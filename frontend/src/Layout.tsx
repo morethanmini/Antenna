@@ -27,10 +27,10 @@ const MODES = {
     nav: [
       { key: 'home', icon: 'home', text: '홈', href: '/' },
       { key: 'stocks', icon: 'stocks', text: '종목 탐색', href: '/stocks' },
-      { key: 'market', icon: 'market', text: '주가 예측', href: '/market' },
+      { key: 'market', icon: 'market', text: '주가 예측', href: '/rankings' },
       { key: 'report', icon: 'report', text: '리포트', href: '/reports' },
-      { key: 'community', icon: 'community', text: '커뮤니티', href: '/community' },
-      { key: 'portfolio', icon: 'portfolio', text: '예측 포트폴리오', href: '/portfolio' },
+      { key: 'community', icon: 'community', text: '커뮤니티', href: '/posts' },
+      { key: 'portfolio', icon: 'portfolio', text: '예측 포트폴리오', href: '/me/portfolio' },
     ],
   },
   sim: {
@@ -38,9 +38,11 @@ const MODES = {
     home: '/sim',
     nav: [
       { key: 'home', icon: 'home', text: '홈', href: '/sim' },
-      { key: 'play', icon: 'play', text: '투자하기', href: '/sim/setup' },
-      { key: 'portfolio', icon: 'portfolio', text: '투자 포트폴리오', href: '/sim/portfolio' },
-      { key: 'ranking', icon: 'trophy', text: '모의투자 랭킹', href: '/sim/ranking' },
+      { key: 'play', icon: 'play', text: '투자하기', href: '/sim/modes' },
+      { key: 'portfolio', icon: 'portfolio', text: '투자 포트폴리오', href: '/sim/history' },
+      /* 시즌 리더보드는 /sim/:id/leaderboard 라 시즌 없이 갈 수 없다.
+         G-01 홈에서 진행 중 시즌을 골라 들어가는 게 정본 경로다. */
+      { key: 'ranking', icon: 'trophy', text: '모의투자 랭킹', href: '/rankings' },
     ],
   },
 } as const
@@ -78,7 +80,8 @@ function Search() {
 }
 
 export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode; nav: string; bodyClass: string; children: React.ReactNode }) {
-  const { authed, user } = useAuth()
+  const { authed, user, signOut } = useAuth()
+  const navigate = useNavigate()
   // 좁은 화면 서랍 전용. 넓은 화면은 접힌 레일이 늘 떠 있어 여닫을 상태가 없다.
   const [railOpen, setRailOpen] = useState(false)
 
@@ -130,6 +133,17 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
                   <path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1v.2a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-2.7-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H3.4a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.7 6.3l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 2.7-1.1V2a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7h.2a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1" />
                 </svg>
               </Link>
+              {/* refresh 는 httpOnly 쿠키라 브라우저가 직접 못 지운다.
+                  서버에 폐기를 요청하는 이 버튼이 유일한 정리 수단이다. */}
+              <button
+                className="iconbtn" type="button" aria-label="로그아웃"
+                onClick={() => { signOut(); navigate('/login', { replace: true }) }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M15 17v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v2" />
+                  <path d="M18 15l3-3-3-3" /><path d="M21 12H9" />
+                </svg>
+              </button>
             </>
           ) : (
             <nav className="topbar-auth" aria-label="계정">
@@ -173,7 +187,8 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
         {/* 비로그인은 하단을 비워 둔다 — 로그인 진입은 상단바에만 있다 */}
         {authed && (
           <div className="rail-foot">
-            <Link className="rail-me" to="/mypage">
+            {/* 설계서 §3 E 기준 마이페이지는 /me 다. 프로토타입의 /mypage 가 아니다 */}
+            <Link className="rail-me" to="/me">
               <img className="rail-me-avatar" src={user?.avatarUrl} alt="" />
               <span><b>{`${user?.nickname ?? '안테나'}님`}</b><small>마이페이지</small></span>
               <em aria-hidden="true">›</em>
