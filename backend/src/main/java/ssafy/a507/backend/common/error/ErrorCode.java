@@ -73,6 +73,13 @@ public enum ErrorCode {
     /** 종목코드가 종목 마스터에 없다. 구간에 시세가 없는 것(200 + 빈 목록)과 구분한다. */
     STOCK_NOT_FOUND(HttpStatus.NOT_FOUND, "종목을 찾을 수 없습니다."),
 
+    // 모의투자 시즌 (ANT-SEASON-01)
+    /**
+     * 시즌이 없다. 관리자 전용 모드(DEMO)를 일반 사용자가 부른 것도 이 code 다 —
+     * 403 으로 답하면 "그런 시즌이 있다" 는 사실이 새고, 시연 시즌은 존재 자체가 비공개다.
+     */
+    SEASON_NOT_FOUND(HttpStatus.NOT_FOUND, "시즌을 찾을 수 없습니다."),
+
     // AI 브리핑 (ANT-RESEARCH-03)
     BRIEFING_NOT_FOUND(HttpStatus.NOT_FOUND, "브리핑을 찾을 수 없습니다."),
 
@@ -88,7 +95,23 @@ public enum ErrorCode {
     SIGNER_MISMATCH(HttpStatus.UNAUTHORIZED, "서명한 지갑이 일치하지 않습니다."),
     /** 프론트가 이 코드를 보고 지갑 연동 화면으로 유도한다. */
     WALLET_NOT_LINKED(HttpStatus.BAD_REQUEST, "지갑을 먼저 연동해주세요."),
-    WALLET_ALREADY_LINKED(HttpStatus.CONFLICT, "이미 연동된 지갑입니다.");
+    WALLET_ALREADY_LINKED(HttpStatus.CONFLICT, "이미 연동된 지갑입니다."),
+
+    // 온체인 (ANT-CHAIN-05)
+    /**
+     * RPC 노드에 닿지 못했거나 릴레이어가 설정되지 않았다. 온체인 동반 요청만 이 코드로 실패하고
+     * 조회 API 는 정상이다(명세 §1). 503 인 이유: 서버 잘못이 아니라 의존 서비스가 없는 상태라서다.
+     */
+    CHAIN_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "블록체인 네트워크에 연결할 수 없습니다. 잠시 후 다시 시도해주세요."),
+
+    // 온체인 검증 (ANT-CHAIN-06)
+    /** 없는 batchId 다. 체인에는 있는데 DB 에 없는 번호(데모 소모분)도 여기로 온다 — 원장은 DB 기준이다. */
+    ANCHOR_NOT_FOUND(HttpStatus.NOT_FOUND, "앵커 배치를 찾을 수 없습니다."),
+    /**
+     * 미판정(BASE/OPEN) 예측을 작성자도 구독자도 아닌 사람이 열었다. 404 로 숨기지 않는다 — 명세 §예측 공개 규칙은
+     * "존재와 커밋 무결성은 공개" 이고, 프론트가 이 code 로 구독 CTA(SubscriptionGate)를 띄운다.
+     */
+    PREDICTION_FORBIDDEN(HttpStatus.FORBIDDEN, "판정 전 예측은 작성자와 구독자만 볼 수 있습니다.");
 
     private final HttpStatus status;
     private final String message;
