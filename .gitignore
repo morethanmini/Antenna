@@ -37,3 +37,10 @@ contracts/cache/
 # 대외비 문서 (커밋 금지)
 docs/토큰증권_API_명세.md
 docs/금융망_API_명세.md
+
+# 특화 데이터셋 정제 파이프라인 (ANT-DATA-09). 원본 CSV 캐시·정제 Parquet 은 수 GB 라 추적하지 않는다 —
+# 팀원은 배포처에서 원본을 받고 data/README.md 의 순서로 재생성한다. 사전(aliases.csv 등) 소형 파일은 추적한다.
+data/.venv/
+data/cache/
+data/out/
+data/__marimo__/
