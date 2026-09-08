@@ -1,0 +1,5 @@
+# 특화 데이터셋 정제용 환경. 빈 venv 에서 재현: python -m venv .venv && .venv/Scripts/pip install -r requirements.txt
+marimo[sql]==0.24.0
+duckdb==1.5.5
+pandas==3.0.5
+pyarrow==25.0.1
