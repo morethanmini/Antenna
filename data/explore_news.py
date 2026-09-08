@@ -64,7 +64,7 @@ def _(mo, news_path):
     news = mo.sql(
         f"""
         CREATE OR REPLACE VIEW news AS
-        SELECT * FROM read_parquet('{news_path}') 
+        SELECT * FROM read_parquet('{news_path}')
         """
     )
     return
@@ -77,8 +77,6 @@ def _(mo, news):
         SELECT company, count(*) AS n_rows
         FROM news
         GROUP BY 1 ORDER BY 2 DESC
-
-
         """
     )
     return
