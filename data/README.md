@@ -24,6 +24,8 @@ DuckDB 로 CSV 를 SQL 로 다루고, marimo 노트북으로 탐색한다. 백�
 | `explore_news.py` | 뉴스 원본을 눈으로 보는 탐색 노트북. 연도별 CSV 를 `cache/news_<연도>.parquet` 으로 한 번 변환 | 연도당 20~30초 |
 | `eda_news.py` | 골든 데이터셋 선별 EDA — 종목명·매크로 주제·시의성 태깅 → `cache/tagged.parquet` → 깔때기·커버리지·별칭 후보 | 태깅 5분, 이후 셀은 초 단위 |
 | `clean_stock.py` | 주가·PER/PBR 정제 (ANT-DATA-07, 닫힘). 종목코드 ISIN→6자리 규칙 포함. `out/stock_price.parquet` 등 산출 | 1분 |
+| `stage0_news.py` | **0단계 필터**: 카테고리 제외표 + 본문 200자 + 템플릿 + 광고 + 시의성 −1 이하 + 중복 제거, 날짜 4형식 → timestamp. `cache/stage0.parquet` 산출. 이후 임베딩·군집·LLM(ANT-DATA-10)의 입력 | 5~10분 |
+| `category_exclude.csv` | 카테고리 제외표 281개 (스포츠·연예·날씨·사진영상·부고·생활취미·종교). 2,310개 중 유저 검토로 확정(2026-09-08). `stage0_news.py` 가 읽는다 | |
 | `aliases.csv` | 종목 수동 별칭 (삼전·하닉·현기차…). `eda_news.py` 가 읽는다 | |
 | `requirements.txt` | 고정 버전 | |
 
