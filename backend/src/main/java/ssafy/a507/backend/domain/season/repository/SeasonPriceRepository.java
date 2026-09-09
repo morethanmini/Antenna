@@ -1,6 +1,9 @@
 package ssafy.a507.backend.domain.season.repository;
 
 import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -50,4 +53,27 @@ public interface SeasonPriceRepository extends JpaRepository<SeasonPrice, Long> 
     @Query("delete from SeasonPrice p where p.ticker in"
             + " (select t from SeasonTicker t where t.season.id = :seasonId)")
     void deleteBySeasonId(@Param("seasonId") Long seasonId);
+
+    /**
+     * 진행일까지의 봉. 상한을 <b>쿼리에서</b> 거는 것이 요점이다 — 전부 읽어 화면에서
+     * 자르면 응답에 실려 나가 개발자도구로 다음 날 종가가 다 보인다.
+     *
+     * <p>UQ(ticker_id, game_day) 를 그대로 타고, 게임일 오름차순이라 차트가 받은 순서대로
+     * 그린다. 워밍업(game_day 0 이하)은 조건에 자연히 포함된다.
+     */
+    List<SeasonPrice> findByTicker_IdAndGameDayLessThanEqualOrderByGameDayAsc(
+            Long tickerId, int uptoDay);
+
+    /** 그 종목의 그 게임일 봉. 체결가(종가)가 여기서 나온다. */
+    Optional<SeasonPrice> findByTicker_IdAndGameDay(Long tickerId, int gameDay);
+
+    /** 여러 종목의 같은 게임일 봉. 보유 종목 평가에 쓴다 — 종목마다 따로 읽으면 N+1 이다. */
+    List<SeasonPrice> findByTicker_IdInAndGameDay(Collection<Long> tickerIds, int gameDay);
+
+    /** 거래한 종목들의 게임일 구간 봉. 종료 시 일별 자산 곡선(최대 낙폭)을 만든다. */
+    List<SeasonPrice> findByTicker_IdInAndGameDayBetweenOrderByGameDayAsc(
+            Collection<Long> tickerIds, int fromDay, int toDay);
+
+    /** 시즌 전 종목의 한 게임일 봉. 벤치마크(등가중)가 첫날·마지막날 둘을 읽는다. */
+    List<SeasonPrice> findByTicker_Season_IdAndGameDay(Long seasonId, int gameDay);
 }

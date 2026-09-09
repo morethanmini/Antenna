@@ -13,7 +13,6 @@
      /stocks          → ANT-DATA-03 (3년치 백필 선행)
      /search          → ANT-DATA-05
      /watchlist       → ANT-DATA-06
-     /briefings       → ANT-RESEARCH-03 (생성 배치 선행)
      /users/me        → ANT-AUTH-05
      /rankings        → 티켓 없음
      /ads/active      → 티켓 없음
@@ -34,25 +33,25 @@ export type IndexQuote = {
   series: number[]
 }
 
+/* 지수는 실제 API 를 탄다.
+
+   잠깐 목업으로 되돌렸다가(d203f1a) 다시 되돌린 자리다. items 가 늘 비어 있는 걸
+   보고 "수집이 아직 안 돌았다" 고 읽었는데, **원인은 백엔드가 아니라 우리 쪽
+   재기동이었다.** application.yaml 이 .env 를 optional:file 로 기동할 때 한 번만
+   읽는데, 그날 백엔드가 09:08 에 뜨고 .env 에 키가 09:59 에 들어왔다. 재기동하니
+   같은 코드가 지수 3,278행을 받아 왔다.
+
+   **다음에 "수집이 안 된다" 싶으면 .env 시각과 기동 시각부터 견주어 볼 것.**
+
+   USDKRW 는 아직 안 온다 — KOREAEXIM_AUTH_KEY 가 .env 에 없어 환율만 건너뛴다.
+   그래서 카드에 지수 셋이 아니라 둘이 뜬다. 빈 자리를 만들지 않고 온 것만 그린다 —
+   화면이 개수를 정하지 않고 서버가 준 만큼 그린다. */
 export function getMarketIndices(days = 30) {
   return api.get<{ items: IndexQuote[] }>('/market/indices', { query: { days } })
 }
 
-/* ── AI 브리핑 · GET /briefings ───────────────────────────── */
-
-export type Briefing = {
-  id: number
-  scope: 'MARKET' | 'STOCK'
-  stockCode: string | null
-  headline: string
-  /** 기준 영업일 YYYY-MM-DD */
-  targetDate: string
-}
-
-export function getBriefings(scope: 'MARKET' | 'STOCK' = 'MARKET') {
-  if (MOCK) return mock.briefings()
-  return api.get<{ items: Briefing[] }>('/briefings', { query: { scope } })
-}
+/* AI 브리핑은 여기 없다. 홈 띠(B-01) · 종목 상세(B-03) · 상세 모달(M-10)이
+   같은 응답을 읽으므로 계약을 api/briefings.ts 한 곳에 뒀다. */
 
 /* ── 관심 종목 · GET /watchlist ───────────────────────────── */
 

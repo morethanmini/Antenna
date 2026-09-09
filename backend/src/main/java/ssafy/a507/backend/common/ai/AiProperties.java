@@ -5,8 +5,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * SSAFY GMS 게이트웨이 설정.
  *
- * <p>리서치 전용이 아니다 — 뉴스 요약(ANT-RESEARCH-02) · AI 브리핑(-03) · 투자 포인트(-04) ·
- * 복기 리포트(-708) · 모의투자 사건 요약이 모두 배치 B6 를 거쳐 이 클라이언트를 쓴다. 그래서
+ * <p>리서치 전용이 아니다 — AI 브리핑(ANT-RESEARCH-03) · 투자 포인트(-04) ·
+ * 복기 리포트(-708) · 모의투자 사건 요약이 모두 이 클라이언트를 쓴다. 그래서
  * {@code domain/research} 가 아니라 {@code common} 에 둔다.
  *
  * <p>GMS 는 OpenAI Chat Completions 를 그대로 프록시한다 — 요청·응답 모양이 OpenAI 규격과
@@ -19,7 +19,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *     행만 골라 다시 생성한다
  */
 @ConfigurationProperties(prefix = "app.ai")
-public record AiProperties(String apiKey, String baseUrl, String model, String promptVersion) {
+public record AiProperties(
+        String apiKey,
+        String baseUrl,
+        String model,
+        String promptVersion) {
 
     private static final String DEFAULT_BASE_URL = "https://gms.ssafy.io/gmsapi/api.openai.com/v1";
     private static final String DEFAULT_MODEL = "gpt-5.4-mini";

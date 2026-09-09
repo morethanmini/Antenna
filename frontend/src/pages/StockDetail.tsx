@@ -18,6 +18,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import InfoTab from '../components/stockDetail/InfoTab'
 import PredictTab from '../components/stockDetail/PredictTab'
+import { emptyPredictForm, type PredictForm } from '../components/stockDetail/predictForm'
 import { useBlock } from '../api/useBlock'
 import ErrorState from '../components/state/ErrorState'
 import { addWatch, removeWatch, MARKET_LABEL } from '../api/stocks'
@@ -49,6 +50,13 @@ export default function StockDetail() {
 
   /* 근거 포인트 선택 — 두 탭이 공유한다 */
   const [picked, setPicked] = useState<number[]>([])
+
+  /* 예측 입력값도 여기서 든다. 탭을 바꾸면 PredictTab 이 언마운트되므로 그
+     안에 두면 근거를 고르러 갔다 온 사이에 적어 둔 것이 전부 사라진다.
+     picked 를 여기 둔 것과 같은 이유다. */
+  /* 함수를 그대로 넘긴다(호출하지 않는다) — useState 의 지연 초기화라 noteSalt 를
+     한 번만 뽑는다. emptyPredictForm() 로 부르면 다시 그릴 때마다 새 난수가 나온다. */
+  const [form, setForm] = useState<PredictForm>(emptyPredictForm)
   const onPick = useCallback((id: number) => {
     setPicked((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   }, [])
@@ -79,17 +87,19 @@ export default function StockDetail() {
             {/* ── 요약 헤더 ───────────────────────────────────
                 스크롤을 내려도 어느 종목을 보는지, 종가가 얼마인지 남아 있어야
                 아래쪽 재무·경쟁사를 읽을 때 기준을 잃지 않는다. */}
-            <header className="sd-head">
-              <div className="sd-head-top">
-                <Link className="sd-back" to="/stocks">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M15 5 8 12l7 7" />
-                  </svg>
-                  종목 탐색
-                </Link>
-              </div>
+            {/* 뒤로가기는 sticky 밖이다. 붙여 두면 스크롤 내내 따라다니는데,
+                한 번 쓰고 마는 길이라 자리만 차지한다. 위로 올리면 다시 보인다. */}
+            <div className="sd-head-top">
+              <Link className="sd-back" to="/stocks">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M15 5 8 12l7 7" />
+                </svg>
+                종목 탐색
+              </Link>
+            </div>
 
+            <header className="sd-head">
               <div className="sd-ident">
                 {summary.loading ? (
                   <span className="sd-skel sd-skel-title" aria-hidden="true" />
@@ -177,6 +187,8 @@ export default function StockDetail() {
                   picked={picked}
                   onPick={onPick}
                   onGoInfo={() => goTab('info')}
+                  form={form}
+                  onForm={setForm}
                 />
               )}
             </div>

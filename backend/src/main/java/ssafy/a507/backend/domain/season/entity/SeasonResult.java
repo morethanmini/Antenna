@@ -75,4 +75,40 @@ public class SeasonResult {
 
     @Column(name = "closed_at")
     private Instant closedAt;
+
+    /**
+     * 종료 시 1회 생성. 점수·등급·AI 복기는 비워 둔다 — 등급 산식은 미확정이고 복기는
+     * ANT-SEASON-09 가 채운다.
+     */
+    public static SeasonResult of(
+            SeasonParticipant participant,
+            BigDecimal finalAsset,
+            BigDecimal returnRate,
+            BigDecimal benchmarkReturn,
+            BigDecimal maxDrawdown,
+            BigDecimal winRate,
+            BigDecimal profitFactor,
+            BigDecimal avgHoldingDays) {
+        SeasonResult r = new SeasonResult();
+        r.participant = participant;
+        r.finalAsset = finalAsset;
+        r.returnRate = returnRate;
+        r.benchmarkReturn = benchmarkReturn;
+        r.maxDrawdown = maxDrawdown;
+        r.winRate = winRate;
+        r.profitFactor = profitFactor;
+        r.avgHoldingDays = avgHoldingDays;
+        r.closedAt = Instant.now();
+        return r;
+    }
+
+    /**
+     * AI 복기를 채운다(ANT-SEASON-09). 종료 시 성적표와 함께 저장되는 것이 보통이고, 키가 없어
+     * 비운 채 끝난 회차는 다음 finish 호출이 채운다. promptVersion 은 문장을 만든 세대 태그다.
+     */
+    public void review(String body, String promptVersion) {
+        this.reviewBody = body;
+        this.reviewedAt = Instant.now();
+        this.promptVersion = promptVersion;
+    }
 }

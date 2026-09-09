@@ -29,6 +29,14 @@ export function toApiError(status: number, body: unknown): ApiError {
     const b = body as ApiErrorBody
     return new ApiError({ code: b.code, message: b.message ?? '', field: b.field }, status)
   }
+  /* 본문 없는 401 은 UNAUTHENTICATED 로 읽는다.
+     Spring Security 의 기본 진입점이 본문 없이 401 만 보낸다(2026-09-07 확인 —
+     Content-Length: 0). 명세 §1 은 모든 오류가 {code, message} 를 갖는다고 정했으므로
+     서버 쪽이 고쳐질 자리지만, 그때까지 화면에 UNKNOWN 이 뜨면 로그인이 안 된 것을
+     알 수 없다. 상태 코드만으로도 뜻이 하나뿐인 경우라 여기서 메운다. */
+  if (status === 401) {
+    return new ApiError({ code: 'UNAUTHENTICATED', message: '' }, status)
+  }
   return new ApiError({ code: 'UNKNOWN', message: '' }, status)
 }
 
@@ -89,6 +97,21 @@ export const ERROR_CODE = {
   PREDICTION_SLOT_EXCEEDED: 'PREDICTION_SLOT_EXCEEDED',
   INSUFFICIENT_BALANCE: 'INSUFFICIENT_BALANCE',
   DAY_MISMATCH: 'DAY_MISMATCH',
+  // 모의투자 (ANT-SEASON-03 · 04, API v0.36~v0.39)
+  SEASON_NOT_FOUND: 'SEASON_NOT_FOUND',
+  SEASON_TICKER_NOT_FOUND: 'SEASON_TICKER_NOT_FOUND',
+  SEASON_ALREADY_JOINED: 'SEASON_ALREADY_JOINED',
+  SEASON_NOT_RUNNING: 'SEASON_NOT_RUNNING',
+  SEASON_JOIN_NOT_SUPPORTED: 'SEASON_JOIN_NOT_SUPPORTED',
+  SEASON_NOT_JOINED: 'SEASON_NOT_JOINED',
+  SEASON_INSUFFICIENT_QTY: 'SEASON_INSUFFICIENT_QTY',
+  SEASON_PRICE_NOT_FOUND: 'SEASON_PRICE_NOT_FOUND',
+  SEASON_ADVANCE_NOT_ALLOWED: 'SEASON_ADVANCE_NOT_ALLOWED',
+  SEASON_ATTEMPT_ENDED: 'SEASON_ATTEMPT_ENDED',
+  SEASON_LAST_DAY: 'SEASON_LAST_DAY',
+  SEASON_NOT_LAST_DAY: 'SEASON_NOT_LAST_DAY',
+  SEASON_RESULT_NOT_FOUND: 'SEASON_RESULT_NOT_FOUND',
+  SEASON_REVIEW_FAILED: 'SEASON_REVIEW_FAILED',
 } as const
 
 /* 프론트가 자체로 만드는 code. 서버 어휘와 겹치지 않게 접두어를 붙인다. */
@@ -109,6 +132,22 @@ export const CLIENT_ERROR_CODE = {
   CLIENT_WALLET_BUSY: 'CLIENT_WALLET_BUSY',
   /** 잠긴 지갑 등으로 계정을 하나도 못 받았다 */
   CLIENT_NO_ACCOUNT: 'CLIENT_NO_ACCOUNT',
+
+  /* D-03 검산은 브라우저가 체인 RPC 를 직접 읽는다. 서버를 거치지 않는 실패라
+     서버 어휘에 자리가 없다. CHAIN_UNAVAILABLE 을 빌려 쓰지 않는 이유 —
+     그건 "서버가 체인에 못 붙었다" 이고 이건 "내 브라우저가 못 붙었다" 라
+     사용자가 할 일(새로고침·망 확인)과 우리가 할 일이 서로 다르다. */
+  /** VITE_CHAIN_RPC_URL 이 비어 있다 — 배포 설정 문제다 */
+  CLIENT_CHAIN_NOT_CONFIGURED: 'CLIENT_CHAIN_NOT_CONFIGURED',
+  /** RPC 에 닿지 못했거나 제한 시간 안에 답이 없다 */
+  CLIENT_CHAIN_UNREACHABLE: 'CLIENT_CHAIN_UNREACHABLE',
+
+  /* 이미지 업로드(M-07)는 XHR 로 보낸다 — fetch 에 업로드 진행 이벤트가 없어서다.
+     그래서 client.ts 의 오류 변환을 타지 않고 여기 둘로 갈린다. */
+  /** 서버에 닿지 못했다. 서버가 거절한 것과 다르다 — 같은 파일로 다시 시도할 수 있다 */
+  CLIENT_UPLOAD_FAILED: 'CLIENT_UPLOAD_FAILED',
+  /** 사용자가 취소했다. 오류 문구를 띄우지 않는다 */
+  CLIENT_UPLOAD_ABORTED: 'CLIENT_UPLOAD_ABORTED',
 } as const
 
 /**

@@ -7,8 +7,10 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from './auth/context'
 import { takeOnboardingPending } from './auth/onboarding'
+import BriefingModal from './components/BriefingModal'
 import OnboardingTour from './components/OnboardingTour'
 import WalletLinkModal from './components/wallet/WalletLinkModal'
+import { useBriefingParam } from './components/briefingParam'
 
 export type Mode = 'insight' | 'sim'
 
@@ -30,7 +32,7 @@ const MODES = {
     nav: [
       { key: 'home', icon: 'home', text: '홈', href: '/' },
       { key: 'stocks', icon: 'stocks', text: '종목 탐색', href: '/stocks' },
-      { key: 'market', icon: 'market', text: '주가 예측', href: '/rankings' },
+      { key: 'market', icon: 'market', text: '주가 예측 랭킹', href: '/rankings' },
       { key: 'report', icon: 'report', text: '리포트', href: '/reports' },
       { key: 'community', icon: 'community', text: '커뮤니티', href: '/posts' },
       { key: 'portfolio', icon: 'portfolio', text: '예측 포트폴리오', href: '/me/portfolio' },
@@ -43,9 +45,10 @@ const MODES = {
       { key: 'home', icon: 'home', text: '홈', href: '/sim' },
       { key: 'play', icon: 'play', text: '투자하기', href: '/sim/modes' },
       { key: 'portfolio', icon: 'portfolio', text: '투자 포트폴리오', href: '/sim/history' },
-      /* 시즌 리더보드는 /sim/:id/leaderboard 라 시즌 없이 갈 수 없다.
-         G-01 홈에서 진행 중 시즌을 골라 들어가는 게 정본 경로다. */
-      { key: 'ranking', icon: 'trophy', text: '모의투자 랭킹', href: '/rankings' },
+      /* 시즌 리더보드(/sim/:id/leaderboard)와 다른 화면이다. 저쪽은 한 시즌 안의
+         순위이고, 이건 리플레이 트랙 누적 랭킹이다.
+         전에는 /rankings 를 가리켜 누르면 인사이트 모드로 넘어갔다. */
+      { key: 'ranking', icon: 'trophy', text: '모의투자 랭킹', href: '/sim/rankings' },
     ],
   },
 } as const
@@ -111,6 +114,12 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
      WalletLinkModal 머리말이 "호출부가 온보딩을 닫고 띄운다" 로 계약을 적어
      두었다. 그래서 튜토리얼을 먼저 닫고 이걸 세운다. */
   const [linking, setLinking] = useState(false)
+
+  /* M-10 브리핑 상세. 여는 쪽(B-01 홈 띠 · B-03 브리핑 카드)은 쿼리만 세우고,
+     그리는 것은 셸이 맡는다 — M-09 오버레이를 셸로 올린 것과 같은 이유다.
+     띠가 비어 있으면 그 컴포넌트는 null 을 돌려주는데, 모달을 그 안에 두면
+     ?briefing=12 로 들어온 딥링크가 아무것도 못 연다. */
+  const briefing = useBriefingParam()
 
   useEffect(() => {
     document.body.className = railOpen ? `${bodyClass} rail-open`.trim() : bodyClass
@@ -238,6 +247,10 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
       )}
 
       {linking && <WalletLinkModal onClose={() => setLinking(false)} />}
+
+      {briefing.id !== null && (
+        <BriefingModal id={briefing.id} onClose={briefing.close} />
+      )}
     </>
   )
 }

@@ -29,6 +29,20 @@ const BY_CODE: Record<string, Text> = {
   [ERROR_CODE.PREDICTION_SLOT_EXCEEDED]: { title: '무료 예측 슬롯을 모두 썼습니다', hint: '토큰을 소각하고 계속 등록할 수 있습니다' },
   [ERROR_CODE.INSUFFICIENT_BALANCE]: { title: '토큰 잔액이 부족합니다', hint: '지갑에서 잔액을 확인해 주세요' },
   [ERROR_CODE.DAY_MISMATCH]: { title: '진행 상황이 달라졌습니다', hint: '최신 상태로 맞춘 뒤 다시 시도합니다', retryable: true },
+  [ERROR_CODE.SEASON_NOT_FOUND]: { title: '시즌을 찾을 수 없습니다' },
+  [ERROR_CODE.SEASON_TICKER_NOT_FOUND]: { title: '이 시즌에 없는 종목입니다' },
+  [ERROR_CODE.SEASON_ALREADY_JOINED]: { title: '이미 진행 중인 모의투자가 있습니다', hint: '이어서 하거나 초기화하고 다시 시작할 수 있습니다' },
+  [ERROR_CODE.SEASON_NOT_RUNNING]: { title: '지금은 참가할 수 없는 시즌입니다' },
+  [ERROR_CODE.SEASON_JOIN_NOT_SUPPORTED]: { title: '대회 참가는 아직 열리지 않았습니다' },
+  [ERROR_CODE.SEASON_NOT_JOINED]: { title: '아직 참가하지 않은 시즌입니다', hint: '시즌 상세에서 먼저 참가해 주세요' },
+  [ERROR_CODE.SEASON_INSUFFICIENT_QTY]: { title: '보유 수량이 부족합니다' },
+  [ERROR_CODE.SEASON_PRICE_NOT_FOUND]: { title: '이 게임일의 가격이 아직 없습니다' },
+  [ERROR_CODE.SEASON_ADVANCE_NOT_ALLOWED]: { title: '대회는 직접 진행할 수 없습니다', hint: '정해진 시각에 함께 넘어갑니다' },
+  [ERROR_CODE.SEASON_ATTEMPT_ENDED]: { title: '이미 끝난 회차입니다', hint: '결과를 보거나 새로 시작할 수 있습니다' },
+  [ERROR_CODE.SEASON_LAST_DAY]: { title: '마지막 게임일입니다', hint: '종료하고 결과를 확인해 주세요' },
+  [ERROR_CODE.SEASON_NOT_LAST_DAY]: { title: '아직 마지막 게임일이 아닙니다' },
+  [ERROR_CODE.SEASON_RESULT_NOT_FOUND]: { title: '아직 결과가 없습니다', hint: '마지막 게임일에 종료하면 만들어집니다' },
+  [ERROR_CODE.SEASON_REVIEW_FAILED]: { title: 'AI 복기를 만들지 못했습니다', hint: '아직 종료되지 않았습니다. 잠시 후 다시 시도해 주세요', retryable: true },
 
   // 지갑 · 서명 (M-01) — 사용자가 할 일이 서로 달라 문구를 합치지 않는다
   [ERROR_CODE.INVALID_SIGNATURE]: { title: '서명이 올바르지 않습니다', hint: '지갑에서 다시 서명해 주세요', retryable: true },
@@ -64,7 +78,7 @@ const BY_CODE: Record<string, Text> = {
 
   // 시세 · 리서치 · 관심 종목
   [ERROR_CODE.STOCK_NOT_FOUND]: { title: '종목을 찾을 수 없습니다' },
-  [ERROR_CODE.BRIEFING_NOT_FOUND]: { title: '브리핑을 찾을 수 없습니다' },
+  [ERROR_CODE.BRIEFING_NOT_FOUND]: { title: '브리핑을 찾을 수 없습니다', hint: '지워졌거나 주소가 잘못된 링크입니다' },
   [ERROR_CODE.DUPLICATE_WATCHLIST_ITEM]: { title: '이미 관심 종목에 있습니다' },
 
   // 댓글 · 좋아요
@@ -82,6 +96,16 @@ const BY_CODE: Record<string, Text> = {
   [CLIENT_ERROR_CODE.CLIENT_SIGN_REJECTED]: { title: '지갑에서 요청을 취소했습니다', hint: '연동하려면 지갑 창에서 승인해 주세요', retryable: true },
   [CLIENT_ERROR_CODE.CLIENT_WALLET_BUSY]: { title: '지갑이 응답을 기다리고 있습니다', hint: '열려 있는 지갑 창을 확인해 주세요', retryable: true },
   [CLIENT_ERROR_CODE.CLIENT_NO_ACCOUNT]: { title: '지갑 계정을 가져오지 못했습니다', hint: '지갑 잠금을 해제하고 계정을 선택해 주세요', retryable: true },
+  /* D-03 은 브라우저가 체인 RPC 를 직접 읽는다. CHAIN_UNAVAILABLE 과 문구를 나눈 이유 —
+     그건 서버가 못 붙은 것이고 이건 이 브라우저가 못 붙은 것이라, 사용자가 확인할 곳이 다르다. */
+  [CLIENT_ERROR_CODE.CLIENT_CHAIN_UNREACHABLE]: { title: '체인에서 확인하지 못했습니다', hint: '네트워크 연결을 확인한 뒤 다시 시도해 주세요', retryable: true },
+  // 배포 설정 문제라 사용자가 다시 눌러도 풀리지 않는다 — 재시도 버튼을 주지 않는다
+  [CLIENT_ERROR_CODE.CLIENT_CHAIN_NOT_CONFIGURED]: { title: '체인 접속 주소가 설정되지 않았습니다', hint: '관리자에게 알려 주세요' },
+  /* 업로드(M-07) — 전송이 끊긴 것과 서버가 규격 위반으로 거절한 것은 사용자가 할 일이 다르다.
+     앞은 같은 파일로 다시, 뒤는 다른 파일로. 그래서 문구를 합치지 않는다. */
+  [CLIENT_ERROR_CODE.CLIENT_UPLOAD_FAILED]: { title: '올리는 중에 연결이 끊겼습니다', hint: '같은 파일로 다시 시도할 수 있습니다', retryable: true },
+  // 사용자가 스스로 멈춘 것이라 화면에 오류로 띄우지 않는다. 호출부가 이 code 를 보고 조용히 넘긴다
+  [CLIENT_ERROR_CODE.CLIENT_UPLOAD_ABORTED]: { title: '업로드를 취소했습니다' },
 }
 
 /* code 를 못 찾으면 status 로 떨어진다. 명세에 없는 사유가 와도 화면이 비지 않게. */

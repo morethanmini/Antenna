@@ -15,27 +15,6 @@ public interface ResearchDocumentRepository extends JpaRepository<ResearchDocume
             ResearchDocument.Source source, List<String> externalIds);
 
     /**
-     * 요약이 필요한 문서 한 묶음 (배치 B6).
-     *
-     * <p>아직 요약이 없는 행과, 프롬프트 세대가 뒤처진 행을 한 조건으로 집는다 — 프롬프트를
-     * 고치면 {@code app.ai.prompt-version} 만 올리면 되고 재생성 경로를 따로 만들지 않는다.
-     *
-     * <p>종목을 함께 읽어 온다. 요약 프롬프트에 종목명을 넣어야 어느 회사 이야기인지 모델이
-     * 알고, 건마다 프록시를 깨우면 묶음 크기만큼 쿼리가 늘어난다.
-     */
-    @Query("""
-            select d from ResearchDocument d
-              join fetch d.stock
-            where d.source = :source
-              and (d.promptVersion is null or d.promptVersion <> :promptVersion)
-            order by d.publishedAt desc
-            """)
-    List<ResearchDocument> findPendingSummary(
-            @Param("source") ResearchDocument.Source source,
-            @Param("promptVersion") String promptVersion,
-            Limit limit);
-
-    /**
      * 브리핑 재료 — 기준일 안에 나온 뉴스 중 최신 몇 건 (ANT-RESEARCH-03).
      *
      * <p>기준일로 묶는 이유: 브리핑 기준일은 일봉이 들어온 마지막 영업일(D-1)인데 뉴스는 그날 저녁
