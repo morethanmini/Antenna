@@ -3,6 +3,7 @@
 
    블록마다 원천이 다르다. 하나가 실패해도 나머지는 그대로 그린다.
 
+     GET /stocks/{code}              요약 헤더 (ANT-DATA-05)
      GET /stocks/{code}/prices       종가 시계열 (from·to)
      GET /stocks/{code}/profile      기업 개요
      GET /stocks/{code}/financials   재무
@@ -20,10 +21,7 @@
    놓치면 다음이 한 달·석 달 뒤다. 공시 배치(매일)에 붙은 fillIfEmpty() 를 한 번
    돌리자 개황 311종목 · 재무 916행 · 공시 597건이 들어왔다.
 
-   ── 아직 서버가 없는 둘 ────────────────────────────────
-   GET /stocks/{code}          요약 헤더. ANT-DATA-05 인데 **담당자가 없다.**
-                               A-03 통합 검색을 막고 있는 바로 그 티켓이다.
-                               getSummary 가 있는 것들로 헤더를 짜 맞춘다(아래).
+   ── 아직 서버가 없는 것 ────────────────────────────────
    GET /stocks/{code}/sentiment 예측 심리. ANT-PRED-06 · 담당자 없음.
                                AI 와 무관하다 — predictions 의 UP/DOWN 집계이고
                                표에는 이미 행이 있다. 코드가 없을 뿐이다.
@@ -32,7 +30,6 @@
    지어낸 값을 실제 값 옆에 두면 어느 쪽이 참인지 알 수 없다.
    ─────────────────────────────────────────────────────── */
 import { api } from './client'
-import { getWatchlist } from './insight'
 import type { ClosePoint } from '../components/CloseChart'
 import type { Market } from './stocks'
 
@@ -45,7 +42,7 @@ export type StockSummary = {
   name: string
   sector: string | null
   market: Market | null
-  /** 전일 종가. 거래정지였으면 null — 0 으로 그리지 않는다 */
+  /** 그 종목의 마지막 거래일 종가. 시세가 한 건도 없으면 null — 0 으로 그리지 않는다 */
   prevClose: number | null
   /** 종가가 기준하는 영업일 YYYY-MM-DD */
   asOf: string | null
@@ -53,7 +50,7 @@ export type StockSummary = {
   per: number | null
   pbr: number | null
   predictionCount: number
-  watched: boolean
+  watching: boolean
 }
 
 /**
@@ -196,67 +193,11 @@ export type Peer = {
 /* ── 호출부 ─────────────────────────────────────────────── */
 
 /**
- * 요약 헤더. **GET /stocks/{code} 가 없어서 있는 것들로 짜 맞춘다.**
- *
- * 값을 지어내지 않는다 — 서버가 세 곳에 흩어 놓은 같은 사실을 모을 뿐이다.
- *
- *   name · sector    ← /profile 의 corpName · industry
- *   prevClose · asOf ← /valuation 의 basedOn (그 블록이 계산 기준으로 이미 싣는다)
- *   changeRate       ← /prices 의 마지막 두 종가
- *
- * 목록에서 행을 들고 오지 않는 이유 — 주소로 바로 들어오는 길이 있다(딥링크·
- * 관심 종목·예측 상세에서 온 링크). 목록을 거친 경우에만 헤더가 뜨면 나머지
- * 경로에서 화면 위쪽이 빈다. 어느 길로 오든 같게 만든다.
- *
- * **이름이 목록과 다르게 나온다.** corpName 은 DART 법인명이라 목록의 KRX 종목명과
- * 어긋난다 — 목록에서 "NAVER" 를 눌렀는데 상세는 "네이버(주)" 다. 둘 다 맞는
- * 이름이지만 같은 흐름 안에서 갈리는 건 좋지 않다. KRX 이름(stocks.name)을 주는
- * 엔드포인트가 없어 지금은 어쩔 수 없고, 단건 조회가 생기면 함께 풀린다.
- * (DART 에 매칭이 안 된 우선주는 서버가 KRX 이름으로 되돌려 주므로 그쪽은 맞는다.)
- *
- * **market 은 어느 응답에도 없어 null 이다** — 헤더가 그 칩만 그리지 않는다.
- * per·pbr 은 상장주식수가 있는 종목에서 값이 온다(없으면 basedOn.note 에 사유).
- * predictionCount 는 원천이 예측 심리뿐인데 그게 목업이라 0 으로 둔다 — 실제 값
- * 옆에 목업 숫자를 배지로 붙이지 않는다.
- *
- * 셋 중 하나만 실패해도 헤더를 못 그리므로 Promise.all 로 함께 기다린다.
- * 없는 종목이면 셋 다 404 STOCK_NOT_FOUND 라 그대로 위로 올라간다.
- *
- * 단건 조회가 생기면 이 몸통을 api.get 한 줄로 되돌린다.
+ * 요약 헤더. 이름은 목록과 같은 KRX 종목명, 종가는 그 종목의 마지막 거래일 값이다
+ * (valuation 과 같은 규칙이라 예측 기준가와 어긋나지 않는다). 없는 종목이면 404 STOCK_NOT_FOUND.
  */
-export async function getSummary(code: string): Promise<StockSummary> {
-  const [profile, valuation, prices, watchlist] = await Promise.all([
-    getProfile(code),
-    getValuation(code),
-    /* 등락률에 필요한 건 마지막 두 점뿐이다. 구간을 안 주면 서버가 최근 20일을
-       주는데, 차트 블록이 어차피 제 구간으로 다시 부르므로 여기서 넓히지 않는다. */
-    getPrices(code),
-    /* 별을 채울지 여기서 안다. 목록에서 온 경우에만 아는 값으로 두면 딥링크로
-       들어왔을 때 이미 담은 종목이 빈 별로 보인다. */
-    getWatchlist(),
-  ])
-
-  const items = prices.items
-  const last = items[items.length - 1]
-  const prev = items[items.length - 2]
-  /* 점이 둘 미만이면 등락률이 없다. 0 으로 두면 "보합" 으로 읽힌다(B-04 와 같은 규칙) */
-  const changeRate = last && prev && prev.close !== 0
-    ? Math.round(((last.close - prev.close) / prev.close) * 10000) / 100
-    : null
-
-  return {
-    code,
-    name: profile.corpName,
-    sector: profile.industry,
-    market: null,
-    prevClose: valuation.basedOn.prevClose,
-    asOf: valuation.basedOn.priceDate,
-    changeRate,
-    per: valuation.per,
-    pbr: valuation.pbr,
-    predictionCount: 0,
-    watched: watchlist.items.some((w) => w.stockCode === code),
-  }
+export function getSummary(code: string) {
+  return api.get<StockSummary>(`/stocks/${code}`)
 }
 
 /** 구간을 주지 않으면 서버가 최근 30일을 준다. 화면은 기간 버튼으로 from 을 계산한다. */
