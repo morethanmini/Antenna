@@ -18,6 +18,7 @@ import ssafy.a507.backend.domain.market.repository.DailyQuoteRepository;
 import ssafy.a507.backend.domain.market.repository.StockRepository;
 import ssafy.a507.backend.domain.season.entity.Season;
 import ssafy.a507.backend.domain.season.entity.SeasonTicker;
+import ssafy.a507.backend.domain.season.repository.SeasonNewsRepository;
 import ssafy.a507.backend.domain.season.repository.SeasonPriceRepository;
 import ssafy.a507.backend.domain.season.repository.SeasonRepository;
 import ssafy.a507.backend.domain.season.repository.SeasonTickerRepository;
@@ -55,6 +56,7 @@ public class SeasonCreateService {
     private final SeasonRepository seasonRepository;
     private final SeasonTickerRepository seasonTickerRepository;
     private final SeasonPriceRepository seasonPriceRepository;
+    private final SeasonNewsRepository seasonNewsRepository;
 
     /**
      * @param spec 무엇을 만들지 — 성격·대표 업종·시작 영업일·종목 수 상한·기간·예수금·seed
@@ -101,11 +103,13 @@ public class SeasonCreateService {
     }
 
     /**
-     * 시즌과 그 종목·가격을 지운다. 참가자가 있는 시즌은 부르지 않는다 — 호출부가 먼저 확인한다.
-     * 만든 곳이 지우는 이유는 트랜잭션 경계를 한 곳에 두려는 것이다.
+     * 시즌과 그 종목·가격·뉴스를 지운다. 참가자가 있는 시즌은 부르지 않는다 — 호출부가 먼저 확인한다.
+     * 만든 곳이 지우는 이유는 트랜잭션 경계를 한 곳에 두려는 것이다. 뉴스는 시즌·종목을 가리키므로
+     * 가장 먼저 지운다(FK).
      */
     @Transactional
     public void delete(Long seasonId) {
+        seasonNewsRepository.deleteBySeasonId(seasonId);
         seasonPriceRepository.deleteBySeasonId(seasonId);
         seasonTickerRepository.deleteBySeason_Id(seasonId);
         seasonRepository.deleteById(seasonId);
