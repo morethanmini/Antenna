@@ -7,6 +7,14 @@
 |---|---|---|---|
 | 1 후보 추출 | 맥 | `extract_candidates.py <원본 폴더>` | `out/candidates.jsonl` (시즌 구간 × 시즌 종목 × 제목 매칭) |
 | 2 관련도 판정 | GPU 박스 | `gpu_judge.py candidates.jsonl.gz judged.jsonl` | 기사·종목 쌍마다 관련/무관 |
+| 3 선별·가림 | 맥 | `select_news.py out/candidates.jsonl out/judged.jsonl` | `out/season-news-ticker.jsonl` (종목·게임일당 5건, 날짜·연도·언론사 가림) |
+| 4 시장 이슈 | 맥 | `extract_day_issues.py <원본 폴더>` | `out/day-issues.jsonl` (게임일마다 이슈 제목 30개) |
+| 5 AI 요약 | 맥 | `summarize_days.py` (backend/.env 의 AI_* 사용, 144콜) | `out/season-news-hint.jsonl` · 검수표 `out/hint-review.md` |
+| 6 시드 | 맥 | 아래 한 줄 | `backend/src/main/resources/seed/season-news.jsonl.gz` → 기동 때 `SeasonNewsSeeder` 가 적재 |
+
+```bash
+cat out/season-news-ticker.jsonl out/season-news-hint.jsonl | gzip -9n > ../../backend/src/main/resources/seed/season-news.jsonl.gz
+```
 
 - `ref/` — 로컬 DB 에서 뽑은 연습 시즌 종목(`season_tickers.csv`)과 게임일 달력(`season_calendar.csv`, 0 은 워밍업 마지막 날).
 - `aliases.csv` — 옛 사명·통칭(기아차·현대상선·SKT·LG엔솔…). 시즌 종목 이름 기준.

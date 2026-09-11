@@ -18,7 +18,6 @@ from datetime import datetime, date, time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-RAW = Path(sys.argv[1]).expanduser()
 OUT = HERE / "out"
 csv.field_size_limit(sys.maxsize)
 
@@ -100,6 +99,7 @@ def match_tickers(season, title):
 
 
 def main():
+    raw = Path(sys.argv[1]).expanduser()
     seasons = load_seasons()
     excl = {r["category"] for r in csv.DictReader(open(HERE / "category_exclude.csv", encoding="utf-8"))}
     years = sorted({c.year for s in seasons for c in (s["cutoffs"][0], s["cutoffs"][-1])})
@@ -108,7 +108,7 @@ def main():
     seen_link, seen_key, n = set(), set(), 0
     with open(OUT / "candidates.jsonl", "w", encoding="utf-8") as out:
         for year in years:
-            with open(RAW / f"ssafy_dataset_news_{year}.csv", newline="", encoding="utf-8") as f:
+            with open(raw / f"ssafy_dataset_news_{year}.csv", newline="", encoding="utf-8") as f:
                 r = csv.reader(f, delimiter="|")
                 next(r)
                 for row in r:

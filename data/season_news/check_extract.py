@@ -2,10 +2,9 @@
 
     python3 check_extract.py
 """
-import re, sys
+import re
 from datetime import datetime
 
-sys.argv = [sys.argv[0], "."]
 import extract_candidates as ex
 
 # 게임일: 전 거래일 15:30 초과 ~ 그 거래일 15:30 이하
