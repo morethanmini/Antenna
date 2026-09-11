@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,6 +29,8 @@ import ssafy.a507.backend.domain.market.dto.StockListItemResponse;
 import ssafy.a507.backend.domain.market.dto.StockListResponse;
 import ssafy.a507.backend.domain.market.dto.StockPriceListResponse;
 import ssafy.a507.backend.domain.market.dto.StockPricePoint;
+import ssafy.a507.backend.domain.market.dto.StockSearchItem;
+import ssafy.a507.backend.domain.market.dto.StockSummaryResponse;
 import ssafy.a507.backend.domain.market.entity.DailyQuote;
 import ssafy.a507.backend.domain.market.entity.Stock;
 import ssafy.a507.backend.domain.market.repository.DailyQuoteRepository;
@@ -296,6 +299,98 @@ public class StockService {
                         .map(quote -> new StockPricePoint(quote.getTradeDate(), quote.getClose()))
                         .toList();
         return new StockPriceListResponse(items);
+    }
+
+    /**
+     * 요약 헤더 (ANT-DATA-05). 종가는 그 종목의 마지막 거래일 한 행, 대비는 그 종목이 거래한 직전 날과
+     * 견준다 — 거래정지로 전역 최신일에 행이 없는 종목도 머리가 비지 않는다(valuation 과 같은 규칙).
+     */
+    public StockSummaryResponse summary(Long userId, String code) {
+        Stock stock = stockRepository
+                .findById(code)
+                .orElseThrow(() -> new BusinessException(ErrorCode.STOCK_NOT_FOUND, "code"));
+        DailyQuote last = dailyQuoteRepository.findTopByStock_CodeOrderByTradeDateDesc(code).orElse(null);
+        DailyQuote previous = last == null
+                ? null
+                : dailyQuoteRepository
+                        .findTopByStock_CodeAndTradeDateLessThanOrderByTradeDateDesc(code, last.getTradeDate())
+                        .orElse(null);
+        BigDecimal close = last == null ? null : last.getClose();
+        BigDecimal previousClose = previous == null ? null : previous.getClose();
+        return new StockSummaryResponse(
+                stock.getCode(),
+                stock.getName(),
+                stock.getSector(),
+                stock.getMarket(),
+                close,
+                last == null ? null : last.getTradeDate(),
+                previousClose == null ? null : close.subtract(previousClose),
+                changeRate(close, previousClose),
+                tradingValue(last),
+                stock.getPer(),
+                stock.getPbr(),
+                0,
+                watchlistItemRepository.existsByUser_IdAndStock_Code(userId, code));
+    }
+
+    /**
+     * 통합 검색의 종목 칸 (ANT-DATA-05). 탐색 목록과 같은 활성 판정으로 거르고 시가총액 큰 순으로 자른다 —
+     * "삼성" 을 치면 이름순이 아니라 삼성전자가 먼저 나와야 한다. 시총을 못 내는(상장주식수 없음) 종목은
+     * 뒤, 같으면 코드순. 종가는 목록과 달리 그 종목의 마지막 거래일 값이라 결과에 빈 종가가 없다.
+     *
+     * @param contains 소문자 · LIKE 이스케이프를 마친 {@code %q%}
+     * @param prefix 소문자 · LIKE 이스케이프를 마친 {@code q%}
+     */
+    public List<StockSearchItem> search(Long userId, String contains, String prefix, int limit) {
+        LocalDate baseDate = dailyQuoteRepository.findLatestTradeDate().orElse(null);
+        if (baseDate == null) {
+            return List.of();
+        }
+        LocalDate activeSince = baseDate.minusDays(ACTIVE_WINDOW_DAYS);
+        List<Stock> found = stockRepository.search(contains, prefix, activeSince);
+        if (found.isEmpty()) {
+            return List.of();
+        }
+        // ponytail: 맞은 종목의 창 안 시세를 전부 읽어 메모리에서 시총순으로 자른다 — 활성 300개 × 5영업일이
+        // 상한이다. 종목이 수천 개가 되면 시총을 파생 컬럼으로 두고 SQL 에서 정렬·LIMIT 한다.
+        Map<String, BigDecimal> lastCloses = new HashMap<>();
+        // 종목·날짜 오름차순이라 같은 종목의 뒤 행이 앞 행을 덮는다 — 마지막 거래일 종가가 남는다.
+        dailyQuoteRepository
+                .findByStock_CodeInAndTradeDateGreaterThanEqualOrderByStock_CodeAscTradeDateAsc(
+                        found.stream().map(Stock::getCode).toList(), activeSince)
+                .forEach(quote -> lastCloses.put(quote.getStock().getCode(), quote.getClose()));
+        Set<String> watched = new HashSet<>(watchlistItemRepository.findWatchedCodes(userId));
+        Comparator<Stock> byCap = Comparator.comparing(
+                        (Stock stock) -> marketCap(stock, lastCloses.get(stock.getCode())),
+                        Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(Stock::getCode);
+        return found.stream()
+                .sorted(byCap)
+                .limit(limit)
+                .map(stock -> new StockSearchItem(
+                        stock.getCode(),
+                        stock.getName(),
+                        stock.getSector(),
+                        lastCloses.get(stock.getCode()),
+                        watched.contains(stock.getCode())))
+                .toList();
+    }
+
+    private static BigDecimal marketCap(Stock stock, BigDecimal close) {
+        if (close == null || stock.getListedShares() == null) {
+            return null;
+        }
+        return close.multiply(BigDecimal.valueOf(stock.getListedShares()));
+    }
+
+    /** 종가 × 거래량(원) — 거래대금 근사. 공공데이터의 거래대금(trPrc)은 수집하지 않는다. */
+    private static BigDecimal tradingValue(DailyQuote quote) {
+        if (quote == null || quote.getVolume() == null) {
+            return null;
+        }
+        return quote.getClose()
+                .multiply(BigDecimal.valueOf(quote.getVolume()))
+                .setScale(0, RoundingMode.HALF_UP);
     }
 
     /** 상장 종목 중 창 안에 시세가 있는 것만 — 목록의 같은 판정을 요약에도 쓴다. */

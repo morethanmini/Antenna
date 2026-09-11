@@ -1,8 +1,11 @@
 package ssafy.a507.backend.domain.market.repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import ssafy.a507.backend.domain.market.entity.Stock;
 
 /**
@@ -17,4 +20,24 @@ public interface StockRepository extends JpaRepository<Stock, String>, JpaSpecif
 
     /** 상장주식수를 한 종목이라도 받았는가 — 칸이 생긴 배포의 첫 부팅 판정. */
     boolean existsByListedSharesIsNotNull();
+
+    /**
+     * 통합 검색의 종목 후보 (ANT-DATA-05) — 종목명·섹터 부분일치 또는 종목코드 앞자리. 상장 종목 중
+     * activeSince 이후 시세가 한 점이라도 있는 것만 — 탐색 목록과 같은 활성 판정이다. 순서는 부르는 쪽이 잡는다.
+     *
+     * @param contains 소문자 · LIKE 이스케이프('!')를 마친 {@code %q%}
+     * @param prefix 소문자 · LIKE 이스케이프('!')를 마친 {@code q%}
+     */
+    @Query("""
+            select s from Stock s
+            where s.listed = true
+              and (lower(s.name) like :contains escape '!'
+                   or lower(s.sector) like :contains escape '!'
+                   or lower(s.code) like :prefix escape '!')
+              and s.code in (select q.stock.code from DailyQuote q where q.tradeDate >= :activeSince)
+            """)
+    List<Stock> search(
+            @Param("contains") String contains,
+            @Param("prefix") String prefix,
+            @Param("activeSince") LocalDate activeSince);
 }

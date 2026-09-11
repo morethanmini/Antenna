@@ -83,6 +83,19 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     List<Report> findChannelPage(
             @Param("userId") Long userId, @Param("cursorId") Long cursorId, Limit limit);
 
+    /**
+     * 통합 검색의 리포트 칸(ANT-DATA-05) — 제목 부분일치, 최신순. 채널 목록처럼 비공개 리포트도 제목은 나온다.
+     *
+     * @param contains 소문자 · LIKE 이스케이프('!')를 마친 {@code %q%}
+     */
+    @Query("""
+            select r from Report r
+              join fetch r.user
+            where lower(r.title) like :contains escape '!'
+            order by r.id desc
+            """)
+    List<Report> searchByTitle(@Param("contains") String contains, Limit limit);
+
     /** 상세 조회. 목록과 같은 이유로 작성자를 함께 끌어온다. */
     @Query("""
             select r from Report r
