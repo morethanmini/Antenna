@@ -6,6 +6,7 @@ import re
 from datetime import datetime
 
 import extract_candidates as ex
+import select_news as sn
 
 # 게임일: 전 거래일 15:30 초과 ~ 그 거래일 15:30 이하
 cut = [datetime(2020, 2, 14, 15, 30), datetime(2020, 2, 17, 15, 30), datetime(2020, 2, 18, 15, 30)]
@@ -44,4 +45,17 @@ assert hits("입국자 대상 특별절차") == ["대상"], "흔한 낱말은 �
 assert ex.clean("#039;전 키움#039; 웰스") == "'전 키움' 웰스"
 assert ex.clean("도요타 임원 amp;quot;투자amp;quot;") == '도요타 임원 "투자"'
 assert ex.clean("S&amp;P 500") == "S&P 500"
+# 가림(select_news)
+assert sn.mask_dates("2020년 3월 15일 밝혔다") == "○○○○년 ○월 ○일 밝혔다"
+assert sn.mask_dates("13일로 예정된 재운영") == "○일로 예정된 재운영", "날짜 뒤 조사"
+assert sn.mask_dates("지난 13일 재선임") == "지난 ○일 재선임"
+assert sn.mask_dates("3월 결산 법인") == "○월 결산 법인"
+assert sn.mask_dates("일본 증시, 일부 종목") == "일본 증시, 일부 종목", "숫자 없는 '일' 은 그대로"
+assert sn.clean_excerpt("(서울=연합뉴스) 김기훈 기자 = 현대자동차는 2020년 3월 15일 밝혔다.", "연합뉴스") == "현대자동차는 ○○○○년 ○월 ○일 밝혔다."
+assert "재무분석차트영역상세보기" not in sn.clean_excerpt("KT(030200) 재무분석차트영역상세보기가 세계은행과", "서울경제")
+same = lambda a, b: len(sn.grams(a) & sn.grams(b)) / len(sn.grams(a) | sn.grams(b)) >= sn.SIMILAR
+assert same("삼성전자 장중 5만원 붕괴...현대차 10만원 밑돌아", "삼성전자 장중 5만원선 붕괴…외국인 매도 ‘집중‘")
+assert not same("삼성전자 등 314곳, 다음주 정기주총 개최", "삼성전자, 지난해 웨어러블 기기 출하량 3위…한 계단 상승")
+assert sn.PROMO.search("[필수] 삼성전자 지금이 기회! AI+5G+핵심반도체 삼성도 투자한 1200% 급등株")
+assert not sn.PROMO.search("[이번주 추천주] 이마트·LG이노텍·네이버 “실적 호전 보라“"), "증권사 추천 기사는 광고가 아니다"
 print("ok")

@@ -14,7 +14,7 @@ import json, re, sys, collections
 
 MAX_PER_DAY = 5
 EXCERPT = 150
-SIMILAR = 0.5          # 제목 두 글자 조각 겹침(자카드) 이 이상이면 같은 일로 본다
+SIMILAR = 0.3          # 제목 두 글자 조각 겹침(자카드) 이 이상이면 같은 일로 본다. 같은 일 0.32~0.48, 다른 일 0.1 안팎(2026-09-11 표본)
 
 BYLINE = [
     re.compile(r"^\s*[\[(【<][^\])】>]{0,40}(기자|특파원|=|뉴스|TV|포토|통신|닷컴|일보|경제|데일리|더팩트|SEN)[^\])】>]{0,40}[\])】>]\s*"),
@@ -24,6 +24,7 @@ BYLINE = [
 ]
 EMAIL = re.compile(r"\S+@\S+\.\S+")
 INLINE_BYLINE = re.compile(r"[\[(【]\s*[^\])】]{0,30}(기자|특파원)[^\])】]{0,10}[\])】]|\(\S{1,15}=\S{2,10}\)\s*([가-힣]{2,4}\s*(기자|특파원)\s*=)?")
+PROMO = re.compile(r"^\[필수\]|급등株|폭등株|\d{3,}% ?(급등|폭등)")   # 기사 모양의 종목 광고 — 김성령 0단계 광고 규칙에 안 걸린 것
 JUNK = re.compile(r"재무분석차트영역상세보기|\ufeff")
 PHOTO = re.compile(r"/?\(?사진(제공)?\s*=\s*[^)\s]+\)?|사진 ?= ?\S+")
 TAIL_BYLINE = re.compile(r"[가-힣]{2,4}\s*(기자|특파원)\s*$")
@@ -31,7 +32,7 @@ YEAR = re.compile(r"(?<!\d)(19|20)\d{2}(?=\s*년|\s|[.·,)\]'’”-]|$)")
 YEAR_SHORT = re.compile(r"(?<![\d.])['’]\d{2}(?!\d)")                          # '20, ’23
 MONTH_DAY = re.compile(r"(?<!\d)\d{1,2}\s*월\s*\d{1,2}\s*일")
 MONTH = re.compile(r"(?<!\d)\d{1,2}\s*월(?!\s*\d)")
-DAY = re.compile(r"(?<![\d.])\d{1,2}\s*일(?=\s|[,.(·)]|$|(오전|오후|새벽|밤|께|부터|까지|현지))")
+DAY = re.compile(r"(?<![\d.])\d{1,2}\s*일(?![본부반정])")          # "13일로"·"13일부터" 도 — 일본·일부·일반·일정은 빼고
 DOTTED = re.compile(r"(?<!\d)(19|20)?\d{2}\.\d{1,2}\.\d{1,2}\.?")
 
 
@@ -94,7 +95,7 @@ def main():
         r = json.loads(l)
         if r["id"].startswith("c"):                    # 같은 파일에 섞인 채점표 결과(g…)는 버린다
             judged[r["id"]] = r["gpu"]
-    kept = [c for c in cand if judged.get(c["id"]) is True]
+    kept = [c for c in cand if judged.get(c["id"]) is True and not PROMO.search(c["title"])]
     by = collections.defaultdict(list)
     for c in kept:
         by[(c["season_seed"], c["code"], c["game_day"])].append(c)
