@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -92,4 +93,29 @@ public interface PredictionRepository extends JpaRepository<Prediction, Long> {
              group by p.status
             """)
     List<Object[]> countMineByStatus(@Param("userId") Long userId);
+
+    /**
+     * 판정된 내 예측의 평균 오차 (C-04). 판정이 없으면 빈 값이다 — 0 이 아니다.
+     *
+     * <p>{@code avg} 를 DB 에 맡기는 이유는 목록을 끌어와 평균을 내면 예측이 늘수록 읽는 행이 느는데,
+     * 화면에 나가는 것은 숫자 하나여서다.
+     */
+    @Query("""
+            select avg(p.errorRate) from Prediction p
+             where p.user.id = :userId
+               and p.status in (ssafy.a507.backend.domain.prediction.entity.Prediction$Status.HIT,
+                                ssafy.a507.backend.domain.prediction.entity.Prediction$Status.MISS)
+            """)
+    Optional<BigDecimal> avgErrorOfSettled(@Param("userId") Long userId);
+
+    /**
+     * 체인에 <b>박힌</b> 내 커밋 수 (C-04). 배치가 CONFIRMED 인 것만 센다 — PENDING 은 아직 안 올라간
+     * 것이고 FAILED 는 못 올라간 것이라, 둘을 anchored 라 부르면 화면이 거짓말을 한다.
+     */
+    @Query("""
+            select count(c) from PredictionCommit c
+             where c.prediction.user.id = :userId
+               and c.anchorBatch.status = ssafy.a507.backend.domain.chain.entity.AnchorBatch$Status.CONFIRMED
+            """)
+    long countAnchored(@Param("userId") Long userId);
 }

@@ -8,7 +8,8 @@
    - 두지 않는 것: 핸들(@) · 구독자 수 · 작성 카운트 · 유저 레벨 · 신뢰도 점수 · 친구.
      /users/me 응답에 없고 사용자 등급 필드 자체가 없다. 배지와 랭킹 티어뿐이다.
 
-   배지 섹션은 내려 두었다(S15P21A507-230) — 아래 해당 자리의 주석에 근거가 있다. */
+   배지 섹션은 S15P21A507-230 에서 내렸다가 GET /users/me/badges 가 열려 되살렸다
+   (ANT-SEASON-09). */
 import { Link } from 'react-router-dom'
 import { useApiQuery } from '../api/useApiQuery'
 import { platformLabel, type BadgeList as BadgeListResponse, type MyProfile } from '../api/account'
