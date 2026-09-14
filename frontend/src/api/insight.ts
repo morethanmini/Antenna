@@ -120,13 +120,14 @@ export function getWalletBalance() {
 /* ── 통합 검색 · GET /search ──────────────────────────────── */
 
 export type SearchResult = {
-  stocks: { code: string; name: string; sector: string; prevClose: number; watching: boolean }[]
-  channels: { userId: number; nickname: string; hitRate: number }[]
+  /** 활성 종목만 온다 — 종가는 그 종목의 마지막 거래일 값이라 비지 않는다. 섹터는 없을 수 있다 */
+  stocks: { code: string; name: string; sector: string | null; prevClose: number; watching: boolean }[]
+  /** 실전 전체 랭킹에 든 예측가만. hitRate 는 % (0~100) — 랭킹 행과 같이 비어 올 수 있다 */
+  channels: { userId: number; nickname: string; hitRate: number | null }[]
   reports: { id: number; title: string; author: string }[]
 }
 
 /** 타입별 상위 N건만 온다. 필터·정렬·페이징은 전용 목록의 책임이다(명세서 §검색). */
 export function search(q: string, limit = 5) {
-  if (MOCK) return mock.search(q, limit)
   return api.get<SearchResult>('/search', { query: { q, limit } })
 }

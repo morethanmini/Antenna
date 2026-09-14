@@ -28,6 +28,13 @@ public interface DailyQuoteRepository extends JpaRepository<DailyQuote, Long> {
     Optional<DailyQuote> findTopByStock_CodeOrderByTradeDateDesc(String stockCode);
 
     /**
+     * 그 종목이 기준일 전에 마지막으로 거래한 날의 시세 — 요약 헤더의 "전일 대비" 비교 대상(ANT-DATA-05).
+     * 전역 직전 영업일이 아니라 그 종목의 직전 거래일이라, 거래정지를 건넌 종목도 비교할 날이 있다.
+     */
+    Optional<DailyQuote> findTopByStock_CodeAndTradeDateLessThanOrderByTradeDateDesc(
+            String stockCode, LocalDate before);
+
+    /**
      * 수집된 마지막 영업일. 목록 응답의 "전일 종가"가 어느 날짜 기준인지를 이 값 하나로 정한다.
      * 행마다 제각각 최신 날짜를 찾으면 화면이 한 날짜를 표기할 수 없다.
      */

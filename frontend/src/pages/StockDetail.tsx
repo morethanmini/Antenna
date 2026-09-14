@@ -64,7 +64,7 @@ export default function StockDetail() {
 
   /* 관심 토글은 낙관적으로 먼저 바꾸고 실패하면 되돌린다(§4 B-02 와 같은 규칙) */
   const [watchOverride, setWatchOverride] = useState<boolean | null>(null)
-  const watched = watchOverride ?? s?.watched ?? false
+  const watched = watchOverride ?? s?.watching ?? false
 
   const toggleWatch = useCallback(() => {
     const next = !watched

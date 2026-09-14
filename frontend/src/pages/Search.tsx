@@ -61,7 +61,8 @@ export default function Search() {
         {data && total === 0 && !loading && (
           <div className="sr-none">
             <p>종목명이나 종목코드로 다시 찾아보세요.</p>
-            <p className="sr-hint">예) 삼성전자 · 005930 · 반도체</p>
+            {/* 섹터는 KRX 업종명이다 — "반도체" 가 아니라 "전기·전자" 로 찾아진다 */}
+            <p className="sr-hint">예) 삼성전자 · 005930 · 전기·전자</p>
           </div>
         )}
 
@@ -79,7 +80,7 @@ export default function Search() {
                       <Link to={`/stocks/${s.code}`}>
                         <span className="sr-main">
                           <b>{s.name}</b>
-                          <small className="num">{s.code} · {s.sector}</small>
+                          <small className="num">{s.code}{s.sector && ` · ${s.sector}`}</small>
                         </span>
                         <span className="sr-side">
                           <b className="num">{won(s.prevClose)}원</b>
@@ -105,7 +106,7 @@ export default function Search() {
                       <Link to={`/channels/${c.userId}`}>
                         <span className="sr-main"><b>{c.nickname}</b></span>
                         <span className="sr-side">
-                          <b className="num">{c.hitRate.toFixed(1)}%</b>
+                          <b className="num">{c.hitRate === null ? '—' : `${c.hitRate.toFixed(1)}%`}</b>
                           <small>적중률</small>
                         </span>
                       </Link>
