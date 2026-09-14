@@ -1,0 +1,60 @@
+/* C-04 예측 포트폴리오 · /me/portfolio — [ANT-FE-PORTFOLIO]
+   숫자 여덟 개짜리 화면이라 장치를 늘리지 않는다 — 카드 셋과 그 안의 숫자뿐이다.
+   색·서체는 app.css 토큰만 쓴다. */
+
+.forecast-page .main-inner{display:flex;flex-direction:column;gap:14px}
+
+.fc-state{padding:26px 0;color:var(--muted);font-size:14px;font-weight:700;text-align:center}
+
+/* ── 빈 상태 ────────────────────────────────────────── */
+.fc-none{
+  display:flex;flex-direction:column;align-items:center;gap:7px;
+  padding:44px 20px;border:1px solid var(--rule);border-radius:16px;
+  background:var(--surface);box-shadow:var(--shadow);text-align:center;
+}
+.fc-none p{margin:0;color:#0e1330;font-size:15px;font-weight:800}
+.fc-none-hint{color:var(--muted);font-size:13.5px;font-weight:700}
+.fc-none .state-cta{margin-top:9px}
+
+/* ── 카드 ──────────────────────────────────────────── */
+.fc-card{
+  padding:18px 20px;border:1px solid var(--rule);border-radius:16px;
+  background:var(--surface);box-shadow:var(--shadow);
+}
+.fc-card h2{margin:0 0 14px;color:#0e1330;font-size:15.5px;font-weight:850;letter-spacing:-.02em}
+
+.fc-note{margin:12px 0 0;color:var(--muted);font-size:12.5px;font-weight:700}
+
+.fc-more{
+  display:inline-block;margin-top:12px;
+  color:var(--brand);font-size:13.5px;font-weight:800;
+}
+.fc-more:hover{color:var(--brand-ink)}
+
+/* ── 성적 두 칸 ─────────────────────────────────────── */
+.fc-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0}
+.fc-metrics > div{
+  display:flex;flex-direction:column;gap:4px;
+  padding:15px 17px;border:1px solid var(--rule);border-radius:14px;background:var(--surface-2);
+}
+.fc-metrics dt{color:var(--muted);font-size:12.5px;font-weight:700}
+.fc-metrics dd{margin:0;color:#0e1330;font-size:26px;font-weight:850;letter-spacing:-.03em}
+.fc-metrics small{color:var(--muted);font-size:12.5px;font-weight:700}
+
+/* ── 분포 줄 ───────────────────────────────────────── */
+.fc-dist{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:12px;
+  margin:0;padding:0;list-style:none;
+}
+.fc-dist li{
+  display:flex;flex-direction:column;gap:3px;
+  padding:14px 16px;border:1px solid var(--rule);border-radius:14px;background:var(--surface-2);
+}
+.fc-dist b{color:#0e1330;font-size:22px;font-weight:850;letter-spacing:-.03em}
+.fc-dist span{color:var(--muted);font-size:12.5px;font-weight:700}
+.fc-dist .up{color:var(--up)}
+.fc-dist .down{color:var(--down)}
+
+@media(max-width:640px){
+  .fc-metrics{grid-template-columns:1fr}
+}

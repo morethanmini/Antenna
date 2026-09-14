@@ -158,6 +158,26 @@ export function getSlots() {
   return api.get<SlotStatus>('/predictions/slots')
 }
 
+/* ── 예측 포트폴리오 · GET /predictions/me/portfolio ──────
+   C-04 가 쓰는 서버 집계. 여덟 필드가 전부다(설계서 §4 C-04). 화면이 목록을
+   전량 받아 세지 않는 이유는 예측이 늘어도 읽는 행이 늘지 않게 하려는 것이다. */
+
+export type Portfolio = {
+  total: number
+  hit: number
+  miss: number
+  /** BASE 와 OPEN 을 합친 수. 화면이 둘을 가르지 않는다 */
+  pending: number
+  /** 적중률 % — 분모는 판정된 것뿐이다. 판정이 0건이면 null */
+  hitRate: number | null
+  /** 판정된 예측의 평균 오차 % · 판정이 0건이면 null */
+  avgError: number | null
+  /** 체인에 **박힌** 배치에 든 수 — 배치가 CONFIRMED 인 것만이다 */
+  anchored: number
+  /** 나머지 전부 — 커밋 전, 배치 대기, PENDING·FAILED 배치 */
+  unanchored: number
+}
+
 /* ── 공개 규칙 (§5 개정, 2026-09-10) ──────────────────────
    판정 전후로 갈리고, 근거만 끝까지 잠긴다.
 
