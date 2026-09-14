@@ -16,11 +16,14 @@ export type WalletBalance = {
   /** 정수 ANT 문자열. 서버가 금액 필드를 문자열로 통일해 내린다 — number 로 좁히지 않는다 */
   balance: string
   symbol: string
-  /** 온체인 대사 시각. 잔액 옆에 반드시 함께 보인다 */
-  syncedAt: string
+  /**
+   * 온체인 대사 시각 — 토큰 인덱서가 체인 끝까지 읽은 마지막 시각. 잔액 옆에 반드시 함께 보인다.
+   * 서버가 막 떴거나(첫 5초) 인덱서가 꺼져 있으면 null 이다(ANT-TOKEN-04) — 그때는 "대사 전" 으로 그린다.
+   */
+  syncedAt: string | null
 }
 
-/* 명세에 적힌 7종이 전부다. 임의 사유를 만들지 않는다. */
+/* 필터로 고를 수 있는 사유는 명세에 적힌 7종이 전부다. 임의 사유를 만들지 않는다. */
 export const LEDGER_REASONS = [
   'SIGNUP_BONUS',
   'SLOT_OVER',
@@ -36,7 +39,11 @@ export type LedgerReason = (typeof LEDGER_REASONS)[number]
 export type LedgerEntry = {
   /** 부호 있는 증감. 양수 획득 · 음수 사용 */
   delta: string
-  reason: LedgerReason
+  /**
+   * 보통은 LedgerReason 7종이다. 필터 없이 받으면 옛 테스트·수동 tx 의 원문(예: MIGRATION)도 온다 —
+   * 서버가 잔액 합과 목록을 맞추려고 숨기지 않는다(ANT-TOKEN-04). 그래서 string 으로 받고 reasonLabel 로 그린다.
+   */
+  reason: string
   txHash: string | null
   createdAt: string
 }
@@ -47,8 +54,14 @@ export const REASON_LABEL: Record<LedgerReason, string> = {
   SUBSCRIBE: '구독 결제',
   SUBSCRIBE_INCOME: '구독 수익',
   AD_PAY: '광고 비용',
-  SEASON_ENTRY: '대회 참가비',
-  SEASON_REWARD: '대회 보상',
+  // 대회 모드는 접었다(09-11 팀 결정). 서버 사유 이름(SEASON_*)대로 시즌으로 부른다
+  SEASON_ENTRY: '시즌 참가비',
+  SEASON_REWARD: '시즌 보상',
+}
+
+/** 원장 한 줄의 사유 라벨. 7종 밖의 원문이면 "기타" — 빈 칸으로 두면 무엇이 오갔는지 읽을 수 없다. */
+export function reasonLabel(reason: string) {
+  return (REASON_LABEL as Record<string, string>)[reason] ?? '기타'
 }
 
 /**

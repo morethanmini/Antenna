@@ -4,15 +4,15 @@
 
    설계 제약
    - 잔액 원천은 온체인, DB 는 캐시다. syncedAt 을 반드시 병기한다 —
-     숫자만 보이면 실시간 잔액으로 오해한다.
-   - reason 은 7종뿐이다. 임의 사유 라벨을 만들지 않는다.
+     숫자만 보이면 실시간 잔액으로 오해한다. syncedAt 이 없으면(서버가 막 떴을 때) "대사 전".
+   - 필터 사유는 7종뿐이다. 임의 사유 라벨을 만들지 않는다. 목록에 7종 밖 원문이 오면 "기타"로 그린다.
    - 보너스·보상은 서버·배치가 지급한다. 수령 버튼을 두지 않는다.
    - 충전·구매 버튼도 없다. 토큰 유입은 가입 보너스와 성과 보상 mint 뿐이다. */
 import { useState } from 'react'
 import { useApiQuery } from '../api/useApiQuery'
 import { useCursorList } from '../api/useCursorList'
 import {
-  LEDGER_REASONS, REASON_LABEL, formatDateTime, formatToken,
+  LEDGER_REASONS, REASON_LABEL, formatDateTime, formatToken, reasonLabel,
   type LedgerEntry, type LedgerReason, type WalletBalance, type WalletStatus,
 } from '../api/wallet'
 import EmptyState from '../components/state/EmptyState'
@@ -70,18 +70,9 @@ export default function Wallet() {
               <code>{status.data.walletAddress}</code>
             </div>
 
-            {/* GET /wallet/balance 는 아직 없다 — 온체인 대사가 필요해 ANT-TOKEN-04 로
-                빠졌다(WalletController 주석). 없는 경로라 서버가 500 을 주는데 그대로
-                ErrorState 로 그리면 "잠시 후 다시 시도해 주세요" 가 뜬다. 서버 장애가
-                아니고 눌러도 영영 안 되므로 틀린 안내다 — E-05 배지와 같게 "준비 중" 으로 알린다.
-                API 가 열리면 이 분기를 지우고 ErrorState 를 되살린다. */}
+            {/* GET /wallet/balance 가 열렸다(ANT-TOKEN-04). 이제 실패는 진짜 장애라 다시 시도를 준다. */}
             {balance.error ? (
-              <p className="wallet-pending">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <circle cx="12" cy="12" r="9" /><path d="M12 7.5V12l3 1.8" />
-                </svg>
-                잔액 조회는 준비 중입니다. 온체인 대사가 붙으면 여기에 표시됩니다.
-              </p>
+              <ErrorState error={balance.error} onRetry={balance.reload} inline />
             ) : balance.data ? (
               <div className="wallet-balance">
                 <span className="wallet-label">보유 잔액</span>
@@ -89,9 +80,11 @@ export default function Wallet() {
                   <b className="num">{formatToken(balance.data.balance)}</b>
                   <small>{balance.data.symbol}</small>
                 </p>
-                {/* 대사 시각 — 이게 없으면 실시간 잔액으로 읽힌다 */}
+                {/* 대사 시각 — 이게 없으면 실시간 잔액으로 읽힌다. null 이면 아직 체인을 끝까지 못 읽은 것 */}
                 <p className="wallet-synced">
-                  {`온체인 대사 ${formatDateTime(balance.data.syncedAt)} 기준`}
+                  {balance.data.syncedAt
+                    ? `온체인 대사 ${formatDateTime(balance.data.syncedAt)} 기준`
+                    : '온체인 대사 전'}
                 </p>
               </div>
             ) : (
@@ -119,22 +112,18 @@ export default function Wallet() {
           </div>
         </div>
 
-        {/* GET /wallet/ledger 도 같은 이유로 아직 없다(ANT-TOKEN-04).
-            사유 필터는 남겨 둔다 — 무엇이 기록될지는 지금도 알려 줄 수 있다. */}
-        {ledger.error && (
-          <p className="wallet-pending">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="9" /><path d="M12 7.5V12l3 1.8" />
-            </svg>
-            획득 · 사용 내역은 준비 중입니다. 가입 보너스와 성과 보상이 여기에 쌓입니다.
-          </p>
-        )}
+        {ledger.error && <ErrorState error={ledger.error} onRetry={ledger.reload} />}
 
+        {/* 미연동 회원도 서버는 빈 목록(200)을 준다(ANT-TOKEN-04). "내역이 없다" 가 아니라 할 일을 알려 준다 */}
         {!ledger.error && ledger.items.length === 0 && !ledger.loading && (
-          <EmptyState
-            title={reason ? `${REASON_LABEL[reason]} 내역이 없습니다` : '아직 내역이 없습니다'}
-            hint={reason ? '다른 사유로 확인해 보세요' : '가입 보너스와 성과 보상이 여기에 쌓입니다'}
-          />
+          status.data && !status.data.linked ? (
+            <EmptyState title="지갑을 연동해 주세요" hint="연동하면 가입 보너스가 여기에 쌓입니다" />
+          ) : (
+            <EmptyState
+              title={reason ? `${REASON_LABEL[reason]} 내역이 없습니다` : '아직 내역이 없습니다'}
+              hint={reason ? '다른 사유로 확인해 보세요' : '가입 보너스와 성과 보상이 여기에 쌓입니다'}
+            />
+          )
         )}
 
         {ledger.items.length > 0 && (
@@ -143,7 +132,7 @@ export default function Wallet() {
               const gain = !e.delta.startsWith('-')
               return (
                 <li key={`${e.createdAt}-${i}`} className="wallet-entry">
-                  <span className="wallet-entry-reason">{REASON_LABEL[e.reason]}</span>
+                  <span className="wallet-entry-reason">{reasonLabel(e.reason)}</span>
                   <span className="wallet-entry-date">{formatDateTime(e.createdAt)}</span>
                   <span className={`wallet-entry-delta num ${gain ? 'gain' : 'spend'}`}>
                     {`${gain ? '+' : ''}${formatToken(e.delta)}`}
