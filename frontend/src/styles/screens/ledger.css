@@ -21,13 +21,24 @@
 }
 .lg-item:hover{ border-color:var(--brand-soft); }
 
-.lg-head{
-  display:flex; align-items:center; justify-content:space-between;
-  gap:10px; margin-bottom:10px;
+/* ── 무엇을 봉인했나 — 한 줄의 머리 ─────────── */
+.lg-what{
+  display:flex; align-items:center; flex-wrap:wrap;
+  gap:8px; margin-bottom:10px;
 }
-.lg-title{ display:flex; align-items:baseline; gap:8px; min-width:0; }
-.lg-batch{ font-size:15px; font-weight:800; color:var(--ink); letter-spacing:-.01em; }
-.lg-date{ font-size:12.5px; color:var(--muted); }
+.lg-stock{ font-size:15px; font-weight:800; color:var(--ink); letter-spacing:-.01em; }
+/* 종목이 지워진 건. 이름 자리라 굵게 두되 색으로 가른다 */
+.lg-stock.is-none{ color:var(--faint); }
+.lg-code{ font-style:normal; font-size:12px; color:var(--faint); }
+.lg-horizon{ font-size:12.5px; color:var(--muted); }
+
+/* 배치 칸 — 번호·영업일·상태가 한 줄에 선다 */
+.lg-batch{ display:flex; align-items:center; flex-wrap:wrap; gap:7px; }
+.lg-batch a{ font-weight:700; color:var(--brand-ink); text-decoration:none; }
+.lg-batch a:hover{ text-decoration:underline; }
+.lg-date{ font-size:12px; color:var(--muted); }
+/* 대기는 실패가 아니다 — 경고색을 쓰지 않는다 */
+.lg-waiting{ margin:0; font-size:12.5px; color:var(--muted); }
 
 /* ── 필드 ────────────────────────────────────── */
 .lg-fields{
@@ -45,21 +56,10 @@
   overflow:hidden; text-overflow:ellipsis;
 }
 
-/* ── 하단 ────────────────────────────────────── */
-.lg-foot{
-  display:flex; align-items:center; justify-content:space-between;
-  flex-wrap:wrap; gap:8px;
-  margin-top:12px; padding-top:11px;
-  border-top:1px solid var(--rule);
-}
-.lg-contract{
-  display:flex; align-items:center; flex-wrap:wrap; gap:6px;
-  font-size:11.5px; color:var(--faint);
-}
-.lg-chain{ color:var(--faint); }
 
+/* 머리줄 오른쪽 끝. margin-left:auto 로 종목·기간·상태 뒤에 붙는다 */
 .lg-go{
-  flex:0 0 auto;
+  flex:0 0 auto; margin-left:auto;
   display:inline-flex; align-items:center; gap:3px;
   font-size:12.5px; font-weight:600; color:var(--brand-ink);
   text-decoration:none;
