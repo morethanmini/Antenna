@@ -6,6 +6,8 @@
 
    백엔드 ANT-CHAIN-06 으로 셋 다 열려 있다. 목업이 아니다. */
 
+import type { Horizon } from './predictions'
+
 /** 배치가 체인에 올라간 단계. 서버 AnchorBatch.Status 와 짝이다. */
 export const ANCHOR_STATUSES = ['PENDING', 'CONFIRMED', 'FAILED'] as const
 export type AnchorStatus = (typeof ANCHOR_STATUSES)[number]
@@ -42,6 +44,19 @@ export type Anchor = {
 export type AnchorLeaf = {
   predictionId: number
   commitHash: string
+  /**
+   * 무엇이 봉인됐는지 알려 주는 두 값(S15P21A507-237). 해시만으로는 읽히지 않는다.
+   *
+   * 둘 다 판정 전에도 공개다 — 서버 ChannelPredictionItemResponse 가 잠긴 건에도 종목과
+   * horizon 을 그대로 내리고, 가리는 것은 방향·목표가뿐이다. 그 둘은 여기 오지 않는다.
+   *
+   * **종목이 지워진 예측이 있어 null 일 수 있다.** 그 커밋도 리프에서 빠지지 않는다 —
+   * 전량이 있어야 머클루트가 재현된다.
+   */
+  stockCode: string | null
+  stockName: string | null
+  /** 예측 기간(영업일). 7 · 14 · 30 · 90 */
+  horizon: Horizon
 }
 
 /**
