@@ -84,20 +84,16 @@ export default function MyPage() {
             </div>
 
             <div className="mp-actions">
-              {/* 두 진입로가 같은 화면의 다른 눈이다.
-                 - 내 채널 보기: ?as=visitor — **남에게 실제로 보이는** 모습. 구독료를
-                   정하는 사람이 무엇이 가려지는지 봐야 해서 이쪽이 기본 확인 경로다.
-                 - 프로필 수정: 쿼리 없는 주인 화면. 닉네임을 그 자리에서 고친다.
-                 환경 설정에는 프로필이 없다(S15P21A507-195 에서 옮겨 옴). */}
+              {/* 진입로는 하나다 — ?as=visitor, **남에게 실제로 보이는** 모습.
+                  구독료를 정하는 사람이 무엇이 가려지는지 봐야 해서 이쪽이 기본이다.
+                  고치는 자리로는 그 화면 안의 띠에서 넘어간다(프로필 수정 버튼).
+                  여기에 같은 버튼을 또 두면 같은 화면으로 가는 길이 둘이 된다 —
+                  예측 포트폴리오를 뺀 것과 같은 이유다(S15P21A507-230).
+                  환경 설정에는 프로필이 없다(S15P21A507-195 에서 옮겨 옴). */}
               {profile.data && (
-                <>
-                  <Link className="mp-btn solid" to={`/channels/${profile.data.id}?as=visitor`}>
-                    내 채널 보기
-                  </Link>
-                  <Link className="mp-btn ghost" to={`/channels/${profile.data.id}`}>
-                    프로필 수정
-                  </Link>
-                </>
+                <Link className="mp-btn solid" to={`/channels/${profile.data.id}?as=visitor`}>
+                  내 채널 보기
+                </Link>
               )}
             </div>
           </section>
