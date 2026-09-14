@@ -130,6 +130,11 @@ export function signingPayload(scope: SignatureScope, address: string, nonce: Wa
 }
 
 /** 1회성 nonce 발급(Redis TTL 5분). 같은 scope 에 재발급하면 그 칸의 이전 값만 죽는다. */
+/** 잔액 한 줄. 홈 위젯(B-01)과 지갑 화면(H-01)이 같은 것을 읽는다. */
+export function fetchWalletBalance() {
+  return api.get<WalletBalance>('/wallet/balance')
+}
+
 export function requestNonce(scope: SignatureScope) {
   return api.post<WalletNonce>('/wallet/nonce', { scope })
 }

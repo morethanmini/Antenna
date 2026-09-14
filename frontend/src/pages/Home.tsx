@@ -1,9 +1,7 @@
 /* B-01 인사이트 홈 · /
    담당 스토리 [ANT-FE-HOME]
 
-   지수·관심 종목·검색·주목할 예측가는 실 API 다. 남은 목업은 둘뿐이다 —
-   광고(등록된 배너가 아직 없다 · 2026-09-03 결정)와 내 자산(GET /wallet/balance
-   미구현 · ANT-TOKEN-04).
+   남은 목업은 광고 하나뿐이다 — 등록된 배너가 아직 없다(2026-09-03 결정).
 
    실전 시세는 전일 종가만 제공된다(법적 제약 · 명세서 §7).
    그래서 이 화면 어디에도 "현재가" 라는 말을 쓰지 않는다.
@@ -13,9 +11,8 @@
    어긋나지 않게 하려는 것이다. */
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  getActiveAds, getMarketIndices, getWalletBalance, getWatchlist,
-} from '../api/insight'
+import { getActiveAds, getMarketIndices, getWatchlist } from '../api/insight'
+import { fetchWalletBalance, formatToken } from '../api/wallet'
 import { fetchRankings, formatComputedAt, metric } from '../api/rankings'
 import { getBriefings } from '../api/briefings'
 import { useBriefingParam } from '../components/briefingParam'
@@ -114,20 +111,6 @@ const StarIcon = () => (
   <svg {...ico} className="hm-ico">
     <path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8-4.2-4.1 5.8-.8z"
           fill="currentColor" />
-  </svg>
-)
-const ArrowDownIcon = () => (
-  <svg {...ico} className="hm-ico">
-    <circle cx="12" cy="12" r="9" fill="currentColor" opacity=".14" />
-    <path d="M12 7.8v8.4M8.6 12.8L12 16.2l3.4-3.4" stroke="currentColor" strokeWidth="2"
-          strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-)
-const ArrowUpIcon = () => (
-  <svg {...ico} className="hm-ico">
-    <circle cx="12" cy="12" r="9" fill="currentColor" opacity=".14" />
-    <path d="M12 16.2V7.8M8.6 11.2L12 7.8l3.4 3.4" stroke="currentColor" strokeWidth="2"
-          strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 )
 const WalletIcon = () => (
@@ -321,8 +304,12 @@ function MarketOverview() {
   )
 }
 
+/* 지갑 화면(H-01)과 같은 응답을 읽는다 — api/wallet.ts 한 벌을 쓴다.
+   전에는 api/insight.ts 가 같은 이름으로 다른 모양을 선언하고 있었다(balance 를 number 로,
+   서버에 없는 30일 증감·원화 환산까지). 목업일 때는 드러나지 않다가 ANT-TOKEN-04 로 경로가
+   생기자 undefined.toLocaleString() 에서 터져 홈 전체가 오류 화면이 됐다. */
 function MyAssets() {
-  const load = useCallback(() => getWalletBalance(), [])
+  const load = useCallback(() => fetchWalletBalance(), [])
   const { data, loading, error, reload } = useAsync(load)
 
   return (
@@ -334,27 +321,22 @@ function MyAssets() {
       <State loading={loading} error={error} onRetry={reload} />
       {data && (
         <>
+          {/* 금액은 정수 ANT 문자열이다(decimals 0). formatToken 이 천 단위만 끊는다 */}
           <div className="hm-ant-box">
             <div>
               <p className="hm-ant-label"><WalletIcon />보유 ANT</p>
-              <p className="hm-ant"><b className="num">{won(data.balance)}</b> <em>ANT</em></p>
+              <p className="hm-ant"><b className="num">{formatToken(data.balance)}</b> <em>ANT</em></p>
             </div>
-            <Link className="hm-ant-btn" to="/me/wallet">ANT 충전</Link>
+            {/* 충전 버튼을 두지 않는다 — 토큰 유입은 가입 보너스와 성과 보상 mint 뿐이다(§H-01 설계 제약) */}
+            <Link className="hm-ant-btn" to="/me/wallet">내역 보기</Link>
           </div>
-          <dl className="hm-ant-grid">
-            <div>
-              <dt>사용 ANT (30일)</dt>
-              <dd className="num down"><ArrowDownIcon />{won(data.spent30d)} ANT</dd>
-            </div>
-            <div>
-              <dt>획득 ANT (30일)</dt>
-              <dd className="num up"><ArrowUpIcon />{won(data.earned30d)} ANT</dd>
-            </div>
-            <div>
-              <dt>총 가치 (KRW)</dt>
-              <dd className="num">₩{won(data.valuationKrw)}</dd>
-            </div>
-          </dl>
+          {/* 30일 증감·원화 환산은 서버에 없다. ANT 시세가 없어 환산 자체가 불가능하다.
+              대신 대사 시각을 적는다 — 숫자만 보이면 실시간 잔액으로 오해한다(§H-01). */}
+          <p className="hm-foot">
+            {data.syncedAt
+              ? `온체인 대사 ${data.syncedAt.slice(0, 10)} 기준`
+              : '아직 온체인 대사 전입니다'}
+          </p>
         </>
       )}
     </section>
