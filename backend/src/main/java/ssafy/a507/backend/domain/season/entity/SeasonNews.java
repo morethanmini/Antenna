@@ -58,11 +58,19 @@ public class SeasonNews {
     private String title;
 
     /**
-     * 종목명·연도를 치환한 본문(블라인드 누수 차단).
-     * AI_HINT는 그 게임일 사건 요약과 생각해볼 질문만 담고 확률 수치는 넣지 않는다.
+     * 기사 앞부분 발췌(날짜·연도·언론사를 지운 것). 원문은 저장하지 않는다 — 실시간 뉴스와 같은
+     * 저작권 방침이다. 종목은 실명이다(ERD v0.8). AI_HINT 는 그 게임일의 주요 사건 세 줄이고,
+     * 한 줄 요약은 {@code title} 에 있다.
      */
     @Column(columnDefinition = "text")
     private String body;
+
+    /**
+     * 원문 링크. AI_HINT 는 NULL 이다. 누르면 실제 날짜·언론사가 보이지만 대회 모드를 접고
+     * 연습 모드만 남아 그대로 싣는다(2026-09-11) — 미래를 찾아보면 제 연습만 망친다.
+     */
+    @Column(length = 500)
+    private String link;
 
     /** AI_HINT 생성에 쓴 프롬프트·모델 버전. 나머지 kind는 NULL이다. */
     @Column(name = "prompt_version", length = 16)

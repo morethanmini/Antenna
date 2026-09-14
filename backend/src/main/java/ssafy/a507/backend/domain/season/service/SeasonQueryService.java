@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ssafy.a507.backend.common.error.BusinessException;
@@ -21,14 +22,18 @@ import ssafy.a507.backend.domain.season.dto.MySeasonStatus;
 import ssafy.a507.backend.domain.season.dto.SeasonDetailResponse;
 import ssafy.a507.backend.domain.season.dto.SeasonListItemResponse;
 import ssafy.a507.backend.domain.season.dto.SeasonListResponse;
+import ssafy.a507.backend.domain.season.dto.SeasonNewsItem;
+import ssafy.a507.backend.domain.season.dto.SeasonNewsListResponse;
 import ssafy.a507.backend.domain.season.dto.SeasonPriceListResponse;
 import ssafy.a507.backend.domain.season.dto.SeasonPricePoint;
 import ssafy.a507.backend.domain.season.dto.SeasonTickerItemResponse;
 import ssafy.a507.backend.domain.season.dto.SeasonTickerListResponse;
 import ssafy.a507.backend.domain.season.entity.Season;
+import ssafy.a507.backend.domain.season.entity.SeasonNews;
 import ssafy.a507.backend.domain.season.entity.SeasonParticipant;
 import ssafy.a507.backend.domain.season.entity.SeasonResult;
 import ssafy.a507.backend.domain.season.entity.SeasonTicker;
+import ssafy.a507.backend.domain.season.repository.SeasonNewsRepository;
 import ssafy.a507.backend.domain.season.repository.SeasonParticipantRepository;
 import ssafy.a507.backend.domain.season.repository.SeasonPriceRepository;
 import ssafy.a507.backend.domain.season.repository.SeasonRepository;
@@ -51,6 +56,7 @@ public class SeasonQueryService {
     private final SeasonRepository seasonRepository;
     private final SeasonTickerRepository seasonTickerRepository;
     private final SeasonPriceRepository seasonPriceRepository;
+    private final SeasonNewsRepository seasonNewsRepository;
     private final SeasonParticipantRepository participantRepository;
     private final SeasonResultRepository resultRepository;
     private final UserRepository userRepository;
@@ -58,6 +64,9 @@ public class SeasonQueryService {
     /** 일반 사용자가 보는 모드. 시연은 빠진다 — 관리자만 여는 화면이다(설계서 §3 G). */
     private static final EnumSet<Season.Mode> PUBLIC_MODES =
             EnumSet.of(Season.Mode.PRACTICE, Season.Mode.COMPETITION);
+
+    /** 뉴스 한 번에 내리는 최대 건수. 화면은 최근 것부터 몇 건만 보여 준다. */
+    private static final int NEWS_LIMIT = 30;
 
     public SeasonListResponse list(Long userId, Season.Mode mode, Season.Status status) {
         Collection<Season.Mode> visible = visibleModes(userId);
@@ -174,9 +183,7 @@ public class SeasonQueryService {
     public SeasonPriceListResponse prices(
             Long userId, Long seasonId, Long tickerId, Integer uptoDay) {
         Season season = visibleSeason(userId, seasonId);
-        SeasonTicker ticker = seasonTickerRepository
-                .findByIdAndSeason_Id(tickerId, season.getId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.SEASON_TICKER_NOT_FOUND));
+        SeasonTicker ticker = ownTicker(season, tickerId);
 
         int limit = visibleDay(season, userId);
         int upto = uptoDay == null ? limit : Math.min(uptoDay, limit);
@@ -194,6 +201,34 @@ public class SeasonQueryService {
                                 p.getClose(),
                                 p.getVolume()))
                         .toList());
+    }
+
+    /**
+     * 시즌 뉴스. <b>진행일을 넘는 행은 내리지 않는다</b> — 가격과 같은 이유로 상한을 쿼리에 건다.
+     *
+     * <p>{@code tickerId} 가 없으면 시장 전체 행(AI 요약), 있으면 그 종목의 기사다. 최근 게임일부터
+     * {@value #NEWS_LIMIT}건까지.
+     *
+     * @param day 이 게임일까지 · 생략하면 진행일까지. 진행일보다 크게 넣어도 진행일에서 잘린다
+     */
+    public SeasonNewsListResponse news(Long userId, Long seasonId, Integer day, Long tickerId) {
+        Season season = visibleSeason(userId, seasonId);
+        int limit = visibleDay(season, userId);
+        int upto = day == null ? limit : Math.min(day, limit);
+
+        List<SeasonNews> rows = tickerId == null
+                ? seasonNewsRepository.findBySeason_IdAndTickerIsNullAndGameDayLessThanEqualOrderByGameDayDescIdAsc(
+                        season.getId(), upto, Limit.of(NEWS_LIMIT))
+                : seasonNewsRepository.findBySeason_IdAndTicker_IdAndGameDayLessThanEqualOrderByGameDayDescIdAsc(
+                        season.getId(), ownTicker(season, tickerId).getId(), upto, Limit.of(NEWS_LIMIT));
+        return new SeasonNewsListResponse(rows.stream().map(SeasonNewsItem::from).toList());
+    }
+
+    /** 그 시즌의 종목이거나 404 — id 만으로 찾으면 남의 시즌 종목을 떠볼 수 있다. */
+    private SeasonTicker ownTicker(Season season, Long tickerId) {
+        return seasonTickerRepository
+                .findByIdAndSeason_Id(tickerId, season.getId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.SEASON_TICKER_NOT_FOUND));
     }
 
     /**
