@@ -717,7 +717,8 @@
    길어져 숫자 몇 자 넣는 칸이 화면 절반을 차지한다. 좁아지면 줄어들기는 한다 */
 .stock-detail-page .sd-target{position:relative;display:flex;align-items:center;flex:0 1 264px;min-width:180px}
 .stock-detail-page .sd-target input{
-  width:100%;min-width:0;height:46px;padding:0 10px;
+  /* 오른쪽 padding 은 칸 안에 들어간 "원" 자리다(.sd-unit) */
+  width:100%;min-width:0;height:46px;padding:0 34px 0 10px;
   border:1px solid var(--rule);border-radius:0 12px 12px 0;background:var(--surface);
   color:var(--ink);font-family:inherit;font-size:17px;font-weight:750;text-align:right;
 }
@@ -727,7 +728,12 @@
 .stock-detail-page .sd-target input:focus{
   outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(88,80,244,.14);
 }
-.stock-detail-page .sd-unit{flex:none;color:var(--muted);font-size:14px;font-weight:700}
+/* 칸 밖이 아니라 **칸 안** 오른쪽에 얹는다. 누르면 입력칸이 잡히도록 클릭은 통과시킨다 */
+.stock-detail-page .sd-unit{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  pointer-events:none;
+  color:var(--muted);font-size:14px;font-weight:700;
+}
 
 .stock-detail-page .sd-help{margin:6px 0 0;color:var(--muted);font-size:12.5px}
 .stock-detail-page .sd-help b{font-weight:750;color:var(--ink)}
@@ -896,10 +902,25 @@
 
 .stock-detail-page .pd-bar{
   flex:0 1 auto;min-width:3px;height:17px;
+  /* 탭에 들어오면 축에서 바깥으로 뻗어 나온다. width 가 아니라 transform 을 쓰는
+     이유 — width 는 인라인으로 구간마다 다르게 박혀 있어 keyframe 이 끝값을 모르고,
+     레이아웃을 다시 재느라 옆 숫자까지 밀린다. scaleX 는 그리기만 바꾼다. */
+  animation:pd-grow .46s cubic-bezier(.22,.61,.36,1) both;
+  animation-delay:calc(var(--pd-i,0) * 32ms);
 }
-/* 축에 닿는 쪽은 각지게, 바깥쪽만 둥글게 — 축에서 자라난 것으로 보이게 한다 */
-.stock-detail-page .pd-bar.is-up{background:var(--up-vivid);border-radius:4px 0 0 4px}
-.stock-detail-page .pd-bar.is-down{background:var(--down-vivid);border-radius:0 4px 4px 0}
+/* 축에 닿는 쪽은 각지게, 바깥쪽만 둥글게 — 축에서 자라난 것으로 보이게 한다.
+   자라는 기준점도 축 쪽이어야 한다(상승은 오른쪽, 하락은 왼쪽이 축이다). */
+.stock-detail-page .pd-bar.is-up{
+  background:var(--up-vivid);border-radius:4px 0 0 4px;transform-origin:right center;
+}
+.stock-detail-page .pd-bar.is-down{
+  background:var(--down-vivid);border-radius:0 4px 4px 0;transform-origin:left center;
+}
+@keyframes pd-grow{ from{ transform:scaleX(0) } to{ transform:scaleX(1) } }
+/* 움직임을 줄여 달라는 설정에서는 처음부터 다 자란 채로 둔다 */
+@media (prefers-reduced-motion:reduce){
+  .stock-detail-page .pd-bar{animation:none}
+}
 
 .stock-detail-page .pd-side-in b{
   flex:none;min-width:20px;font-size:13.5px;

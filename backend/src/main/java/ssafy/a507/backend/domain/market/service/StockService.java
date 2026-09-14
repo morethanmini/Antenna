@@ -196,6 +196,7 @@ public class StockService {
                         row.changeRate(),
                         row.stock().getPer(),
                         row.stock().getPbr(),
+                        marketCap(row.close(), row.stock().getListedShares()),
                         0,
                         null,
                         watched.contains(row.code())))
@@ -408,6 +409,23 @@ public class StockService {
 
     private LocalDate previousTradeDate(LocalDate baseDate) {
         return baseDate == null ? null : dailyQuoteRepository.findPreviousTradeDate(baseDate).orElse(null);
+    }
+
+    /**
+     * 시가총액 = 종가 × 상장주식수.
+     *
+     * <p>거래가 정지됐거나(종가 없음) 상장주식수를 못 받은 종목은 null 이다 — 0 으로 내리면
+     * 히트맵에서 폭 0 짜리 칸이 되어 종목이 통째로 사라진다. 화면은 null 을 "크기를 모른다" 로
+     * 읽고 따로 다룬다.
+     *
+     * <p>소수부는 버린다. 종가는 원 단위이고 주식수는 정수라 곱은 늘 정수인데, BigDecimal 의
+     * 눈금(scale)이 그대로 남으면 JSON 에 {@code 1575600000000.00} 처럼 실린다.
+     */
+    private static BigDecimal marketCap(BigDecimal close, Long listedShares) {
+        if (close == null || listedShares == null) {
+            return null;
+        }
+        return close.multiply(BigDecimal.valueOf(listedShares)).setScale(0, RoundingMode.HALF_UP);
     }
 
     /** 어느 한쪽 종가가 없으면 null — 0 으로 그리면 "변동 없음" 으로 읽힌다. */

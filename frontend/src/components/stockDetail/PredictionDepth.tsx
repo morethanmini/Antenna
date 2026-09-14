@@ -97,7 +97,7 @@ function Rows({ d }: { d: PredictionDistribution }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((b) => {
+          {rows.map((b, i) => {
             const up = b.fromPct === null ? false : b.fromPct >= 0
             const width = `${(b.count / peak) * 100}%`
             /* 막대는 장식이라 읽어 주지 않는다 — 숫자를 늘 함께 적는다. 건수가 0 이면
@@ -110,7 +110,13 @@ function Rows({ d }: { d: PredictionDistribution }) {
             const bar = (
               <div className="pd-side-in">
                 {b.count > 0 && (
-                  <span className={`pd-bar is-${up ? 'up' : 'down'}`} style={{ width }} aria-hidden="true" />
+                  <span
+                    className={`pd-bar is-${up ? 'up' : 'down'}`}
+                    /* --pd-i 는 자라나는 순서다. 위에서 아래로 차례로 뻗게 해
+                       한꺼번에 튀어나오지 않는다(CSS 의 animation-delay). */
+                    style={{ width, ['--pd-i' as string]: String(i) }}
+                    aria-hidden="true"
+                  />
                 )}
                 <b className="num">{b.count > 0 ? won(b.count) : '·'}</b>
               </div>

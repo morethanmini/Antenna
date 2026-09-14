@@ -1,0 +1,174 @@
+/* 종목 히트맵 — B-02. MarketMap.tsx 와 짝이다.
+   전 선택자를 mm- 접두사로 둔다(화면별 CSS 가 전역으로 함께 올라간다).
+
+   **판 하나만 어둡다.** 앱은 밝은 화면인데 여기만 검은 것은 실수가 아니라
+   작정한 것이다 — 등락률을 색으로 읽는 판이라, 밝은 바탕 위에서는 ±0.5% 짜리
+   옅은 칸이 흰 카드에 묻혀 안 보인다. 어두운 바탕에서는 같은 색이 제 값을 낸다.
+   바깥 여백·머리글·범례는 앱 토큰 그대로다.
+
+   칸 사이 틈은 margin 이 아니라 **판 색 테두리**로 만든다. 칸의 위치와 크기는
+   JS 가 픽셀로 계산해 넣으므로, margin 을 주면 계산값과 실제 크기가 어긋난다. */
+
+/* 판 색. 칸 사이 틈도 이 색이라 한 곳에서 바꾼다.
+   flex:1 · min-height:0 은 화면 한 장에 맞추기 위한 것이다(stocks.css 의 st-fit) */
+.mm{
+  --mm-bg:#1b1e28; --mm-gap:#1b1e28;
+  display:flex; flex-direction:column; gap:10px; flex:1; min-height:0;
+}
+
+/* ── 판 위 줄 — 위치·범례 ────────────────────────────────── */
+.mm-bar{display:flex; align-items:center; gap:12px; min-height:28px}
+
+.mm-back{
+  display:inline-flex; align-items:center; gap:5px; flex:none;
+  height:28px; padding:0 11px 0 8px;
+  border:1px solid var(--rule); border-radius:999px; background:var(--surface);
+  color:var(--body); font-size:12px; font-weight:700;
+  transition:border-color .12s, background .12s, color .12s;
+}
+.mm-back:hover{border-color:#c8c9f5; background:var(--brand-softer); color:var(--brand-ink)}
+.mm-back:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+
+.mm-where{margin:0; display:flex; align-items:baseline; gap:9px; min-width:0}
+.mm-where b{color:var(--ink); font-size:14.5px; font-weight:800; letter-spacing:-.02em}
+.mm-where em{color:var(--faint); font-style:normal; font-size:12px; font-weight:650}
+.mm-where span{font-size:13px; font-weight:750}
+
+/* 범례 — 색이 무슨 뜻인지 판 옆에 늘 있어야 한다.
+   단계마다 숫자를 박은 칸이다(그라데이션 띠에서 바꿨다 · 2026-09-11).
+   칸 색은 컴포넌트가 heatOf 로 넣는다 — 여기에 색값을 적지 않는다. */
+.mm-legend{margin-left:auto; display:flex; align-items:center; gap:9px; flex:none}
+.mm-legend-label{color:var(--muted); font-size:11.5px; font-weight:750; white-space:nowrap}
+
+.mm-scale{
+  display:flex; margin:0; padding:0; list-style:none;
+  border-radius:5px; overflow:hidden;
+}
+.mm-scale li{
+  width:46px; height:21px;
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; font-size:10.5px; font-weight:750;
+  font-variant-numeric:tabular-nums;
+}
+
+/* ── 판 ──────────────────────────────────────────────────── */
+/* 트리맵은 면적을 나눠 쓰는 그림이라 내용에 따라 늘어날 수 없다 — 높이를 밖에서
+   정해 줘야 한다. 그 높이를 **남는 자리 전부**로 잡는다(flex:1): 머리글·탭·범례·
+   각주가 쓰고 남은 만큼이다. min-height 는 바닥이다 — 세로가 아주 짧은 창에서
+   판이 납작해져 색도 글자도 안 보이게 되는 것만 막는다(이때는 페이지가 스크롤된다). */
+.mm-canvas{
+  position:relative; overflow:hidden; flex:1; min-height:320px;
+  /* 살짝만 굴린다(14 → 6px · 2026-09-11). 판은 데이터가 빽빽한 상자라 많이
+     굴리면 네 귀퉁이 칸이 그만큼 잘려 나간다 — 앱의 카드보다 각지게 둔다 */
+  border-radius:6px; background:var(--mm-bg);
+}
+
+/* 불러오는 동안 판 한가운데. 판 위에 두면 글이 사라질 때 판이 위로 뛴다 */
+.mm-loading{
+  position:absolute; inset:0; margin:0;
+  display:flex; align-items:center; justify-content:center;
+  color:#9aa1b2; font-size:12.5px; font-weight:650;
+}
+
+/* ── 섹터 덩어리(첫 화면) ───────────────────────────────── */
+/* 덩어리는 이름줄(버튼)과 종목 칸(링크)을 담는 자리일 뿐이라 누를 수 없다.
+   position 만 있으면 되고, 안쪽 칸이 이 상자를 기준으로 자리를 잡는다. */
+.mm-block{
+  position:absolute; box-sizing:border-box; overflow:hidden;
+  border:1px solid var(--mm-gap); border-radius:5px; background:#262a36;
+}
+
+/* 섹터 이름줄 — **이것이 섹터를 펼치는 버튼이다.** 누를 수 있다는 것이 보이도록
+   손 모양 커서와 hover 를 준다. 높이는 컴포넌트의 HEAD_H 와 같아야 한다 */
+.mm-head{
+  position:absolute; top:0; left:0; right:0; height:22px;
+  display:flex; align-items:center; gap:6px; padding:0 7px; box-sizing:border-box;
+  border:0; background:#2b3040; text-align:left; cursor:pointer;
+  transition:background .12s;
+}
+.mm-head:hover{background:#3a4153}
+.mm-head:hover .mm-head-name{color:#fff}
+.mm-head:focus-visible{outline:2px solid #fff; outline-offset:-2px; z-index:3}
+.mm-head-name{
+  min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  color:#d7dae4; font-size:11.5px; font-weight:750; letter-spacing:-.02em;
+}
+.mm-head-rate{
+  margin-left:auto; flex:none; color:#9aa1b2; font-style:normal;
+  font-size:11px; font-weight:700; font-variant-numeric:tabular-nums;
+}
+/* 어두운 판 위에서는 앱의 --up/--down 이 너무 어둡다. 여기서만 밝은 짝을 쓴다 */
+.mm-head-rate.up{color:#ff6a6a}
+.mm-head-rate.down{color:#6ea6ff}
+
+/* ── 종목 칸 ────────────────────────────────────────────── */
+/* 첫 판의 잔 칸과 펼친 섹터의 큰 칸이 같은 선택자다 — 둘 다 종목 상세로 가는
+   링크이고 크기만 다르다. 자리가 되는 칸에만 이름·등락률이 붙는다(fitOf). */
+.mm-tile{
+  position:absolute; box-sizing:border-box; overflow:hidden;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:1px; padding:2px;
+  border:1px solid var(--mm-gap); border-radius:3px;
+  color:#fff; text-decoration:none; line-height:1.15;
+  transition:filter .12s;
+}
+.mm-tile:hover{filter:brightness(1.25); z-index:2}
+.mm-tile:focus-visible{outline:2px solid #fff; outline-offset:-3px; z-index:2}
+
+.mm-tile-name{
+  max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-weight:750; letter-spacing:-.02em;
+}
+.mm-tile-rate{
+  font-size:.84em; font-weight:650; opacity:.92;
+  font-variant-numeric:tabular-nums;
+}
+
+/* ── 칸 설명 말풍선 ─────────────────────────────────────── */
+/* 브라우저 기본 title 대신 직접 그린다. 자리는 JS 가 커서를 따라 넣는다
+   (MarketMap 의 Tip) — width·height 는 그쪽 TIP_W · TIP_H 와 맞춰야
+   판 모서리에서 접히는 계산이 맞는다.
+
+   커서를 따라다니므로 마우스를 가로채면 안 된다(pointer-events:none).
+   안 그러면 말풍선이 커서 밑 칸을 덮어 hover 가 저 혼자 켜졌다 꺼졌다 한다. */
+.mm-tip{
+  position:absolute; z-index:5; pointer-events:none;
+  width:214px; padding:11px 13px 12px; box-sizing:border-box;
+  border:1px solid #4d5672; border-radius:10px;
+  background:#333a4d; box-shadow:0 12px 26px rgb(8 10 18 / .5);
+}
+
+.mm-tip-name{
+  margin:0 0 9px; padding-bottom:9px; border-bottom:1px solid #4d5672;
+  color:#fff; font-size:14.5px; font-weight:800; letter-spacing:-.02em;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+
+.mm-tip-rows{margin:0; display:grid; gap:5px}
+.mm-tip-rows > div{display:flex; align-items:baseline; gap:5px; min-width:0}
+.mm-tip-rows dt{flex:none; color:#98a0b4; font-size:11.5px; font-weight:650}
+.mm-tip-rows dt::after{content:':'}
+.mm-tip-rows dd{
+  margin:0; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  color:#e9ebf2; font-size:12.5px; font-weight:750;
+  font-variant-numeric:tabular-nums;
+}
+/* 어두운 판 위에서는 앱의 --up/--down 이 너무 어둡다 — 이름줄과 같은 밝은 짝 */
+.mm-tip-rows dd.up{color:#ff6a6a}
+.mm-tip-rows dd.down{color:#6ea6ff}
+
+/* ── 판 아래 각주 ───────────────────────────────────────── */
+.mm-foot{margin:0; color:var(--faint); font-size:11.5px; line-height:1.55}
+
+
+/* 세로가 짧은 화면(대표적으로 1366x768)에서는 사이 여백을 줄여 판에 자리를
+   더 준다. 높이 자체는 건드리지 않는다 — flex:1 이 알아서 남는 만큼 먹는다.
+   짝이 되는 머리글 축소는 stocks.css 의 같은 미디어 쿼리에 있다. */
+@media (max-height:820px){
+  .mm{gap:8px}
+  .mm-canvas{min-height:260px}
+}
+/* 좁은 화면에는 범례 일곱 칸이 들어갈 자리가 없다. 색의 뜻은 각주가 대신한다 */
+@media (max-width:860px){
+  .mm-legend{display:none}
+}
