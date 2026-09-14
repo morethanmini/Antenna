@@ -3,10 +3,18 @@
 # 러너: 앱 EC2 에 shell executor 로 등록돼 있다(태그 a507-antenna-runner).
 #       빌드와 배포가 같은 기계에서 일어나므로 산출물 전송 단계가 아예 없다.
 #
-# 배포 대상은 master 뿐이다. dev 는 통합·로컬 테스트용이라 파이프라인이 생성되지 않는다.
-# 러너를 ref_protected 로 등록했기 때문에 보호 브랜치(master) job 만 집어간다.
+# 배포 대상은 master 뿐이다.
+# 러너를 ref_protected 로 등록했기 때문에 보호 브랜치 job 만 집어간다 — master 와 dev 둘 다
+# 보호 브랜치라 dev 도 파이프라인이 돈다. 기능 브랜치 MR 에는 돌지 않는다(보호 대상이 아니다).
+#
+# dev 에 verify 를 둔 이유(2026-09-14) — 하루에 두 번, 각자는 초록인 브랜치 둘이 합쳐지면서
+# dev 가 깨졌다. 둘 다 컴파일 오류였고 몇 시간 동안 아무도 몰랐다.
+#   ① KoreaeximFxClient 생성자 시그니처를 바꾸고 테스트를 안 고쳐 백엔드 테스트가 통째로 안 돌았다
+#   ② HORIZON_LABEL export 를 없앴는데 다른 브랜치의 새 사용처가 남아 프론트가 tsc 에서 멈췄다
+# 둘 다 건드린 파일이 달라 git 은 충돌을 내지 않았다. 통합해야만 드러나는 종류다.
 
 stages:
+  - verify
   - deploy
 
 variables:
@@ -14,6 +22,48 @@ variables:
   # 프론트 빌드를 도커(root)로 돌리므로 그 산출물을 gitlab-runner 권한으로 못 지워
   # job 이 Permission denied 로 깨진다. 'x' 를 빼면 git 이 무시된 파일을 손대지 않는다.
   GIT_CLEAN_FLAGS: -ffd
+
+# dev 통합 검증. 배포하지 않고 "합쳐 놓은 것이 빌드되는가" 만 본다.
+#
+# resource_group 을 배포와 다르게 둔다 — 같게 두면 dev 검증이 도는 동안 운영 배포가 줄을 선다.
+# 급할 때 배포가 막히는 편이 dev 검증이 늦는 것보다 나쁘다.
+#
+# 비밀값을 쓰지 않는다. CI/CD 변수는 Protected 라 dev 에서도 노출되지만, 백엔드 테스트는
+# src/test/resources/application.yaml(H2)로 돌고 프론트 빌드는 커밋된 .env.production 을 읽는다.
+.verify-base: &verify-base
+  stage: verify
+  tags:
+    - a507-antenna-runner
+  resource_group: verify
+  timeout: 20m
+
+verify-backend:
+  <<: *verify-base
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+      changes:
+        - backend/**/*
+        - .gitlab-ci.yml
+  script:
+    # 배포 job 과 같은 명령이다(clean test). 같은 기계에서 이미 매 배포마다 도는 부하라
+    # dev 에서 한 번 더 돈다고 달라지지 않는다. bootJar 는 뺀다 — 배포하지 않으므로 필요 없다.
+    # 서브셸로 감싸는 이유는 deploy-backend 와 같다(실패 시 cd 가 안 되돌아온다).
+    - (cd backend && chmod +x ./gradlew && ./gradlew --no-daemon clean test)
+
+verify-frontend:
+  <<: *verify-base
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+      changes:
+        - frontend/**/*
+        - .gitlab-ci.yml
+  script:
+    # 호스트에 node 를 설치하지 않는다 — deploy-frontend 와 같은 이미지·같은 방식이다.
+    # tsc -b 를 따로 부르는 이유: npm run build 의 tsc -b 가 먼저 돌긴 하지만, 타입 오류와
+    # 번들 오류를 로그에서 가르려면 단계가 나뉘어 있는 편이 읽기 쉽다.
+    - |
+      docker run --rm -v "$PWD/frontend":/app -w /app node:22-alpine \
+        sh -c "npm ci && npx tsc -b && npm run build"
 
 # 배포가 겹치면 컨테이너 교체와 정적 파일 교체가 서로를 덮어쓴다.
 # 같은 resource_group 의 job 은 한 번에 하나만 실행된다.
