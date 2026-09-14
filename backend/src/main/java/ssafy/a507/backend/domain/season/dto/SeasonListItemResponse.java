@@ -10,7 +10,7 @@ import ssafy.a507.backend.domain.season.entity.Season;
  * 영업일로 바꿀 때만 쓰는 값이다 — 연도가 새면 참가자가 그다음에 무슨 일이 있었는지 아는
  * 상태로 시작해 예측이 아니라 복기가 된다(API 명세 v0.24 · 설계서 §3 G).
  *
- * @param title 시즌의 <b>성격</b> · 연도·사건 고유명사 금지
+ * @param title 시즌을 만든 <b>사건</b>과 성격 · 실제 날짜·연도는 금지(2026-09-14)
  * @param sector 참가자에게 보이는 섹터 힌트 · 상위 분류로만
  * @param tickerCount 블라인드 종목 수 · 이름은 진행 화면에서 "A사" 로만 보인다
  * @param entryFee COMPETITION 만 · 연습·시연은 null

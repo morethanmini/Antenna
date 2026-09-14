@@ -1,21 +1,16 @@
 /* B-01 인사이트 홈 · A-03 통합 검색이 쓰는 조회 API.
 
-   타입은 API 명세서의 응답 스키마를 그대로 옮겼다. 지금 백엔드에는 조회 API 가
-   하나도 없어(AuthController · AbuseReportController 뿐) 목업으로 화면을 먼저 만든다.
+   타입은 API 명세서의 응답 스키마를 그대로 옮겼다.
 
-   ── 백엔드가 붙으면 지울 것 ────────────────────────────────
-   아래 MOCK 을 false 로 바꾸면 전부 실제 호출로 넘어간다. 그다음
-   api/mock/insight.ts 와 각 함수의 `if (MOCK)` 한 줄씩만 지우면 흔적이 없다.
-   각 함수의 실제 호출부는 이미 명세서 경로·쿼리대로 적어 두었다.
+   ── 남은 목업 둘 ──────────────────────────────────────────
+   MOCK 은 아직 true 지만 걸려 있는 함수는 두 개뿐이다. 나머지는 실 API 다.
 
-   담당 백엔드 티켓:
-     /market/indices  → ANT-DATA-04 (지수·환율 수집 선행)
-     /stocks          → ANT-DATA-03 (3년치 백필 선행)
-     /search          → ANT-DATA-05
-     /watchlist       → ANT-DATA-06
-     /users/me        → ANT-AUTH-05
-     /rankings        → 티켓 없음
-     /ads/active      → 티켓 없음
+     /ads/active     등록된 배너가 없어 화면이 비어 보인다 — 시연 동안 유지(2026-09-03 결정)
+     /wallet/balance 서버에 없다 — ANT-TOKEN-04(S15P21A507-40)
+
+   각 함수의 실제 호출부는 이미 명세서 경로·쿼리대로 적어 두었다. 서버가 붙으면
+   그 함수의 `if (MOCK)` 한 줄과 mock/insight.ts 의 짝을 지우면 된다. 둘 다 걷히면
+   MOCK 상수와 import 까지 사라진다.
    ─────────────────────────────────────────────────────── */
 import { api } from './client'
 import * as mock from './mock/insight'
@@ -71,25 +66,9 @@ export function getWatchlist() {
   return api.get<{ items: WatchlistRow[] }>('/watchlist')
 }
 
-/* ── 주목할 예측가 · GET /rankings ────────────────────────── */
-
-export type RankingRow = {
-  rank: number
-  userId: number
-  nickname: string
-  score: number
-  hitRate: number
-  avgError: number
-  doneCount: number
-}
-
-/** 홈 위젯은 track=REAL&limit=5 를 재사용한다(명세서 §랭킹). */
-export function getTopPredictors(limit = 5) {
-  if (MOCK) return mock.rankings(limit)
-  return api.get<{ computedAt: string; items: RankingRow[] }>('/rankings', {
-    query: { track: 'REAL', limit },
-  })
-}
+/* 주목할 예측가(GET /rankings)는 여기 없다 — 랭킹 화면(E-01)과 같은 응답이라
+   api/rankings.ts 의 fetchRankings 한 벌을 홈도 같이 쓴다. 전에는 여기에도
+   같은 타입이 있었는데, 지표 셋을 non-null 로 적어 두어 배치 전 응답과 어긋났다. */
 
 /* ── 스폰서드 · GET /ads/active ───────────────────────────── */
 
@@ -120,13 +99,14 @@ export function getWalletBalance() {
 /* ── 통합 검색 · GET /search ──────────────────────────────── */
 
 export type SearchResult = {
-  stocks: { code: string; name: string; sector: string; prevClose: number; watching: boolean }[]
-  channels: { userId: number; nickname: string; hitRate: number }[]
+  /** 활성 종목만 온다 — 종가는 그 종목의 마지막 거래일 값이라 비지 않는다. 섹터는 없을 수 있다 */
+  stocks: { code: string; name: string; sector: string | null; prevClose: number; watching: boolean }[]
+  /** 실전 전체 랭킹에 든 예측가만. hitRate 는 % (0~100) — 랭킹 행과 같이 비어 올 수 있다 */
+  channels: { userId: number; nickname: string; hitRate: number | null }[]
   reports: { id: number; title: string; author: string }[]
 }
 
 /** 타입별 상위 N건만 온다. 필터·정렬·페이징은 전용 목록의 책임이다(명세서 §검색). */
 export function search(q: string, limit = 5) {
-  if (MOCK) return mock.search(q, limit)
   return api.get<SearchResult>('/search', { query: { q, limit } })
 }

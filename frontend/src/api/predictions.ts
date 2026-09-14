@@ -57,38 +57,60 @@
        누를 때마다 숫자가 바뀐다.
    ─────────────────────────────────────────────────────── */
 import { api } from './client'
+import { releaseIdempotencyKey } from './idempotency'
 import * as mock from './mock/predictions'
 import { keccak256Utf8 } from '../chain/keccak'
 import type { Anchor } from './anchors'
+import type { ProofAnchorStatus } from './proof'
 import type { ClosePrice, CursorList, OperationRef } from './types'
 import type { WalletNonce } from './wallet'
 
+/**
+ * 남은 목업은 **서버에 그 API 가 없는 것들뿐**이다 — 예측 상세와 종목별 예측 목록.
+ * 등록(POST /predictions)과 슬롯(GET /predictions/slots)은 ANT-PRED-01 이 들어와
+ * 실제 호출로 넘어갔다. 위 "백엔드가 붙으면 지울 것" 목록의 남은 두 줄이 채워지면
+ * 이 상수도 함께 사라진다.
+ */
 const MOCK = true
 
 /** UP/DOWN 둘뿐이다. "보합" 을 두지 않는다(§4 C-01). */
 export const DIRECTIONS = ['UP', 'DOWN'] as const
 export type Direction = (typeof DIRECTIONS)[number]
 
-/** 5·10·20·60 4지 고정. 임의 마감일을 받지 않는다(§4 C-01). */
-export const HORIZONS = [5, 10, 20, 60] as const
+/**
+ * 7·14·30·90 4지 고정. 임의 마감일을 받지 않는다(§4 C-01).
+ *
+ * **거래일이 아니라 캘린더일이다**(결정 B5, 명세 v0.38). 만기일 = 기준일 + horizon 일로
+ * 등록 즉시 확정된다 — 휴장일을 세지 않으므로 클라이언트가 그대로 계산할 수 있다.
+ * DB CHECK(DB-01)·ERD·서버 HORIZONS 가 모두 이 네 값이라, 다른 값을 보내면
+ * 400 INVALID_REQUEST(horizon) 이다.
+ */
+export const HORIZONS = [7, 14, 30, 90] as const
 export type Horizon = (typeof HORIZONS)[number]
 
 export const HORIZON_LABEL: Record<Horizon, string> = {
-  5: '5거래일',
-  10: '10거래일',
-  20: '20거래일',
-  60: '60거래일',
+  7: '7일',
+  14: '14일',
+  30: '30일',
+  90: '90일',
 }
 
 /** 근거 본문 상한. 구독자 전용이며 만기 리빌 후에도 공개되지 않는다. */
 export const NOTE_MAX = 5000
 
+/** 슬롯은 **하루** 단위다(서버 app.prediction.slot.free-per-day). 주 단위가 아니다. */
 export type SlotStatus = {
-  weeklyLimit: number
+  /** 이 셈이 걸린 날(KST). 자정에 넘어간다 */
+  date: string
+  freeLimit: number
   used: number
   remaining: number
-  /** 슬롯이 다시 차는 시각 */
-  resetsAt: string
+  /**
+   * 슬롯을 넘겨 등록할 때 소각할 금액(정수 ANT 문자열). 서버 금액표
+   * app.token.amounts.slot-over(ANT-TOKEN-08)에서 온다. 금액 필드는 문자열로 통일돼 있어
+   * 숫자로 바꾸지 않는다 — 표시는 formatToken(api/wallet.ts) 으로 한다.
+   */
+  overCost: string
 }
 
 export type PredictionDraft = {
@@ -108,12 +130,24 @@ export type PredictionDraft = {
 
 /** 201 응답. basePrice 는 배치 B2 가 다음 영업일 종가로 채운다 — 비어 있다. */
 export type PredictionCreated = {
-  predictionId: string
-  status: 'BASE'
+  id: number
   commitHash: string
+  /** 등록 직후에는 항상 WAITING. 배치 B2 가 묶으면 넘어간다 */
+  anchorStatus: ProofAnchorStatus
+  status: 'BASE'
+  /** 등록 시점의 다음 평일. 기준가는 이 날 종가로 배치가 채운다 */
+  baseDate: string
+  /** baseDate + horizon 캘린더일 — 등록 즉시 확정된다 */
+  settleDate: string
 }
 
-/** 슬롯을 넘겨 소각으로 넘어간 경우. M-02 가 operationId 를 폴링한다. */
+/**
+ * 슬롯을 넘겨 소각으로 넘어간 경우. M-02 가 operationId 를 폴링한다.
+ *
+ * **서버가 아직 이 응답을 내지 않는다.** 소각할 토큰(ANT-CHAIN-03)이 없어 슬롯 초과는
+ * 409 PREDICTION_SLOT_EXCEEDED 로 끝난다(명세 v0.41). 규격에는 남아 있어 타입도 남기되,
+ * 지금 이 갈래로 오는 응답은 없다.
+ */
 export type PredictionQueued = OperationRef
 
 export type CreateResult =
@@ -121,14 +155,46 @@ export type CreateResult =
   | { kind: 'queued'; data: PredictionQueued }
 
 export function getSlots() {
-  if (MOCK) return mock.slots()
   return api.get<SlotStatus>('/predictions/slots')
 }
 
-/* ── 이 종목에 걸린 남의 예측 ─────────────────────────────
-   §5 게이팅이 타입에 드러나야 한다. 잠긴 예측의 direction·targetPrice 를
-   null 로 두면, 화면이 실수로 잠긴 값을 그리려 해도 타입에서 먼저 막힌다.
-   404 로 감추지 않는 것이 규칙이다 — 없는 것처럼 보이면 구독 유인이 사라진다. */
+/* ── 예측 포트폴리오 · GET /predictions/me/portfolio ──────
+   C-04 가 쓰는 서버 집계. 여덟 필드가 전부다(설계서 §4 C-04). 화면이 목록을
+   전량 받아 세지 않는 이유는 예측이 늘어도 읽는 행이 늘지 않게 하려는 것이다. */
+
+export type Portfolio = {
+  total: number
+  hit: number
+  miss: number
+  /** BASE 와 OPEN 을 합친 수. 화면이 둘을 가르지 않는다 */
+  pending: number
+  /** 적중률 % — 분모는 판정된 것뿐이다. 판정이 0건이면 null */
+  hitRate: number | null
+  /** 판정된 예측의 평균 오차 % · 판정이 0건이면 null */
+  avgError: number | null
+  /** 체인에 **박힌** 배치에 든 수 — 배치가 CONFIRMED 인 것만이다 */
+  anchored: number
+  /** 나머지 전부 — 커밋 전, 배치 대기, PENDING·FAILED 배치 */
+  unanchored: number
+}
+
+/* ── 공개 규칙 (§5 개정, 2026-09-10) ──────────────────────
+   판정 전후로 갈리고, 근거만 끝까지 잠긴다.
+
+     필드          판정 전(BASE·OPEN)   판정 후(HIT·MISS)
+     ─────────────────────────────────────────────────────
+     어느 종목      전체 공개            전체 공개
+     방향          구독자만             전체 공개
+     목표가         구독자만             전체 공개
+     근거 본문      구독자만             구독자만
+
+   판정 후 방향을 가리지 않는 이유 — 목표가가 공개되면 기준가와 비교해 방향이
+   그대로 드러난다. 가려도 가려지지 않으므로 잠그는 시늉만 남는다.
+
+   근거가 판정 후에도 잠기는 것은 서버 결정 D6 과 같다(PredictionCommit 주석).
+
+   타입에 null 을 그대로 적는다 — 화면이 잠긴 값을 그리려 하면 tsc 가 먼저 막는다.
+   404 로 감추지 않는 것도 그대로다. 없는 것처럼 보이면 구독 유인이 사라진다. */
 
 /** 상태 전이는 BASE → OPEN → HIT/MISS 다(서버 Prediction.Status). */
 export const PREDICTION_STATUSES = ['BASE', 'OPEN', 'HIT', 'MISS'] as const
@@ -147,41 +213,11 @@ export const PHASE_LABEL: Record<PredictionPhase, string> = {
 export const phaseOf = (s: PredictionStatus): PredictionPhase =>
   (s === 'HIT' || s === 'MISS' ? 'JUDGED' : 'PENDING')
 
-export type StockPrediction = {
-  id: string
-  author: { userId: string; nickname: string }
-  /** 작성자 적중률 %. 판정 이력이 없으면 null — 0% 로 그리지 않는다 */
-  accuracy: number | null
-  status: PredictionStatus
-  horizon: Horizon
-  createdAt: string
-  /** 만기 영업일 YYYY-MM-DD */
-  dueDate: string
-  /**
-   * 근거 본문을 볼 권한이 없으면 true. **다른 값은 그대로 온다**
-   * (2026-09-08 결정 — 전에는 목표가까지 비웠다).
-   */
-  locked: boolean
-  /* 방향은 잠긴 예측에서도 온다. 서버 PredictionCardResponse 가 정한 규칙으로
-     (Jira S15P21A507-70), 잠글 때 종목·방향까지는 남기고 targetPrice 만 null 로
-     뺀다. 방향까지 가리면 "누가 무엇을 걸었는지" 가 통째로 사라져 목록이 빈다. */
-  direction: Direction
-  /** 잠기면 null. 판정 완료는 항상 채워진다 */
-  targetPrice: number | null
-  /** 배치 B2 가 확정한 기준가. 등록 직후에는 비어 있다 */
-  basePrice: number | null
-  /** 판정 완료만 채워진다 */
-  closePrice: number | null
-  /** 목표가 대비 오차 %. 판정 완료만 */
-  errorRate: number | null
-  /** 잠금을 푸는 채널. 구독 CTA 가 여기로 간다 */
-  channelId: string | null
-}
-
 /* ── 내 예측 (C-02) ───────────────────────────────────────
    서버 MyPredictionItemResponse 와 짝을 이룬다(ANT-PRED-06). 명세가 못 박은
-   아홉 필드에 stockName 이 더해진 열 개이고, **그 밖의 값을 화면에서 만들어
-   내지 않는다.**
+   아홉 필드에 stockName · anchorStatus 가 더해진 열한 개이고, **그 밖의 값을
+   화면에서 만들어 내지 않는다.** 시안에 있는 현재가 · 확신도 · 진행률 · 정확도
+   점수는 이 응답에 없다 — 그리려면 API 가 먼저 늘어야 한다.
 
    잠금이 없다. 내 예측이라 전부 보인다 — 남의 예측(StockPrediction)과 필드부터
    다르므로 타입을 합치지 않았다. */
@@ -203,6 +239,14 @@ export type MyPrediction = {
   errorRate: number | null
   /** 만기 영업일 YYYY-MM-DD. 기준가 배치가 채우기 전에는 null 이다 */
   settleDate: string | null
+  /* 이 예측이 블록에 올라갔는가. 서버가 행마다 함께 내린다
+     (MyPredictionItemResponse.anchorStatus, 2026-09-09). 어휘는 proof 와 같은
+     넷이라 C-03 과 같은 말로 그린다 — 커밋이 아직 없으면 WAITING 이다.
+
+     앵커 배치는 매일 00:05 KST 에 **전날 등록분**을 한 번에 묶는다
+     (AnchorScheduler, 주말 포함). WAITING 은 고장이 아니라 정상 대기이고,
+     화면은 그 사실을 문장으로 말해 줘야 한다. */
+  anchorStatus: ProofAnchorStatus
 }
 
 /* 상태 필터. 서버가 status 로 거른다 — 커서 페이징이라 클라이언트에서 거르면
@@ -356,38 +400,115 @@ export function targetProgress(d: PredictionDetail): number | null {
   return Math.round(((lastClose.close - basePrice) / span) * 1000) / 10
 }
 
-/* 목록 전체에 한 번만 해당하는 값. useCursorList 의 meta 로 온다.
-   불러온 페이지로 세면 "더 보기" 를 누를 때마다 숫자가 바뀌므로 서버가 준다. */
-export type StockPredictionMeta = {
-  pendingCount: number
-  judgedCount: number
-  /** 판정 완료 중 적중 비율 %. 판정 건이 없으면 null — 0% 로 그리지 않는다 */
-  hitRate: number | null
+/* ── 이 종목의 예측 분포 (호가창) ────────────────────────
+   설계 변경 2026-09-10. 종목 상세는 **누가 걸었는지를 보여주지 않는다** —
+   목표가를 구간으로 잘라 각 구간에 몇 명이 걸었는지만 낸다. 개인은 작성자
+   채널에서만 본다.
+
+   그래서 이 응답에는 예측 id·작성자·목표가 원본이 없다. 있으면 구간을 되짚어
+   개인을 복원할 수 있고, 그건 이 화면을 만든 이유를 무너뜨린다.
+
+   구간은 **전일 종가 대비 %** 로 자른다. 주식 호가창과 달리 상·하한이 없어
+   절대가로는 자를 수 없고, 비율이면 1,000원 종목과 100만원 종목이 같은 개수의
+   구간으로 나뉜다. 기준가는 전일 종가다 — 실전 시세는 그것뿐이다(§7 legal). */
+
+/** 한 구간. 아래에서 위로(싼 가격 → 비싼 가격) 온다 */
+export type PredictionBucket = {
+  /** 전일 종가 대비 하한 %(포함). 맨 아래 구간은 null — "그 이하 전부" */
+  fromPct: number | null
+  /** 상한 %(미포함). 맨 위 구간은 null — "그 이상 전부" */
+  toPct: number | null
+  /** 구간 경계의 실제 가격. 화면이 다시 계산하지 않게 서버가 함께 준다 */
+  fromPrice: number | null
+  toPrice: number | null
+  /** 이 구간에 걸린 예측 수 */
+  count: number
 }
 
-export type StockPredictionList = CursorList<StockPrediction> & StockPredictionMeta
-
-/** 한 화면에 담는 줄 수 */
-export const STOCK_PREDICTION_PAGE_SIZE = 8
-
-/** useCursorList 가 커서를 관리하므로 함수를 넘긴다 */
-export function fetchStockPredictions(code: string, phase: PredictionPhase) {
-  return (query: Record<string, string | number | boolean | undefined>) => {
-    const q = { phase, size: STOCK_PREDICTION_PAGE_SIZE, ...query }
-    if (MOCK) return mock.stockPredictions(code, q)
-    return api.get<StockPredictionList>(`/stocks/${code}/predictions`, { query: q })
-  }
+export type PredictionDistribution = {
+  stockCode: string
+  /** 구간을 나눈 기준. 전일 종가다 — "현재가"가 아니다(§7 legal) */
+  basePrice: number
+  /** 그 종가의 날짜 */
+  asOf: string
+  /** 구간 폭 % */
+  stepPct: number
+  /** 아래(싼 쪽)에서 위(비싼 쪽) 순서 */
+  buckets: PredictionBucket[]
+  /** 구간 합계. 화면이 더해서 쓰지 않는다 — 서버가 센 값과 어긋날 수 있다 */
+  total: number
 }
+
+/* ── 오늘 판정된 예측 (B-03 헤더) ─────────────────────────
+   판정 배치 B2 가 13:30 에 돌면서 그날 만기가 온 예측을 HIT/MISS 로 확정한다.
+   그 결과만 종목 머리에 띄운다 — "이 종목에 걸었던 사람들이 오늘 어떻게 됐나".
+
+   판정 완료는 전체 공개다(§5 개정). 작성자·적중 여부·오차율에 잠금이 없어
+   locked 같은 칸이 필요 없다. */
+export type SettledPrediction = {
+  /** 서버가 숫자로 준다(Prediction.id) — 링크에 그대로 끼워 쓴다 */
+  id: number
+  /** avatarUrl 은 지금 항상 null 이다 — users 에 사진 칸이 없다(서버 SettledTodayResponse.Author) */
+  author: { userId: number; nickname: string; avatarUrl: string | null }
+  /** 판정 후라 방향·목표가에 잠금이 없다(§5 개정) */
+  direction: Direction
+  targetPrice: number
+  /** 판정된 것만 오므로 BASE·OPEN 은 없다 */
+  status: 'HIT' | 'MISS'
+  /** 목표가 대비 오차 %. 판정 완료라 항상 채워진다 */
+  errorRate: number
+}
+
+/**
+ * 오늘 판정된 이 종목의 예측.
+ *
+ * 없으면 빈 목록이다 — 화면은 그때 아무것도 그리지 않는다. 장이 쉬는 날이나
+ * 배치 전에는 늘 비어 있으므로, 빈 상태를 "없습니다" 로 알릴 일이 아니다.
+ */
+export function getSettledToday(code: string) {
+  return api.get<{ items: SettledPrediction[] }>(`/stocks/${code}/predictions/settled-today`)
+}
+
+/**
+ * 판정 대기 중인 예측의 분포.
+ *
+ * 판정이 끝난 예측은 세지 않는다 — 호가창은 지금 걸려 있는 물량을 보는 것이고,
+ * 끝난 예측은 기록이다. 둘을 한 그림에 더하면 어느 쪽도 읽을 수 없다.
+ *
+ * 기준가는 응답의 basePrice 를 쓴다. 목업 때는 화면이 전일 종가를 인자로 건넸는데
+ * (목업이 난수로 지어낸 기준가가 화면 머리와 어긋나서), 서버는 그 값을 받지 않는다.
+ */
+export function getPredictionDistribution(code: string) {
+  return api.get<PredictionDistribution>(`/stocks/${code}/predictions/distribution`)
+}
+
+/**
+ * 멱등 키 scope. 서버가 `Idempotency-Key` 를 **필수**로 받는다(없으면 400
+ * IDEMPOTENCY_KEY_REQUIRED) — 예측에는 삭제 API 가 없고 슬롯도 되돌아오지 않아,
+ * 타임아웃 뒤 한 번의 재시도가 예측 둘을 만들면 복구할 길이 없다.
+ *
+ * 봉인 재료가 바뀌면 다른 요청이므로 키도 갈라야 한다. noteSalt 가 등록마다 새로
+ * 뽑히므로 그것만으로도 갈리지만, 무엇에 서명했는지가 키에 드러나도록 함께 적는다.
+ */
+export const createScope = (d: PredictionDraft) =>
+  `prediction:${d.stockCode}:${d.noteSalt}`
 
 /* 201 과 202 를 응답 본문 모양으로 가른다. api.post 는 상태 코드를 돌려주지 않는데,
    그것 하나 때문에 공용 client 를 고치면 다른 화면까지 영향이 간다. 두 응답은
-   키가 겹치지 않아(operationId ↔ predictionId) 모양만으로 확실히 갈린다. */
+   키가 겹치지 않아(operationId ↔ id) 모양만으로 확실히 갈린다.
+
+   지금 서버는 202 를 내지 않는다 — 슬롯 초과는 409 다(위 PredictionQueued 주석). */
 export function createPrediction(draft: PredictionDraft, signature: string) {
-  if (MOCK) return mock.create(draft)
-  return api.post<PredictionCreated | PredictionQueued>('/predictions', { ...draft, signature })
+  const scope = createScope(draft)
+  return api.post<PredictionCreated | PredictionQueued>(
+    '/predictions', { ...draft, signature }, { idempotencyScope: scope },
+  )
     .then((body): CreateResult => ('operationId' in body
       ? { kind: 'queued', data: body }
       : { kind: 'created', data: body }))
+    /* 확정된 뒤에야 키를 버린다. 실패한 재시도는 같은 키로 가야 서버가 중복으로
+       세지 않는다 — 성공 응답을 받은 다음 요청만 새 키를 받는다. */
+    .then((r) => { releaseIdempotencyKey(scope); return r })
 }
 
 /* ── 커밋 봉인 (ANT-PRED-02) ──────────────────────────────

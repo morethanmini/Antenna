@@ -1,0 +1,105 @@
+{
+ "canvas": {
+  "w": 278,
+  "h": 311
+ },
+ "baseline": {
+  "x": 138,
+  "y": 303
+ },
+ "door": 0.582,
+ "pad": {
+  "dx": 34,
+  "w": 173,
+  "top": 69,
+  "foot": 2
+ },
+ "files": {
+  "walk-empty": [
+   "mascot/walk-empty-1.webp",
+   "mascot/walk-empty-2.webp",
+   "mascot/walk-empty-3.webp",
+   "mascot/walk-empty-4.webp",
+   "mascot/walk-empty-5.webp",
+   "mascot/walk-empty-6.webp"
+  ],
+  "walk-carry": [
+   "mascot/walk-carry-1.webp",
+   "mascot/walk-carry-2.webp",
+   "mascot/walk-carry-3.webp",
+   "mascot/walk-carry-4.webp",
+   "mascot/walk-carry-5.webp",
+   "mascot/walk-carry-6.webp"
+  ],
+  "pickup": [
+   "mascot/pickup-1.webp",
+   "mascot/pickup-2.webp",
+   "mascot/pickup-3.webp",
+   "mascot/pickup-4.webp"
+  ],
+  "place": [
+   "mascot/place-1.webp",
+   "mascot/place-2.webp",
+   "mascot/place-3.webp",
+   "mascot/place-4.webp"
+  ],
+  "cheer": [
+   "mascot/cheer-1.webp",
+   "mascot/cheer-2.webp",
+   "mascot/cheer-3.webp",
+   "mascot/cheer-4.webp",
+   "mascot/cheer-5.webp",
+   "mascot/cheer-6.webp"
+  ],
+  "pose": [
+   "mascot/pose-1.webp",
+   "mascot/pose-2.webp",
+   "mascot/pose-3.webp",
+   "mascot/pose-4.webp"
+  ],
+  "pose2": [
+   "mascot/pose2-1.webp",
+   "mascot/pose2-2.webp",
+   "mascot/pose2-3.webp",
+   "mascot/pose2-4.webp"
+  ],
+  "place-of": [
+   "scene/building.webp"
+  ],
+  "portal": [
+   "scene/portal-idle.webp",
+   "scene/portal-charge.webp",
+   "scene/portal-done.webp"
+  ],
+  "cube": [
+   "cube/cube-draft.webp",
+   "cube/cube-sealed.webp",
+   "cube/cube-anchored.webp",
+   "cube/cube-failed.webp"
+  ],
+  "fx": [
+   "effect/trail-flat.webp",
+   "effect/trail-arc.webp",
+   "effect/spark-small.webp",
+   "effect/spark-big.webp",
+   "effect/ring.webp",
+   "effect/think.webp"
+  ],
+  "chain": [
+   "effect/chain-1.webp",
+   "effect/chain-2.webp",
+   "effect/chain-3.webp",
+   "effect/chain-4.webp"
+  ],
+  "pad": [
+   "scene/pad.webp"
+  ],
+  "slot": [
+   "scene/slot.webp"
+  ]
+ },
+ "slot": {
+  "w": 173,
+  "h": 158
+ }
+}

@@ -1,9 +1,9 @@
 /* B-01 인사이트 홈 · /
    담당 스토리 [ANT-FE-HOME]
 
-   백엔드에 조회 API 가 아직 없어 api/insight.ts 의 목업으로 그린다.
-   호출 경로·응답 타입은 명세서대로 맞춰 두었으므로, 백엔드가 붙으면
-   insight.ts 의 MOCK 만 false 로 바꾸면 된다.
+   지수·관심 종목·검색·주목할 예측가는 실 API 다. 남은 목업은 둘뿐이다 —
+   광고(등록된 배너가 아직 없다 · 2026-09-03 결정)와 내 자산(GET /wallet/balance
+   미구현 · ANT-TOKEN-04).
 
    실전 시세는 전일 종가만 제공된다(법적 제약 · 명세서 §7).
    그래서 이 화면 어디에도 "현재가" 라는 말을 쓰지 않는다.
@@ -14,8 +14,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  getActiveAds, getMarketIndices, getTopPredictors, getWalletBalance, getWatchlist,
+  getActiveAds, getMarketIndices, getWalletBalance, getWatchlist,
 } from '../api/insight'
+import { fetchRankings, formatComputedAt, metric } from '../api/rankings'
 import { getBriefings } from '../api/briefings'
 import { useBriefingParam } from '../components/briefingParam'
 import { useAsync } from '../api/useAsync'
@@ -217,7 +218,7 @@ function Hero() {
           </svg>
         </Link>
       </div>
-      <img className="hm-hero-art" src="/assets/character/black_ant/antena-character-black.png" alt=""
+      <img className="hm-hero-art" src="/assets/character/black_ant/antenna-character-black.png" alt=""
            aria-hidden="true" />
     </section>
   )
@@ -423,9 +424,13 @@ function Watchlist() {
   )
 }
 
-/* 한 명만 세운다. 순위표는 E-01 랭킹 화면의 몫이라 여기서 되풀이하지 않는다. */
+/* 한 명만 세운다. 순위표는 E-01 랭킹 화면의 몫이라 여기서 되풀이하지 않는다.
+
+   랭킹 화면(E-01)과 같은 api/rankings.ts 를 쓴다 — 전에는 insight.ts 가 같은 응답을
+   따로 선언했는데, 그쪽 타입이 지표 셋을 non-null 로 적어 두어 배치 전 응답(전부 null)에서
+   toFixed 가 터졌다. */
 function TopPredictor() {
-  const load = useCallback(() => getTopPredictors(1), [])
+  const load = useCallback(() => fetchRankings({ track: 'REAL', limit: 1 }), [])
   const { data, loading, error, reload } = useAsync(load)
   const lead = data?.items[0]
 
@@ -439,19 +444,22 @@ function TopPredictor() {
       {lead && (
         <>
           <div className="hm-lead">
-            <img className="hm-avatar" src="/assets/character/white_ant/antena-profile.png" alt="" aria-hidden="true" />
+            <img className="hm-avatar" src="/assets/character/white_ant/antenna-profile.png" alt="" aria-hidden="true" />
             <div className="hm-lead-id">
               <Link className="hm-lead-name" to={`/channels/${lead.userId}`}>{lead.nickname}</Link>
               <span className="hm-lead-rank">랭킹 {lead.rank}위</span>
             </div>
             <dl className="hm-lead-stats">
               <div><dt>예측</dt><dd className="num">{lead.doneCount}건</dd></div>
-              <div><dt>적중률</dt><dd className="num">{lead.hitRate.toFixed(1)}%</dd></div>
-              <div><dt>평균 오차</dt><dd className="num">{lead.avgError.toFixed(1)}%p</dd></div>
+              <div><dt>적중률</dt><dd className="num">{metric(lead.hitRate, 1, '%')}</dd></div>
+              <div><dt>평균 오차</dt><dd className="num">{metric(lead.avgError, 1, '%p')}</dd></div>
             </dl>
             <Link className="hm-lead-btn" to={`/channels/${lead.userId}`}>프로필 보기</Link>
           </div>
-          <p className="hm-foot">매 영업일 배치 집계 · 기준 {data!.computedAt.slice(0, 10)}</p>
+          {/* 배치 전에는 computedAt 이 null 이다 — 그때는 기준 시각을 적지 않는다 */}
+          {data?.computedAt && (
+            <p className="hm-foot">매 영업일 배치 집계 · 기준 {formatComputedAt(data.computedAt)}</p>
+          )}
         </>
       )}
     </section>

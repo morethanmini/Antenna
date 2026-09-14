@@ -25,6 +25,7 @@ import { useApiQuery } from '../api/useApiQuery'
 import {
   STATUS_LABEL, formatBusinessDate, formatConfirmedAt, type AnchorDetail,
 } from '../api/anchors'
+import { HORIZON_LABEL } from '../api/predictions'
 import AnchorBadge from '../components/AnchorBadge'
 import CopyHash from '../components/CopyHash'
 import ErrorState from '../components/state/ErrorState'
@@ -131,7 +132,7 @@ export default function Anchor() {
               </dl>
 
               {/* 실패 사유는 서버가 준 문자열 그대로 보여준다 — 체인 오류 이름이라
-                  옮기면 검색이 안 된다(예: RootMismatch · BATCH_ID_COLLISION) */}
+                  옮기면 검색이 안 된다(예: RootMismatch · CHAIN_UNAVAILABLE) */}
               {anchor.data.status === 'FAILED' && anchor.data.lastError && (
                 <div className="ac-error" role="alert">
                   <b>{`${STATUS_LABEL.FAILED} 사유`}</b>
@@ -163,6 +164,22 @@ export default function Anchor() {
                     {visible.map((c, i) => (
                       <li key={c.predictionId}>
                         <span className="ac-commit-no num">{i + 1}</span>
+
+                        {/* 무엇이 봉인됐는지 — 해시만 있으면 이 줄이 읽히지 않는다.
+                            종목이 지워진 예측은 코드도 이름도 없다. 그때는 자리를 비운다
+                            (그 커밋도 리프에서 빠지지 않는다 — 전량이 있어야 루트가 나온다). */}
+                        <span className="ac-commit-what">
+                          {c.stockName || c.stockCode ? (
+                            <>
+                              {c.stockCode && <em className="ac-commit-code num">{c.stockCode}</em>}
+                              {c.stockName && <b className="ac-commit-stock">{c.stockName}</b>}
+                            </>
+                          ) : (
+                            <span className="ac-commit-nostock">종목 없음</span>
+                          )}
+                          <span className="ac-commit-horizon">{HORIZON_LABEL[c.horizon]}</span>
+                        </span>
+
                         <CopyHash value={c.commitHash} head={14} tail={10} />
                         {/* 이 커밋이 정말 루트에 들어 있는지 브라우저에서 직접 확인하는 화면으로 */}
                         <Link className="ac-verify" to={`/ledger/verify/${c.predictionId}`}>

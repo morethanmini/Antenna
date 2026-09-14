@@ -44,6 +44,7 @@ class SeasonControllerTest {
     private Long practiceId;
     private Long demoId;
     private Long tickerA;
+    private Long tickerB;
 
     @BeforeEach
     void setUp() {
@@ -57,7 +58,7 @@ class SeasonControllerTest {
         insertStock("A0001");
         insertStock("A0002");
         tickerA = insertTicker(practiceId, "A사", "A0001");
-        insertTicker(practiceId, "B사", "A0002");
+        tickerB = insertTicker(practiceId, "B사", "A0002");
         // 워밍업 두 봉(game_day -1·0)과 플레이 다섯 봉. 진행일이 3 이면 워밍업 2 + 플레이 3 이다.
         insertPrice(tickerA, -1, 900);
         insertPrice(tickerA, 0, 950);
@@ -66,6 +67,10 @@ class SeasonControllerTest {
         }
         em.flush();
         em.clear();
+    }
+
+    private String newsUrl() {
+        return URL + "/" + practiceId + "/news";
     }
 
     private String pricesUrl() {
@@ -296,6 +301,88 @@ class SeasonControllerTest {
     }
 
     @Test
+    @DisplayName("뉴스 — 참가하지 않았으면 한 건도 오지 않는다")
+    void 뉴스_미참가는_빈_목록() throws Exception {
+        insertNews(practiceId, null, 1, "AI_HINT", "1일 요약", null);
+        em.flush();
+        em.clear();
+
+        mockMvc.perform(get(newsUrl()).with(user(me)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("뉴스 — 종목 없이 부르면 시장 전체 요약만, 내 진행일까지 최근 것부터 온다")
+    void 뉴스_시장_전체() throws Exception {
+        insertParticipant(practiceId, Long.valueOf(me), 1, 3);
+        for (int day = 1; day <= 5; day++) {
+            insertNews(practiceId, null, day, "AI_HINT", day + "일 요약", null);
+        }
+        insertNews(practiceId, tickerA, 2, "NEWS", "A사 수주", "https://news.example/a");
+        em.flush();
+        em.clear();
+
+        mockMvc.perform(get(newsUrl()).with(user(me)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(3))
+                .andExpect(jsonPath("$.items[0].gameDay").value(3))
+                .andExpect(jsonPath("$.items[0].kind").value("AI_HINT"))
+                .andExpect(jsonPath("$.items[0].title").value("3일 요약"))
+                .andExpect(jsonPath("$.items[?(@.gameDay > 3)]").isEmpty())
+                .andExpect(jsonPath("$.items[?(@.kind == 'NEWS')]").isEmpty());
+    }
+
+    @Test
+    @DisplayName("뉴스 — 종목을 넣으면 그 종목 기사만, 원문 링크와 함께 온다")
+    void 뉴스_종목() throws Exception {
+        insertParticipant(practiceId, Long.valueOf(me), 1, 3);
+        insertNews(practiceId, tickerA, 2, "NEWS", "A사 수주", "https://news.example/a");
+        insertNews(practiceId, tickerA, 4, "NEWS", "A사 내일 기사", "https://news.example/a4");
+        insertNews(practiceId, tickerB, 1, "NEWS", "B사 기사", "https://news.example/b");
+        insertNews(practiceId, null, 1, "AI_HINT", "1일 요약", null);
+        em.flush();
+        em.clear();
+
+        mockMvc.perform(get(newsUrl()).param("tickerId", String.valueOf(tickerA)).with(user(me)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].title").value("A사 수주"))
+                .andExpect(jsonPath("$.items[0].link").value("https://news.example/a"))
+                .andExpect(jsonPath("$.items[0].gameDay").value(2));
+    }
+
+    @Test
+    @DisplayName("뉴스 — day 를 크게 넣어도 진행일에서 잘린다")
+    void 뉴스_day_로_커닝할_수_없다() throws Exception {
+        insertParticipant(practiceId, Long.valueOf(me), 1, 3);
+        for (int day = 1; day <= 5; day++) {
+            insertNews(practiceId, null, day, "AI_HINT", day + "일 요약", null);
+        }
+        em.flush();
+        em.clear();
+
+        mockMvc.perform(get(newsUrl()).param("day", "60").with(user(me)))
+                .andExpect(jsonPath("$.items.length()").value(3));
+        mockMvc.perform(get(newsUrl()).param("day", "1").with(user(me)))
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].gameDay").value(1));
+    }
+
+    @Test
+    @DisplayName("뉴스 — 남의 시즌 종목 id 로는 못 본다")
+    void 뉴스_다른_시즌_종목은_404() throws Exception {
+        insertParticipant(practiceId, Long.valueOf(me), 1, 3);
+        Long otherTicker = insertTicker(demoId, "A사", "A0001");
+        em.flush();
+        em.clear();
+
+        mockMvc.perform(get(newsUrl()).param("tickerId", String.valueOf(otherTicker)).with(user(me)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("SEASON_TICKER_NOT_FOUND"));
+    }
+
+    @Test
     @DisplayName("로그인하지 않으면 401")
     void 비로그인은_401() throws Exception {
         mockMvc.perform(get(URL)).andExpect(status().isUnauthorized());
@@ -379,6 +466,21 @@ class SeasonControllerTest {
                 .setParameter(4, new BigDecimal(close + 10))
                 .setParameter(5, new BigDecimal(close - 10))
                 .setParameter(6, new BigDecimal(close))
+                .executeUpdate();
+    }
+
+    private void insertNews(Long seasonId, Long tickerId, int gameDay, String kind, String title, String link) {
+        em.createNativeQuery(
+                        """
+                        INSERT INTO season_news (season_id, ticker_id, game_day, kind, title, body, link)
+                        VALUES (?, ?, ?, ?, ?, '발췌', ?)
+                        """)
+                .setParameter(1, seasonId)
+                .setParameter(2, tickerId)
+                .setParameter(3, gameDay)
+                .setParameter(4, kind)
+                .setParameter(5, title)
+                .setParameter(6, link)
                 .executeUpdate();
     }
 

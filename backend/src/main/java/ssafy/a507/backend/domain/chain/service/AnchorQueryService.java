@@ -12,12 +12,14 @@ import ssafy.a507.backend.domain.chain.dto.AnchorItemResponse;
 import ssafy.a507.backend.domain.chain.dto.AnchorListResponse;
 import ssafy.a507.backend.domain.chain.entity.AnchorBatch;
 import ssafy.a507.backend.domain.chain.repository.AnchorBatchRepository;
+import ssafy.a507.backend.domain.market.entity.Stock;
+import ssafy.a507.backend.domain.prediction.entity.Prediction;
 import ssafy.a507.backend.domain.prediction.repository.PredictionCommitRepository;
 
 /**
  * 앵커 배치 조회 (ANT-CHAIN-06, 화면 D-01·D-02).
  *
- * <p>읽기만 한다. 체인에는 묻지 않는다 — "체인에 정말 박혔나" 는 브라우저가 {@code rootOf(batchId)} 로 직접 대조한다
+ * <p>읽기만 한다. 체인에는 묻지 않는다 — "체인에 정말 박혔나" 는 브라우저가 {@code anchoredAt(root)} 로 직접 대조한다
  * (화면설계서 D-03: 서버가 "검증됨" 이라 말해 주면 그건 증명이 아니다). 여기가 내리는 값은 전부 DB 의 것이고,
  * 릴레이어(CHAIN-05)와 인덱서(CHAIN-04)가 채운 그대로다.
  *
@@ -60,8 +62,19 @@ public class AnchorQueryService {
     public AnchorDetailResponse detail(long id) {
         AnchorBatch batch = batches.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ANCHOR_NOT_FOUND, "id"));
-        List<AnchorDetailResponse.Leaf> leaves = commits.findByAnchorBatchOrderByPredictionIdAsc(batch).stream()
-                .map(c -> new AnchorDetailResponse.Leaf(c.getPredictionId(), c.getCommitHash()))
+        /* 종목이 지워진 예측이 있어 stock 은 null 일 수 있다. 여기서 걸러 내면 리프가 모자라
+           루트가 재현되지 않으므로, 값만 비우고 줄은 남긴다. */
+        List<AnchorDetailResponse.Leaf> leaves = commits.findLeavesWithPredictionByAnchorBatch(batch).stream()
+                .map(c -> {
+                    Prediction p = c.getPrediction();
+                    Stock stock = p.getStock();
+                    return new AnchorDetailResponse.Leaf(
+                            c.getPredictionId(),
+                            c.getCommitHash(),
+                            stock == null ? null : stock.getCode(),
+                            stock == null ? null : stock.getName(),
+                            p.getHorizon());
+                })
                 .toList();
         return AnchorDetailResponse.of(batch, leaves);
     }

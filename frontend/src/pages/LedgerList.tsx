@@ -2,28 +2,40 @@
    담당 스토리 [ANT-FE-LEDGER-LIST]
    설계서 docs/화면설계서.md §3 D · §7
 
+   커밋 단위로 읽는다 — 배치 단위가 아니다
+   전에는 앵커 배치 한 줄에 "#418 · 커밋 137건" 이 전부였다. 무엇이 봉인됐는지
+   알 수 없어 원장이 읽히지 않았다. 배치 줄에는 종목을 적을 수도 없다 —
+   한 배치에 여러 종목의 커밋이 함께 묶이기 때문이다.
+   그래서 봉인 한 건을 한 줄로 두고, 배치는 그 줄에서 들어간다.
+
+   배치 상세(D-02)는 그대로 남는다. 그쪽은 리프 전량으로 머클루트를 다시 접는
+   검증용 뷰라 성격이 다르다 — 여기는 "최근에 무엇이 봉인됐나" 를 보는 목록이다.
+
    설계 제약
-   - 상태 표시는 AnchorBadge 를 쓴다. C-01 · C-02 · M-02 와 같은 컴포넌트다
-     (구독 PENDING 도 여기 포함).
-   - 머클루트·트랜잭션 해시는 잘라 보여주더라도 전체 값을 복사할 수 있어야 한다
-     → CopyHash. 체인 탐색기에 붙여 넣어 직접 확인하는 길을 막지 않는다.
+   - 상태 표시는 AnchorBadge 를 쓴다. C-01 · C-02 · M-02 와 같은 컴포넌트다.
+   - 커밋 해시는 잘라 보여주더라도 전체 값을 복사할 수 있어야 한다 → CopyHash.
+     체인 탐색기에 붙여 넣어 직접 확인하는 길을 막지 않는다.
    - 앵커는 배치 B2 가 만든다. 실시간이 아니므로 갱신 주기를 오해하지 않게 표시한다.
 
-   PENDING 행은 txHash · blockNumber · confirmedAt 이 비어 있다.
-   아직 체인에 안 올랐을 뿐이고 실패가 아니다 — 빈 칸을 오류처럼 그리지 않는다. */
+   아직 배치에 안 묶인 커밋은 배치 자리가 비어 온다(anchorId 가 null).
+   봉인은 끝났고 다음 배치를 기다리는 중이라 실패가 아니다 — 빈 칸을 오류처럼
+   그리지 않고 "다음 배치 대기" 라고 적는다.
+
+   방향·목표가·작성자는 응답에 없다. 판정 전이면 작성자·구독자만 봐야 하는 값이라
+   원장이 내리면 E-02·C-03 의 게이팅을 우회한다(서버 CommitItemResponse 주석). */
 import { Link } from 'react-router-dom'
 import { useCursorList } from '../api/useCursorList'
-import {
-  formatBusinessDate, formatConfirmedAt, type Anchor,
-} from '../api/anchors'
+import { formatBusinessDate, type LedgerCommit } from '../api/anchors'
+import { HORIZON_LABEL } from '../api/predictions'
 import AnchorBadge from '../components/AnchorBadge'
 import CopyHash from '../components/CopyHash'
+import PredictionStatus from '../components/prediction/PredictionStatus'
 import EmptyState from '../components/state/EmptyState'
 import ErrorState from '../components/state/ErrorState'
 import '../styles/screens/ledger.css'
 
 export default function LedgerList() {
-  const { items, hasNext, loading, error, loadMore, reload } = useCursorList<Anchor>('/anchors')
+  const { items, hasNext, loading, error, loadMore, reload } = useCursorList<LedgerCommit>('/commits')
 
   return (
     <main className="main">
@@ -33,7 +45,7 @@ export default function LedgerList() {
           <p>봉인된 예측이 배치로 묶여 체인에 기록된 기록입니다</p>
         </div>
 
-        {/* 배치 주기를 알려 준다 — 방금 등록한 예측이 여기 없다고 고장으로 읽히면 안 된다 */}
+        {/* 배치 주기를 알려 준다 — 방금 등록한 예측이 "대기" 로 있는 것을 고장으로 읽으면 안 된다 */}
         <p className="lg-note">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="9" /><path d="M12 7.5V12l3 1.8" />
@@ -45,67 +57,66 @@ export default function LedgerList() {
 
         {!error && items.length === 0 && !loading && (
           <EmptyState
-            title="앵커된 배치가 없습니다"
-            hint="예측이 봉인되면 배치로 묶여 체인에 기록됩니다"
+            title="봉인된 커밋이 없습니다"
+            hint="예측을 등록하면 커밋이 만들어지고 다음 배치에 담깁니다"
           />
         )}
 
         {items.length > 0 && (
           <ul className="lg-list">
-            {items.map((a) => (
-              <li key={a.id} className="lg-item">
-                <div className="lg-head">
-                  <div className="lg-title">
-                    {/* 배치 번호가 곧 온체인 batchId 다 */}
-                    <span className="lg-batch num">{`#${a.id}`}</span>
-                    <span className="lg-date">{formatBusinessDate(a.businessDate)}</span>
-                  </div>
-                  <AnchorBadge status={a.status} />
+            {items.map((c) => (
+              <li key={c.predictionId} className="lg-item">
+                {/* ── 무엇을 봉인했나 ───────────────────── */}
+                <div className="lg-what">
+                  {c.stockName || c.stockCode ? (
+                    <>
+                      <b className="lg-stock">{c.stockName ?? c.stockCode}</b>
+                      {/* 이름이 있을 때만 코드를 덧붙인다. 이름이 없으면 위가 이미 코드다 */}
+                      {c.stockName && c.stockCode && (
+                        <em className="lg-code num">{c.stockCode}</em>
+                      )}
+                    </>
+                  ) : (
+                    /* 종목이 지워진 예측. 빈칸으로 두면 데이터가 깨진 것처럼 읽힌다 */
+                    <b className="lg-stock is-none">종목 없음</b>
+                  )}
+                  <span className="lg-horizon">{HORIZON_LABEL[c.horizon]}</span>
+                  <PredictionStatus status={c.status} />
+
+                  {/* 이 커밋이 정말 루트에 들어 있는지 브라우저에서 직접 확인하는 화면으로.
+                      필드가 둘뿐이라 아래 따로 줄을 두면 카드가 비어 보인다 — 머리줄 끝에 붙인다 */}
+                  <Link className="lg-go" to={`/ledger/verify/${c.predictionId}`}>
+                    검산<em aria-hidden="true">›</em>
+                  </Link>
                 </div>
 
+                {/* ── 어디에 기록됐나 ───────────────────── */}
                 <dl className="lg-fields">
                   <div className="lg-field">
-                    <dt>머클루트</dt>
-                    <dd><CopyHash value={a.merkleRoot} /></dd>
-                  </div>
-
-                  <div className="lg-field">
                     <dt>커밋</dt>
-                    <dd className="num">{`${a.commitCount.toLocaleString('ko-KR')}건`}</dd>
+                    <dd><CopyHash value={c.commitHash} /></dd>
                   </div>
 
-                  {/* 아래 셋은 확정된 배치에만 있다. PENDING·FAILED 는 자리를 비운다 */}
-                  {a.txHash && (
+                  {c.anchorId !== null ? (
                     <div className="lg-field">
-                      <dt>트랜잭션</dt>
-                      <dd><CopyHash value={a.txHash} /></dd>
+                      <dt>배치</dt>
+                      <dd className="lg-batch">
+                        {/* routes.ts 의 D-02 경로가 /ledger/anchors/:id 다 */}
+                        <Link className="num" to={`/ledger/anchors/${c.anchorId}`}>{`#${c.anchorId}`}</Link>
+                        {c.businessDate && (
+                          <span className="lg-date">{formatBusinessDate(c.businessDate)}</span>
+                        )}
+                        {c.anchorStatus && <AnchorBadge status={c.anchorStatus} />}
+                      </dd>
                     </div>
-                  )}
-
-                  {a.blockNumber !== null && (
+                  ) : (
                     <div className="lg-field">
-                      <dt>블록</dt>
-                      <dd className="num">{a.blockNumber.toLocaleString('ko-KR')}</dd>
-                    </div>
-                  )}
-
-                  {a.confirmedAt && (
-                    <div className="lg-field">
-                      <dt>확정</dt>
-                      <dd>{formatConfirmedAt(a.confirmedAt)}</dd>
+                      <dt>배치</dt>
+                      {/* 실패가 아니다. 봉인은 끝났고 묶이기를 기다리는 중이다 */}
+                      <dd className="lg-waiting">다음 배치 대기</dd>
                     </div>
                   )}
                 </dl>
-
-                <div className="lg-foot">
-                  {/* 장부 컨트랙트는 배치마다 같지만, 어느 장부에 올렸는지 밝혀 둔다 */}
-                  <span className="lg-contract">
-                    {'장부 '}<CopyHash value={a.contractAddress} head={8} tail={6} />
-                    <span className="lg-chain num">{`chainId ${a.chainId}`}</span>
-                  </span>
-                  {/* routes.ts 의 D-02 경로가 /ledger/anchors/:id 다 */}
-                  <Link className="lg-go" to={`/ledger/anchors/${a.id}`}>배치 상세<em aria-hidden="true">›</em></Link>
-                </div>
               </li>
             ))}
           </ul>

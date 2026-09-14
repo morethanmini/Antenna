@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * ANT-DATA-03 — GET /api/v1/stocks, GET /api/v1/stocks/{code}/prices 의 AC 검증.
+ * ANT-DATA-05 — GET /api/v1/stocks/{code} 요약 헤더.
  *
  * <p>읽기만 하는 API 라 H2 로 충분하다. PostgreSQL 이 필요한 것은 ON CONFLICT 를 쓰는 적재
  * 경로뿐이고 그쪽은 MarketUpsertRepositoryTest 가 진짜 DB 로 본다.
@@ -45,7 +46,7 @@ class StockControllerTest {
         insertStock("111111", "폐지종목", null, "KOSPI", false);
 
         insertQuote("005930", PREVIOUS, "70000");
-        insertQuote("005930", LATEST, "71500");
+        insertQuote("005930", LATEST, "71500", 1000L);
         insertQuote("035720", LATEST, "41250");
         insertQuote("900000", PREVIOUS, "1200");
         insertQuote("111111", LATEST, "500");
@@ -166,6 +167,80 @@ class StockControllerTest {
                 .andExpect(jsonPath("$.field").value("from"));
     }
 
+    // ── GET /stocks/{code} ──────────────────────────────────
+
+    @Test
+    @DisplayName("요약 헤더는 KRX 종목명과 그 종목의 마지막 종가·전일 대비·거래대금을 한 번에 준다")
+    void 요약_헤더를_준다() throws Exception {
+        em.createNativeQuery("UPDATE stocks SET per = 12.34, pbr = 1.20 WHERE code = '005930'").executeUpdate();
+
+        mockMvc.perform(get(URL + "/005930").with(user("1")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("005930"))
+                .andExpect(jsonPath("$.name").value("삼성전자"))
+                .andExpect(jsonPath("$.sector").value("반도체"))
+                .andExpect(jsonPath("$.market").value("KOSPI"))
+                .andExpect(jsonPath("$.prevClose").value(71500))
+                .andExpect(jsonPath("$.asOf").value("2026-08-28"))
+                .andExpect(jsonPath("$.change").value(1500))
+                .andExpect(jsonPath("$.changeRate").value(2.14))
+                // 종가 × 거래량 근사 — daily_quotes 에 거래대금 컬럼이 없다.
+                .andExpect(jsonPath("$.tradingValue").value(71500000))
+                .andExpect(jsonPath("$.per").value(12.34))
+                .andExpect(jsonPath("$.pbr").value(1.2))
+                .andExpect(jsonPath("$.predictionCount").value(0))
+                .andExpect(jsonPath("$.watching").value(false));
+    }
+
+    @Test
+    @DisplayName("전역 최신일에 시세가 없는 종목은 자기 마지막 거래일 종가를 준다 — 비교할 전날이 없으면 대비는 빈 칸")
+    void 거래정지_종목은_자기_마지막_종가다() throws Exception {
+        mockMvc.perform(get(URL + "/900000").with(user("1")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.prevClose").value(1200))
+                .andExpect(jsonPath("$.asOf").value("2026-08-27"))
+                .andExpect(jsonPath("$.change").value(nullValue()))
+                .andExpect(jsonPath("$.changeRate").value(nullValue()))
+                .andExpect(jsonPath("$.tradingValue").value(nullValue()));
+    }
+
+    @Test
+    @DisplayName("관심 종목이면 watching 이 true 다")
+    void 관심_종목이면_watching() throws Exception {
+        Long userId = insertUser("관심러");
+        em.createNativeQuery("""
+                        INSERT INTO watchlist_items (user_id, stock_code, created_at)
+                        VALUES (?, '005930', CURRENT_TIMESTAMP)
+                        """)
+                .setParameter(1, userId)
+                .executeUpdate();
+
+        mockMvc.perform(get(URL + "/005930").with(user(String.valueOf(userId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.watching").value(true));
+    }
+
+    @Test
+    @DisplayName("없는 종목은 404 STOCK_NOT_FOUND")
+    void 없는_종목_요약은_404() throws Exception {
+        mockMvc.perform(get(URL + "/999999").with(user("1")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("STOCK_NOT_FOUND"));
+    }
+
+    private Long insertUser(String nickname) {
+        em.createNativeQuery("""
+                        INSERT INTO users (nickname, role, status, created_at, updated_at)
+                        VALUES (?, 'USER', 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                        """)
+                .setParameter(1, nickname)
+                .executeUpdate();
+        return ((Number) em.createNativeQuery("SELECT id FROM users WHERE nickname = ?")
+                        .setParameter(1, nickname)
+                        .getSingleResult())
+                .longValue();
+    }
+
     private void insertStock(String code, String name, String sector, String market, boolean listed) {
         em.createNativeQuery(
                         """
@@ -189,6 +264,19 @@ class StockControllerTest {
                 .setParameter(1, code)
                 .setParameter(2, tradeDate)
                 .setParameter(3, new java.math.BigDecimal(close))
+                .executeUpdate();
+    }
+
+    private void insertQuote(String code, LocalDate tradeDate, String close, long volume) {
+        em.createNativeQuery(
+                        """
+                        INSERT INTO daily_quotes (stock_code, trade_date, close, volume, collected_at)
+                        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                        """)
+                .setParameter(1, code)
+                .setParameter(2, tradeDate)
+                .setParameter(3, new java.math.BigDecimal(close))
+                .setParameter(4, volume)
                 .executeUpdate();
     }
 }

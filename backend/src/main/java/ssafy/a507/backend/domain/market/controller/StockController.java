@@ -13,6 +13,7 @@ import ssafy.a507.backend.common.security.CurrentUserProvider;
 import ssafy.a507.backend.domain.market.dto.SectorSummaryResponse;
 import ssafy.a507.backend.domain.market.dto.StockListResponse;
 import ssafy.a507.backend.domain.market.dto.StockPriceListResponse;
+import ssafy.a507.backend.domain.market.dto.StockSummaryResponse;
 import ssafy.a507.backend.domain.market.entity.Stock;
 import ssafy.a507.backend.domain.market.service.StockService;
 
@@ -62,6 +63,12 @@ public class StockController {
     @GetMapping("/sectors")
     public SectorSummaryResponse sectors() {
         return stockService.sectors();
+    }
+
+    /** 요약 헤더 — 종목 상세 머리(ANT-DATA-05). 리터럴 경로 /sectors 가 이 패턴보다 먼저 잡힌다. */
+    @GetMapping("/{code}")
+    public StockSummaryResponse summary(@PathVariable String code) {
+        return stockService.summary(currentUserProvider.currentUserId(), code);
     }
 
     /**

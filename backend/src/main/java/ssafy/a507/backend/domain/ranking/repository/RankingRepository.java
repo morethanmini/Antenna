@@ -40,6 +40,25 @@ public interface RankingRepository extends JpaRepository<Ranking, Long> {
             @Param("fromRank") int fromRank,
             Limit limit);
 
+    /**
+     * 통합 검색의 예측가 칸(ANT-DATA-05) — 한 스냅샷(트랙·필터) 안에서 닉네임 부분일치, 순위순.
+     *
+     * @param contains 소문자 · LIKE 이스케이프('!')를 마친 {@code %q%}
+     */
+    @Query("""
+            select r from Ranking r
+             join fetch r.user u
+             where r.track = :track
+               and r.filterKey = :filterKey
+               and lower(u.nickname) like :contains escape '!'
+             order by r.rank asc, u.id asc
+            """)
+    List<Ranking> searchByNickname(
+            @Param("track") Track track,
+            @Param("filterKey") String filterKey,
+            @Param("contains") String contains,
+            Limit limit);
+
     /** 내 순위 한 줄(ANT-RANK-03). 없으면 빈 값 — 배치 전이거나 표본이 모자라 랭킹에 안 든 것이다. */
     Optional<Ranking> findByTrackAndFilterKeyAndUserId(Track track, String filterKey, Long userId);
 
