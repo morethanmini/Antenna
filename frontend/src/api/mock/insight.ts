@@ -6,7 +6,7 @@
 
    지연을 조금 주는 이유: 로딩 상태를 화면에서 실제로 보게 하려는 것이다. */
 import type {
-  ActiveAd, IndexQuote, RankingRow, WalletBalance, WatchlistRow,
+  ActiveAd, IndexQuote, WalletBalance, WatchlistRow,
 } from '../insight'
 
 const delay = <T,>(value: T, ms = 320) =>
@@ -42,17 +42,6 @@ export const watchlist = () => delay<{ items: WatchlistRow[] }>({
     { stockCode: '247540', name: '에코프로비엠', prevClose: 167200, changeRate: -1.36, series: walk(109, 30, 174000, 0.024) },
     { stockCode: '005380', name: '현대차', prevClose: 242000, changeRate: 0.83, series: walk(113, 30, 238000, 0.011) },
   ],
-})
-
-export const rankings = (limit: number) => delay<{ computedAt: string; items: RankingRow[] }>({
-  computedAt: '2026-08-31T06:00:00+09:00',
-  items: ([
-    { rank: 1, userId: 41, nickname: '반도체훈련소', score: 921, hitRate: 78.6, avgError: 2.4, doneCount: 128 },
-    { rank: 2, userId: 77, nickname: '차트도사', score: 884, hitRate: 74.1, avgError: 2.9, doneCount: 96 },
-    { rank: 3, userId: 12, nickname: '느린손', score: 851, hitRate: 71.8, avgError: 3.1, doneCount: 154 },
-    { rank: 4, userId: 63, nickname: '배당수집가', score: 828, hitRate: 70.2, avgError: 3.4, doneCount: 71 },
-    { rank: 5, userId: 88, nickname: '이차전지관찰', score: 802, hitRate: 68.9, avgError: 3.6, doneCount: 89 },
-  ] as RankingRow[]).slice(0, limit),
 })
 
 /* 홈 배너는 여러 장을 돌려 보여주므로 목업도 여러 장 준다.

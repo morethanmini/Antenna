@@ -426,8 +426,10 @@ export type PredictionDistribution = {
    판정 완료는 전체 공개다(§5 개정). 작성자·적중 여부·오차율에 잠금이 없어
    locked 같은 칸이 필요 없다. */
 export type SettledPrediction = {
-  id: string
-  author: { userId: string; nickname: string; avatarUrl: string | null }
+  /** 서버가 숫자로 준다(Prediction.id) — 링크에 그대로 끼워 쓴다 */
+  id: number
+  /** avatarUrl 은 지금 항상 null 이다 — users 에 사진 칸이 없다(서버 SettledTodayResponse.Author) */
+  author: { userId: number; nickname: string; avatarUrl: string | null }
   /** 판정 후라 방향·목표가에 잠금이 없다(§5 개정) */
   direction: Direction
   targetPrice: number
@@ -444,12 +446,8 @@ export type SettledPrediction = {
  * 배치 전에는 늘 비어 있으므로, 빈 상태를 "없습니다" 로 알릴 일이 아니다.
  */
 export function getSettledToday(code: string) {
-  if (MOCK) return mock.settledToday(code)
   return api.get<{ items: SettledPrediction[] }>(`/stocks/${code}/predictions/settled-today`)
 }
-
-/** 목업이 기준가를 지어내지 않도록 화면이 건네는 값. 서버가 붙으면 무시된다 */
-export type DistributionBase = { basePrice: number | null; asOf: string | null }
 
 /**
  * 판정 대기 중인 예측의 분포.
@@ -457,12 +455,10 @@ export type DistributionBase = { basePrice: number | null; asOf: string | null }
  * 판정이 끝난 예측은 세지 않는다 — 호가창은 지금 걸려 있는 물량을 보는 것이고,
  * 끝난 예측은 기록이다. 둘을 한 그림에 더하면 어느 쪽도 읽을 수 없다.
  *
- * `base` 는 **목업 전용**이다. 목업이 기준가를 난수로 지어내면 같은 화면 머리의
- * 전일 종가와 다른 값이 호가창 아래에 뜬다 — 실제로 269,500원과 205,000원이
- * 나란히 보였다. 서버가 붙으면 응답의 basePrice 를 쓰므로 이 인자는 버려진다.
+ * 기준가는 응답의 basePrice 를 쓴다. 목업 때는 화면이 전일 종가를 인자로 건넸는데
+ * (목업이 난수로 지어낸 기준가가 화면 머리와 어긋나서), 서버는 그 값을 받지 않는다.
  */
-export function getPredictionDistribution(code: string, base?: DistributionBase) {
-  if (MOCK) return mock.distribution(code, base)
+export function getPredictionDistribution(code: string) {
   return api.get<PredictionDistribution>(`/stocks/${code}/predictions/distribution`)
 }
 

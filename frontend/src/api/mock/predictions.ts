@@ -1,17 +1,15 @@
 /* 예측 목업. **서버에 아직 API 가 없는 것만 남았다.**
 
-   등록(POST /predictions)과 슬롯(GET /predictions/slots)은 ANT-PRED-01 이 들어와
-   실제 호출로 넘어갔고, 그 목업은 지웠다. 남은 둘은 명세에 엔드포인트가 없다:
+   등록·슬롯(ANT-PRED-01)에 이어 오늘 판정·분포(ANT-PRED-06)까지 실제 호출로 넘어가
+   그 목업은 지웠다. 남은 하나:
 
-     GET /predictions/{id}                         예측 상세 (C-03)
-     GET /stocks/{code}/predictions/distribution  이 종목의 예측 분포(호가창)
+     GET /predictions/{id}  예측 상세 (C-03) — ANT-PRED-05 가 구독 게이팅까지 붙이는 중
 
-   둘 다 §5 게이팅을 재현한다 — 판정 완료는 전부 공개하고, 미판정은 근거만 잠근다.
+   §5 게이팅을 재현한다 — 판정 완료는 전부 공개하고, 미판정은 근거만 잠근다.
    화면이 잠금 카드와 구독 CTA 를 제대로 그리는지 눈으로 확인하려는 것이다. */
 import { phaseOf } from '../predictions'
 import type {
-  Direction, DistributionBase, Horizon, PredictionBucket, PredictionDetail,
-  PredictionDistribution, PredictionStatus, SettledPrediction,
+  Direction, Horizon, PredictionDetail, PredictionStatus,
 } from '../predictions'
 
 const delay = <T,>(value: T, ms: number) =>
@@ -109,93 +107,6 @@ function buildRows(code: string): MockRow[] {
       channelId: locked ? a.userId : null,
     }
   })
-}
-
-/* 오늘 판정된 예측. 판정 완료(HIT/MISS) 중 앞의 몇 건을 오늘 것으로 친다 —
-   목업에는 판정 시각이 없어서다. 서버가 붙으면 이 함수는 사라진다. */
-export function settledToday(code: string): Promise<{ items: SettledPrediction[] }> {
-  const rows = buildRows(code).filter((r) => phaseOf(r.status) === 'JUDGED')
-  return delay({
-    items: rows.map((r) => ({
-      id: r.id,
-      author: {
-        userId: r.author.userId,
-        nickname: r.author.nickname,
-        /* 목업에는 사람마다 다른 사진이 없다. 화면이 기본 얼굴로 메우도록 null 로 준다 */
-        avatarUrl: null,
-      },
-      direction: r.direction,
-      targetPrice: r.targetPrice,
-      status: r.status as 'HIT' | 'MISS',
-      errorRate: r.errorRate ?? 0,
-    })),
-  }, 320)
-}
-
-/* ── 예측 분포 (호가창) ────────────────────────────────────
-   서버가 할 일을 흉내낸다 — 판정 대기 건만 세고, 전일 종가 대비 %로 구간을 잘라
-   구간별 인원만 낸다. 개별 예측은 내려가지 않는다.
-
-   열 명뿐인 목업으로는 호가창이 휑해서, 구간마다 사람을 더 얹어 모양을 만든다.
-   서버가 붙으면 이 함수 전체가 사라진다. */
-/* 5% 폭으로 ±20% 까지. 구간을 좁게 잡으면(2%) 줄이 스물 가까이 되어 호가창이
-   길어지고 구간마다 한두 명씩 흩어져 분포 모양이 안 보인다. 넓게 잡을수록
-   "어디에 몰렸나" 가 한눈에 들어온다. */
-const STEP_PCT = 5
-const EDGE_PCT = 20   // ±20% 밖은 맨 끝 구간에 몰아넣는다
-
-export function distribution(code: string, base?: DistributionBase): Promise<PredictionDistribution> {
-  const rnd = seeded(`${code}dist`)
-  const rows = buildRows(code).filter((r) => phaseOf(r.status) === 'PENDING')
-  /* 화면이 준 전일 종가를 그대로 쓴다 — 지어내면 같은 화면 머리의 종가와 다른 값이
-     호가창 아래에 뜬다. 못 받았을 때만(요약이 아직 안 왔거나 거래정지) 난수로 만든다.
-     난수 쪽은 100원 단위로 떨군다 — 구간 경계도 같은 단위라, 맞춰 두지 않으면
-     "전일 종가 205,014원" 과 0% 경계 "205,000" 이 어긋나 보인다. */
-  const basePrice = base?.basePrice != null && base.basePrice > 0
-    ? base.basePrice
-    : Math.round((100000 + Math.floor(seeded(`${code}p`)() * 200000)) / 100) * 100
-
-  /* -20 ~ +20 을 5% 씩 자르고 양 끝에 열린 구간을 하나씩 붙인다 */
-  const edges: number[] = []
-  for (let p = -EDGE_PCT; p <= EDGE_PCT; p += STEP_PCT) edges.push(p)
-
-  const price = (pct: number) => Math.round((basePrice * (1 + pct / 100)) / 100) * 100
-  const buckets: PredictionBucket[] = []
-
-  buckets.push({ fromPct: null, toPct: -EDGE_PCT, fromPrice: null, toPrice: price(-EDGE_PCT), count: 0 })
-  for (let i = 0; i < edges.length - 1; i++) {
-    buckets.push({
-      fromPct: edges[i], toPct: edges[i + 1],
-      fromPrice: price(edges[i]), toPrice: price(edges[i + 1]),
-      count: 0,
-    })
-  }
-  buckets.push({ fromPct: EDGE_PCT, toPct: null, fromPrice: price(EDGE_PCT), toPrice: null, count: 0 })
-
-  /* 실제 예측을 구간에 떨어뜨린다 */
-  const drop = (target: number) => {
-    const pct = ((target - basePrice) / basePrice) * 100
-    if (pct < -EDGE_PCT) return buckets[0]
-    if (pct >= EDGE_PCT) return buckets[buckets.length - 1]
-    return buckets[1 + Math.floor((pct + EDGE_PCT) / STEP_PCT)]
-  }
-  for (const r of rows) drop(r.targetPrice).count += 1
-
-  // 목업을 덜 휑하게. 가운데 구간에 더 몰리도록 종 모양으로 얹는다
-  buckets.forEach((b, i) => {
-    const mid = (buckets.length - 1) / 2
-    const weight = 1 - Math.abs(i - mid) / (mid + 1)
-    b.count += Math.floor(rnd() * 26 * weight * weight)
-  })
-
-  return delay({
-    stockCode: code,
-    basePrice,
-    asOf: base?.asOf ?? '2026-09-09',
-    stepPct: STEP_PCT,
-    buckets,
-    total: buckets.reduce((s, b) => s + b.count, 0),
-  }, 300)
 }
 
 /* C-03 상세 목업이 없는 id 로 들어왔을 때 만들어 낼 씨앗.

@@ -345,11 +345,7 @@ export default function PredictTab({ code, summary, picked, onPick, onGoInfo, fo
      먼저 확인하고 내 판단을 적는 흐름이라 둘을 나란히 둔다. */
   return (
     <div className="sd-grid">
-      <PredictionDepth
-        code={code}
-        base={{ basePrice: summary?.prevClose ?? null, asOf: summary?.asOf ?? null }}
-        span={6}
-      />
+      <PredictionDepth code={code} span={6} />
 
       <Panel
         title="예측 등록하기"
