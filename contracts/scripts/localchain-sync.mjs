@@ -207,23 +207,30 @@ async function warnIfBackendRunning() {
   }
 }
 
+/**
+ * 코드 유무는 ethers provider 가 아니라 RPC 로 바로 묻는다(09-14 실측 버그). ethers 는 같은 요청을 250ms 캐시하고 타이머로 지우는데,
+ * 배포를 spawnSync 로 돌리는 동안 이벤트 루프가 막혀 그 타이머가 못 돈다 — 배포 직후 확인이 배포 <b>전</b> 결과("코드 없음")를 받는다.
+ */
+const codeAt = (address) => rpc('eth_getCode', [address, 'latest']);
+
 async function main() {
   const chainId = await waitForChain();
   if (chainId !== LOCAL_CHAIN_ID) {
     throw new Error(`chainId ${chainId} — 로컬 체인(31337)이 아니다. 멈춘다`);
   }
-  const provider = new JsonRpcProvider(RPC_URL, Number(LOCAL_CHAIN_ID), { staticNetwork: true });
 
-  if ((await provider.getCode(COMMIT_ANCHOR)) !== '0x') {
+  if ((await codeAt(COMMIT_ANCHOR)) !== '0x') {
     log('컨트랙트가 이미 있다 — 이 노드에서는 이미 맞춘 체인이다. 할 일 없음');
     return;
   }
   deploy();
   for (const address of [COMMIT_ANCHOR, PREDICT_TOKEN]) {
-    if ((await provider.getCode(address)) === '0x') {
+    if ((await codeAt(address)) === '0x') {
       throw new Error(`배포 뒤 ${address} 에 코드가 없다 — deploy.js 의 배포 순서가 바뀌었나. deployments/README.md 표와 여기 상수를 같이 고쳐라`);
     }
   }
+  // provider 는 배포 뒤에 만든다 — 앵커 재전송(서명·영수증 대기)에만 쓴다. 위와 같은 캐시 함정을 피한다.
+  const provider = new JsonRpcProvider(RPC_URL, Number(LOCAL_CHAIN_ID), { staticNetwork: true });
   log(`배포 확인 — CommitAnchor ${COMMIT_ANCHOR} · PredictToken ${PREDICT_TOKEN}`);
 
   const env = readEnvFile(BACKEND_ENV_FILE);
