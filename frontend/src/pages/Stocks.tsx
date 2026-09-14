@@ -1,14 +1,16 @@
 /* B-02 종목 탐색 · /stocks
    담당 스토리 [ANT-FE-STOCKS]
 
-   2026-09-11 개편 — **마켓맵이 첫 화면이다.** 전에는 열 줄짜리 목록에 "더 보기"
-   였는데, 그 화면으로는 "오늘 시장이 어디로 움직였나" 를 알 수 없었다. 열 줄을
-   읽고 또 열 줄을 부르는 동안 전체 그림은 끝내 안 나온다. 한국경제 marketmap 을
-   참고해 전 종목을 한 판에 깔고, 섹터를 눌러 파고드는 방식으로 바꿨다.
+   보기가 둘이다. **목록이 첫 화면이고**(2026-09-14), 마켓맵은 그 옆 탭이다.
 
-   목록을 없애지는 않았다 — PER 범위·예측 방향처럼 마켓맵으로는 못 거는 조건이
-   있고, 종목별 PER·PBR·예측 현황을 숫자로 나란히 보는 일은 목록이 낫다.
-   탭으로 나란히 둔다.
+   마켓맵은 2026-09-11에 들였다 — 열 줄짜리 목록에 "더 보기" 뿐이던 화면으로는
+   "오늘 시장이 어디로 움직였나" 를 알 수 없었다. 열 줄을 읽고 또 열 줄을 부르는
+   동안 전체 그림은 끝내 안 나온다. 한국경제 marketmap 을 참고해 전 종목을 한 판에
+   깔고, 섹터를 눌러 파고들 수 있게 했다.
+
+   그래도 들어오면 목록이 먼저다. PER 범위·예측 방향처럼 마켓맵으로는 못 거는
+   조건이 있고, 종목별 PER·PBR·예측 현황을 숫자로 나란히 보는 일은 목록이 낫다.
+   판을 보려는 사람은 탭 하나만 누르면 된다.
 
    필터 상태(filter)는 이 페이지가 들고 두 보기가 나눠 쓴다. 마켓맵은 그중
    관심 여부만 쓰고 누르는 즉시 적용하며, 나머지 조건과 "필터 적용" 버튼은
@@ -21,7 +23,7 @@ import StockTable from '../components/stocks/StockTable'
 import '../styles/screens/stocks.css'
 
 /**
- * 보기 전환 탭. **적히는 차례대로** 둔다(2026-09-14에 목록을 앞으로 옮겼다).
+ * 보기 전환 탭. **적히는 차례대로** 화면에 선다(2026-09-14에 목록을 앞으로 옮겼다).
  *
  * 객체의 키 순서에 기대지 않고 배열로 두는 이유 — 순서가 화면에 그대로 드러나는
  * 값이라, 나중에 누가 키를 정렬하거나 타입을 손봤을 때 조용히 뒤바뀌면 안 된다.
@@ -33,9 +35,13 @@ const VIEWS = [
 
 type View = (typeof VIEWS)[number]['key']
 
+/** 들어왔을 때 켜져 있는 탭. 첫 칸과 같아야 한다 — 두 번째 탭이 켜진 채로 열리면
+ *  사용자가 누르지도 않은 것이 눌려 있는 꼴이 된다 */
+const FIRST_VIEW: View = VIEWS[0].key
+
 export default function Stocks() {
   const [filter, setFilter] = useState<StockFilter>(EMPTY_FILTER)
-  const [view, setView] = useState<View>('map')
+  const [view, setView] = useState<View>(FIRST_VIEW)
 
   /* 마켓맵에는 조건을 **추려서** 넘긴다.
 
@@ -56,24 +62,20 @@ export default function Stocks() {
           하려는 것이고, 목록 탭에는 그럴 이유가 없다(stocks.css 의 st-fit).
           화면 이름인 stocks-page 는 routes.ts 가 body 에 붙이므로 쓰지 않는다. */}
       <div className={`main-inner${view === 'map' ? ' st-fit' : ''}`}>
-        {/* .st-hero 는 가로 flex 다 — 제목과 설명줄을 세로로 쌓으려면 이 div 로
-            한 번 묶어야 한다. 풀면 둘이 나란히 선다. */}
+        {/* 설명줄을 뺐다(2026-09-14). 제목이 이미 "오늘 시장은 어디로 움직였나요?"
+            라, 판을 보고 종목으로 좁히라는 말을 한 줄 더 적을 이유가 없다.
+            감싸던 div 도 함께 푼다 — 제목 하나뿐이면 세로로 쌓을 것이 없다. */}
         <header className="st-hero">
-          <div>
-            <h1>오늘 시장은 어디로 움직였나요?</h1>
-            <p className="st-hero-sub">
-              섹터별로 깔아 놓은 판에서 흐름을 먼저 보고, 종목으로 좁혀 들어가세요.
-            </p>
-          </div>
+          <h1>오늘 시장은 어디로 움직였나요?</h1>
         </header>
 
         {/* 보기 전환과, 마켓맵이 쓰는 조건 하나 */}
         <div className="st-views">
-          <div className="st-tabs" role="tablist" aria-label="보기 방식">
+          <div className="st-viewtabs" role="tablist" aria-label="보기 방식">
             {VIEWS.map((v) => (
               <button
                 key={v.key} type="button" role="tab" id={`st-tab-${v.key}`}
-                className={`st-tab${view === v.key ? ' on' : ''}`}
+                className={`st-viewtab${view === v.key ? ' on' : ''}`}
                 aria-selected={view === v.key} aria-controls={`st-view-${v.key}`}
                 onClick={() => setView(v.key)}
               >
