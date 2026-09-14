@@ -62,6 +62,13 @@ export type StockListItem = {
   changeRate: number | null
   per: number | null
   pbr: number | null
+  /**
+   * 시가총액(원) = 종가 × 상장주식수. 히트맵의 **칸 크기 기준**이다(MarketMap).
+   *
+   * 거래가 정지됐거나 상장주식수를 못 받은 종목은 null 이다. 0 이 아니다 —
+   * 0 으로 오면 폭 0 짜리 칸이 되어 종목이 판에서 사라진다.
+   */
+  marketCap: number | null
   /** 판정 대기 중인 예측 건수 */
   predictionCount: number
   /** 그중 UP 비율 0~100. 예측이 없으면 null */
@@ -88,6 +95,10 @@ export type SectorSummary = {
 
 export type StockFilter = {
   sector?: string
+  /**
+   * 상장 시장. **화면에 이 값을 거는 컨트롤은 없다**(2026-09-11) — 이 서비스는
+   * 코스피만 다뤄 고를 것이 하나뿐이다. 서버가 받는 파라미터라 자리는 남겨 둔다.
+   */
   market?: Market
   sentiment?: Sentiment
   perMin?: number
@@ -110,6 +121,38 @@ export function fetchStocks(filter: StockFilter) {
     const q = { ...filter, size: STOCK_PAGE_SIZE, ...query }
     return api.get<StockList>('/stocks', { query: q })
   }
+}
+
+/** 서버가 한 번에 내려 주는 상한. 명세 §종목 — 기본 20, 최대 100. */
+const MAX_SIZE = 100
+
+/** 커서를 따라가는 횟수 뚜껑. 서버가 hasNext 를 계속 참으로 주면 여기서 멈춘다 */
+const MAX_PAGES = 12
+
+/**
+ * 전 종목을 한 번에. 히트맵(B-02)이 쓴다 — 트리맵은 일부만 그리면 면적 비율이
+ * 거짓말이 되어, "더 보기" 로 이어 붙일 수가 없다.
+ *
+ * size 상한이 100 이라 코스피 536 종목이면 여섯 번을 이어 부른다. 한 번에 내려
+ * 주는 엔드포인트를 백엔드에 요청해 두었고, 생기면 이 함수만 바뀐다.
+ */
+export async function fetchAllStocks(filter: StockFilter): Promise<StockList> {
+  const items: StockListItem[] = []
+  let cursor: string | number | undefined
+  let baseDate: string | null = null
+
+  for (let page = 0; page < MAX_PAGES; page += 1) {
+    const res = await api.get<StockList>('/stocks', {
+      query: { ...filter, size: MAX_SIZE, cursor },
+    })
+    items.push(...res.items)
+    /* 기준 영업일은 목록 전체에 하나다. 첫 쪽이 비어 null 로 올 수 있어 덮어쓴다 */
+    baseDate = res.baseDate ?? baseDate
+    if (!res.hasNext || res.nextCursor == null) break
+    cursor = res.nextCursor
+  }
+
+  return { items, nextCursor: null, hasNext: false, baseDate }
 }
 
 export function getSectorSummary() {

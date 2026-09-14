@@ -40,12 +40,22 @@ import ssafy.a507.backend.domain.account.entity.User;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Operation {
 
-    /** 202 를 쓰는 네 곳. {@code POST /wallet/nonce} 의 scope 어휘와 같다(온체인 전송이 없는 WALLET_LINK 만 빠진다). */
+    /**
+     * 202 를 쓰는 네 곳 + 가입 보너스. 앞의 넷은 {@code POST /wallet/nonce} 의 scope 어휘와 같다(온체인 전송이 없는
+     * WALLET_LINK 만 빠진다).
+     */
     public enum Kind {
         PREDICTION_BURN,
         SUBSCRIBE,
         AD,
-        SEASON_JOIN
+        SEASON_JOIN,
+        /**
+         * 지갑 연동 시 mint (ANT-TOKEN-07). 202 가 아니고(연동 응답은 200) 서명·리소스도 없지만 여기 남긴다 — 전송 실패·유실을
+         * 인덱서가 닫는 길과 1인 1회 판정을 그대로 쓰려는 것이다. 범용 {@code MINT} 로 두지 않는 이유: 시즌 상금이 같은 칸에
+         * 들어오면 "보너스를 받았나" 를 kind 로 가를 수 없다. 값을 더하면 기존 DB 의 옛 CHECK 제약이 INSERT 를 막는다
+         * → {@code db/enum-checks.sql}.
+         */
+        SIGNUP_BONUS
     }
 
     /** 전이는 체인 인덱서가 {@code chain_events} 기입과 함께 수행한다 — 서버에 폴링 배치가 없는 이유다. */
