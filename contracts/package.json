@@ -10,6 +10,7 @@
     "keygen": "node scripts/keygen.mjs",
     "deploy:local": "hardhat run scripts/deploy.js --network localhost",
     "mint:local": "hardhat run scripts/mint-local.js --network localhost",
+    "localchain:sync": "node scripts/localchain-sync.mjs",
     "deploy:ssafy": "node scripts/deploy-ssafy.mjs",
     "deploy:token:ssafy": "node scripts/deploy-token-ssafy.mjs",
     "rebuild": "node scripts/rebuild-from-chain.mjs",
@@ -21,6 +22,7 @@
     "@openzeppelin/contracts": "^5.6.1",
     "chai": "^4.5.0",
     "ethers": "^6.15.0",
-    "hardhat": "^2.29.1"
+    "hardhat": "^2.29.1",
+    "pg": "^8.23.0"
   }
 }
