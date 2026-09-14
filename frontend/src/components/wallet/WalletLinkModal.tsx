@@ -11,11 +11,14 @@
    - 온보딩(M-09) 안에서 열지 않는다 — 모달 3겹이 된다. 호출부가 온보딩을 닫고 띄운다.
    - 연동 후 원래 하려던 동작으로 이어져야 한다. 그래서 성공을 onLinked 로 올려
      호출부(주로 C-01 예측 등록)가 하던 일을 마저 하게 한다.
+   - 가입 보너스는 완료 화면 한 줄이 전부다(ANT-TOKEN-07). 수령 버튼을 두지 않는다 —
+     사용자가 할 일이 없다. 전송이 실패해도 응답 모양이 성공과 같아 과거형으로 쓰지 않는다.
 
    두지 않는 것: 연동 해제 · 다중 지갑 관리. 해당 API 가 없다. */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, ERROR_CODE } from '../../api/errors'
-import { linkWallet, requestNonce, shortAddress, signingPayload } from '../../api/wallet'
+import type { WalletLinkResult } from '../../api/wallet'
+import { formatToken, linkWallet, requestNonce, shortAddress, signingPayload } from '../../api/wallet'
 import { WALLET_INSTALL_URL, connectAddress, hasWallet, onWalletReady, personalSign } from '../../wallet/provider'
 import { errorText } from '../state/errorText'
 import { useAuth } from '../../auth/context'
@@ -49,6 +52,9 @@ export default function WalletLinkModal({
   const [step, setStep] = useState<Step>('connect')
   const [draft, setDraft] = useState<Draft | null>(null)
   const [linked, setLinked] = useState<string | null>(null)
+  /* 연동과 함께 접수된 가입 보너스. 완료 화면의 한 줄이 이것만 보고 그릴지 말지 정한다.
+     서버 체인이 꺼져 있으면 null 로 와서 줄이 아예 나오지 않는다. */
+  const [bonus, setBonus] = useState<WalletLinkResult['bonus']>(null)
   const [error, setError] = useState<ApiError | null>(null)
 
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -90,8 +96,10 @@ export default function WalletLinkModal({
     setStep('working')
     try {
       const signature = await personalSign(draft.payload, draft.address)
-      const { walletAddress } = await linkWallet(draft.address, signature)
-      setLinked(walletAddress)
+      const result = await linkWallet(draft.address, signature)
+      setLinked(result.walletAddress)
+      /* 서버 MR 이 아직 안 붙었으면 필드가 없다. undefined 를 null 로 눕혀 두 경우를 한 줄로 다룬다 */
+      setBonus(result.bonus ?? null)
       setWalletLinked(true)
       setStep('done')
     } catch (e) {
@@ -149,6 +157,17 @@ export default function WalletLinkModal({
             </p>
             <p className="wl-done-title">지갑을 연동했습니다</p>
             <code className="wl-address">{linked}</code>
+
+            {/* 보너스를 알 수 있는 화면은 여기뿐이다. 다만 mint 전송이 실패해도 응답은 이 모양
+                그대로라, 성공했다고 단정하는 과거형은 그때 거짓이 된다. 실패분은 서버 재시도
+                배치가 결국 보내므로 "곧 지급됩니다" 만 두 경우 모두에서 참이다.
+                금액은 서버 설정(app.token.amounts.signup-bonus)이라 응답값을 그대로 쓴다. */}
+            {bonus && (
+              <p className="wl-done-bonus">
+                가입 보너스 {formatToken(bonus.amount)} ANT 가 곧 지급됩니다
+              </p>
+            )}
+
             <p className="wl-note">이제 예측을 등록하고 토큰을 받을 수 있습니다.</p>
             <div className="wl-actions">
               <button
