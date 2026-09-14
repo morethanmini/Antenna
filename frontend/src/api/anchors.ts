@@ -1,12 +1,13 @@
 /* 온체인 검증 도메인. API 명세서 §온체인 검증 · 설계서 §3 D.
 
    GET /anchors?cursor=&size=  { items, nextCursor, hasNext }
+   GET /commits?cursor=&size=  커밋 원장 목록 — D-01 [ANT-FE-LEDGER-LIST]
    GET /anchors/{id}           배치 상세 (리프 전량) — D-02 [ANT-FE-ANCHOR]
    GET /predictions/{id}/proof 3단계 검산            — D-03 [ANT-FE-VERIFY]
 
    백엔드 ANT-CHAIN-06 으로 셋 다 열려 있다. 목업이 아니다. */
 
-import type { Horizon } from './predictions'
+import type { Horizon, PredictionStatus } from './predictions'
 
 /** 배치가 체인에 올라간 단계. 서버 AnchorBatch.Status 와 짝이다. */
 export const ANCHOR_STATUSES = ['PENDING', 'CONFIRMED', 'FAILED'] as const
@@ -57,6 +58,29 @@ export type AnchorLeaf = {
   stockName: string | null
   /** 예측 기간(영업일). 7 · 14 · 30 · 90 */
   horizon: Horizon
+}
+
+/**
+ * 커밋 원장의 한 줄. 서버 CommitItemResponse 와 짝이다 — GET /commits.
+ *
+ * 원장을 **배치가 아니라 커밋 단위**로 읽는다. 배치 줄에는 종목을 적을 수 없다 —
+ * 한 배치에 여러 종목의 커밋이 함께 묶이기 때문이다.
+ *
+ * 방향·목표가·작성자는 오지 않는다. 판정 전이면 작성자·구독자만 봐야 하는 값이라
+ * 원장이 내리면 E-02·C-03 의 게이팅을 우회한다(서버 DTO 주석).
+ */
+export type LedgerCommit = {
+  predictionId: number
+  commitHash: string
+  /** 종목이 지워진 예측이 있어 null 일 수 있다. 그 커밋도 원장에서 빠지지 않는다 */
+  stockCode: string | null
+  stockName: string | null
+  horizon: Horizon
+  status: PredictionStatus
+  /** 아직 배치에 안 묶였으면 셋 다 null — 봉인은 끝났고 다음 배치를 기다리는 중이다 */
+  anchorId: number | null
+  businessDate: string | null
+  anchorStatus: AnchorStatus | null
 }
 
 /**

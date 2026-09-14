@@ -2,6 +2,7 @@ package ssafy.a507.backend.domain.prediction.repository;
 
 import java.util.Collection;
 import java.util.List;
+import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -41,6 +42,26 @@ public interface PredictionCommitRepository extends JpaRepository<PredictionComm
      */
     @Query("select c from PredictionCommit c left join fetch c.anchorBatch where c.predictionId in :ids")
     List<PredictionCommit> findWithBatchByPredictionIdIn(@Param("ids") Collection<Long> ids);
+
+    /**
+     * 커밋 원장 목록(화면 D-01) — 최신 커밋부터, 커서 id 미만. 커서 규칙은 {@code AnchorBatchRepository.findPage} 와 같다.
+     *
+     * <p>여기만 <b>내림차순</b>이다. 리프 조회가 오름차순인 것은 머클 트리를 접는 순서여서이고, 이 목록은 검증 재료가
+     * 아니라 "최근에 무엇이 봉인됐나" 를 보는 화면용이다.
+     *
+     * <p>연관 셋을 모두 fetch 한다 — 한 장에 20건이면 fetch 없이 60번의 추가 질의가 난다.
+     * {@code stock} 과 {@code anchorBatch} 는 <b>left</b> 다: 종목이 지워진 커밋과 아직 배치에 안 묶인 커밋도
+     * 원장에 남아야 한다(빠지면 "봉인했는데 원장에 없다" 가 된다).
+     */
+    @Query("""
+            select c from PredictionCommit c
+             join fetch c.prediction p
+             left join fetch p.stock
+             left join fetch c.anchorBatch
+             where (:cursorId is null or c.predictionId < :cursorId)
+             order by c.predictionId desc
+            """)
+    List<PredictionCommit> findLedgerPage(@Param("cursorId") Long cursorId, Limit limit);
 
     /** 리빌 대상 — 판정이 끝났는데 salt 가 아직 비공개인 커밋 (결정 A9: 판정 기준). */
     @Query(
