@@ -11,6 +11,8 @@ import BriefingModal from './components/BriefingModal'
 import OnboardingTour from './components/OnboardingTour'
 import WalletLinkModal from './components/wallet/WalletLinkModal'
 import { useBriefingParam } from './components/briefingParam'
+import { useApiQuery } from './api/useApiQuery'
+import { formatToken, type WalletBalance } from './api/wallet'
 
 export type Mode = 'insight' | 'sim'
 
@@ -92,6 +94,25 @@ function Search() {
   )
 }
 
+/* 상단바 잔액.
+   조건부로 그려지는 자리라 훅을 바깥에 둘 수 없어 작은 컴포넌트로 감쌌다 —
+   로그인했을 때만 마운트되고, 그때 한 번만 부른다(셸은 라우트가 바뀌어도 살아 있다).
+
+   홈 카드(B-01)와 **같은 함수**를 쓴다. 전에는 여기가 0 을, 홈이 목업 값을 띄워 같은
+   화면에서 두 숫자가 어긋났다. 이후 — 로 바꿔 두었던 자리다(2026-09-14).
+
+   못 받았을 때도 — 다. 0 은 "잔액이 없다" 는 주장이라, 못 불러온 것과 구분돼야 한다. */
+function WalletChip() {
+  const { data } = useApiQuery<WalletBalance>('/wallet/balance')
+
+  return (
+    <div className="wallet">
+      <i />
+      <span className="num">{data ? formatToken(data.balance) : '—'}</span> ANT
+    </div>
+  )
+}
+
 export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode; nav: string; bodyClass: string; children: React.ReactNode }) {
   const { authed, user, signOut } = useAuth()
   const navigate = useNavigate()
@@ -162,10 +183,7 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
         <div className="topbar-right">
           {authed ? (
             <>
-              {/* 잔액은 H-01 [ANT-FE-WALLET] 이 GET /wallet/balance 로 채운다.
-                  그때까지 0 이 아니라 — 이다(2026-09-14). 0 은 "잔액이 없다" 는
-                  주장이라, 홈 카드가 다른 숫자를 띄우면 곧바로 어긋나 보인다. */}
-              <div className="wallet"><i /><span className="num">—</span> ANT</div>
+              <WalletChip />
               {/* 미확인 뱃지는 H-02 [ANT-FE-NOTIFICATION] 이 채운다 */}
               <Link className="iconbtn" to="/notifications" aria-label="알림">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
