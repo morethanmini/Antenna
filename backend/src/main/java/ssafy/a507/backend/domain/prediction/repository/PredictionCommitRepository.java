@@ -21,6 +21,21 @@ public interface PredictionCommitRepository extends JpaRepository<PredictionComm
     List<PredictionCommit> findByAnchorBatchOrderByPredictionIdAsc(AnchorBatch anchorBatch);
 
     /**
+     * 배치 리프 전량 + 예측·종목까지 한 번에 (D-02 가 종목명·기간을 함께 그린다, S15P21A507-237).
+     *
+     * <p>{@code prediction} 은 {@code @MapsId} 라 항상 있어 {@code join fetch} 지만, {@code stock} 은
+     * <b>nullable 이라 left 다</b> — inner 로 걸면 종목이 지워진 커밋이 리프 목록에서 빠져 원장이 실제보다
+     * 짧아지고, 그 목록으로는 머클루트를 재현할 수 없다.
+     *
+     * <p>두 연관 모두 {@code LAZY} 라 fetch 하지 않으면 리프 수(최대 500)만큼 N+1 이 난다.
+     * 순서 규칙은 {@link #findByAnchorBatchOrderByPredictionIdAsc} 와 같다.
+     */
+    @Query("select c from PredictionCommit c"
+            + " join fetch c.prediction p left join fetch p.stock"
+            + " where c.anchorBatch = :batch order by c.predictionId asc")
+    List<PredictionCommit> findLeavesWithPredictionByAnchorBatch(@Param("batch") AnchorBatch batch);
+
+    /**
      * 목록 한 장의 커밋을 배치까지 한 번에 (ANT-PRED-06 anchorStatus, 프론트 요청 09-09). 항목마다 proof 를 따로 부르면
      * 한 페이지에 요청이 12번 나가서 목록 응답에 상태를 싣는다. 배치를 {@code join fetch} 하지 않으면 여기서 N+1 이 난다.
      */
