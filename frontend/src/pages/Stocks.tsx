@@ -1,16 +1,18 @@
 /* B-02 종목 탐색 · /stocks
    담당 스토리 [ANT-FE-STOCKS]
 
-   2026-09-11 개편 — **히트맵이 첫 화면이다.** 전에는 열 줄짜리 목록에 "더 보기"
-   였는데, 그 화면으로는 "오늘 시장이 어디로 움직였나" 를 알 수 없었다. 열 줄을
-   읽고 또 열 줄을 부르는 동안 전체 그림은 끝내 안 나온다. 한국경제 marketmap 을
-   참고해 전 종목을 한 판에 깔고, 섹터를 눌러 파고드는 방식으로 바꿨다.
+   보기가 둘이다. **목록이 첫 화면이고**(2026-09-14), 마켓맵은 그 옆 탭이다.
 
-   목록을 없애지는 않았다 — PER 범위·예측 방향처럼 히트맵으로는 못 거는 조건이
-   있고, 종목별 PER·PBR·예측 현황을 숫자로 나란히 보는 일은 목록이 낫다.
-   탭으로 나란히 둔다.
+   마켓맵은 2026-09-11에 들였다 — 열 줄짜리 목록에 "더 보기" 뿐이던 화면으로는
+   "오늘 시장이 어디로 움직였나" 를 알 수 없었다. 열 줄을 읽고 또 열 줄을 부르는
+   동안 전체 그림은 끝내 안 나온다. 한국경제 marketmap 을 참고해 전 종목을 한 판에
+   깔고, 섹터를 눌러 파고들 수 있게 했다.
 
-   필터 상태(filter)는 이 페이지가 들고 두 보기가 나눠 쓴다. 히트맵은 그중
+   그래도 들어오면 목록이 먼저다. PER 범위·예측 방향처럼 마켓맵으로는 못 거는
+   조건이 있고, 종목별 PER·PBR·예측 현황을 숫자로 나란히 보는 일은 목록이 낫다.
+   판을 보려는 사람은 탭 하나만 누르면 된다.
+
+   필터 상태(filter)는 이 페이지가 들고 두 보기가 나눠 쓴다. 마켓맵은 그중
    관심 여부만 쓰고 누르는 즉시 적용하며, 나머지 조건과 "필터 적용" 버튼은
    목록 보기 안에 있다(StockTable). */
 import { useMemo, useState } from 'react'
@@ -20,20 +22,33 @@ import MarketMap, { HeatLegend } from '../components/stocks/MarketMap'
 import StockTable from '../components/stocks/StockTable'
 import '../styles/screens/stocks.css'
 
-type View = 'map' | 'list'
+/**
+ * 보기 전환 탭. **적히는 차례대로** 화면에 선다(2026-09-14에 목록을 앞으로 옮겼다).
+ *
+ * 객체의 키 순서에 기대지 않고 배열로 두는 이유 — 순서가 화면에 그대로 드러나는
+ * 값이라, 나중에 누가 키를 정렬하거나 타입을 손봤을 때 조용히 뒤바뀌면 안 된다.
+ */
+const VIEWS = [
+  { key: 'list', label: '목록' },
+  { key: 'map', label: '마켓맵' },
+] as const
 
-const VIEW_LABEL: Record<View, string> = { map: '히트맵', list: '목록' }
+type View = (typeof VIEWS)[number]['key']
+
+/** 들어왔을 때 켜져 있는 탭. 첫 칸과 같아야 한다 — 두 번째 탭이 켜진 채로 열리면
+ *  사용자가 누르지도 않은 것이 눌려 있는 꼴이 된다 */
+const FIRST_VIEW: View = VIEWS[0].key
 
 export default function Stocks() {
   const [filter, setFilter] = useState<StockFilter>(EMPTY_FILTER)
-  const [view, setView] = useState<View>('map')
+  const [view, setView] = useState<View>(FIRST_VIEW)
 
-  /* 히트맵에는 조건을 **추려서** 넘긴다.
+  /* 마켓맵에는 조건을 **추려서** 넘긴다.
 
      섹터는 판이 스스로 고르는 축이라 목록 탭에서 걸어 둔 섹터 필터를 그대로
      물려주면 덩어리가 하나뿐인 판이 나온다. PER 범위·예측 방향도 목록 전용이다 —
      시장 전체를 깔아 보려고 들어온 화면이 앞 탭에 걸어 둔 조건 때문에 텅 비면
-     안 된다. 히트맵이 쓰는 것은 관심 여부뿐이다.
+     안 된다. 마켓맵이 쓰는 것은 관심 여부뿐이다.
 
      참조가 고정돼야 MarketMap 안의 useBlock 이 매 렌더 다시 부르지 않는다. */
   const mapFilter = useMemo<StockFilter>(
@@ -43,32 +58,28 @@ export default function Stocks() {
 
   return (
     <main className="main">
-      {/* 히트맵일 때만 페이지를 세로 flex 로 세운다 — 판이 남는 높이를 모두 먹게
+      {/* 마켓맵일 때만 페이지를 세로 flex 로 세운다 — 판이 남는 높이를 모두 먹게
           하려는 것이고, 목록 탭에는 그럴 이유가 없다(stocks.css 의 st-fit).
           화면 이름인 stocks-page 는 routes.ts 가 body 에 붙이므로 쓰지 않는다. */}
       <div className={`main-inner${view === 'map' ? ' st-fit' : ''}`}>
-        {/* .st-hero 는 가로 flex 다 — 제목과 설명줄을 세로로 쌓으려면 이 div 로
-            한 번 묶어야 한다. 풀면 둘이 나란히 선다. */}
+        {/* 설명줄을 뺐다(2026-09-14). 제목이 이미 "오늘 시장은 어디로 움직였나요?"
+            라, 판을 보고 종목으로 좁히라는 말을 한 줄 더 적을 이유가 없다.
+            감싸던 div 도 함께 푼다 — 제목 하나뿐이면 세로로 쌓을 것이 없다. */}
         <header className="st-hero">
-          <div>
-            <h1>오늘 시장은 어디로 움직였나요?</h1>
-            <p className="st-hero-sub">
-              섹터별로 깔아 놓은 판에서 흐름을 먼저 보고, 종목으로 좁혀 들어가세요.
-            </p>
-          </div>
+          <h1>오늘 시장은 어디로 움직였나요?</h1>
         </header>
 
-        {/* 보기 전환과, 히트맵이 쓰는 조건 하나 */}
+        {/* 보기 전환과, 마켓맵이 쓰는 조건 하나 */}
         <div className="st-views">
-          <div className="st-tabs" role="tablist" aria-label="보기 방식">
-            {(Object.keys(VIEW_LABEL) as View[]).map((v) => (
+          <div className="st-viewtabs" role="tablist" aria-label="보기 방식">
+            {VIEWS.map((v) => (
               <button
-                key={v} type="button" role="tab" id={`st-tab-${v}`}
-                className={`st-tab${view === v ? ' on' : ''}`}
-                aria-selected={view === v} aria-controls={`st-view-${v}`}
-                onClick={() => setView(v)}
+                key={v.key} type="button" role="tab" id={`st-tab-${v.key}`}
+                className={`st-viewtab${view === v.key ? ' on' : ''}`}
+                aria-selected={view === v.key} aria-controls={`st-view-${v.key}`}
+                onClick={() => setView(v.key)}
               >
-                {VIEW_LABEL[v]}
+                {v.label}
               </button>
             ))}
           </div>
@@ -77,7 +88,7 @@ export default function Stocks() {
               다룬다. 고를 것이 하나뿐인 필터는 자리만 먹고, KOSDAQ 을 눌러 빈
               화면을 보는 헛걸음을 만든다.
 
-              관심 종목만은 히트맵에서만 내놓는다. 목록에는 제 필터 패널이 따로
+              관심 종목만은 마켓맵에서만 내놓는다. 목록에는 제 필터 패널이 따로
               있어, 두 벌이 되면 어느 쪽이 이겼는지 알 수 없다 */}
           {view === 'map' && (
             <>
