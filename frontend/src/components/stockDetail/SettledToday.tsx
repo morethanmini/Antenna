@@ -21,6 +21,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useBlock } from '../../api/useBlock'
+import { DEFAULT_AVATAR } from '../../auth/context'
 import { getSettledToday } from '../../api/predictions'
 import type { SettledPrediction } from '../../api/predictions'
 import '../../styles/screens/settled-today.css'
@@ -34,7 +35,8 @@ const CARD_H = 36
 /** 미끄러지는 시간(ms). CSS .st-track 의 transition 과 같아야 한다 */
 const SLIDE = 380
 
-const FALLBACK_FACE = '/assets/character/white_ant/antenna-profile.png'
+/* 서버가 사진 칸을 아직 안 내려 준다 — 값이 없으면 기본 개미 아바타를 쓴다 */
+const FALLBACK_FACE = DEFAULT_AVATAR
 
 const won = (n: number) => n.toLocaleString('ko-KR')
 

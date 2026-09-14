@@ -1,6 +1,7 @@
 /* 세션 복원. 새로고침하면 메모리의 accessToken 이 사라지지만 refresh 쿠키는 남아 있다.
    쿠키로 access 를 되찾고 프로필을 읽어 로그인 상태를 되살린다. */
 import { api, refreshAccessToken, setAccessToken } from '../api/client'
+import { DEFAULT_AVATAR } from './context'
 import type { AuthUser, Role } from './context'
 
 /** 백엔드 UserDtos.MeResponse 와 짝을 이룬다. */
@@ -18,7 +19,7 @@ export function toAuthUser(me: MeResponse): AuthUser {
     // 닉네임 미설정은 빈 문자열로 넘긴다 — 화면은 이 값이 비었는지로 온보딩을 판단한다.
     nickname: me.nickname ?? '',
     // 프로필 이미지는 아직 서버가 주지 않는다.
-    avatarUrl: '/assets/character/white_ant/antenna-profile.png',
+    avatarUrl: DEFAULT_AVATAR,
     role: me.role,
     walletLinked: me.walletLinked,
   }

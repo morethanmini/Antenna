@@ -20,7 +20,7 @@ import { fetchRankings, formatComputedAt, metric } from '../api/rankings'
 import { getBriefings } from '../api/briefings'
 import { useBriefingParam } from '../components/briefingParam'
 import { useAsync } from '../api/useAsync'
-import { useAuth } from '../auth/context'
+import { DEFAULT_AVATAR, useAuth } from '../auth/context'
 import Sparkline from '../components/Sparkline'
 import '../styles/home.css'
 
@@ -200,8 +200,7 @@ function Hero() {
     <section className="hm-hero" aria-labelledby="hm-hero-h">
       <div className="hm-hero-text">
         <p className="hm-hello">
-          {user?.nickname ? `${user.nickname}님, 환영합니다` : '환영합니다'}
-          <span aria-hidden="true"> 👋</span>
+          {user?.nickname ? `${user.nickname}님, 환영합니다.` : '환영합니다.'}
         </p>
         {/* 페이지 제목 자리다. 위에 따로 머리글을 두지 않으므로 h1 이다. */}
         <h1 id="hm-hero-h">
@@ -444,7 +443,8 @@ function TopPredictor() {
       {lead && (
         <>
           <div className="hm-lead">
-            <img className="hm-avatar" src="/assets/character/white_ant/antenna-profile.png" alt="" aria-hidden="true" />
+            {/* 서버가 사진 칸을 아직 안 내려 준다 — 모두 기본 개미 아바타다 */}
+            <img className="hm-avatar" src={DEFAULT_AVATAR} alt="" aria-hidden="true" />
             <div className="hm-lead-id">
               <Link className="hm-lead-name" to={`/channels/${lead.userId}`}>{lead.nickname}</Link>
               <span className="hm-lead-rank">랭킹 {lead.rank}위</span>
@@ -491,8 +491,12 @@ function Sponsored() {
                  style={{ transform: `translateX(-${index * 100}%)` }}>
               {items.map((it, i) => {
                 const t = AD_THEMES[i % AD_THEMES.length]
+                /* 색 이름에 hm- 를 붙인다(2026-09-14). 전에는 `t-b` 였는데 모의투자
+                   연습 화면(sim-practice.css)에 범위 없는 `.t-b{background:#e8f1fe}` 가
+                   있어, 화면별 CSS 가 전역으로 함께 올라가며 이 슬라이드를 덮었다 —
+                   두 번째 광고만 배경이 연하늘색이 되고 흰 글씨가 안 읽혔다. */
                 return (
-                  <div className={`hm-showcase-slide t-${t.tone}`} key={it.id} aria-hidden={i !== index}>
+                  <div className={`hm-showcase-slide hm-t-${t.tone}`} key={it.id} aria-hidden={i !== index}>
                     <p className="hm-showcase-title">{t.title}</p>
                     <p className="hm-showcase-sub">{t.sub}</p>
                     <Link className="hm-showcase-btn" to={it.linkUrl}

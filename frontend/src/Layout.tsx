@@ -20,7 +20,6 @@ const ICON: Record<string, React.ReactNode> = {
   market: <><path d="M12 3v18" /><path d="M5 8h9a3 3 0 0 1 0 6H5" /><path d="M5 8H3" /><path d="M19 14h2" /></>,
   report: <><path d="M6 2h8l4 4v16H6z" /><path d="M14 2v4h4" /><path d="M9 12h6M9 16h6" /></>,
   portfolio: <><path d="M3 7h18v13H3z" /><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" /><path d="M3 12h18" /></>,
-  community: <><path d="M17 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9.5" cy="7" r="3.5" /><path d="M22 20v-2a4 4 0 0 0-3-3.87" /></>,
   // 사슬 — 온체인 기록. 마이페이지가 쓰던 것과 같은 모양이다
   chain: <><path d="M10 13a5 5 0 0 0 7.5.6l3-3a5 5 0 0 0-7-7l-1.7 1.7" /><path d="M14 11a5 5 0 0 0-7.5-.6l-3 3a5 5 0 0 0 7 7l1.7-1.7" /></>,
   play: <><circle cx="12" cy="12" r="9" /><path d="m10 8.5 6 3.5-6 3.5z" /></>,
@@ -41,7 +40,8 @@ const MODES = {
          전에는 사이드바에 없어서 마이페이지 임시 링크로만 닿았다. */
       { key: 'ledger', icon: 'chain', text: '원장 내역', href: '/ledger' },
       { key: 'report', icon: 'report', text: '리포트', href: '/reports' },
-      { key: 'community', icon: 'community', text: '커뮤니티', href: '/posts' },
+      /* 커뮤니티(F-04~F-06)는 개발 범위에서 뺐다(2026-09-14) — 항목과 아이콘,
+         화면과 라우트까지 지웠다. 서버 API 는 그대로 남아 있다. */
       { key: 'portfolio', icon: 'portfolio', text: '예측 포트폴리오', href: '/me/portfolio' },
     ],
   },
@@ -162,8 +162,10 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
         <div className="topbar-right">
           {authed ? (
             <>
-              {/* 잔액은 H-01 [ANT-FE-WALLET] 이 GET /wallet/balance 로 채운다 */}
-              <div className="wallet"><i /><span className="num">0</span> ANT</div>
+              {/* 잔액은 H-01 [ANT-FE-WALLET] 이 GET /wallet/balance 로 채운다.
+                  그때까지 0 이 아니라 — 이다(2026-09-14). 0 은 "잔액이 없다" 는
+                  주장이라, 홈 카드가 다른 숫자를 띄우면 곧바로 어긋나 보인다. */}
+              <div className="wallet"><i /><span className="num">—</span> ANT</div>
               {/* 미확인 뱃지는 H-02 [ANT-FE-NOTIFICATION] 이 채운다 */}
               <Link className="iconbtn" to="/notifications" aria-label="알림">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
