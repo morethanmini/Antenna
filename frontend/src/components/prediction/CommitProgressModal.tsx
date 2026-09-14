@@ -294,7 +294,7 @@ export default function CommitProgressModal({ phase, result, onClose }: Props) {
             {queued ? (
               <Link className="cp-btn solid" to="/ledger" onClick={onClose}>커밋 원장으로</Link>
             ) : (
-              <Link className="cp-btn solid" to="/me/predictions" onClick={onClose}>내 예측 내역으로</Link>
+              <Link className="cp-btn solid" to="/me/predictions" onClick={onClose}>예측 현황 보러가기</Link>
             )}
           </div>
         )}

@@ -195,8 +195,9 @@ export const phaseOf = (s: PredictionStatus): PredictionPhase =>
 
 /* ── 내 예측 (C-02) ───────────────────────────────────────
    서버 MyPredictionItemResponse 와 짝을 이룬다(ANT-PRED-06). 명세가 못 박은
-   아홉 필드에 stockName 이 더해진 열 개이고, **그 밖의 값을 화면에서 만들어
-   내지 않는다.**
+   아홉 필드에 stockName · anchorStatus 가 더해진 열한 개이고, **그 밖의 값을
+   화면에서 만들어 내지 않는다.** 시안에 있는 현재가 · 확신도 · 진행률 · 정확도
+   점수는 이 응답에 없다 — 그리려면 API 가 먼저 늘어야 한다.
 
    잠금이 없다. 내 예측이라 전부 보인다 — 남의 예측(StockPrediction)과 필드부터
    다르므로 타입을 합치지 않았다. */
@@ -218,6 +219,14 @@ export type MyPrediction = {
   errorRate: number | null
   /** 만기 영업일 YYYY-MM-DD. 기준가 배치가 채우기 전에는 null 이다 */
   settleDate: string | null
+  /* 이 예측이 블록에 올라갔는가. 서버가 행마다 함께 내린다
+     (MyPredictionItemResponse.anchorStatus, 2026-09-09). 어휘는 proof 와 같은
+     넷이라 C-03 과 같은 말로 그린다 — 커밋이 아직 없으면 WAITING 이다.
+
+     앵커 배치는 매일 00:05 KST 에 **전날 등록분**을 한 번에 묶는다
+     (AnchorScheduler, 주말 포함). WAITING 은 고장이 아니라 정상 대기이고,
+     화면은 그 사실을 문장으로 말해 줘야 한다. */
+  anchorStatus: ProofAnchorStatus
 }
 
 /* 상태 필터. 서버가 status 로 거른다 — 커서 페이징이라 클라이언트에서 거르면
