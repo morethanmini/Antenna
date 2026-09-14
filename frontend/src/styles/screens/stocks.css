@@ -54,9 +54,10 @@
   margin:0; color:var(--ink); font-size:29px; font-weight:800; letter-spacing:-.03em;
 }
 
-/* ── 보기 전환 줄 ───────────────────────────────────────── */
-/* 목록·마켓맵 탭과, 마켓맵이 쓰는 조건 두 가지가 한 줄에 선다.
-   조건을 탭에 바로 붙이지 않고 gap 으로 떼어 둔다 — 탭처럼 보이면 안 된다. */
+/* ── 마켓맵 조건 줄 ─────────────────────────────────────── */
+/* 목록·마켓맵 탭은 2026-09-14에 머리글 오른쪽으로 올라갔다(.st-hero 참고).
+   여기 남은 것은 마켓맵이 쓰는 조건뿐이라, 이 줄 자체가 마켓맵 탭에서만 그려진다.
+   왼쪽에 "관심 종목만", 오른쪽 끝에 범례(.mm-legend 의 margin-left:auto)다. */
 .stocks-page .st-views{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:14px}
 
 /* 이름이 st-viewtab* 인 까닭 — H-03 환경 설정(settings.css)이 ".st-tabs button" 을
@@ -92,17 +93,95 @@
 }
 
 /* ── 섹터 요약 칩 ───────────────────────────────────────── */
-/* 칸 수가 섹터 수라 늘어난다. 한 줄에 다 넣지 않고 넘치면 접는다. */
-.stocks-page .st-sectors{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px}
+/* 칸 수가 섹터 수(23) + 전체 = 24 라 접으면 세 줄이 된다. 그 띠가 목록 위를 덮어
+   정작 종목이 화면 밖으로 밀려났다 — **한 줄로 눕히고 좌우 버튼으로 넘긴다**
+   (2026-09-14). 짝이 되는 동작은 StockTable 의 SectorChips 에 있다. */
+/* 이 줄에서만 쓰는 그림자. app.css 의 --shadow 를 안 쓴다 —
+   그쪽 둘째 겹이 `0 10px 28px -22px` 라 28px 번짐에 -22px 스프레드다. 20px 짜리
+   카드에서는 얇은 받침으로 읽히지만, 148px 짜리 작은 칩에서는 그림자 모양이
+   거의 점으로 줄어 카드 밑에 어두운 얼룩이 뭉친다(2026-09-14).
+
+   대신 번짐을 키우며 진하기를 낮춘 네 겹을 겹친다. 한 겹으로는 경계가 딱
+   끊기는데, 겹칠수록 실제 빛처럼 가장자리가 서서히 풀린다. 스프레드를 음수로
+   두는 것은 위쪽으로 새는 것을 막기 위해서이고, 번짐의 절반을 넘기지 않는다. */
+.stocks-page .st-sectors{
+  --st-lift:
+    0 1px 1.5px rgb(20 20 27 / .04),
+    0 3px 6px -1px rgb(20 20 27 / .035),
+    0 8px 14px -4px rgb(20 20 27 / .03),
+    0 16px 26px -10px rgb(20 20 27 / .035);
+  /* 고른 섹터는 브랜드 색으로 든다. 회색 그림자를 그대로 쓰면 연보라 바탕 위에서
+     때가 탄 것처럼 탁해진다 */
+  --st-lift-on:
+    0 1px 1.5px rgb(84 87 232 / .07),
+    0 3px 6px -1px rgb(84 87 232 / .06),
+    0 8px 14px -4px rgb(84 87 232 / .07),
+    0 16px 26px -10px rgb(84 87 232 / .08);
+
+  /* 제목 바로 밑에 카드가 붙어 답답해서 위를 벌렸다(2026-09-14).
+
+     **제목 쪽 margin-bottom 을 키우지 않은 이유** — 그 값을 마켓맵 탭도 함께
+     쓴다. 저쪽은 판이 화면 한 장에 맞아야 해서 1px 도 아깝다. 이 줄은 목록
+     탭에만 있으니 여기서 벌리면 저쪽이 안 다친다.
+
+     **margin-top 이 아니라 padding-top 인 이유** — 위 마진은 .st-hero 의
+     margin-bottom(14) 과 맞닿아 겹친다(둘 중 큰 값 하나만 남는다). margin-top:10
+     을 줬더니 14 에 먹혀 아무 일도 일어나지 않았다. padding 은 겹치지 않는다. */
+  display:flex; align-items:center; gap:8px;
+  padding-top:10px; margin:0 0 16px;
+}
+
+/* 넘김 버튼. 칩과 같은 높이로 늘어나 손이 짚기 쉬운 기둥이 된다 */
+.stocks-page .st-sector-nav{
+  flex:none; align-self:stretch; width:32px; display:grid; place-items:center;
+  border:1px solid var(--rule); border-radius:11px; background:var(--surface);
+  color:var(--muted); box-shadow:var(--st-lift);
+  transition:color .12s, border-color .12s, opacity .12s;
+}
+.stocks-page .st-sector-nav:hover:not(:disabled){color:var(--brand-ink); border-color:#c8c9f5}
+.stocks-page .st-sector-nav:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+/* 끝에 닿으면 끈다. 감추지 않는 이유 — 사라지면 그만큼 트랙 폭이 튀어
+   칩이 통째로 한 칸씩 움직인다 */
+.stocks-page .st-sector-nav:disabled{opacity:.32; cursor:default; box-shadow:none}
+
+.stocks-page .st-sector-track{
+  display:flex; gap:10px; flex:1; min-width:0;
+  overflow-x:auto; scroll-behavior:smooth;
+  /* 칩이 반쯤 걸친 채 멈추지 않게 붙여 준다. mandatory 는 손으로 밀 때
+     끌어당기는 느낌이 세서 proximity 로 둔다 */
+  scroll-snap-type:x proximity;
+  /* 스크롤바는 숨긴다 — 넘기는 수단은 좌우 버튼이고, 줄 하나에 막대가 더해지면
+     칩 높이가 그만큼 눌린다 */
+  scrollbar-width:none;
+
+  /* overflow-x:auto 는 세로도 함께 자른다(한 축이 visible 이 아니면 나머지도
+     visible 로 계산되지 않는다). 그대로 두면 칩 그림자 아래쪽과 포커스 링이
+     싹둑 잘린다. 잘리지 않을 만큼 안쪽을 벌리고, **같은 크기의 음수 바깥 여백**
+     으로 되돌린다 — 줄 높이는 칩 높이 그대로이면서 그림자만 밖으로 나간다.
+     위아래 값이 다른 것은 그림자가 아래로만 지기 때문이다. */
+  padding:6px 0 20px; margin:-6px 0 -20px;
+}
+.stocks-page .st-sector-track::-webkit-scrollbar{display:none}
+
+/* 폭을 고정한다(1 1 → 0 0). 늘어나게 두면 칩 수에 따라 폭이 들쭉날쭉해져
+   한 쪽 넘길 거리를 셀 수 없다 — SectorChips 의 CHIP_W 와 같은 값이어야 한다 */
 .stocks-page .st-sector-chip{
-  flex:1 1 148px; display:flex; flex-direction:column; gap:7px; align-items:flex-start;
+  flex:0 0 148px; scroll-snap-align:start;
+  display:flex; flex-direction:column; gap:7px; align-items:flex-start;
   padding:13px 15px; border:1px solid var(--rule); border-radius:13px;
-  background:var(--surface); text-align:left; box-shadow:var(--shadow);
-  transition:border-color .12s, background .12s;
+  background:var(--surface); text-align:left; box-shadow:var(--st-lift);
+  transition:border-color .12s, background .12s, box-shadow .12s;
 }
 .stocks-page .st-sector-chip:hover{border-color:#c8c9f5}
-.stocks-page .st-sector-chip.on{border-color:var(--brand); background:var(--brand-softer)}
-.stocks-page .st-sector-name{color:var(--ink); font-size:14px; font-weight:750; letter-spacing:-.02em}
+.stocks-page .st-sector-chip.on{
+  border-color:var(--brand); background:var(--brand-softer); box-shadow:var(--st-lift-on);
+}
+/* 폭이 고정이라 긴 이름은 잘린다. 줄바꿈으로 두면 칩 높이가 저마다 달라져
+   줄이 울퉁불퉁해지므로 말줄임으로 끊는다 — 전체 이름은 목록 머리글이 말한다 */
+.stocks-page .st-sector-name{
+  max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  color:var(--ink); font-size:14px; font-weight:750; letter-spacing:-.02em;
+}
 .stocks-page .st-sector-chip.on .st-sector-name{color:var(--brand-ink)}
 .stocks-page .st-sector-meta{display:flex; align-items:baseline; gap:8px; width:100%}
 .stocks-page .st-sector-meta em{color:var(--faint); font-style:normal; font-size:12px; font-weight:650}

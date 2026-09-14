@@ -15,7 +15,7 @@
    행별 UP/DOWN 집계는 응답에 실려 온다 — 행마다 /sentiment 를 부르지 않는다.
    페이지 번호는 두지 않는다(커서 페이징이라 성립하지 않는다 · §9.2).
    행을 누르면 B-03 종목 상세로 간다. */
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   addWatch, EMPTY_FILTER, fetchStocks, getSectorSummary, MARKET_LABEL, removeWatch,
@@ -78,33 +78,114 @@ function SentimentBar({ upRatio, count }: { upRatio: number | null; count: numbe
   )
 }
 
-/** 상단 섹터 요약 칩. 누르면 섹터 필터가 즉시 바뀐다. */
+/** 칩 하나의 폭(px). CSS .st-sector-chip 의 flex-basis 와 같아야 한다 —
+ *  한 쪽 넘길 거리를 셀 때 "한 칸은 남긴다" 는 계산에 쓴다 */
+const CHIP_W = 148
+
+/** 스크롤 끝 판정 여유(px). 소수점 오차로 끝에 닿고도 1px 이 남는 일이 있다 */
+const EDGE_SLACK = 1
+
+/**
+ * 상단 섹터 요약 칩. 누르면 섹터 필터가 즉시 바뀐다.
+ *
+ * **한 줄로 눕히고 좌우 버튼으로 넘긴다**(2026-09-14). 섹터가 23 개 + 전체 = 24 칸
+ * 이라 접어 두면 세 줄이 되는데, 그 띠가 목록 위를 덮어 정작 종목이 화면 밖으로
+ * 밀려났다. 섹터는 훑다가 하나 고르는 값이지 한눈에 다 세는 값이 아니다.
+ *
+ * 넘기는 것은 브라우저 스크롤에 맡긴다(scrollBy + scroll-behavior:smooth) —
+ * 직접 transform 으로 옮기면 트랙패드 가로 스크롤과 키보드 포커스 이동이 제
+ * 자리를 잃는다. 버튼은 그 스크롤을 대신 눌러 주는 것뿐이다.
+ */
 function SectorChips({ current, onPick }: {
   current: string | undefined
   onPick: (sector: string | undefined) => void
 }) {
   const load = useCallback(() => getSectorSummary(), [])
   const { data, error } = useAsync(load)
+
+  const trackRef = useRef<HTMLDivElement>(null)
+  /** 양쪽에 더 갈 데가 있는지. 없으면 그 버튼을 끈다 */
+  const [more, setMore] = useState({ left: false, right: false })
+
+  const measure = useCallback(() => {
+    const el = trackRef.current
+    if (!el) return
+    const max = el.scrollWidth - el.clientWidth
+    setMore((prev) => {
+      const next = { left: el.scrollLeft > EDGE_SLACK, right: el.scrollLeft < max - EDGE_SLACK }
+      return prev.left === next.left && prev.right === next.right ? prev : next
+    })
+  }, [])
+
+  /* 폭이 바뀌면 넘길 데가 있는지도 바뀐다. data 를 의존성에 두는 것은 칩이
+     생기기 전에 재면 늘 "넘길 데 없음" 이 나오기 때문이다. */
+  useEffect(() => {
+    const el = trackRef.current
+    if (!el) return
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [measure, data])
+
+  const page = useCallback((dir: -1 | 1) => {
+    const el = trackRef.current
+    if (!el) return
+    /* 보이는 만큼 넘기되 **한 칸은 남긴다** — 방금 보던 끝 칸이 다음 쪽 처음에
+       남아 있어야 어디까지 봤는지 이어진다. 좁은 화면에서 음수가 되지 않게 막는다. */
+    el.scrollBy({ left: dir * Math.max(CHIP_W, el.clientWidth - CHIP_W), behavior: 'smooth' })
+  }, [])
+
   if (error || !data) return null
 
   return (
-    <div className="st-sectors" role="group" aria-label="섹터별 보기">
-      {data.items.map((s: SectorSummary) => {
-        const on = (s.sector ?? undefined) === current
-        return (
-          <button key={s.sector ?? 'ALL'} type="button"
-                  className={`st-sector-chip${on ? ' on' : ''}`}
-                  aria-pressed={on}
-                  onClick={() => onPick(s.sector ?? undefined)}>
-            <span className="st-sector-name">{s.sector ?? '전체 종목'}</span>
-            <span className="st-sector-meta">
-              <em className="num">{s.count}개</em>
-              <b className={`num ${toneOf(s.changeRate)}`}>{signed(s.changeRate)}</b>
-            </span>
-          </button>
-        )
-      })}
+    <div className="st-sectors">
+      <SectorNav dir={-1} disabled={!more.left} onClick={() => page(-1)} />
+      {/* 스크롤 상자 자체에는 tabIndex 를 주지 않는다 — 안쪽 칩이 전부 버튼이라
+          탭으로 닿고, 브라우저가 포커스 간 칩을 알아서 끌어온다. 탭 정거장을
+          하나 더 만들면 키보드로 지나가기만 번거로워진다. */}
+      <div
+        className="st-sector-track" ref={trackRef} onScroll={measure}
+        role="group" aria-label="섹터별 보기"
+      >
+        {data.items.map((s: SectorSummary) => {
+          const on = (s.sector ?? undefined) === current
+          return (
+            <button key={s.sector ?? 'ALL'} type="button"
+                    className={`st-sector-chip${on ? ' on' : ''}`}
+                    aria-pressed={on}
+                    onClick={() => onPick(s.sector ?? undefined)}>
+              <span className="st-sector-name">{s.sector ?? '전체 종목'}</span>
+              <span className="st-sector-meta">
+                <em className="num">{s.count}개</em>
+                <b className={`num ${toneOf(s.changeRate)}`}>{signed(s.changeRate)}</b>
+              </span>
+            </button>
+          )
+        })}
+      </div>
+      <SectorNav dir={1} disabled={!more.right} onClick={() => page(1)} />
     </div>
+  )
+}
+
+/** 섹터 줄 좌우 넘김 버튼. 화살표는 MarketMap 의 "전체 섹터" 와 같은 모양이다 */
+function SectorNav({ dir, disabled, onClick }: {
+  dir: -1 | 1
+  disabled: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button" className="st-sector-nav" onClick={onClick} disabled={disabled}
+      aria-label={dir === -1 ? '이전 섹터 보기' : '다음 섹터 보기'}
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+           style={dir === 1 ? { transform: 'rotate(180deg)' } : undefined}>
+        <path d="M15 5 8 12l7 7" />
+      </svg>
+    </button>
   )
 }
 
