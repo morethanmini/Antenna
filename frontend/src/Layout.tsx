@@ -41,7 +41,9 @@ const MODES = {
          전에는 사이드바에 없어서 마이페이지 임시 링크로만 닿았다. */
       { key: 'ledger', icon: 'chain', text: '원장 내역', href: '/ledger' },
       { key: 'report', icon: 'report', text: '리포트', href: '/reports' },
-      { key: 'community', icon: 'community', text: '커뮤니티', href: '/posts' },
+      /* 커뮤니티(F-04~F-06)는 개발 범위에서 뺐다(2026-09-14). 여기서는 사이드바
+         입구만 닫는다 — 라우트·화면·API 는 그대로라 /posts 로 직접 들어가면 아직
+         열린다. 되살릴 일이 없다고 정해지면 그때 통째로 지운다. */
       { key: 'portfolio', icon: 'portfolio', text: '예측 포트폴리오', href: '/me/portfolio' },
     ],
   },
