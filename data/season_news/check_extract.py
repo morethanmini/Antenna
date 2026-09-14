@@ -56,6 +56,12 @@ assert "재무분석차트영역상세보기" not in sn.clean_excerpt("KT(030200
 same = lambda a, b: len(sn.grams(a) & sn.grams(b)) / len(sn.grams(a) | sn.grams(b)) >= sn.SIMILAR
 assert same("삼성전자 장중 5만원 붕괴...현대차 10만원 밑돌아", "삼성전자 장중 5만원선 붕괴…외국인 매도 ‘집중‘")
 assert not same("삼성전자 등 314곳, 다음주 정기주총 개최", "삼성전자, 지난해 웨어러블 기기 출하량 3위…한 계단 상승")
+assert sn.mask_dates("‘인터배터리 2023’ 참가") == "‘인터배터리 ○○○○’ 참가", "행사 이름 속 연도"
+assert sn.mask_dates("[2023서울모빌리티쇼]") == "[○○○○서울모빌리티쇼]"
+assert sn.mask_dates("2021학년도부터 신설") == "○○○○학년도부터 신설"
+assert sn.mask_dates("8만 2000원으로 상향") == "8만 2000원으로 상향", "금액은 그대로"
+assert sn.mask_dates("자기자본(1956억원) 대비") == "자기자본(1956억원) 대비"
+assert sn.mask_dates("대리점 2000곳") == "대리점 2000곳"
 assert sn.PROMO.search("[필수] 삼성전자 지금이 기회! AI+5G+핵심반도체 삼성도 투자한 1200% 급등株")
 assert not sn.PROMO.search("[이번주 추천주] 이마트·LG이노텍·네이버 “실적 호전 보라“"), "증권사 추천 기사는 광고가 아니다"
 print("ok")
