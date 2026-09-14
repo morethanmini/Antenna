@@ -11,12 +11,12 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.Optional;
-import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.restclient.autoconfigure.RestClientSsl;
+import org.springframework.boot.ssl.DefaultSslBundleRegistry;
 import org.springframework.boot.ssl.SslBundle;
+import org.springframework.boot.ssl.SslBundles;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
@@ -32,22 +32,14 @@ class KoreaeximFxClientTest {
 
     private static final LocalDate DATE = LocalDate.of(2026, 9, 2);
 
-    /**
-     * TLS 신뢰 묶음을 붙이지 않는 가짜. 진짜는 요청 팩터리를 갈아 끼우므로 목 서버 바인딩이
-     * 풀린다. 어느 이름의 묶음을 달라고 했는지만 기록해 둔다.
-     */
+    /** 어느 이름의 신뢰 묶음을 달라고 했는지 기록하는 가짜 등록부. */
     private String requestedBundle;
 
-    private final RestClientSsl noSsl = new RestClientSsl() {
+    private final SslBundles recordingBundles = new DefaultSslBundleRegistry() {
         @Override
-        public Consumer<RestClient.Builder> fromBundle(String bundleName) {
-            requestedBundle = bundleName;
-            return builder -> {};
-        }
-
-        @Override
-        public Consumer<RestClient.Builder> fromBundle(SslBundle bundle) {
-            return builder -> {};
+        public SslBundle getBundle(String name) {
+            requestedBundle = name;
+            return SslBundle.of(null);
         }
     };
 
@@ -64,17 +56,25 @@ class KoreaeximFxClientTest {
     private MockRestServiceServer server;
     private KoreaeximFxClient client;
 
+    /* 운영 생성자는 요청 팩터리를 직접 갈아 끼워(WAF 챌린지용 리다이렉트·쿠키) 목 서버 바인딩을
+       덮는다. 그래서 응답 해석 규칙은 클라이언트를 밖에서 넣는 테스트 전용 생성자로 본다.
+       신뢰 묶음 이름은 아래에서 운영 생성자를 직접 불러 따로 확인한다. */
     @BeforeEach
     void setUp() {
         RestClient.Builder builder = RestClient.builder();
         server = MockRestServiceServer.bindTo(builder).build();
         client = new KoreaeximFxClient(
-                builder, noSsl, new KoreaeximProperties("http://fx.test/exchangeJSON", "test-key"));
+                builder.build(), new KoreaeximProperties("http://fx.test/exchangeJSON", "test-key"));
     }
 
     @Test
     @DisplayName("수출입은행 전용 신뢰 묶음(koreaexim)을 붙인다 — 서버가 중간 인증서를 안 보내서다")
     void 전용_신뢰_묶음을_붙인다() {
+        new KoreaeximFxClient(
+                RestClient.builder(),
+                recordingBundles,
+                new KoreaeximProperties("http://fx.test/exchangeJSON", "test-key"));
+
         assertThat(requestedBundle).isEqualTo("koreaexim");
     }
 

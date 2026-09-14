@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.ssl.SslBundles;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -84,7 +85,11 @@ public class KoreaeximFxClient {
      * 리다이렉트 추적과 쿠키 저장을 켠 HTTP 클라이언트를 직접 만들어 붙인다 — 클래스 주석의
      * WAF 챌린지를 넘기 위한 것이고, 기본 RestClient 로는 둘 다 꺼져 있어 302 에서 끝난다.
      * SSL 묶음도 여기서 직접 건다(RestClientSsl 은 제 요청 팩토리를 세우므로 함께 못 쓴다).
+     *
+     * <p>{@code @Autowired} 를 단 이유 — 아래에 테스트 전용 생성자가 하나 더 있어서 스프링이 어느
+     * 쪽으로 주입할지 정하지 못한다. 운영 경로는 이쪽 하나다.
      */
+    @Autowired
     public KoreaeximFxClient(
             RestClient.Builder restClientBuilder, SslBundles sslBundles, KoreaeximProperties properties) {
         HttpClient httpClient = HttpClient.newBuilder()
@@ -97,6 +102,20 @@ public class KoreaeximFxClient {
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
         factory.setReadTimeout(TIMEOUT);
         this.restClient = restClientBuilder.requestFactory(factory).build();
+        this.properties = properties;
+    }
+
+    /**
+     * 이미 만들어 둔 클라이언트를 그대로 받는다. <b>테스트 전용 이음매</b>다.
+     *
+     * <p>위 생성자가 요청 팩터리를 직접 갈아 끼우기 때문에 {@code MockRestServiceServer.bindTo(builder)}
+     * 가 심어 둔 팩터리가 덮여 목 서버가 요청을 가로채지 못한다. 그렇다고 응답 해석 규칙(result 코드
+     * 1~4 · 쉼표 섞인 숫자 · 빈 배열)을 안 볼 수는 없어서, 클라이언트를 밖에서 넣는 길을 하나 둔다.
+     *
+     * <p>package-private 이라 스프링이 쓰지 않는다 — 운영 경로는 위 생성자 하나뿐이다.
+     */
+    KoreaeximFxClient(RestClient restClient, KoreaeximProperties properties) {
+        this.restClient = restClient;
         this.properties = properties;
     }
 
