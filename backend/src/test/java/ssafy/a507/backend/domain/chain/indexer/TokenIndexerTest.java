@@ -286,6 +286,17 @@ class TokenIndexerTest {
     }
 
     @Test
+    @DisplayName("체인 끝까지 읽고 회차를 마치면 lastSyncedAt 이 그 시각이 된다 — 지갑 잔액의 syncedAt(ANT-TOKEN-04)")
+    void last_synced_at() {
+        assertThat(indexer.lastSyncedAt()).isEmpty();
+        source.head(150);
+
+        indexer.poll(now);
+
+        assertThat(indexer.lastSyncedAt()).contains(now);
+    }
+
+    @Test
     @DisplayName("토큰 주소가 없으면 꺼진다 — 릴레이어 키는 안 본다")
     void disabled_without_address() {
         TokenIndexer off = new TokenIndexer(source, service, props, new PredictTokenProperties(null));
