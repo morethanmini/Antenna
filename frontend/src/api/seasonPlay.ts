@@ -13,7 +13,7 @@
    - POST /join(restart 포함) · GET /me · POST /orders · GET /trades — 됨(ANT-SEASON-03, v0.36)
    - POST /advance · POST /finish · GET /result/me — 됨(ANT-SEASON-04, v0.37~39)
    - 대회 참가(참가비 소각 서명)는 501 — ANT-SEASON-06
-   - GET /news — ANT-SEASON-07, season_news 가 0행이다
+   - GET /news — 됨(ANT-SEASON-07). 데이터는 seed/season-news.jsonl.gz 가 들어오면 채워진다
    - GET /indicators — MVP 에서 빼기로 했다. 절대값 하나로 구간이 특정된다
 
    Idempotency-Key 는 scope 하나에 키 하나가 물려 있다(api/idempotency). 성공한 뒤
@@ -206,13 +206,19 @@ export const getResult = (seasonId: number) =>
 
 /* ── 게임일 뉴스 · GET /seasons/{id}/news ─────────────────── */
 
-export type NewsKind = 'NEWS' | 'DISCLOSURE' | 'IR' | 'EVENT'
+export type NewsKind = 'NEWS' | 'DISCLOSURE' | 'IR' | 'EVENT' | 'AI_HINT'
 
-/** 본문은 종목명·연도 치환본이다. 원문이 아니다 */
+/**
+ * 제목·본문(앞부분 발췌)에서 날짜·연도·언론사를 지웠다. 종목은 실명이다.
+ * link 는 원문 주소라 누르면 날짜가 보인다 — 연습 모드만 남아 그대로 준다.
+ * AI_HINT 는 그 게임일 시장 전체 요약: title 이 한 줄 요약, body 가 주요 사건 세 줄(\n), link 는 null.
+ * tickerId 를 빼면 AI_HINT, 넣으면 그 종목 기사다. 최근 게임일부터 30건, day 는 진행일에서 잘린다.
+ */
 export type SeasonNews = {
   kind: NewsKind
   title: string
-  body: string
+  body: string | null
+  link: string | null
   gameDay: number
 }
 

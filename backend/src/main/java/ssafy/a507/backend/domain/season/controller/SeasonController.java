@@ -25,6 +25,7 @@ import ssafy.a507.backend.domain.season.dto.SeasonFinishResponse;
 import ssafy.a507.backend.domain.season.dto.SeasonJoinRequest;
 import ssafy.a507.backend.domain.season.dto.SeasonJoinResponse;
 import ssafy.a507.backend.domain.season.dto.SeasonListResponse;
+import ssafy.a507.backend.domain.season.dto.SeasonNewsListResponse;
 import ssafy.a507.backend.domain.season.dto.SeasonOrderRequest;
 import ssafy.a507.backend.domain.season.dto.SeasonOrderResponse;
 import ssafy.a507.backend.domain.season.dto.SeasonPriceListResponse;
@@ -92,6 +93,18 @@ public class SeasonController {
             @RequestParam(required = false) Integer uptoDay) {
         return seasonQueryService.prices(
                 currentUserProvider.currentUserId(), seasonId, tickerId, uptoDay);
+    }
+
+    /**
+     * 시즌 뉴스. {@code tickerId} 가 없으면 시장 전체 요약, 있으면 그 종목 기사다. {@code day} 도 가격의
+     * {@code uptoDay} 처럼 상한을 낮추는 데만 쓴다 — 진행일을 넘겨 물어도 진행일에서 잘린다.
+     */
+    @GetMapping("/{seasonId}/news")
+    public SeasonNewsListResponse news(
+            @PathVariable Long seasonId,
+            @RequestParam(required = false) Integer day,
+            @RequestParam(required = false) Long tickerId) {
+        return seasonQueryService.news(currentUserProvider.currentUserId(), seasonId, day, tickerId);
     }
 
     /**

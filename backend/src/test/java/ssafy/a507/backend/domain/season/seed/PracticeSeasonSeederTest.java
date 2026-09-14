@@ -24,12 +24,13 @@ class PracticeSeasonSeederTest {
     @Autowired EntityManager em;
 
     @Test
-    @DisplayName("스펙에 없는 연습 시즌은 종목·가격과 함께 지운다")
+    @DisplayName("스펙에 없는 연습 시즌은 종목·가격·뉴스와 함께 지운다 — 뉴스가 종목을 가리켜 먼저 지운다(FK)")
     void 스펙에_없는_시즌은_지운다() {
         Long stale = insertSeason("PRACTICE", "옛 업종", 1L);
         insertStock("A0001");
         Long ticker = insertTicker(stale, "A0001");
         insertPrice(ticker);
+        insertNews(stale, ticker);
         em.flush();
         em.clear();
 
@@ -38,6 +39,7 @@ class PracticeSeasonSeederTest {
         assertThat(count("seasons")).isZero();
         assertThat(count("season_tickers")).isZero();
         assertThat(count("season_prices")).isZero();
+        assertThat(count("season_news")).isZero();
     }
 
     @Test
@@ -99,6 +101,14 @@ class PracticeSeasonSeederTest {
     private void insertPrice(Long tickerId) {
         em.createNativeQuery("INSERT INTO season_prices (ticker_id, game_day, close) VALUES (?, 1, 1000)")
                 .setParameter(1, tickerId)
+                .executeUpdate();
+    }
+
+    private void insertNews(Long seasonId, Long tickerId) {
+        em.createNativeQuery(
+                        "INSERT INTO season_news (season_id, ticker_id, game_day, kind, title) VALUES (?, ?, 1, 'NEWS', '기사')")
+                .setParameter(1, seasonId)
+                .setParameter(2, tickerId)
                 .executeUpdate();
     }
 

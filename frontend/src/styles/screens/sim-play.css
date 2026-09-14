@@ -606,3 +606,26 @@
   .sp-indbtn,.sp-indpop button,.sp-tpick,.sp-steps button,.sp-stepper > button,.sp-join,
   .sp-submit,.sp-advance,.tp-row,.pd-legend button,.sp-fold > summary i{transition:none}
 }
+
+/* ── 그날의 요약·소식 (ANT-SEASON-07) ───────────────── */
+/* 접힌 줄에 한 줄 요약과 건수를 띄우므로 펴 보지 않아도 뜻이 전해진다. */
+.sp-hint{margin:0;padding:0 0 0 18px;color:var(--ink);font-size:13.5px;line-height:1.7}
+.sp-hint li{margin:0 0 6px}
+.sp-hint li:last-child{margin-bottom:0}
+
+.sp-news{margin:0;padding:0;list-style:none;display:grid;gap:12px;max-height:320px;overflow:auto}
+.sp-news li{padding:0 0 12px;border-bottom:1px solid var(--rule)}
+.sp-news li:last-child{padding-bottom:0;border-bottom:none}
+.sp-news-head{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px}
+.sp-news-head a,.sp-news-head b{color:var(--ink);font-size:13.5px;font-weight:750;line-height:1.5}
+.sp-news-head a:hover{text-decoration:underline}
+/* 실제 날짜 대신 게임일만 적는다 — 시즌 전체가 따르는 규칙이다 */
+.sp-news-day{
+  flex:none;padding:2px 7px;border-radius:999px;background:var(--surface-2);
+  color:var(--muted);font-family:var(--mono);font-size:10.5px;font-weight:700;
+}
+.sp-news-kind{
+  flex:none;padding:2px 7px;border-radius:999px;background:#eef1ff;
+  color:var(--brand);font-size:10.5px;font-weight:800;
+}
+.sp-news li p{margin:4px 0 0;color:var(--muted);font-size:12.5px;line-height:1.65}

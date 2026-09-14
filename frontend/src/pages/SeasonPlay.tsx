@@ -12,9 +12,9 @@
    차트에 폭을 다 주지 않는다. 시즌이 30게임일이라 워밍업까지 합쳐도 봉이 60개라
    넓게 늘어놓으면 오히려 성기게 보인다.
 
-   뉴스·AI 힌트는 아래 두 칸으로 내리고 접어 뒀다(2026-09-08). season_news 가
-   0행이라 빈 상자 둘이 화면 가운데를 차지하고 있었다 — 접힌 줄에 무엇이 올
-   자리인지만 적어 둔다. ANT-SEASON-07 이 들어오면 펴진 모습이 채워진다.
+   뉴스·AI 힌트는 아래 두 칸으로 내리고 접어 뒀다(2026-09-08). 주문할 때 먼저 보는
+   것은 차트와 내 비중이고, 읽을거리는 그다음이다. 2026-09-14 에 GET /news 가 들어와
+   접힌 줄에 그날의 한 줄 요약과 기사 건수가 뜬다 — 펴 보지 않아도 무엇이 있는지 안다.
 
    ── 프로토타입에서 일부러 뺀 것 ──────────────────────────
    1. 날짜 배지(2008.09.19 금). 시기를 알려주면 결과를 아는 사람이 유리해진다.
@@ -27,9 +27,8 @@
    6. 초보자 모드 · 심급적용 토글. 아직 정의가 없다.
 
    ── 서버에서 오는 것 · 아직 안 오는 것 ────────────────────
-   온다   GET /seasons/{id} · /tickers · /tickers/{tickerId}/prices
+   온다   GET /seasons/{id} · /tickers · /tickers/{tickerId}/prices · /news
           GET /seasons/{id}/me · /trades · POST /orders · /advance · /join
-   안 온다 GET /news (ANT-SEASON-07)
 
    주문·진행·투자현황은 useSeasonSim 이 서버를 부른다. 브라우저에서 굴리던 것을
    2026-09-08 에 서버로 옮겼다 — 그때 order·advance 를 Promise 로 만들어 둔 덕에
@@ -39,7 +38,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ApiError } from '../api/errors'
 import {
   getPrices, getTickers, maxBuyQty, orderAmount, rate, signOf,
-  type Candle, type Side, type Ticker,
+  type Candle, type SeasonNews, type Side, type Ticker,
 } from '../api/seasonPlay'
 import { useApiQuery } from '../api/useApiQuery'
 import CandleChart from '../components/sim/CandleChart'
@@ -209,6 +208,14 @@ export default function SeasonPlay() {
     setCandles({})
   }
 
+  /* 그날의 시장 요약(AI_HINT)과 고른 종목의 기사·공시. 훅이라 이른 return 보다 위에 둔다.
+     서버가 진행일을 넘는 행을 내리지 않으므로 day 는 화면 표시용이다 — 넘겨 물어도 잘린다. */
+  const hints = useApiQuery<{ items: SeasonNews[] }>(`/seasons/${id}/news`, { day: sim.day })
+  const news = useApiQuery<{ items: SeasonNews[] }>(
+    `/seasons/${id}/news`,
+    { day: sim.day, tickerId: selected ?? undefined },
+  )
+
   const heldQty = useMemo(
     () => Object.fromEntries(sim.positions.map((p) => [p.tickerId, p.qty])),
     [sim.positions],
@@ -281,6 +288,8 @@ export default function SeasonPlay() {
     )
   }
 
+  const todayHint = hints.data?.items.find((n) => n.gameDay === sim.day) ?? null
+  const newsItems = (news.data?.items ?? []).filter((n) => n.kind !== 'AI_HINT')
   const ticker = tickers.find((t) => t.tickerId === selected) ?? null
   const bars = selected === null ? undefined : candles[selected]
   const price = selected === null ? null : sim.priceOf(selected)
@@ -710,14 +719,22 @@ export default function SeasonPlay() {
                 <Ico size={15}><path d="m12 4 1.6 3.6L17 9.2l-3.4 1.6L12 14.4l-1.6-3.6L7 9.2l3.4-1.6z" /><path d="M18 15.5 18.8 17l1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8z" /></Ico>
               </span>
               AI 한줄 요약
-              <em>아직 준비 중입니다</em>
+              <em>{hints.loading ? '불러오는 중…' : (todayHint?.title ?? '이 게임일 요약이 없습니다')}</em>
               <i aria-hidden="true">⌄</i>
             </summary>
             <div className="sp-fold-body">
-              <p className="sp-soon">
-                그 시점 사건을 요약해 판단 근거를 짚어 줍니다.
-                <small>배치 생성 · ANT-SEASON-07</small>
-              </p>
+              {todayHint ? (
+                <ul className="sp-hint">
+                  {todayHint.body?.split('\n').filter(Boolean).map((line) => (
+                    <li key={line}>{line.replace(/^·\s*/, '')}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="sp-soon">
+                  그 시점 사건을 요약해 판단 근거를 짚어 줍니다.
+                  <small>배치 생성 · ANT-SEASON-07</small>
+                </p>
+              )}
             </div>
           </details>
 
@@ -727,14 +744,41 @@ export default function SeasonPlay() {
                 <Ico size={15}><path d="M5 4h11v16H5z" /><path d="M16 8h3v9.5a2.5 2.5 0 0 1-5 0" /><path d="M8 8h5M8 11.5h5M8 15h3" /></Ico>
               </span>
               당시 주요 이슈
-              <em>아직 준비 중입니다</em>
+              <em>
+                {news.loading
+                  ? '불러오는 중…'
+                  : newsItems.length > 0
+                    ? `${ticker?.displayName ?? ''} 소식 ${newsItems.length}건`
+                    : '아직 소식이 없습니다'}
+              </em>
               <i aria-hidden="true">⌄</i>
             </summary>
             <div className="sp-fold-body">
-              <p className="sp-soon">
-                게임일 시점의 뉴스·공시가 이 자리에 옵니다.
-                <small>GET /seasons/{'{id}'}/news · ANT-SEASON-07</small>
-              </p>
+              {newsItems.length > 0 ? (
+                <ul className="sp-news">
+                  {newsItems.map((n) => (
+                    <li key={n.link ?? `${n.gameDay}${n.title}`}>
+                      <div className="sp-news-head">
+                        <span className="sp-news-day">DAY {n.gameDay}</span>
+                        {n.kind !== 'NEWS' && (
+                          <span className="sp-news-kind">{n.kind === 'IR' ? '기업설명회' : '공시'}</span>
+                        )}
+                        {n.link ? (
+                          <a href={n.link} target="_blank" rel="noreferrer">{n.title}</a>
+                        ) : (
+                          <b>{n.title}</b>
+                        )}
+                      </div>
+                      {n.body && <p>{n.body}</p>}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="sp-soon">
+                  이 종목은 여기까지 전해진 기사·공시가 없습니다.
+                  <small>고른 종목과 진행일에 따라 달라집니다</small>
+                </p>
+              )}
             </div>
           </details>
         </div>
