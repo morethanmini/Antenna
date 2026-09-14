@@ -45,7 +45,8 @@ import ssafy.a507.backend.domain.season.repository.SeasonTickerRepository;
  * 시즌 조회 — 목록·상세·내 참가. 읽기만 한다.
  *
  * <p><b>이 서비스가 지키는 것은 하나다: 시기를 내보내지 않는다.</b> 응답 DTO 에
- * {@code baseDate} 자리가 아예 없어 실수로 담을 수 없다. 실제 날짜·연도·사건 고유명사는
+ * {@code baseDate} 자리가 아예 없어 실수로 담을 수 없다. 숨기는 것은 실제 날짜·연도이고, 사건 이름은
+ * 제목·뉴스에 드러난다(2026-09-14 — 대회 모드를 접고 연습만 남았다). 실제 날짜는
  * 어떤 시즌 응답에도 나가지 않는다(API 명세 v0.24 · ERD v0.6).
  */
 @Service
