@@ -45,6 +45,7 @@ assert hits("입국자 대상 특별절차") == ["대상"], "흔한 낱말은 �
 assert ex.clean("#039;전 키움#039; 웰스") == "'전 키움' 웰스"
 assert ex.clean("도요타 임원 amp;quot;투자amp;quot;") == '도요타 임원 "투자"'
 assert ex.clean("S&amp;P 500") == "S&P 500"
+assert ex.clean("베트남서 apos;이것apos; 금지") == "베트남서 '이것' 금지"
 # 가림(select_news)
 assert sn.mask_dates("2020년 3월 15일 밝혔다") == "○○○○년 ○월 ○일 밝혔다"
 assert sn.mask_dates("13일로 예정된 재운영") == "○일로 예정된 재운영", "날짜 뒤 조사"
