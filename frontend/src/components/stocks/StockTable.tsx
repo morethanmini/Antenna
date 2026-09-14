@@ -85,6 +85,9 @@ const CHIP_W = 148
 /** 스크롤 끝 판정 여유(px). 소수점 오차로 끝에 닿고도 1px 이 남는 일이 있다 */
 const EDGE_SLACK = 1
 
+/** 값이 오기 전에 깔아 두는 자리 칸 수. 1440px 화면에서 트랙에 들어가는 만큼이다 */
+const SKELETON_CHIPS = 8
+
 /**
  * 상단 섹터 요약 칩. 누르면 섹터 필터가 즉시 바뀐다.
  *
@@ -136,7 +139,15 @@ function SectorChips({ current, onPick }: {
     el.scrollBy({ left: dir * Math.max(CHIP_W, el.clientWidth - CHIP_W), behavior: 'smooth' })
   }, [])
 
-  if (error || !data) return null
+  if (error) return null
+  /* 아직 안 왔으면 **같은 크기의 자리**를 그린다(2026-09-14).
+
+     null 을 돌려주고 있었는데, 그러면 이 줄이 통째로 없다가 생기면서 아래가
+     104px 밀린다. 옆의 필터 카드와 목록 패널은 정적 마크업이라 먼저 그려져
+     있어, 유독 이 줄만 "가장 늦게 뜬다" 로 보였다. 재 보니 실제 지연은 140ms
+     남짓이고 /stocks/sectors 가 /stocks 보다 느린 것도 아니다(둘 다 80~90ms) —
+     자리를 안 잡아 둔 것이 원인이었다. */
+  if (!data) return <SectorChipsSkeleton />
 
   return (
     <div className="st-sectors">
@@ -169,11 +180,39 @@ function SectorChips({ current, onPick }: {
   )
 }
 
-/** 섹터 줄 좌우 넘김 버튼. 화살표는 MarketMap 의 "전체 섹터" 와 같은 모양이다 */
+/**
+ * 값이 오기 전의 자리.
+ *
+ * 빈 상자만 두지 않고 **칩 모양을 옅게 깔아 둔다** — 같은 높이의 회색 띠만
+ * 있으면 그것대로 고장 난 화면처럼 보인다. 칸이 여덟인 것은 1440px 기준으로
+ * 트랙에 들어가는 수다. 모자라면 오른쪽이 조금 비고 넘치면 잘릴 뿐이라,
+ * 화면 폭을 재서 맞출 만한 값이 아니다.
+ *
+ * 읽어 줄 내용이 없으므로 보조기기에서는 감춘다. 목록 쪽이 제 로딩을 알린다.
+ */
+function SectorChipsSkeleton() {
+  return (
+    <div className="st-sectors" aria-hidden="true">
+      <SectorNav dir={-1} disabled />
+      <div className="st-sector-track">
+        {Array.from({ length: SKELETON_CHIPS }, (_, i) => (
+          <div key={i} className="st-sector-chip st-sector-skel">
+            <span className="st-skel st-skel-name" />
+            <span className="st-skel st-skel-meta" />
+          </div>
+        ))}
+      </div>
+      <SectorNav dir={1} disabled />
+    </div>
+  )
+}
+
+/** 섹터 줄 좌우 넘김 버튼. 화살표는 MarketMap 의 "전체 섹터" 와 같은 모양이다.
+ *  자리만 그릴 때는 누를 일이 없어 onClick 이 없다 */
 function SectorNav({ dir, disabled, onClick }: {
   dir: -1 | 1
   disabled: boolean
-  onClick: () => void
+  onClick?: () => void
 }) {
   return (
     <button
@@ -320,11 +359,16 @@ export default function StockTable({ filter, setFilter }: Props) {
             </label>
           </fieldset>
 
-          <button type="submit" className="st-apply" disabled={perInvalid}>필터 적용</button>
-          <button type="button" className="st-reset"
-                  onClick={() => { setDraft(EMPTY_FILTER); setFilter(EMPTY_FILTER) }}>
-            필터 초기화
-          </button>
+          {/* 두 버튼을 한 번 묶는다 — .st-filter 의 gap:18px 이 모든 자식 사이에
+              똑같이 걸려, 조건 묶음 사이만큼이나 버튼 둘 사이가 벌어져 있었다.
+              한 쌍으로 읽혀야 하는 것이라 여기만 따로 좁힌다(st-actions). */}
+          <div className="st-actions">
+            <button type="submit" className="st-apply" disabled={perInvalid}>필터 적용</button>
+            <button type="button" className="st-reset"
+                    onClick={() => { setDraft(EMPTY_FILTER); setFilter(EMPTY_FILTER) }}>
+              필터 초기화
+            </button>
+          </div>
         </form>
 
         {/* ── 우측 목록 ────────────────────────────────── */}

@@ -187,6 +187,27 @@
 .stocks-page .st-sector-meta em{color:var(--faint); font-style:normal; font-size:12px; font-weight:650}
 .stocks-page .st-sector-meta b{margin-left:auto; font-size:12.5px; font-weight:750}
 
+/* ── 값이 오기 전의 자리 ─────────────────────────────────
+   칩과 **높이가 같아야** 값이 들어올 때 아래가 안 밀린다. 진짜 칩의 78px 은
+   글자에서 나오는 값이라 자리만 그릴 때는 잴 수 없어, 안쪽 막대 높이로 맞춘다
+   (21 + gap 7 + 22 = 50 · 위아래 padding 26 · 테두리 2 = 78).
+   글꼴이나 padding 을 건드리면 여기도 같이 고친다 — 어긋난 만큼 그대로 튄다.
+
+   빛줄기는 B-03 종목 상세의 .sd-skel 과 같은 방식이다. */
+.stocks-page .st-sector-skel{cursor:default}
+.stocks-page .st-skel{
+  display:block; border-radius:6px;
+  background:linear-gradient(100deg,var(--surface-2) 30%,#f2f3f8 46%,var(--surface-2) 62%);
+  background-size:220% 100%; animation:st-shine 1.25s linear infinite;
+}
+@keyframes st-shine{to{background-position:-120% 0}}
+.stocks-page .st-skel-name{width:78px; height:21px}
+.stocks-page .st-skel-meta{width:100%; height:22px}
+/* 움직임을 줄여 달라는 설정에서는 빛줄기를 세운다 */
+@media (prefers-reduced-motion:reduce){
+  .stocks-page .st-skel{animation:none}
+}
+
 /* ── 본문 2단 ───────────────────────────────────────────── */
 .stocks-page .st-body{
   display:grid; gap:16px;
@@ -242,6 +263,11 @@
   color:var(--body); font-size:12.5px; font-weight:650; cursor:pointer;
 }
 .stocks-page .st-check input{width:15px; height:15px; flex:none; accent-color:var(--brand)}
+
+/* "필터 적용"·"필터 초기화" 는 한 쌍으로 읽혀야 한다. .st-filter 의 gap:18px 이
+   모든 자식 사이에 똑같이 걸려, 서로 다른 조건 묶음 사이만큼이나 이 둘이 벌어져
+   있었다 — 한 겹 묶어 여기만 8px 로 좁힌다(2026-09-14). */
+.stocks-page .st-actions{display:flex; flex-direction:column; gap:8px}
 
 .stocks-page .st-apply{
   padding:11px 0; border-radius:10px; background:var(--brand); color:#fff;
@@ -322,7 +348,12 @@
 }
 .stocks-page .st-item:last-child{border-bottom:0}
 .stocks-page .st-item:hover{background:var(--surface-2)}
-.stocks-page .st-link{padding:12px 0 12px 20px; color:var(--ink)}
+/* 행 높이를 정하는 것은 **로고(36)가 아니라 종목명+코드 묶음**이다. 글꼴 기본
+   줄 높이가 헐거워 23 + gap 2 + 20 = 45 였고, 여기에 위아래 12 씩과 구분선을
+   더해 한 행이 70px 이었다. 줄 높이를 좁히고 여백을 10 으로 줄여 59px 로
+   낮췄다(2026-09-14) — 열 줄이면 110px, 화면 하나만큼 덜 스크롤한다.
+   더 줄이려면 로고를 건드려야 한다: 36 + 20 = 56 이 그다음 바닥이다. */
+.stocks-page .st-link{padding:10px 0 10px 20px; color:var(--ink)}
 .stocks-page .st-item:hover .st-name{color:var(--brand-ink)}
 
 .stocks-page .st-id{display:flex; align-items:center; gap:11px; min-width:0}
@@ -331,9 +362,11 @@
   border-radius:10px; font-size:14px; font-weight:750;
 }
 .stocks-page .st-id-text{display:flex; flex-direction:column; gap:2px; min-width:0}
-.stocks-page .st-name{font-size:14.5px; font-weight:750; letter-spacing:-.01em}
+.stocks-page .st-name{
+  font-size:14.5px; font-weight:750; letter-spacing:-.01em; line-height:1.35;
+}
 .stocks-page .st-sub{
-  color:var(--faint); font-size:11.5px; font-weight:500;
+  color:var(--faint); font-size:11.5px; font-weight:500; line-height:1.4;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 
@@ -382,7 +415,10 @@
     gap:16px 20px; align-items:start;
   }
   .stocks-page .st-filter h2{grid-column:1 / -1}
-  .stocks-page .st-apply,.stocks-page .st-reset{grid-column:span 1; align-self:end}
+  /* 넓은 화면에서는 버튼 둘이 세로로 쌓이지만, 여기서는 조건 칸들과 나란히
+     한 칸을 차지하므로 가로로 눕혀 그 칸을 채운다 */
+  .stocks-page .st-actions{grid-column:span 1; align-self:end; flex-direction:row}
+  .stocks-page .st-actions > *{flex:1}
 }
 @media (max-width:980px){
   /* PER·PBR 을 접는다 — 종목·종가·등락률·심리가 먼저다 */
@@ -399,7 +435,7 @@
   .stocks-page .st-cols,.stocks-page .st-link{grid-template-columns:minmax(0,1fr) auto}
   .stocks-page .st-link{
     grid-template-areas:'id close' 'id rate';
-    gap:2px 12px; padding:12px 0 12px 16px;
+    gap:2px 12px; padding:10px 0 10px 16px;
   }
   .stocks-page .st-id{grid-area:id}
   .stocks-page .st-close{grid-area:close}
