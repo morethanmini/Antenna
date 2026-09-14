@@ -98,9 +98,9 @@ export const ROUTES: PageMeta[] = [
   { screen: 'C-04', element: Portfolio, path: '/me/portfolio', title: '예측 포트폴리오', access: 'user', mode: 'insight', nav: 'portfolio', bodyClass: 'forecast-page', story: 'ANT-FE-PORTFOLIO' },
 
   // ── D. 온체인 검증 ───────────────────────────────────
-  { screen: 'D-01', element: LedgerList, path: '/ledger', title: '커밋 원장', access: 'user', mode: 'insight', nav: 'portfolio', story: 'ANT-FE-LEDGER-LIST' },
-  { screen: 'D-02', element: Anchor, path: '/ledger/anchors/:id', title: '앵커 배치 상세', access: 'user', mode: 'insight', nav: 'portfolio', story: 'ANT-FE-ANCHOR' },
-  { screen: 'D-03', element: Verify, path: '/ledger/verify/:predictionId', title: '3단계 검산', access: 'user', mode: 'insight', nav: 'portfolio', story: 'ANT-FE-VERIFY' },
+  { screen: 'D-01', element: LedgerList, path: '/ledger', title: '커밋 원장', access: 'user', mode: 'insight', nav: 'ledger', story: 'ANT-FE-LEDGER-LIST' },
+  { screen: 'D-02', element: Anchor, path: '/ledger/anchors/:id', title: '앵커 배치 상세', access: 'user', mode: 'insight', nav: 'ledger', story: 'ANT-FE-ANCHOR' },
+  { screen: 'D-03', element: Verify, path: '/ledger/verify/:predictionId', title: '3단계 검산', access: 'user', mode: 'insight', nav: 'ledger', story: 'ANT-FE-VERIFY' },
 
   // ── E. 채널 · 구독 ───────────────────────────────────
   { screen: 'E-01', element: Ranking, path: '/rankings', title: '주가 예측 랭킹', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'predictor-market-page', story: 'ANT-FE-RANKING' },
