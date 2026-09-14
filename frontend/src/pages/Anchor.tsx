@@ -25,7 +25,7 @@ import { useApiQuery } from '../api/useApiQuery'
 import {
   STATUS_LABEL, formatBusinessDate, formatConfirmedAt, type AnchorDetail,
 } from '../api/anchors'
-import { HORIZON_LABEL } from '../api/predictions'
+import { horizonLabel } from '../api/predictions'
 import AnchorBadge from '../components/AnchorBadge'
 import CopyHash from '../components/CopyHash'
 import ErrorState from '../components/state/ErrorState'
@@ -177,7 +177,7 @@ export default function Anchor() {
                           ) : (
                             <span className="ac-commit-nostock">종목 없음</span>
                           )}
-                          <span className="ac-commit-horizon">{HORIZON_LABEL[c.horizon]}</span>
+                          <span className="ac-commit-horizon">{horizonLabel(c.horizon)}</span>
                         </span>
 
                         <CopyHash value={c.commitHash} head={14} tail={10} />
