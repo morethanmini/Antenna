@@ -21,6 +21,8 @@ const ICON: Record<string, React.ReactNode> = {
   report: <><path d="M6 2h8l4 4v16H6z" /><path d="M14 2v4h4" /><path d="M9 12h6M9 16h6" /></>,
   portfolio: <><path d="M3 7h18v13H3z" /><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" /><path d="M3 12h18" /></>,
   community: <><path d="M17 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9.5" cy="7" r="3.5" /><path d="M22 20v-2a4 4 0 0 0-3-3.87" /></>,
+  // 사슬 — 온체인 기록. 마이페이지가 쓰던 것과 같은 모양이다
+  chain: <><path d="M10 13a5 5 0 0 0 7.5.6l3-3a5 5 0 0 0-7-7l-1.7 1.7" /><path d="M14 11a5 5 0 0 0-7.5-.6l-3 3a5 5 0 0 0 7 7l1.7-1.7" /></>,
   play: <><circle cx="12" cy="12" r="9" /><path d="m10 8.5 6 3.5-6 3.5z" /></>,
   trophy: <><path d="M7 4h10v5a5 5 0 0 1-10 0z" /><path d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3" /><path d="M10 19h4M12 14v5M8 21h8" /></>,
 }
@@ -33,6 +35,11 @@ const MODES = {
       { key: 'home', icon: 'home', text: '홈', href: '/' },
       { key: 'stocks', icon: 'stocks', text: '종목 탐색', href: '/stocks' },
       { key: 'market', icon: 'market', text: '주가 예측 랭킹', href: '/rankings' },
+      /* 원장은 개인 기록이 아니라 **서비스 전체**의 기록이다(GET /anchors 에 사용자
+         필터가 없다). 그래서 아래 '예측 포트폴리오' 묶음이 아니라 랭킹 옆에 둔다 —
+         랭킹이 "누가 잘하나", 원장이 "그 기록이 조작은 아닌가" 다.
+         전에는 사이드바에 없어서 마이페이지 임시 링크로만 닿았다. */
+      { key: 'ledger', icon: 'chain', text: '원장 내역', href: '/ledger' },
       { key: 'report', icon: 'report', text: '리포트', href: '/reports' },
       { key: 'community', icon: 'community', text: '커뮤니티', href: '/posts' },
       { key: 'portfolio', icon: 'portfolio', text: '예측 포트폴리오', href: '/me/portfolio' },
