@@ -12,5 +12,6 @@
 import { Navigate } from 'react-router-dom'
 
 export default function ChannelFee() {
-  return <Navigate to="/settings" replace />
+  // 탭이 생겨 정확히 그 자리로 보낼 수 있다 — 설정 첫 탭에 떨구면 한 번 더 찾아야 한다
+  return <Navigate to="/settings?tab=channel" replace />
 }

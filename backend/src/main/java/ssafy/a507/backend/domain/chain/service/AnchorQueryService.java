@@ -12,6 +12,8 @@ import ssafy.a507.backend.domain.chain.dto.AnchorItemResponse;
 import ssafy.a507.backend.domain.chain.dto.AnchorListResponse;
 import ssafy.a507.backend.domain.chain.entity.AnchorBatch;
 import ssafy.a507.backend.domain.chain.repository.AnchorBatchRepository;
+import ssafy.a507.backend.domain.market.entity.Stock;
+import ssafy.a507.backend.domain.prediction.entity.Prediction;
 import ssafy.a507.backend.domain.prediction.repository.PredictionCommitRepository;
 
 /**
@@ -60,8 +62,19 @@ public class AnchorQueryService {
     public AnchorDetailResponse detail(long id) {
         AnchorBatch batch = batches.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ANCHOR_NOT_FOUND, "id"));
-        List<AnchorDetailResponse.Leaf> leaves = commits.findByAnchorBatchOrderByPredictionIdAsc(batch).stream()
-                .map(c -> new AnchorDetailResponse.Leaf(c.getPredictionId(), c.getCommitHash()))
+        /* 종목이 지워진 예측이 있어 stock 은 null 일 수 있다. 여기서 걸러 내면 리프가 모자라
+           루트가 재현되지 않으므로, 값만 비우고 줄은 남긴다. */
+        List<AnchorDetailResponse.Leaf> leaves = commits.findLeavesWithPredictionByAnchorBatch(batch).stream()
+                .map(c -> {
+                    Prediction p = c.getPrediction();
+                    Stock stock = p.getStock();
+                    return new AnchorDetailResponse.Leaf(
+                            c.getPredictionId(),
+                            c.getCommitHash(),
+                            stock == null ? null : stock.getCode(),
+                            stock == null ? null : stock.getName(),
+                            p.getHorizon());
+                })
                 .toList();
         return AnchorDetailResponse.of(batch, leaves);
     }

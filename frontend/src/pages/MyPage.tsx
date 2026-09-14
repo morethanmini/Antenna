@@ -8,10 +8,12 @@
    - 두지 않는 것: 핸들(@) · 구독자 수 · 작성 카운트 · 유저 레벨 · 신뢰도 점수 · 친구.
      /users/me 응답에 없고 사용자 등급 필드 자체가 없다. 배지와 랭킹 티어뿐이다.
 
-   배지 섹션은 내려 두었다(S15P21A507-230) — 아래 해당 자리의 주석에 근거가 있다. */
+   배지 섹션은 S15P21A507-230 에서 내렸다가 GET /users/me/badges 가 열려 되살렸다
+   (ANT-SEASON-09). */
 import { Link } from 'react-router-dom'
 import { useApiQuery } from '../api/useApiQuery'
-import { platformLabel, type MyProfile } from '../api/account'
+import { platformLabel, type BadgeList as BadgeListResponse, type MyProfile } from '../api/account'
+import BadgeList from '../components/BadgeList'
 import ErrorState from '../components/state/ErrorState'
 import { useAuth } from '../auth/context'
 import '../styles/screens/mypage.css'
@@ -43,6 +45,7 @@ const ICON: Record<string, React.ReactNode> = {
 export default function MyPage() {
   const { user } = useAuth()
   const profile = useApiQuery<MyProfile>('/users/me')
+  const badges = useApiQuery<BadgeListResponse>('/users/me/badges')
 
   /* 배열은 여기서 한 번 정규화한다. 백엔드 MeResponse 가 아직 이 필드를
      내려주지 않아 undefined 로 온다 — 아래에서 .length 를 바로 읽으면
@@ -110,21 +113,17 @@ export default function MyPage() {
         )}
 
         {/* ── 배지 ───────────────────────────────────────
-            섹션째 내렸다(S15P21A507-230).
+            S15P21A507-230 에서 내렸다가 GET /users/me/badges 가 열려(ANT-SEASON-09) 되살렸다.
+            이제 없는 경로가 아니므로 500 분기를 두지 않는다 — ErrorState 에 걸리는 것은
+            진짜 서버 오류뿐이다.
 
-            GET /users/me/badges 가 아직 없다. UserBadge 엔티티·리포지토리는 있으나
-            컨트롤러가 안 열렸다. 없는 경로라 500 이 와서, 전에는 ErrorState 대신
-            "배지는 준비 중입니다" 안내를 그려 두고 있었다 — 서버 문제가 아니고 다시
-            시도해도 영영 안 되므로 재시도 안내가 틀린 말이기 때문이다.
-
-            그래도 화면 한 칸을 계속 "준비 중" 으로 채우는 것보다 비우는 편이 낫다.
-            지금은 API 가 열려도 시즌 성과가 없어 빈 목록이다.
-
-            API 가 열리면 되살린다 — 그때는
-              const badges = useApiQuery<BadgeList>('/users/me/badges')
-            와 <BadgeList badges={badges.data?.items ?? []} /> 를 여기에 되돌리고,
-            500 분기 없이 ErrorState 를 그대로 쓰면 된다(진짜 서버 오류만 남는다).
-            컴포넌트 components/BadgeList.tsx 는 G-09 가 계속 쓰고 있어 그대로 있다. */}
+            아직 시즌을 끝낸 적이 없으면 빈 목록이고, 그 문구는 BadgeList 가 그린다. */}
+        <section className="mp-block">
+          <h3>배지</h3>
+          {badges.error
+            ? <ErrorState error={badges.error} onRetry={badges.reload} inline />
+            : <BadgeList badges={badges.data?.items ?? []} />}
+        </section>
 
         {/* ── 활동 진입점 ──────────────────────────────── */}
         <section className="mp-block">
