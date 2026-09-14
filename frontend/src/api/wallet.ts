@@ -4,7 +4,7 @@
    GET /wallet/balance  { balance(정수 ANT), symbol, syncedAt }
    GET /wallet/ledger   { items: [{ delta, reason, txHash, createdAt }], nextCursor, hasNext }
    POST /wallet/nonce   { scope } → { nonce, chainId }
-   POST /wallet/link    { address, signature } → { walletAddress } */
+   POST /wallet/link    { address, signature } → { walletAddress, bonus } */
 import { api } from './client'
 
 export type WalletStatus = {
@@ -80,7 +80,7 @@ export function formatDateTime(iso: string) {
 
 /* ── 지갑 연동 (M-01) ─────────────────────────────────────────
    POST /wallet/nonce  { scope }            → { nonce, chainId }
-   POST /wallet/link   { address, signature } → { walletAddress } */
+   POST /wallet/link   { address, signature } → { walletAddress, bonus } */
 
 /** 서명이 붙는 요청의 종류. payload 첫 줄의 용도 태그와 서버 nonce 칸을 동시에 정한다. */
 export const SIGNATURE_SCOPES = {
@@ -121,9 +121,30 @@ export function requestNonce(scope: SignatureScope) {
   return api.post<WalletNonce>('/wallet/nonce', { scope })
 }
 
+/**
+ * 연동 응답. 주소 등록과 함께 서버가 가입 보너스 mint 를 접수한다(ANT-TOKEN-07).
+ *
+ * 연동 자체는 요청 안에서 끝나 상태 코드는 200 그대로다 — 비동기인 것은 보너스 전송뿐이다.
+ */
+export type WalletLinkResult = {
+  walletAddress: string
+  /**
+   * 가입 보너스 접수분. 서버 체인이 꺼져 있으면 null 이다.
+   *
+   * `?` 로 둔 것은 서버 MR 보다 이쪽이 먼저 머지될 수 있어서다. 필드가 아직 안 오는 동안
+   * 타입이 거짓말을 하지 않게 두면, 화면은 줄을 안 그리는 쪽으로 알아서 흐른다.
+   *
+   * **전송이 실패해도 이 모양은 그대로다.** 성공과 구분할 단서가 응답에 없으므로 이것을 근거로
+   * "지급됐다"고 말하지 않는다. 실패분은 서버 재시도 배치가 10분 안팎에 다시 보낸다.
+   *
+   * amount 는 다른 금액 필드와 같이 정수 ANT 문자열이다 — formatToken() 으로 그린다.
+   */
+  bonus?: { operationId: string; amount: string } | null
+}
+
 /** 서명 검증 → 주소 등록. nonce 는 본문에 넣지 않는다 — 서버가 userId 로 꺼내 쓴다. */
 export function linkWallet(address: string, signature: string) {
-  return api.post<{ walletAddress: string }>('/wallet/link', { address, signature })
+  return api.post<WalletLinkResult>('/wallet/link', { address, signature })
 }
 
 /** 0x1234…cdef 로 줄인다. 주소 전체는 좁은 자리에 넣으면 줄바꿈으로 깨진다. */
