@@ -16,6 +16,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import ssafy.a507.backend.domain.account.entity.User;
+import ssafy.a507.backend.domain.season.badge.BadgeCode;
 
 /** 배지. 계정당 평생 1회라 재획득해도 행이 늘지 않는다. */
 @Entity
@@ -53,4 +54,19 @@ public class UserBadge {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+
+    /**
+     * 처음 딴 한 장. {@code pinned} 는 false 로 시작한다 — 전시 고정을 바꾸는 API 가 아직 없고,
+     * 서버가 임의로 하나를 올려 두면 사용자가 내릴 방법이 없다.
+     *
+     * @param season 딴 시즌 · 실전 트랙 배지면 null
+     */
+    public static UserBadge of(User user, BadgeCode code, Season season) {
+        UserBadge badge = new UserBadge();
+        badge.user = user;
+        badge.badgeCode = code.name();
+        badge.season = season;
+        badge.pinned = false;
+        return badge;
+    }
 }
