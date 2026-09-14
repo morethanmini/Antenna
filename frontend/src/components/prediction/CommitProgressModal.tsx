@@ -19,7 +19,7 @@
    합치지 않는다 — 사용자가 받은 것이 서로 다르다. */
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { PROOF_STATUS_LABEL, fetchAnchorStatus, isAnchorSettling } from '../../api/proof'
+import { PROOF_STATUS_LABEL, fetchProof, isAnchorSettling } from '../../api/proof'
 import type { ProofAnchorStatus } from '../../api/proof'
 import type { CreateResult } from '../../api/predictions'
 import BlockchainScene from './BlockchainScene'
@@ -116,7 +116,7 @@ export default function CommitProgressModal({ phase, result, onClose }: Props) {
       if (!alive || inflight) return
       inflight = true
       try {
-        const p = await fetchAnchorStatus(predictionId)
+        const p = await fetchProof(predictionId)
         if (!alive) return
         failures = 0
         setPolled(p.anchorStatus)
