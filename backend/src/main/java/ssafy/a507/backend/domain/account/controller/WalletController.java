@@ -34,11 +34,13 @@ public class WalletController {
         return walletService.issueNonce(currentUserProvider.currentUserId(), request.scope());
     }
 
-    /** 새 리소스를 만드는 게 아니라 기존 계정의 상태를 바꾸는 전이라서 200이다. */
+    /**
+     * 새 리소스를 만드는 게 아니라 기존 계정의 상태를 바꾸는 전이라서 200이다.
+     * 가입 보너스 mint 는 비동기지만(ANT-TOKEN-07) 연동 자체는 여기서 끝나므로 202 로 바꾸지 않는다.
+     */
     @PostMapping("/link")
     public WalletLinkResponse link(@Valid @RequestBody WalletLinkRequest request) {
-        return new WalletLinkResponse(
-                walletService.link(currentUserProvider.currentUserId(), request));
+        return walletService.link(currentUserProvider.currentUserId(), request);
     }
 
     @GetMapping

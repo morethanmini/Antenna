@@ -31,7 +31,9 @@ spring:
   sql:
     init:
       mode: never
-      schema-locations: classpath:db/append-only.sql
+      schema-locations:
+        - classpath:db/append-only.sql
+        - classpath:db/enum-checks.sql
       separator: "^^^ END OF SCRIPT ^^^"
 
   # 컨텍스트 로딩용 더미. 테스트는 구글과 통신하지 않는다.
@@ -78,6 +80,8 @@ app:
       signup-bonus: 10000
       slot-over: 1000
       ad-per-day: 1000
+    # 가입 보너스 재시도(ANT-TOKEN-07). 테스트는 SignupBonusService.retryOnce() 를 직접 부른다 — 스케줄은 끈다.
+    bonus-retry-cron: "-"
 
   # 판정 배치(ANT-PRED-03·04). "-" 는 스프링의 스케줄 비활성 표시다 — 등록은 검증되고 실행만 빠진다.
   # 켜 두면 테스트 중에 배치가 H2 의 픽스처를 전이시켜 다른 테스트가 흔들린다.

@@ -36,7 +36,10 @@ spring:
   sql:
     init:
       mode: always
-      schema-locations: classpath:db/append-only.sql
+      schema-locations:
+        - classpath:db/append-only.sql
+        # enum 칼럼의 옛 CHECK 제약 제거(ANT-TOKEN-07). 이유는 파일 머리말.
+        - classpath:db/enum-checks.sql
       # plpgsql 함수 본문의 세미콜론을 문장 구분자로 쪼개지 않도록 파일 전체를 한 문장으로 보낸다.
       separator: "^^^ END OF SCRIPT ^^^"
 
@@ -114,6 +117,9 @@ app:
       slot-over: 1000
       # 메인 배너 하루치 게재료 소각 (COMMUNITY-05). 잠정 — 경매형으로 바뀔 수 있다
       ad-per-day: 1000
+    # 가입 보너스 재시도(ANT-TOKEN-07) — 연동 때 빠진 보너스(체인 꺼짐·전송 실패·기능 배포 전 연동)를 다시 보낸다.
+    # 운영은 기본값(10분마다). 로컬 .env 는 반드시 "-" — ANCHOR_CRON 과 같은 이유(운영과 같은 릴레이어 키라 nonce 가 부딪힌다).
+    bonus-retry-cron: ${BONUS_RETRY_CRON:0 */10 * * * *}
 
   # 광고 게재(ANT-COMMUNITY-05). 경매가 아니라 고정 단가 × 기간제 선착순이다. 단가는 위 token.amounts.ad-per-day.
   ads:
