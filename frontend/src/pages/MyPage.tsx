@@ -32,7 +32,8 @@ const LINKS = [
      사이드바가 맞는 자리였다(S15P21A507-181). */
   /* 채널 설정(E-04)을 환경 설정 안으로 합쳤다 — 둘 다 내 계정을 손보는 곳인데
      진입점이 둘로 갈려 있었고 아이콘까지 같아 구분되지 않았다. */
-  { to: '/settings', label: '설정', desc: '프로필과 채널, 알림', icon: 'gear' },
+  /* 프로필은 더 이상 설정에 없다 — 내 채널로 옮겼다(S15P21A507-195) */
+  { to: '/settings', label: '설정', desc: '구독료와 알림, 로그아웃', icon: 'gear' },
 ] as const
 
 const ICON: Record<string, React.ReactNode> = {
@@ -83,13 +84,21 @@ export default function MyPage() {
             </div>
 
             <div className="mp-actions">
-              {/* 내가 쓴 리포트·예측은 내 채널 공개 페이지(E-02)에서 보인다 */}
+              {/* 두 진입로가 같은 화면의 다른 눈이다.
+                 - 내 채널 보기: ?as=visitor — **남에게 실제로 보이는** 모습. 구독료를
+                   정하는 사람이 무엇이 가려지는지 봐야 해서 이쪽이 기본 확인 경로다.
+                 - 프로필 수정: 쿼리 없는 주인 화면. 닉네임을 그 자리에서 고친다.
+                 환경 설정에는 프로필이 없다(S15P21A507-195 에서 옮겨 옴). */}
               {profile.data && (
-                <Link className="mp-btn solid" to={`/channels/${profile.data.id}`}>
-                  내 채널 보기
-                </Link>
+                <>
+                  <Link className="mp-btn solid" to={`/channels/${profile.data.id}?as=visitor`}>
+                    내 채널 보기
+                  </Link>
+                  <Link className="mp-btn ghost" to={`/channels/${profile.data.id}`}>
+                    프로필 수정
+                  </Link>
+                </>
               )}
-              <Link className="mp-btn ghost" to="/settings">프로필 수정</Link>
             </div>
           </section>
         )}

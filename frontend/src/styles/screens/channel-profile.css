@@ -7,6 +7,30 @@
 
 .ch-loading{ margin:24px 0; font-size:13.5px; color:var(--muted); }
 
+/* ── 미리보기 띠 ─────────────────────────────────────
+   고장이 아니라 모드 안내다 — 경고색을 쓰지 않는다(.ch-gate-note 와 같은 규칙).
+   화면 맨 위에서 한 줄로 끝내고, 돌아갈 길을 오른쪽 끝에 붙인다. */
+.ch-preview{
+  display:flex; align-items:center; justify-content:space-between;
+  flex-wrap:wrap; gap:10px;
+  margin:0 0 12px; padding:10px 14px;
+  border:1px dashed var(--brand-soft); border-radius:10px; background:var(--brand-softer);
+  font-size:12.5px; line-height:1.6; color:var(--brand-ink);
+}
+/* 관리 화면 쪽은 안내일 뿐이라 한 단계 낮춘다 — 미리보기처럼 눈에 띄면
+   자기 채널을 열 때마다 띠가 먼저 읽힌다 */
+.ch-preview.is-owner{ border-style:solid; border-color:var(--rule); background:var(--surface-2); color:var(--muted); }
+
+/* 반대편으로 가는 길. 문장 옆의 보조 행동이라 solid 버튼으로 키우지 않는다 */
+.ch-preview-btn{
+  flex:0 0 auto; padding:5px 12px;
+  border:1px solid var(--brand-soft); border-radius:8px; background:var(--surface);
+  font-size:12px; font-weight:700; color:var(--brand-ink); text-decoration:none; white-space:nowrap;
+}
+.ch-preview-btn:hover{ border-color:var(--brand); background:var(--brand-softer); }
+.ch-preview.is-owner .ch-preview-btn{ border-color:var(--rule); color:var(--body); }
+.ch-preview.is-owner .ch-preview-btn:hover{ border-color:var(--brand-soft); color:var(--brand-ink); }
+
 /* ── 헤더 ────────────────────────────────────────────── */
 .ch-head{
   display:flex; align-items:flex-start; gap:15px;

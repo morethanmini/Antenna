@@ -157,8 +157,10 @@ const PENDING: ChannelPrediction[] = [
   },
 ]
 
-/** 잠긴 모양 — 목표가만 빠지고 나머지는 그대로다 */
-const lock = (p: ChannelPrediction): ChannelPrediction => ({ ...p, targetPrice: null, locked: true })
+/** 잠긴 모양 — 방향·목표가가 빠지고 나머지는 그대로다.
+    서버 ChannelPredictionItemResponse.of 와 같다(2026-09-11 ANT-PRED-07 개정). */
+const lock = (p: ChannelPrediction): ChannelPrediction =>
+  ({ ...p, direction: null, targetPrice: null, locked: true })
 
 export async function predictions(
   userId: string,
