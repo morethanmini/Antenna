@@ -30,8 +30,8 @@ TICKER_BOT = re.compile(r"^<(유|코)>|매도잔량|매수잔량|체결강도|�
 PUBLISHED = re.compile(r"^(\d{4})[-.](\d{2})[-.](\d{2})\s+(?:(오전|오후)\s*)?(\d{1,2}):(\d{2})")
 BEFORE_BAD = re.compile(r"[가-힣A-Za-z0-9]")
 LATIN = re.compile(r"[A-Za-z0-9]")
-BROKEN_ENTITY = re.compile(r"(?<!&)(#0?39|quot|amp|lt|gt);")   # 원본에 '&' 가 떨어져 나간 조각 — "#039;전 키움#039;"
-DOUBLE_AMP = re.compile(r"(?<!&)amp;(?=(#0?39|quot|lt|gt);)")    # 두 번 이스케이프된 조각 — "amp;quot;"
+BROKEN_ENTITY = re.compile(r"(?<!&)(#0?39|quot|apos|amp|lt|gt|nbsp);")   # 원본에 '&' 가 떨어져 나간 조각 — "#039;전 키움#039;"
+DOUBLE_AMP = re.compile(r"(?<!&)amp;(?=(#0?39|quot|apos|lt|gt|nbsp);)")    # 두 번 이스케이프된 조각 — "amp;quot;"
 
 
 def clean(text):

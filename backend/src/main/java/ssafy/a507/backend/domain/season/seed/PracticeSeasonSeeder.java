@@ -55,47 +55,72 @@ public class PracticeSeasonSeeder implements ApplicationRunner {
     private static final int TICKER_COUNT = 200;
 
     /**
-     * 만들어 둘 연습 시즌. 구간은 로컬 일봉으로 성격을 확인한 것들이다(2026-09-07).
+     * 만들어 둘 연습 시즌. 구간은 시장을 흔든 사건으로 잡는다(2026-09-14 팀 결정).
      *
-     * <p>길이는 20~60게임일로 짧게 둔다 — 참가자가 하루씩 직접 넘기므로 120번을 누르게 하면
-     * 끝까지 가는 사람이 없다. 대신 앞에 워밍업 봉 30개가 붙어 추세는 충분히 보인다.
+     * <p>길이는 25~44게임일이다 — 참가자가 하루씩 직접 넘기므로 80번을 누르게 하면 끝까지 가는
+     * 사람이 없다. 대신 앞에 워밍업 봉 30개가 붙어 사건 전의 추세는 충분히 보인다.
      *
-     * <p>{@code title}·{@code note} 에 연도·사건 고유명사를 넣지 않는다. 종목은 실명이라
-     * 마음먹으면 시기를 알아낼 수는 있지만, 화면이 먼저 말해 주지는 않는다.
+     * <p><b>제목이 사건을 드러낸다.</b> 예전에는 연도·사건 이름을 카드에 쓰지 않았다 — 결과를 아는
+     * 채로 시작하면 예측이 아니라 복기가 되기 때문이다. 대회 모드를 접고 연습만 남기면서 뒤집었다:
+     * 연습은 혼자 하는 공부라 무엇이 있었는지 알고 들어가는 편이 배우기 낫고, 어차피 뉴스 본문에
+     * 사건 이름이 그대로 나온다. <b>숨기는 것은 실제 날짜·연도 하나뿐이다</b>(ERD v0.8).
+     *
+     * <p>{@code theme} 은 카드 배지에 쓰는 대표 업종이고 종목을 거르지 않는다. 사건이 업종을 가리지
+     * 않고 시장 전체를 흔들기 때문이다 — 종목은 그 구간 첫날 시가총액 상위 200이다.
      *
      * <p>기준일은 요청값이다. 그날이 휴일이면 시즌은 그다음 영업일부터 시작한다.
      */
     private static final List<SeasonSpec> SEASONS = List.of(
             new SeasonSpec(
                     Season.Mode.PRACTICE,
-                    "급락과 반등",
-                    "시장 전체가 짧은 기간에 크게 내렸다가 되돌아온 구간. 공포 속에서 파는 손과 저점을 잡는 손을 연습한다.",
-                    "운송장비·부품",
+                    "코로나 대확산, 멈춘 두 달",
+                    "전염병이 퍼지며 시장 전체가 무너졌다가 되돌아온 구간. 공포 속에서 파는 손과 저점을 잡는 손을 연습한다.",
+                    "운송·창고",
                     LocalDate.of(2020, 2, 17),
                     TICKER_COUNT,
                     44,
                     INITIAL_CASH,
-                    2001L),
+                    2011L),
             new SeasonSpec(
                     Season.Mode.PRACTICE,
-                    "반도체 실적 구간",
-                    "반도체 실적 기대가 시장을 끌어올린 구간. 실적 랠리에 올라타는 시점과 되돌림에서 이익을 지키는 법을 연습한다.",
-                    "전기·전자",
-                    LocalDate.of(2025, 10, 1),
-                    TICKER_COUNT,
-                    38,
-                    INITIAL_CASH,
-                    2002L),
-            new SeasonSpec(
-                    Season.Mode.PRACTICE,
-                    "전기차 섹터 변동성",
-                    "전기차·배터리 테마가 급등한 구간. 테마 추격 매수의 진입·청산 타이밍을 연습한다.",
+                    "전쟁이 터진 날",
+                    "전쟁으로 원자재와 방산이 뛰고 지수는 밀린 구간. 사건이 업종마다 다르게 닿는 것을 본다.",
                     "화학",
-                    LocalDate.of(2023, 1, 16),
+                    LocalDate.of(2022, 2, 7),
                     TICKER_COUNT,
-                    62,
+                    40,
                     INITIAL_CASH,
-                    2003L));
+                    2012L),
+            new SeasonSpec(
+                    Season.Mode.PRACTICE,
+                    "하루 만의 폭락, 엔캐리 청산",
+                    "해외 금리와 환 변동에 하루 만에 급락한 뒤 되돌아온 구간. 패닉에 파는 것이 답인지 묻는다.",
+                    "전기·전자",
+                    LocalDate.of(2024, 7, 22),
+                    TICKER_COUNT,
+                    30,
+                    INITIAL_CASH,
+                    2013L),
+            new SeasonSpec(
+                    Season.Mode.PRACTICE,
+                    "트럼프 재당선과 환율 급등",
+                    "선거 결과로 환율이 뛰고 업종 희비가 갈린 구간. 정책 기대와 우려를 나눠 읽는 연습이다.",
+                    "운송장비·부품",
+                    LocalDate.of(2024, 10, 21),
+                    TICKER_COUNT,
+                    25,
+                    INITIAL_CASH,
+                    2014L),
+            new SeasonSpec(
+                    Season.Mode.PRACTICE,
+                    "비상계엄과 탄핵 정국",
+                    "정치 불확실성이 환율과 외국인 수급을 흔든 구간. 시끄러운 뉴스와 실제 실적을 가르는 연습이다.",
+                    "은행",
+                    LocalDate.of(2024, 11, 25),
+                    TICKER_COUNT,
+                    40,
+                    INITIAL_CASH,
+                    2015L));
 
     private final SeasonRepository seasonRepository;
     private final SeasonParticipantRepository participantRepository;
