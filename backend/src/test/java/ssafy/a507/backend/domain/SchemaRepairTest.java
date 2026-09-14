@@ -52,6 +52,43 @@ class SchemaRepairTest {
         assertThat(nickNullable()).as("매 부팅마다 도는 파일이라 멱등이어야 한다").isEqualTo("YES");
     }
 
+    @Test
+    @DisplayName("옛 배포 DB 에 남은 예측 기간 CHECK(7/14/30/90)를 부팅 SQL 이 3~90 으로 바꾼다 — 두 번 돌려도 같다")
+    void 옛_horizon_집합_제약을_구간으로_바꾼다() {
+        // ANT-PRED-08 이전에 만들어진 배포 DB 의 모습을 재현한다. ddl-auto: update 는 이걸 안 고친다.
+        jdbc.execute("ALTER TABLE predictions DROP CONSTRAINT ck_predictions_horizon");
+        jdbc.execute(
+                """
+                ALTER TABLE predictions ADD CONSTRAINT ck_predictions_horizon
+                CHECK ((track = 'REAL' AND horizon IN (7,14,30,90)) OR (track = 'REPLAY' AND horizon > 0))
+                """);
+        assertThat(horizonCheck()).contains("7").doesNotContain("90))");
+
+        runEnumChecksSql();
+        // 제약이 사라지지 않고 새 구간으로 남아야 한다 — 떼면 테스트와 운영이 갈린다.
+        assertThat(horizonCheck())
+                .as("45일을 받되 2일·91일은 막는 구간이어야 한다")
+                .contains("3")
+                .contains("90")
+                .doesNotContain("= 7");
+
+        String afterFirst = horizonCheck();
+        runEnumChecksSql();
+        assertThat(horizonCheck())
+                .as("매 부팅마다 도는 파일이라 멱등이어야 한다 — ADD CONSTRAINT 에 IF NOT EXISTS 가 없다")
+                .isEqualTo(afterFirst);
+    }
+
+    /** predictions 의 기간 CHECK 정의문. 없으면 null 이라 "떼어 버렸다" 도 잡힌다. */
+    private String horizonCheck() {
+        return jdbc.queryForObject(
+                """
+                select pg_get_constraintdef(oid) from pg_constraint
+                where conname = 'ck_predictions_horizon'
+                """,
+                String.class);
+    }
+
     private String nickNullable() {
         return jdbc.queryForObject(
                 """
@@ -59,6 +96,11 @@ class SchemaRepairTest {
                 where table_name = 'users' and column_name = 'nickname'
                 """,
                 String.class);
+    }
+
+    /** enum-checks.sql 은 평범한 세미콜론 구분이다. append-only.sql 과 달리 트리거 본문이 없다. */
+    private void runEnumChecksSql() {
+        new ResourceDatabasePopulator(new ClassPathResource("db/enum-checks.sql")).execute(dataSource);
     }
 
     /** application.yaml 의 spring.sql.init 과 같은 방식(파일 전체 한 문장)으로 돌린다. */
