@@ -26,7 +26,7 @@ import SubscriptionGate from '../components/state/SubscriptionGate'
 import { isSubscriptionGated } from '../api/errors'
 import { PROOF_STATUS_LABEL, fetchAnchorStatus } from '../api/proof'
 import { useBlock } from '../api/useBlock'
-import { getPredictionDetail, targetProgress, phaseOf, HORIZON_LABEL } from '../api/predictions'
+import { getPredictionDetail, targetProgress, phaseOf, horizonLabel } from '../api/predictions'
 import { getProfile } from '../api/stockDetail'
 import '../styles/screens/predict-detail.css'
 
@@ -174,7 +174,7 @@ export default function PredictDetail() {
 
           <p className="pd-by">
             <Link to={`/channels/${d.author.userId}`}>{d.author.nickname}</Link>
-            <span className="num">{`${dot(d.createdAt)} 등록 · ${HORIZON_LABEL[d.horizon]}`}</span>
+            <span className="num">{`${dot(d.createdAt)} 등록 · ${horizonLabel(d.horizon)}`}</span>
           </p>
         </header>
 
