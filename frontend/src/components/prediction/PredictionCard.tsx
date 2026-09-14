@@ -27,7 +27,8 @@ export type PredictionCardData = {
   id: string | number
   stockCode: string | null
   stockName?: string | null
-  direction: Direction
+  /** 판정 전 비구독자에게는 서버가 null 로 내린다(ChannelPredictionItemResponse) */
+  direction: Direction | null
   status: Status
   /** 근거 본문을 볼 권한이 없을 때. 카드의 다른 값은 그대로 온다 */
   locked?: boolean
@@ -72,7 +73,11 @@ export default function PredictionCard({ data }: { data: PredictionCardData }) {
           <b>{title}</b>
           {stockName && stockCode && <em className="num">{stockCode}</em>}
         </span>
-        <span className={`pc-dir is-${direction.toLowerCase()}`}>{DIRECTION_LABEL[direction]}</span>
+        {/* 잠기면 방향이 아예 오지 않는다. 자리를 비우지 않고 가려졌다고 말한다 —
+            빼 버리면 카드가 한 칸 좁아져 다른 카드와 줄이 어긋난다 */}
+        {direction === null
+          ? <span className="pc-dir is-hidden">가려짐</span>
+          : <span className={`pc-dir is-${direction.toLowerCase()}`}>{DIRECTION_LABEL[direction]}</span>}
         <PredictionStatus status={status} />
       </div>
 
@@ -124,9 +129,12 @@ export default function PredictionCard({ data }: { data: PredictionCardData }) {
   /* 잠금은 카드를 대체하지 않고 카드 안에 든다. 무엇이 잠겼는지 보이지 않으면
      구독 유인이 사라진다(§5).
 
-     **잠기는 것은 근거뿐이다**(2026-09-08 결정). 예측가·종목·방향·목표가·기간은
-     누구에게나 보인다 — 전에는 목표가까지 가렸는데, 그러면 "누가 무언가를
-     예측했다" 만 남아 예측가를 고를 근거가 안 된다. 대신 판단의 이유(근거 본문)는
+     **판정 전에는 방향·목표가도 가려진다**(2026-09-11 공개 규칙 개정, ANT-PRED-07).
+     09-08 에는 "잠기는 것은 근거뿐" 이었는데 뒤집혔다 — 방향만으로도 판정 전 예측의
+     핵심이 새어 나가고, 구독으로 사는 것이 바로 그 판단이라는 이유다. 서버가
+     ChannelPredictionItemResponse·PredictionCardResponse 에서 둘 다 null 로 내리므로
+     화면이 고를 수 있는 문제가 아니다. 종목·기간·상태는 그대로 보인다. 판정 후에는
+     방향·목표가가 전체 공개다. 대신 판단의 이유(근거 본문)는
      만기가 지나도 풀리지 않는다(payload 에 noteHash 만 들어가므로 애초에 공개
      대상이 아니다 — §4 C-03). 그게 구독으로 사는 것이다. */
   if (locked) {

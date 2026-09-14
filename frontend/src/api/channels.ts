@@ -114,7 +114,8 @@ export type ChannelPrediction = {
   id: string
   stockCode: string | null
   stockName: string | null
-  direction: Direction
+  /** 잠기면 null — 판정 전 비구독자에게는 방향도 가린다(2026-09-11 ANT-PRED-07) */
+  direction: Direction | null
   status: PredictionStatus
   /** 잠기면 null */
   targetPrice: number | null

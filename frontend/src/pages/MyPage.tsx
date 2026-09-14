@@ -4,16 +4,16 @@
 
    설계 제약
    - 이 화면은 허브다. 스스로 데이터를 많이 만들지 않고 각 화면으로 보낸다.
-   - 배지는 획득분만 표시한다. G-09 와 같은 컴포넌트를 쓴다.
    - 두지 않는 것: 핸들(@) · 구독자 수 · 작성 카운트 · 유저 레벨 · 신뢰도 점수 · 친구.
      /users/me 응답에 없고 사용자 등급 필드 자체가 없다. 배지와 랭킹 티어뿐이다.
 
-   배지 섹션은 S15P21A507-230 에서 내렸다가 GET /users/me/badges 가 열려 되살렸다
-   (ANT-SEASON-09). */
+   배지 섹션은 두지 않는다. S15P21A507-230 에서 내렸다가 GET /users/me/badges 가 열려
+   되살렸는데(ANT-SEASON-09) 다시 내렸다 — 이 화면은 허브다. 배지는 시즌 성과물이라
+   랭킹(G-09)에서 보는 것이 맞고, 여기서는 목록 하나를 더 읽느라 첫 화면만 늦어졌다.
+   컴포넌트(components/BadgeList)와 GET /users/me/badges 는 그대로 둔다. */
 import { Link } from 'react-router-dom'
 import { useApiQuery } from '../api/useApiQuery'
-import { platformLabel, type BadgeList as BadgeListResponse, type MyProfile } from '../api/account'
-import BadgeList from '../components/BadgeList'
+import { platformLabel, type MyProfile } from '../api/account'
 import ErrorState from '../components/state/ErrorState'
 import { useAuth } from '../auth/context'
 import '../styles/screens/mypage.css'
@@ -32,7 +32,8 @@ const LINKS = [
      사이드바가 맞는 자리였다(S15P21A507-181). */
   /* 채널 설정(E-04)을 환경 설정 안으로 합쳤다 — 둘 다 내 계정을 손보는 곳인데
      진입점이 둘로 갈려 있었고 아이콘까지 같아 구분되지 않았다. */
-  { to: '/settings', label: '설정', desc: '프로필과 채널, 알림', icon: 'gear' },
+  /* 프로필은 더 이상 설정에 없다 — 내 채널로 옮겼다(S15P21A507-195) */
+  { to: '/settings', label: '설정', desc: '구독료와 알림, 로그아웃', icon: 'gear' },
 ] as const
 
 const ICON: Record<string, React.ReactNode> = {
@@ -45,7 +46,6 @@ const ICON: Record<string, React.ReactNode> = {
 export default function MyPage() {
   const { user } = useAuth()
   const profile = useApiQuery<MyProfile>('/users/me')
-  const badges = useApiQuery<BadgeListResponse>('/users/me/badges')
 
   /* 배열은 여기서 한 번 정규화한다. 백엔드 MeResponse 가 아직 이 필드를
      내려주지 않아 undefined 로 온다 — 아래에서 .length 를 바로 읽으면
@@ -83,13 +83,17 @@ export default function MyPage() {
             </div>
 
             <div className="mp-actions">
-              {/* 내가 쓴 리포트·예측은 내 채널 공개 페이지(E-02)에서 보인다 */}
+              {/* 진입로는 하나다 — ?as=visitor, **남에게 실제로 보이는** 모습.
+                  구독료를 정하는 사람이 무엇이 가려지는지 봐야 해서 이쪽이 기본이다.
+                  고치는 자리로는 그 화면 안의 띠에서 넘어간다(프로필 수정 버튼).
+                  여기에 같은 버튼을 또 두면 같은 화면으로 가는 길이 둘이 된다 —
+                  예측 포트폴리오를 뺀 것과 같은 이유다(S15P21A507-230).
+                  환경 설정에는 프로필이 없다(S15P21A507-195 에서 옮겨 옴). */}
               {profile.data && (
-                <Link className="mp-btn solid" to={`/channels/${profile.data.id}`}>
+                <Link className="mp-btn solid" to={`/channels/${profile.data.id}?as=visitor`}>
                   내 채널 보기
                 </Link>
               )}
-              <Link className="mp-btn ghost" to="/settings">프로필 수정</Link>
             </div>
           </section>
         )}
@@ -111,19 +115,6 @@ export default function MyPage() {
             </ul>
           </section>
         )}
-
-        {/* ── 배지 ───────────────────────────────────────
-            S15P21A507-230 에서 내렸다가 GET /users/me/badges 가 열려(ANT-SEASON-09) 되살렸다.
-            이제 없는 경로가 아니므로 500 분기를 두지 않는다 — ErrorState 에 걸리는 것은
-            진짜 서버 오류뿐이다.
-
-            아직 시즌을 끝낸 적이 없으면 빈 목록이고, 그 문구는 BadgeList 가 그린다. */}
-        <section className="mp-block">
-          <h3>배지</h3>
-          {badges.error
-            ? <ErrorState error={badges.error} onRetry={badges.reload} inline />
-            : <BadgeList badges={badges.data?.items ?? []} />}
-        </section>
 
         {/* ── 활동 진입점 ──────────────────────────────── */}
         <section className="mp-block">

@@ -128,6 +128,7 @@ export async function completeLogin(
 
   return {
     user: {
+      id: body.user.id,
       // 신규 가입은 닉네임이 비어 있다. 온보딩 화면이 isNew 로 분기한다.
       nickname: body.user.nickname ?? '',
       // 로그인 응답에 프로필 이미지가 없다. GET /users/me 가 생기면 그 값으로 바꾼다.

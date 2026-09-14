@@ -31,13 +31,20 @@ import ErrorState from '../state/ErrorState'
  * @param locked 목록이 이미 잠금으로 내려준 건. 그러면 근거도 반드시 잠겨 있다 —
  *   서버에서 locked = 판정 전 && !canRead 이고 noteLocked = !canRead 이므로
  *   locked 면 noteLocked 다. 답이 정해진 요청을 보내지 않는다.
+ * @param preview 내 채널을 비구독자 눈으로 미리 보는 중(E-02 ?as=visitor).
+ *   비구독자는 canRead=false 라 noteLocked 가 **판정 여부와 무관하게** 참이다.
+ *   서버는 나를 주인으로 보고 본문을 그대로 내려주므로, 물으면 미리보기에 본문이
+ *   새어 나온다. 그래서 읽지 않고 잠긴 문구만 그린다.
  */
 export default function PredictionNote(
-  { id, isMe, locked }: { id: string; isMe: boolean; locked: boolean },
+  { id, isMe, locked, preview = false }: {
+    id: string; isMe: boolean; locked: boolean; preview?: boolean
+  },
 ) {
+  const hidden = locked || preview
   const load = useCallback(
-    () => (locked ? Promise.resolve(null) : getPredictionDetail(id)),
-    [id, locked],
+    () => (hidden ? Promise.resolve(null) : getPredictionDetail(id)),
+    [id, hidden],
   )
   const detail = useAsync<PredictionDetail | null>(load)
 
@@ -49,6 +56,10 @@ export default function PredictionNote(
           그때는 아래 Body 가 이유를 말해야 한다. */}
       {locked
         ? null
+        : preview
+        /* 판정 후라 카드에는 잠금 표시가 없다. 그러면 여기서 이유를 말해야 한다 —
+           비구독자에게 실제로 뜨는 문구 그대로 보여 주는 것이 미리보기의 목적이다. */
+        ? <LockedMsg isMe={false} />
         : (
           <>
             {detail.loading && <p className="ch-note-msg">판단 내용을 불러오는 중…</p>}
