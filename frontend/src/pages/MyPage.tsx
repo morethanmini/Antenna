@@ -16,8 +16,8 @@ import ErrorState from '../components/state/ErrorState'
 import { useAuth } from '../auth/context'
 import '../styles/screens/mypage.css'
 
-/* 허브가 보내는 곳. 목록 화면이 있는 것만 둔다 —
-   커뮤니티 내 글은 GET /posts 에 작성자 필터가 없어(§9.2 F-04) 진입점을 만들 수 없다. */
+/* 허브가 보내는 곳. 목록 화면이 있는 것만 둔다.
+   커뮤니티는 개발 범위에서 빠졌다(2026-09-14) — 그 진입점 이야기도 함께 지웠다. */
 const LINKS = [
   { to: '/me/predictions', label: '내 예측', desc: '등록한 예측과 판정 결과', icon: 'chart' },
   /* 예측 포트폴리오(/me/portfolio)는 여기 두지 않는다 — 사이드바에 늘 떠 있어서
