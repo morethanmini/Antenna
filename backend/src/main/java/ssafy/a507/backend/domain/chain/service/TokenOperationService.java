@@ -62,6 +62,11 @@ public class TokenOperationService {
         }
     }
 
+    /** 거절하지 않고 건너뛰어야 하는 호출자용 — 가입 보너스는 체인이 꺼져 있어도 지갑 연동을 막지 않는다(ANT-TOKEN-07). */
+    public boolean isEnabled() {
+        return relayer.isEnabled();
+    }
+
     /** Operation 의 사용자 지갑으로 {@code mint(to, amount, reason)}. @return tx 해시 */
     public String dispatchMint(String operationId, BigInteger amount, TokenReason reason) {
         return dispatch(operationId, "mint", w -> relayer.mint(w.self(), amount, reason), null);
