@@ -4,16 +4,16 @@
 
    설계 제약
    - 이 화면은 허브다. 스스로 데이터를 많이 만들지 않고 각 화면으로 보낸다.
-   - 배지는 획득분만 표시한다. G-09 와 같은 컴포넌트를 쓴다.
    - 두지 않는 것: 핸들(@) · 구독자 수 · 작성 카운트 · 유저 레벨 · 신뢰도 점수 · 친구.
      /users/me 응답에 없고 사용자 등급 필드 자체가 없다. 배지와 랭킹 티어뿐이다.
 
-   배지 섹션은 S15P21A507-230 에서 내렸다가 GET /users/me/badges 가 열려 되살렸다
-   (ANT-SEASON-09). */
+   배지 섹션은 두지 않는다. S15P21A507-230 에서 내렸다가 GET /users/me/badges 가 열려
+   되살렸는데(ANT-SEASON-09) 다시 내렸다 — 이 화면은 허브다. 배지는 시즌 성과물이라
+   랭킹(G-09)에서 보는 것이 맞고, 여기서는 목록 하나를 더 읽느라 첫 화면만 늦어졌다.
+   컴포넌트(components/BadgeList)와 GET /users/me/badges 는 그대로 둔다. */
 import { Link } from 'react-router-dom'
 import { useApiQuery } from '../api/useApiQuery'
-import { platformLabel, type BadgeList as BadgeListResponse, type MyProfile } from '../api/account'
-import BadgeList from '../components/BadgeList'
+import { platformLabel, type MyProfile } from '../api/account'
 import ErrorState from '../components/state/ErrorState'
 import { useAuth } from '../auth/context'
 import '../styles/screens/mypage.css'
@@ -46,7 +46,6 @@ const ICON: Record<string, React.ReactNode> = {
 export default function MyPage() {
   const { user } = useAuth()
   const profile = useApiQuery<MyProfile>('/users/me')
-  const badges = useApiQuery<BadgeListResponse>('/users/me/badges')
 
   /* 배열은 여기서 한 번 정규화한다. 백엔드 MeResponse 가 아직 이 필드를
      내려주지 않아 undefined 로 온다 — 아래에서 .length 를 바로 읽으면
@@ -116,19 +115,6 @@ export default function MyPage() {
             </ul>
           </section>
         )}
-
-        {/* ── 배지 ───────────────────────────────────────
-            S15P21A507-230 에서 내렸다가 GET /users/me/badges 가 열려(ANT-SEASON-09) 되살렸다.
-            이제 없는 경로가 아니므로 500 분기를 두지 않는다 — ErrorState 에 걸리는 것은
-            진짜 서버 오류뿐이다.
-
-            아직 시즌을 끝낸 적이 없으면 빈 목록이고, 그 문구는 BadgeList 가 그린다. */}
-        <section className="mp-block">
-          <h3>배지</h3>
-          {badges.error
-            ? <ErrorState error={badges.error} onRetry={badges.reload} inline />
-            : <BadgeList badges={badges.data?.items ?? []} />}
-        </section>
 
         {/* ── 활동 진입점 ──────────────────────────────── */}
         <section className="mp-block">
