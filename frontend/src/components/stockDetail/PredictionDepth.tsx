@@ -13,7 +13,7 @@
    많을수록 모든 막대가 짧아져 분포 모양이 안 보인다. */
 import { useBlock } from '../../api/useBlock'
 import { getPredictionDistribution } from '../../api/predictions'
-import type { DistributionBase, PredictionBucket, PredictionDistribution } from '../../api/predictions'
+import type { PredictionBucket, PredictionDistribution } from '../../api/predictions'
 import ErrorState from '../state/ErrorState'
 import { Panel } from './Block'
 
@@ -144,21 +144,13 @@ function Rows({ d }: { d: PredictionDistribution }) {
 
 type Props = {
   code: string
-  /**
-   * 화면 머리의 전일 종가. **목업이 기준가를 지어내지 않게** 넘긴다 — 지어내면
-   * 같은 화면에 269,500원과 205,000원이 나란히 뜬다. 서버가 붙으면 응답값을 쓴다.
-   */
-  base: DistributionBase
   span?: 4 | 5 | 6 | 7 | 8 | 12
 }
 
-export default function PredictionDepth({ code, base, span = 6 }: Props) {
-  /* 요약은 뒤늦게 온다(처음엔 prevClose 가 null). deps 에 넣어 값이 들어오면
-     기준가를 그것으로 다시 잡는다 — 안 넣으면 첫 렌더의 난수가 그대로 남는다. */
-  const q = useBlock(
-    () => getPredictionDistribution(code, base),
-    [code, base.basePrice, base.asOf],
-  )
+export default function PredictionDepth({ code, span = 6 }: Props) {
+  /* 기준가는 응답의 basePrice 다. 목업 때는 화면 머리의 전일 종가를 인자로 건네고
+     그 값이 들어올 때 다시 불렀는데, 서버가 기준가를 정하므로 종목만 보면 된다. */
+  const q = useBlock(() => getPredictionDistribution(code), [code])
 
   return (
     <Panel title="이 종목의 예측 분포" span={span}>
