@@ -12,6 +12,7 @@
 import { Navigate } from 'react-router-dom'
 
 export default function ChannelFee() {
-  // 탭이 생겨 정확히 그 자리로 보낼 수 있다 — 설정 첫 탭에 떨구면 한 번 더 찾아야 한다
-  return <Navigate to="/settings?tab=channel" replace />
+  /* '내 채널' 이 설정의 첫 탭이라 쿼리를 붙이지 않아도 그 자리에 닿는다.
+     기본 탭이 바뀌면 여기에 ?tab=channel 을 다시 붙여야 한다. */
+  return <Navigate to="/settings" replace />
 }

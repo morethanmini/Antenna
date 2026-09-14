@@ -31,6 +31,7 @@ import { fetchChannelReports, formatDate, type ChannelReportItem } from '../api/
 import { useAsync } from '../api/useAsync'
 import { formatToken } from '../api/wallet'
 import PredictionCard from '../components/prediction/PredictionCard'
+import ChannelNickname from '../components/channel/ChannelNickname'
 import PredictionNote from '../components/channel/PredictionNote'
 import SubscribeModal from '../components/channel/SubscribeModal'
 import EmptyState from '../components/state/EmptyState'
@@ -127,7 +128,13 @@ export default function ChannelProfile() {
             <header className="ch-head">
               {channel.avatarUrl && <img className="ch-avatar" src={channel.avatarUrl} alt="" />}
               <div className="ch-id">
-                <h1>{channel.nickname}</h1>
+                {/* 내 채널이면 여기서 바로 고친다 — 남에게 보이는 값이라
+                    보이는 자리에서 고치는 편이 맞다(S15P21A507-195 에서 설정에서 옮겨 옴) */}
+                <ChannelNickname
+                  nickname={channel.nickname}
+                  isMe={channel.isMe}
+                  onSaved={ch.reload}
+                />
                 {channel.bio && <p className="ch-bio">{channel.bio}</p>}
 
                 {channel.interests.length > 0 && (

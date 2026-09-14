@@ -34,6 +34,8 @@ function writeStub(role: Role | null) {
 
 function demoUser(role: Role): AuthUser {
   return {
+    // 목업 채널표(api/mock/channels.ts)의 1번 자리를 쓴다 — 내 채널 링크가 실제로 열린다
+    id: 1,
     nickname: '안테나',
     avatarUrl: DEFAULT_AVATAR,
     role,

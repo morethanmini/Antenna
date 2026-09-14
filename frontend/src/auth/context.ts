@@ -17,6 +17,8 @@ export type Role = 'USER' | 'ADMIN'
 export const DEFAULT_AVATAR = '/assets/character/default-avatar.svg'
 
 export type AuthUser = {
+  /** 내 채널(E-02)이 /channels/{userId} 라 셸에서 내 채널로 보내려면 id 가 필요하다 */
+  id: number
   nickname: string
   /** 프로필 이미지 경로. 실제로는 GET /users/me 가 내려준다 */
   avatarUrl: string
