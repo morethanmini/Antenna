@@ -7,6 +7,7 @@
    프로바이더가 둘(구글 · SSAFY)이라 갈리는 값만 표로 두고 흐름은 하나로 쓴다
    — 인가 요청·state 대조·코드 교환이 프로바이더마다 다를 이유가 없다. */
 import { request, setAccessToken } from '../api/client'
+import { DEFAULT_AVATAR } from './context'
 import type { AuthUser } from './context'
 
 export const PROVIDERS = ['google', 'ssafy'] as const
@@ -130,7 +131,7 @@ export async function completeLogin(
       // 신규 가입은 닉네임이 비어 있다. 온보딩 화면이 isNew 로 분기한다.
       nickname: body.user.nickname ?? '',
       // 로그인 응답에 프로필 이미지가 없다. GET /users/me 가 생기면 그 값으로 바꾼다.
-      avatarUrl: '/assets/character/white_ant/antenna-profile.png',
+      avatarUrl: DEFAULT_AVATAR,
       // 로그인 응답에 role 이 없어 일반 사용자로 둔다.
       // 관리자 판별은 [ANT-FE-SESSION] 이 /users/me 를 붙일 때 채운다.
       role: 'USER',

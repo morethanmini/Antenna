@@ -2,15 +2,17 @@
 
    타입은 API 명세서의 응답 스키마를 그대로 옮겼다.
 
-   ── 남은 목업 둘 ──────────────────────────────────────────
-   MOCK 은 아직 true 지만 걸려 있는 함수는 두 개뿐이다. 나머지는 실 API 다.
+   ── 남은 목업 하나 ────────────────────────────────────────
+   MOCK 이 걸린 함수는 이제 하나뿐이다. 나머지는 실 API 다.
 
-     /ads/active     등록된 배너가 없어 화면이 비어 보인다 — 시연 동안 유지(2026-09-03 결정)
-     /wallet/balance 서버에 없다 — ANT-TOKEN-04(S15P21A507-40)
+     /ads/active  등록된 배너가 없어 화면이 비어 보인다 — 시연 동안 유지(2026-09-03 결정)
 
-   각 함수의 실제 호출부는 이미 명세서 경로·쿼리대로 적어 두었다. 서버가 붙으면
-   그 함수의 `if (MOCK)` 한 줄과 mock/insight.ts 의 짝을 지우면 된다. 둘 다 걷히면
-   MOCK 상수와 import 까지 사라진다.
+   /wallet/balance 는 목업을 걷었다(2026-09-14). 서버에 경로가 아직 없어 실패하지만,
+   지어낸 1,250 ANT 를 띄우는 것보다 낫다 — 상단바가 0 ANT 를 박아 두고 있어 같은
+   화면에서 두 숫자가 어긋나 있었다. 이제 양쪽 다 "모른다" 로 보인다.
+
+   실제 호출부는 명세서 경로·쿼리대로 적어 두었다. 광고가 붙으면 그 함수의
+   `if (MOCK)` 한 줄과 mock/insight.ts 의 짝을 지우고, MOCK 상수와 import 까지 지운다.
    ─────────────────────────────────────────────────────── */
 import { api } from './client'
 import * as mock from './mock/insight'
@@ -92,7 +94,6 @@ export type WalletBalance = {
 }
 
 export function getWalletBalance() {
-  if (MOCK) return mock.walletBalance()
   return api.get<WalletBalance>('/wallet/balance')
 }
 

@@ -162,8 +162,10 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
         <div className="topbar-right">
           {authed ? (
             <>
-              {/* 잔액은 H-01 [ANT-FE-WALLET] 이 GET /wallet/balance 로 채운다 */}
-              <div className="wallet"><i /><span className="num">0</span> ANT</div>
+              {/* 잔액은 H-01 [ANT-FE-WALLET] 이 GET /wallet/balance 로 채운다.
+                  그때까지 0 이 아니라 — 이다(2026-09-14). 0 은 "잔액이 없다" 는
+                  주장이라, 홈 카드가 다른 숫자를 띄우면 곧바로 어긋나 보인다. */}
+              <div className="wallet"><i /><span className="num">—</span> ANT</div>
               {/* 미확인 뱃지는 H-02 [ANT-FE-NOTIFICATION] 이 채운다 */}
               <Link className="iconbtn" to="/notifications" aria-label="알림">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">

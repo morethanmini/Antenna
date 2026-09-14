@@ -6,7 +6,7 @@
 
    지연을 조금 주는 이유: 로딩 상태를 화면에서 실제로 보게 하려는 것이다. */
 import type {
-  ActiveAd, IndexQuote, WalletBalance, WatchlistRow,
+  ActiveAd, IndexQuote, WatchlistRow,
 } from '../insight'
 
 const delay = <T,>(value: T, ms = 320) =>
@@ -54,9 +54,6 @@ export const activeAds = () => delay<{ items: ActiveAd[] }>({
   ],
 })
 
-export const walletBalance = () => delay<WalletBalance>({
-  balance: 1250,
-  spent30d: 320,
-  earned30d: 850,
-  valuationKrw: 1213750,
-})
+/* walletBalance 목업은 걷었다(2026-09-14) — 지어낸 1,250 ANT 가 상단바의 0 ANT 와
+   어긋나 보였다. /wallet/balance 는 이제 실 호출이고, 서버 경로가 생길 때까지
+   화면은 "—" 로 둔다(insight.ts · Layout.tsx). */

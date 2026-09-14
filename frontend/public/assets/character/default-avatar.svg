@@ -1,0 +1,31 @@
+<!-- 프로필 기본 이미지. 사진을 올리지 않은 사용자 자리에 들어간다.
+     favicon.svg 의 개미(머리 + 더듬이 둘)를 흔한 사람 실루엣 자리에 앉힌 모양이다.
+     favicon 을 그대로 쓰지 않은 이유 — 그쪽은 150KB 짜리 base64 PNG 를 마스크로 쓰는
+     파일이라 아바타마다 불러오면 무겁다. 여기서는 같은 형태를 도형으로 다시 그렸다.
+
+     색은 app.css 의 브랜드 토큰 값을 그대로 옮겼다 — 바탕은 brand-soft(#ece9fd),
+     실루엣은 brand(#5457e8). img 의 src 로 불리는 파일이라 CSS 변수를 쓸 수 없어
+     값으로 적는다. 토큰이 바뀌면 여기도 함께 고쳐야 한다.
+     (주석 안에 붙임표 두 개를 쓰면 XML 이 깨지므로 토큰 이름에 접두사를 빼고 적었다.) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <defs>
+    <!-- 몸통이 원 밖으로 나가는 것을 잘라 낸다 — 사람 실루엣의 어깨와 같은 처리다 -->
+    <clipPath id="ant-avatar-clip"><circle cx="48" cy="48" r="48"/></clipPath>
+  </defs>
+
+  <circle cx="48" cy="48" r="48" fill="#ece9fd"/>
+
+  <g clip-path="url(#ant-avatar-clip)" fill="#5457e8">
+    <!-- 더듬이: 대와 끝 구슬. 구슬이 대보다 조금만 굵어야 로고와 비율이 맞는다 -->
+    <path d="M36 39 28 23" stroke="#5457e8" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <path d="M60 39 68 23" stroke="#5457e8" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <circle cx="27" cy="22" r="6"/>
+    <circle cx="69" cy="22" r="6"/>
+
+    <!-- 머리 -->
+    <circle cx="48" cy="52" r="23"/>
+
+    <!-- 몸통. 원에 잘려 어깨처럼 보인다 -->
+    <ellipse cx="48" cy="103" rx="33" ry="29"/>
+  </g>
+</svg>

@@ -5,6 +5,17 @@ import { createContext, useContext } from 'react'
 
 export type Role = 'USER' | 'ADMIN'
 
+/**
+ * 사진을 올리지 않은 사용자의 프로필 이미지.
+ *
+ * 같은 경로가 네 곳(AuthContext · oauth · session · Login)에 각각 박혀 있던 것을
+ * 여기 하나로 모았다(2026-09-14) — 기본 그림을 바꿀 때 한 곳만 고치면 된다.
+ *
+ * 서버에는 아직 프로필 사진 칸이 없다(users 테이블에 컬럼이 없고 /users/me 도
+ * 내려주지 않는다). 그래서 지금은 모두가 이 그림을 쓴다.
+ */
+export const DEFAULT_AVATAR = '/assets/character/default-avatar.svg'
+
 export type AuthUser = {
   nickname: string
   /** 프로필 이미지 경로. 실제로는 GET /users/me 가 내려준다 */
