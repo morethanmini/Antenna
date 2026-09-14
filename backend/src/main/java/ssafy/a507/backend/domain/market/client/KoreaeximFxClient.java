@@ -5,14 +5,19 @@ import static ssafy.a507.backend.domain.market.client.PublicDataJson.text;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
+import java.net.CookieManager;
 import java.net.URI;
+import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.restclient.autoconfigure.RestClientSsl;
+import org.springframework.boot.ssl.SslBundles;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -35,6 +40,13 @@ import org.springframework.web.util.UriComponentsBuilder;
  * 만들어 PKIX 오류로 끝난다(2026-09-03 확인 — {@code enableAIAcaIssuers} 로도 실패). 그래서
  * 중간 인증서를 {@code certs/koreaexim-ca.crt} 에 동봉하고 이 클라이언트에만 그 묶음을 단다.
  * 다른 외부 호출은 JDK 기본 신뢰 저장소 그대로다.
+ *
+ * <p><b>리다이렉트·쿠키를 켜는 이유(2026-09-14).</b> 이 서버 앞에 WAF 가 있어, 처음 보는
+ * 클라이언트에게는 본문 없이 {@code 302} 와 {@code Set-Cookie} 를 주고 <b>같은 URL 로</b>
+ * 돌려보낸다. 쿠키를 물고 다시 가야 비로소 200 이 온다. 기본 RestClient 는 리다이렉트도
+ * 쿠키도 다루지 않아 빈 본문을 받고 "빈 응답이 왔다" 로 끝났다 — 그 실패가 한도 오류로는
+ * 잡히지 않아, 회차마다 수백 날짜를 그대로 두드리며 일 1,000콜을 태웠다(2026-09-14 확인).
+ * curl 이 쿠키 항아리만으로 200 을 받는 것과 같은 이치다.
  */
 @Slf4j
 @Component
@@ -63,12 +75,47 @@ public class KoreaeximFxClient {
 
     private static final int RESULT_DAILY_LIMIT = 4;
 
+    /** 핸드셰이크·응답 대기 상한. 한 회차가 수백 날짜를 도는데 한 건이 오래 물고 있으면 안 된다. */
+    private static final Duration TIMEOUT = Duration.ofSeconds(10);
+
     private final RestClient restClient;
     private final KoreaeximProperties properties;
 
+    /**
+     * 리다이렉트 추적과 쿠키 저장을 켠 HTTP 클라이언트를 직접 만들어 붙인다 — 클래스 주석의
+     * WAF 챌린지를 넘기 위한 것이고, 기본 RestClient 로는 둘 다 꺼져 있어 302 에서 끝난다.
+     * SSL 묶음도 여기서 직접 건다(RestClientSsl 은 제 요청 팩토리를 세우므로 함께 못 쓴다).
+     *
+     * <p>{@code @Autowired} 를 단 이유 — 아래에 테스트 전용 생성자가 하나 더 있어서 스프링이 어느
+     * 쪽으로 주입할지 정하지 못한다. 운영 경로는 이쪽 하나다.
+     */
+    @Autowired
     public KoreaeximFxClient(
-            RestClient.Builder restClientBuilder, RestClientSsl ssl, KoreaeximProperties properties) {
-        this.restClient = restClientBuilder.apply(ssl.fromBundle(SSL_BUNDLE)).build();
+            RestClient.Builder restClientBuilder, SslBundles sslBundles, KoreaeximProperties properties) {
+        HttpClient httpClient = HttpClient.newBuilder()
+                .sslContext(sslBundles.getBundle(SSL_BUNDLE).createSslContext())
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                // 쿠키를 들고 다시 가야 챌린지가 풀린다. 이것이 없으면 같은 URL 로 계속 돈다.
+                .cookieHandler(new CookieManager())
+                .connectTimeout(TIMEOUT)
+                .build();
+        JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
+        factory.setReadTimeout(TIMEOUT);
+        this.restClient = restClientBuilder.requestFactory(factory).build();
+        this.properties = properties;
+    }
+
+    /**
+     * 이미 만들어 둔 클라이언트를 그대로 받는다. <b>테스트 전용 이음매</b>다.
+     *
+     * <p>위 생성자가 요청 팩터리를 직접 갈아 끼우기 때문에 {@code MockRestServiceServer.bindTo(builder)}
+     * 가 심어 둔 팩터리가 덮여 목 서버가 요청을 가로채지 못한다. 그렇다고 응답 해석 규칙(result 코드
+     * 1~4 · 쉼표 섞인 숫자 · 빈 배열)을 안 볼 수는 없어서, 클라이언트를 밖에서 넣는 길을 하나 둔다.
+     *
+     * <p>package-private 이라 스프링이 쓰지 않는다 — 운영 경로는 위 생성자 하나뿐이다.
+     */
+    KoreaeximFxClient(RestClient restClient, KoreaeximProperties properties) {
+        this.restClient = restClient;
         this.properties = properties;
     }
 

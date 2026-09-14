@@ -17,7 +17,7 @@
    내 채널은 이 표에 없다 — 아래 mine() 이 실제 내 id 로 만든다. */
 import { api } from '../client'
 import { ApiError } from '../errors'
-import type { MeResponse } from '../../auth/session'
+import { platformLabel, type MyProfile } from '../account'
 import type {
   Backtest, Channel, ChannelPrediction, ChannelPredictionPage, SubscribeBody,
 } from '../channels'
@@ -82,11 +82,11 @@ const CHANNELS: Record<string, Channel> = {
    실제 id 를 물어서 그게 나면 내 채널을 만들어 준다.
 
    /users/me 는 실제로 열려 있는 API 다. 목업이 지어내는 값이 아니다. */
-let mePromise: Promise<MeResponse> | null = null
+let mePromise: Promise<MyProfile> | null = null
 
-function fetchMe(): Promise<MeResponse> {
+function fetchMe(): Promise<MyProfile> {
   /* 실패를 캐시하면 로그인 뒤에도 계속 실패한다 — 거절된 약속은 지우고 다시 묻는다 */
-  mePromise ??= api.get<MeResponse>('/users/me').catch((e: unknown) => {
+  mePromise ??= api.get<MyProfile>('/users/me').catch((e: unknown) => {
     mePromise = null
     throw e
   })
@@ -105,10 +105,12 @@ async function mine(userId: string): Promise<Channel | null> {
        읽힌다. E-04 내 채널 구독료(S15P21A507-186)도 같은 판단으로 미설정을
        "아직 정하지 않았습니다" 로 그린다. 행이 없는 것이 곧 미설정이다. */
     fee: null,
-    /* /users/me 가 주지 않는 것은 비워 둔다. 지어내면 내 채널만 남과 다른 값을
-       보여주게 되고, 서버가 열렸을 때 무엇이 바뀐 건지 알 수 없다 */
-    interests: [],
-    externalLinks: [],
+    /* 관심 섹터·외부 채널은 /users/me 가 정본이다 — 지어내지 않고 그대로 흘려보낸다.
+       명세 §회원 에는 있으나 백엔드 MeResponse 가 아직 안 내려줘 보통 undefined 다.
+       그때는 빈 배열이 되고 헤더가 그 줄을 통째로 뺀다(마이페이지와 같은 처리).
+       서버가 열리면 내 채널 머리에 저절로 뜬다. */
+    interests: me.interests ?? [],
+    externalLinks: (me.channels ?? []).map((c) => ({ label: platformLabel(c.platform), url: c.url })),
     mySubscription: { status: null, expiresAt: null, autoRenew: false, paidFee: null },
     isMe: true,
   }
@@ -157,8 +159,10 @@ const PENDING: ChannelPrediction[] = [
   },
 ]
 
-/** 잠긴 모양 — 목표가만 빠지고 나머지는 그대로다 */
-const lock = (p: ChannelPrediction): ChannelPrediction => ({ ...p, targetPrice: null, locked: true })
+/** 잠긴 모양 — 방향·목표가가 빠지고 나머지는 그대로다.
+    서버 ChannelPredictionItemResponse.of 와 같다(2026-09-11 ANT-PRED-07 개정). */
+const lock = (p: ChannelPrediction): ChannelPrediction =>
+  ({ ...p, direction: null, targetPrice: null, locked: true })
 
 export async function predictions(
   userId: string,

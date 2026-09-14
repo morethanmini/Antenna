@@ -1,17 +1,18 @@
-# 배포 기록 — 운영 한 벌 (로컬 서버도 같은 세트) · Hardhat 은 컨트랙트 개발용
+# 배포 기록 — 운영 한 벌(SSAFY) · 팀원 로컬은 로컬 체인
 
-SSAFY 체인(chainId 31221, `wss://ws.ssafy-blockchain.com`, 가스 0)에는 **운영 한 벌만** 쓴다.
-실서버 테스트도, **로컬 서버도** 운영 컨트랙트로 하고 그대로 서비스한다(2026-09-12 결정). Hardhat 로컬 체인은 컨트랙트를 고칠 때만 쓴다.
+SSAFY 체인(chainId 31221, `wss://ws.ssafy-blockchain.com`, 가스 0)에는 **운영 한 벌만** 쓴다. 실서버 테스트와 서비스가 이 세트다.
+**팀원 로컬 서버의 기본은 로컬 체인이다**(2026-09-14, ANT-CHAIN-15) — `docker compose up -d` 가 Hardhat 체인을 띄우고 배포까지 한다(아래 "로컬 체인").
+로컬 서버를 운영 세트에 붙이는 건 운영 릴레이어 키 보유자(김성령)만이다.
 
 역할(`ANCHOR_ROLE` · `OPERATOR_ROLE`)은 컨트랙트마다 **특정 주소**에 주어진다. 그래서 키와 컨트랙트는 한 벌로 움직인다.
-로컬 서버도 운영 릴레이어 키를 쓴다 — 키는 저장소에 두지 않고 팀 내부로만 전달한다.
+운영 릴레이어 키는 저장소에 두지 않고 팀원에게 나누지 않는다.
 
 **이 파일이 단일 진실이다.** 주소를 바꾸면 여기와 "넣는 곳" 을 같이 바꾼다.
 
-> 결정 경위. 2026-09-11 오후엔 개발/운영 두 벌이었고, 같은 날 저녁 개발 세트를 폐기해 "세트는 하나, 로컬은 체인 밖(Hardhat)" 으로 갔다.
-> 09-12 에 로컬도 운영 세트를 쓰기로 다시 바꿨다 — Hardhat · 운영 · 옛 dev 세 벌이 머리만 아프고, 어차피 운영넷 테스트를 해야 해서다.
-> 대가: 로컬 테스트 흔적이 운영 장부에 남는다(오픈 때 DB 는 비우고 테스트 ANT 는 오퍼레이터 `burn`). 로컬 서버의 `ANCHOR_CRON` 은 반드시 끈다 —
-> 운영 서버와 같은 키로 00:05 에 겹치면 nonce 가 부딪힌다(`backend/.env.example`).
+> 결정 경위. 09-11 오후 개발/운영 두 벌 → 저녁 "세트는 하나, 로컬은 체인 밖(Hardhat)" → 09-12 "로컬도 운영 세트" →
+> **09-14 "운영 세트는 키 보유자만, 팀원은 로컬 체인"**(ANT-CHAIN-15). 09-12 방식은 서버마다 자기 DB 로 1인 1회를 판정해,
+> 운영 키를 여럿이 쥐면 가입 보너스가 중복으로 나가고 nonce 가 부딪힌다(ANT-TOKEN-07 검토). 로컬 체인은 각자 따로라 둘 다 없다.
+> 운영 세트로 로컬을 쓰는 사람은 로컬 서버의 `ANCHOR_CRON` 을 끄고 `BONUS_RETRY_CRON` 을 운영과 비킨다(`backend/.env.example` 체인 절 맨 아래).
 
 ## 운영 (prod) — SSAFY 체인
 
@@ -29,17 +30,38 @@ SSAFY 체인(chainId 31221, `wss://ws.ssafy-blockchain.com`, 가스 0)에는 **�
   DB 초기화 vs 기준 시점 필터)은 보류다.
 - 체인은 RPC 로 누구나 읽을 수 있다. "안 보여 준다" 는 화면 이야기지 비밀이 아니다. 앵커에는 해시만 올라가 예측 내용은 안 읽힌다.
 
-## 로컬 Hardhat 체인 — 컨트랙트를 고칠 때만
+## 로컬 체인 — 팀원 로컬 서버의 기본 (ANT-CHAIN-15)
 
-로컬 **서버**는 위 운영 세트를 쓴다(`backend/.env.example`). 아래는 Solidity 를 고치거나 배포 스크립트를 시험할 때 쓰는 로컬 체인이다.
-서버를 여기에 붙이려면 `backend/.env` 의 체인 줄 여섯 개(RPC · chainId · 두 주소 · 릴레이어 키 · 시작 블록 0)를 아래 표 값으로 잠깐 바꾼다.
+**`docker compose up -d` 한 번이면 된다.** `docker-compose.override.yml` 의 `chain` 컨테이너가 Hardhat 노드(chainId 31337, 8545)를 띄우고
+아래 표의 주소로 배포까지 한다. `backend/.env.example` · `frontend/.env.example` 의 체인 기본값이 이 체인이라 복사만 하면 붙는다.
+override 파일은 운영 CI(`-f docker-compose.yml -f docker-compose.prod.yml`)가 읽지 않는다 — 운영 서버에는 안 뜬다.
+
+**체인은 컨테이너가 다시 뜰 때마다 새로 생긴다**(Hardhat 은 메모리 체인). 그때 컨테이너가 알아서 맞춘다(`scripts/localchain-sync.mjs`):
+
+1. 컨트랙트 배포 — 새 노드라 주소는 늘 표와 같다
+2. 로컬 DB 의 체인 사본(`chain_events` · `token_ledger` · `operations`)을 비운다 — 회원·지갑 연동·예측·앵커 배치·시세는 그대로.
+   연동 회원의 가입 보너스는 서버의 재시도 배치가 새 체인에 다시 준다. 로컬 잔액 이력은 사라진다(잔액은 보너스 1만으로 돌아간다)
+3. 확정(CONFIRMED)된 로컬 앵커 배치의 루트를 새 체인에 다시 앵커한다 — 리프 순서는 prediction id 오름차순(서버와 같다).
+   tx·블록 참조는 백엔드 인덱서가 새 값으로 고친다 → 예전 로컬 예측의 검증 화면이 그대로 산다
+
+- **2·3 은 `backend/.env` 가 이 체인(CHAIN_ID 31337 + 아래 CommitAnchor 주소)을 볼 때만 한다.** 운영 세트로 로컬을 쓰는 사람의 DB 에는
+  운영 체인 사본이 있다 — 그 DB 는 건드리지 않고 배포만 한다.
+- ⚠️ chain 컨테이너가 다시 떴으면 **백엔드도 재시작**한다. 인덱서가 옛 체인의 블록 높이를 메모리에 들고 있어 새 체인 이벤트를 못 읽는다
+  (백엔드가 떠 있으면 컨테이너 로그에 경고가 찍힌다).
+- 지갑 연동은 체인과 무관하다(DB + 서명). 한 번 연동하면 체인이 새로 생겨도 그대로다. 메타마스크 네트워크도 안 바꿔도 된다.
+- 로그: `docker compose logs -f chain`. 손으로 다시 맞추기: `docker compose exec chain npm run localchain:sync`(이미 배포된 노드면 할 일 없음).
+- 컨트랙트(.sol)나 스크립트를 고치면 이미지를 다시 굽는다: `docker compose up -d --build chain`.
+
+컨테이너 없이 손으로 띄울 때(컨트랙트 개발):
 
 ```bash
 cd contracts
 npx hardhat node                          # 터미널 1 — chainId 31337, 계정 20개(키가 화면에 찍힌다. 공개된 테스트 키다)
-npm run deploy:local                      # 터미널 2 — CommitAnchor v3 + PredictToken → deployments/local/
-MINT_TO=0x내지갑 npm run mint:local        # 잔액이 필요할 때 — 기본 10000 ANT, reason SIGNUP_BONUS, localhost 가 아니면 거부
+npm run localchain:sync                   # 터미널 2 — 배포 + (backend/.env 가 이 체인을 보면) 로컬 DB 맞추기. 배포만: npm run deploy:local
+MINT_TO=0x내지갑 npm run mint:local        # 잔액이 더 필요할 때 — 기본 10000 ANT, reason SIGNUP_BONUS, localhost 가 아니면 거부
 ```
+
+chain 컨테이너가 8545 를 쥐고 있으면 손으로 띄운 노드는 못 뜬다 — `docker compose stop chain` 먼저.
 
 | 역할 | Hardhat 계정 | 주소 |
 |---|---|---|

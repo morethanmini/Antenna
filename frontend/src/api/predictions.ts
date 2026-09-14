@@ -78,22 +78,22 @@ export const DIRECTIONS = ['UP', 'DOWN'] as const
 export type Direction = (typeof DIRECTIONS)[number]
 
 /**
- * 7·14·30·90 4지 고정. 임의 마감일을 받지 않는다(§4 C-01).
+ * 3~90 사이 정수 일수. 눈금 네 개(7·14·30·90) 고정이었는데 2026-09-14 에 연속 구간으로
+ * 넓혔다 — "2주쯤" 처럼 눈금 사이를 노리는 예측을 눈금에 맞춰 반올림하게 만들 이유가 없다.
  *
  * **거래일이 아니라 캘린더일이다**(결정 B5, 명세 v0.38). 만기일 = 기준일 + horizon 일로
  * 등록 즉시 확정된다 — 휴장일을 세지 않으므로 클라이언트가 그대로 계산할 수 있다.
- * DB CHECK(DB-01)·ERD·서버 HORIZONS 가 모두 이 네 값이라, 다른 값을 보내면
+ * DB CHECK(DB-01)·서버 검증이 같은 구간이라, 밖의 값을 보내면
  * 400 INVALID_REQUEST(horizon) 이다.
  */
-export const HORIZONS = [7, 14, 30, 90] as const
-export type Horizon = (typeof HORIZONS)[number]
+export const HORIZON_MIN = 3
+export const HORIZON_MAX = 90
+export type Horizon = number
 
-export const HORIZON_LABEL: Record<Horizon, string> = {
-  7: '7일',
-  14: '14일',
-  30: '30일',
-  90: '90일',
-}
+/** 고르개 눈금에만 쓰는 참조값. 값 자체는 이 넷에 묶이지 않는다. */
+export const HORIZON_TICKS = [3, 30, 60, 90] as const
+
+export const horizonLabel = (h: Horizon) => `${h}일`
 
 /** 근거 본문 상한. 구독자 전용이며 만기 리빌 후에도 공개되지 않는다. */
 export const NOTE_MAX = 5000

@@ -40,6 +40,12 @@ public class TokenIndexer {
 
     private volatile boolean halted;
     private Long scannedUpTo;
+    /**
+     * 체인 끝(head)까지 읽고 회차를 마친 시각 (ANT-TOKEN-04). 지갑 잔액의 {@code syncedAt} 이 이 값이다 — 잔액은 원장 합이고
+     * 원장은 인덱서가 여기까지 읽은 체인 이벤트의 사본이라, "언제 기준 잔액인가" 가 곧 이 시각이다. 꺼져 있거나 아직 한 번도
+     * 끝까지 못 읽었으면 null. 메모리 값이라 재시작하면 첫 회차(5초)까지 null 이다.
+     */
+    private volatile Instant lastSyncedAt;
 
     public TokenIndexer(
             ChainLogSource source, TokenIndexService service, ChainProperties props, PredictTokenProperties token) {
@@ -67,10 +73,15 @@ public class TokenIndexer {
         return Optional.ofNullable(scannedUpTo);
     }
 
+    public Optional<Instant> lastSyncedAt() {
+        return Optional.ofNullable(lastSyncedAt);
+    }
+
     /** 테스트 전용 — 재시작 직후 상태로. */
     synchronized void resetForTest() {
         halted = false;
         scannedUpTo = null;
+        lastSyncedAt = null;
     }
 
     public void poll() {
@@ -137,6 +148,8 @@ public class TokenIndexer {
                 scannedUpTo = to;
                 from = to + 1;
             }
+            // 여기까지 오면 head 까지 읽었다(새 블록이 없었어도). 지갑 잔액의 syncedAt 이 이 값이다(ANT-TOKEN-04).
+            lastSyncedAt = now;
 
             // ⑤ 정리
             settleStale(now);

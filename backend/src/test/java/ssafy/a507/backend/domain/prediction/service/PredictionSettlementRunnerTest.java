@@ -295,7 +295,7 @@ class PredictionSettlementRunnerTest {
 
     // ── 픽스처 ──────────────────────────────────────────────────────
 
-    /** BASE 상태의 REAL 예측. horizon 은 REAL 제약(7·14·30·90) 안의 값이어야 한다. */
+    /** BASE 상태의 REAL 예측. horizon 은 REAL 제약(3~90) 안의 값이어야 한다. */
     private long givenBase(
             LocalDate baseDate, LocalDate settleDate, Prediction.Direction direction, String targetPrice) {
         return givenBase(STOCK, baseDate, settleDate, direction, targetPrice);

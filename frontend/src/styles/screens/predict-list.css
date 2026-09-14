@@ -10,18 +10,110 @@
    "맞혔나". 앵커 안내만은 예측 하나가 아니라 카드 전체를 두고 하는 말이라
    줄이 아니라 카드 아래 한 줄로 나온다. */
 
-.my-predictions-page .mp-head,
-.my-predictions-page .mp-flow,
-.my-predictions-page .mp-toolbar,
-.my-predictions-page .mp-list,
-.my-predictions-page .mp-skel,
-.my-predictions-page .mp-load{max-width:1140px}
+/* ── 두 단 ───────────────────────────────────────────────
+   셸이 1600px 까지 내주는데 전에는 전부 1140 으로 묶어 두어, 넓은 화면에서
+   오른쪽이 통째로 비고 목록만 왼쪽에 붙어 있었다. 곁칸을 세워 그 자리를 쓴다.
 
-/* ── 머리 ────────────────────────────────────────────────*/
-.my-predictions-page .mp-head{
-  display:flex;align-items:flex-start;justify-content:space-between;gap:20px;
-  margin:0 0 18px;
+   제목 · 툴바 · 목록 · 곁칸을 영역 이름으로 앉힌다. order 로 순서만 바꾸면
+   넓은 화면에서는 맞아도 좁아질 때 곁칸이 제목 위로 올라간다.
+
+     넓을 때          좁을 때
+     head  head       head
+     bar   .          side
+     main  side       bar
+                      main
+
+   곁칸이 목록 줄에서만 시작하므로 첫 카드와 같은 y 에서 출발한다. 툴바는
+   오른쪽 칸을 비워 둬(.) 정렬 드롭다운이 목록 오른쪽 끝에 선다 — 두 칸에
+   걸치게 두면 드롭다운이 곁칸 위로 밀려 무엇을 정렬하는지 흐려진다.
+*/
+.my-predictions-page .mp-layout{
+  max-width:1560px;
+  display:grid;grid-template-columns:minmax(0,1fr) 300px;
+  grid-template-areas:
+    "head head"
+    "bar  ."
+    "main side";
+  /* 세로 간격은 각 조각의 margin 이 준다(row-gap 0) */
+  gap:0 24px;
 }
+.my-predictions-page .mp-head{grid-area:head;margin:0 0 18px}
+.my-predictions-page .mp-toolbar{grid-area:bar}
+.my-predictions-page .mp-main{grid-area:main}
+
+/* 곁칸은 목록 줄에서만 시작한다. 제목·툴바 줄에는 걸치지 않으므로 첫 카드와
+   **같은 y 에서 출발**한다 — 위로 올리면 카드 어느 것과도 안 맞고, 화면 가운데로
+   내리면 계정마다(적중률 카드 유무) 자리가 달라진다.
+
+   격자가 잡아 주므로 숫자를 적지 않는다. 제목이나 필터가 한 줄 늘어도 둘이
+   같이 내려간다. */
+.my-predictions-page .mp-side{
+  grid-area:side;align-self:start;
+  position:sticky;top:calc(var(--topbar-h) + 20px);
+}
+/* 카드가 접히는 시점은 화면 폭이 아니라 **목록 칸의 폭**으로 정해야 한다.
+   곁칸이 300px 를 떼어 가므로 화면 폭으로 재면 늘 300px 씩 어긋난다. */
+.my-predictions-page .mp-main{container:mp / inline-size;min-width:0}
+
+.my-predictions-page .mp-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+
+/* 다음 기록까지 — 곁칸의 머리. 이 화면에서 가장 많이 나오는 질문의 답이다 */
+.my-predictions-page .mp-next{
+  position:relative;overflow:hidden;
+  padding:16px 18px;border-radius:18px;
+  background:linear-gradient(150deg,var(--brand) 0%,#6f5df0 100%);color:#fff;
+}
+/* 시계 그림. 글 위로 올라오지 않게 오른쪽 위에 두고, 남은 시간 줄만 피한다 */
+.my-predictions-page .mp-next-art{
+  position:absolute;top:26px;right:16px;
+  display:grid;place-items:center;width:52px;height:52px;
+  border-radius:999px;color:#fff;
+  background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.34),rgba(255,255,255,.12));
+}
+.my-predictions-page .mp-next-cap{
+  display:flex;align-items:center;gap:5px;margin:0 0 6px;
+  font-size:11.5px;font-weight:700;opacity:.82;
+}
+.my-predictions-page .mp-next-t{
+  display:flex;align-items:baseline;gap:3px;margin:0 0 10px;
+  padding-right:60px;
+}
+.my-predictions-page .mp-next-t b{font-size:28px;font-weight:800;letter-spacing:-.03em;line-height:1.1}
+.my-predictions-page .mp-next-t i{font-style:normal;font-size:13px;font-weight:700;margin-right:6px;opacity:.85}
+.my-predictions-page .mp-next-sub{
+  margin:0;font-size:11.5px;line-height:1.55;opacity:.8;word-break:keep-all;
+}
+
+/* 적중률 */
+/* 적중률 — 아이콘 · 값 · 화살표 한 줄. 눌러서 예측 포트폴리오로 간다 */
+.my-predictions-page .mp-stat{
+  display:flex;align-items:center;gap:13px;
+  padding:14px 16px;border-radius:18px;
+  background:var(--surface);border:1px solid var(--rule);
+  transition:border-color .14s,background .14s;
+}
+.my-predictions-page .mp-stat:hover{border-color:#c8ccdd;background:#fbfbfe}
+/* 값이 없는 자리. 크기는 그대로 두고 강조만 낮춘다 — 높이가 같아야 곁칸이
+   계정마다 다른 자리에 서지 않는다 */
+.my-predictions-page .mp-stat.is-empty{background:var(--surface)}
+.my-predictions-page .mp-stat.is-empty .mp-stat-ic{background:var(--surface-2);color:var(--faint)}
+.my-predictions-page .mp-stat.is-empty .mp-stat-v b{color:var(--faint)}
+.my-predictions-page .mp-stat:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.my-predictions-page .mp-stat-ic{
+  flex:none;display:grid;place-items:center;width:42px;height:42px;
+  border-radius:13px;background:var(--brand-softer);color:var(--brand);
+}
+.my-predictions-page .mp-stat-v{flex:1;display:flex;flex-direction:column;gap:1px;min-width:0}
+.my-predictions-page .mp-stat-v b{
+  font-size:24px;line-height:1.15;font-weight:800;
+  letter-spacing:-.03em;color:var(--brand);
+}
+.my-predictions-page .mp-stat-v i{font-style:normal;color:var(--faint);font-size:11.5px}
+.my-predictions-page .mp-stat > svg{flex:none;color:var(--faint)}
+
+/* ── 머리 ────────────────────────────────────────────────
+   적중률은 곁칸(.mp-stat)으로 갔다. 여기 남는 건 제목과 한 줄 설명뿐이다. */
+.my-predictions-page .mp-head{margin:0}
 .my-predictions-page .mp-head h1{
   margin:0 0 6px;font-size:30px;line-height:1.15;
   font-weight:800;letter-spacing:-.04em;color:var(--ink);
@@ -30,50 +122,50 @@
   margin:0;color:var(--muted);font-size:13.5px;line-height:1.6;word-break:keep-all;
 }
 
-/* 적중률. 이 화면에서 가장 먼저 눈에 들어와야 하는 숫자다 */
-.my-predictions-page .mp-hit{
-  flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:1px;
-  margin:0;padding:0 0 0 20px;border-left:1px solid var(--rule);
-}
-.my-predictions-page .mp-hit b{
-  font-size:26px;line-height:1.15;font-weight:800;letter-spacing:-.03em;color:var(--brand);
-}
-.my-predictions-page .mp-hit span{color:var(--faint);font-size:11.5px}
-
 /* ── 세 걸음 안내 ────────────────────────────────────────
-   등록 → 자정 배치 → 결과. 가운데 걸음이 이 화면의 핵심 안내라 강조해 둔다 —
-   "왜 아직 블록에 없지" 의 답이 여기 있다. */
+   등록 → 자정 배치 → 결과. 곁칸으로 내려오면서 가로 세 칸에서 세로 목록이
+   됐다. 가로로 두던 때는 화면 위쪽을 한 줄 통째로 먹어 목록이 그만큼 밀렸다. */
 .my-predictions-page .mp-flow{
-  list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;
-  margin:0 0 20px;padding:0;
+  padding:15px 18px 17px;border-radius:18px;
+  background:var(--surface);border:1px solid var(--rule);
 }
+.my-predictions-page .mp-flow h2{
+  margin:0 0 12px;font-size:12.5px;font-weight:750;color:var(--ink);
+}
+.my-predictions-page .mp-flow ol{list-style:none;display:grid;gap:14px;margin:0;padding:0}
 .my-predictions-page .mp-flow li{
-  position:relative;display:flex;align-items:center;gap:13px;
-  padding:15px 17px;
-  background:var(--surface);border:1px solid var(--rule);border-radius:16px;
+  position:relative;display:flex;align-items:flex-start;gap:11px;
 }
-/* 걸음 사이의 화살표. 마지막 뒤에는 두지 않는다 */
+/* 걸음을 잇는 세로선. 마지막 뒤에는 두지 않는다 */
 .my-predictions-page .mp-flow li:not(:last-child)::after{
-  content:'';position:absolute;right:-10px;top:50%;z-index:1;
-  width:7px;height:7px;border-top:1.7px solid var(--faint);border-right:1.7px solid var(--faint);
-  transform:translateY(-50%) rotate(45deg);
+  content:'';position:absolute;left:17px;top:38px;bottom:-14px;
+  width:1.5px;border-radius:2px;background:var(--rule);
 }
 .my-predictions-page .mp-flow-ic{
-  flex:none;display:grid;place-items:center;width:40px;height:40px;
-  border-radius:13px;background:var(--brand-softer);color:var(--brand);
+  flex:none;display:grid;place-items:center;width:35px;height:35px;
+  border-radius:12px;background:var(--brand-softer);color:var(--brand);
 }
-.my-predictions-page .mp-flow div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.my-predictions-page .mp-flow div{display:flex;flex-direction:column;gap:2px;min-width:0}
 .my-predictions-page .mp-flow b{
-  font-size:13.5px;font-weight:750;color:var(--ink);word-break:keep-all;
+  font-size:12.5px;font-weight:750;color:var(--ink);word-break:keep-all;
 }
 .my-predictions-page .mp-flow span{
-  color:var(--muted);font-size:11.5px;line-height:1.55;word-break:keep-all;
+  color:var(--muted);font-size:11px;line-height:1.5;word-break:keep-all;
 }
 /* 가운데 걸음(자정 배치)만 브랜드색을 입힌다 */
-.my-predictions-page .mp-flow li:nth-child(2){
-  background:var(--brand-softer);border-color:var(--brand-soft);
-}
 .my-predictions-page .mp-flow li:nth-child(2) .mp-flow-ic{background:var(--brand);color:#fff}
+
+/* 되돌릴 수 없다는 말은 화면에서 여기 한 번만 나온다 */
+.my-predictions-page .mp-tip{
+  display:flex;align-items:flex-start;gap:8px;
+  margin:14px 0 0;padding:11px 13px;border-radius:12px;
+  background:var(--brand-softer);
+  color:var(--muted);font-size:11px;line-height:1.5;word-break:keep-all;
+}
+.my-predictions-page .mp-tip > span{
+  flex:none;display:inline-flex;align-items:center;gap:3px;
+  color:var(--brand-ink);font-size:10.5px;font-weight:800;letter-spacing:.02em;
+}
 
 /* ── 거르개 · 정렬 ───────────────────────────────────────
    알약을 따로 떼어 둔다. 셸의 밑줄 탭과 헷갈리지 않게 다른 모양이어야 한다. */
@@ -183,21 +275,40 @@
 
    그래서 상자를 벗기고 줄 하나로 만든다. 아이콘은 방향 배지 칸에, 글은 값
    칸에 맞춰 서므로 위 줄들과 세로선이 이어진다. */
+/* 옅은 상자 한 칸으로 둔다. 실선 위에 글만 얹으면 카드의 마지막 줄인지
+   카드 밖 설명인지 흐려진다 — 상자가 "이 카드에 딸린 말" 이라고 묶어 준다. */
 .my-predictions-page .mp-card > .mp-panel{
-  display:grid;grid-template-columns:104px minmax(0,1fr);
-  /* 줄의 열 간격과 같아야 글이 값 칸(L233)에서 시작한다 */
-  align-items:center;gap:0 20px;
-  min-height:0;margin-top:2px;padding:13px 0 0;
-  border-radius:0;border-top:1px solid var(--rule);
+  display:flex;align-items:center;gap:11px;
+  min-height:0;margin-top:14px;padding:11px 14px;
+  border-radius:12px;background:var(--surface-2);
 }
 /* 색칠을 벗긴다. 아래쪽 .mp-panel.is-anchor 규칙이 같은 명시도이고 더 뒤에
    있어서 background:none 만으로는 지지 않는다 — 클래스를 하나 더 걸어 이긴다.
    (실패 쪽은 .is-anchor.is-failed 라 한 단계 더 필요하다) */
-.my-predictions-page .mp-card > .mp-panel.is-anchor,
-.my-predictions-page .mp-card > .mp-panel.is-anchor.is-failed{background:none}
+.my-predictions-page .mp-card > .mp-panel.is-anchor{background:var(--surface-2)}
+.my-predictions-page .mp-card > .mp-panel.is-anchor.is-failed{background:#fdeeee}
+
+/* 한 줄로 눕힌다. 상자였을 때는 좁아서 두 줄로 접었지만 여기는 카드 폭을 다
+   쓰므로 접을 이유가 없다 — 세 줄짜리 덩어리가 카드 아래에 얹혀 있으면 안내가
+   목록보다 무거워 보인다.
+
+   .mp-panel.is-anchor b 의 white-space:pre-line 이 같은 명시도이면서 뒤에 있어
+   그냥 normal 만으로는 안 진다. 배경색 때와 같은 이유다 — 클래스를 하나 더 건다. */
+.my-predictions-page .mp-card > .mp-panel.is-anchor > div{
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;min-width:0;
+}
+.my-predictions-page .mp-card > .mp-panel.is-anchor b{
+  white-space:normal;font-size:12.5px;font-weight:700;
+}
+.my-predictions-page .mp-card > .mp-panel.is-anchor span{font-size:11.5px}
+/* 두 문장을 가운뎃점으로 잇는다. 줄이 갈리면 점은 사라진다 */
+.my-predictions-page .mp-card > .mp-panel.is-anchor span::before{
+  content:'·';margin-right:8px;color:var(--rule);
+}
+/* 사슬 그림도 줄인다. 19px 짜리 둘이면 아이콘만 50px 를 먹는다 */
 .my-predictions-page .mp-card > .mp-panel .mp-panel-art{justify-self:start}
-/* 상자 안에서는 두 줄로 접었지만 여기서는 한 줄로 흐르게 둔다 */
-.my-predictions-page .mp-card > .mp-panel b{white-space:normal}
+.my-predictions-page .mp-card > .mp-panel .mp-panel-art svg{width:15px;height:15px}
+.my-predictions-page .mp-card > .mp-panel .mp-panel-art i{width:7px}
 
 /* ── 누구 ────────────────────────────────────────────────*/
 .my-predictions-page .mp-who{display:flex;align-items:center;gap:13px;min-width:0}
@@ -237,15 +348,19 @@
 }
 /* 대기는 정상 상태다 — 경고색을 쓰지 않는다 */
 .my-predictions-page .mp-stage.is-anchor{background:var(--brand-soft);color:var(--brand-ink)}
-.my-predictions-page .mp-stage.is-open{background:#e8eefb;color:#2a52b5}
-.my-predictions-page .mp-stage.is-done{background:#e7f5ec;color:#15803d}
+/* 진행 중은 파랑을 쓰지 않는다. 이 화면에서 파랑은 **하락**으로 이미 예약된
+   색이고(--down), 두 배지가 같은 줄에 나란히 붙어 선다 — 배경도 #e8eefb 와
+   #e9f0ff 로 사실상 같아서, 뜻이 다른 알약 둘이 한 색으로 보였다.
+   기다리는 상태라 중립이 맞다. 뜻은 아이콘과 글자가 진다. */
+.my-predictions-page .mp-stage.is-open{background:var(--surface-2);color:var(--body)}
+.my-predictions-page .mp-stage.is-done{background:var(--ok-soft);color:var(--ok)}
 /* 국내 관례대로 상승이 빨강이다(app.css --up 주석) */
-.my-predictions-page .mp-dir.up{background:#fdecec;color:var(--up)}
-.my-predictions-page .mp-dir.down{background:#e9f0ff;color:var(--down)}
+.my-predictions-page .mp-dir.up{background:var(--up-soft);color:var(--up)}
+.my-predictions-page .mp-dir.down{background:var(--down-soft);color:var(--down)}
 
 .my-predictions-page .mp-anchored{
   align-self:flex-start;margin:0;padding:0;
-  color:#15803d;font-size:11.5px;font-weight:700;
+  color:var(--ok);font-size:11.5px;font-weight:700;
 }
 
 .my-predictions-page .mp-figures{
@@ -262,7 +377,7 @@
 }
 .my-predictions-page .mp-err{color:var(--body)}
 /* 목표가에 가깝게 맞힌 건은 강조한다 — 이 서비스가 파는 값어치다 */
-.my-predictions-page .mp-err.is-near{color:#0a7f3d}
+.my-predictions-page .mp-err.is-near{color:var(--hit)}
 .my-predictions-page .mp-none{color:var(--faint);font-weight:600}
 
 /* ── 지금 어디 ───────────────────────────────────────────*/
@@ -330,15 +445,15 @@
 .my-predictions-page .mp-bar-ends i{font-style:normal;opacity:.75}
 
 /* 결과 — 맞혔는지부터 말하고, 그다음이 자세히 보기다 */
-.my-predictions-page .mp-panel.is-done{background:#eef8f1}
+.my-predictions-page .mp-panel.is-done{background:var(--ok-soft)}
 .my-predictions-page .mp-panel.is-done.is-miss{background:var(--surface-2)}
 .my-predictions-page .mp-panel.is-done div{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
-.my-predictions-page .mp-panel.is-done b{font-size:14.5px;font-weight:800;color:#15803d}
+.my-predictions-page .mp-panel.is-done b{font-size:14.5px;font-weight:800;color:var(--ok)}
 .my-predictions-page .mp-panel.is-done.is-miss b{color:var(--body)}
 .my-predictions-page .mp-panel.is-done span{color:var(--muted);font-size:11.5px}
 .my-predictions-page .mp-trophy{
   flex:none;display:grid;place-items:center;width:42px;height:42px;
-  border-radius:999px;background:var(--surface);color:#15803d;
+  border-radius:999px;background:var(--surface);color:var(--ok);
 }
 .my-predictions-page .mp-panel.is-done.is-miss .mp-trophy{color:var(--faint)}
 .my-predictions-page .mp-cta{
@@ -384,24 +499,21 @@
 }
 
 /* ── 좁은 화면 ───────────────────────────────────────────*/
-@media (max-width:1180px){
-  /* 오른쪽 칸을 아랫줄 전체로 내린다. 폭을 줄이면 D-day 와 진행 바가 함께
-     찌그러져 둘 다 안 읽힌다 */
-  /* grid-row 까지 풀어야 한다. 열만 되돌리면 넓은 화면용 `grid-row:1` 이 남아
-     안내 칸이 첫 줄로 올라가고, 종목·값이 그 아래로 밀린다. */
-}
-/* 카드 종류마다 필요한 폭이 다르다. 한 기준으로 몰아 접으면 자리가 남는데도
-   세로로 쌓인다 — 실제로 1180 에 묶었을 때 D-day 상자가 폭 890 을 두고 통째로
-   내려왔다. 그래서 세 단계로 나눈다.
+/* ── 좁아질 때 ───────────────────────────────────────────
+   카드가 접히는 기준은 화면 폭이 아니라 **목록 칸의 폭**이다(@container mp).
+   곁칸이 300px 를 떼어 가므로 화면 폭으로 재면 늘 그만큼 어긋난다 — 넓은
+   화면에서 자리가 남는데도 D-day 상자가 통째로 아래로 내려가던 것이 그 탓이다.
 
-   묶음 줄(오른쪽에 제 칸이 있는 것): 값 ~450 + 칸 356 + 사이 20 ≈ 830 */
-@media (max-width:1040px){
+   칸 종류마다 필요한 폭이 다르므로 두 단계로 나눈다. */
+
+/* 오른쪽에 제 칸이 있는 줄: 값 ~450 + 칸 356 + 사이 20 ≈ 830 */
+@container mp (max-width:840px){
   .my-predictions-page .mp-row:not(.is-shared){grid-template-columns:minmax(0,1fr)}
   .my-predictions-page .mp-row:not(.is-shared) > .mp-panel{grid-column:1;grid-row:auto}
   .my-predictions-page .mp-row:not(.is-shared) .mp-more{grid-column:1;justify-self:start}
 }
-/* 한 줄짜리 표: 방향 104 + 값 436 + 버튼 111 ≈ 700 */
-@media (max-width:960px){
+/* 한 줄짜리 표: 방향 104 + 값 436 + 사이 40 + 버튼 111 ≈ 690 */
+@container mp (max-width:720px){
   .my-predictions-page .mp-row.is-shared{grid-template-columns:minmax(0,1fr)}
   /* 접으면 배지가 칸 폭만큼 늘어난다 */
   .my-predictions-page .mp-row.is-shared > .mp-dir{justify-self:start}
@@ -409,20 +521,51 @@
   .my-predictions-page .mp-row.is-shared .mp-more{grid-column:1;justify-self:start}
   /* 안내도 함께 편다 — 줄이 세로로 쌓이면 맞출 세로선이 없다 */
   .my-predictions-page .mp-card > .mp-panel{grid-template-columns:auto minmax(0,1fr);gap:0 12px}
+  /* 두 문장이 한 줄에 못 들어가 접힌다. 그때 가운뎃점만 둘째 줄 맨 앞에 남아
+     문장을 여는 것처럼 보이므로 지운다 — CSS 로는 접힘을 알 수 없어 폭으로 가른다. */
+  .my-predictions-page .mp-card > .mp-panel.is-anchor > div{gap:1px 8px}
+  .my-predictions-page .mp-card > .mp-panel.is-anchor span::before{content:none}
 }
-@media (max-width:860px){
-  .my-predictions-page .mp-flow{grid-template-columns:1fr}
-  .my-predictions-page .mp-flow li:not(:last-child)::after{
-    right:auto;left:28px;top:auto;bottom:-10px;transform:rotate(135deg);
-  }
-  .my-predictions-page .mp-head{flex-direction:column;gap:12px}
-  .my-predictions-page .mp-hit{
-    padding:0;border-left:0;flex-direction:row;align-items:baseline;gap:8px;
-  }
-  .my-predictions-page .mp-toolbar{flex-direction:column;align-items:stretch}
-  .my-predictions-page .mp-sort select{width:100%}
-  .my-predictions-page .mp-group-head{flex-wrap:wrap;gap:8px}
-  /* 칸 넷이 한 줄에 안 들어간다. 실선을 지우고 두 칸씩 흐르게 둔다 */
+/* 칸 넷이 한 줄에 안 들어간다. 실선을 지우고 흐르게 둔다 */
+@container mp (max-width:560px){
   .my-predictions-page .mp-figures{gap:6px 16px}
   .my-predictions-page .mp-figures > div{border-left:0;padding:0}
+  .my-predictions-page .mp-group-head{flex-wrap:wrap;gap:8px}
+}
+
+/* 곁칸을 세울 자리가 없어지면 목록 아래로 내린다. 위로 올리면 목록에 닿기까지
+   안내를 세 번 지나쳐야 한다 — 매번 보러 오는 건 목록이다. */
+@media (max-width:1120px){
+  .my-predictions-page .mp-layout{grid-template-columns:minmax(0,1fr)}
+  /* 제목 → 곁칸 → 목록. 넓은 화면에서 오른쪽 위에 있던 것이 좁아졌다고 맨
+     아래로 사라지면 방금 보던 것을 다시 찾아 내려가야 한다. 다만 제목보다
+     위로 올라가지는 않는다 — 화면 이름이 맨 먼저다. */
+  .my-predictions-page .mp-layout{
+    grid-template-areas:
+      "head"
+      "side"
+      "bar"
+      "main";
+  }
+  /* 한 열로 접히면 가운데 정렬도 sticky 도 뜻이 없다 */
+  .my-predictions-page .mp-side{
+    position:static;align-self:stretch;
+    flex-direction:row;flex-wrap:wrap;
+  }
+  .my-predictions-page .mp-next{flex:1 1 260px}
+  .my-predictions-page .mp-stat{flex:1 1 160px}
+  .my-predictions-page .mp-flow{flex:1 1 100%}
+  .my-predictions-page .mp-flow ol{grid-template-columns:repeat(3,1fr)}
+  /* 가로로 서면 잇는 선의 방향이 바뀐다 */
+  .my-predictions-page .mp-flow li:not(:last-child)::after{
+    left:auto;right:-9px;top:17px;bottom:auto;width:12px;height:1.5px;
+  }
+}
+@media (max-width:860px){
+  .my-predictions-page .mp-toolbar{flex-direction:column;align-items:stretch}
+  .my-predictions-page .mp-sort select{width:100%}
+  .my-predictions-page .mp-flow ol{grid-template-columns:1fr}
+  .my-predictions-page .mp-flow li:not(:last-child)::after{
+    right:auto;left:17px;top:38px;bottom:-14px;width:1.5px;height:auto;
+  }
 }

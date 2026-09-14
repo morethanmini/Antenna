@@ -36,14 +36,15 @@ import ssafy.a507.backend.domain.season.entity.SeasonTicker;
  */
 @Entity
 @Table(name = "predictions")
-// 대상·기간 규칙은 앱 검증이 놓쳐도 DB 가 막는다. 값 집합은 ERD v0.4(REAL 캘린더 일수 7/14/30/90) 기준.
+// 대상·기간 규칙은 앱 검증이 놓쳐도 DB 가 막는다. REAL 기간은 3~90 캘린더일 연속 구간이다
+// (2026-09-14, 화면의 기간 고르개를 눈금 네 개에서 슬라이더로 바꾸면서 ERD v0.4 의 7/14/30/90 집합을 넓혔다).
 @Check(
         name = "ck_predictions_target_matches_track",
         constraints = "(track = 'REAL' and stock_code is not null and season_ticker_id is null)"
                 + " or (track = 'REPLAY' and season_ticker_id is not null and stock_code is null)")
 @Check(
         name = "ck_predictions_horizon",
-        constraints = "(track = 'REAL' and horizon in (7, 14, 30, 90))"
+        constraints = "(track = 'REAL' and horizon between 3 and 90)"
                 + " or (track = 'REPLAY' and horizon > 0)")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -97,7 +98,7 @@ public class Prediction {
     @Column(name = "ref_close", precision = 14, scale = 2)
     private BigDecimal refClose;
 
-    /** REAL은 캘린더 일수 7/14/30/90, REPLAY는 게임일 수. 단위가 트랙마다 다르다. */
+    /** REAL은 캘린더 일수 3~90, REPLAY는 게임일 수. 단위가 트랙마다 다르다. */
     @Column(nullable = false)
     private short horizon;
 

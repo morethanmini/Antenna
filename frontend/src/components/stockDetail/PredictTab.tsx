@@ -6,7 +6,7 @@
    그쪽으로 들어와도 이 탭이 열린다.
 
    설계 제약(§4 C-01)
-   - direction 은 UP/DOWN 둘뿐이고 horizon 은 **7·14·30·90 캘린더일** 고정이다(결정 B5).
+   - direction 은 UP/DOWN 둘뿐이고 horizon 은 **3~90 캘린더일**이다(결정 B5, 구간은 2026-09-14 확장).
      임의 마감일이 없다. 화면설계서는 아직 5·10·20·60 거래일로 적혀 있는데, DB CHECK·ERD·
      API 명세 v0.38 이 모두 앞의 값이라 그쪽이 낡았다.
    - targetPrice 는 등록 후 불변이다. 그래서 등록 전에 "수정·삭제 불가" 를 반드시 고지한다.
@@ -41,8 +41,8 @@ import { ApiError } from '../../api/errors'
 import { POINT_KINDS, POINT_LABEL, getPoints } from '../../api/stockDetail'
 import type { InvestPoint, PointKind, StockSummary } from '../../api/stockDetail'
 import {
-  DIRECTIONS, HORIZONS, HORIZON_LABEL, NOTE_MAX,
-  commitHash, commitPayload, createPrediction, getSlots, newNoteSalt, noteHash,
+  DIRECTIONS, HORIZON_MAX, HORIZON_MIN, HORIZON_TICKS, NOTE_MAX,
+  commitHash, commitPayload, createPrediction, getSlots, horizonLabel, newNoteSalt, noteHash,
   predictionSigningPayload, targetPriceInScale,
 } from '../../api/predictions'
 import type {
@@ -171,7 +171,7 @@ export default function PredictTab({ code, summary, picked, onPick, onGoInfo, fo
 
   /* 등락률 고르개. 목표가를 직접 치는 사람도 있어 기본은 닫혀 있다 */
   const [pctOpen, setPctOpen] = useState(false)
-  const horizonIdx = horizon === null ? 0 : HORIZONS.indexOf(horizon)
+
 
   /* 고른 비율로 목표가를 채운다. 원 단위로 반올림한다 — 소수 셋째 자리가 남으면
      서버가 400 으로 거절하고(numeric(14,2)), 호가 단위가 아닌 값도 사람이 읽기 어렵다. */
@@ -456,10 +456,9 @@ export default function PredictTab({ code, summary, picked, onPick, onGoInfo, fo
             )}
           </li>
 
-          {/* ② 기간 — 네 값 고정이다. 임의 마감일(직접 입력)을 두지 않는다(§4 C-01).
-              수직선(number line)으로 바꿨다(2026-09-10). 값이 네 개뿐이라 range 입력을
-              **눈금 번호**로 쓴다 — 1·7·30·90 을 값 그대로 쓰면 90 쪽이 화면을 다
-              먹어 앞쪽 셋이 붙어 버린다.
+          {/* ② 기간 — 3~90 일 연속 구간이다(2026-09-14). 눈금 네 개 고정이던 때는 range 를
+              **눈금 번호**로 썼는데, 이제 값 자체를 싣는다. 눈금은 3·30·60·90 참조선으로만
+              남긴다 — 화살표키 한 칸이 1일이라 손잡이가 눈금에 붙지 않는다.
               native range 를 쓰는 이유는 접근성이다. 직접 만든 끌개는 키보드·스크린리더가
               못 쓰는데, range 는 화살표키·Home/End 가 그냥 된다. */}
           <li className="pf-step">
@@ -468,31 +467,31 @@ export default function PredictTab({ code, summary, picked, onPick, onGoInfo, fo
               <input
                 type="range"
                 className="pf-line-input"
-                min={0}
-                max={HORIZONS.length - 1}
+                min={HORIZON_MIN}
+                max={HORIZON_MAX}
                 step={1}
-                value={horizonIdx}
+                value={horizon ?? HORIZON_MIN}
                 aria-label="예측 기간"
-                aria-valuetext={horizon === null ? '고르지 않음' : `${HORIZON_LABEL[horizon]} · ${dueLabel(horizon)} 만기`}
-                onChange={(e) => setHorizon(HORIZONS[Number(e.target.value)])}
+                aria-valuetext={horizon === null ? '고르지 않음' : `${horizonLabel(horizon)} · ${dueLabel(horizon)} 만기`}
+                onChange={(e) => setHorizon(Number(e.target.value))}
               />
               <div className="pf-line-ticks" aria-hidden="true">
-                {HORIZONS.map((h, i) => (
+                {HORIZON_TICKS.map((h) => (
                   <span
                     key={h}
                     className={`pf-tick${horizon === h ? ' is-on' : ''}`}
-                    style={{ left: `${(i / (HORIZONS.length - 1)) * 100}%` }}
+                    style={{ left: `${((h - HORIZON_MIN) / (HORIZON_MAX - HORIZON_MIN)) * 100}%` }}
                   >
                     <i />
-                    <b>{HORIZON_LABEL[h]}</b>
+                    <b>{horizonLabel(h)}</b>
                   </span>
                 ))}
               </div>
             </div>
             <p className="sd-help">
               {horizon === null
-                ? '손잡이를 옮겨 기간을 고르세요.'
-                : <>만기 <b className="num">{dueLabel(horizon)}</b> · 기준일(다음 평일)부터 캘린더일로 셉니다. 기준가는 기준일 종가로 확정됩니다.</>}
+                ? '손잡이를 옮겨 3일에서 90일 사이로 고르세요.'
+                : <><b className="num">{horizonLabel(horizon)}</b> · 만기 <b className="num">{dueLabel(horizon)}</b> · 기준일(다음 평일)부터 캘린더일로 셉니다. 기준가는 기준일 종가로 확정됩니다.</>}
             </p>
           </li>
 

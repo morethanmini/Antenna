@@ -24,9 +24,9 @@ import PredictionStatus from '../components/prediction/PredictionStatus'
 import ErrorState from '../components/state/ErrorState'
 import SubscriptionGate from '../components/state/SubscriptionGate'
 import { isSubscriptionGated } from '../api/errors'
-import { PROOF_STATUS_LABEL, fetchAnchorStatus } from '../api/proof'
+import { PROOF_STATUS_LABEL, fetchProof } from '../api/proof'
 import { useBlock } from '../api/useBlock'
-import { getPredictionDetail, targetProgress, phaseOf, HORIZON_LABEL } from '../api/predictions'
+import { getPredictionDetail, targetProgress, phaseOf, horizonLabel } from '../api/predictions'
 import { getProfile } from '../api/stockDetail'
 import '../styles/screens/predict-detail.css'
 
@@ -88,7 +88,7 @@ export default function PredictDetail() {
      id 로 부르면 400 이 난다. GET /predictions/{id} 가 붙어 상세가 실제
      데이터가 되면 이 갈래는 사라진다. */
   const isServerId = /^\d+$/.test(id)
-  const proof = useBlock(() => fetchAnchorStatus(id), [id], isServerId)
+  const proof = useBlock(() => fetchProof(id), [id], isServerId)
 
   /* 종목명이 비어 오면 종목 개요에서 가져온다.
 
@@ -174,7 +174,7 @@ export default function PredictDetail() {
 
           <p className="pd-by">
             <Link to={`/channels/${d.author.userId}`}>{d.author.nickname}</Link>
-            <span className="num">{`${dot(d.createdAt)} 등록 · ${HORIZON_LABEL[d.horizon]}`}</span>
+            <span className="num">{`${dot(d.createdAt)} 등록 · ${horizonLabel(d.horizon)}`}</span>
           </p>
         </header>
 

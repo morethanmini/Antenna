@@ -28,9 +28,6 @@ import MyPage from './pages/MyPage'
 import Reports from './pages/Reports'
 import ReportDetail from './pages/ReportDetail'
 import ReportNew from './pages/ReportNew'
-import Posts from './pages/Posts'
-import PostDetail from './pages/PostDetail'
-import PostNew from './pages/PostNew'
 import SeasonHome from './pages/SeasonHome'
 import SeasonMode from './pages/SeasonMode'
 import SeasonPractice from './pages/SeasonPractice'
@@ -117,13 +114,12 @@ export const ROUTES: PageMeta[] = [
      App.tsx 가 `meta.nav ?? 'home'` 으로 기본값을 주므로 비우면 이번엔 홈이 켜진다. */
   { screen: 'E-05', element: MyPage, path: '/me', title: '마이페이지', access: 'user', mode: 'insight', nav: 'me', bodyClass: 'mypage-page', story: 'ANT-FE-MYPAGE' },
 
-  // ── F. 리포트 · 커뮤니티 ─────────────────────────────
+  // ── F. 리포트 ───────────────────────────────────────
+  // 커뮤니티(F-04 피드 · F-05 글 상세 · F-06 글 작성)는 개발 범위에서 뺐다
+  // (2026-09-14). 화면과 라우트를 지웠고, 서버 API 는 그대로 남아 있다.
   { screen: 'F-01', element: Reports, path: '/reports', title: '리포트 피드', access: 'user', mode: 'insight', nav: 'report', bodyClass: 'reports-page', story: 'ANT-FE-REPORTS' },
   { screen: 'F-02', element: ReportDetail, path: '/reports/:id', title: '리포트 상세', access: 'user', mode: 'insight', nav: 'report', story: 'ANT-FE-REPORT-DETAIL' },
   { screen: 'F-03', element: ReportNew, path: '/reports/new', title: '리포트 작성', access: 'user', mode: 'insight', nav: 'report', story: 'ANT-FE-REPORT-NEW' },
-  { screen: 'F-04', element: Posts, path: '/posts', title: '커뮤니티 피드', access: 'user', mode: 'insight', nav: 'community', bodyClass: 'community-list-page', story: 'ANT-FE-POSTS' },
-  { screen: 'F-05', element: PostDetail, path: '/posts/:id', title: '글 상세', access: 'user', mode: 'insight', nav: 'community', bodyClass: 'community-page', story: 'ANT-FE-POST-DETAIL' },
-  { screen: 'F-06', element: PostNew, path: '/posts/new', title: '글 작성', access: 'user', mode: 'insight', nav: 'community', story: 'ANT-FE-POST-NEW' },
 
   // ── G. 모의투자 ──────────────────────────────────────
   { screen: 'G-01', element: SeasonHome, path: '/sim', title: '모의투자 홈', access: 'user', mode: 'sim', nav: 'home', bodyClass: 'sim-home-page', story: 'ANT-FE-SEASON-HOME' },

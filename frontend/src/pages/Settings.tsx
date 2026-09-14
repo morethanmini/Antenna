@@ -5,29 +5,41 @@
    설계 제약
    - 설정 항목은 notifyVerdict · notifySeason · notifySocial · chartView 4개뿐이다.
      임의 토글을 늘리지 않는다. AI 힌트·난이도 설정은 두지 않는다.
-   - 닉네임은 중복 확인 API 를 거친다(useNicknameCheck 가 A-02 와 공유).
    - M-09 온보딩은 최초 1회만 뜬다. 건너뛴 사용자를 위한 보완 안내를 이 화면에 둔다.
 
-   백엔드 준비 상태 — 이 화면은 절반이 잠겨 있다
-   - PATCH /users/me 는 지금 닉네임만 받는다(UserController 주석 명시).
-     그래서 소개·관심 섹터·외부 채널은 읽기 전용으로 둔다. 편집 UI 를 먼저 만들면
-     저장 못 하는 입력란이 생기고, 사용자는 저장했다고 믿는다.
-   - GET·PUT /users/me/settings 는 아직 없다. 알림 3종과 차트 뷰는 잠긴 카드로 둔다.
-     토글을 그려 두고 동작만 막으면 고장 난 화면으로 읽힌다. */
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { api, ApiError } from '../api/client'
-import { useApiQuery } from '../api/useApiQuery'
-import { NICKNAME_MAX, useNicknameCheck, validateNickname } from '../api/useNicknameCheck'
-import { platformLabel, type MyProfile } from '../api/account'
-import { ERROR_CODE } from '../api/errors'
-import type { MeResponse } from '../auth/session'
+   프로필은 여기 없다 — E-02 내 채널에서 고친다
+   닉네임·소개·관심 섹터·외부 채널은 **남에게 보이는 값**이라, 남이 보는 그 화면에서
+   고치는 편이 맞다. 설정에 두면 내가 어떻게 보이는지 확인하러 화면을 한 번 더 옮겨야
+   했다. 이 화면에는 구독료(E-04)와 알림·차트 뷰, 로그아웃만 남는다.
+
+   한 화면 안에서 탭으로 오간다
+   설정 항목이 넷이라 세로로 쌓으면 아래 것이 스크롤 밖으로 나간다 — 무엇이 있는지
+   자체를 모른다. B-03 종목 상세와 같은 탭 패턴을 쓴다(role=tablist · 쿼리스트링).
+   탭 밖에 남기는 둘이 있다.
+   - 온보딩 보완: 지금 해야 할 일을 알리는 자리라 탭 안에 숨기면 안 보인다.
+   - 로그아웃: 설정 패널이 아니라 행동이다. 탭 하나를 버튼 한 개로 채우게 된다.
+
+   백엔드 준비 상태
+   GET·PUT /users/me/settings 는 아직 없다. 알림 3종과 차트 뷰는 잠긴 카드로 둔다 —
+   토글을 그려 두고 동작만 막으면 고장 난 화면으로 읽힌다. */
+import { useCallback, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/context'
-import ErrorState from '../components/state/ErrorState'
 import LockedCard from '../components/state/LockedCard'
 import ChannelFeeSection from '../components/settings/ChannelFeeSection'
 import WalletLinkModal from '../components/wallet/WalletLinkModal'
 import '../styles/screens/settings.css'
+
+/* 탭 셋. 첫 탭이 기본이라 쿼리가 붙지 않는다 — 나머지는 ?tab=notify 처럼 실린다. */
+const TABS = [
+  { key: 'fee', label: '구독료' },
+  { key: 'notify', label: '알림' },
+  { key: 'chart', label: '트레이딩 뷰' },
+] as const
+
+type TabKey = (typeof TABS)[number]['key']
+
+const isTab = (v: string | null): v is TabKey => TABS.some((t) => t.key === v)
 
 /* 명세 §회원 의 설정 4개. 서버가 열리면 이 표가 토글 목록이 된다.
    지금은 무엇이 준비 중인지 알려 주는 데만 쓴다. */
@@ -39,64 +51,26 @@ const SETTING_ITEMS = [
 
 export default function Settings() {
   const navigate = useNavigate()
-  const { user, signOut, setNickname } = useAuth()
-
-  const profile = useApiQuery<MyProfile>('/users/me')
-
-  /* 셸이 들고 있는 닉네임을 기준으로 삼는다 — 입력을 열자마자 서버 응답을
-     기다리지 않아도 되고, 변경 직후에도 값이 어긋나지 않는다. */
-  const current = user?.nickname ?? ''
-  const [value, setValue] = useState(current)
-  const { check, markTaken } = useNicknameCheck(value, current)
-
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { user, signOut } = useAuth()
 
   // M-09 를 건너뛴 사용자를 위한 보완 진입로(설계 제약)
   const [linking, setLinking] = useState(false)
 
-  async function submit(event: React.FormEvent) {
-    event.preventDefault()
-    const reason = validateNickname(value)
-    if (reason) {
-      setError(reason)
-      return
-    }
+  /* 탭은 쿼리스트링에 둔다 — 옛 /me/channel 링크가 기본 탭에 그대로 닿고,
+     새로고침해도 보던 자리가 유지된다. 모르는 값이면 구독료로 떨어뜨린다. */
+  const [params, setParams] = useSearchParams()
+  const raw = params.get('tab')
+  const tab: TabKey = isTab(raw) ? raw : 'fee'
+  const goTab = useCallback((next: TabKey) => {
+    const p = new URLSearchParams(params)
+    if (next === 'fee') p.delete('tab')
+    else p.set('tab', next)
+    /* 탭 전환은 히스토리를 쌓지 않는다 — 네 번 오간 뒤 뒤로가기를 네 번 눌러야
+       마이페이지로 돌아가면 답답하다(B-03 과 같은 판단). */
+    setParams(p, { replace: true })
+  }, [params, setParams])
 
-    setSaving(true)
-    setError(null)
-    setSaved(false)
-    try {
-      const me = await api.patch<MeResponse>('/users/me', { nickname: value })
-      // 서버가 확정한 값으로 셸을 갱신한다. 화면 입력값을 그대로 믿지 않는다.
-      setNickname(me.nickname ?? value)
-      setSaved(true)
-      profile.reload()
-    } catch (e) {
-      /* 중복 검사와 확정 사이에 누가 먼저 가져갈 수 있다. 최종 판정은 서버다. */
-      if (e instanceof ApiError && e.code === ERROR_CODE.DUPLICATE_NICKNAME) {
-        markTaken(value)
-        setError('이미 사용 중인 닉네임입니다.')
-      } else {
-        setError('닉네임을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.')
-      }
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const hint = {
-    idle: `${NICKNAME_MAX}자까지 입력할 수 있습니다.`,
-    unchanged: '현재 사용 중인 닉네임입니다.',
-    checking: '확인 중…',
-    available: '사용할 수 있는 닉네임입니다.',
-    taken: '이미 사용 중인 닉네임입니다.',
-    invalid: check.state === 'invalid' ? check.reason : '',
-  }[check.state]
-
-  const interests = profile.data?.interests ?? []
-  const channels = profile.data?.channels ?? []
+  const current = user?.nickname ?? ''
   const walletLinked = user?.walletLinked ?? false
 
   return (
@@ -104,7 +78,7 @@ export default function Settings() {
       <div className="main-inner">
         <div className="page-head">
           <h1>환경 설정</h1>
-          <p>프로필과 알림, 로그아웃을 관리합니다</p>
+          <p>구독료와 알림, 로그아웃을 관리합니다</p>
         </div>
 
         {/* ── 온보딩 보완 ───────────────────────────────
@@ -117,7 +91,9 @@ export default function Settings() {
               {current === '' && (
                 <li>
                   <b>닉네임</b>
-                  <span>예측 기록과 랭킹에 표시됩니다. 아래에서 정할 수 있습니다.</span>
+                  <span>예측 기록과 랭킹에 표시됩니다.</span>
+                  {/* 정하는 자리가 내 채널로 옮겨 갔다 — 여기서 알리기만 하고 보낸다 */}
+                  <Link className="st-btn solid" to={`/channels/${user?.id ?? ''}`}>내 채널에서 정하기</Link>
                 </li>
               )}
               {!walletLinked && (
@@ -133,95 +109,43 @@ export default function Settings() {
           </section>
         )}
 
-        {/* ── 프로필 ────────────────────────────────── */}
-        <section className="st-block">
-          <h2>프로필</h2>
+        {/* ── 탭 ────────────────────────────────────────
+            잠긴 둘(알림·트레이딩 뷰)도 탭으로 남긴다. 빼면 그런 설정이 있다는 것
+            자체를 모르게 되고, 서버가 열렸을 때 "없던 게 생겼다" 로 읽힌다.
+            대신 무엇이 준비 중인지는 각 패널 안에서 말한다. */}
+        <div className="st-tabs" role="tablist" aria-label="환경 설정 항목">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              role="tab"
+              id={`st-tab-${t.key}`}
+              aria-selected={tab === t.key}
+              aria-controls={`st-panel-${t.key}`}
+              className={tab === t.key ? 'is-on' : undefined}
+              onClick={() => goTab(t.key)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
 
-          <form className="st-field" onSubmit={submit}>
-            <label className="st-label" htmlFor="settings-nickname">닉네임</label>
-            <div className="st-row">
-              <input
-                className="st-input"
-                id="settings-nickname"
-                type="text"
-                value={value}
-                onChange={(e) => { setValue(e.target.value); setError(null); setSaved(false) }}
-                maxLength={NICKNAME_MAX}
-                aria-describedby="settings-nickname-hint"
-                aria-invalid={check.state === 'taken' || check.state === 'invalid'}
-              />
-              <button
-                type="submit" className="st-btn solid"
-                disabled={saving || check.state !== 'available'}
-              >
-                {saving ? '저장 중…' : '변경'}
-              </button>
-            </div>
-            <p className={`st-hint is-${check.state}`} id="settings-nickname-hint" aria-live="polite">
-              {error ?? (saved ? '닉네임을 변경했습니다.' : hint)}
-            </p>
-          </form>
+        <div role="tabpanel" id={`st-panel-${tab}`} aria-labelledby={`st-tab-${tab}`} tabIndex={-1}>
 
-          {profile.error ? (
-            <ErrorState error={profile.error} onRetry={profile.reload} inline />
-          ) : (
-            <>
-              {/* PATCH /users/me 가 아직 받지 않는 필드들. 읽기 전용으로 둔다 */}
-              <div className="st-field">
-                <span className="st-label">소개</span>
-                <p className="st-readonly">
-                  {profile.data?.introduce || '소개가 아직 없습니다'}
-                </p>
-              </div>
-
-              <div className="st-field">
-                <span className="st-label">관심 섹터</span>
-                {interests.length > 0 ? (
-                  <ul className="st-tags">
-                    {interests.map((s) => <li key={s}>{s}</li>)}
-                  </ul>
-                ) : (
-                  <p className="st-readonly">등록된 관심 섹터가 없습니다</p>
-                )}
-              </div>
-
-              <div className="st-field">
-                <span className="st-label">외부 채널</span>
-                {channels.length > 0 ? (
-                  <ul className="st-channels">
-                    {channels.map((c) => (
-                      <li key={c.url}>
-                        {/* 명세상 https 만 저장된다. 외부로 나가므로 새 탭 + noreferrer */}
-                        <a href={c.url} target="_blank" rel="noreferrer noopener">
-                          <span className="st-channel-platform">{platformLabel(c.platform)}</span>
-                          <span className="st-channel-url">{c.url}</span>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="st-readonly">등록된 채널이 없습니다</p>
-                )}
-              </div>
-
-              <p className="st-note">
-                소개 · 관심 섹터 · 외부 채널 수정은 준비 중입니다. 지금은 닉네임만 변경할 수 있습니다.
-              </p>
-            </>
-          )}
-        </section>
-
-        {/* ── 내 채널 ───────────────────────────────────
-            원래 E-04 [ANT-FE-CHANNEL-FEE] 의 별도 화면(/me/channel)이었는데
-            여기로 합쳤다. 둘 다 "내 계정을 손보는 곳"이라 마이페이지에서
-            설정 진입점이 둘로 갈려 있었다.
-
+        {/* ── 구독료 ─────────────────────────────────
+            E-04 [ANT-FE-CHANNEL-FEE] 의 별도 화면(/me/channel)이었는데 여기로 합쳤다(2026-09-07).
+        
+            닉네임·소개·관심 섹터·외부 채널은 여기 없다 — E-02 내 채널에서 본다.
+            그 넷은 **남에게 보이는 값**이라, 남이 보는 그 화면에서 고치는 것이 맞다.
+            설정에 두면 내가 어떻게 보이는지 확인하러 화면을 한 번 더 옮겨야 했다.
+        
             섹션 안쪽은 ChannelFeeSection 이 맡는다 — 설계 제약 셋(차기 주기 적용 ·
             FEE_CHANGED 확인 단계 · 변경 이력)도 그 파일 머리말에 있다.
             **아직 목업이다.** GET·PUT /me/channel/fee 가 없다(api/channelFee.ts). */}
-        <ChannelFeeSection />
+        {tab === 'fee' && <ChannelFeeSection />}
 
         {/* ── 알림 ─────────────────────────────────── */}
+        {tab === 'notify' && (
         <section className="st-block">
           <h2>알림</h2>
           {/* 기본 문구는 구독 잠금용이라 title 로 갈아끼운다 — 구독으로 풀리는 잠금이 아니다 */}
@@ -236,8 +160,10 @@ export default function Settings() {
             </ul>
           </LockedCard>
         </section>
+        )}
 
         {/* ── 트레이딩 기본 뷰 ──────────────────────── */}
+        {tab === 'chart' && (
         <section className="st-block">
           <h2>트레이딩 기본 뷰</h2>
           <LockedCard label="차트 뷰 설정" title="차트 뷰 설정은 준비 중입니다">
@@ -246,8 +172,13 @@ export default function Settings() {
             </p>
           </LockedCard>
         </section>
+        )}
 
-        {/* ── 로그아웃 ─────────────────────────────── */}
+        </div>
+
+        {/* ── 로그아웃 — 탭 밖에 둔다 ──────────────────
+            설정 패널이 아니라 행동이다. 탭 하나를 버튼 한 개로 채우게 되고,
+            어느 탭에 있든 여기서 나갈 수 있는 편이 낫다. */}
         <section className="st-block">
           <h2>로그아웃</h2>
           <p className="st-note">
@@ -264,8 +195,9 @@ export default function Settings() {
         {linking && (
           <WalletLinkModal
             onClose={() => setLinking(false)}
-            // 연동되면 셸의 walletLinked 가 서고, 위 보완 안내가 사라진다
-            onLinked={() => profile.reload()}
+            /* 연동되면 셸의 walletLinked 가 서고 위 보완 안내가 사라진다 —
+               이 화면은 더 이상 /users/me 를 읽지 않아 따로 할 일이 없다 */
+            onLinked={() => setLinking(false)}
           />
         )}
       </div>

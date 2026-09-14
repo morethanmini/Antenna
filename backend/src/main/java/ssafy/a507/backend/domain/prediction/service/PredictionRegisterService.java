@@ -57,8 +57,9 @@ public class PredictionRegisterService {
     /** 슬롯·D-day 는 장 기준이라 서버 시간대와 무관하게 KST 로 센다. */
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
-    /** REAL 트랙 기간(캘린더일). DB CHECK(ck_predictions_horizon)와 같은 집합 — 앱이 먼저 400 으로 거른다. */
-    private static final Set<Short> HORIZONS = Set.of((short) 7, (short) 14, (short) 30, (short) 90);
+    /** REAL 트랙 기간(캘린더일). DB CHECK(ck_predictions_horizon)와 같은 구간 — 앱이 먼저 400 으로 거른다. */
+    private static final short HORIZON_MIN = 3;
+    private static final short HORIZON_MAX = 90;
 
     /** 근거 포인트 상한. 화면(B-03)이 고를 수 있는 개수 정도. */
     private static final int MAX_EVIDENCES = 10;
@@ -117,7 +118,7 @@ public class PredictionRegisterService {
         }
 
         // ② 싼 검사들 — 전부 nonce 소비 앞.
-        if (!HORIZONS.contains(req.horizon())) {
+        if (req.horizon() < HORIZON_MIN || req.horizon() > HORIZON_MAX) {
             throw new BusinessException(ErrorCode.INVALID_REQUEST, "horizon");
         }
         Stock stock = stocks.findById(req.stockCode())

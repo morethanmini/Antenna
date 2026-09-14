@@ -2,6 +2,36 @@
    색·간격은 app.css 의 토큰만 쓴다. 닉네임 입력 스타일이 auth.css 에도 있지만
    그쪽은 .auth 안쪽으로 스코프돼 있어 이 화면에 닿지 않는다 — 여기서 다시 정의한다. */
 
+/* ── 탭 ──────────────────────────────────────────
+   B-03 종목 상세(.sd-tabs)와 같은 모양이다. 그쪽은 화면 클래스로 스코프돼 있어
+   가져다 쓸 수 없어 여기서 다시 적는다 — 값이 갈리지 않게 함께 고친다. */
+.st-tabs{
+  display:flex; gap:4px;
+  margin-bottom:14px;
+  border-bottom:1px solid var(--rule);
+  overflow-x:auto;            /* 좁은 화면에서 넷이 안 들어가면 가로로 민다 */
+  scrollbar-width:none;
+}
+.st-tabs::-webkit-scrollbar{ display:none; }
+.st-tabs button{
+  position:relative; flex:0 0 auto;
+  padding:9px 14px;
+  border:0; background:none; font:inherit;
+  font-size:13px; font-weight:600; color:var(--muted);
+  white-space:nowrap; cursor:pointer;
+}
+.st-tabs button:hover{ color:var(--ink); }
+.st-tabs button.is-on{ color:var(--brand); }
+/* 선택 표시를 색으로만 하지 않는다 — 밑줄이 함께 있어야 읽힌다 */
+.st-tabs button.is-on::after{
+  content:''; position:absolute; left:10px; right:10px; bottom:-1px;
+  height:2px; border-radius:2px; background:var(--brand);
+}
+.st-tabs button:focus-visible{ outline:2px solid var(--brand); outline-offset:-4px; border-radius:8px; }
+
+/* 패널에 초점이 갈 때 테두리를 그리지 않는다 — tabIndex 는 읽기 순서용이다 */
+[id^="st-panel-"]:focus{ outline:none; }
+
 .st-block{
   background:var(--surface);
   border:1px solid var(--rule);

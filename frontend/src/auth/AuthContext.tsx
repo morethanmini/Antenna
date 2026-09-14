@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { setAccessToken, setUnauthorizedHandler } from '../api/client'
 import SessionExpiredModal from '../components/session/SessionExpiredModal'
+import { DEFAULT_AVATAR } from './context'
 import { endSession, restoreSession } from './session'
 import { rememberReturnTo } from './returnTo'
 import { AuthCtx, type AuthState, type AuthUser, type Role } from './context'
@@ -33,8 +34,10 @@ function writeStub(role: Role | null) {
 
 function demoUser(role: Role): AuthUser {
   return {
+    // 목업 채널표(api/mock/channels.ts)의 1번 자리를 쓴다 — 내 채널 링크가 실제로 열린다
+    id: 1,
     nickname: '안테나',
-    avatarUrl: '/assets/character/white_ant/antenna-profile.png',
+    avatarUrl: DEFAULT_AVATAR,
     role,
     walletLinked: false,
   }

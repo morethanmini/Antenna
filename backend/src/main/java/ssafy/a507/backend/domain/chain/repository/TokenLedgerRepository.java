@@ -20,4 +20,21 @@ public interface TokenLedgerRepository extends JpaRepository<TokenLedger, Long> 
     default BigInteger balanceOf(Long userId) {
         return sumDeltaByUserId(userId).orElse(BigInteger.ZERO);
     }
+
+    /**
+     * 지갑 원장 목록 (ANT-TOKEN-04) — 최신부터, 커서 id 미만, reason 선택. 커밋 원장 목록({@code AnchorBatchRepository.findPage})과
+     * 같은 커서 규칙이다. 근거 이벤트를 같이 읽는다 — 행마다 tx 해시를 다시 묻지 않으려는 것(대부분 이벤트가 있다).
+     */
+    @Query("""
+            select l from TokenLedger l left join fetch l.chainEvent
+             where l.user.id = :userId
+               and (:reason is null or l.reason = :reason)
+               and (:cursorId is null or l.id < :cursorId)
+             order by l.id desc
+            """)
+    java.util.List<TokenLedger> findPage(
+            @Param("userId") Long userId,
+            @Param("reason") String reason,
+            @Param("cursorId") Long cursorId,
+            org.springframework.data.domain.Limit limit);
 }

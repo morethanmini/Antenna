@@ -20,7 +20,7 @@
    결제가 체인에서 확정되기를 기다리는 중이라 아직 열람 권한이 없다. 여기서
    "구독 중" 이라고 쓰면 잠긴 예측을 보고 고장으로 읽는다. */
 import { useCallback, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import {
   daysLeft, fetchBacktest, fetchChannel, fetchChannelPredictions,
   formatExpiry,
@@ -31,6 +31,7 @@ import { fetchChannelReports, formatDate, type ChannelReportItem } from '../api/
 import { useAsync } from '../api/useAsync'
 import { formatToken } from '../api/wallet'
 import PredictionCard from '../components/prediction/PredictionCard'
+import ChannelNickname from '../components/channel/ChannelNickname'
 import PredictionNote from '../components/channel/PredictionNote'
 import SubscribeModal from '../components/channel/SubscribeModal'
 import EmptyState from '../components/state/EmptyState'
@@ -70,6 +71,17 @@ function toCard(p: ChannelPrediction) {
 export default function ChannelProfile() {
   const { userId = '' } = useParams<{ userId: string }>()
 
+  /* ?as=visitor — 내 채널을 **다른 예측가 눈으로** 본다(E-05 "내 채널 보기").
+     서버는 여전히 나를 주인으로 보고 다 열어 준다. 권한을 흉내 낼 방법이 없어서가
+     아니라, 가리는 규칙이 단순해서 화면에서 다시 계산한다.
+       locked      = 판정 전 (비구독자는 canRead=false 이므로 판정 전이 곧 잠김)
+       noteLocked  = 항상 참 (canRead=false)
+       리포트 잠김 = 구독자 전용 글
+     서버의 PredictionViewService.canRead 와 같은 경계다. 규칙이 바뀌면 여기도 바꾼다.
+     주인용 편집 화면은 쿼리 없는 /channels/{내 id} 쪽이다. */
+  const [params] = useSearchParams()
+  const asVisitor = params.get('as') === 'visitor'
+
   const loadChannel = useCallback(() => fetchChannel(userId), [userId])
   const loadPredictions = useCallback(() => fetchChannelPredictions(userId), [userId])
   const loadReports = useCallback(() => fetchChannelReports(userId), [userId])
@@ -91,6 +103,11 @@ export default function ChannelProfile() {
 
   const channel = ch.data
   const sub = channel?.mySubscription
+
+  /** 주인 화면으로 그릴지. 미리보기 중이면 내 채널이라도 남처럼 그린다 */
+  const owner = (channel?.isMe ?? false) && !asVisitor
+  /** 미리보기 띠를 띄울 조건. 남의 채널에 ?as=visitor 를 붙여도 바뀔 게 없다 */
+  const previewing = (channel?.isMe ?? false) && asVisitor
 
   /** 내 채널일 때, 비구독자에게는 가려질 건수. 판정 전이 곧 잠금 경계다(§5) */
   const lockedForOthers = (preds.data?.items ?? [])
@@ -123,11 +140,34 @@ export default function ChannelProfile() {
 
         {channel && (
           <>
+            {/* ── 모드 띠 — 내 채널에서만 ────────────────
+                같은 화면을 두 눈으로 본다. 지금 어느 쪽인지와 반대편으로 가는 길을
+                한 줄에 둔다 — 미리보기에서 편집 자리가 사라진 것을 고장으로 읽지
+                않게 하고, 관리 화면에서 남에게 무엇이 보이는지 바로 열어 볼 수 있게. */}
+            {channel.isMe && (
+              <p className={`ch-preview${previewing ? '' : ' is-owner'}`}>
+                <span>
+                  {previewing
+                    ? '다른 예측가에게 보이는 화면입니다. 가려지는 범위는 규칙대로 다시 계산해 보여 줍니다.'
+                    : '내 채널 관리 화면입니다. 이름은 여기서 바로 고칩니다.'}
+                </span>
+                {previewing
+                  ? <Link className="ch-preview-btn" to={`/channels/${userId}`}>프로필 수정</Link>
+                  : <Link className="ch-preview-btn" to={`/channels/${userId}?as=visitor`}>남에게 보이는 화면</Link>}
+              </p>
+            )}
+
             {/* ── 채널 헤더 ─────────────────────────────── */}
             <header className="ch-head">
               {channel.avatarUrl && <img className="ch-avatar" src={channel.avatarUrl} alt="" />}
               <div className="ch-id">
-                <h1>{channel.nickname}</h1>
+                {/* 내 채널이면 여기서 바로 고친다 — 남에게 보이는 값이라
+                    보이는 자리에서 고치는 편이 맞다(S15P21A507-195 에서 설정에서 옮겨 옴) */}
+                <ChannelNickname
+                  nickname={channel.nickname}
+                  isMe={owner}
+                  onSaved={ch.reload}
+                />
                 {channel.bio && <p className="ch-bio">{channel.bio}</p>}
 
                 {channel.interests.length > 0 && (
@@ -172,7 +212,7 @@ export default function ChannelProfile() {
             </section>
 
             {/* ── 구독 카드 ─────────────────────────────── */}
-            {channel.isMe ? (
+            {owner ? (
               <section className="ch-sub is-me">
                 {/* 채널은 가입과 함께 있지만 구독료는 정해야 생긴다. 아직이면 그 사실부터
                     말한다 — "바꿉니다" 라고만 하면 이미 값이 있는 줄 안다(S15P21A507-230) */}
@@ -234,6 +274,12 @@ export default function ChannelProfile() {
                   <p className="ch-sub-unset-note">
                     이 채널은 아직 구독료를 정하지 않아 구독할 수 없습니다.
                   </p>
+                ) : previewing ? (
+                  /* 내 채널을 내가 구독할 수는 없다. 버튼을 지우면 남이 보는 화면과
+                     달라지므로 자리는 그대로 두고 누르지 못하게만 한다 */
+                  <button type="button" className="ch-sub-cta" disabled title="미리보기입니다">
+                    구독하기
+                  </button>
                 ) : (
                   <button type="button" className="ch-sub-cta" onClick={() => setSubscribing(true)}>
                     {sub?.status === 'EXPIRED' ? '다시 구독하기' : '구독하기'}
@@ -272,7 +318,7 @@ export default function ChannelProfile() {
                   (서버 isPending 과 같은 경계 — BASE · OPEN). 세는 데 서버를 더 부를
                   필요가 없어 이미 받은 목록에서 센다.
                   이 목록은 한 페이지뿐이라 "이 페이지 기준"이라는 뜻으로 적는다. */}
-              {channel.isMe && lockedForOthers > 0 && (
+              {owner && lockedForOthers > 0 && (
                 <p className="ch-gate-note">
                   {`판정 전 ${lockedForOthers}건은 비구독자에게 방향·목표가가 가려집니다. 지금 화면은 주인에게만 다 보입니다.`}
                 </p>
@@ -287,6 +333,8 @@ export default function ChannelProfile() {
                   {preds.data.items.map((p) => {
                     const id = String(p.id)
                     const open = openId === id
+                    /* 미리보기에서는 서버가 다 열어 준 목록을 비구독자 기준으로 다시 잠근다 */
+                    const locked = previewing ? phaseOf(p.status) === 'PENDING' : p.locked
                     return (
                       <li key={p.id} className={open ? 'is-open' : ''}>
                         {/* 카드째로 누를 수 있어야 한다. <button> 으로 감싸면 안쪽의
@@ -308,14 +356,20 @@ export default function ChannelProfile() {
                               구독 CTA 는 위 구독 카드 하나로 충분하다. 다른 화면(B-03 등)에서는
                               여기로 보내야 하므로 카드가 channelId 를 받는 것 자체는 남긴다.
                               여기 안에 링크가 없어야 role="button" 이 성립한다. */}
-                          <PredictionCard data={toCard(p)} />
+                          {/* 서버가 잠긴 건에서 방향·목표가를 빼는 것과 같은 모양으로 만든다 —
+                              값을 그대로 둔 채 자물쇠만 얹으면 미리보기가 거짓말이 된다 */}
+                          <PredictionCard
+                            data={locked
+                              ? { ...toCard(p), locked, direction: null, targetPrice: null }
+                              : toCard(p)}
+                          />
                         </div>
 
                         {/* 접으면 언마운트된다 — 그래서 "열 때만 읽기" 가 훅 조건부 호출
                             없이 된다(PredictionNote 머리말) */}
                         {open && (
                           <div id={`ch-note-${id}`}>
-                            <PredictionNote id={id} isMe={channel.isMe} locked={p.locked} />
+                            <PredictionNote id={id} isMe={owner} locked={locked} preview={previewing} />
                           </div>
                         )}
                       </li>
@@ -334,7 +388,10 @@ export default function ChannelProfile() {
               )}
               {reports.data && reports.data.items.length > 0 && (
                 <ul className="ch-reports">
-                  {reports.data.items.map((r: ChannelReportItem) => (
+                  {reports.data.items.map((r: ChannelReportItem) => {
+                    /* 미리보기에서는 구독자 전용 글이 곧 잠긴 글이다 */
+                    const locked = previewing ? !r.visibility : r.locked
+                    return (
                     <li key={r.id}>
                       <Link to={`/reports/${r.id}`}>
                         <span className="ch-report-title">{r.title}</span>
@@ -342,7 +399,7 @@ export default function ChannelProfile() {
                           {/* 두 배지는 뜻이 다르다 — visibility 는 글의 속성,
                               locked 는 내 권한이다(서버 주석). 합치지 않는다 */}
                           {!r.visibility && <em className="ch-badge">구독자 전용</em>}
-                          {r.locked && (
+                          {locked && (
                             <em className="ch-badge is-locked">
                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                 <rect x="4" y="10" width="16" height="10" rx="2" />
@@ -355,7 +412,8 @@ export default function ChannelProfile() {
                         </span>
                       </Link>
                     </li>
-                  ))}
+                    )
+                  })}
                 </ul>
               )}
             </section>

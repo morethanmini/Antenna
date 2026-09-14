@@ -12,7 +12,7 @@
    SSO 버튼이 로그인과 가입을 겸한다. */
 import { useNavigate } from 'react-router-dom'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../auth/context'
+import { DEFAULT_AVATAR, useAuth } from '../auth/context'
 import { takeReturnTo } from '../auth/returnTo'
 import { isConfigured, startLogin } from '../auth/oauth'
 import '../styles/auth.css'
@@ -68,7 +68,9 @@ export default function Login() {
      실제 로그인이 안정되면 지운다. — [ANT-AUTH-01] 이 남긴 것을 그대로 둔다.
      라우트 40개 중 39개가 가드 뒤에 있어 이게 없으면 로컬에서 화면을 못 본다. */
   function signInAsDemo(role: 'USER' | 'ADMIN') {
-    signIn({ nickname: '안테나', avatarUrl: '/assets/character/white_ant/antenna-profile.png', role, walletLinked: false })
+    /* id 는 목업 채널표(api/mock/channels.ts)의 1번 자리를 쓴다 — 데모 계정도
+       "내 채널 보기" 가 실제로 열린다. 아바타는 DEFAULT_AVATAR 한 곳에서 온다. */
+    signIn({ id: 1, nickname: '안테나', avatarUrl: DEFAULT_AVATAR, role, walletLinked: false })
     navigate(takeReturnTo(), { replace: true })
   }
 
