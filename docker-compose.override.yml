@@ -1,0 +1,39 @@
+# 로컬 개발 전용 (ANT-CHAIN-15) — 팀원 로컬 체인.
+#
+# `docker compose up -d` 는 이 파일을 docker-compose.yml 에 저절로 합친다(compose 의 기본 동작). 따로 켤 것이 없다.
+# 운영 배포(CI)는 `-f docker-compose.yml -f docker-compose.prod.yml` 로 파일을 못박아 이 파일을 읽지 않는다 —
+# 운영 서버에는 로컬 체인이 뜨지 않는다. docker-compose.yml 에 넣지 않은 이유가 이것이다(운영 CI 가 그 파일을 같이 쓴다).
+#
+# chain: Hardhat 노드(chainId 31337, 8545) + 컨트랙트 배포 + 로컬 DB 맞추기(새 체인이면 체인 사본 비우기 · 확정 앵커 재전송).
+# 백엔드를 이 체인에 붙이는 건 backend/.env 의 체인 줄이다 — backend/.env.example 기본값이 이 체인이다.
+# 자세한 건 contracts/deployments/README.md "로컬 체인".
+services:
+  chain:
+    build:
+      context: ./contracts
+      dockerfile: Dockerfile.localchain
+    image: antenna-localchain
+    container_name: antenna-chain
+    # 노드와 동기화 스크립트를 node 프로세스 하나가 거느린다. init 이 종료 신호를 그 프로세스에 넘겨준다.
+    init: true
+    restart: unless-stopped
+    ports:
+      - "${CHAIN_PORT:-8545}:8545"
+    environment:
+      # backend/.env 를 읽어 백엔드가 이 체인을 볼 때만 DB 를 만진다 — 운영 체인 세트로 로컬을 쓰는 사람의 DB 를 지키려는 것.
+      BACKEND_ENV_FILE: /host-backend/.env
+      # DB 는 compose 네트워크 안에서 붙는다(postgres:5432). 이름·계정·비밀번호는 backend/.env 의 값을 쓴다.
+      LOCALCHAIN_DB_HOST: postgres
+      LOCALCHAIN_DB_PORT: "5432"
+      # 호스트에서 백엔드가 떠 있으면 "재시작하라" 를 찍으려고 찔러 본다(인덱서가 옛 체인 높이를 메모리에 든다).
+      LOCALCHAIN_BACKEND_HEALTH: http://host.docker.internal:8080/actuator/health
+    volumes:
+      # /backend 가 아니라 /host-backend 인 이유: deploy.js 가 ../backend/src/main/resources/abi 에 ABI 를 쓰는데,
+      # 그 자리에 읽기 전용 마운트가 있으면 배포가 중간에 죽는다. 컨테이너 안의 /backend 는 버려지는 사본이다.
+      - ./backend:/host-backend:ro
+    extra_hosts:
+      # 리눅스 도커는 host.docker.internal 을 모른다. 윈도·맥 도커 데스크톱은 이미 안다.
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
