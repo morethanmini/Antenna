@@ -530,8 +530,8 @@
 .stock-detail-page .pf-pct-item:focus-visible{outline:2px solid var(--brand);outline-offset:1px}
 
 
-/* 기간 — 수직선(number line). 값이 네 개뿐이라 range 를 눈금 번호로 쓴다.
-   1·7·30·90 을 값 그대로 주면 90 쪽이 선을 다 먹어 앞쪽 셋이 붙는다.
+/* 기간 — 수직선(number line). 3~90 일을 값 그대로 실어 손잡이를 1일 단위로 옮긴다.
+   눈금 3·30·60·90 은 읽기용 참조선이라 손잡이가 거기에 붙지 않는다.
 
    native range 를 쓰는 이유는 접근성이다 — 화살표키·Home/End 가 그냥 되고
    스크린리더가 값을 읽는다. 직접 만든 끌개로는 둘 다 다시 만들어야 한다. */
@@ -561,8 +561,8 @@
 .stock-detail-page .pf-line-input:focus-visible::-webkit-slider-thumb{
   outline:2px solid var(--brand);outline-offset:2px;
 }
-/* 아직 안 고른 상태 — 손잡이가 첫 눈금에 있지만 값은 null 이다. 흐리게 두어
-   "이미 7일이 골라졌다" 로 읽히지 않게 한다 */
+/* 아직 안 고른 상태 — 손잡이가 왼쪽 끝에 있지만 값은 null 이다. 흐리게 두어
+   "이미 3일이 골라졌다" 로 읽히지 않게 한다 */
 .stock-detail-page .pf-line.is-unset .pf-line-input::-webkit-slider-thumb{
   background:var(--faint);
 }

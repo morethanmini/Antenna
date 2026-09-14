@@ -37,7 +37,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useCursorList } from '../api/useCursorList'
-import { HORIZON_LABEL, fetchMyPredictions, hitRatePercent, phaseOf } from '../api/predictions'
+import { fetchMyPredictions, hitRatePercent, horizonLabel, phaseOf } from '../api/predictions'
 import type { MyPrediction, MyPredictionMeta } from '../api/predictions'
 import { ANCHOR_BATCH_TIME, isAnchored } from '../components/prediction/AnchorStage'
 import EmptyState from '../components/state/EmptyState'
@@ -368,7 +368,7 @@ function Figures({ p }: { p: MyPrediction }) {
       </div>
       <div>
         <dt>예측 기간</dt>
-        <dd className="num">{HORIZON_LABEL[p.horizon]}</dd>
+        <dd className="num">{horizonLabel(p.horizon)}</dd>
       </div>
       <div>
         <dt>만기일</dt>

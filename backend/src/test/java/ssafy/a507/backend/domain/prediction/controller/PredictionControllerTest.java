@@ -284,9 +284,9 @@ class PredictionControllerTest {
         }
 
         @Test
-        @DisplayName("horizon 이 7/14/30/90 밖이면 400 horizon · noteSalt 형식이 틀리면 400 noteSalt")
+        @DisplayName("horizon 이 3~90 밖이면 400 horizon · noteSalt 형식이 틀리면 400 noteSalt")
         void horizon_noteSalt() throws Exception {
-            perform(signed(request(SAMSUNG, "UP", "82000", 5, List.of()), wallet), UUID.randomUUID().toString())
+            perform(signed(request(SAMSUNG, "UP", "82000", 91, List.of()), wallet), UUID.randomUUID().toString())
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.field").value("horizon"));
             PredictionCreateRequest bad = new PredictionCreateRequest(

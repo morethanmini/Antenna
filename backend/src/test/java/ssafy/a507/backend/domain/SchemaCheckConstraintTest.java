@@ -56,9 +56,12 @@ class SchemaCheckConstraintTest {
     }
 
     @Test
-    @DisplayName("REAL horizon 은 7/14/30/90 만 허용한다")
-    void REAL_horizon_은_고정_집합이다() {
-        assertThatThrownBy(() -> insertPrediction("REAL", SAMSUNG, 5))
+    @DisplayName("REAL horizon 은 3~90 만 허용한다")
+    void REAL_horizon_은_구간이다() {
+        assertThatCode(() -> insertPrediction("REAL", SAMSUNG, 5)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> insertPrediction("REAL", SAMSUNG, 2))
+                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> insertPrediction("REAL", SAMSUNG, 91))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
