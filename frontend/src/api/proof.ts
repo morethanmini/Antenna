@@ -5,17 +5,10 @@
    서버는 검증하지 않는다. 이 응답은 계산의 "입력값" 이고, 세 단계의 계산은
    전부 브라우저가 한다 — 서버가 "검증됨" 이라고 답해 주면 그건 증명이 아니다.
 
-   ── MOCK 을 켜 둔 이유 ─────────────────────────────────
-   API 는 열려 있지만 로컬 DB 의 anchor_batches · prediction_commits 가 0행이라
-   부를 예측이 없다. 데이터가 들어오면 MOCK 을 false 로 바꾸고 mock/proof.ts 와
-   `if (MOCK)` 한 줄만 지우면 된다. 화면 코드는 손대지 않는다.
-   목 데이터는 지어낸 값이 아니라 SSAFY 체인에 실제로 올라간 배치 1번이다 —
-   자세한 것은 mock/proof.ts 머리말. */
+   앵커 전(anchorStatus WAITING)에도 200 이다 — anchor 가 null 로 올 뿐이다.
+   화면은 그때 ②를 잠근 채 ①만 계산한다. */
 import { api } from './client'
-import * as mock from './mock/proof'
 import { commitHash, commitPayload } from './predictions'
-
-const MOCK = true
 
 /** 배치 상태 + "아직 배치에 안 들어감". 서버 ProofResponse.AnchorStatus 와 짝이다. */
 export const PROOF_ANCHOR_STATUSES = ['WAITING', 'PENDING', 'CONFIRMED', 'FAILED'] as const
@@ -34,7 +27,7 @@ export type ProofPayload = {
   stockCode: string | null
   direction: 'UP' | 'DOWN'
   targetPrice: number
-  /** 5 · 10 · 20 · 60 영업일 */
+  /** 예측 기간(일). 어휘는 api/predictions.ts HORIZONS 다 */
   horizon: number
   /** keccak256(note ‖ salt). 커밋 문자열의 마지막 줄이다. 커밋 전이면 null */
   noteHash: string | null
@@ -106,8 +99,11 @@ export type Proof = {
   settle: ProofSettle | null
 }
 
+/**
+ * 검산 재료 전부. 앵커 상태만 필요한 화면(C-01 등록 모달 · C-03 예측 상세)도 이걸 쓴다 —
+ * 같은 응답이라 경로를 두 벌로 두면 한쪽만 고쳐지고 갈린다.
+ */
 export function fetchProof(predictionId: string | number): Promise<Proof> {
-  if (MOCK) return mock.proof(predictionId)
   return api.get<Proof>(`/predictions/${predictionId}/proof`)
 }
 
@@ -163,14 +159,3 @@ export const PROOF_STATUS_LABEL: Record<ProofAnchorStatus, string> = {
 /** 더 기다리면 바뀌는가. 폴링을 언제 멈출지 이 하나로 정한다 */
 export const isAnchorSettling = (s: ProofAnchorStatus) => s === 'WAITING' || s === 'PENDING'
 
-/**
- * 앵커 **상태만** 실제 서버에서 읽는다.
- *
- * fetchProof 를 쓰지 않는 이유 — 그쪽은 D-03 검산용이라 MOCK 이 켜져 있고,
- * 목 데이터의 anchorStatus 가 CONFIRMED 다. 앵커가 안 잡힌 예측을 "확정" 으로
- * 그리게 된다. 상태는 실제 서버가 이미 답하므로(앵커 전이면 WAITING) 여기서는
- * 목업을 타지 않는다. MOCK 이 false 가 되면 이 함수는 fetchProof 로 합친다.
- */
-export function fetchAnchorStatus(predictionId: string | number) {
-  return api.get<Proof>(`/predictions/${predictionId}/proof`)
-}
