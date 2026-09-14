@@ -1,7 +1,7 @@
 /* 종목 목록 보기 — B-02 의 둘째 탭. 2026-09-11 에 Stocks.tsx 에서 떼어 왔다.
 
-   히트맵이 첫 화면이 되면서 목록은 탭 하나로 내려갔다. 파일을 나눈 것은 줄 수
-   때문이 아니라 **훅 때문**이다 — 한 파일에 두면 히트맵을 보는 동안에도 목록의
+   마켓맵이 첫 화면이 되면서 목록은 탭 하나로 내려갔다. 파일을 나눈 것은 줄 수
+   때문이 아니라 **훅 때문**이다 — 한 파일에 두면 마켓맵을 보는 동안에도 목록의
    useCursorList 가 돌아 쓰지도 않을 첫 쪽을 불러온다. 탭이 꺼지면 이 컴포넌트가
    통째로 빠지므로 그 요청이 아예 나가지 않는다.
 
@@ -117,7 +117,7 @@ export default function StockTable({ filter, setFilter }: Props) {
   /* 적용된 필터와 편집 중인 값을 나눈다 — 좌측 패널은 "필터 적용" 을 눌러야
      반영되고, 상단 섹터 칩은 즉시 반영된다(탐색용이라 한 번에 바뀌는 게 낫다).
 
-     draft 는 이 안에서만 산다. 히트맵은 관심 여부만 쓰고 그것은 누르는 즉시
+     draft 는 이 안에서만 산다. 마켓맵은 관심 여부만 쓰고 그것은 누르는 즉시
      적용되므로, 페이지가 들고 있어야 하는 것은 filter 뿐이다. */
   const [draft, setDraft] = useState<StockFilter>(filter)
 
@@ -177,7 +177,7 @@ export default function StockTable({ filter, setFilter }: Props) {
           <h2>상세 필터</h2>
 
           {/* 시장(전체·KOSPI·KOSDAQ) 칸은 뺐다(2026-09-11) — 이 서비스는 코스피만
-              다룬다. 히트맵 쪽 칩과 같은 이유다(Stocks.tsx). 행에 찍히는 "KOSPI"
+              다룬다. 마켓맵 쪽 칩과 같은 이유다(Stocks.tsx). 행에 찍히는 "KOSPI"
               표시는 남긴다 — 그건 거르는 조건이 아니라 종목을 설명하는 말이다. */}
           <fieldset className="st-field">
             <legend>예측 방향</legend>
