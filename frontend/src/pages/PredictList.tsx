@@ -112,7 +112,9 @@ const STEPS = [
     /* "수정할 수 없다" 는 여기 적지 않는다. 예측을 등록할 때(C-01 봉인 모달)
        이미 그 말을 하고 확인까지 받는다 — 다 끝난 뒤에 또 경고하면 이 화면이
        무언가 잘못됐다고 말하는 것처럼 읽힌다. 대기 카드의 안내에는 남긴다. */
-    body: `매일 ${ANCHOR_BATCH_TIME}에 하루치를 한 번에 묶어 기록해요.`,
+    /* 시각(00:05)은 여기 적지 않는다. 바로 위 카운트다운 카드가 이미 말하고
+       있어서, 곁칸 안에서 같은 문장이 두 번 겹쳐 읽힌다. */
+    body: '하루치 예측을 한 배치로 묶어 블록체인에 올려요.',
     icon: <><path d="M12 3 4 7.2v9.6L12 21l8-4.2V7.2Z" /><path d="M4 7.2 12 11.5l8-4.3" /><path d="M12 11.5V21" /></>,
   },
   {
@@ -128,6 +130,55 @@ function Icon({ children, size = 15 }: { children: React.ReactNode; size?: numbe
          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       {children}
     </svg>
+  )
+}
+
+/* ── 다음 기록까지 ───────────────────────────────────────
+   이 화면에서 가장 많이 나오는 질문이 "언제 올라가나" 다. 배치 시각을 글로만
+   적어 두면 지금부터 얼마나 남았는지는 각자 세야 한다.
+
+   앵커 배치는 매일 00:05 KST 다(AnchorScheduler). KST 는 UTC+9 고정이고 서머타임이
+   없으므로 UTC 15:05 와 정확히 같다 — 그래서 보는 사람의 시간대와 무관하게
+   맞는다. 로컬 시각으로 00:05 를 잡으면 시차가 있는 곳에서 엉뚱한 값이 나온다. */
+function nextBatchAt(now: Date) {
+  const t = new Date(now)
+  t.setUTCHours(15, 5, 0, 0)
+  if (t <= now) t.setUTCDate(t.getUTCDate() + 1)
+  return t
+}
+
+function NextBatch() {
+  const [now, setNow] = useState(() => new Date())
+
+  /* 30초마다 다시 센다. 초까지 흘리면 눈에 거슬리기만 하고, 하루에 한 번 도는
+     일을 초 단위로 볼 이유도 없다 — 분까지만 보여 준다. */
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000)
+    return () => clearInterval(id)
+  }, [])
+
+  const left = nextBatchAt(now).getTime() - now.getTime()
+  const hours = Math.floor(left / 3_600_000)
+  const mins = Math.floor((left % 3_600_000) / 60_000)
+
+  return (
+    <section className="mp-next">
+      {/* 시계 그림. 뜻은 위 문구가 다 지므로 장식이다 — 읽을 것이 없어 숨긴다 */}
+      <span className="mp-next-art" aria-hidden="true">
+        <Icon size={26}><circle cx="12" cy="12" r="9" /><path d="M12 7V12l3.2 2" /></Icon>
+      </span>
+      <p className="mp-next-cap">
+        <Icon size={13}><circle cx="12" cy="12" r="9" /><path d="M12 7.5V12l3 1.8" /></Icon>
+        다음 블록체인 기록까지
+      </p>
+      <p className="mp-next-t num">
+        {hours > 0 && <><b>{hours}</b><i>시간</i></>}
+        <b>{mins}</b><i>분</i>
+      </p>
+      <p className="mp-next-sub">
+        {`매일 ${ANCHOR_BATCH_TIME}에 그날 등록분을 한 배치로 묶어 올려요.`}
+      </p>
+    </section>
   )
 }
 
@@ -169,23 +220,28 @@ function Panel({ p, count = 1 }: { p: MyPrediction; count?: number }) {
       : p.anchorStatus === 'FAILED'
         ? { lead: '기록에 실패해 다시 시도해요.', sub: '다음 회차 배치가 재시도합니다. 예측 자체는 그대로 남아 있어요.' }
         : {
-            /* 한 배치가 하루치를 통째로 묶으므로, 묶인 줄들은 정말로 함께 올라간다 */
+            /* 한 배치가 하루치를 통째로 묶으므로, 묶인 줄들은 정말로 함께 올라간다.
+
+               시각(00:05)은 빼고 "다가오는 배치" 로만 말한다. 곁칸 카운트다운이
+               언제인지를 이미 말하고 있고, 카드마다 그 시각을 되풀이하면 목록을
+               내릴수록 같은 문장만 쌓인다 — 대기 카드가 여섯이면 여섯 번이다. */
             lead: many
-              ? `다가오는 ${ANCHOR_BATCH_TIME}에\n이 ${count}건이 한 번에 기록될 예정이에요.`
-              : `다가오는 ${ANCHOR_BATCH_TIME}에\n블록체인에 기록될 예정이에요.`,
-            sub: '기록 후에는 예측 내용을 수정할 수 없어요.',
+              ? `다가오는 배치에 이 ${count}건이 함께 기록돼요`
+              : '다가오는 배치에 블록체인으로 기록돼요',
+            /* 수정 불가는 곁칸 TIP 한 곳으로 옮겼다 — 카드마다 되풀이하지 않는다 */
+            sub: '',
           }
 
     return (
       <div className={`mp-panel is-anchor is-${p.anchorStatus.toLowerCase()}`}>
+        {/* 블록 하나면 된다. 둘을 사슬로 잇던 그림은 폭만 50px 먹고, 뜻은
+            옆 문장이 이미 지고 있었다 */}
         <span className="mp-panel-art" aria-hidden="true">
-          <Icon size={19}><path d="M12 3 4 7.2v9.6L12 21l8-4.2V7.2Z" /><path d="M4 7.2 12 11.5l8-4.3" /><path d="M12 11.5V21" /></Icon>
-          <i />
-          <Icon size={19}><path d="M12 3 4 7.2v9.6L12 21l8-4.2V7.2Z" /><path d="M4 7.2 12 11.5l8-4.3" /><path d="M12 11.5V21" /></Icon>
+          <Icon size={17}><path d="M12 3 4 7.2v9.6L12 21l8-4.2V7.2Z" /><path d="M4 7.2 12 11.5l8-4.3" /><path d="M12 11.5V21" /></Icon>
         </span>
         <div>
           <b>{copy.lead}</b>
-          <span>{copy.sub}</span>
+          {copy.sub && <span>{copy.sub}</span>}
         </div>
       </div>
     )
@@ -326,8 +382,12 @@ function Figures({ p }: { p: MyPrediction }) {
             {p.errorRate === null ? (
               <span className="mp-none">—</span>
             ) : (
-              /* 목표가에 가깝게 맞힌 건은 강조한다 — 이 서비스가 파는 값어치다 */
-              <span className={Math.abs(p.errorRate) <= 3 ? 'mp-err is-near' : 'mp-err'}>
+              /* 목표가에 가깝게 맞힌 건은 강조한다 — 이 서비스가 파는 값어치다.
+
+                 **적중일 때만 칠한다.** 오차와 적중은 다른 축이라, 아깝게 빗나간
+                 건(-2%)에 적중색을 칠하면 "예측 실패" 옆에 초록 숫자가 서서 한
+                 카드가 서로 반대되는 말을 한다. */
+              <span className={p.status === 'HIT' && Math.abs(p.errorRate) <= 3 ? 'mp-err is-near' : 'mp-err'}>
                 {`${p.errorRate > 0 ? '+' : ''}${p.errorRate}%`}
               </span>
             )}
@@ -525,36 +585,20 @@ export default function PredictList() {
   return (
     <main className="main">
       <div className="main-inner">
-        <header className="mp-head">
-          <div>
+        {/* 목록과 곁칸 두 단. 셸이 1600px 까지 내주는데 예전에는 전부 1140 으로
+            묶어 두어 넓은 화면에서 오른쪽이 통째로 비었다. 세로로만 길던 안내를
+            그 자리로 옮기면 목록이 한 화면에 더 많이 담긴다.
+
+            제목도 이 안에 둔다. 밖에 두면 제목이 곁칸 위까지 가로로 뻗어 그
+            오른쪽이 빈 채 남고, 곁칸은 제목 아래에서 혼자 시작해 붕 뜬 것처럼
+            보인다 — 제목과 카운트다운이 같은 줄에서 출발해야 두 단으로 읽힌다. */}
+        <div className="mp-layout">
+          <header className="mp-head">
             <h1>내 예측 현황</h1>
             <p>등록한 예측이 지금 어디까지 왔는지 한눈에 확인해보세요.</p>
-          </div>
-          {/* 적중률은 판정이 끝난 건에 대한 값이다. 판정 건이 없으면 아예 두지 않는다 —
-              0% 로 그리면 다 틀린 것처럼 보인다 */}
-          {hitRate !== null && (
-            <p className="mp-hit">
-              <b className="num">{`${hitRatePercent(hitRate)}%`}</b>
-              <span>{`판정 ${judged}건 적중률`}</span>
-            </p>
-          )}
-        </header>
+          </header>
 
-        {/* 세 걸음 안내. 이 화면에 처음 온 사람은 "왜 아직 블록에 없지" 를 묻는데,
-            그 답(자정 배치)이 카드 안쪽에만 있으면 목록이 빈 사람은 못 읽는다. */}
-        <ol className="mp-flow">
-          {STEPS.map((s, i) => (
-            <li key={s.title}>
-              <span className="mp-flow-ic" aria-hidden="true"><Icon size={19}>{s.icon}</Icon></span>
-              <div>
-                <b>{`${i + 1}. ${s.title}`}</b>
-                <span>{s.body}</span>
-              </div>
-            </li>
-          ))}
-        </ol>
-
-        <div className="mp-toolbar">
+          <div className="mp-toolbar">
           <div className="mp-filters" role="group" aria-label="단계 필터">
             {STAGES.map((s) => (
               <button
@@ -581,6 +625,7 @@ export default function PredictList() {
           </label>
         </div>
 
+        <div className="mp-main">
         {list.error ? (
           <ErrorState error={list.error} onRetry={list.reload} />
         ) : settling ? (
@@ -607,6 +652,79 @@ export default function PredictList() {
             )}
           </>
         )}
+          </div>
+
+          {/* 곁칸. 목록을 읽는 동안 계속 곁에 있어야 하는 것만 둔다 —
+              언제 올라가나 · 얼마나 맞혔나 · 이 화면이 어떻게 굴러가나. */}
+          <aside className="mp-side">
+            <NextBatch />
+
+            {/* 적중률은 판정이 끝난 건에 대한 값이다. 판정 건이 없으면 아예 두지
+                않는다 — 0% 로 그리면 다 틀린 것처럼 보인다 */}
+            {/* 판정 건이 없어도 **자리는 지킨다.** 통째로 빼면 곁칸이 93px 짧아지고,
+                가운데 정렬이라 그만큼 위치가 통째로 움직여 계정마다 화면이 다르게
+                보인다. 대신 0% 로 채우지는 않는다 — 판정이 없는 것과 다 틀린 것은
+                다른 말이다. 자리만 두고 값을 비운다. */}
+            {hitRate !== null ? (
+              /* 눌러서 갈 곳이 있다. 적중률을 자세히 뜯어보는 자리는 C-04
+                 예측 포트폴리오다 — 숫자만 두고 길을 안 주면 여기서 막힌다 */
+              <Link className="mp-stat" to="/me/portfolio">
+                <span className="mp-stat-ic" aria-hidden="true">
+                  <Icon size={18}><path d="M5 20V11M12 20V5M19 20v-6" /></Icon>
+                </span>
+                <span className="mp-stat-v">
+                  <b className="num">{`${hitRatePercent(hitRate)}%`}</b>
+                  <i>{`판정 ${judged}건 적중률`}</i>
+                </span>
+                <Icon size={15}><path d="m9 6 6 6-6 6" /></Icon>
+              </Link>
+            ) : (
+              /* 대시(—)를 크게 두면 회색 굵은 막대로 보여 로딩 스켈레톤과
+                 헷갈린다. 자리는 지키되 **실제로 있는 값**을 넣는다 — 판정을
+                 기다리는 건수는 집계에 이미 와 있다.
+
+                 갈 곳은 주지 않는다. 적중률을 뜯어볼 것이 아직 없는데 화살표를
+                 두면 눌러 보고 만다. */
+              <section className="mp-stat is-empty">
+                <span className="mp-stat-ic" aria-hidden="true">
+                  <Icon size={18}><circle cx="12" cy="12" r="9" /><path d="M12 7.5V12l3 1.8" /></Icon>
+                </span>
+                <span className="mp-stat-v">
+                  <b className="num">{`${list.meta?.pendingCount ?? 0}건`}</b>
+                  <i>판정을 기다리는 예측</i>
+                </span>
+              </section>
+            )}
+
+            {/* 세 걸음 안내. 이 화면에 처음 온 사람은 "왜 아직 블록에 없지" 를
+                묻는데, 그 답이 카드 안쪽에만 있으면 목록이 빈 사람은 못 읽는다. */}
+            <section className="mp-flow">
+              <h2>이렇게 진행돼요</h2>
+              <ol>
+                {STEPS.map((s, i) => (
+                  <li key={s.title}>
+                    <span className="mp-flow-ic" aria-hidden="true"><Icon size={17}>{s.icon}</Icon></span>
+                    <div>
+                      <b>{`${i + 1}. ${s.title}`}</b>
+                      <span>{s.body}</span>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+
+              {/* 수정 불가 안내는 여기 한 번만 둔다. 대기 카드마다 붙이면 카드가
+                  여섯일 때 같은 경고를 여섯 번 읽는다 — 그래서 카드 쪽 안내에서
+                  이 문장을 뺐다. */}
+              <p className="mp-tip">
+                <span aria-hidden="true">
+                  <Icon size={13}><path d="M9 18h6M10 21h4" /><path d="M12 3a6 6 0 0 0-3.5 10.9c.3.3.5.7.5 1.1h6c0-.4.2-.8.5-1.1A6 6 0 0 0 12 3Z" /></Icon>
+                  TIP
+                </span>
+                예측은 기록 후 수정할 수 없어요. 신중하게 등록해주세요.
+              </p>
+            </section>
+          </aside>
+        </div>
       </div>
     </main>
   )
