@@ -14,6 +14,10 @@ import ssafy.a507.backend.domain.market.entity.Stock;
  * @param changeRate 전일 대비 등락률(%) · 소수 둘째 자리. 어느 한쪽 종가가 없으면 null
  * @param per 종가 × 상장주식수 / 최신 연간 순이익 · 소수 둘째 자리. 재료가 없거나 적자면 null
  * @param pbr 종가 × 상장주식수 / 최신 연간 자본총계 · 소수 둘째 자리. 재료가 없거나 자본잠식이면 null
+ * @param marketCap 시가총액(원) = 종가 × 상장주식수. 둘 중 하나라도 없으면 null.
+ *     B-02 히트맵이 칸 넓이를 잡는 값이다 — 규모가 안 실리면 대형주와 소형주가 같은 크기로 그려진다.
+ *     PER·PBR 과 달리 파생 컬럼으로 적재하지 않는다: 필터·정렬 대상이 아니라 조회할 때 곱하면 되고,
+ *     적재하면 종가가 바뀔 때마다 다시 써야 하는 컬럼이 하나 더 는다
  * @param predictionCount 판정 대기 예측 수 — 아직 0
  * @param upRatio 예측 중 UP 비율 — 예측이 없어 null
  * @param watched 내 관심 종목인가
@@ -27,6 +31,7 @@ public record StockListItemResponse(
         BigDecimal changeRate,
         BigDecimal per,
         BigDecimal pbr,
+        BigDecimal marketCap,
         int predictionCount,
         BigDecimal upRatio,
         boolean watched) {}
