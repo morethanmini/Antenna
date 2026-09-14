@@ -7,10 +7,6 @@
 
      /ads/active  등록된 배너가 없어 화면이 비어 보인다 — 시연 동안 유지(2026-09-03 결정)
 
-   /wallet/balance 는 목업을 걷었다(2026-09-14). 서버에 경로가 아직 없어 실패하지만,
-   지어낸 1,250 ANT 를 띄우는 것보다 낫다 — 상단바가 0 ANT 를 박아 두고 있어 같은
-   화면에서 두 숫자가 어긋나 있었다. 이제 양쪽 다 "모른다" 로 보인다.
-
    실제 호출부는 명세서 경로·쿼리대로 적어 두었다. 광고가 붙으면 그 함수의
    `if (MOCK)` 한 줄과 mock/insight.ts 의 짝을 지우고, MOCK 상수와 import 까지 지운다.
    ─────────────────────────────────────────────────────── */
@@ -82,20 +78,11 @@ export function getActiveAds() {
   return api.get<{ items: ActiveAd[] }>('/ads/active')
 }
 
-/* ── 내 자산 · GET /wallet/balance ────────────────────────── */
-
-/** 보유 ANT 는 프로필이 아니라 지갑에서 온다. /users/me 에는 없다. */
-export type WalletBalance = {
-  balance: number
-  spent30d: number
-  earned30d: number
-  /** 원화 환산 — 서버가 계산해 내려준다 */
-  valuationKrw: number
-}
-
-export function getWalletBalance() {
-  return api.get<WalletBalance>('/wallet/balance')
-}
+/* 내 자산(GET /wallet/balance)은 여기 없다 — 지갑 화면(H-01)과 같은 응답이라 api/wallet.ts
+   한 벌을 홈도 같이 쓴다. 전에는 여기에도 같은 이름의 타입이 있었는데 모양이 아예 달랐다
+   (balance 를 number 로, 서버에 없는 spent30d·earned30d·valuationKrw 를 넣어 두었다).
+   목업일 때는 그 넷이 다 있었고 서버 경로가 없을 때는 호출이 실패해 안 그렸는데,
+   ANT-TOKEN-04 로 경로가 생기자 200 으로 다른 모양이 와서 홈이 통째로 터졌다. */
 
 /* ── 통합 검색 · GET /search ──────────────────────────────── */
 
