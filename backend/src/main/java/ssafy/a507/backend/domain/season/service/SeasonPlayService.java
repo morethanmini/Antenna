@@ -69,6 +69,7 @@ public class SeasonPlayService {
     private final SeasonResultRepository resultRepository;
     private final UserRepository userRepository;
     private final SeasonReviewService reviewService;
+    private final BadgeService badgeService;
     /** finish 가 트랜잭션을 손으로 나누는 데 쓴다 — LLM 호출을 트랜잭션 밖에 두려고. */
     private final TransactionTemplate tx;
 
@@ -294,7 +295,13 @@ public class SeasonPlayService {
         if (review != null) {
             result.review(review, reviewService.promptVersion());
         }
-        return toResponse(resultRepository.save(result));
+        SeasonFinishResponse response = toResponse(resultRepository.save(result));
+        /* 배지는 여기서 준다 — 끝낸 자리에서 바로 보여야 하고, finish 는 끝난 회차를 다시 계산하지
+           않으므로 이 지점을 놓치면 그 회차의 배지를 줄 기회가 없다. 승률의 분모와 같은 수를
+           넘겨야 해 매도만 센다. */
+        long sells = trades.stream().filter(t -> t.getSide() == SeasonTrade.Side.SELL).count();
+        badgeService.award(me.getUser(), season, r, (int) sells);
+        return response;
     }
 
     /** 성과 지표 — 체결과 거래한 종목의 종가에서 계산한다. */
