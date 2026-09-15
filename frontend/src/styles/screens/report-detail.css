@@ -38,6 +38,16 @@
 .rd-author:hover{ color:var(--brand-ink); text-decoration:underline; }
 .rd-dot{ color:var(--faint); }
 
+/* 작성자 증명 배지. 구독자 공개(브랜드색)와 색을 나눈다 — 하나는 판매 조건,
+   하나는 무결성이라 같은 색으로 묶으면 뜻이 섞인다. */
+.rd-signed{
+  display:inline-flex; align-items:center; gap:4px;
+  margin-left:2px; padding:3px 9px;
+  border-radius:999px;
+  background:var(--ok-soft); color:var(--ok);
+  font-size:11.5px; font-weight:700;
+}
+
 .rd-private{
   margin-left:2px; padding:3px 9px;
   border-radius:999px;

@@ -10,6 +10,8 @@
    GET·POST /reports/{id}/comments          댓글 목록 · 작성
    POST·DELETE /report-comments/{id}/like   댓글 좋아요 · 취소 */
 import { api } from './client'
+import { keccak256Utf8 } from '../chain/keccak'
+import { SIGNATURE_SCOPES, type WalletNonce } from './wallet'
 
 /** 글·리포트·예측 카드가 공유하는 작성자 표기. 서버 AuthorResponse 와 짝이다. */
 export type Author = {
@@ -76,6 +78,13 @@ export type ReportDetail = {
   /** locked 일 때만 채워진다. 서버가 앞 3줄(최대 300자)로 잘라 준 값 */
   preview: string | null
   publishedAt: string
+  /**
+   * 발행 서명에서 복원한 지갑 주소 (ANT-CHAIN-16).
+   *
+   * **서명 이전에 발행된 리포트는 이 키가 아예 없다.** 서버가 NON_NULL 로 내리므로
+   * undefined 가 곧 "서명 기능 이전 글" 이다 — null 과 구분할 필요가 없게 서버가 키를 뺀다.
+   */
+  signerAddress?: string
   /** 서버가 이번 열람을 반영해 내려준다. 본인 글은 증가하지 않는다 */
   viewCount: number
   likeCount: number
@@ -102,8 +111,41 @@ export const BODY_MAX = 20000
  */
 export const REPORT_CREATE_SCOPE = 'report:new'
 
-export function createReport(body: { title: string; body: string; visibility: boolean }) {
-  return api.post<{ id: number }>('/reports', body, { idempotencyScope: REPORT_CREATE_SCOPE })
+export function createReport(
+  body: { title: string; body: string; visibility: boolean },
+  signature: string,
+) {
+  return api.post<{ id: number }>(
+    '/reports',
+    { ...body, signature },
+    { idempotencyScope: REPORT_CREATE_SCOPE },
+  )
+}
+
+/**
+ * personal_sign 대상 문자열 (ANT-CHAIN-16). 서버 ReportCreateRequest.signingPayload 와 같아야 한다.
+ *
+ * 서버는 본문 필드로 payload 를 다시 조립해 대조한다. 줄바꿈·순서 중 하나만 어긋나도 복원 주소가
+ * 달라져 SIGNER_MISMATCH 가 나고, 원인이 로그에 남지 않는다. 손대려면 양쪽을 같이 고친다.
+ *
+ * **본문 대신 해시에 서명한다.** 20000자를 지갑 확인창에 띄우면 사용자가 읽지 않고 누른다.
+ * 그 해시는 봉인의 bodyHash 와 다른 값이다 — 봉인은 salt 를 섞는데(서버가 만든다) 서명
+ * 시점에는 salt 가 없다. 그래서 여기서는 salt 없는 keccak256(body) 를 쓴다.
+ *
+ * chainId 는 POST /wallet/nonce 응답값을 그대로 쓴다 — 지갑에서 eth_chainId 로 읽으면 어긋난다.
+ */
+export async function reportSigningPayload(
+  body: { title: string; body: string; visibility: boolean },
+  nonce: WalletNonce,
+) {
+  return [
+    `antenna:${SIGNATURE_SCOPES.REPORT_PUBLISH}:v1`,
+    `title=${body.title}`,
+    `visibility=${body.visibility}`,
+    `bodyHash=${await keccak256Utf8(body.body)}`,
+    `chainId=${nonce.chainId}`,
+    `nonce=${nonce.nonce}`,
+  ].join('\n')
 }
 
 /** 발행일 표기. 목록에서는 시각까지 필요 없다. */

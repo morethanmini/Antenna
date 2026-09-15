@@ -72,6 +72,17 @@ export default function ReportDetail() {
                 {!report.data.visibility && (
                   <span className="rd-private">구독자 공개</span>
                 )}
+
+                {/* 작성자 증명(ANT-CHAIN-16). 서명 이전 발행분은 키가 아예 없어 배지도 없다 —
+                    "서명이 비었다" 가 아니라 "그 기능 이전 글" 이라 빈 배지를 그리지 않는다 */}
+                {report.data.signerAddress && (
+                  <span className="rd-signed" title={report.data.signerAddress}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                    지갑 서명
+                  </span>
+                )}
               </div>
             </header>
 
