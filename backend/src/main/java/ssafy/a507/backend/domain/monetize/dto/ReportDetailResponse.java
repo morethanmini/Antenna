@@ -2,9 +2,10 @@ package ssafy.a507.backend.domain.monetize.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.Instant;
-import java.util.Arrays;
+import java.util.List;
 import ssafy.a507.backend.domain.community.dto.AuthorResponse;
 import ssafy.a507.backend.domain.monetize.entity.Report;
+import ssafy.a507.backend.domain.monetize.report.MarkdownPlain;
 
 /**
  * GET /api/v1/reports/{id} 200 응답. 잠기지 않았으면 {@code body}(전문), 잠겼으면
@@ -92,15 +93,26 @@ public record ReportDetailResponse(
     public record Social(long likeCount, boolean liked, long commentCount) {
     }
 
+    /**
+     * 잠긴 리포트의 앞 3줄.
+     *
+     * <p>본문은 마크다운이라 원문을 그대로 자르면 {@code ## 제목} 이나 이미지 주소가 미리보기에
+     * 뜬다. {@link MarkdownPlain} 으로 글자만 남긴 뒤 센다 — 그림 한 줄이나 문단 사이 빈 줄이
+     * 세 줄 중 하나를 먹지 않도록 <b>글자가 있는 줄만</b> 줄로 센다.
+     *
+     * <p>벗기는 것은 보여 주기뿐이다. 저장도 봉인({@code bodyHash})도 원문 그대로다.
+     */
     private static String preview(String body) {
         if (body == null) {
             return null;
         }
-        // limit 을 PREVIEW_LINES + 1 로 두면 앞 3줄까지만 쪼개고 나머지는 마지막 조각에 남는다.
-        // 개행은 \r?\n 으로 본다 — \n 만 보면 CRLF 본문의 각 줄 끝에 \r 이 남는다.
-        String[] lines = body.split("\r?\n", PREVIEW_LINES + 1);
-        int take = Math.min(lines.length, PREVIEW_LINES);
-        String head = String.join("\n", Arrays.copyOf(lines, take));
+        List<String> lines = MarkdownPlain.textLines(body);
+        String head = String.join(
+                "\n", lines.subList(0, Math.min(lines.size(), PREVIEW_LINES)));
+        if (head.isEmpty()) {
+            // 본문이 그림뿐이면 남는 글자가 없다. 빈 문자열을 주면 화면이 빈 칸을 그린다
+            return null;
+        }
         if (head.length() <= PREVIEW_MAX_CHARS) {
             return head;
         }

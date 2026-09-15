@@ -1,0 +1,32 @@
+/* 개미 말풍선 (components/MascotSay.tsx)
+
+   ── 얼굴을 말풍선 **안**에 둔다 ────────────────────────
+   B-03 예측 호가창(.pd-say)은 얼굴을 밖에 두고 꼬리를 달았다. 그 화면에서는
+   말풍선이 넓은 자리에 혼자 서 있어 괜찮지만, 값이 빽빽한 카드 안에서는
+   말풍선의 왼쪽 끝이 카드 안 다른 줄들과 어긋나 혼자 떠 보인다 —
+   얼굴(42px)과 사이 여백만큼 안쪽으로 밀리기 때문이다.
+
+   그래서 한 덩어리로 합쳤다. 왼쪽 끝이 카드 본문과 같은 자리에서 시작하고,
+   얼굴은 줄 안의 아이콘처럼 읽힌다. 꼬리도 없앴다 — 가리킬 대상이 옆에 없다.
+
+   화면 스코프가 없다. 어느 화면에서나 같은 모양이어야 하므로 접두어(ms-)로만 가른다. */
+
+.ms-say{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 13px;border-radius:12px;
+  background:var(--surface);
+  /* 카드 안의 카드다. 테두리로 가르면 상자가 겹쳐 보이므로 옅은 그림자로만 띄운다 */
+  box-shadow:0 1px 1px rgba(20,20,27,.05),0 3px 10px -4px rgba(20,20,27,.14);
+  color:var(--body);font-size:12px;line-height:1.65;word-break:keep-all;
+}
+.ms-face{
+  flex:none;width:30px;height:30px;object-fit:contain;
+  /* 말풍선이 한 줄일 때 얼굴이 줄보다 커서 위아래로 삐져나온다. 살짝 줄여
+     글줄 높이 안에 들어오게 한다 */
+  margin:-2px 0;
+}
+
+.ms-text{flex:1;min-width:0}
+.ms-text p{margin:0}
+.ms-text p + p{margin-top:5px}
+.ms-say b{color:var(--ink)}

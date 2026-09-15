@@ -985,4 +985,87 @@ class ReportControllerTest {
                         .getSingleResult())
                 .longValue();
     }
+
+    /* ── 마크다운 본문 (ANT-FE-REPORT-MD) ─────────────────────────
+       본문이 마크다운이 되면서 잠긴 리포트의 앞 3줄에 문법이 새어 나가지 않아야 한다.
+       구독을 권하는 자리라 "## 제목" 이나 이미지 주소가 뜨면 읽히지도 않는다.
+       저장·봉인은 원문 그대로다 — 벗기는 것은 이 응답 필드뿐이다. */
+
+    @Test
+    @DisplayName("미리보기에서 마크다운 문법을 벗긴다 — 제목·강조·목록")
+    void 열람_미리보기_마크다운_벗김() throws Exception {
+        Long reportId = insertReportWithBody(
+                authorId, "마크다운 리포트", false,
+                "## 반도체 업황\n**공급 과잉**이 끝났다\n- 재고 감소\n- 가격 반등");
+        flush();
+
+        mockMvc.perform(get(URL + "/" + reportId).with(user(String.valueOf(viewerId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.locked").value(true))
+                .andExpect(jsonPath("$.preview").value("반도체 업황\n공급 과잉이 끝났다\n재고 감소"));
+    }
+
+    @Test
+    @DisplayName("이미지 줄은 미리보기 세 줄을 먹지 않는다")
+    void 열람_미리보기_이미지_제외() throws Exception {
+        Long reportId = insertReportWithBody(
+                authorId, "그림 있는 리포트", false,
+                "![차트](/api/v1/uploads/abc-123)\n1줄\n2줄\n3줄\n4줄");
+        flush();
+
+        mockMvc.perform(get(URL + "/" + reportId).with(user(String.valueOf(viewerId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.preview").value("1줄\n2줄\n3줄"));
+    }
+
+    @Test
+    @DisplayName("문단 사이 빈 줄도 미리보기 세 줄을 먹지 않는다")
+    void 열람_미리보기_빈줄_제외() throws Exception {
+        Long reportId = insertReportWithBody(
+                authorId, "문단 리포트", false, "1줄\n\n2줄\n\n3줄\n\n4줄");
+        flush();
+
+        mockMvc.perform(get(URL + "/" + reportId).with(user(String.valueOf(viewerId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.preview").value("1줄\n2줄\n3줄"));
+    }
+
+    @Test
+    @DisplayName("링크는 글자만 남고 주소는 미리보기에 안 나온다")
+    void 열람_미리보기_링크_주소_제거() throws Exception {
+        Long reportId = insertReportWithBody(
+                authorId, "링크 리포트", false, "[공시 원문](https://dart.fss.or.kr/x)을 봤다");
+        flush();
+
+        mockMvc.perform(get(URL + "/" + reportId).with(user(String.valueOf(viewerId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.preview").value("공시 원문을 봤다"));
+    }
+
+    @Test
+    @DisplayName("본문이 그림뿐이면 미리보기 키가 아예 없다 — 빈 칸을 그리게 두지 않는다")
+    void 열람_미리보기_그림뿐() throws Exception {
+        Long reportId = insertReportWithBody(
+                authorId, "그림만", false, "![](/api/v1/uploads/a)\n\n![](/api/v1/uploads/b)");
+        flush();
+
+        mockMvc.perform(get(URL + "/" + reportId).with(user(String.valueOf(viewerId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.locked").value(true))
+                .andExpect(jsonPath("$.preview").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("구독자에게는 본문이 마크다운 원문 그대로 간다 — 벗기는 것은 미리보기뿐")
+    void 열람_전문은_원문_그대로() throws Exception {
+        String body = "## 제목\n**굵게**\n![](/api/v1/uploads/a)";
+        Long reportId = insertReportWithBody(authorId, "원문 확인", true, body);
+        flush();
+
+        mockMvc.perform(get(URL + "/" + reportId).with(user(String.valueOf(viewerId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.locked").value(false))
+                .andExpect(jsonPath("$.body").value(body));
+    }
+
 }

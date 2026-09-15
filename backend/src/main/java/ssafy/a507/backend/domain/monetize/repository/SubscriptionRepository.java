@@ -3,6 +3,8 @@ package ssafy.a507.backend.domain.monetize.repository;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -58,4 +60,23 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
             @Param("publisherId") Long publisherId,
             @Param("status") Subscription.Status status,
             @Param("now") Instant now);
+
+    /**
+     * 이 사람이 저 채널에 건 구독 중 <b>가장 최근 한 줄</b>. 없으면 빈 값이다.
+     *
+     * <p>한 쌍에 행이 여럿 쌓인다 — 만료된 뒤 다시 구독하면 EXPIRED 가 남은 채로 새 행이 생긴다.
+     * 화면이 물어보는 것은 "지금 내 상태"라 가장 최근 것만 본다. 여기서는 기간으로 거르지 않는다 —
+     * 열람 권한을 판정하는 {@link #findSubscribedPublisherIds} 와 달리, 만료된 구독도 "만료됨"으로
+     * 보여줘야 재구독 안내를 그릴 수 있다.
+     */
+    @Query("""
+            select s from Subscription s
+             where s.subscriber.id = :subscriberId
+               and s.publisher.id = :publisherId
+             order by s.id desc
+            """)
+    Optional<Subscription> findLatestBetween(
+            @Param("subscriberId") Long subscriberId,
+            @Param("publisherId") Long publisherId,
+            Limit limit);
 }

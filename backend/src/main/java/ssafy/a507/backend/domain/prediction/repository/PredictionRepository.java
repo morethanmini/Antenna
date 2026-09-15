@@ -133,6 +133,22 @@ public interface PredictionRepository extends JpaRepository<Prediction, Long> {
     List<Object[]> countMineByStatus(@Param("userId") Long userId);
 
     /**
+     * 위와 같되 트랙을 좁힌다. {@code track} 이 null 이면 둘 다 센다 — 기존 호출부의 뜻 그대로다.
+     *
+     * <p>한 표에 REAL 과 REPLAY 가 함께 들어간다(스키마의 {@code ck_predictions_target_matches_track}).
+     * 채널 실적(ANT-TOKEN-09)처럼 "실전 성적"을 묻는 자리는 REAL 만 세야 한다 — 모의투자 성적이 섞이면
+     * 적중률이 조용히 달라지고, 오류가 아니라 숫자만 틀리므로 눈치채기 어렵다.
+     */
+    @Query("""
+            select p.status, count(p) from Prediction p
+             where p.user.id = :userId
+               and (:track is null or p.track = :track)
+             group by p.status
+            """)
+    List<Object[]> countByStatusAndTrack(
+            @Param("userId") Long userId, @Param("track") Track track);
+
+    /**
      * 판정된 내 예측의 평균 오차 (C-04). 판정이 없으면 빈 값이다 — 0 이 아니다.
      *
      * <p>{@code avg} 를 DB 에 맡기는 이유는 목록을 끌어와 평균을 내면 예측이 늘수록 읽는 행이 느는데,
@@ -145,6 +161,17 @@ public interface PredictionRepository extends JpaRepository<Prediction, Long> {
                                 ssafy.a507.backend.domain.prediction.entity.Prediction$Status.MISS)
             """)
     Optional<BigDecimal> avgErrorOfSettled(@Param("userId") Long userId);
+
+    /** 위와 같되 트랙을 좁힌다. {@code track} 이 null 이면 둘 다 본다 — {@link #countByStatusAndTrack} 와 짝이다. */
+    @Query("""
+            select avg(p.errorRate) from Prediction p
+             where p.user.id = :userId
+               and (:track is null or p.track = :track)
+               and p.status in (ssafy.a507.backend.domain.prediction.entity.Prediction$Status.HIT,
+                                ssafy.a507.backend.domain.prediction.entity.Prediction$Status.MISS)
+            """)
+    Optional<BigDecimal> avgErrorOfSettledByTrack(
+            @Param("userId") Long userId, @Param("track") Track track);
 
     /**
      * 체인에 <b>박힌</b> 내 커밋 수 (C-04). 배치가 CONFIRMED 인 것만 센다 — PENDING 은 아직 안 올라간

@@ -7,6 +7,7 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ssafy.a507.backend.domain.common.Track;
 import ssafy.a507.backend.domain.prediction.dto.PortfolioResponse;
 import ssafy.a507.backend.domain.prediction.entity.Prediction;
 import ssafy.a507.backend.domain.prediction.repository.PredictionRepository;
@@ -26,8 +27,20 @@ public class PortfolioQueryService {
 
     private final PredictionRepository predictions;
 
+    /** C-04 내 포트폴리오. 트랙을 가리지 않는다 — 기존 동작 그대로다. */
     public PortfolioResponse mine(Long userId) {
-        Map<Prediction.Status, Long> counts = countsByStatus(userId);
+        return stats(userId, null);
+    }
+
+    /**
+     * 같은 집계를 트랙으로 좁혀 낸다. {@code track} 이 null 이면 둘 다 센다.
+     *
+     * <p>채널 실적(ANT-TOKEN-09)이 {@code REAL} 로 부른다 — AC 가 "REAL 트랙만"이다. 적중률 계산을
+     * 그쪽에 따로 두지 않고 여기를 부르게 한 이유는, 두 벌이 되면 같은 사람의 적중률이 C-04 화면과
+     * E-02 화면에서 서로 다르게 나오기 때문이다.
+     */
+    public PortfolioResponse stats(Long userId, Track track) {
+        Map<Prediction.Status, Long> counts = countsByStatus(userId, track);
         long hit = counts.getOrDefault(Prediction.Status.HIT, 0L);
         long miss = counts.getOrDefault(Prediction.Status.MISS, 0L);
         /* BASE 와 OPEN 을 합쳐 "대기" 하나로 낸다 — 둘의 차이는 판정 배치가 열었느냐일 뿐이고,
@@ -45,14 +58,16 @@ public class PortfolioQueryService {
                 pending,
                 hitRate(hit, settled),
                 // 판정이 없으면 평균도 없다. 0 으로 채우면 "오차 0%" 라는 거짓말이 된다
-                settled == 0 ? null : scaled(predictions.avgErrorOfSettled(userId).orElse(null)),
+                settled == 0
+                        ? null
+                        : scaled(predictions.avgErrorOfSettledByTrack(userId, track).orElse(null)),
                 anchored,
                 settled + pending - anchored);
     }
 
-    private Map<Prediction.Status, Long> countsByStatus(Long userId) {
+    private Map<Prediction.Status, Long> countsByStatus(Long userId, Track track) {
         Map<Prediction.Status, Long> counts = new EnumMap<>(Prediction.Status.class);
-        for (Object[] row : predictions.countMineByStatus(userId)) {
+        for (Object[] row : predictions.countByStatusAndTrack(userId, track)) {
             counts.put((Prediction.Status) row[0], ((Number) row[1]).longValue());
         }
         return counts;

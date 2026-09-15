@@ -20,6 +20,7 @@
    잠긴 리포트에는 반응할 수 없다 — 서버가 403 REPORT_FORBIDDEN 을 준다. locked 를
    이미 알고 있으니 좋아요 버튼은 아예 그리지 않고, 댓글은 목록만 보여 준다(읽기는
    허용된다 — 반응이 오가는 리포트라는 사실이 미리보기와 같은 부류의 구독 유인이다). */
+import Markdown from '../components/report/Markdown'
 import { Link, useParams } from 'react-router-dom'
 import { useApiQuery } from '../api/useApiQuery'
 import {
@@ -101,8 +102,9 @@ export default function ReportDetail() {
                 channelId={String(report.data.author.userId)}
               />
             ) : (
-              /* 작성자가 넣은 줄바꿈을 살린다. 서버는 본문을 그대로 보관한다 */
-              <div className="rd-body">{report.data.body}</div>
+              /* 본문은 마크다운이다(ANT-FE-REPORT-MD). 작성 화면의 미리보기와 같은
+                 컴포넌트를 쓴다 — 규칙이 두 군데 있으면 미리보기가 거짓말이 된다. */
+              <Markdown text={report.data.body ?? ''} className="rd-body" />
             )}
 
             {/* 잠긴 리포트에는 버튼을 내밀지 않는다 — 누르면 403 인 버튼은 없느니만 못하다.

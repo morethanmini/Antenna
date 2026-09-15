@@ -91,3 +91,59 @@
   .rn{ padding:18px 16px 20px; }
   .rn-actions .rn-btn{ flex:1 1 0; }
 }
+
+/* ── 본문 도구줄 (작성/미리보기 · 이미지) ───────────────── */
+.rn-tools{
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  margin-bottom:6px;
+}
+
+/* 캡슐 하나를 칸막이로 나눈다 — 같은 것을 보는 두 방식이라는 게 모양으로 보인다 */
+.rn-tabs{
+  display:inline-flex;
+  border:1px solid var(--rule); border-radius:999px;
+  background:var(--surface); overflow:hidden;
+}
+.rn-tabs button{
+  padding:5px 14px;
+  border:0; background:none; cursor:pointer;
+  font-size:12.5px; font-weight:600; color:var(--muted);
+}
+.rn-tabs button + button{ border-left:1px solid var(--rule); }
+.rn-tabs button.on{ background:var(--brand-softer); color:var(--brand-ink); }
+.rn-tabs button:disabled{ opacity:.55; cursor:not-allowed; }
+/* overflow:hidden 이 안쪽 outline 을 자르므로 초점 표시는 음수 offset 으로 준다 —
+   안 그러면 탭으로 옮겼을 때 아무 표시가 없다 */
+.rn-tabs button:focus-visible{ outline:2px solid var(--brand); outline-offset:-3px; }
+
+.rn-img-btn{
+  display:inline-flex; align-items:center; gap:5px;
+  padding:5px 12px;
+  border:1px solid var(--rule); border-radius:999px;
+  background:var(--surface); color:var(--body);
+  font-size:12.5px; font-weight:600; cursor:pointer;
+}
+.rn-img-btn:hover:not(:disabled){ background:var(--surface-2); }
+.rn-img-btn:disabled{ opacity:.55; cursor:not-allowed; }
+.rn-img-btn:focus-visible{ outline:2px solid var(--brand); outline-offset:2px; }
+
+/* 미리보기 상자. textarea 와 최소 높이를 맞춰 탭을 옮길 때 화면이 튀지 않게 한다 */
+.rn-preview{
+  min-height:320px;
+  padding:12px 14px;
+  border:1px solid var(--rule); border-radius:10px;
+  background:var(--surface);
+  font-size:15px; line-height:1.85; color:var(--body);
+}
+.rn-preview-empty{ margin:0; color:var(--faint); font-size:13px; }
+
+/* 문법 안내 한 줄. 글자 수 표시와 같은 무게로 둔다 — 읽지 않아도 되는 정보다 */
+.rn-hint{
+  margin:6px 0 0;
+  font-size:11.5px; line-height:1.7; color:var(--muted);
+}
+.rn-hint code{
+  font-family:var(--mono); font-size:11px;
+  background:var(--surface-2); border:1px solid var(--rule);
+  border-radius:4px; padding:1px 4px; margin:0 1px;
+}
