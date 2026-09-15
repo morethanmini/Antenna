@@ -45,7 +45,15 @@ public final class UserDtos {
                     String nickname,
             @Size(max = 200) String introduce,
             List<@NotBlank @Size(max = 30) String> interests,
-            List<@Valid ChannelRequest> channels) {}
+            List<@Valid ChannelRequest> channels,
+            /**
+             * 프로필 사진. POST /uploads 가 준 fileId 다(purpose=PROFILE).
+             *
+             * <p>빈 문자열이면 <b>지우겠다</b>는 뜻이라 기본 그림으로 돌아간다. 다른 필드와 같이
+             * null 은 "건드리지 않음" 이다. 내 파일이 아니거나 용도가 다르면 400 이다 —
+             * 남이 올린 id 를 알아내 내 사진으로 걸 수 없어야 한다.
+             */
+            @Size(max = 36) String avatarFileId) {}
 
     /**
      * 외부 채널 한 줄.
@@ -71,6 +79,12 @@ public final class UserDtos {
             Long id,
             String nickname,
             String introduce,
+            /**
+             * 프로필 사진 주소. 안 올렸으면 null 이고, 그때는 화면이 기본 그림을 쓴다.
+             * fileId 가 아니라 주소를 내린다 — 화면이 주소를 조립하면 업로드 저장 위치가
+             * CDN 으로 바뀔 때 화면까지 고쳐야 한다(UploadResponse 와 같은 판단).
+             */
+            String avatarUrl,
             /** 관심 섹터. 없으면 빈 배열이다 — null 을 내리면 화면마다 가드를 따로 써야 한다 */
             List<String> interests,
             /** 외부 채널. 등록 순(created_at)으로 내린다 */

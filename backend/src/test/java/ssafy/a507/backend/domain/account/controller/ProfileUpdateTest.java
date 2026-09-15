@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 import ssafy.a507.backend.domain.account.entity.User;
+import ssafy.a507.backend.domain.upload.entity.UploadFile;
 
 /**
  * PATCH /users/me — 프로필 수정 (ANT-AUTH-05, 명세 §회원).
@@ -48,6 +49,16 @@ class ProfileUpdateTest {
         em.persist(user);
         em.flush();
         return user.getId();
+    }
+
+    /** 업로드 한 건을 만든다. 실제 POST /uploads 를 거치지 않고 행만 넣는다 */
+    private String insertUpload(Long ownerId, UploadFile.Purpose purpose) {
+        User owner = em.find(User.class, ownerId);
+        UploadFile file = UploadFile.create(owner, purpose, "image/png", 400, 400, 1024);
+        file.locateAt("/api/v1/uploads/" + file.getId());
+        em.persist(file);
+        em.flush();
+        return file.getId();
     }
 
     private ResultActions patchMe(String body) throws Exception {
@@ -190,4 +201,57 @@ class ProfileUpdateTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.introduce").doesNotExist());
     }
+
+    @Test
+    @DisplayName("내가 올린 PROFILE 사진을 걸면 주소를 돌려준다")
+    void setsAvatar() throws Exception {
+        String fileId = insertUpload(userId, UploadFile.Purpose.PROFILE);
+
+        patchMe("{\"avatarFileId\":\"" + fileId + "\"}")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.avatarUrl").value("/api/v1/uploads/" + fileId));
+    }
+
+    @Test
+    @DisplayName("빈 문자열이면 사진을 지운다 — 기본 그림으로 돌아간다")
+    void clearsAvatar() throws Exception {
+        patchMe("{\"avatarFileId\":\"" + insertUpload(userId, UploadFile.Purpose.PROFILE) + "\"}")
+                .andExpect(status().isOk());
+
+        patchMe("""
+                {"avatarFileId":""}
+                """)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.avatarUrl").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("남이 올린 파일은 걸 수 없다 — id 를 알아내도 소용없어야 한다")
+    void rejectsOthersUpload() throws Exception {
+        Long other = insertUser("남의계정");
+        String fileId = insertUpload(other, UploadFile.Purpose.PROFILE);
+
+        patchMe("{\"avatarFileId\":\"" + fileId + "\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
+    @DisplayName("용도가 다른 파일은 걸 수 없다 — 광고 배너가 프로필 자리에 들어가면 안 된다")
+    void rejectsWrongPurpose() throws Exception {
+        String fileId = insertUpload(userId, UploadFile.Purpose.AD);
+
+        patchMe("{\"avatarFileId\":\"" + fileId + "\"}")
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("없는 파일 id 는 400 이다")
+    void rejectsUnknownFile() throws Exception {
+        patchMe("""
+                {"avatarFileId":"00000000-0000-0000-0000-000000000000"}
+                """)
+                .andExpect(status().isBadRequest());
+    }
 }
+

@@ -19,6 +19,8 @@ import ssafy.a507.backend.domain.account.entity.UserInterest;
 import ssafy.a507.backend.domain.account.repository.UserChannelRepository;
 import ssafy.a507.backend.domain.account.repository.UserInterestRepository;
 import ssafy.a507.backend.domain.account.repository.UserRepository;
+import ssafy.a507.backend.domain.upload.entity.UploadFile;
+import ssafy.a507.backend.domain.upload.repository.UploadFileRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +29,7 @@ public class UserService {
     private final UserRepository users;
     private final UserInterestRepository interests;
     private final UserChannelRepository channels;
+    private final UploadFileRepository uploads;
 
     @Transactional(readOnly = true)
     public MeResponse me(Long userId) {
@@ -60,6 +63,9 @@ public class UserService {
         }
         if (request.channels() != null) {
             replaceChannels(user, request.channels());
+        }
+        if (request.avatarFileId() != null) {
+            applyAvatar(user, request.avatarFileId());
         }
         return toResponse(user);
     }
@@ -111,6 +117,38 @@ public class UserService {
                         .toList());
     }
 
+    /**
+     * 프로필 사진을 건다. 빈 문자열이면 지운다.
+     *
+     * <p><b>내가 올린 PROFILE 파일만</b> 받는다. 소유자 조건이 없으면 남이 올린 id 를 알아내
+     * 자기 프로필로 걸 수 있고(UploadFileRepository 머리말과 같은 이유), 용도 조건이 없으면
+     * 광고 배너로 올린 16:9 이미지가 동그란 프로필 자리에 들어간다.
+     */
+    private void applyAvatar(User user, String fileId) {
+        if (fileId.isBlank()) {
+            user.changeAvatar(null);
+            return;
+        }
+        UploadFile file = uploads
+                .findByIdAndUserId(fileId, user.getId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REQUEST));
+        if (file.getPurpose() != UploadFile.Purpose.PROFILE) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST);
+        }
+        user.changeAvatar(file.getId());
+    }
+
+    /**
+     * 파일이 지워졌으면 사진이 없는 것으로 본다 — 회원 조회가 깨지는 것보다 기본 그림이 낫다.
+     * users.avatar_file_id 에 FK 를 걸지 않은 것과 같은 판단이다(User.avatarFileId).
+     */
+    private String avatarUrl(User user) {
+        if (user.getAvatarFileId() == null) {
+            return null;
+        }
+        return uploads.findById(user.getAvatarFileId()).map(UploadFile::getUrl).orElse(null);
+    }
+
     private User find(Long userId) {
         return users.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -121,6 +159,7 @@ public class UserService {
                 user.getId(),
                 user.getNickname(),
                 user.getIntroduce(),
+                avatarUrl(user),
                 interests.findByUserIdOrderByIdAsc(user.getId()).stream()
                         .map(UserInterest::getSector)
                         .toList(),
