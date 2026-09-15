@@ -8,6 +8,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -30,7 +31,13 @@ import ssafy.a507.backend.domain.account.entity.User;
  * 가려져야 한다 — 리포트({@link Report#seal})·예측과 다른 취급이다.
  */
 @Entity
-@Table(name = "report_comments")
+/* 목록도 개수도 report_id 로 거른다 — 리포트 상세를 열 때마다 두 번 탄다.
+   id 를 뒤에 붙인 이유는 페이지 쿼리가 `where report_id = ? and id > ? order by id asc` 라
+   같은 인덱스로 거르기와 정렬이 함께 끝나기 때문이다. FK 는 참조하는 쪽에 인덱스를
+   만들어 주지 않는다(post_comments 가 그래서 없다). */
+@Table(
+        name = "report_comments",
+        indexes = @Index(name = "ix_report_comments_report", columnList = "report_id, id"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ReportComment {

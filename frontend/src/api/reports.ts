@@ -3,7 +3,12 @@
    GET /reports?scope=&sort=&cursor=&size=  { items, nextCursor, hasNext }
    GET /reports/{reportId}                  전문 또는 3줄 미리보기 + locked
    POST /reports                            Idempotency-Key 필수
-   GET /channels/{userId}/reports           채널별 목록 (E-02 · 최신순 고정) */
+   GET /channels/{userId}/reports           채널별 목록 (E-02 · 최신순 고정)
+
+   반응 (ANT-REPORT-SOCIAL)
+   POST·DELETE /reports/{id}/like           좋아요 · 취소
+   GET·POST /reports/{id}/comments          댓글 목록 · 작성
+   POST·DELETE /report-comments/{id}/like   댓글 좋아요 · 취소 */
 import { api } from './client'
 
 /** 글·리포트·예측 카드가 공유하는 작성자 표기. 서버 AuthorResponse 와 짝이다. */
@@ -44,6 +49,11 @@ export type ReportFeedItem = {
   locked: boolean
   publishedAt: string
   viewCount: number
+  likeCount: number
+  /** 이 열람자가 이미 눌렀는지 */
+  liked: boolean
+  /** 블라인드된 댓글은 빠진 수다 */
+  commentCount: number
 }
 
 /**
@@ -68,6 +78,11 @@ export type ReportDetail = {
   publishedAt: string
   /** 서버가 이번 열람을 반영해 내려준다. 본인 글은 증가하지 않는다 */
   viewCount: number
+  likeCount: number
+  /** 이 열람자가 이미 눌렀는지 */
+  liked: boolean
+  /** 블라인드된 댓글은 빠진 수다 */
+  commentCount: number
 }
 
 /* ── 발행 (F-03) ──────────────────────────────────────────
@@ -124,4 +139,60 @@ export function formatDate(iso: string) {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return iso
   return d.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })
+}
+
+/* ── 반응 (ANT-REPORT-SOCIAL) ─────────────────────────────
+
+   잠긴 리포트에는 반응할 수 없다. 서버가 403 REPORT_FORBIDDEN 을 주고, 화면은
+   locked 를 이미 알고 있으므로 애초에 버튼을 내밀지 않는다 — 403 은 그 사이에
+   구독이 끊긴 경우를 위한 그물이다.
+
+   댓글 목록은 잠겨 있어도 읽을 수 있다(쓰기와 규칙이 다르다). 반응이 오가는
+   리포트라는 사실이 통계와 같은 부류의 구독 유인이라서다.
+
+   멱등성 키를 붙이지 않는다 — 명세 §1 의 필수 대상이 아니다. 좋아요는 DELETE 가
+   있고 중복은 409 로 막히며, 댓글이 두 건 남는 것은 화면에서 눈에 보인다. */
+
+/** 댓글 한 줄. 서버 ReportCommentItemResponse 와 짝이다. */
+export type ReportComment = {
+  id: number
+  body: string
+  author: Author
+  likeCount: number
+  /** 요청한 사람 기준이다 */
+  liked: boolean
+  createdAt: string
+}
+
+/** 서버 ReportCommentCreateRequest 의 제약 그대로. */
+export const COMMENT_MAX = 500
+
+/** 등록은 201 { likeCount } 다 — 화면이 재조회 없이 숫자를 바꾼다. 취소는 204 라 본문이 없다. */
+export function likeReport(reportId: number) {
+  return api.post<{ likeCount: number }>(`/reports/${reportId}/like`)
+}
+
+export function unlikeReport(reportId: number) {
+  return api.delete<void>(`/reports/${reportId}/like`)
+}
+
+export function likeComment(commentId: number) {
+  return api.post<{ likeCount: number }>(`/report-comments/${commentId}/like`)
+}
+
+export function unlikeComment(commentId: number) {
+  return api.delete<void>(`/report-comments/${commentId}/like`)
+}
+
+export function createComment(reportId: number, body: string) {
+  return api.post<{ id: number }>(`/reports/${reportId}/comments`, { body })
+}
+
+/** 날짜만으로는 대화 흐름이 안 읽혀 댓글에는 시각까지 붙인다. */
+export function formatDateTime(iso: string) {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  return d.toLocaleString('ko-KR', {
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+  })
 }

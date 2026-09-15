@@ -92,6 +92,8 @@
 }
 .rp-author{ font-weight:600; color:var(--body); }
 .rp-dot{ color:var(--faint); }
+/* 내가 이미 누른 리포트. 목록에서 굳이 하트를 그리지 않고 글자색만 바꾼다 */
+.rp-liked{ color:var(--danger); font-weight:600; }
 
 /* ── 더 보기 ─────────────────────────────────── */
 .rp-more{

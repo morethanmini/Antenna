@@ -163,6 +163,15 @@ function ReportFeed({ scope, sort }: { scope: ReportScope; sort: ReportSort }) {
                   <span>{formatDate(r.publishedAt)}</span>
                   <span className="rp-dot" aria-hidden="true">·</span>
                   <span className="num">{`조회 ${r.viewCount.toLocaleString('ko-KR')}`}</span>
+                  {/* 반응은 수만 보여준다. 카드 전체가 링크라 그 안에 버튼을 겹칠 수 없고,
+                      잠긴 리포트는 애초에 누를 수 없다 — 누르는 건 상세에서 한다.
+                      잠겼어도 수는 그대로 온다(통계는 늘 공개다). */}
+                  <span className="rp-dot" aria-hidden="true">·</span>
+                  <span className={r.liked ? 'rp-liked num' : 'num'}>
+                    {`좋아요 ${r.likeCount.toLocaleString('ko-KR')}`}
+                  </span>
+                  <span className="rp-dot" aria-hidden="true">·</span>
+                  <span className="num">{`댓글 ${r.commentCount.toLocaleString('ko-KR')}`}</span>
                 </div>
               </Link>
             </li>
