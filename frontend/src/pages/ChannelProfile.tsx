@@ -69,6 +69,16 @@ function toCard(p: ChannelPrediction) {
   }
 }
 
+/* 채널에서 볼 것. 순서가 곧 화면 순서다 — 예측이 먼저인 이유는 이 서비스가 파는 것이
+   예측이고, 리포트는 그 근거이며, 백테스트는 둘을 검산한 결과이기 때문이다. */
+const TABS = [
+  ['PREDICTION', '예측'],
+  ['REPORT', '리포트'],
+  ['BACKTEST', '백테스트'],
+] as const
+
+type Tab = (typeof TABS)[number][0]
+
 export default function ChannelProfile() {
   const { userId = '' } = useParams<{ userId: string }>()
 
@@ -84,23 +94,21 @@ export default function ChannelProfile() {
   const asVisitor = params.get('as') === 'visitor'
 
   const loadChannel = useCallback(() => fetchChannel(userId), [userId])
-  const loadPredictions = useCallback(() => fetchChannelPredictions(userId), [userId])
-  const loadReports = useCallback(() => fetchChannelReports(userId), [userId])
-  const loadBacktest = useCallback(() => fetchBacktest(userId), [userId])
 
   const ch = useAsync<Channel>(loadChannel)
-  const preds = useAsync(loadPredictions)
-  const reports = useAsync(loadReports)
-  const back = useAsync<Backtest>(loadBacktest)
+
+  /* 어느 목록을 보고 있는가. 주소에 담지 않는다 — 특정 탭으로 바로 보내는 요구가
+     아직 없고, 주소 상태는 뒤로 가기·공유 규칙까지 함께 정해야 한다. */
+  const [tab, setTab] = useState<Tab>('PREDICTION')
+
+  /* 구독 직후 예측 목록을 다시 읽게 하는 열쇠. 자식이 제 데이터를 쥐고 있어 부모가
+     reload 를 부를 수 없으므로, key 를 바꿔 다시 마운트시킨다. */
+  const [dataKey, setDataKey] = useState(0)
 
   /* M-03 은 라우트가 없는 모달이라 이 화면이 열고 닫는다.
      지갑이 없으면 M-03 을 닫고 M-01 을 띄운다 — 모달 2겹을 만들지 않는다. */
   const [subscribing, setSubscribing] = useState(false)
   const [linking, setLinking] = useState(false)
-
-  /* 펼친 예측 한 건. 여러 개를 동시에 펴지 않는다 — 목록이 길어지면 무엇을
-     보고 있었는지 놓치고, 판단 내용은 한 건씩 읽는 글이다. */
-  const [openId, setOpenId] = useState<string | null>(null)
 
   const channel = ch.data
   const sub = channel?.mySubscription
@@ -118,10 +126,6 @@ export default function ChannelProfile() {
   /** 다시 잠글지. 구독자 눈으로 볼 때는 서버가 준 대로 둔다 */
   const relock = previewing && previewAs === 'guest'
 
-  /** 내 채널일 때, 비구독자에게는 가려질 건수. 판정 전이 곧 잠금 경계다(§5) */
-  const lockedForOthers = (preds.data?.items ?? [])
-    .filter((p) => phaseOf(p.status) === 'PENDING').length
-
   /* 구독이 ACTIVE 로 바뀌면 예측 목록의 잠금이 풀린다. 그런데 **바로 다시 읽으면 안 된다** —
      useAsync.reload 가 data 를 null 로 되돌리는 순간 아래 {channel && …} 가 거짓이 되어
      모달까지 언마운트된다. 그러면 성공 화면을 못 보고, 다시 마운트된 모달이 confirm 부터
@@ -138,8 +142,8 @@ export default function ChannelProfile() {
     if (!staleAfterSubscribe) return
     setStaleAfterSubscribe(false)
     ch.reload()
-    preds.reload()
-  }, [staleAfterSubscribe, ch, preds])
+    setDataKey((k) => k + 1)
+  }, [staleAfterSubscribe, ch])
 
   return (
     <main className="main">
@@ -300,12 +304,34 @@ export default function ChannelProfile() {
               />
             )}
 
-            {/* ── 예측 목록 ─────────────────────────────── */}
+            {/* ── 예측 · 리포트 · 백테스트 ───────────────
+                세로로 쌓지 않고 탭으로 가른다. 셋 다 길어질 수 있는 목록이라 쌓아 두면
+                리포트를 보려는 사람이 예측 목록을 통째로 지나쳐야 하고, 백테스트는
+                한참 아래에 있어 있다는 것조차 모른다.
+
+                고른 탭만 그린다 — 덕분에 **안 보는 목록은 요청도 안 나간다.** 훅을
+                조건부로 부를 수 없어 섹션마다 컴포넌트를 나눴다(리포트 피드 F-01 과 같은 수). */}
             <section className="ch-section">
               <div className="ch-section-head">
-                <h2>예측</h2>
+                <div className="ch-tabs" role="tablist" aria-label="채널에서 볼 것">
+                  {TABS.map(([key, text]) => (
+                    <button
+                      key={key} type="button" role="tab"
+                      id={`ch-tab-${key}`}
+                      aria-selected={tab === key}
+                      aria-controls={`ch-panel-${key}`}
+                      className={tab === key ? 'is-on' : undefined}
+                      onClick={() => setTab(key)}
+                    >
+                      {text}
+                    </button>
+                  ))}
+                </div>
+
                 {/* 미리보기에서만 뜬다. 구독으로 무엇이 열리는지는 둘을 나란히 봐야 안다 —
-                    이 줄이 없으면 주인은 "가려진 쪽" 만 보고 구독료를 정하게 된다. */}
+                    이 줄이 없으면 주인은 "가려진 쪽" 만 보고 구독료를 정하게 된다.
+                    탭 밖에 두는 이유 — 이 토글은 예측과 리포트 **둘 다**의 잠금을 바꾼다.
+                    예측 탭 안에 있으면 리포트에서 무엇이 바뀌는지 볼 수 없다. */}
                 {previewing && (
                   <div className="ch-as" role="group" aria-label="누구 눈으로 볼지">
                     {([['guest', '비구독자'], ['subscriber', '구독자']] as const).map(([key, text]) => (
@@ -323,160 +349,216 @@ export default function ChannelProfile() {
                 )}
               </div>
 
-              {/* 내 채널에서는 목록이 **남이 보는 것과 다르다** — 서버가 본인을 구독자와
-                  같이 취급해(PredictionViewService.canRead) 판정 전 건까지 다 열어 준다.
-                  그래서 채널 주인은 비구독자가 무엇을 못 보는지 알 수 없는데, 구독료를
-                  정하는 사람이 바로 그 사람이다. 몇 건이 가려지는지만 알려 준다.
-
-                  잠기는 조건은 "판정 전"이고 그게 곧 phaseOf(s) === 'PENDING' 이다
-                  (서버 isPending 과 같은 경계 — BASE · OPEN). 세는 데 서버를 더 부를
-                  필요가 없어 이미 받은 목록에서 센다.
-                  이 목록은 한 페이지뿐이라 "이 페이지 기준"이라는 뜻으로 적는다. */}
-              {owner && lockedForOthers > 0 && (
-                <p className="ch-gate-note">
-                  {`판정 전 ${lockedForOthers}건은 비구독자에게 방향·목표가가 가려집니다. 지금 화면은 주인에게만 다 보입니다.`}
-                </p>
-              )}
-
-              {preds.error && <ErrorState error={preds.error} onRetry={preds.reload} inline />}
-              {!preds.error && preds.data?.items.length === 0 && (
-                <EmptyState title="아직 등록한 예측이 없습니다" />
-              )}
-              {preds.data && preds.data.items.length > 0 && (
-                <ul className="ch-cards">
-                  {preds.data.items.map((p) => {
-                    const id = String(p.id)
-                    const open = openId === id
-                    /* 미리보기에서는 서버가 다 열어 준 목록을 비구독자 기준으로 다시 잠근다 */
-                    const locked = relock ? phaseOf(p.status) === 'PENDING' : p.locked
-                    return (
-                      <li key={p.id} className={open ? 'is-open' : ''}>
-                        {/* 카드째로 누를 수 있어야 한다. <button> 으로 감싸면 안쪽의
-                            제목·목록이 버튼 안에 들어가 마크업이 깨지므로 role 을 준다.
-                            키보드로도 같은 동작이 되게 Enter·Space 를 받는다. */}
-                        <div
-                          role="button" tabIndex={0}
-                          aria-expanded={open} aria-controls={`ch-note-${id}`}
-                          className="ch-pred-hit"
-                          onClick={() => setOpenId(open ? null : id)}
-                          onKeyDown={(e) => {
-                            if (e.key !== 'Enter' && e.key !== ' ') return
-                            e.preventDefault()   // Space 로 화면이 스크롤되지 않게
-                            setOpenId(open ? null : id)
-                          }}
-                        >
-                          {/* channelId 를 넘기지 않는다 — LockedCard 의 "채널 구독하고 보기" 가
-                              /channels/{id} 로 가는데 그게 바로 이 화면이라 눌러도 제자리다.
-                              구독 CTA 는 위 구독 카드 하나로 충분하다. 다른 화면(B-03 등)에서는
-                              여기로 보내야 하므로 카드가 channelId 를 받는 것 자체는 남긴다.
-                              여기 안에 링크가 없어야 role="button" 이 성립한다. */}
-                          {/* 서버가 잠긴 건에서 방향·목표가를 빼는 것과 같은 모양으로 만든다 —
-                              값을 그대로 둔 채 자물쇠만 얹으면 미리보기가 거짓말이 된다 */}
-                          <PredictionCard
-                            data={locked
-                              ? { ...toCard(p), locked, direction: null, targetPrice: null }
-                              : toCard(p)}
-                          />
-                        </div>
-
-                        {/* 접으면 언마운트된다 — 그래서 "열 때만 읽기" 가 훅 조건부 호출
-                            없이 된다(PredictionNote 머리말) */}
-                        {open && (
-                          <div id={`ch-note-${id}`}>
-                            <PredictionNote id={id} isMe={owner} locked={locked} preview={relock} />
-                          </div>
-                        )}
-                      </li>
-                    )
-                  })}
-                </ul>
-              )}
+              <div role="tabpanel" id={`ch-panel-${tab}`} aria-labelledby={`ch-tab-${tab}`}>
+                {/* key 에 dataKey 를 실어 구독 직후 다시 읽게 한다 — 부모가 자식의 reload 를
+                    쥐고 있지 않아도 되고, 다시 마운트되면 useAsync 가 알아서 읽는다 */}
+                {tab === 'PREDICTION' && (
+                  <ChannelPredictions
+                    key={`pred-${dataKey}`}
+                    userId={userId} owner={owner} relock={relock}
+                  />
+                )}
+                {tab === 'REPORT' && <ChannelReports userId={userId} relock={relock} />}
+                {tab === 'BACKTEST' && <ChannelBacktest userId={userId} />}
+              </div>
             </section>
 
-            {/* ── 리포트 목록 ───────────────────────────── */}
-            <section className="ch-section">
-              <h2>리포트</h2>
-              {reports.error && <ErrorState error={reports.error} onRetry={reports.reload} inline />}
-              {!reports.error && reports.data?.items.length === 0 && (
-                <EmptyState title="아직 발행한 리포트가 없습니다" />
-              )}
-              {reports.data && reports.data.items.length > 0 && (
-                <ul className="ch-reports">
-                  {reports.data.items.map((r: ChannelReportItem) => {
-                    /* 미리보기에서는 구독자 전용 글이 곧 잠긴 글이다 */
-                    const locked = relock ? !r.visibility : r.locked
-                    return (
-                    <li key={r.id}>
-                      <Link to={`/reports/${r.id}`}>
-                        <span className="ch-report-title">{r.title}</span>
-                        <span className="ch-report-meta">
-                          {/* 두 배지는 뜻이 다르다 — visibility 는 글의 속성,
-                              locked 는 내 권한이다(서버 주석). 합치지 않는다 */}
-                          {!r.visibility && <em className="ch-badge">구독자 전용</em>}
-                          {locked && (
-                            <em className="ch-badge is-locked">
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                <rect x="4" y="10" width="16" height="10" rx="2" />
-                                <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-                              </svg>
-                              잠김
-                            </em>
-                          )}
-                          <span className="num">{formatDate(r.publishedAt)}</span>
-                        </span>
-                      </Link>
-                    </li>
-                    )
-                  })}
-                </ul>
-              )}
-            </section>
-
-            {/* ── 백테스트 — 무료 · 파라미터 고정 ───────── */}
-            <section className="ch-section">
-              <h2>백테스트</h2>
-              {back.error && <ErrorState error={back.error} onRetry={back.reload} inline />}
-
-              {back.data && back.data.sampleCount === 0 ? (
-                /* 표본이 없으면 0% 를 그리지 않는다 — "손실 없음" 으로 읽힌다 */
-                <EmptyState
-                  title="아직 검증할 판정 결과가 없습니다"
-                  hint="예측이 판정되면 이 채널을 따라갔을 때의 수익률을 계산합니다"
-                />
-              ) : back.data && (
-                <div className="ch-backtest">
-                  <div className="ch-bt-figures">
-                    <div>
-                      <dt>수익률</dt>
-                      <dd className={`num ${back.data.returnRate >= 0 ? 'up' : 'down'}`}>
-                        {`${back.data.returnRate > 0 ? '+' : ''}${back.data.returnRate}%`}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>KOSPI</dt>
-                      <dd className="num">
-                        {back.data.benchmarkRate === null
-                          ? '—'
-                          : `${back.data.benchmarkRate > 0 ? '+' : ''}${back.data.benchmarkRate}%`}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>표본</dt>
-                      <dd className="num">{`${back.data.sampleCount}건`}</dd>
-                    </div>
-                  </div>
-                  {/* 조건을 적어 둔다. 안 적으면 어떤 가정의 숫자인지 알 수 없다.
-                      값을 화면에 박지 않고 응답에서 받는 이유 — 기간이 바뀌면
-                      문구와 계산 근거가 어긋난다 */}
-                  <p className="ch-bt-terms">
-                    {`최근 ${back.data.months}개월 · 원금 ${back.data.principal.toLocaleString('ko-KR')}원 · 수수료 0 기준입니다. 무료로 제공합니다.`}
-                  </p>
-                </div>
-              )}
-            </section>
           </>
         )}
       </div>
     </main>
+  )
+}
+
+/* ── 탭 안쪽 셋 ─────────────────────────────────────────
+   섹션마다 컴포넌트를 나눈 이유는 훅을 조건부로 부를 수 없어서다. 고른 탭만 마운트되므로
+   useAsync 가 그때 돌고, **안 보는 목록은 요청이 아예 안 나간다**(리포트 피드 F-01 과 같은 수). */
+
+/** 예측 목록. 펼친 한 건과 '가려질 건수' 는 이 목록만의 상태라 여기서 들고 있다. */
+function ChannelPredictions({ userId, owner, relock }: {
+  userId: string
+  /** 주인 화면인가. 근거를 주인 눈으로 읽을지와 안내문 노출을 정한다 */
+  owner: boolean
+  /** 서버가 열어 준 것을 비구독자 기준으로 다시 잠글지(미리보기) */
+  relock: boolean
+}) {
+  const load = useCallback(() => fetchChannelPredictions(userId), [userId])
+  const preds = useAsync(load)
+
+  /* 펼친 예측 한 건. 여러 개를 동시에 펴지 않는다 — 목록이 길어지면 무엇을
+     보고 있었는지 놓치고, 판단 내용은 한 건씩 읽는 글이다.
+     탭을 옮겼다 돌아오면 접힌다. 다시 마운트되기 때문인데, 그게 맞다 —
+     다른 목록을 보고 온 사람에게 아까 펴 둔 근거가 남아 있을 이유가 없다. */
+  const [openId, setOpenId] = useState<string | null>(null)
+
+  /** 내 채널일 때, 비구독자에게는 가려질 건수. 판정 전이 곧 잠금 경계다(§5) */
+  const lockedForOthers = (preds.data?.items ?? [])
+    .filter((p) => phaseOf(p.status) === 'PENDING').length
+
+  return (
+    <>
+            {/* 내 채널에서는 목록이 **남이 보는 것과 다르다** — 서버가 본인을 구독자와
+                같이 취급해(PredictionViewService.canRead) 판정 전 건까지 다 열어 준다.
+                그래서 채널 주인은 비구독자가 무엇을 못 보는지 알 수 없는데, 구독료를
+                정하는 사람이 바로 그 사람이다. 몇 건이 가려지는지만 알려 준다.
+
+                잠기는 조건은 "판정 전"이고 그게 곧 phaseOf(s) === 'PENDING' 이다
+                (서버 isPending 과 같은 경계 — BASE · OPEN). 세는 데 서버를 더 부를
+                필요가 없어 이미 받은 목록에서 센다.
+                이 목록은 한 페이지뿐이라 "이 페이지 기준"이라는 뜻으로 적는다. */}
+            {owner && lockedForOthers > 0 && (
+              <p className="ch-gate-note">
+                {`판정 전 ${lockedForOthers}건은 비구독자에게 방향·목표가가 가려집니다. 지금 화면은 주인에게만 다 보입니다.`}
+              </p>
+            )}
+
+            {preds.error && <ErrorState error={preds.error} onRetry={preds.reload} inline />}
+            {!preds.error && preds.data?.items.length === 0 && (
+              <EmptyState title="아직 등록한 예측이 없습니다" />
+            )}
+            {preds.data && preds.data.items.length > 0 && (
+              <ul className="ch-cards">
+                {preds.data.items.map((p) => {
+                  const id = String(p.id)
+                  const open = openId === id
+                  /* 미리보기에서는 서버가 다 열어 준 목록을 비구독자 기준으로 다시 잠근다 */
+                  const locked = relock ? phaseOf(p.status) === 'PENDING' : p.locked
+                  return (
+                    <li key={p.id} className={open ? 'is-open' : ''}>
+                      {/* 카드째로 누를 수 있어야 한다. <button> 으로 감싸면 안쪽의
+                          제목·목록이 버튼 안에 들어가 마크업이 깨지므로 role 을 준다.
+                          키보드로도 같은 동작이 되게 Enter·Space 를 받는다. */}
+                      <div
+                        role="button" tabIndex={0}
+                        aria-expanded={open} aria-controls={`ch-note-${id}`}
+                        className="ch-pred-hit"
+                        onClick={() => setOpenId(open ? null : id)}
+                        onKeyDown={(e) => {
+                          if (e.key !== 'Enter' && e.key !== ' ') return
+                          e.preventDefault()   // Space 로 화면이 스크롤되지 않게
+                          setOpenId(open ? null : id)
+                        }}
+                      >
+                        {/* channelId 를 넘기지 않는다 — LockedCard 의 "채널 구독하고 보기" 가
+                            /channels/{id} 로 가는데 그게 바로 이 화면이라 눌러도 제자리다.
+                            구독 CTA 는 위 구독 카드 하나로 충분하다. 다른 화면(B-03 등)에서는
+                            여기로 보내야 하므로 카드가 channelId 를 받는 것 자체는 남긴다.
+                            여기 안에 링크가 없어야 role="button" 이 성립한다. */}
+                        {/* 서버가 잠긴 건에서 방향·목표가를 빼는 것과 같은 모양으로 만든다 —
+                            값을 그대로 둔 채 자물쇠만 얹으면 미리보기가 거짓말이 된다 */}
+                        <PredictionCard
+                          data={locked
+                            ? { ...toCard(p), locked, direction: null, targetPrice: null }
+                            : toCard(p)}
+                        />
+                      </div>
+
+                      {/* 접으면 언마운트된다 — 그래서 "열 때만 읽기" 가 훅 조건부 호출
+                          없이 된다(PredictionNote 머리말) */}
+                      {open && (
+                        <div id={`ch-note-${id}`}>
+                          <PredictionNote id={id} isMe={owner} locked={locked} preview={relock} />
+                        </div>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+    </>
+  )
+}
+
+/** 리포트 목록. 목록 단계에는 게이팅이 없어 다시 읽을 일이 없다. */
+function ChannelReports({ userId, relock }: { userId: string; relock: boolean }) {
+  const load = useCallback(() => fetchChannelReports(userId), [userId])
+  const reports = useAsync(load)
+
+  return (
+    <>
+            {reports.error && <ErrorState error={reports.error} onRetry={reports.reload} inline />}
+            {!reports.error && reports.data?.items.length === 0 && (
+              <EmptyState title="아직 발행한 리포트가 없습니다" />
+            )}
+            {reports.data && reports.data.items.length > 0 && (
+              <ul className="ch-reports">
+                {reports.data.items.map((r: ChannelReportItem) => {
+                  /* 미리보기에서는 구독자 전용 글이 곧 잠긴 글이다 */
+                  const locked = relock ? !r.visibility : r.locked
+                  return (
+                  <li key={r.id}>
+                    <Link to={`/reports/${r.id}`}>
+                      <span className="ch-report-title">{r.title}</span>
+                      <span className="ch-report-meta">
+                        {/* 두 배지는 뜻이 다르다 — visibility 는 글의 속성,
+                            locked 는 내 권한이다(서버 주석). 합치지 않는다 */}
+                        {!r.visibility && <em className="ch-badge">구독자 전용</em>}
+                        {locked && (
+                          <em className="ch-badge is-locked">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <rect x="4" y="10" width="16" height="10" rx="2" />
+                              <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                            </svg>
+                            잠김
+                          </em>
+                        )}
+                        <span className="num">{formatDate(r.publishedAt)}</span>
+                      </span>
+                    </Link>
+                  </li>
+                  )
+                })}
+              </ul>
+            )}
+    </>
+  )
+}
+
+/** 백테스트 — 무료 · 파라미터 고정. 미리보기와 무관하다(가릴 것이 없다). */
+function ChannelBacktest({ userId }: { userId: string }) {
+  const load = useCallback(() => fetchBacktest(userId), [userId])
+  const back = useAsync<Backtest>(load)
+
+  return (
+    <>
+            {back.error && <ErrorState error={back.error} onRetry={back.reload} inline />}
+
+            {back.data && back.data.sampleCount === 0 ? (
+              /* 표본이 없으면 0% 를 그리지 않는다 — "손실 없음" 으로 읽힌다 */
+              <EmptyState
+                title="아직 검증할 판정 결과가 없습니다"
+                hint="예측이 판정되면 이 채널을 따라갔을 때의 수익률을 계산합니다"
+              />
+            ) : back.data && (
+              <div className="ch-backtest">
+                <div className="ch-bt-figures">
+                  <div>
+                    <dt>수익률</dt>
+                    <dd className={`num ${back.data.returnRate >= 0 ? 'up' : 'down'}`}>
+                      {`${back.data.returnRate > 0 ? '+' : ''}${back.data.returnRate}%`}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>KOSPI</dt>
+                    <dd className="num">
+                      {back.data.benchmarkRate === null
+                        ? '—'
+                        : `${back.data.benchmarkRate > 0 ? '+' : ''}${back.data.benchmarkRate}%`}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>표본</dt>
+                    <dd className="num">{`${back.data.sampleCount}건`}</dd>
+                  </div>
+                </div>
+                {/* 조건을 적어 둔다. 안 적으면 어떤 가정의 숫자인지 알 수 없다.
+                    값을 화면에 박지 않고 응답에서 받는 이유 — 기간이 바뀌면
+                    문구와 계산 근거가 어긋난다 */}
+                <p className="ch-bt-terms">
+                  {`최근 ${back.data.months}개월 · 원금 ${back.data.principal.toLocaleString('ko-KR')}원 · 수수료 0 기준입니다. 무료로 제공합니다.`}
+                </p>
+              </div>
+            )}
+    </>
   )
 }
