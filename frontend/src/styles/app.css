@@ -309,6 +309,21 @@ body.rail-open .rail-backdrop{opacity:1;pointer-events:auto}
 }
 .placeholder.tall{min-height:320px}
 
+/* 종목 로고(components/stocks/StockLogo). 여러 화면이 쓰는 조각이라 여기 둔다.
+   크기·모서리는 화면 쪽 배지 클래스가 정하고(st-logo · hm-logo), 여기서는
+   **이미지를 그 위에 덮는 일**만 한다 — 자리는 글자 배지가 잡고 있고, 로고가
+   있는 종목만 그 위를 채운다. 파일이 없으면 img 가 빠져 글자가 그대로 드러난다.
+   모서리를 inherit 로 받는 것은 화면마다 radius 가 달라서다. */
+.stock-logo{position:relative;overflow:hidden}
+/* 흰 바탕을 까는 까닭 — 로고 파일이 두 종류다. 대부분은 네 귀퉁이까지 색이 찬
+   정사각이라 바탕이 안 보이지만, 일부는 **원형에 바깥이 투명**하다. 그대로 두면
+   그 모서리로 밑에 깔린 글자 배지의 색(종목코드에서 뽑은 파스텔)이 배어 나와
+   종목마다 다른 색 귀퉁이가 생긴다. 흰색이면 주변 카드와 그대로 섞인다. */
+.stock-logo img{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;border-radius:inherit;background:#fff;
+}
+
 @media(max-width:900px){
   .search{display:none}
   .main-inner{padding:20px 16px 48px}

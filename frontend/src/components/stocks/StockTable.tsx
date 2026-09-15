@@ -28,6 +28,7 @@ import { useAsync } from '../../api/useAsync'
 import { useCursorList } from '../../api/useCursorList'
 import EmptyState from '../state/EmptyState'
 import ErrorState from '../state/ErrorState'
+import StockLogo from './StockLogo'
 
 const won = (n: number) => n.toLocaleString('ko-KR')
 /* 0 에는 부호를 붙이지 않고 색도 주지 않는다 — 근거는 Watchlist.tsx(B-04). */
@@ -39,20 +40,6 @@ const dotted = (iso: string) => iso.replaceAll('-', '.')
 const DASH = '—'
 
 const SENTIMENT_LABEL: Record<Sentiment, string> = { UP: '상승 우세', DOWN: '하락 우세' }
-
-/* 종목 로고 자산이 없어 이름 첫 글자로 배지를 만든다. 색은 종목코드에서 뽑아
-   항상 같은 색이 나오게 한다(무작위가 아니다).
-   B-01 홈에도 같은 배지가 있다 — 세 번째 화면이 필요해지면 공용으로 뽑는다. */
-function StockBadge({ code, name }: { code: string; name: string }) {
-  let h = 0
-  for (const ch of code) h = (h * 31 + ch.charCodeAt(0)) % 360
-  return (
-    <span className="st-logo" aria-hidden="true"
-          style={{ background: `hsl(${h} 62% 92%)`, color: `hsl(${h} 54% 36%)` }}>
-      {name.slice(0, 1)}
-    </span>
-  )
-}
 
 /* 예측 심리 막대. UP 과 DOWN 이 한 줄을 나눠 갖는다 — 두 개를 따로 그리면
    합이 100 이라는 게 보이지 않는다. 비율만으로 방향을 전달하지 않도록
@@ -428,7 +415,7 @@ export default function StockTable({ filter, setFilter }: Props) {
                     <li key={s.code} className="st-item">
                       <Link className="st-link" to={`/stocks/${s.code}`}>
                         <span className="st-id">
-                          <StockBadge code={s.code} name={s.name} />
+                          <StockLogo code={s.code} name={s.name} className="st-logo" />
                           <span className="st-id-text">
                             <b className="st-name">{s.name}</b>
                             <small className="st-sub">

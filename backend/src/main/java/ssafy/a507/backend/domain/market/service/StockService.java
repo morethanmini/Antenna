@@ -74,6 +74,7 @@ public class StockService {
 
     /** 목록 정렬. 예측 집계 3종은 predictions 가 없어 아직 전부 코드순이다. */
     public enum Sort {
+        MARKET_CAP,
         PREDICTION_COUNT,
         UP_RATIO,
         DOWN_RATIO,
@@ -208,10 +209,18 @@ public class StockService {
 
     /**
      * 값이 없는 행은 뒤로, 같은 값 안에서는 코드순 — 전순서라 커서가 같은 비교로 자리를 잡는다.
-     * PER 은 낮은 순(싼 순), 등락률은 높은 순.
+     * PER 은 낮은 순(싼 순), 등락률·시가총액은 높은 순.
      */
     private static Comparator<Row> order(Sort sort) {
         Comparator<Row> byCode = Comparator.comparing(Row::code);
+        if (sort == Sort.MARKET_CAP) {
+            // 시가총액은 컬럼이 아니라 종가 × 상장주식수다. 둘 중 하나라도 없으면 null 이고 뒤로 간다
+            // — 거래정지라 종가가 없는 종목이 큰 회사인 척 위에 서면 안 된다.
+            return Comparator.<Row, BigDecimal>comparing(
+                            row -> marketCap(row.close(), row.stock().getListedShares()),
+                            Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(byCode);
+        }
         if (sort == Sort.PER) {
             return Comparator.<Row, BigDecimal>comparing(
                             row -> row.stock().getPer(), Comparator.nullsLast(Comparator.naturalOrder()))
