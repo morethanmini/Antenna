@@ -100,15 +100,26 @@ export type SectorSummary = {
 }
 
 export type StockFilter = {
+  /** 종목명·종목코드 부분 일치. 대소문자는 안 가린다. 빈 문자열은 안 보낸다 */
+  q?: string
   sector?: string
   /**
    * 상장 시장. **화면에 이 값을 거는 컨트롤은 없다**(2026-09-11) — 이 서비스는
    * 코스피만 다뤄 고를 것이 하나뿐이다. 서버가 받는 파라미터라 자리는 남겨 둔다.
    */
   market?: Market
+  /**
+   * 예측 심리(상승·하락 우세). **market 과 마찬가지로 컨트롤이 없다**(2026-09-15).
+   * 정렬의 "상승 의견 순"·"하락 의견 순" 과 같은 축이라 한 화면에 둘 이유가 없었다.
+   * 정렬 쪽을 남긴 것은, 거르면 경계에 걸친 종목이 아예 사라지는데 줄을 세우면
+   * 위아래로 다 보이기 때문이다. 서버가 받는 파라미터라 자리는 남겨 둔다.
+   */
   sentiment?: Sentiment
   perMin?: number
   perMax?: number
+  /** PBR 범위. PER 과 같은 규칙이다 — 값이 없는 종목은 어느 범위에도 안 든다 */
+  pbrMin?: number
+  pbrMax?: number
   hasOpenPrediction?: boolean
   watchedOnly?: boolean
   sort: StockSort

@@ -39,20 +39,26 @@ public class StockController {
      */
     @GetMapping
     public StockListResponse list(
+            @RequestParam(required = false) String q,
             @RequestParam(required = false) String sector,
             @RequestParam(required = false) Stock.Market market,
             @RequestParam(required = false) BigDecimal perMin,
             @RequestParam(required = false) BigDecimal perMax,
+            @RequestParam(required = false) BigDecimal pbrMin,
+            @RequestParam(required = false) BigDecimal pbrMax,
             @RequestParam(required = false, defaultValue = "false") boolean watchedOnly,
             @RequestParam(required = false) StockService.Sort sort,
             @RequestParam(required = false) String cursor,
             @RequestParam(required = false) Integer size) {
         return stockService.list(
                 currentUserProvider.currentUserId(),
+                q,
                 sector,
                 market,
                 perMin,
                 perMax,
+                pbrMin,
+                pbrMax,
                 watchedOnly,
                 sort,
                 cursor,

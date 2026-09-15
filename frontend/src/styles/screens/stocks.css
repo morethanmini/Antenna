@@ -216,9 +216,23 @@
 }
 
 /* ── 상세 필터 ──────────────────────────────────────────── */
-.stocks-page .st-filter{display:flex; flex-direction:column; gap:18px}
-.stocks-page .st-filter h2{
-  margin:0; color:var(--ink); font-size:16px; font-weight:750; letter-spacing:-.02em;
+/* **스크롤을 따라온다**(2026-09-15). 목록이 길어 아래로 내려가면 필터가 화면
+   밖으로 사라져, 조건을 바꾸려면 매번 맨 위까지 올라와야 했다.
+
+   top 은 고정 상단바 높이(--topbar-h)에 한 뼘을 더한 값이다 — 0 으로 붙이면
+   상단바(z-index 30)가 필터 머리를 덮는다.
+
+   max-height 와 overflow-y 가 짝으로 필요하다. 필터가 화면보다 길어지면
+   sticky 상자가 뷰포트를 넘겨 아래쪽(필터 적용 버튼)에 영영 닿을 수 없다 —
+   그때는 필터 안쪽만 스크롤한다. 지금은 내용이 짧아 잘 안 보이지만, 조건이
+   늘면 바로 겪는 문제다.
+
+   .st-body 에 align-items:start 가 이미 있어야 한다. stretch 면 칸이 목록만큼
+   늘어나 sticky 가 걸릴 자리가 없다. */
+.stocks-page .st-filter{
+  display:flex; flex-direction:column; gap:18px;
+  position:sticky; top:calc(var(--topbar-h) + 14px);
+  max-height:calc(100vh - var(--topbar-h) - 28px); overflow-y:auto;
 }
 /* fieldset 은 브라우저 기본이 min-width:min-content 라 안쪽이 줄어들지 않는다.
    그대로 두면 PER 두 칸이 제 내재 폭(각 195px)을 고집해 카드를 뚫고 나간다.
@@ -231,32 +245,103 @@
    `.st-field + .st-field{margin-top:16px}` 이 특정도 (0,2,0) 으로 이쪽과 비겨
    파일 순서로 이기고 있었다 — 18 위에 16 이 얹혀 34px 이 됐다. 한 겹 더 얹어 끈다. */
 .stocks-page .st-field + .st-field{margin-top:0}
+/* **margin-bottom 이 있어야 한다.** .st-field 는 flex 인데 legend 는 그 flex 항목이
+   아니다 — fieldset 의 테두리에 놓이는 특수 요소라 gap:9px 이 legend 에는 안 걸리고,
+   라벨과 내용이 0px 로 붙어 있었다(2026-09-15에 재서 알았다).
+   다른 칸 사이(9px)보다 좁게 둔다 — 라벨은 제 내용에 딸린 것이라, 칸 사이만큼
+   벌어지면 어느 라벨이 어느 내용의 것인지 흐려진다. */
 .stocks-page .st-field legend{
-  padding:0; color:var(--ink); font-size:12.5px; font-weight:750;
+  padding:0; margin-bottom:7px;
+  color:var(--ink); font-size:12.5px; font-weight:750;
 }
-.stocks-page .st-chips{display:flex; flex-wrap:wrap; gap:7px}
-.stocks-page .st-chip{
-  padding:7px 13px; border:1px solid var(--rule); border-radius:9px;
-  background:var(--surface); color:var(--muted); font-size:12.5px; font-weight:700;
-}
-.stocks-page .st-chip:hover{color:var(--ink); border-color:#c8c9f5}
-.stocks-page .st-chip.on{
-  border-color:var(--brand); background:var(--brand-softer); color:var(--brand-ink);
+/* 눈에 안 보이는 legend(재무 지표 범위)는 자리를 차지하면 안 된다 */
+.stocks-page .st-field legend.st-sr{margin-bottom:0}
+/* .st-chips · .st-chip 은 지웠다(2026-09-15) — 유일하게 쓰던 "예측 방향" 칸이
+   정렬과 겹쳐 빠지면서 함께 없어졌다. 섹터 칩은 .st-sector-chip 으로 따로다. */
+
+/* ── 범위 슬라이더(PER · PBR) ──────────────────────────────
+   짝이 되는 마크업은 components/stocks/RangeSlider.tsx 다.
+   최소·최대를 적는 칸 두 개를 2026-09-15에 이걸로 바꿨다.
+
+   input[type=range] 두 개가 겹쳐 있다. 네이티브 트랙은 감추고 아래 span 이
+   그린다 — 안 감추면 선이 두 겹으로 보인다. 그리고 위에 깔린 input 이 아래
+   것의 손잡이를 덮으므로, input 은 마우스를 안 받고 손잡이만 받는다. */
+.stocks-page .st-slider{display:flex; flex-direction:column; gap:7px}
+/* PER 과 PBR 사이. 둘은 "재무 지표" 한 묶음이라 다른 조건 묶음 사이(18px)만큼
+   벌릴 이유가 없다 — 23px 이던 것을 13px 로 좁혔다(2026-09-15).
+   위 여백이 6px 인데 눈에는 13px 로 보이는 것은, 앞 슬라이더의 끝값 줄(0 · 80+)이
+   제 글자보다 낮아 아래쪽에 빈 띠가 남기 때문이다. */
+.stocks-page .st-slider + .st-slider{margin-top:6px}
+
+.stocks-page .st-slider-head{display:flex; align-items:baseline; gap:8px}
+.stocks-page .st-slider-label{color:var(--ink); font-size:12.5px; font-weight:750}
+.stocks-page .st-slider-head b{
+  margin-left:auto; color:var(--brand-ink); font-size:12.5px; font-weight:750;
+  font-variant-numeric:tabular-nums;
 }
 
-.stocks-page .st-range{display:flex; align-items:center; gap:9px}
-.stocks-page .st-range input{
-  flex:1; min-width:0; height:36px; padding:0 11px;
+/* 손잡이가 양 끝에서 반쯤 잘리지 않도록 좌우로 손잡이 반지름만큼 벌린다 */
+.stocks-page .st-slider-body{position:relative; height:22px; margin:0 8px}
+.stocks-page .st-slider-track,
+.stocks-page .st-slider-fill{
+  position:absolute; top:50%; height:4px; margin-top:-2px; border-radius:99px;
+}
+.stocks-page .st-slider-track{left:0; right:0; background:var(--surface-2)}
+.stocks-page .st-slider-fill{background:var(--brand)}
+
+.stocks-page .st-slider-input{
+  position:absolute; inset:0; width:100%; height:100%; margin:0;
+  appearance:none; background:none; pointer-events:none;
+}
+.stocks-page .st-slider-input:focus{outline:none}
+/* 크롬·사파리 */
+.stocks-page .st-slider-input::-webkit-slider-thumb{
+  appearance:none; pointer-events:auto; cursor:grab;
+  width:16px; height:16px; border-radius:50%;
+  border:2px solid var(--brand); background:var(--surface);
+  box-shadow:0 1px 3px rgb(20 20 27 / .22);
+}
+.stocks-page .st-slider-input::-webkit-slider-thumb:active{cursor:grabbing}
+.stocks-page .st-slider-input:focus-visible::-webkit-slider-thumb{
+  outline:2px solid var(--brand); outline-offset:2px;
+}
+/* 파이어폭스 */
+.stocks-page .st-slider-input::-moz-range-thumb{
+  pointer-events:auto; cursor:grab;
+  width:16px; height:16px; border-radius:50%;
+  border:2px solid var(--brand); background:var(--surface);
+  box-shadow:0 1px 3px rgb(20 20 27 / .22);
+}
+.stocks-page .st-slider-input::-moz-range-track{background:none}
+.stocks-page .st-slider-input:focus-visible::-moz-range-thumb{
+  outline:2px solid var(--brand); outline-offset:2px;
+}
+
+/* 눈금 양 끝 숫자.
+   위 여백이 음수인 까닭 — 몸통(.st-slider-body)은 손잡이 16px 을 담으려고 22px
+   이라, 선보다 9px 아래까지 자리를 차지한다. 그대로 두면 gap 7px 이 그 9px 위에
+   얹혀 숫자가 선에서 16px 이나 떨어진다. 남는 칸을 되돌려 **선을 기준으로** 붙인다.
+   -9 까지 당기지 않는 것은 손잡이가 선보다 6px 아래로 나오기 때문이다 — 숫자와
+   손잡이가 맞닿지 않게 3px 을 남긴다(2026-09-15). */
+.stocks-page .st-slider-ends{
+  display:flex; justify-content:space-between; margin:-7px 8px 0;
+  color:var(--faint); font-size:11px; font-variant-numeric:tabular-nums;
+}
+/* 종목명 검색칸. 상단바 검색과 생김새를 맞추지 않는다 — 저쪽은 종목 하나로
+   건너뛰는 길이고 이건 목록을 좁히는 조건이라, 옆의 PER 칸·칩과 같은 결이어야
+   한 벌로 읽힌다. type=search 라 브라우저가 넣는 지우기 단추는 그대로 쓴다. */
+.stocks-page .st-search{
+  width:100%; min-width:0; height:36px; padding:0 11px;
   border:1px solid var(--rule); border-radius:9px; background:var(--surface);
-  color:var(--ink); font-size:13px; font-variant-numeric:tabular-nums;
+  color:var(--ink); font-size:13px;
 }
-.stocks-page .st-range input::placeholder{color:var(--faint)}
-.stocks-page .st-range input:focus{border-color:var(--brand); outline:none}
-.stocks-page .st-range input[aria-invalid='true']{border-color:var(--danger)}
-.stocks-page .st-range span{color:var(--faint); flex:none}
-.stocks-page .st-panel .st-field-err,.stocks-page .st-filter .st-field-err{
-  margin:0; color:var(--danger); font-size:12px; font-weight:650;
-}
+.stocks-page .st-search::placeholder{color:var(--faint)}
+.stocks-page .st-search:focus{border-color:var(--brand); outline:none}
+
+/* 체크박스만 모인 묶음. .st-field 의 gap:9px 은 PER·PBR 슬라이더처럼 덩치가 큰
+   칸 사이를 벌리는 값이라, 한 줄짜리 체크박스 둘에 쓰면 따로 노는 항목처럼
+   보인다 — 여기만 좁힌다(2026-09-15). */
+.stocks-page .st-field-list{gap:4px}
 
 .stocks-page .st-check{
   display:flex; align-items:center; gap:9px;
@@ -264,17 +349,11 @@
 }
 .stocks-page .st-check input{width:15px; height:15px; flex:none; accent-color:var(--brand)}
 
-/* "필터 적용"·"필터 초기화" 는 한 쌍으로 읽혀야 한다. .st-filter 의 gap:18px 이
-   모든 자식 사이에 똑같이 걸려, 서로 다른 조건 묶음 사이만큼이나 이 둘이 벌어져
-   있었다 — 한 겹 묶어 여기만 8px 로 좁힌다(2026-09-14). */
+/* 버튼 상자. "필터 적용" 을 없애고(2026-09-15) 초기화만 남았지만 상자는 둔다 —
+   좁은 화면에서 .st-filter 가 grid 로 바뀔 때 이 버튼이 조건 칸들과 나란히
+   한 칸을 차지하는 자리다(아래 1180px 미디어 쿼리). */
 .stocks-page .st-actions{display:flex; flex-direction:column; gap:8px}
 
-.stocks-page .st-apply{
-  padding:11px 0; border-radius:10px; background:var(--brand); color:#fff;
-  font-size:13.5px; font-weight:750;
-}
-.stocks-page .st-apply:hover{background:var(--brand-ink)}
-.stocks-page .st-apply:disabled{background:var(--surface-2); color:var(--faint); cursor:not-allowed}
 .stocks-page .st-reset{
   padding:10px 0; border:1px solid var(--rule); border-radius:10px;
   background:var(--surface); color:var(--muted); font-size:13px; font-weight:700;
@@ -408,13 +487,15 @@
 
 /* ── 반응형 ─────────────────────────────────────────────── */
 @media (max-width:1180px){
-  /* 필터를 위로 올리고 목록에 폭을 준다 */
+  /* 필터를 위로 올리고 목록에 폭을 준다.
+     여기서는 **따라오게 하지 않는다** — 필터가 목록 위에 가로로 눕는 배치라,
+     붙여 두면 화면 위쪽을 늘 차지해 정작 종목 볼 자리를 잡아먹는다. */
   .stocks-page .st-body{grid-template-columns:minmax(0,1fr)}
   .stocks-page .st-filter{
     display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
     gap:16px 20px; align-items:start;
+    position:static; max-height:none; overflow:visible;
   }
-  .stocks-page .st-filter h2{grid-column:1 / -1}
   /* 넓은 화면에서는 버튼 둘이 세로로 쌓이지만, 여기서는 조건 칸들과 나란히
      한 칸을 차지하므로 가로로 눕혀 그 칸을 채운다 */
   .stocks-page .st-actions{grid-column:span 1; align-self:end; flex-direction:row}
