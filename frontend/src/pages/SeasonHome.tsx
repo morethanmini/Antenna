@@ -25,11 +25,12 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { ApiError } from '../api/errors'
 import {
-  getMyRuns, getPracticeRuns, MODE_LABEL, progressOf, recentFirst, won,
+  agreed, getMyRuns, getPracticeRuns, manwon, MODE_LABEL, progressOf, recentFirst,
   type MyRun, type OpenRun,
 } from '../api/seasons'
 import { useAsync } from '../api/useAsync'
 import ErrorState from '../components/state/ErrorState'
+import { openSimOnboarding } from '../sim/onboardingSeen'
 import '../styles/screens/sim-home.css'
 
 /* 홈은 요약이라 접힌 상태로는 두 줄만 보여준다. 더 있으면 토글로 편다.
@@ -55,26 +56,6 @@ function endedOn(iso?: string | null) {
   if (Number.isNaN(d.getTime())) return null
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}. ${pad(d.getMonth() + 1)}. ${pad(d.getDate())} 완료`
-}
-
-/* 시안의 "1,000만원". 만 단위로 딱 떨어질 때만 이 표기를 쓰고 아니면 공용 won() 으로
-   돌아간다 — 칩은 한눈에 읽히는 것이 목적이라 1,000만원이 10,000,000원보다 낫지만,
-   단위가 안 맞는 값을 억지로 줄이면 반올림이 생겨 금액이 달라진다. */
-const manwon = (n: number) =>
-  n >= 10_000 && n % 10_000 === 0 ? `${(n / 10_000).toLocaleString('ko-KR')}만원` : won(n)
-
-/**
- * 연습 목록이 한 값으로 모일 때만 그 값을 준다.
- *
- * 히어로 칩("시작 자산 1,000만원")은 특정 시즌이 아니라 "연습은 이런 것" 이라는 안내다.
- * 시즌마다 초기 자금이 다르면 아무 시즌의 값이나 대표로 세우는 셈이라 거짓이 된다.
- * 그럴 때는 undefined 를 줘서 칩을 통째로 감춘다 — §1 규칙 3 이 금지하는 건 금액 상수를
- * 화면에 박는 것이지, 응답에 실려 온 값을 그리는 것이 아니다.
- */
-function agreed<K extends keyof OpenRun>(runs: OpenRun[] | undefined, key: K) {
-  if (!runs?.length) return undefined
-  const first = runs[0][key]
-  return runs.every((r) => r[key] === first) ? first : undefined
 }
 
 const Ico = ({ size = 22, children }: { size?: number; children: React.ReactNode }) => (
@@ -357,6 +338,12 @@ function HowTo() {
     <article className="sh-panel">
       <div className="sh-panel-head">
         <h2><BookIcon />처음이라면 이렇게 시작해요</h2>
+        {/* G-00 안내는 모의투자를 처음 열었을 때 한 번만 자동으로 뜬다. 건너뛴 사람이
+            다시 볼 자리가 없으면 그 안내는 사실상 없는 것이라 여기에 입구를 남긴다.
+            라우트가 없는 오버레이라 링크가 아니라 셸에 신호를 보낸다. */}
+        <button type="button" className="sh-relink" onClick={openSimOnboarding}>
+          안내 다시 보기 ›
+        </button>
       </div>
 
       <ol className="sh-steps">

@@ -9,8 +9,10 @@ import { useAuth } from './auth/context'
 import { takeOnboardingPending } from './auth/onboarding'
 import BriefingModal from './components/BriefingModal'
 import OnboardingTour from './components/OnboardingTour'
+import SimOnboardingTour from './components/SimOnboardingTour'
 import WalletLinkModal from './components/wallet/WalletLinkModal'
 import { useBriefingParam } from './components/briefingParam'
+import { onSimOnboardingOpen, simOnboardingSeen } from './sim/onboardingSeen'
 import { useApiQuery } from './api/useApiQuery'
 import { formatToken, type WalletBalance } from './api/wallet'
 
@@ -137,6 +139,30 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
     tourChecked.current = true
     setTour(takeOnboardingPending())
   }, [authed, user?.nickname])
+
+  /* G-00 모의투자 온보딩. M-09 와 같은 자리·같은 규칙이다(셸 위 오버레이, 라우트 없음).
+     다른 점은 진입 조건뿐 — 가입 직후가 아니라 **모의투자 모드로 처음 들어왔을 때**다.
+     그래서 mode 를 함께 본다. 인사이트 화면에서는 뜨지 않는다.
+
+     M-09 와 마찬가지로 ref 로 잠근다. 이 이펙트는 mode·authed·nickname 에 반응하는데,
+     한 번 판단한 뒤 그 값이 바뀌어 다시 돌면 이미 "봤다" 가 된 플래그를 읽어 **열려
+     있는 안내를 닫아 버린다**(닫자마자 markSimOnboardingSeen 이 플래그를 세운다).
+
+     인사이트로 나갔다 모의투자로 돌아와도 다시 보지 않는다 — ref 는 셸이 살아 있는
+     동안 유지되고, 플래그도 이미 서 있다. */
+  const [simTour, setSimTour] = useState(false)
+  const simChecked = useRef(false)
+  useEffect(() => {
+    if (simChecked.current || mode !== 'sim' || !authed || !user?.nickname) return
+    simChecked.current = true
+    /* 이미 본 사람에게는 false 를 넣는데, 초기값이 false 라 아무 일도 하지 않는다.
+       M-09 의 setTour(takeOnboardingPending()) 과 같은 모양이다. */
+    setSimTour(!simOnboardingSeen())
+  }, [mode, authed, user?.nickname])
+
+  /* G-01 홈의 "안내 다시 보기". 오버레이를 띄우는 곳이 셸이라 화면 안쪽에서는
+     신호만 올려 보낸다(sim/onboardingSeen.ts 의 openSimOnboarding). */
+  useEffect(() => onSimOnboardingOpen(() => setSimTour(true)), [])
 
   /* M-01 지갑 연동. **튜토리얼 안에서 열지 않는다** — 모달 3겹이 되기 때문이고,
      WalletLinkModal 머리말이 "호출부가 온보딩을 닫고 띄운다" 로 계약을 적어
@@ -268,6 +294,16 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
         <OnboardingTour
           onClose={() => setTour(false)}
           onLinkWallet={() => { setTour(false); setLinking(true) }}
+        />
+      )}
+
+      {/* M-09 가 떠 있는 동안에는 기다린다. 가입 직후 모의투자로 바로 들어온 회원에게
+          두 안내가 겹쳐 뜨면 어느 쪽을 읽는 것인지 알 수 없다 — M-09 를 닫으면
+          이 조건이 풀려 이어서 뜬다. */}
+      {simTour && !tour && (
+        <SimOnboardingTour
+          onClose={() => setSimTour(false)}
+          onStart={() => { setSimTour(false); navigate('/sim/modes') }}
         />
       )}
 
