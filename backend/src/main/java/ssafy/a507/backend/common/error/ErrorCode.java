@@ -183,7 +183,25 @@ public enum ErrorCode {
      * 화면이 "지워진 글" 로 그린다. 소급 봉인을 하지 않기로 한 결정(ANT-CHAIN-14)의 겉면이라, 프론트는
      * 이 code 로 "봉인 이전 발행분" 이라고 적는다.
      */
-    REPORT_NOT_SEALED(HttpStatus.NOT_FOUND, "봉인 이전에 발행된 리포트입니다.");
+    REPORT_NOT_SEALED(HttpStatus.NOT_FOUND, "봉인 이전에 발행된 리포트입니다."),
+
+    /**
+     * 자기 채널을 자기가 구독하려 했다 (ANT-TOKEN-01). 400 이 아니라 409 인 이유 — 요청 <b>모양</b>은
+     * 옳고 지금 상태에서 할 수 없는 일이다. 명세도 자기 구독·중복 구독·잔액 부족을 409 한 줄로 묶었다.
+     */
+    SELF_SUBSCRIBE(HttpStatus.CONFLICT, "자기 채널은 구독할 수 없습니다."),
+
+    /**
+     * 이미 유효한 구독이 있다 (ANT-TOKEN-01). PENDING 도 막는다 — 결제가 체인에서 확정되기를 기다리는
+     * 중에 한 번 더 누르면 같은 채널에 두 번 결제된다. 만료된 구독은 막지 않는다(재구독은 정상이다).
+     */
+    ALREADY_SUBSCRIBED(HttpStatus.CONFLICT, "이미 구독 중인 채널입니다."),
+
+    /**
+     * 채널이 구독료를 아직 정하지 않았다 (ANT-TOKEN-01). 0 원으로 열어 주지 않는다 — 구독료는 정해야
+     * 생기는 값이고(publisher_fees 에 행이 없다), 0 으로 보면 무료 구독이 만들어진다.
+     */
+    FEE_NOT_SET(HttpStatus.CONFLICT, "이 채널은 아직 구독료를 정하지 않았습니다.");
 
     private final HttpStatus status;
     private final String message;
