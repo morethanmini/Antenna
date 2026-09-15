@@ -17,7 +17,14 @@
    - 움직임을 줄여 달라는 설정에서는 아예 안 넘긴다(prefers-reduced-motion).
 
    한쪽이 비면 그 칸은 그리지 않는다. 오늘 적중이 없는 날 "적중 0" 빈 상자를
-   띄워 둘 이유가 없다. 둘 다 비면 통째로 사라진다. */
+   띄워 둘 이유가 없다.
+
+   **둘 다 비어도 자리는 남긴다**(2026-09-15). 전에는 통째로 사라졌는데, 그러면
+   판정이 있는 종목과 없는 종목을 오갈 때 머리 오른쪽이 생겼다 없어져 옆의
+   "관심 종목" 버튼이 좌우로 뛴다. 무엇보다 이 자리에 원래 무엇이 오는지를
+   모르는 사람에게는 "없다" 와 "이런 기능이 없다" 가 구분되지 않았다.
+   불러오는 중·실패도 같은 크기의 자리를 쓴다 — 실패를 "없음" 으로 적으면
+   거짓말이 되므로 글귀만 달리한다. */
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useBlock } from '../../api/useBlock'
@@ -150,8 +157,17 @@ export default function SettledToday({ code }: { code: string }) {
   const hits = items.filter((p) => p.status === 'HIT')
   const misses = items.filter((p) => p.status === 'MISS')
 
-  // 불러오는 중·실패·빈 목록에는 자리를 만들지 않는다. 머리가 들썩이지 않게.
-  if (q.loading || q.error || items.length === 0) return null
+  /* 셋 다 카드가 없는 경우다. 자리는 같게 두고 안에 든 것만 바꾼다 —
+     높이·폭이 카드가 찼을 때와 같아야 머리가 들썩이지 않는다. */
+  if (q.loading) {
+    return <div className="st"><span className="st-slot sd-skel" aria-hidden="true" /></div>
+  }
+  if (q.error) {
+    return <div className="st"><p className="st-slot is-quiet">판정 정보를 불러오지 못했어요</p></div>
+  }
+  if (items.length === 0) {
+    return <div className="st"><p className="st-slot is-quiet">오늘 판정된 예측이 아직 없어요</p></div>
+  }
 
   /* 바깥 제목은 두지 않는다(2026-09-10). 이름표가 이미 적중·빗나감을 말하고,
      머리에 줄을 하나 더 얹으면 sticky 가 그만큼 본문을 가린다. */
