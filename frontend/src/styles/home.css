@@ -114,11 +114,13 @@
   background:var(--brand); color:#fff; font-size:14px; font-weight:700;
 }
 .hm-cta:hover{background:var(--brand-ink)}
-/* 마스코트는 카드보다 크게 잡고 아래로 흘려보낸다. .hm-hero 가 overflow:hidden
-   이라 하체가 잘리고, 음수 마진 덕에 카드 높이는 글자가 정한다. */
+/* 마스코트는 카드보다 크게 잡고 아래로 살짝 흘려보낸다. .hm-hero 가 overflow:hidden
+   이라 아래가 잘리고, 음수 마진 덕에 카드 높이는 글자가 정한다.
+   가로형 단체 그림(1536×1024)이라 폭을 넓히고 잘라내는 양은 줄였다 — 세로가 짧아
+   예전 값(-58px)을 그대로 두면 그림의 3분의 1이 날아간다. */
 .hm-hero-art{
-  align-self:end; width:268px; height:auto;
-  margin:0 -10px -58px 0;
+  align-self:end; width:330px; height:auto;
+  margin:0 -14px -14px 0;
 }
 
 /* ── 시장 Overview — 지수 셋을 가로로 세운다 ──────────────── */
