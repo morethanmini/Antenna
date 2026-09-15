@@ -28,6 +28,7 @@ import { useCursorList } from '../api/useCursorList'
 import { formatBusinessDate, type LedgerCommit } from '../api/anchors'
 import { horizonLabel } from '../api/predictions'
 import AnchorBadge from '../components/AnchorBadge'
+import { ANCHOR_BATCH_CYCLE } from '../components/prediction/AnchorStage'
 import CopyHash from '../components/CopyHash'
 import PredictionStatus from '../components/prediction/PredictionStatus'
 import EmptyState from '../components/state/EmptyState'
@@ -45,12 +46,15 @@ export default function LedgerList() {
           <p>봉인된 예측이 배치로 묶여 체인에 기록된 기록입니다</p>
         </div>
 
-        {/* 배치 주기를 알려 준다 — 방금 등록한 예측이 "대기" 로 있는 것을 고장으로 읽으면 안 된다 */}
+        {/* 배치 주기를 알려 준다 — 방금 등록한 예측이 "대기" 로 있는 것을 고장으로 읽으면 안 된다.
+            주기는 AnchorStage 의 상수를 쓴다. 여기에 직접 적어 두었더니 2026-09-15 에 서버가
+            10분 주기로 바뀔 때 이 줄만 "매 영업일" 로 남아 운영에서 거짓을 말했다 — 값이 두
+            곳에 있으면 한쪽만 고쳐진다. */}
         <p className="lg-note">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="9" /><path d="M12 7.5V12l3 1.8" />
           </svg>
-          앵커는 매 영업일 배치로 묶여 올라갑니다. 방금 등록한 예측은 다음 배치에 담깁니다.
+          {`앵커는 ${ANCHOR_BATCH_CYCLE} 배치로 묶여 올라갑니다. 방금 등록한 예측은 다음 배치에 담깁니다.`}
         </p>
 
         {error && <ErrorState error={error} onRetry={reload} />}
