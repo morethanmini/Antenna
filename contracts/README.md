@@ -214,3 +214,68 @@ prod 는 이 규칙을 스크립트가 강제한다 — `deployments/prod/Predic
   인덱서는 이 셋만 읽는다. `reason` 은 `bytes32 indexed`(ASCII 왼쪽 정렬, `token_ledger.reason` varchar(32) 와 길이가 같다).
   ERC-20 표준 `Transfer` 는 지갑 표시용이다. `operatorTransfer` 는 사유 이벤트를 내지 않는다 — 사유는 위성 컨트랙트가 자기 이벤트로 남긴다.
 - 커스텀 에러: `TransferDisabled · SelfSubscribe · ZeroAmount · ZeroAddress · SameAddress` + OZ `ERC20InsufficientBalance · AccessControlUnauthorizedAccount`.
+
+---
+
+# PredictionEventPool — 업앤다운 배팅 이벤트의 돈통 (ANT-EVENT-01)
+
+종목별 UP 풀·DOWN 풀에 ANT 를 걸고, 판정 뒤 이긴 쪽이 전체를 배팅 비율대로 나눠 받는다(스포츠토토 승자투표권 방식, 환급률 100%).
+배팅금 보관·방향 커밋 대조·승패 판정·배분·송금이 전부 여기서 일어난다. 서버는 기준가·종가를 넣고 순위만 센다.
+설계 근거: `.claude/docs-personal/impl/ANT-EVENT-01-03/plan.md`.
+
+## 명령
+
+```bash
+npx hardhat test test/PredictionEventPool.test.js                   # 39건. 가스 참고값도 찍힌다
+DEPLOY_ENV=prod ANCHOR_ADMIN_PRIVATE_KEY=0x… TOKEN_OPERATOR=0x… npm run deploy:pool:ssafy
+DEPLOY_ENV=prod ANCHOR_ADMIN_PRIVATE_KEY=0x… npm run grant:mover:ssafy   # ← 이걸 빼먹으면 placeBet 이 전부 revert 한다
+npm run deploy:local                                                  # 로컬은 nonce 2 로 같이 올라가고 MOVER 도 바로 준다
+```
+
+## 왜 팩토리가 아닌가
+
+MOVER_ROLE 은 주소 단위다. 이벤트마다 컨트랙트를 찍으면 회차마다 관리자 키 tx 가 필요하다. 하나에 `eventId` 차원을 두면 배포 때 한 번.
+대가: 모든 회차의 자금이 한 주소에 산다 → 이벤트별 `escrow` 를 따로 세어 `sweep` 이 남의 회차 돈을 못 가져간다(테스트 "여러 이벤트").
+
+## 상태 머신 — 순서를 코드가 강제한다
+
+```
+NONE → openEvent → OPEN → seal → SEALED → reveal… → revealDone → REVEALED
+     → resolveStock ×종목수 → resolveDone → RESOLVED → settle… → sweep → SETTLED
+```
+
+- 봉인 전 `reveal` 은 `BadState`. 접수 중 방향 유출을 코드가 막는다.
+- 안 밝혀진 배팅은 `revealDone` 뒤 풀 밖이고, `settle` 에서 원금을 돌려받는다(DB 유실 대비 안전장치).
+- **취소·종목 무효·비상 인출은 없다**(2026-09-15 결정). 정산 버튼이 안 눌리는 버그면 돈이 갇힌다 — 그래서 테스트가 두껍다.
+
+## 커밋 식 — 서버와 바이트 단위로 같아야 한다
+
+`keccak256(abi.encodePacked(uint256 eventId, uint16 stockIdx, uint8 side, bytes32 noteHash))` — 32+2+1+32 = 67 바이트.
+`side` 는 UP=0 · DOWN=1. `noteHash` 는 예측 커밋의 `keccak(note ‖ noteSalt)`(`CommitHashes.noteHash`) 그대로.
+ethers 로는 `solidityPackedKeccak256(['uint256','uint16','uint8','bytes32'], [...])`. 자바 쪽 `EventCommits` 가 같은 값을 내는지 고정 벡터로 대조한다(ANT-EVENT-02).
+
+## 배분식
+
+이긴 쪽 `payout = stake × (poolUp + poolDown) / poolWinner`(곱셈 먼저). 진 쪽 0.
+환불(`BetRefunded`, 원금): 미리빌 · 보합(TIE) · 이긴 풀이 0. 정수 절삭 나머지는 `sweep` 이 `treasury` 로.
+
+## 함정 7 — 조회 함수 이름 `getEvent` 를 쓰면 안 된다
+
+ethers v6 의 `Contract` 객체가 `getEvent(이름)` 을 내장 메서드로 갖고 있어 같은 이름의 컨트랙트 함수 호출이 가려진다(`key.format is not a function`).
+그래서 `eventInfo(eventId)` 다. `getFunction · getAddress · getDeployedCode` 도 같은 이유로 피한다.
+
+## 함정 8 — `reveal` 루프에서 stack too deep
+
+루프 안에 지역변수를 여섯 개 두면 solc 가 `Stack too deep` 을 낸다. `viaIR` 을 켜면 풀리지만 빌드 설정(paris)을 건드리게 되어
+한 건 처리를 `_revealOne` 으로 뺐다. `settle` 도 같은 꼴이 되면 같은 방법.
+
+## 가스 참고값 (Hardhat, optimizer 200)
+
+`placeBet` 160k · `reveal` 40건 812k(≈20k/건) · `settle` 40건 1.70M(≈42k/건). 100건 묶음이면 reveal ≈ 2M · settle ≈ 4.3M.
+SSAFY 는 gasPrice 0 이라 비용은 없고, 블록 한도만 본다.
+
+## 이벤트 — 인덱서 ③(ANT-EVENT-02)가 읽는다
+
+`EventOpened · BetPlaced(eventId, betId, user, stockIdx, stake, commit) · EventSealed · BetRevealed(eventId, betId, side) · EventRevealed ·
+StockResolved(eventId, stockIdx, base, close, winner) · EventResolved · BetSettled(eventId, betId, user, payout) · BetRefunded(eventId, betId, user, stake) · EventSettled(eventId, dust)`.
+커스텀 에러: `BadState(eventId, current) · ZeroAddress · BadConfig · WrongStock · StakeOutOfRange · AlreadyBet · NoSuchBet · AlreadyRevealed · BadCommit · LengthMismatch · AlreadyResolved · NotAllResolved · AlreadySettled · NotAllSettled` + 토큰의 `ERC20InsufficientBalance · AccessControlUnauthorizedAccount`.
