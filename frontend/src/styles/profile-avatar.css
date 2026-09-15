@@ -5,20 +5,28 @@
 
 .pa{ display:flex; flex-direction:column; align-items:center; gap:6px; flex:0 0 auto; }
 
-/* 사진 아래 한 줄. 사진보다 좁아지지 않게 두 개를 나란히 둔다 */
-.pa-acts{ display:flex; align-items:center; gap:6px; }
+/* ── 사진 아래 캡슐 ─────────────────────────────────
+   둘을 각각 캡슐로 두면 사진 밑에 알약이 두 개 굴러다닌다. **하나의 캡슐을 반으로**
+   나눠 담는다 — 같은 사진에 딸린 두 행동이라는 것이 모양으로 보인다.
+   테두리·둥근 모서리는 여기 한 번만 주고, 안쪽 버튼은 칸막이 선만 갖는다. */
+.pa-acts{
+  display:inline-flex; align-items:stretch; overflow:hidden;
+  border:1px solid var(--rule); border-radius:999px; background:var(--surface);
+}
 
 /* 값이 아니라 행동이라 작게 둔다 — 항목 옆의 "수정"(.ch-line-edit)과 같은 무게로 맞춘다 */
 .pa-btn{
-  padding:1px 7px;
-  border:1px solid var(--rule); border-radius:999px; background:var(--surface);
+  padding:1px 9px; border:0; background:none;
   font:inherit; font-size:11px; font-weight:700; color:var(--faint);
-  line-height:1.7; white-space:nowrap; cursor:pointer;
+  line-height:1.9; white-space:nowrap; cursor:pointer;
 }
-.pa-btn:hover{ border-color:var(--brand-soft); color:var(--brand-ink); background:var(--brand-softer); }
-.pa-btn:focus-visible{ outline:2px solid var(--brand); outline-offset:2px; }
-.pa-btn:disabled{ opacity:.45; cursor:default; }
+/* 칸막이. 첫 칸에는 없다 — 캡슐 왼쪽 테두리와 겹친다 */
+.pa-btn + .pa-btn{ border-left:1px solid var(--rule); }
+.pa-btn:hover{ color:var(--brand-ink); background:var(--brand-softer); }
+/* 초점 표시는 캡슐 밖으로 나가야 보인다 — overflow:hidden 이 안쪽 outline 을 자른다 */
+.pa-btn:focus-visible{ outline:2px solid var(--brand); outline-offset:-2px; }
+.pa-btn:disabled{ opacity:.45; cursor:default; background:none; }
 /* 지우는 것은 되돌릴 수 없으니 호버에서만 경고색을 쓴다 — 늘 빨가면 눈이 그리로 간다 */
-.pa-btn.is-drop:hover{ border-color:var(--danger); color:var(--danger); background:var(--surface); }
+.pa-btn.is-drop:hover{ color:var(--danger); background:var(--surface-2); }
 
 .pa-error{ margin:0; max-width:12em; font-size:11px; line-height:1.5; color:var(--danger); text-align:center; }
