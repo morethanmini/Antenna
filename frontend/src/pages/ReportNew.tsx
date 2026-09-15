@@ -26,8 +26,12 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ApiError } from '../api/client'
 import { releaseIdempotencyKey } from '../api/idempotency'
-import { BODY_MAX, REPORT_CREATE_SCOPE, TITLE_MAX, createReport } from '../api/reports'
+import { BODY_MAX, REPORT_CREATE_SCOPE, TITLE_MAX, createReport, reportSigningPayload } from '../api/reports'
+import { requestNonce } from '../api/wallet'
 import { ERROR_CODE } from '../api/errors'
+import { useAuth } from '../auth/context'
+import { connectAddress, hasWallet, personalSign } from '../wallet/provider'
+import WalletLinkModal from '../components/wallet/WalletLinkModal'
 import { errorText } from '../components/state/errorText'
 import FieldError from '../components/state/FieldError'
 import ImageUploadModal from '../components/upload/ImageUploadModal'
@@ -45,6 +49,7 @@ const VISIBILITY_OPTIONS = [
 
 export default function ReportNew() {
   const navigate = useNavigate()
+  const { user } = useAuth()
 
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
@@ -61,7 +66,12 @@ export default function ReportNew() {
   const bodyRef = useRef<HTMLTextAreaElement>(null)
 
   const [submitting, setSubmitting] = useState(false)
+  const [signing, setSigning] = useState(false)
+  const [linking, setLinking] = useState(false)
   const [error, setError] = useState<ApiError | null>(null)
+  /* 지갑 쪽 실패는 서버 오류가 아니라 ApiError 가 아니다 — 거부·확장 미설치 등.
+     ApiError 자리에 억지로 끼우지 않고 따로 문장 하나를 둔다(PredictTab 과 같은 판단). */
+  const [localMsg, setLocalMsg] = useState<string | null>(null)
 
   /**
    * 커서 자리에 마크다운을 꽂는다. 끝에 붙이지 않는 이유 — 글 중간에 그림을 넣으려던
@@ -119,21 +129,48 @@ export default function ReportNew() {
     setError(null)
   }
 
+  /**
+   * 발행은 지갑 서명을 거친다 (ANT-CHAIN-16).
+   *
+   * 리포트가 온체인에 올라가는데 서명이 없으면 "이 지갑 주인이 썼다" 를 서버를 믿어야만
+   * 알 수 있다. 예측 등록(C-01)과 같은 흐름이고 scope 만 REPORT_PUBLISH 다.
+   *
+   * 미설치와 미연동을 여기서 가르지 않는다 — M-01(WalletLinkModal)이 이미 네 갈래를
+   * 각각 다른 안내로 다룬다. 여기서 문구를 또 쓰면 같은 안내가 두 곳에 생긴다.
+   */
   async function submit(event: React.FormEvent) {
     event.preventDefault()
     if (!ready || submitting) return
 
+    if (!hasWallet() || !user?.walletLinked) {
+      setLinking(true)
+      return
+    }
+
     setSubmitting(true)
+    setSigning(true)
     setError(null)
+    setLocalMsg(null)
     try {
-      const { id } = await createReport({ title: title.trim(), body, visibility })
+      /* 서명에 들어갈 값은 지금 이 입력에서 나와야 한다. 다듬은 제목(trim)을 서버에
+         그대로 보내므로 서명도 같은 값에 붙어야 SIGNER_MISMATCH 가 나지 않는다. */
+      const draft = { title: title.trim(), body, visibility }
+
+      const address = await connectAddress()
+      const nonce = await requestNonce('REPORT_PUBLISH')
+      const signature = await personalSign(await reportSigningPayload(draft, nonce), address)
+      setSigning(false)
+
+      const { id } = await createReport(draft, signature)
       // 발행이 확정됐으니 키를 놓는다. 다음 리포트는 새 키를 받는다.
       releaseIdempotencyKey(REPORT_CREATE_SCOPE)
       // 뒤로 가기로 작성 화면에 되돌아오지 않게 replace 로 바꿔치운다
       navigate(`/reports/${id}`, { replace: true })
     } catch (e) {
-      setError(e as ApiError)
+      setSigning(false)
       setSubmitting(false)
+      if (e instanceof ApiError) setError(e)
+      else setLocalMsg(e instanceof Error ? e.message : '서명을 마치지 못했습니다.')
     }
   }
 
@@ -153,7 +190,7 @@ export default function ReportNew() {
       <div className="main-inner">
         <div className="page-head">
           <h1>리포트 작성</h1>
-          <p>발행하면 수정하거나 지울 수 없습니다</p>
+          <p>지갑으로 서명해 발행합니다. 발행하면 수정하거나 지울 수 없습니다</p>
         </div>
 
         <form className="rn" onSubmit={submit}>
@@ -266,17 +303,29 @@ export default function ReportNew() {
             </div>
           )}
 
+          {/* 지갑 쪽 실패(거부·확장 없음). 서버 오류와 자리를 나눈다 — 사용자가 할 일이 다르다 */}
+          {localMsg && (
+            <div className="rn-error" role="alert">
+              <b>{localMsg}</b>
+            </div>
+          )}
+
           <div className="rn-actions">
             <button type="button" className="rn-btn ghost" onClick={cancel} disabled={submitting}>
               취소
             </button>
             <button type="submit" className="rn-btn solid" disabled={!ready || submitting}>
-              {submitting ? '발행 중…' : '발행'}
+              {signing ? '지갑에서 서명해 주세요…' : submitting ? '발행 중…' : '서명하고 발행'}
             </button>
           </div>
 
           {!ready && !submitting && (
             <p className="rn-hint">제목 · 본문 · 공개 범위를 모두 채우면 발행할 수 있습니다.</p>
+          )}
+          {ready && !submitting && (
+            <p className="rn-hint">
+              발행하면 본문 해시가 블록체인에 기록됩니다. 서명은 그 기록이 내 지갑에서 나왔음을 남깁니다.
+            </p>
           )}
         </form>
 
@@ -291,6 +340,9 @@ export default function ReportNew() {
           />
         )}
       </div>
+
+      {/* 미설치·미연동·주소 불일치를 한 곳에서 다룬다(M-01). 닫으면 작성 내용은 그대로 남는다 */}
+      {linking && <WalletLinkModal onClose={() => setLinking(false)} />}
     </main>
   )
 }

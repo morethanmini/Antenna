@@ -20,6 +20,7 @@ import Portfolio from './pages/Portfolio'
 import LedgerList from './pages/LedgerList'
 import Anchor from './pages/Anchor'
 import Verify from './pages/Verify'
+import VerifyReport from './pages/VerifyReport'
 import Ranking, { SimRanking } from './pages/Ranking'
 import ChannelProfile from './pages/ChannelProfile'
 import SubscriptionList from './pages/SubscriptionList'
@@ -98,6 +99,9 @@ export const ROUTES: PageMeta[] = [
   { screen: 'D-01', element: LedgerList, path: '/ledger', title: '커밋 원장', access: 'user', mode: 'insight', nav: 'ledger', story: 'ANT-FE-LEDGER-LIST' },
   { screen: 'D-02', element: Anchor, path: '/ledger/anchors/:id', title: '앵커 배치 상세', access: 'user', mode: 'insight', nav: 'ledger', story: 'ANT-FE-ANCHOR' },
   { screen: 'D-03', element: Verify, path: '/ledger/verify/:predictionId', title: '3단계 검산', access: 'user', mode: 'insight', nav: 'ledger', story: 'ANT-FE-VERIFY' },
+  /* 리포트 검산. 예측 검산과 경로를 나눈 이유는 id 가 다른 시퀀스라서다 —
+     /ledger/verify/:id 하나로 두면 12 가 예측인지 리포트인지 알 수 없다. */
+  { screen: 'D-04', element: VerifyReport, path: '/ledger/verify/report/:reportId', title: '리포트 검산', access: 'user', mode: 'insight', nav: 'ledger', story: 'ANT-CHAIN-17' },
 
   // ── E. 채널 · 구독 ───────────────────────────────────
   { screen: 'E-01', element: Ranking, path: '/rankings', title: '주가 예측 랭킹', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'predictor-market-page', story: 'ANT-FE-RANKING' },

@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import jakarta.persistence.EntityManager;
+import org.web3j.crypto.Credentials;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -24,12 +25,19 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import ssafy.a507.backend.common.security.SignatureGuard;
+import ssafy.a507.backend.common.security.SignatureNonceStore;
+import ssafy.a507.backend.common.security.SignatureScope;
+import ssafy.a507.backend.domain.monetize.dto.ReportCreateRequest;
+import ssafy.a507.backend.support.TestNonceStoreConfig;
+import ssafy.a507.backend.support.WalletSignatures;
 
 /**
  * ANT-COMMUNITY-01 — 리포트 발행·열람의 AC 검증.
@@ -43,6 +51,8 @@ import org.springframework.transaction.annotation.Transactional;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
+// nonce 는 Redis 가 아니라 인메모리로. Lettuce 는 지연 연결이라 컨텍스트는 뜨고 연산에서 터진다.
+@Import(TestNonceStoreConfig.class)
 class ReportControllerTest {
 
     private static final String URL = "/api/v1/reports";
@@ -53,8 +63,28 @@ class ReportControllerTest {
     @Autowired
     EntityManager em;
 
+    @Autowired
+    SignatureNonceStore nonceStore;
+
+    @Autowired
+    SignatureGuard signatureGuard;
+
     @MockitoBean
     StringRedisTemplate redis;
+
+    /* 발행이 지갑 서명을 받는다(ANT-CHAIN-16). 지갑 역할은 web3j Credentials 가 한다 —
+       PredictionControllerTest 와 같은 방식이고 키도 같은 것을 쓴다. */
+    private static final String PRIVATE_KEY =
+            "0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318";
+
+    /** 둘째 지갑. {@code users.wallet_address} 가 UQ 라 두 계정이 같은 주소를 쓸 수 없다. */
+    private static final String OTHER_PRIVATE_KEY =
+            "0x8d5366123cb560bb606379f90a0bfd4769eecc0557f1b362dcae9012b548b1e5";
+
+    /** 형식만 맞는 가짜 서명. @Valid 가 서명 검증보다 먼저 도는 400 테스트에 쓴다. */
+    private static final String DUMMY_SIGNATURE = "0x" + "11".repeat(65);
+
+    private Credentials wallet;
 
     private final Map<String, String> redisStore = new HashMap<>();
 
@@ -64,8 +94,11 @@ class ReportControllerTest {
     @BeforeEach
     void setUp() {
         stubRedis();
+        wallet = Credentials.create(PRIVATE_KEY);
         authorId = insertUser("발행자");
         viewerId = insertUser("열람자");
+        // 서명자 주소와 대조할 연동 지갑. 없으면 발행이 WALLET_NOT_LINKED 로 막힌다.
+        linkWallet(authorId, wallet.getAddress());
         flush();
     }
 
@@ -94,9 +127,7 @@ class ReportControllerTest {
                         .with(csrf())
                         .header("Idempotency-Key", "key-1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"title":"반도체 리포트","body":"본문","visibility":true}
-                                """))
+                        .content(signedBody("반도체 리포트", "본문", true)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").isNumber());
     }
@@ -104,9 +135,10 @@ class ReportControllerTest {
     @Test
     @DisplayName("같은 Idempotency-Key 재요청은 리포트를 하나만 만든다")
     void 발행_멱등() throws Exception {
-        String body = """
-                {"title":"멱등 리포트","body":"본문","visibility":true}
-                """;
+        /* 멱등 재요청은 같은 본문이어야 한다 — 서명까지 같은 문자열을 두 번 보낸다.
+           nonce 는 첫 요청에서 소비되지만 두 번째는 컨트롤러가 최초 결과를 돌려주므로
+           서비스가 다시 불리지 않는다(서명 검증도 안 탄다). 그것까지 이 테스트가 고정한다. */
+        String body = signedBody("멱등 리포트", "본문", true);
 
         String first = mockMvc.perform(post(URL)
                         .with(user(String.valueOf(authorId)))
@@ -141,9 +173,7 @@ class ReportControllerTest {
                         .with(user(String.valueOf(authorId)))
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"title":"제목","body":"본문","visibility":true}
-                                """))
+                        .content(json("제목", "본문", "true", DUMMY_SIGNATURE)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("IDEMPOTENCY_KEY_REQUIRED"));
     }
@@ -156,9 +186,7 @@ class ReportControllerTest {
                         .with(csrf())
                         .header("Idempotency-Key", "key-2")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"title":"제목","body":"본문"}
-                                """))
+                        .content("{\"title\":\"제목\",\"body\":\"본문\",\"signature\":\"" + DUMMY_SIGNATURE + "\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
                 .andExpect(jsonPath("$.field").value("visibility"));
@@ -172,8 +200,7 @@ class ReportControllerTest {
                         .with(csrf())
                         .header("Idempotency-Key", "key-3")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"title\":\"" + "가".repeat(101)
-                                + "\",\"body\":\"본문\",\"visibility\":true}"))
+                        .content(json("가".repeat(101), "본문", "true", DUMMY_SIGNATURE)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
                 .andExpect(jsonPath("$.field").value("title"));
@@ -190,9 +217,7 @@ class ReportControllerTest {
                         .with(csrf())
                         .header("Idempotency-Key", "key-noti")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"title":"알림 리포트","body":"본문","visibility":false}
-                                """))
+                        .content(signedBody("알림 리포트", "본문", false)))
                 .andExpect(status().isCreated());
         flush();
 
@@ -210,13 +235,129 @@ class ReportControllerTest {
                         .with(csrf())
                         .header("Idempotency-Key", "key-noti-2")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"title":"알림 리포트2","body":"본문","visibility":false}
-                                """))
+                        .content(signedBody("알림 리포트2", "본문", false)))
                 .andExpect(status().isCreated());
         flush();
 
         assertThat(countNotifications(viewerId, "REPORT_PUBLISHED")).isZero();
+    }
+
+    // ── 발행 서명 (ANT-CHAIN-16) ─────────────────────────────
+
+    @Test
+    @DisplayName("서명한 발행은 signature · signer_address 가 함께 저장된다 — 작성자 증명은 이 칸이 한다")
+    void 발행_서명_저장() throws Exception {
+        mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(authorId)))
+                        .with(csrf())
+                        .header("Idempotency-Key", "key-sig")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signedBody("서명 리포트", "본문", true)))
+                .andExpect(status().isCreated());
+        flush();
+
+        Object[] row = (Object[]) em.createNativeQuery(
+                        "SELECT signature, signer_address FROM reports WHERE title = '서명 리포트'")
+                .getSingleResult();
+        assertThat((String) row[0]).matches("^0x[0-9a-fA-F]{130}$");
+        // 저장·비교 형식은 소문자 0x + 40자 하나뿐이다(SignatureGuard).
+        assertThat((String) row[1]).isEqualTo(wallet.getAddress().toLowerCase(java.util.Locale.ROOT));
+    }
+
+    @Test
+    @DisplayName("봉인 규격은 그대로다 — 서명이 reportHash 재료가 아니라서 옛 리포트도 같은 식으로 검증된다")
+    void 발행_봉인은_그대로() throws Exception {
+        mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(authorId)))
+                        .with(csrf())
+                        .header("Idempotency-Key", "key-seal")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signedBody("봉인 리포트", "본문", true)))
+                .andExpect(status().isCreated());
+        flush();
+
+        Object[] row = (Object[]) em.createNativeQuery(
+                        "SELECT body_hash, report_hash, salt FROM reports WHERE title = '봉인 리포트'")
+                .getSingleResult();
+        assertThat((String) row[0]).matches("^0x[0-9a-f]{64}$");
+        assertThat((String) row[1]).matches("^0x[0-9a-f]{64}$");
+        assertThat((String) row[2]).matches("^[0-9a-f]{64}$");
+    }
+
+    @Test
+    @DisplayName("남의 지갑으로 서명하면 401 SIGNER_MISMATCH — 발행되지 않는다")
+    void 발행_서명자_불일치() throws Exception {
+        Credentials other = Credentials.create(OTHER_PRIVATE_KEY);
+
+        mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(authorId)))
+                        .with(csrf())
+                        .header("Idempotency-Key", "key-mismatch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signedBody(authorId, other, "남의 서명", "본문", true)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("SIGNER_MISMATCH"));
+        flush();
+
+        // 검증이 저장보다 먼저다 — 실패한 발행이 행으로 남으면 지울 API 가 없다.
+        assertThat(countReports("남의 서명")).isZero();
+    }
+
+    @Test
+    @DisplayName("지갑 미연동 회원은 400 WALLET_NOT_LINKED — nonce 를 태우기 전에 거른다")
+    void 발행_지갑_미연동() throws Exception {
+        String nonce = nonceStore.issue(viewerId, SignatureScope.REPORT_PUBLISH);
+        ReportCreateRequest unsigned =
+                new ReportCreateRequest("지갑없음", "본문", true, DUMMY_SIGNATURE);
+        String signature = WalletSignatures.sign(
+                unsigned.signingPayload(nonce, signatureGuard.chainId()), wallet);
+
+        mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(viewerId)))
+                        .with(csrf())
+                        .header("Idempotency-Key", "key-nowallet")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json("지갑없음", "본문", "true", signature)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("WALLET_NOT_LINKED"));
+
+        // 성공할 수 없는 요청에 nonce 를 쓰지 않는다 — 그대로 남아 있어야 한다.
+        assertThat(nonceStore.consume(viewerId, SignatureScope.REPORT_PUBLISH)).isEqualTo(nonce);
+    }
+
+    @Test
+    @DisplayName("nonce 없이 보내면 400 NONCE_NOT_FOUND — 같은 서명을 두 번 쓸 수 없다")
+    void 발행_nonce_없음() throws Exception {
+        nonceStore.consume(authorId, SignatureScope.REPORT_PUBLISH); // 남은 것이 있어도 비운다
+        ReportCreateRequest unsigned =
+                new ReportCreateRequest("nonce 없음", "본문", true, DUMMY_SIGNATURE);
+        String signature = WalletSignatures.sign(
+                unsigned.signingPayload("stale", signatureGuard.chainId()), wallet);
+
+        mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(authorId)))
+                        .with(csrf())
+                        .header("Idempotency-Key", "key-nononce")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json("nonce 없음", "본문", "true", signature)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("NONCE_NOT_FOUND"));
+    }
+
+    @Test
+    @DisplayName("서명이 없으면 400 — 형식 검증이 서명 검증보다 먼저다")
+    void 발행_서명_누락() throws Exception {
+        mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(authorId)))
+                        .with(csrf())
+                        .header("Idempotency-Key", "key-nosig")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"서명없음","body":"본문","visibility":true}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.field").value("signature"));
     }
 
     // ── GET /reports (통합 피드) ──────────────────────────────
@@ -633,9 +774,7 @@ class ReportControllerTest {
                         .with(csrf())
                         .header("Idempotency-Key", "key-expired")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"title":"만료 알림 리포트","body":"본문","visibility":false}
-                                """))
+                        .content(signedBody("만료 알림 리포트", "본문", false)))
                 .andExpect(status().isCreated());
         flush();
 
@@ -647,6 +786,9 @@ class ReportControllerTest {
     void 닉네임_없는_발행자_알림() throws Exception {
         Long noNameId = insertUserWithoutNickname();
         insertSubscription(viewerId, noNameId, "ACTIVE");
+        // 발행자가 authorId 가 아니라 이 사람이다. 지갑은 UQ 라 둘째 키를 쓴다.
+        Credentials other = Credentials.create(OTHER_PRIVATE_KEY);
+        linkWallet(noNameId, other.getAddress());
         flush();
 
         mockMvc.perform(post(URL)
@@ -654,9 +796,7 @@ class ReportControllerTest {
                         .with(csrf())
                         .header("Idempotency-Key", "key-nonick")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"title":"닉없음 리포트","body":"본문","visibility":false}
-                                """))
+                        .content(signedBody(noNameId, other, "닉없음 리포트", "본문", false)))
                 .andExpect(status().isCreated());
         flush();
 
@@ -678,6 +818,49 @@ class ReportControllerTest {
     }
 
     // ── 픽스처 ──────────────────────────────────────────────
+
+    // ── 서명 (ANT-CHAIN-16) ─────────────────────────────────
+
+    /** {@link #signedBody(Long, String, String, boolean)} 의 발행자 기본값 = authorId. */
+    private String signedBody(String title, String body, boolean visibility) {
+        return signedBody(authorId, title, body, visibility);
+    }
+
+    /**
+     * nonce 를 발급받아 DTO 의 {@code signingPayload} 로 서명한 요청 본문 — 프론트가 할 일과 같다.
+     *
+     * <p>DTO 를 한 번 만들어 payload 를 뽑는 이유는 서명 문자열 조립 규칙이 한 곳이어야 해서다.
+     * 테스트가 payload 를 따로 적으면 규칙이 갈려도 테스트만 통과한다.
+     */
+    private String signedBody(Long userId, String title, String body, boolean visibility) {
+        return signedBody(userId, wallet, title, body, visibility);
+    }
+
+    private String signedBody(
+            Long userId, Credentials signer, String title, String body, boolean visibility) {
+        ReportCreateRequest unsigned =
+                new ReportCreateRequest(title, body, visibility, DUMMY_SIGNATURE);
+        String nonce = nonceStore.issue(userId, SignatureScope.REPORT_PUBLISH);
+        String signature = WalletSignatures.sign(
+                unsigned.signingPayload(nonce, signatureGuard.chainId()), signer);
+        return json(title, body, String.valueOf(visibility), signature);
+    }
+
+    /** 원시 JSON. visibility 를 문자열로 받아 누락·잘못된 값까지 적을 수 있게 둔다. */
+    private static String json(String title, String body, String visibility, String signature) {
+        return "{\"title\":\"" + title
+                + "\",\"body\":\"" + body
+                + "\",\"visibility\":" + visibility
+                + ",\"signature\":\"" + signature + "\"}";
+    }
+
+    /** 서명자 주소와 대조할 연동 지갑. SignatureGuard 는 소문자로 눕힌 값을 기대한다. */
+    private void linkWallet(Long userId, String address) {
+        em.createNativeQuery("UPDATE users SET wallet_address = ? WHERE id = ?")
+                .setParameter(1, address.toLowerCase(java.util.Locale.ROOT))
+                .setParameter(2, userId)
+                .executeUpdate();
+    }
 
     private void flush() {
         em.flush();

@@ -84,6 +84,39 @@ public class Report {
     @Column(length = 64)
     private String salt;
 
+    /**
+     * 발행 지갑 서명 (ANT-CHAIN-16). {@code 0x} + r(32) s(32) v(1) = 132자.
+     *
+     * <p><b>해시 재료가 아니다.</b> {@code reportHash} 는 그대로이고 서명은 여기 따로 남는다 —
+     * 예측이 {@code prediction_commits.signature} 를 커밋 해시 밖에 두는 것과 같은 구조다. 덕분에
+     * 이 기능 이전에 봉인된 리포트도 봉인 규격이 바뀌지 않아 그대로 검증된다.
+     *
+     * <p>nullable 인 이유가 둘이다: ① {@code ddl-auto} 가 기존 행이 있는 표에 기본값 없는 NOT NULL 을
+     * 못 붙인다 ② 이 기능 이전 발행분은 서명이 없다 — NULL 이 곧 "서명 이전 발행분" 이라는 표시다.
+     */
+    @Column(length = 132)
+    private String signature;
+
+    /**
+     * 서명에서 복원한 지갑 주소. 소문자 0x + 40자.
+     *
+     * <p>이 값이 {@code users.wallet_address} 와 같다는 것을 {@code SignatureGuard.verify} 가 확인한 뒤 저장한다.
+     * <b>작성자 증명은 이 칸이 한다</b> — {@code reportHash} 재료의 {@code authorId} 는 서버가 넣은 값이라
+     * 그것만으로는 서버를 믿어야 성립한다.
+     */
+    @Column(name = "signer_address", length = 42)
+    private String signerAddress;
+
+    /**
+     * 서명 payload 에 박힌 1회용 nonce (ANT-CHAIN-17).
+     *
+     * <p>검산이 이 값을 쓴다. 브라우저가 {@code signerAddress} 를 그대로 믿지 않고 서명에서 직접 주소를
+     * 복원하려면 payload 를 재조립해야 하고, 거기에 nonce 가 들어간다. Redis 의 nonce 는 소비되면
+     * 사라지므로 여기 남긴다. <b>공개해도 안전하다</b> — 이미 태운 값이라 그 서명을 다시 쓸 수 없다.
+     */
+    @Column(name = "sign_nonce", length = 64)
+    private String signNonce;
+
     /** 소속 앵커 배치. NULL 이면 앵커 대기 상태다 — {@code PredictionCommit.anchorBatch} 와 같은 뜻이다. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "anchor_batch_id")
@@ -113,6 +146,16 @@ public class Report {
         this.salt = seal.salt();
         this.bodyHash = seal.bodyHash();
         this.reportHash = seal.reportHash();
+    }
+
+    /**
+     * 발행 서명을 남긴다 (ANT-CHAIN-16). 봉인과 나눠 부르는 이유는 둘이 다른 것을 증명해서다 —
+     * 봉인은 "이 내용이 안 바뀌었다", 서명은 "이 지갑 주인이 썼다".
+     */
+    public void sign(String signature, String signerAddress, String signNonce) {
+        this.signature = signature;
+        this.signerAddress = signerAddress;
+        this.signNonce = signNonce;
     }
 
     /**
