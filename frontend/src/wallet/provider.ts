@@ -190,8 +190,9 @@ export async function currentChainId(): Promise<number | null> {
  * rejected    지갑 창에서 사용자가 취소했다 — 다시 부르면 된다
  * busy        앞선 지갑 창이 아직 떠 있다 — 잠시 뒤 다시 부르면 된다
  * unsupported 이 지갑은 wallet_watchAsset 을 모른다 — 손으로 넣는 수밖에 없다
+ * conflict    같은 RPC·체인을 쓰는 항목이 지갑에 이미 있다 — 지우고 다시 넣어야 한다
  */
-export type WatchResult = 'added' | 'rejected' | 'busy' | 'unsupported'
+export type WatchResult = 'added' | 'rejected' | 'busy' | 'conflict' | 'unsupported'
 
 /* EIP-1193 4200 = 지갑이 이 메서드를 구현하지 않음. JSON-RPC -32601 도 같은 뜻으로 온다. */
 const UNSUPPORTED = [4200, -32601]
@@ -237,6 +238,11 @@ export async function watchToken(token: {
 /** 지갑이 체인을 모른다. switch 요청에만 온다 — 그때는 add 로 넘어간다. */
 const UNKNOWN_CHAIN = 4902
 
+/* JSON-RPC '잘못된 인자'. add 요청에서 이 코드는 대개 **이미 있는 항목과 부딪혔다**는 뜻이다 —
+   같은 RPC 주소가 다른 체인 ID 로 등록돼 있거나, 그 RPC 가 스스로 밝힌 체인이 우리가 적어 보낸
+   값과 다를 때 지갑이 이걸로 거절한다. 지갑 문구로 갈라내지 않는다 — 지갑을 바꾸면 죽는 분기가 된다. */
+const INVALID_PARAMS = -32602
+
 export type NetworkParams = {
   /** 16진수. chain.ts 의 hexChainId 로 만든다 */
   chainId: string
@@ -277,6 +283,7 @@ export async function ensureNetwork(params: NetworkParams): Promise<WatchResult>
     const code = (e as { code?: unknown } | null)?.code
     if (code === REJECTED) return 'rejected'
     if (code === PENDING) return 'busy'
+    if (code === INVALID_PARAMS) return 'conflict'
     return 'unsupported'
   }
 }

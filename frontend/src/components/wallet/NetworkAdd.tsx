@@ -52,7 +52,7 @@ export default function NetworkAdd({ chainId }: {
     }))
   }
 
-  const failed = phase === 'rejected' || phase === 'busy' || phase === 'unsupported'
+  const failed = phase === 'rejected' || phase === 'busy' || phase === 'conflict' || phase === 'unsupported'
 
   return (
     <div className="wl-token">
@@ -67,6 +67,25 @@ export default function NetworkAdd({ chainId }: {
       {phase === 'busy' && (
         <p className="wl-token-hint">지갑이 다른 창을 처리하는 중입니다. 잠시 뒤 다시 눌러 주세요.</p>
       )}
+      {/* 지갑이 같은 RPC 주소를 이미 다른 네트워크로 들고 있으면 새로 넣을 수 없다.
+          이때만은 '아래 값으로 직접 넣으세요' 가 거짓말이 된다 — 직접 넣어도 같은 이유로 막힌다.
+          할 일은 먼저 지우는 것이라 절차를 따로 적는다. */}
+      {phase === 'conflict' && (
+        <div className="wl-token-warn" role="alert">
+          <p>
+            같은 RPC 주소를 쓰는 네트워크가 지갑에 <b>이미 있습니다.</b> 지우고 다시 넣어야 합니다.
+          </p>
+          <ol>
+            <li>지갑에서 <b>네트워크 선택</b> → 목록에서 그 네트워크의 점 세 개(⋮) 또는 <b>편집</b></li>
+            <li><b>삭제</b>(또는 <b>제거</b>)</li>
+            <li>이 창으로 돌아와 위 버튼을 다시 누르기</li>
+          </ol>
+          <p className="wl-note">
+            지우는 것은 지갑의 네트워크 목록일 뿐입니다 — <b>자산이나 계정은 사라지지 않습니다.</b>
+          </p>
+        </div>
+      )}
+
       {phase === 'unsupported' && (
         <p className="wl-token-hint">이 지갑은 자동 추가를 지원하지 않습니다. 아래 값으로 넣어 주세요.</p>
       )}

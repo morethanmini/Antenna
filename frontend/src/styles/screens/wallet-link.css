@@ -197,3 +197,11 @@
   .wl-net-table > div{ flex-direction:column; gap:2px; }
   .wl-net-table dt{ flex:none; }
 }
+
+/* 충돌 안내는 문단 하나가 아니라 "지우고 다시" 절차라 경고 판 안에 단을 만든다 */
+.wl-token-warn > p{ margin:0; }
+.wl-token-warn > ol{
+  margin:6px 0 0; padding-left:17px;
+  display:flex; flex-direction:column; gap:3px;
+}
+.wl-token-warn > .wl-note{ margin-top:6px; color:#8a5a12; opacity:.85; }
