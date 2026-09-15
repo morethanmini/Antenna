@@ -1,0 +1,199 @@
+/* J-01 천하제일 단타대회. EventContest.tsx
+
+   **모든 선택자를 .event-contest-page 아래에 둔다.** 화면별 CSS 가 전역으로 함께
+   올라오는 구조라, 접두사만으로는 다른 화면과 충돌한다(B-02 에서 st- 접두사를
+   세 화면이 나눠 쓰다 실제로 깨진 적이 있다). ev- 는 짧아서 더 위험하다.
+
+   이벤트 화면이라 평소보다 세게 칠한다. 다만 색은 브랜드 토큰 안에서만 쓴다 —
+   이 한 화면만 다른 팔레트를 쓰면 링크를 타고 들어온 사람에게 다른 서비스로
+   보인다. */
+
+.event-contest-page .ev{
+  display:flex;flex-direction:column;gap:16px;
+}
+
+/* ── 머리 ─────────────────────────────────────────────── */
+/* 보라 판에 흰 글씨. 홈 히어로와 같은 얼개지만 색을 뒤집어, 링크로 들어온
+   사람이 "특별한 자리에 왔다" 는 것을 한눈에 알게 한다. */
+.event-contest-page .ev-hero{
+  position:relative;overflow:hidden;
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:center;
+  padding:30px 32px;border-radius:18px;
+  background:
+    radial-gradient(120% 160% at 88% 10%,#6b6ef2 0%,transparent 60%),
+    linear-gradient(135deg,var(--brand) 0%,var(--brand-ink) 100%);
+  color:#fff;
+}
+.event-contest-page .ev-hero-text{min-width:0}
+
+.event-contest-page .ev-kicker{
+  display:flex;align-items:center;gap:8px;margin:0 0 10px;
+  color:rgba(255,255,255,.72);font-size:12px;font-weight:700;letter-spacing:.02em;
+}
+/* 지금 단계. 색이 아니라 **글자**로 말한다 — 색만으로 전하면 못 읽는 사람이 있다 */
+.event-contest-page .ev-phase{
+  padding:3px 9px;border-radius:999px;
+  background:rgba(255,255,255,.18);color:#fff;font-size:11.5px;font-weight:800;
+}
+/* 등록 중일 때만 금색으로 도드라지게 — 지금 할 수 있는 일이 있다는 뜻이다 */
+.event-contest-page .ev-phase.is-open{background:var(--gold);color:#4a3a06}
+
+.event-contest-page .ev-hero h1{
+  margin:0 0 8px;font-size:30px;font-weight:850;letter-spacing:-.03em;color:#fff;
+}
+.event-contest-page .ev-lede{
+  margin:0;color:rgba(255,255,255,.86);font-size:14px;line-height:1.55;
+}
+
+/* 다음 마감 한 줄. 히어로 안에서 유일하게 흰 상자라 눈이 여기서 멈춘다 */
+.event-contest-page .ev-next{
+  display:inline-flex;align-items:center;gap:10px;margin:16px 0 0;
+  padding:9px 14px;border-radius:999px;
+  background:rgba(255,255,255,.14);
+  /* 반투명 위에 반투명을 얹으면 경계가 흐려 상자로 안 보인다 */
+  border:1px solid rgba(255,255,255,.28);
+  font-size:13px;
+}
+.event-contest-page .ev-next b{color:rgba(255,255,255,.75);font-weight:700}
+.event-contest-page .ev-next span{color:#fff;font-weight:800;font-variant-numeric:tabular-nums}
+
+.event-contest-page .ev-hero-art{
+  width:150px;height:auto;flex:none;
+  /* 어두운 보라 위에 밝은 그림이라 가장자리가 튄다. 살짝 띄워 그림자로 앉힌다 */
+  filter:drop-shadow(0 12px 24px rgba(20,20,60,.32));
+}
+
+/* ── 칸 공통 ──────────────────────────────────────────── */
+.event-contest-page .ev-block-head{margin:0 0 14px}
+.event-contest-page .ev-block-head h2{
+  display:flex;align-items:center;gap:7px;
+  margin:0 0 4px;font-size:16px;font-weight:800;letter-spacing:-.02em;color:var(--ink);
+}
+.event-contest-page .ev-block-head h2 .num{
+  padding:2px 8px;border-radius:999px;
+  background:var(--brand-soft);color:var(--brand-ink);font-size:12px;font-weight:800;
+}
+.event-contest-page .ev-block-head p{margin:0;color:var(--muted);font-size:13px}
+
+.event-contest-page .ev-state{
+  margin:0;padding:26px 0;text-align:center;color:var(--muted);font-size:13px;
+}
+.event-contest-page .ev-state.is-quiet{
+  padding:30px 0;border:1px dashed var(--rule);border-radius:12px;
+}
+.event-contest-page .ev-retry{
+  border:0;background:none;padding:0;
+  color:var(--brand);font-size:13px;font-weight:700;text-decoration:underline;cursor:pointer;
+}
+
+/* ── 종목 카드 ────────────────────────────────────────── */
+/* auto-fill 이 아니라 **고정 5열**이다. 열 개짜리 고정 목록이라 두 줄 다섯 칸으로
+   떨어지는 모양이 곧 "열 종목" 이라는 메시지가 된다. 좁아지면 아래에서 줄인다. */
+.event-contest-page .ev-cards{
+  list-style:none;margin:0;padding:0;
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;
+}
+.event-contest-page .ev-card{
+  display:grid;grid-template-columns:auto minmax(0,1fr);grid-auto-rows:auto;
+  gap:2px 10px;align-items:center;
+  padding:14px;border:1px solid var(--rule);border-radius:14px;
+  background:var(--surface);text-decoration:none;
+  transition:border-color .14s,box-shadow .14s,transform .14s;
+}
+.event-contest-page .ev-card:hover{
+  border-color:#cdc9f7;transform:translateY(-2px);
+  box-shadow:0 10px 22px -16px rgba(20,20,27,.45);
+}
+.event-contest-page .ev-card:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+.event-contest-page .ev-card-logo{
+  grid-row:1 / span 2;
+  display:grid;place-items:center;width:36px;height:36px;flex:none;
+  border-radius:50%;font-size:14px;font-weight:750;
+}
+.event-contest-page .ev-card-name{
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:var(--ink);font-size:14px;font-weight:750;letter-spacing:-.02em;
+}
+.event-contest-page .ev-card-code{color:var(--faint);font-size:11.5px;font-weight:600}
+
+/* 값 두 줄은 로고 아래 칸까지 통째로 쓴다 — 로고 옆에 끼우면 이름이 더 잘린다 */
+.event-contest-page .ev-card-price{
+  grid-column:1 / -1;margin-top:10px;
+  color:var(--ink);font-size:15px;font-weight:800;font-variant-numeric:tabular-nums;
+}
+.event-contest-page .ev-card-rate{
+  grid-column:1 / -1;
+  color:var(--muted);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;
+}
+.event-contest-page .ev-card-rate.is-up{color:var(--up)}
+.event-contest-page .ev-card-rate.is-down{color:var(--down)}
+
+.event-contest-page .ev-card-go{
+  grid-column:1 / -1;margin-top:10px;
+  color:var(--brand);font-size:12px;font-weight:750;
+}
+
+/* 불러오는 중 자리. 카드와 **같은 높이**여야 아래 칸이 안 밀린다 */
+.event-contest-page .ev-card.is-skel{
+  display:block;height:136px;border-style:dashed;background:var(--surface-2);
+  animation:ev-breathe 1.4s ease-in-out infinite;
+}
+@keyframes ev-breathe{50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){
+  .event-contest-page .ev-card.is-skel{animation:none}
+}
+
+/* ── 규칙 ─────────────────────────────────────────────── */
+/* 이름표 폭을 고정해 설명 줄의 왼쪽 끝이 다 맞는다. 안 맞으면 네 줄이
+   들쭉날쭉해 읽는 눈이 매번 왼쪽을 다시 찾는다. */
+.event-contest-page .ev-rules{margin:0;display:grid;gap:10px}
+.event-contest-page .ev-rules > div{
+  display:grid;grid-template-columns:52px minmax(0,1fr);gap:12px;align-items:baseline;
+  padding:11px 13px;border-radius:11px;background:var(--brand-softer);
+}
+.event-contest-page .ev-rules dt{
+  justify-self:center;padding:2px 9px;border-radius:999px;
+  background:var(--brand-soft);color:var(--brand-ink);font-size:11.5px;font-weight:800;
+}
+.event-contest-page .ev-rules dd{
+  margin:0;color:var(--body);font-size:13.5px;line-height:1.5;
+}
+
+/* ── 참가자 ───────────────────────────────────────────── */
+.event-contest-page .ev-tiles{
+  list-style:none;margin:0;padding:0;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;
+}
+.event-contest-page .ev-tile{
+  display:grid;justify-items:center;gap:7px;
+  padding:14px 8px;border:1px solid var(--rule);border-radius:12px;
+  background:var(--surface);text-decoration:none;
+  transition:border-color .14s,background .14s;
+}
+.event-contest-page .ev-tile:hover{border-color:#cdc9f7;background:var(--brand-softer)}
+.event-contest-page .ev-tile-face{
+  width:44px;height:44px;border-radius:50%;object-fit:cover;background:var(--brand-soft);
+}
+.event-contest-page .ev-tile-name{
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:var(--ink);font-size:12.5px;font-weight:700;
+}
+
+/* ── 좁은 화면 ────────────────────────────────────────── */
+@media (max-width:1180px){
+  .event-contest-page .ev-cards{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media (max-width:900px){
+  .event-contest-page .ev-cards{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .event-contest-page .ev-hero-art{width:110px}
+}
+@media (max-width:680px){
+  .event-contest-page .ev-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+  /* 그림이 글자 자리를 빼앗는다. 좁으면 글만 남긴다 */
+  .event-contest-page .ev-hero{grid-template-columns:minmax(0,1fr);padding:24px}
+  .event-contest-page .ev-hero-art{display:none}
+  .event-contest-page .ev-hero h1{font-size:24px}
+  .event-contest-page .ev-rules > div{grid-template-columns:minmax(0,1fr);gap:6px}
+  .event-contest-page .ev-rules dt{justify-self:start}
+}
