@@ -17,9 +17,10 @@ import ssafy.a507.backend.domain.prediction.entity.Prediction;
  * 앵커 전에는 넷이 각각 null 이 아니라 {@code anchor == null} + {@link #anchorStatus} 하나로 "대기" 를 말한다 —
  * 프론트 AnchorBadge 의 입력이 상태값 하나면 된다.
  *
- * <p>비밀은 {@code salt} 하나다(ANT-PRED-02, 09-09 결정 — 커밋 salt 를 따로 두지 않는다). 이 값은 근거 salt 이며 리빌 뒤에도
+ * <p>비밀은 {@code salt} 하나다(ANT-PRED-02, 09-09 결정 — 커밋 salt 를 따로 두지 않는다). 이 값은 근거 salt 이며
  * <b>작성자·구독자만</b> 받는다(결정 D6) — 근거 본문은 판정 후에도 구독자 전용인데 {@code noteHash} 가 공개되면 짧은 근거를 후보 해시로
- * 맞출 수 있어서다. 비구독자의 ①단계 검산에는 salt 가 필요 없다: 공개 필드 4개 + {@code payload.noteHash} 로 커밋 문자열을 다시 조립해
+ * 맞출 수 있어서다. <b>리빌 조건은 걸지 않는다(2026-09-15)</b> — 받을 자격은 구독이지 시간이 아니라서, 구독자는 등록 직후부터
+ * 근거 대조가 된다. 비구독자의 ①단계 검산에는 salt 가 필요 없다: 공개 필드 4개 + {@code payload.noteHash} 로 커밋 문자열을 다시 조립해
  * {@code commitHash} 와 대조하면 된다. 구독자는 한 겹 더 {@code keccak256(note ‖ salt) == noteHash} 를 확인할 수 있다.
  */
 public record ProofResponse(
