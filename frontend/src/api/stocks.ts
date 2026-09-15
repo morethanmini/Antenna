@@ -24,13 +24,19 @@ export const MARKET_LABEL: Record<Market, string> = {
   KONEX: 'KONEX',
 }
 
-/* 정렬은 5종 고정이다(§4 B-02). 종목명·종가 정렬은 두지 않는다 — 어휘에 없다. */
+/* 설계서 §4 B-02 는 정렬 5종을 적어 두었다. 거기에 **시가총액 순**을 더했다
+   (2026-09-14, 서버 Sort enum 도 함께). 예측 집계 3종은 predictions 가 비어 있는
+   동안 전부 코드순으로 떨어져, 목록 첫 장이 000020·000050… 으로 채워진다 —
+   시장을 훑으러 온 사람에게 가나다도 아니고 규모도 아닌 번호순은 뜻이 없다.
+   종목명·종가 정렬은 여전히 두지 않는다 — 어휘에 없다.
+   적히는 차례가 드롭다운에 서는 차례다. */
 export const STOCK_SORTS = [
-  'PREDICTION_COUNT', 'UP_RATIO', 'DOWN_RATIO', 'CHANGE_RATE', 'PER',
+  'MARKET_CAP', 'PREDICTION_COUNT', 'UP_RATIO', 'DOWN_RATIO', 'CHANGE_RATE', 'PER',
 ] as const
 export type StockSort = (typeof STOCK_SORTS)[number]
 
 export const SORT_LABEL: Record<StockSort, string> = {
+  MARKET_CAP: '시가총액 순',
   PREDICTION_COUNT: '예측 많은 순',
   UP_RATIO: '상승 의견 순',
   DOWN_RATIO: '하락 의견 순',
@@ -94,15 +100,26 @@ export type SectorSummary = {
 }
 
 export type StockFilter = {
+  /** 종목명·종목코드 부분 일치. 대소문자는 안 가린다. 빈 문자열은 안 보낸다 */
+  q?: string
   sector?: string
   /**
    * 상장 시장. **화면에 이 값을 거는 컨트롤은 없다**(2026-09-11) — 이 서비스는
    * 코스피만 다뤄 고를 것이 하나뿐이다. 서버가 받는 파라미터라 자리는 남겨 둔다.
    */
   market?: Market
+  /**
+   * 예측 심리(상승·하락 우세). **market 과 마찬가지로 컨트롤이 없다**(2026-09-15).
+   * 정렬의 "상승 의견 순"·"하락 의견 순" 과 같은 축이라 한 화면에 둘 이유가 없었다.
+   * 정렬 쪽을 남긴 것은, 거르면 경계에 걸친 종목이 아예 사라지는데 줄을 세우면
+   * 위아래로 다 보이기 때문이다. 서버가 받는 파라미터라 자리는 남겨 둔다.
+   */
   sentiment?: Sentiment
   perMin?: number
   perMax?: number
+  /** PBR 범위. PER 과 같은 규칙이다 — 값이 없는 종목은 어느 범위에도 안 든다 */
+  pbrMin?: number
+  pbrMax?: number
   hasOpenPrediction?: boolean
   watchedOnly?: boolean
   sort: StockSort
@@ -111,8 +128,12 @@ export type StockFilter = {
 /** 한 화면에 담는 줄 수. 서버 기본값이 20, 상한이 100 이다. */
 export const STOCK_PAGE_SIZE = 10
 
-/** 빈 필터. "필터 초기화" 가 이 값으로 되돌린다. */
-export const EMPTY_FILTER: StockFilter = { sort: 'PREDICTION_COUNT' }
+/** 빈 필터. "필터 초기화" 가 이 값으로 되돌린다.
+ *
+ *  기본을 예측 많은 순에서 **시가총액 순**으로 옮겼다(2026-09-14). 예측이 아직
+ *  한 건도 없어 그 정렬이 코드순으로 떨어지고 있었다 — 첫 화면이 번호순인 셈이다.
+ *  예측이 쌓이기 시작하면 이 한 줄을 PREDICTION_COUNT 로 되돌리면 된다. */
+export const EMPTY_FILTER: StockFilter = { sort: 'MARKET_CAP' }
 
 /* 목록은 useCursorList 가 커서를 관리하므로 함수를 그대로 넘긴다.
    백엔드가 붙으면 이 함수 대신 '/stocks' 경로 문자열을 주면 된다. */

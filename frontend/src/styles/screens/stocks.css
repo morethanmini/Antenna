@@ -1,10 +1,22 @@
-/* B-02 종목 탐색. 전 선택자를 st- 접두사로 두고 app.css 토큰만 쓴다.
-   화면별 CSS 가 전역으로 함께 올라가므로 흔한 이름을 만들지 않는다.
+/* B-02 종목 탐색. app.css 토큰만 쓴다.
+
+   **전 선택자를 .stocks-page 아래로 넣는다**(2026-09-14). routes.ts 가 이 화면일 때
+   body 에 붙이는 이름이라, 이 파일의 규칙이 다른 화면에 닿지 않고 다른 화면의
+   규칙도 여기 못 들어온다.
+
+   그냥 st- 접두사만 믿다가 실제로 세 군데가 겹쳐 화면이 깨져 있었다 —
+   H-03 환경 설정(settings.css)과 F-06 모의투자 체결내역(sim-trades.css)이 같은
+   st- 를 쓴다. 화면별 CSS 가 전역으로 함께 올라가는 구조라, 남의 `.st-list b`
+   (0,1,1) 가 이쪽 `.st-name` (0,1,0) 을 이겼다. 겹친 것: st-tabs · st-field ·
+   st-count · st-list. 접두사는 이름이 겹치면 그만이고, 스코프는 안 겹친다.
+
+   그래서 새 규칙을 적을 때도 반드시 `.stocks-page` 를 앞에 둔다. 빼먹으면
+   그 한 줄만 다시 전역이 되어, 남의 화면에 새는 쪽이든 먹히는 쪽이든 된다.
 
    app.css 의 .card p{color:muted} · .card{padding:20px} 이 특정도 (0,1,1)/(0,1,0)
-   으로 세다. 카드 안 문단·여백을 덮을 때는 .st-panel 을 한 겹 얹어 적는다. */
+   으로 세다. 카드 안 문단·여백을 덮을 때는 .st-panel 을 한 겹 더 얹어 적는다. */
 
-.st-sr{
+.stocks-page .st-sr{
   position:absolute; width:1px; height:1px; padding:0; margin:-1px;
   overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
 }
@@ -22,9 +34,8 @@
    빼면 안 된다 — app.css 가 box-sizing:border-box 라 min-height 안에 이미 들어
    있어서, 두 번 빼면 딱 그만큼 아래에 빈 띠가 남는다.
 
-   바깥 상자 이름은 st-fit 이다. stocks-page 는 routes.ts 가 body 에 붙이는 화면
-   이름이라 겹쳐 쓰지 않는다. 목록 탭에는 이 클래스를 안 붙인다 — 저쪽은 내용만큼
-   길어지는 화면이다. */
+   바깥 상자 이름은 st-fit 이다. 목록 탭에는 이 클래스를 안 붙인다 — 저쪽은
+   내용만큼 길어지는 화면이다. */
 .stocks-page .st-fit{
   display:flex; flex-direction:column;
   min-height:calc(100vh - 52px);
@@ -35,152 +46,344 @@
 .stocks-page .st-fit .st-view{display:flex; flex-direction:column; flex:1; min-height:0}
 
 /* ── 머리글 ─────────────────────────────────────────────── */
-.st-hero{
+.stocks-page .st-hero{
   display:flex; align-items:flex-end; justify-content:space-between; gap:20px;
   margin-bottom:14px;
 }
-.st-hero h1{
+.stocks-page .st-hero h1{
   margin:0; color:var(--ink); font-size:29px; font-weight:800; letter-spacing:-.03em;
 }
 
-/* ── 보기 전환 줄 ───────────────────────────────────────── */
-/* 목록·마켓맵 탭과, 마켓맵이 쓰는 조건 두 가지가 한 줄에 선다.
-   조건을 탭에 바로 붙이지 않고 gap 으로 떼어 둔다 — 탭처럼 보이면 안 된다. */
-.st-views{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:14px}
+/* ── 마켓맵 조건 줄 ─────────────────────────────────────── */
+/* 목록·마켓맵 탭은 2026-09-14에 머리글 오른쪽으로 올라갔다(.st-hero 참고).
+   여기 남은 것은 마켓맵이 쓰는 조건뿐이라, 이 줄 자체가 마켓맵 탭에서만 그려진다.
+   왼쪽에 "관심 종목만", 오른쪽 끝에 범례(.mm-legend 의 margin-left:auto)다. */
+.stocks-page .st-views{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:14px}
 
 /* 이름이 st-viewtab* 인 까닭 — H-03 환경 설정(settings.css)이 ".st-tabs button" 을
    특정도 (0,1,1) 로 잡고 있다. 화면별 CSS 가 전역으로 함께 올라가므로 이쪽
    ".st-tab" (0,1,0) 이 거기에 져서 padding·글꼴이 저쪽 값(9px 14px · 13px)으로
    그려졌고, 글자가 칸 아래로 4px 밀려 있었다(2026-09-14에 찾았다).
    남의 화면 파일을 고치는 대신 이쪽 이름을 겹치지 않게 둔다. */
-.st-viewtabs{
+.stocks-page .st-viewtabs{
   display:flex; flex:none; gap:3px; padding:3px;
   border:1px solid var(--rule); border-radius:11px; background:var(--surface-2);
 }
 /* 글자를 칸 한가운데 세운다. block 으로 두면 줄 높이가 칸보다 클 때 위에서부터
    흘러 아래로 삐져나간다 — 높이를 못 박은 버튼은 flex 로 가운데를 잡아야 한다. */
-.st-viewtab{
+.stocks-page .st-viewtab{
   display:flex; align-items:center; justify-content:center;
   height:30px; padding:0 15px; border:0; border-radius:8px; background:none;
   color:var(--muted); font-size:12.5px; font-weight:750; line-height:1; cursor:pointer;
   transition:background .12s, color .12s;
 }
-.st-viewtab:hover{color:var(--body)}
-.st-viewtab.on{background:var(--surface); color:var(--brand-ink); box-shadow:var(--shadow)}
-.st-viewtab:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+.stocks-page .st-viewtab:hover{color:var(--body)}
+.stocks-page .st-viewtab.on{background:var(--surface); color:var(--brand-ink); box-shadow:var(--shadow)}
+.stocks-page .st-viewtab:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
 
 /* 필터 패널 쪽 .st-check 는 세로로 쌓이는 항목이다. 이 줄에서는 한 줄로 둔다 */
-.st-views-check{margin:0; white-space:nowrap}
+.stocks-page .st-views-check{margin:0; white-space:nowrap}
 
 /* 세로가 짧은 화면에서는 머리글을 줄여 마켓맵 판에 자리를 내준다
    (짝이 되는 판 높이는 market-map.css 의 같은 미디어 쿼리). */
 @media (max-height:820px){
-  .st-hero{margin-bottom:10px}
-  .st-hero h1{font-size:25px}
-  .st-views{margin-bottom:10px}
+  .stocks-page .st-hero{margin-bottom:10px}
+  .stocks-page .st-hero h1{font-size:25px}
+  .stocks-page .st-views{margin-bottom:10px}
 }
 
 /* ── 섹터 요약 칩 ───────────────────────────────────────── */
-/* 칸 수가 섹터 수라 늘어난다. 한 줄에 다 넣지 않고 넘치면 접는다. */
-.st-sectors{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px}
-.st-sector-chip{
-  flex:1 1 148px; display:flex; flex-direction:column; gap:7px; align-items:flex-start;
-  padding:13px 15px; border:1px solid var(--rule); border-radius:13px;
-  background:var(--surface); text-align:left; box-shadow:var(--shadow);
-  transition:border-color .12s, background .12s;
+/* 칸 수가 섹터 수(23) + 전체 = 24 라 접으면 세 줄이 된다. 그 띠가 목록 위를 덮어
+   정작 종목이 화면 밖으로 밀려났다 — **한 줄로 눕히고 좌우 버튼으로 넘긴다**
+   (2026-09-14). 짝이 되는 동작은 StockTable 의 SectorChips 에 있다. */
+/* 이 줄에서만 쓰는 그림자. app.css 의 --shadow 를 안 쓴다 —
+   그쪽 둘째 겹이 `0 10px 28px -22px` 라 28px 번짐에 -22px 스프레드다. 20px 짜리
+   카드에서는 얇은 받침으로 읽히지만, 148px 짜리 작은 칩에서는 그림자 모양이
+   거의 점으로 줄어 카드 밑에 어두운 얼룩이 뭉친다(2026-09-14).
+
+   대신 번짐을 키우며 진하기를 낮춘 네 겹을 겹친다. 한 겹으로는 경계가 딱
+   끊기는데, 겹칠수록 실제 빛처럼 가장자리가 서서히 풀린다. 스프레드를 음수로
+   두는 것은 위쪽으로 새는 것을 막기 위해서이고, 번짐의 절반을 넘기지 않는다. */
+.stocks-page .st-sectors{
+  --st-lift:
+    0 1px 1.5px rgb(20 20 27 / .04),
+    0 3px 6px -1px rgb(20 20 27 / .035),
+    0 8px 14px -4px rgb(20 20 27 / .03),
+    0 16px 26px -10px rgb(20 20 27 / .035);
+  /* 고른 섹터는 브랜드 색으로 든다. 회색 그림자를 그대로 쓰면 연보라 바탕 위에서
+     때가 탄 것처럼 탁해진다 */
+  --st-lift-on:
+    0 1px 1.5px rgb(84 87 232 / .07),
+    0 3px 6px -1px rgb(84 87 232 / .06),
+    0 8px 14px -4px rgb(84 87 232 / .07),
+    0 16px 26px -10px rgb(84 87 232 / .08);
+
+  /* 제목 바로 밑에 카드가 붙어 답답해서 위를 벌렸다(2026-09-14).
+
+     **제목 쪽 margin-bottom 을 키우지 않은 이유** — 그 값을 마켓맵 탭도 함께
+     쓴다. 저쪽은 판이 화면 한 장에 맞아야 해서 1px 도 아깝다. 이 줄은 목록
+     탭에만 있으니 여기서 벌리면 저쪽이 안 다친다.
+
+     **margin-top 이 아니라 padding-top 인 이유** — 위 마진은 .st-hero 의
+     margin-bottom(14) 과 맞닿아 겹친다(둘 중 큰 값 하나만 남는다). margin-top:10
+     을 줬더니 14 에 먹혀 아무 일도 일어나지 않았다. padding 은 겹치지 않는다. */
+  display:flex; align-items:center; gap:8px;
+  padding-top:10px; margin:0 0 16px;
 }
-.st-sector-chip:hover{border-color:#c8c9f5}
-.st-sector-chip.on{border-color:var(--brand); background:var(--brand-softer)}
-.st-sector-name{color:var(--ink); font-size:14px; font-weight:750; letter-spacing:-.02em}
-.st-sector-chip.on .st-sector-name{color:var(--brand-ink)}
-.st-sector-meta{display:flex; align-items:baseline; gap:8px; width:100%}
-.st-sector-meta em{color:var(--faint); font-style:normal; font-size:12px; font-weight:650}
-.st-sector-meta b{margin-left:auto; font-size:12.5px; font-weight:750}
+
+/* 넘김 버튼. 칩과 같은 높이로 늘어나 손이 짚기 쉬운 기둥이 된다 */
+.stocks-page .st-sector-nav{
+  flex:none; align-self:stretch; width:32px; display:grid; place-items:center;
+  border:1px solid var(--rule); border-radius:11px; background:var(--surface);
+  color:var(--muted); box-shadow:var(--st-lift);
+  transition:color .12s, border-color .12s, opacity .12s;
+}
+.stocks-page .st-sector-nav:hover:not(:disabled){color:var(--brand-ink); border-color:#c8c9f5}
+.stocks-page .st-sector-nav:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+/* 끝에 닿으면 끈다. 감추지 않는 이유 — 사라지면 그만큼 트랙 폭이 튀어
+   칩이 통째로 한 칸씩 움직인다 */
+.stocks-page .st-sector-nav:disabled{opacity:.32; cursor:default; box-shadow:none}
+
+.stocks-page .st-sector-track{
+  display:flex; gap:10px; flex:1; min-width:0;
+  overflow-x:auto; scroll-behavior:smooth;
+  /* 칩이 반쯤 걸친 채 멈추지 않게 붙여 준다. mandatory 는 손으로 밀 때
+     끌어당기는 느낌이 세서 proximity 로 둔다 */
+  scroll-snap-type:x proximity;
+  /* 스크롤바는 숨긴다 — 넘기는 수단은 좌우 버튼이고, 줄 하나에 막대가 더해지면
+     칩 높이가 그만큼 눌린다 */
+  scrollbar-width:none;
+
+  /* overflow-x:auto 는 세로도 함께 자른다(한 축이 visible 이 아니면 나머지도
+     visible 로 계산되지 않는다). 그대로 두면 칩 그림자 아래쪽과 포커스 링이
+     싹둑 잘린다. 잘리지 않을 만큼 안쪽을 벌리고, **같은 크기의 음수 바깥 여백**
+     으로 되돌린다 — 줄 높이는 칩 높이 그대로이면서 그림자만 밖으로 나간다.
+     위아래 값이 다른 것은 그림자가 아래로만 지기 때문이다. */
+  padding:6px 0 20px; margin:-6px 0 -20px;
+}
+.stocks-page .st-sector-track::-webkit-scrollbar{display:none}
+
+/* 폭을 고정한다(1 1 → 0 0). 늘어나게 두면 칩 수에 따라 폭이 들쭉날쭉해져
+   한 쪽 넘길 거리를 셀 수 없다 — SectorChips 의 CHIP_W 와 같은 값이어야 한다 */
+.stocks-page .st-sector-chip{
+  flex:0 0 148px; scroll-snap-align:start;
+  display:flex; flex-direction:column; gap:7px; align-items:flex-start;
+  padding:13px 15px; border:1px solid var(--rule); border-radius:13px;
+  background:var(--surface); text-align:left; box-shadow:var(--st-lift);
+  transition:border-color .12s, background .12s, box-shadow .12s;
+}
+.stocks-page .st-sector-chip:hover{border-color:#c8c9f5}
+.stocks-page .st-sector-chip.on{
+  border-color:var(--brand); background:var(--brand-softer); box-shadow:var(--st-lift-on);
+}
+/* 폭이 고정이라 긴 이름은 잘린다. 줄바꿈으로 두면 칩 높이가 저마다 달라져
+   줄이 울퉁불퉁해지므로 말줄임으로 끊는다 — 전체 이름은 목록 머리글이 말한다 */
+.stocks-page .st-sector-name{
+  max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  color:var(--ink); font-size:14px; font-weight:750; letter-spacing:-.02em;
+}
+.stocks-page .st-sector-chip.on .st-sector-name{color:var(--brand-ink)}
+.stocks-page .st-sector-meta{display:flex; align-items:baseline; gap:8px; width:100%}
+.stocks-page .st-sector-meta em{color:var(--faint); font-style:normal; font-size:12px; font-weight:650}
+.stocks-page .st-sector-meta b{margin-left:auto; font-size:12.5px; font-weight:750}
+
+/* ── 값이 오기 전의 자리 ─────────────────────────────────
+   칩과 **높이가 같아야** 값이 들어올 때 아래가 안 밀린다. 진짜 칩의 78px 은
+   글자에서 나오는 값이라 자리만 그릴 때는 잴 수 없어, 안쪽 막대 높이로 맞춘다
+   (21 + gap 7 + 22 = 50 · 위아래 padding 26 · 테두리 2 = 78).
+   글꼴이나 padding 을 건드리면 여기도 같이 고친다 — 어긋난 만큼 그대로 튄다.
+
+   빛줄기는 B-03 종목 상세의 .sd-skel 과 같은 방식이다. */
+.stocks-page .st-sector-skel{cursor:default}
+.stocks-page .st-skel{
+  display:block; border-radius:6px;
+  background:linear-gradient(100deg,var(--surface-2) 30%,#f2f3f8 46%,var(--surface-2) 62%);
+  background-size:220% 100%; animation:st-shine 1.25s linear infinite;
+}
+@keyframes st-shine{to{background-position:-120% 0}}
+.stocks-page .st-skel-name{width:78px; height:21px}
+.stocks-page .st-skel-meta{width:100%; height:22px}
+/* 움직임을 줄여 달라는 설정에서는 빛줄기를 세운다 */
+@media (prefers-reduced-motion:reduce){
+  .stocks-page .st-skel{animation:none}
+}
 
 /* ── 본문 2단 ───────────────────────────────────────────── */
-.st-body{
+.stocks-page .st-body{
   display:grid; gap:16px;
   grid-template-columns:minmax(0,268px) minmax(0,1fr);
   align-items:start;
 }
 
 /* ── 상세 필터 ──────────────────────────────────────────── */
-.st-filter{display:flex; flex-direction:column; gap:18px}
-.st-filter h2{
-  margin:0; color:var(--ink); font-size:16px; font-weight:750; letter-spacing:-.02em;
+/* **스크롤을 따라온다**(2026-09-15). 목록이 길어 아래로 내려가면 필터가 화면
+   밖으로 사라져, 조건을 바꾸려면 매번 맨 위까지 올라와야 했다.
+
+   top 은 고정 상단바 높이(--topbar-h)에 한 뼘을 더한 값이다 — 0 으로 붙이면
+   상단바(z-index 30)가 필터 머리를 덮는다.
+
+   max-height 와 overflow-y 가 짝으로 필요하다. 필터가 화면보다 길어지면
+   sticky 상자가 뷰포트를 넘겨 아래쪽(필터 적용 버튼)에 영영 닿을 수 없다 —
+   그때는 필터 안쪽만 스크롤한다. 지금은 내용이 짧아 잘 안 보이지만, 조건이
+   늘면 바로 겪는 문제다.
+
+   .st-body 에 align-items:start 가 이미 있어야 한다. stretch 면 칸이 목록만큼
+   늘어나 sticky 가 걸릴 자리가 없다. */
+.stocks-page .st-filter{
+  display:flex; flex-direction:column; gap:18px;
+  position:sticky; top:calc(var(--topbar-h) + 14px);
+  max-height:calc(100vh - var(--topbar-h) - 28px); overflow-y:auto;
 }
 /* fieldset 은 브라우저 기본이 min-width:min-content 라 안쪽이 줄어들지 않는다.
    그대로 두면 PER 두 칸이 제 내재 폭(각 195px)을 고집해 카드를 뚫고 나간다.
    0 으로 눌러야 flex:1 이 먹는다. */
-.st-field{
+.stocks-page .st-field{
   min-width:0;
   margin:0; padding:0; border:0; display:flex; flex-direction:column; gap:9px;
 }
-.st-field legend{
-  padding:0; color:var(--ink); font-size:12.5px; font-weight:750;
+/* 묶음 사이는 .st-filter 의 gap:18px 하나로만 띄운다. H-03 환경 설정(settings.css)의
+   `.st-field + .st-field{margin-top:16px}` 이 특정도 (0,2,0) 으로 이쪽과 비겨
+   파일 순서로 이기고 있었다 — 18 위에 16 이 얹혀 34px 이 됐다. 한 겹 더 얹어 끈다. */
+.stocks-page .st-field + .st-field{margin-top:0}
+/* **margin-bottom 이 있어야 한다.** .st-field 는 flex 인데 legend 는 그 flex 항목이
+   아니다 — fieldset 의 테두리에 놓이는 특수 요소라 gap:9px 이 legend 에는 안 걸리고,
+   라벨과 내용이 0px 로 붙어 있었다(2026-09-15에 재서 알았다).
+   다른 칸 사이(9px)보다 좁게 둔다 — 라벨은 제 내용에 딸린 것이라, 칸 사이만큼
+   벌어지면 어느 라벨이 어느 내용의 것인지 흐려진다. */
+.stocks-page .st-field legend{
+  padding:0; margin-bottom:7px;
+  color:var(--ink); font-size:12.5px; font-weight:750;
 }
-.st-chips{display:flex; flex-wrap:wrap; gap:7px}
-.st-chip{
-  padding:7px 13px; border:1px solid var(--rule); border-radius:9px;
-  background:var(--surface); color:var(--muted); font-size:12.5px; font-weight:700;
-}
-.st-chip:hover{color:var(--ink); border-color:#c8c9f5}
-.st-chip.on{
-  border-color:var(--brand); background:var(--brand-softer); color:var(--brand-ink);
+/* 눈에 안 보이는 legend(재무 지표 범위)는 자리를 차지하면 안 된다 */
+.stocks-page .st-field legend.st-sr{margin-bottom:0}
+/* .st-chips · .st-chip 은 지웠다(2026-09-15) — 유일하게 쓰던 "예측 방향" 칸이
+   정렬과 겹쳐 빠지면서 함께 없어졌다. 섹터 칩은 .st-sector-chip 으로 따로다. */
+
+/* ── 범위 슬라이더(PER · PBR) ──────────────────────────────
+   짝이 되는 마크업은 components/stocks/RangeSlider.tsx 다.
+   최소·최대를 적는 칸 두 개를 2026-09-15에 이걸로 바꿨다.
+
+   input[type=range] 두 개가 겹쳐 있다. 네이티브 트랙은 감추고 아래 span 이
+   그린다 — 안 감추면 선이 두 겹으로 보인다. 그리고 위에 깔린 input 이 아래
+   것의 손잡이를 덮으므로, input 은 마우스를 안 받고 손잡이만 받는다. */
+.stocks-page .st-slider{display:flex; flex-direction:column; gap:7px}
+/* PER 과 PBR 사이. 둘은 "재무 지표" 한 묶음이라 다른 조건 묶음 사이(18px)만큼
+   벌릴 이유가 없다 — 23px 이던 것을 13px 로 좁혔다(2026-09-15).
+   위 여백이 6px 인데 눈에는 13px 로 보이는 것은, 앞 슬라이더의 끝값 줄(0 · 80+)이
+   제 글자보다 낮아 아래쪽에 빈 띠가 남기 때문이다. */
+.stocks-page .st-slider + .st-slider{margin-top:6px}
+
+.stocks-page .st-slider-head{display:flex; align-items:baseline; gap:8px}
+.stocks-page .st-slider-label{color:var(--ink); font-size:12.5px; font-weight:750}
+.stocks-page .st-slider-head b{
+  margin-left:auto; color:var(--brand-ink); font-size:12.5px; font-weight:750;
+  font-variant-numeric:tabular-nums;
 }
 
-.st-range{display:flex; align-items:center; gap:9px}
-.st-range input{
-  flex:1; min-width:0; height:36px; padding:0 11px;
+/* 손잡이가 양 끝에서 반쯤 잘리지 않도록 좌우로 손잡이 반지름만큼 벌린다 */
+.stocks-page .st-slider-body{position:relative; height:22px; margin:0 8px}
+.stocks-page .st-slider-track,
+.stocks-page .st-slider-fill{
+  position:absolute; top:50%; height:4px; margin-top:-2px; border-radius:99px;
+}
+.stocks-page .st-slider-track{left:0; right:0; background:var(--surface-2)}
+.stocks-page .st-slider-fill{background:var(--brand)}
+
+.stocks-page .st-slider-input{
+  position:absolute; inset:0; width:100%; height:100%; margin:0;
+  appearance:none; background:none; pointer-events:none;
+}
+.stocks-page .st-slider-input:focus{outline:none}
+/* 크롬·사파리 */
+.stocks-page .st-slider-input::-webkit-slider-thumb{
+  appearance:none; pointer-events:auto; cursor:grab;
+  width:16px; height:16px; border-radius:50%;
+  border:2px solid var(--brand); background:var(--surface);
+  box-shadow:0 1px 3px rgb(20 20 27 / .22);
+}
+.stocks-page .st-slider-input::-webkit-slider-thumb:active{cursor:grabbing}
+.stocks-page .st-slider-input:focus-visible::-webkit-slider-thumb{
+  outline:2px solid var(--brand); outline-offset:2px;
+}
+/* 파이어폭스 */
+.stocks-page .st-slider-input::-moz-range-thumb{
+  pointer-events:auto; cursor:grab;
+  width:16px; height:16px; border-radius:50%;
+  border:2px solid var(--brand); background:var(--surface);
+  box-shadow:0 1px 3px rgb(20 20 27 / .22);
+}
+.stocks-page .st-slider-input::-moz-range-track{background:none}
+.stocks-page .st-slider-input:focus-visible::-moz-range-thumb{
+  outline:2px solid var(--brand); outline-offset:2px;
+}
+
+/* 눈금 양 끝 숫자.
+   위 여백이 음수인 까닭 — 몸통(.st-slider-body)은 손잡이 16px 을 담으려고 22px
+   이라, 선보다 9px 아래까지 자리를 차지한다. 그대로 두면 gap 7px 이 그 9px 위에
+   얹혀 숫자가 선에서 16px 이나 떨어진다. 남는 칸을 되돌려 **선을 기준으로** 붙인다.
+   -9 까지 당기지 않는 것은 손잡이가 선보다 6px 아래로 나오기 때문이다 — 숫자와
+   손잡이가 맞닿지 않게 3px 을 남긴다(2026-09-15). */
+.stocks-page .st-slider-ends{
+  display:flex; justify-content:space-between; margin:-7px 8px 0;
+  color:var(--faint); font-size:11px; font-variant-numeric:tabular-nums;
+}
+/* 종목명 검색칸. 상단바 검색과 생김새를 맞추지 않는다 — 저쪽은 종목 하나로
+   건너뛰는 길이고 이건 목록을 좁히는 조건이라, 옆의 PER 칸·칩과 같은 결이어야
+   한 벌로 읽힌다. type=search 라 브라우저가 넣는 지우기 단추는 그대로 쓴다. */
+.stocks-page .st-search{
+  width:100%; min-width:0; height:36px; padding:0 11px;
   border:1px solid var(--rule); border-radius:9px; background:var(--surface);
-  color:var(--ink); font-size:13px; font-variant-numeric:tabular-nums;
+  color:var(--ink); font-size:13px;
 }
-.st-range input::placeholder{color:var(--faint)}
-.st-range input:focus{border-color:var(--brand); outline:none}
-.st-range input[aria-invalid='true']{border-color:var(--danger)}
-.st-range span{color:var(--faint); flex:none}
-.st-panel .st-field-err,.st-filter .st-field-err{
-  margin:0; color:var(--danger); font-size:12px; font-weight:650;
-}
+.stocks-page .st-search::placeholder{color:var(--faint)}
+.stocks-page .st-search:focus{border-color:var(--brand); outline:none}
 
-.st-check{
+/* 체크박스만 모인 묶음. .st-field 의 gap:9px 은 PER·PBR 슬라이더처럼 덩치가 큰
+   칸 사이를 벌리는 값이라, 한 줄짜리 체크박스 둘에 쓰면 따로 노는 항목처럼
+   보인다 — 여기만 좁힌다(2026-09-15). */
+.stocks-page .st-field-list{gap:4px}
+
+.stocks-page .st-check{
   display:flex; align-items:center; gap:9px;
   color:var(--body); font-size:12.5px; font-weight:650; cursor:pointer;
 }
-.st-check input{width:15px; height:15px; flex:none; accent-color:var(--brand)}
+.stocks-page .st-check input{width:15px; height:15px; flex:none; accent-color:var(--brand)}
 
-.st-apply{
-  padding:11px 0; border-radius:10px; background:var(--brand); color:#fff;
-  font-size:13.5px; font-weight:750;
-}
-.st-apply:hover{background:var(--brand-ink)}
-.st-apply:disabled{background:var(--surface-2); color:var(--faint); cursor:not-allowed}
-.st-reset{
+/* 버튼 상자. "필터 적용" 을 없애고(2026-09-15) 초기화만 남았지만 상자는 둔다 —
+   좁은 화면에서 .st-filter 가 grid 로 바뀔 때 이 버튼이 조건 칸들과 나란히
+   한 칸을 차지하는 자리다(아래 1180px 미디어 쿼리). */
+.stocks-page .st-actions{display:flex; flex-direction:column; gap:8px}
+
+.stocks-page .st-reset{
   padding:10px 0; border:1px solid var(--rule); border-radius:10px;
   background:var(--surface); color:var(--muted); font-size:13px; font-weight:700;
 }
-.st-reset:hover{color:var(--ink); border-color:#c8c9f5}
+.stocks-page .st-reset:hover{color:var(--ink); border-color:#c8c9f5}
 
 /* ── 목록 패널 ──────────────────────────────────────────── */
-.st-panel{display:flex; flex-direction:column; gap:14px; min-width:0}
-.st-panel-head{display:flex; align-items:center; gap:10px}
-.st-panel-head h2{
+.stocks-page .st-panel{display:flex; flex-direction:column; gap:14px; min-width:0}
+.stocks-page .st-panel-head{display:flex; align-items:center; gap:10px}
+.stocks-page .st-panel-head h2{
   margin:0; color:var(--ink); font-size:17px; font-weight:750; letter-spacing:-.02em;
 }
-.st-count{
+/* margin:0 은 장식이 아니다 — F-06 체결내역(sim-trades.css)의 같은 이름이
+   margin:0 0 0 auto 로 배지를 오른쪽 끝까지 밀어붙인다. 스코프를 씌워도 **내가
+   적지 않은 속성**은 저쪽 값이 그대로 남으므로, 기대는 값은 적어 둬야 한다. */
+.stocks-page .st-count{
+  margin:0;
   padding:3px 9px; border-radius:99px;
   background:var(--brand-softer); color:var(--brand-ink);
   font-size:11.5px; font-weight:750;
 }
 /* 기준 영업일 — 머리글에서 목록 패널로 내려왔다(2026-09-11). 마켓맵 탭에서는
    목록을 부르지 않아 baseDate 가 없고, 머리글에 두면 탭마다 있다 없다 한다 */
-.st-panel-asof{
+.stocks-page .st-panel-asof{
   color:var(--muted); font-size:12px; font-weight:650; white-space:nowrap;
 }
-.st-panel-asof b{color:var(--ink); font-weight:750}
+.stocks-page .st-panel-asof b{color:var(--ink); font-weight:750}
 
-.st-sort{margin-left:auto; flex:none}
-.st-sort select{
+.stocks-page .st-sort{margin-left:auto; flex:none}
+.stocks-page .st-sort select{
   height:34px; padding:0 30px 0 12px; border:1px solid var(--rule); border-radius:9px;
   background:var(--surface); color:var(--body); font-size:12.5px; font-weight:700;
   appearance:none; cursor:pointer;
@@ -191,118 +394,132 @@
   background-size:5px 5px,5px 5px;
   background-repeat:no-repeat;
 }
-.st-sort select:focus{border-color:var(--brand); outline:none}
+.stocks-page .st-sort select:focus{border-color:var(--brand); outline:none}
 
 /* 칸 나눔은 머리글과 행이 같은 값을 써야 어긋나지 않는다 */
-.st-cols,.st-link{
+.stocks-page .st-cols,.stocks-page .st-link{
   display:grid;
   grid-template-columns:minmax(0,1fr) 92px 82px 62px 64px minmax(0,176px);
   align-items:center; gap:12px;
 }
 /* 오른쪽 여백은 행의 관심 버튼 칸과 같아야 한다 — 이 값이 어긋나면 그 차이가
    여섯 칸 모두에 그대로 밀려 머리글과 값이 따로 논다. .st-item 의 44px 과 한 쌍이다. */
-.st-cols{
+.stocks-page .st-cols{
   margin:0 -20px; padding:0 44px 10px 20px; border-bottom:1px solid var(--rule);
   color:var(--muted); font-size:11.5px; font-weight:650; letter-spacing:.02em;
 }
-.st-cols .r{text-align:right}
+.stocks-page .st-cols .r{text-align:right}
 
 /* 재무 지표(PER·PBR)와 예측 현황 사이를 한 뼘 벌린다 — 붙어 있으면 어디까지가
    숫자 칸인지 경계가 흐려진다. 머리글과 행에 같은 값을 줘야 어긋나지 않는다.
    PER·PBR 이 접히는 좁은 화면에서도 nth-child 번호는 그대로다. */
-.st-cols > :nth-child(6),
-.st-link > :nth-child(6){padding-left:18px}
+.stocks-page .st-cols > :nth-child(6),
+.stocks-page .st-link > :nth-child(6){padding-left:18px}
 
-.st-list{list-style:none; margin:0 -20px; padding:0}
+/* display·gap 을 적어 두는 까닭은 .st-count 와 같다 — sim-trades.css 의 .st-list 가
+   flex column + gap:4px 이라, 안 적으면 행 사이가 4px 씩 벌어지고 구분선이 끊긴다.
+   여기 행은 border-bottom 으로 이어 붙는 목록이라 틈이 있으면 안 된다. */
+.stocks-page .st-list{list-style:none; margin:0 -20px; padding:0; display:block; gap:0}
 /* 행은 링크(정보)와 관심 버튼 두 칸이다 — a 안에 button 을 둘 수 없다 */
-.st-item{
+.stocks-page .st-item{
   display:grid; grid-template-columns:minmax(0,1fr) 44px;
   align-items:center; border-bottom:1px solid var(--rule);
 }
-.st-item:last-child{border-bottom:0}
-.st-item:hover{background:var(--surface-2)}
-.st-link{padding:12px 0 12px 20px; color:var(--ink)}
-.st-item:hover .st-name{color:var(--brand-ink)}
+.stocks-page .st-item:last-child{border-bottom:0}
+.stocks-page .st-item:hover{background:var(--surface-2)}
+/* 행 높이를 정하는 것은 **로고(36)가 아니라 종목명+코드 묶음**이다. 글꼴 기본
+   줄 높이가 헐거워 23 + gap 2 + 20 = 45 였고, 여기에 위아래 12 씩과 구분선을
+   더해 한 행이 70px 이었다. 줄 높이를 좁히고 여백을 10 으로 줄여 59px 로
+   낮췄다(2026-09-14) — 열 줄이면 110px, 화면 하나만큼 덜 스크롤한다.
+   더 줄이려면 로고를 건드려야 한다: 36 + 20 = 56 이 그다음 바닥이다. */
+.stocks-page .st-link{padding:10px 0 10px 20px; color:var(--ink)}
+.stocks-page .st-item:hover .st-name{color:var(--brand-ink)}
 
-.st-id{display:flex; align-items:center; gap:11px; min-width:0}
-.st-logo{
+.stocks-page .st-id{display:flex; align-items:center; gap:11px; min-width:0}
+.stocks-page .st-logo{
   display:grid; place-items:center; flex:none; width:36px; height:36px;
   border-radius:10px; font-size:14px; font-weight:750;
 }
-.st-id-text{display:flex; flex-direction:column; gap:2px; min-width:0}
-.st-name{font-size:14.5px; font-weight:750; letter-spacing:-.01em}
-.st-sub{
-  color:var(--faint); font-size:11.5px; font-weight:500;
+.stocks-page .st-id-text{display:flex; flex-direction:column; gap:2px; min-width:0}
+.stocks-page .st-name{
+  font-size:14.5px; font-weight:750; letter-spacing:-.01em; line-height:1.35;
+}
+.stocks-page .st-sub{
+  color:var(--faint); font-size:11.5px; font-weight:500; line-height:1.4;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 
-.st-close,.st-rate,.st-per{
+.stocks-page .st-close,.stocks-page .st-rate,.stocks-page .st-per{
   text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap;
 }
-.st-close{color:var(--ink); font-size:14px; font-weight:750}
-.st-rate{font-size:13px; font-weight:750}
-.st-per{color:var(--body); font-size:12.5px; font-weight:650}
+.stocks-page .st-close{color:var(--ink); font-size:14px; font-weight:750}
+.stocks-page .st-rate{font-size:13px; font-weight:750}
+.stocks-page .st-per{color:var(--body); font-size:12.5px; font-weight:650}
 
 /* ── 예측 심리 막대 ─────────────────────────────────────── */
-.st-senti{display:flex; flex-direction:column; gap:5px; min-width:0}
-.st-senti-head{display:flex; align-items:baseline; gap:8px}
-.st-senti-head b{font-size:11.5px; font-weight:800; letter-spacing:.02em}
-.st-senti-head em{margin-left:auto; color:var(--faint); font-style:normal; font-size:11px}
-.st-senti-track{display:flex; height:5px; border-radius:99px; overflow:hidden}
+.stocks-page .st-senti{display:flex; flex-direction:column; gap:5px; min-width:0}
+.stocks-page .st-senti-head{display:flex; align-items:baseline; gap:8px}
+.stocks-page .st-senti-head b{font-size:11.5px; font-weight:800; letter-spacing:.02em}
+.stocks-page .st-senti-head em{margin-left:auto; color:var(--faint); font-style:normal; font-size:11px}
+.stocks-page .st-senti-track{display:flex; height:5px; border-radius:99px; overflow:hidden}
 /* 막대는 글자가 아니라 그래픽이라 밝은 쪽을 쓴다 */
-.st-senti-up{background:var(--up-vivid)}
-.st-senti-down{background:var(--down-vivid)}
-.st-senti-none{color:var(--faint); font-size:11.5px}
+.stocks-page .st-senti-up{background:var(--up-vivid)}
+.stocks-page .st-senti-down{background:var(--down-vivid)}
+.stocks-page .st-senti-none{color:var(--faint); font-size:11.5px}
 
 /* ── 관심 별 ────────────────────────────────────────────── */
-.st-star{
+.stocks-page .st-star{
   display:grid; place-items:center; width:32px; height:32px; margin:0 6px 0 auto;
   border-radius:9px; color:var(--faint);
 }
-.st-star:hover{background:var(--brand-softer); color:var(--brand)}
-.st-star.on{color:var(--gold)}
+.stocks-page .st-star:hover{background:var(--brand-softer); color:var(--brand)}
+.stocks-page .st-star.on{color:var(--gold)}
 
 /* ── 더 보기·꼬리말 ─────────────────────────────────────── */
-.st-more{
+.stocks-page .st-more{
   align-self:center; padding:10px 22px; border:1px solid var(--rule); border-radius:10px;
   background:var(--surface); color:var(--body); font-size:13px; font-weight:700;
 }
-.st-more:hover{border-color:var(--brand); color:var(--brand-ink)}
-.st-panel .st-more-hint,.st-panel .st-foot{
+.stocks-page .st-more:hover{border-color:var(--brand); color:var(--brand-ink)}
+.stocks-page .st-panel .st-more-hint,.stocks-page .st-panel .st-foot{
   margin:0; align-self:center; color:var(--faint); font-size:12px;
 }
 
 /* ── 반응형 ─────────────────────────────────────────────── */
 @media (max-width:1180px){
-  /* 필터를 위로 올리고 목록에 폭을 준다 */
-  .st-body{grid-template-columns:minmax(0,1fr)}
-  .st-filter{
+  /* 필터를 위로 올리고 목록에 폭을 준다.
+     여기서는 **따라오게 하지 않는다** — 필터가 목록 위에 가로로 눕는 배치라,
+     붙여 두면 화면 위쪽을 늘 차지해 정작 종목 볼 자리를 잡아먹는다. */
+  .stocks-page .st-body{grid-template-columns:minmax(0,1fr)}
+  .stocks-page .st-filter{
     display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
     gap:16px 20px; align-items:start;
+    position:static; max-height:none; overflow:visible;
   }
-  .st-filter h2{grid-column:1 / -1}
-  .st-apply,.st-reset{grid-column:span 1; align-self:end}
+  /* 넓은 화면에서는 버튼 둘이 세로로 쌓이지만, 여기서는 조건 칸들과 나란히
+     한 칸을 차지하므로 가로로 눕혀 그 칸을 채운다 */
+  .stocks-page .st-actions{grid-column:span 1; align-self:end; flex-direction:row}
+  .stocks-page .st-actions > *{flex:1}
 }
 @media (max-width:980px){
   /* PER·PBR 을 접는다 — 종목·종가·등락률·심리가 먼저다 */
-  .st-cols,.st-link{grid-template-columns:minmax(0,1fr) 92px 78px minmax(0,150px)}
-  .st-cols span:nth-child(4),.st-cols span:nth-child(5),
-  .st-link .st-per{display:none}
+  .stocks-page .st-cols,.stocks-page .st-link{grid-template-columns:minmax(0,1fr) 92px 78px minmax(0,150px)}
+  .stocks-page .st-cols span:nth-child(4),.stocks-page .st-cols span:nth-child(5),.stocks-page .st-link .st-per{display:none}
 }
 @media (max-width:900px){
-  .st-hero{flex-direction:column; align-items:flex-start; gap:12px}
-  .st-hero h1{font-size:24px}
+  .stocks-page .st-hero{flex-direction:column; align-items:flex-start; gap:12px}
+  .stocks-page .st-hero h1{font-size:24px}
 }
 @media (max-width:680px){
   /* 심리 막대까지 접고 종목·종가·등락률만 남긴다 */
-  .st-cols{display:none}
-  .st-cols,.st-link{grid-template-columns:minmax(0,1fr) auto}
-  .st-link{
+  .stocks-page .st-cols{display:none}
+  .stocks-page .st-cols,.stocks-page .st-link{grid-template-columns:minmax(0,1fr) auto}
+  .stocks-page .st-link{
     grid-template-areas:'id close' 'id rate';
-    gap:2px 12px; padding:12px 0 12px 16px;
+    gap:2px 12px; padding:10px 0 10px 16px;
   }
-  .st-id{grid-area:id}
-  .st-close{grid-area:close}
-  .st-rate{grid-area:rate}
-  .st-link .st-senti,.st-link .st-senti-none{display:none}
+  .stocks-page .st-id{grid-area:id}
+  .stocks-page .st-close{grid-area:close}
+  .stocks-page .st-rate{grid-area:rate}
+  .stocks-page .st-link .st-senti,.stocks-page .st-link .st-senti-none{display:none}
 }

@@ -19,6 +19,7 @@ import { useBriefingParam } from '../components/briefingParam'
 import { useAsync } from '../api/useAsync'
 import { DEFAULT_AVATAR, useAuth } from '../auth/context'
 import Sparkline from '../components/Sparkline'
+import StockLogo from '../components/stocks/StockLogo'
 import '../styles/home.css'
 
 const INDEX_LABEL: Record<string, string> = {
@@ -87,19 +88,6 @@ function useRotate(count: number, ms: number) {
 
   /* 목록이 짧아져도 범위를 벗어나지 않게 나머지로 접는다 */
   return { index: count > 0 ? index % count : 0, setIndex, setPaused }
-}
-
-/* 종목 로고 자산이 없어 이름 첫 글자로 배지를 만든다. 색은 종목코드에서
-   뽑아 항상 같은 색이 나오게 한다(무작위가 아니다). */
-function StockBadge({ code, name }: { code: string; name: string }) {
-  let h = 0
-  for (const ch of code) h = (h * 31 + ch.charCodeAt(0)) % 360
-  return (
-    <span className="hm-logo" aria-hidden="true"
-          style={{ background: `hsl(${h} 62% 94%)`, color: `hsl(${h} 54% 38%)` }}>
-      {name.slice(0, 1)}
-    </span>
-  )
 }
 
 /* ── 인라인 아이콘 ─────────────────────────────────────────
@@ -375,7 +363,7 @@ function Watchlist() {
                   <tr key={s.stockCode}>
                     <th scope="row">
                       <Link to={`/stocks/${s.stockCode}`}>
-                        <StockBadge code={s.stockCode} name={s.name} />
+                        <StockLogo code={s.stockCode} name={s.name} className="hm-logo" />
                         {s.name} <small className="num">{s.stockCode}</small>
                       </Link>
                     </th>

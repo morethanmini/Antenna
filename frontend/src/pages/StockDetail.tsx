@@ -24,6 +24,7 @@ import { useBlock } from '../api/useBlock'
 import ErrorState from '../components/state/ErrorState'
 import { addWatch, removeWatch, MARKET_LABEL } from '../api/stocks'
 import { getSummary } from '../api/stockDetail'
+import StockLogo from '../components/stocks/StockLogo'
 import '../styles/screens/stock-detail.css'
 
 const TABS = [
@@ -102,6 +103,11 @@ export default function StockDetail() {
 
             <header className="sd-head">
               <div className="sd-ident">
+                {/* 로고는 **불러오기와 상관없이** 먼저 세운다 — 종목코드는 주소에서
+                    바로 알 수 있어 이름을 기다릴 이유가 없고, 뒤늦게 끼어들면
+                    제목 줄이 그만큼 옆으로 밀린다. 이름이 오기 전에는 글자 배지가
+                    빈 채로 자리만 지킨다(목록·홈과 같은 컴포넌트다). */}
+                <StockLogo code={code} name={s?.name ?? ''} className="sd-logo" />
                 {summary.loading ? (
                   <span className="sd-skel sd-skel-title" aria-hidden="true" />
                 ) : (

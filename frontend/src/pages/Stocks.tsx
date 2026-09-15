@@ -65,12 +65,11 @@ export default function Stocks() {
         {/* 설명줄을 뺐다(2026-09-14). 제목이 이미 "오늘 시장은 어디로 움직였나요?"
             라, 판을 보고 종목으로 좁히라는 말을 한 줄 더 적을 이유가 없다.
             감싸던 div 도 함께 푼다 — 제목 하나뿐이면 세로로 쌓을 것이 없다. */}
+        {/* 보기 전환 탭은 **제목과 같은 줄 오른쪽 끝**이다(2026-09-14). 제목 아래
+            제 줄을 쓰고 있었는데, 그 줄 오른쪽이 늘 비어 판이 그만큼 내려갔다.
+            .st-hero 가 space-between 이라 여기 두면 저절로 오른쪽 끝에 선다. */}
         <header className="st-hero">
           <h1>오늘 시장은 어디로 움직였나요?</h1>
-        </header>
-
-        {/* 보기 전환과, 마켓맵이 쓰는 조건 하나 */}
-        <div className="st-views">
           <div className="st-viewtabs" role="tablist" aria-label="보기 방식">
             {VIEWS.map((v) => (
               <button
@@ -83,32 +82,35 @@ export default function Stocks() {
               </button>
             ))}
           </div>
+        </header>
 
-          {/* 시장(전체·KOSPI·KOSDAQ) 칩은 뺐다(2026-09-11) — 이 서비스는 코스피만
-              다룬다. 고를 것이 하나뿐인 필터는 자리만 먹고, KOSDAQ 을 눌러 빈
-              화면을 보는 헛걸음을 만든다.
+        {/* 마켓맵이 쓰는 조건 줄. **목록 탭에는 아예 내지 않는다** — 빈 상자를
+            두면 margin 만큼 아래가 밀린다.
 
-              관심 종목만은 마켓맵에서만 내놓는다. 목록에는 제 필터 패널이 따로
-              있어, 두 벌이 되면 어느 쪽이 이겼는지 알 수 없다 */}
-          {view === 'map' && (
-            <>
-              <label className="st-check st-views-check">
-                <input
-                  type="checkbox" checked={filter.watchedOnly ?? false}
-                  onChange={(e) => setFilter((f) => ({
-                    ...f, watchedOnly: e.target.checked || undefined,
-                  }))}
-                />
-                관심 종목만
-              </label>
+            시장(전체·KOSPI·KOSDAQ) 칩은 뺐다(2026-09-11) — 이 서비스는 코스피만
+            다룬다. 고를 것이 하나뿐인 필터는 자리만 먹고, KOSDAQ 을 눌러 빈
+            화면을 보는 헛걸음을 만든다.
 
-              {/* 범례가 판 위에 제 줄을 하나 쓰고 있었다(2026-09-11). 그 줄은 왼쪽이
-                  늘 비어 있어 토글과 판 사이에 빈 띠만 만들었다. 같은 줄 오른쪽
-                  끝으로 옮겨 줄 하나를 줄이고, 그만큼 판이 높아졌다. */}
-              <HeatLegend />
-            </>
-          )}
-        </div>
+            관심 종목만은 마켓맵에서만 내놓는다. 목록에는 제 필터 패널이 따로
+            있어, 두 벌이 되면 어느 쪽이 이겼는지 알 수 없다 */}
+        {view === 'map' && (
+          <div className="st-views">
+            <label className="st-check st-views-check">
+              <input
+                type="checkbox" checked={filter.watchedOnly ?? false}
+                onChange={(e) => setFilter((f) => ({
+                  ...f, watchedOnly: e.target.checked || undefined,
+                }))}
+              />
+              관심 종목만
+            </label>
+
+            {/* 범례가 판 위에 제 줄을 하나 쓰고 있었다(2026-09-11). 그 줄은 왼쪽이
+                늘 비어 있어 토글과 판 사이에 빈 띠만 만들었다. 같은 줄 오른쪽
+                끝으로 옮겨 줄 하나를 줄이고, 그만큼 판이 높아졌다. */}
+            <HeatLegend />
+          </div>
+        )}
 
         <div
           className="st-view"
