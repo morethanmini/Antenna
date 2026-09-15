@@ -12,8 +12,18 @@
    안 읽힌다 — 그래서 같은 상태에 다른 문장을 준다. */
 import type { ProofAnchorStatus } from '../../api/proof'
 
-/** 앵커 배치는 매일 00:05 KST 에 돈다(AnchorScheduler). 화면 문구가 이 값을 여러 번 쓴다 */
-export const ANCHOR_BATCH_TIME = '자정 5분(00:05)'
+/* 앵커 배치 주기. 화면 문구가 이 값을 여러 번 쓴다.
+
+   서버 AnchorScheduler 의 cron 과 짝이다 — 2026-09-15 에 매일 00:05 에서
+   **10분마다**로 바뀌었다(서버 설정 ANCHOR_CRON).
+
+   시각이 아니라 주기라서 문장이 달라진다. 전에는 "자정 5분에 도는 배치가
+   오늘 등록분을 한 번에 묶는다" 였는데, 이제 "곧 다음 회차가 묶는다" 다 —
+   "오늘 등록분" 이라는 말도 더는 맞지 않는다(하루치를 모으지 않는다).
+
+   **서버 cron 을 바꾸면 이 파일도 같이 바꾼다.** 사용자에게 보이는 문구라,
+   어긋나면 앱이 거짓을 말한다. */
+export const ANCHOR_BATCH_CYCLE = '10분마다'
 
 const LABEL: Record<ProofAnchorStatus, string> = {
   WAITING: '블록체인 기록 예정',
@@ -37,9 +47,9 @@ const ICON: Record<ProofAnchorStatus, React.ReactNode> = {
 
 /* 대기가 정상이라는 것을 말로 못 박는다. 이 한 줄이 없으면 "기록 예정" 을
    보고 등록이 덜 끝난 줄 안다 — 등록은 서버가 받은 순간 이미 끝났고,
-   앵커는 하루 한 번 도는 배치가 나중에 묶는 별개의 일이다. */
+   앵커는 주기적으로 도는 배치가 나중에 묶는 별개의 일이다. */
 const HINT: Record<ProofAnchorStatus, string> = {
-  WAITING: `등록은 이미 끝났어요. 오늘 등록분은 ${ANCHOR_BATCH_TIME}에 도는 배치가 한 번에 묶어 기록합니다.`,
+  WAITING: `등록은 이미 끝났어요. ${ANCHOR_BATCH_CYCLE} 도는 배치가 곧 묶어서 기록합니다.`,
   PENDING: '배치가 트랜잭션을 보냈고 블록 확정을 기다리는 중입니다. 잠시 뒤 확정으로 바뀝니다.',
   CONFIRMED: '이 예측은 블록체인에 기록됐습니다. 이제 누구도, 나조차도 내용을 바꿀 수 없어요.',
   FAILED: '앵커 전송이 실패해 서버가 다음 회차에 다시 시도합니다. 예측 자체는 그대로 남아 있어요.',

@@ -91,9 +91,9 @@ export default function Portfolio() {
                 <li><b className="num">{d.anchored}</b><span>체인에 기록됨</span></li>
                 <li><b className="num">{d.unanchored}</b><span>기록 대기</span></li>
               </ul>
-              {/* 기록 대기를 실패로 읽지 않게 한다 — 앵커는 하루 한 번 도는 배치다 */}
+              {/* 기록 대기를 실패로 읽지 않게 한다 — 앵커는 주기적으로 도는 배치다 */}
               <p className="fc-note">
-                봉인된 예측은 하루 한 번 배치로 묶여 체인에 올라갑니다. 대기는 실패가 아닙니다.
+                봉인된 예측은 10분마다 도는 배치로 묶여 체인에 올라갑니다. 대기는 실패가 아닙니다.
               </p>
               <Link className="fc-more" to="/ledger">커밋 원장에서 확인 ›</Link>
             </section>

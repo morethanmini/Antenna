@@ -39,7 +39,7 @@ import { Link } from 'react-router-dom'
 import { useCursorList } from '../api/useCursorList'
 import { fetchMyPredictions, hitRatePercent, horizonLabel, phaseOf } from '../api/predictions'
 import type { MyPrediction, MyPredictionMeta } from '../api/predictions'
-import { ANCHOR_BATCH_TIME, isAnchored } from '../components/prediction/AnchorStage'
+import { ANCHOR_BATCH_CYCLE, isAnchored } from '../components/prediction/AnchorStage'
 import EmptyState from '../components/state/EmptyState'
 import ErrorState from '../components/state/ErrorState'
 import '../styles/screens/predict-list.css'
@@ -86,7 +86,7 @@ const EMPTY: Record<Stage, { title: string; hint: string }> = {
   },
   ANCHOR: {
     title: '블록체인 기록을 기다리는 예측이 없습니다',
-    hint: `등록한 예측은 매일 ${ANCHOR_BATCH_TIME}에 도는 배치가 한 번에 묶어 기록합니다.`,
+    hint: `등록한 예측은 ${ANCHOR_BATCH_CYCLE} 도는 배치가 묶어서 블록체인에 기록합니다.`,
   },
   OPEN: {
     title: '진행 중인 예측이 없습니다',
@@ -99,8 +99,8 @@ const EMPTY: Record<Stage, { title: string; hint: string }> = {
 }
 
 /* 등록한 사람이 다음에 무엇을 기다리면 되는지 세 걸음으로 못 박는다.
-   두 번째 걸음의 시각이 이 화면의 핵심 안내다 — 앵커 배치는 매일 00:05 KST 에
-   전날 등록분을 한 번에 묶는다(백엔드 AnchorScheduler, 주말 포함). */
+   두 번째 걸음이 이 화면의 핵심 안내다 — 앵커 배치는 10분마다 그때까지 쌓인
+   봉인을 묶는다(백엔드 AnchorScheduler, 주말·휴장 포함). */
 const STEPS = [
   {
     title: '예측 등록',
@@ -112,9 +112,9 @@ const STEPS = [
     /* "수정할 수 없다" 는 여기 적지 않는다. 예측을 등록할 때(C-01 봉인 모달)
        이미 그 말을 하고 확인까지 받는다 — 다 끝난 뒤에 또 경고하면 이 화면이
        무언가 잘못됐다고 말하는 것처럼 읽힌다. 대기 카드의 안내에는 남긴다. */
-    /* 시각(00:05)은 여기 적지 않는다. 바로 위 카운트다운 카드가 이미 말하고
+    /* 남은 시간은 여기 적지 않는다. 바로 위 카운트다운 카드가 이미 말하고
        있어서, 곁칸 안에서 같은 문장이 두 번 겹쳐 읽힌다. */
-    body: '하루치 예측을 한 배치로 묶어 블록체인에 올려요.',
+    body: '쌓인 예측을 한 배치로 묶어 블록체인에 올려요.',
     icon: <><path d="M12 3 4 7.2v9.6L12 21l8-4.2V7.2Z" /><path d="M4 7.2 12 11.5l8-4.3" /><path d="M12 11.5V21" /></>,
   },
   {
@@ -134,32 +134,44 @@ function Icon({ children, size = 15 }: { children: React.ReactNode; size?: numbe
 }
 
 /* ── 다음 기록까지 ───────────────────────────────────────
-   이 화면에서 가장 많이 나오는 질문이 "언제 올라가나" 다. 배치 시각을 글로만
-   적어 두면 지금부터 얼마나 남았는지는 각자 세야 한다.
+   이 화면에서 가장 많이 나오는 질문이 "언제 올라가나" 다. 주기를 글로만 적어
+   두면 지금부터 얼마나 남았는지는 각자 세야 한다.
 
-   앵커 배치는 매일 00:05 KST 다(AnchorScheduler). KST 는 UTC+9 고정이고 서머타임이
-   없으므로 UTC 15:05 와 정확히 같다 — 그래서 보는 사람의 시간대와 무관하게
-   맞는다. 로컬 시각으로 00:05 를 잡으면 시차가 있는 곳에서 엉뚱한 값이 나온다. */
+   앵커 배치는 **10분마다** 돈다(AnchorScheduler, `0 0,10,20,30,40,50 * * * *`
+   꼴). 2026-09-15 이전에는 매일 00:05 KST 였고 여기서 그 시각을 고정으로
+   잡고 있었다 — 그대로 두면 "14시간 뒤" 라고 말하면서 실제로는 8분 뒤에
+   올라간다.
+
+   **UTC 로 센다.** 서버 cron 은 KST 기준인데 KST 는 UTC+9 정각 오프셋이라
+   분(minute) 경계가 UTC 와 같다. 로컬 시각으로 세면 UTC+5:30 처럼 30분
+   오프셋인 곳에서 경계가 30분 어긋난다. */
 function nextBatchAt(now: Date) {
   const t = new Date(now)
-  t.setUTCHours(15, 5, 0, 0)
-  if (t <= now) t.setUTCDate(t.getUTCDate() + 1)
+  t.setUTCSeconds(0, 0)
+  t.setUTCMinutes(Math.floor(t.getUTCMinutes() / 10) * 10 + 10)
   return t
 }
 
 function NextBatch() {
   const [now, setNow] = useState(() => new Date())
 
-  /* 30초마다 다시 센다. 초까지 흘리면 눈에 거슬리기만 하고, 하루에 한 번 도는
-     일을 초 단위로 볼 이유도 없다 — 분까지만 보여 준다. */
+  /* 5초마다 다시 센다. 표시는 분 단위지만 **갱신 간격이 주기에 비해 짧아야 한다.**
+
+     주기가 하루였을 때는 30초였고 지연이 보이지 않았다. 10분 주기에서는 경계를
+     막 지난 순간 "1분" 이라고 말한 채로 최대 30초를 버틴다 — 기다려도 안 올라가니
+     고장으로 읽힌다(실측: 05:19:5x 에 그린 "1분" 이 05:20:03 까지 남아 있었다).
+
+     초 단위로 그리지는 않는다. 눈에 거슬리기만 하고, 5초면 경계에서 어긋나는
+     창이 사람이 알아채기 전에 닫힌다. */
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 30_000)
+    const id = setInterval(() => setNow(new Date()), 5_000)
     return () => clearInterval(id)
   }, [])
 
+  /* 남은 시간은 10분을 넘지 않는다. 0분일 때 "0분" 이라 적으면 멈춘 것처럼
+     읽혀 1분을 하한으로 둔다 — 실제로도 그 회차에 담긴다. */
   const left = nextBatchAt(now).getTime() - now.getTime()
-  const hours = Math.floor(left / 3_600_000)
-  const mins = Math.floor((left % 3_600_000) / 60_000)
+  const mins = Math.max(1, Math.ceil(left / 60_000))
 
   return (
     <section className="mp-next">
@@ -172,11 +184,10 @@ function NextBatch() {
         다음 블록체인 기록까지
       </p>
       <p className="mp-next-t num">
-        {hours > 0 && <><b>{hours}</b><i>시간</i></>}
         <b>{mins}</b><i>분</i>
       </p>
       <p className="mp-next-sub">
-        {`매일 ${ANCHOR_BATCH_TIME}에 그날 등록분을 한 배치로 묶어 올려요.`}
+        {`${ANCHOR_BATCH_CYCLE} 도는 배치가 그때까지 쌓인 예측을 한 묶음으로 올려요.`}
       </p>
     </section>
   )
@@ -213,18 +224,19 @@ function Panel({ p, count = 1 }: { p: MyPrediction; count?: number }) {
 
   if (stage === 'ANCHOR') {
     /* 대기가 정상이라는 것을 말로 못 박는다. 이 문장이 없으면 등록이 덜 끝난
-       줄 안다 — 등록은 서버가 받은 순간 이미 끝났고, 앵커는 하루 한 번 도는
+       줄 안다 — 등록은 서버가 받은 순간 이미 끝났고, 앵커는 주기적으로 도는
        배치가 나중에 묶는 별개의 일이다. */
     const copy = p.anchorStatus === 'PENDING'
       ? { lead: '블록 확정을 기다리는 중이에요.', sub: '배치가 트랜잭션을 보냈어요. 잠시 뒤 기록이 확정됩니다.' }
       : p.anchorStatus === 'FAILED'
         ? { lead: '기록에 실패해 다시 시도해요.', sub: '다음 회차 배치가 재시도합니다. 예측 자체는 그대로 남아 있어요.' }
         : {
-            /* 한 배치가 하루치를 통째로 묶으므로, 묶인 줄들은 정말로 함께 올라간다.
+            /* 한 회차가 그때까지 쌓인 봉인을 통째로 묶으므로, 묶인 줄들은 정말로
+               함께 올라간다.
 
-               시각(00:05)은 빼고 "다가오는 배치" 로만 말한다. 곁칸 카운트다운이
-               언제인지를 이미 말하고 있고, 카드마다 그 시각을 되풀이하면 목록을
-               내릴수록 같은 문장만 쌓인다 — 대기 카드가 여섯이면 여섯 번이다. */
+               남은 시간은 빼고 "다가오는 배치" 로만 말한다. 곁칸 카운트다운이
+               언제인지를 이미 말하고 있고, 카드마다 되풀이하면 목록을 내릴수록
+               같은 문장만 쌓인다 — 대기 카드가 여섯이면 여섯 번이다. */
             lead: many
               ? `다가오는 배치에 이 ${count}건이 함께 기록돼요`
               : '다가오는 배치에 블록체인으로 기록돼요',
@@ -306,8 +318,8 @@ function Panel({ p, count = 1 }: { p: MyPrediction; count?: number }) {
      한 예측에 대한 값(D-day · 결과)   → 그 줄의 오른쪽 칸
      카드 전체에 대한 안내(앵커 배치)  → 카드 아래 한 줄
 
-   앵커는 예측 하나의 사정이 아니다. 배치가 하루치를 통째로 묶으므로 이 카드의
-   예측들은 **정말로 함께** 올라간다. 그래서 건수와 상관없이 — 한 건짜리
+   앵커는 예측 하나의 사정이 아니다. 배치가 그때까지 쌓인 봉인을 통째로 묶으므로
+   이 카드의 예측들은 **정말로 함께** 올라간다. 그래서 건수와 상관없이 — 한 건짜리
    카드에서도 — 카드 아래 한 줄로 낸다. 한 건일 때만 오른쪽 상자로 두면 같은
    안내가 카드마다 다른 모양이 되어, 목록을 훑을 때 눈이 계속 다시 맞춰야 한다.
 
@@ -520,7 +532,7 @@ export default function PredictList() {
      **useMemo 로 굳혀야 한다.** 매 렌더 새 함수를 넘기면 훅의 load 가 매번
      새로 만들어져 effect 가 끝없이 다시 읽는다 — 실제로 그랬다(3초에 247회).
      Stocks.tsx 가 같은 이유로 같은 처리를 해 두었다. */
-  const fetcher = useMemo(() => fetchMyPredictions('ALL'), [])
+  const fetcher = useMemo(() => fetchMyPredictions(), [])
   const list = useCursorList<MyPrediction, MyPredictionMeta>(fetcher)
 
   /* 커서 끝까지 이어서 받는다. 세 칸의 건수가 정확하려면 전량이 있어야 한다.
