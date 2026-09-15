@@ -122,6 +122,8 @@ export const ROUTES: PageMeta[] = [
   { screen: 'F-03', element: ReportNew, path: '/reports/new', title: '리포트 작성', access: 'user', mode: 'insight', nav: 'report', story: 'ANT-FE-REPORT-NEW' },
 
   // ── G. 모의투자 ──────────────────────────────────────
+  /* G-00 모의투자 온보딩은 라우트가 없다 — M-09 와 같이 셸 위 오버레이다
+     (components/SimOnboardingTour.tsx, Layout 이 띄운다). */
   { screen: 'G-01', element: SeasonHome, path: '/sim', title: '모의투자 홈', access: 'user', mode: 'sim', nav: 'home', bodyClass: 'sim-home-page', story: 'ANT-FE-SEASON-HOME' },
   { screen: 'G-02', element: SeasonMode, path: '/sim/modes', title: '모드 선택', access: 'user', mode: 'sim', nav: 'play', bodyClass: 'sim-setup-page', story: 'ANT-FE-SEASON-MODE' },
   /* G-02 에서 PRACTICE 를 고른 사람이 머무는 허브. 화면설계서 §3 에는 없는 경로라
