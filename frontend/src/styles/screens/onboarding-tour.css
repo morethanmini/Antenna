@@ -1,135 +1,352 @@
 /* M-09 온보딩 튜토리얼 — 셸 위 오버레이 (라우트 없음)
+   [ANT-FE-LOGIN] · 지라 S15P21A507-155
 
-   겉껍데기(덮개·카드·버튼) 규칙은 M-01 지갑 연동 모달(wallet-link.css)을
-   따랐다. 같은 흐름 안에서 이 오버레이를 닫고 그 모달이 뜨므로, 두 겹의 생김새가
-   다르면 같은 서비스의 같은 단계로 읽히지 않는다. 선택자만 ob- 로 나눈다.
+   ── G-00 모의투자 온보딩과 한 벌이다 ────────────────────
+   sim-onboarding.css 와 카드 구조·치수·움직임을 그대로 맞췄다. 두 안내가 같은
+   제품의 첫인상인데 한쪽만 다르게 생기면 같은 서비스로 읽히지 않는다.
+   선택자만 ob- 로 가른다(모의투자는 sot-).
+
+   달라지는 것은 무대에 세우는 그림뿐이다 — 인사이트는 흰 개미, 모의투자는
+   검정 개미다. 다만 3걸음(모의투자 안내)만 예외로 검정 개미를 세운다. 그 걸음이
+   가리키는 곳의 캐릭터가 그쪽이라, 여기서 흰 개미를 쓰면 안내와 도착지가 어긋난다.
 
    bodyClass 스코프가 없다. 셸이 띄우므로 어느 화면 위에도 뜨고, 오버레이라
    페이지 스코프 밖에서 그려진다 — 그래서 선택자 접두어(ob-)로만 가른다. */
 
 .ob-backdrop{
-  position:fixed; inset:0; z-index:60;   /* 사이드바(40)·상단바(30) 위 */
-  display:flex; align-items:center; justify-content:center;
+  position:fixed;inset:0;z-index:60;      /* 사이드바(40)·상단바(30) 위 */
+  display:flex;align-items:center;justify-content:center;
   padding:20px;
-  background:rgba(20,20,27,.44);
+  background:rgba(20,20,27,.5);
+  backdrop-filter:blur(3px);
+  animation:ob-fade .18s ease both;
 }
+@keyframes ob-fade{from{opacity:0}to{opacity:1}}
 
+/* ── 카드 ───────────────────────────────────────────── */
 .ob-modal{
-  width:100%; max-width:440px;
+  --card-h:472px;
+  --stage-w:330px;
+  /* 마스코트 폭. 장식 크기가 여기서 따라온다. 무대 폭의 3분의 2 언저리로 둔다 —
+     더 키우면 장식이 개미 몸에 덮여 무엇인지 안 읽힌다. */
+  --art:184px;
+
+  position:relative;
+  width:100%;max-width:880px;height:var(--card-h);max-height:calc(100vh - 40px);
+  display:grid;grid-template-columns:minmax(0,1fr) var(--stage-w);
+  border-radius:22px;overflow:hidden;outline:none;
   background:var(--surface);
-  border-radius:14px;
-  box-shadow:0 24px 60px -20px rgba(20,20,27,.4);
-  outline:none;
-  max-height:calc(100vh - 40px);
-  display:flex; flex-direction:column;
+  box-shadow:0 40px 90px -30px rgba(20,20,27,.55),0 0 0 1px rgba(255,255,255,.6);
+  animation:ob-rise .22s cubic-bezier(.2,.8,.3,1) both;
+}
+@keyframes ob-rise{
+  from{opacity:0;transform:translateY(12px) scale(.985)}
+  to{opacity:1;transform:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .ob-backdrop,.ob-modal,.ob-step,.ob-art-layer{animation:none}
+  .ob-drift{animation:none !important}
 }
 
-/* ── 머리 ─────────────────────────────────────── */
-.ob-head{
-  display:flex; align-items:center; justify-content:space-between; gap:12px;
-  padding:16px 18px 0;
+/* ── 왼쪽: 글 ───────────────────────────────────────── */
+/* 위(인사·걸음) · 가운데(본문) · 아래(버튼) 셋. 본문만 늘어나(1fr) 버튼이 늘
+   카드 바닥에 붙는다 — 걸음마다 글이 짧아도 자리가 그대로다. */
+.ob-copy{
+  display:grid;grid-template-rows:auto minmax(0,1fr) auto;
+  padding:26px 30px 24px;
+  word-break:keep-all;
 }
+
+/* ── 머리: 인사 + 걸음 표시 ─────────────────────────── */
+.ob-head{display:flex;align-items:center;gap:12px}
 .ob-hello{
-  margin:0; min-width:0;
-  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  color:var(--muted); font-size:12.5px; font-weight:600;
+  margin:0;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:var(--faint);font-size:12px;font-weight:800;
 }
-.ob-x{
-  flex:none;
-  display:grid; place-items:center; width:28px; height:28px;
-  border:0; border-radius:8px; background:none;
-  color:var(--faint); cursor:pointer;
-  transition:background .14s, color .14s;
-}
-.ob-x:hover{ background:var(--surface-2); color:var(--ink); }
-.ob-x:focus-visible{ outline:2px solid var(--brand); outline-offset:2px; }
-
-/* ── 걸음 표시 ─────────────────────────────────
-   몇 걸음 남았는지 모르면 건너뛸지 읽을지 판단할 수 없다. 지난 걸음과 남은
-   걸음을 다르게 칠해 되돌아갈 수 없다는 것도 함께 알린다. */
-.ob-dots{
-  list-style:none; display:flex; gap:5px;
-  margin:14px 0 0; padding:0 18px;
-}
+.ob-dots{list-style:none;display:flex;align-items:center;gap:6px;margin:0 0 0 auto;padding:0}
 .ob-dots li{
-  height:3px; flex:1; border-radius:999px;
+  width:8px;height:8px;border-radius:999px;
   background:var(--surface-2);
-  transition:background .18s;
+  transition:width .22s ease,background .22s ease;
 }
-.ob-dots li.is-done{ background:var(--brand-softer); }
-.ob-dots li.is-on{ background:var(--brand); }
+.ob-dots li.is-done{background:var(--brand-softer);box-shadow:inset 0 0 0 1px #ddd8fb}
+/* 현재 걸음만 알약으로 늘인다 — 색만 다르면 지난 걸음과 구분이 어렵다 */
+.ob-dots li.is-on{width:26px;background:var(--brand)}
+.ob-count{flex:none;color:var(--faint);font-size:12px;font-weight:800;letter-spacing:.02em}
 
-/* ── 본문 ─────────────────────────────────────── */
-.ob-body{ padding:18px; overflow:auto; }
-.ob-body h2{
-  margin:0 0 8px;
-  font-size:17px; line-height:1.35; font-weight:750;
-  letter-spacing:-.02em; color:var(--ink);
-  word-break:keep-all;
+/* ── 본문 ───────────────────────────────────────────── */
+/* 걸음이 바뀌면 key 로 리마운트되어 이 등장이 다시 돈다. 위치를 조금만 움직인다 —
+   네 걸음을 연달아 넘기는 자리라 크게 움직이면 멀미가 난다. */
+.ob-step{
+  align-self:center;
+  animation:ob-in .26s ease both;
 }
+@keyframes ob-in{
+  from{opacity:0;transform:translateX(8px)}
+  to{opacity:1;transform:none}
+}
+
+/* 머리말은 점 하나 + 한 줄. 카드 안이라 배경을 한 겹 더 깔면 흰 바탕 위에
+   회색 상자만 늘어난다. */
+.ob-eyebrow{
+  display:inline-flex;align-items:center;gap:7px;margin-bottom:9px;
+  color:var(--brand);font-size:12.5px;font-weight:800;letter-spacing:-.01em;
+}
+.ob-eyebrow::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+
+.ob-body h2{
+  margin:0 0 9px;
+  color:#141a3c;font-size:25px;font-weight:850;letter-spacing:-.035em;line-height:1.3;
+  text-wrap:balance;
+}
+.ob-body h2 em{color:var(--brand);font-style:normal}
 .ob-text{
-  margin:0;
-  color:var(--body); font-size:13.5px; line-height:1.7;
-  word-break:keep-all;
+  margin:0;max-width:36ch;
+  color:var(--muted);font-size:13.5px;font-weight:600;line-height:1.7;
 }
 
 /* 어디로 가면 되는지. 본문보다 한 단 낮춰 "읽고 넘어가는 줄" 로 둔다 */
 .ob-where{
-  margin:10px 0 0; padding:9px 11px;
-  border-radius:9px; background:var(--surface-2);
-  color:var(--muted); font-size:12px; line-height:1.6;
-  word-break:keep-all;
+  display:flex;align-items:center;gap:8px;
+  margin:14px 0 0;padding:10px 13px;
+  border-radius:11px;background:var(--brand-softer);
+  color:#4a5070;font-size:12.5px;font-weight:700;line-height:1.5;
 }
+.ob-where svg{flex:none;color:var(--brand)}
 
-/* ── 마친 것 · 남은 것 ─────────────────────────
-   마지막 걸음에서만 나온다. 닉네임은 A-02 에서 이미 끝냈으므로 할 일이
-   아니라 확인이고, 그래서 지갑과 같은 목록에 두되 표식을 다르게 둔다. */
-.ob-checks{
-  list-style:none; margin:16px 0 0; padding:0;
-  display:grid; gap:8px;
-}
+/* ── 마친 것 · 남은 것 ──────────────────────────────── */
+/* 마지막 걸음에서만 나온다. 닉네임은 A-02 에서 이미 끝냈으므로 할 일이 아니라
+   확인이고, 그래서 지갑과 같은 목록에 두되 표식을 다르게 둔다. */
+.ob-checks{list-style:none;display:flex;flex-direction:column;gap:7px;margin:16px 0 0;padding:0}
 .ob-checks li{
-  display:grid; grid-template-columns:20px auto minmax(0,1fr); align-items:center; gap:8px;
-  padding:10px 12px;
-  border:1px solid var(--rule); border-radius:10px;
-  background:var(--surface-2);
+  display:grid;grid-template-columns:22px auto minmax(0,1fr);align-items:center;gap:9px;
+  padding:9px 12px;border-radius:11px;background:var(--surface-2);
 }
-.ob-checks li.is-done{ border-color:var(--brand-softer); background:var(--brand-softer); }
+.ob-checks li.is-done{background:var(--brand-softer)}
 .ob-mark{
-  display:grid; place-items:center;
-  width:20px; height:20px; border-radius:999px;
-  background:var(--surface);
-  color:var(--faint); font-size:11px; font-weight:800;
+  display:grid;place-items:center;width:22px;height:22px;border-radius:999px;
+  background:var(--surface);color:var(--faint);font-size:11px;font-weight:800;
 }
-.ob-checks li.is-done .ob-mark{ background:var(--brand); color:#fff; }
-.ob-checks b{ font-size:13px; font-weight:700; color:var(--ink); }
+.ob-checks li.is-done .ob-mark{background:var(--brand);color:#fff}
+.ob-checks b{color:#28304f;font-size:13px;font-weight:800}
 .ob-sub{
-  min-width:0; text-align:right;
-  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  color:var(--muted); font-size:11.5px;
+  min-width:0;text-align:right;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:var(--muted);font-size:11.5px;font-weight:650;
 }
 
-/* ── 발판 ─────────────────────────────────────── */
-.ob-actions{
-  display:flex; align-items:center; justify-content:space-between; gap:10px;
-  padding:0 18px 18px;
-}
-/* 건너뛰기는 늘 남겨 둔다. 로그인 직후에 붙잡아 두지 않는다 —
-   다만 앞으로 가는 버튼과 무게를 다르게 해 기본 경로를 헷갈리지 않게 한다 */
+/* ── 버튼 줄 ────────────────────────────────────────── */
+.ob-actions{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .ob-skip{
-  padding:9px 4px; border:0; background:none;
-  color:var(--faint); font-family:inherit; font-size:12.5px; font-weight:600;
-  cursor:pointer; border-radius:8px;
+  padding:8px 2px;color:var(--faint);font-size:13px;font-weight:700;
+  transition:color .14s;
 }
-.ob-skip:hover{ color:var(--muted); }
-.ob-skip:focus-visible{ outline:2px solid var(--brand); outline-offset:2px; }
+.ob-skip:hover{color:var(--body)}
+.ob-nav{display:flex;align-items:center;gap:8px}
 
 .ob-btn{
-  display:inline-flex; align-items:center; justify-content:center;
-  padding:9px 15px; border-radius:9px;
-  font-family:inherit; font-size:13px; font-weight:700;
-  cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  height:42px;padding:0 18px;border-radius:12px;
+  font-size:14px;font-weight:800;letter-spacing:-.02em;
+  transition:filter .15s,background .15s,transform .06s;
 }
-.ob-btn.solid{ border:1px solid var(--brand); background:var(--brand); color:#fff; }
-.ob-btn.solid:hover{ background:var(--brand-ink); border-color:var(--brand-ink); }
-.ob-btn:focus-visible{ outline:2px solid var(--brand); outline-offset:2px; }
+.ob-btn:active{transform:translateY(1px)}
+.ob-btn.solid{
+  background:linear-gradient(96deg,#7a63f2 0%,var(--brand) 62%,#4f4ae0 100%);
+  color:#fff;box-shadow:0 12px 24px -12px rgba(84,87,232,.8);
+}
+.ob-btn.solid:hover{filter:brightness(1.07)}
+.ob-btn.ghost{border:1px solid var(--rule);background:var(--surface);color:var(--body)}
+.ob-btn.ghost:hover{background:var(--surface-2)}
+/* 첫 걸음에서도 자리를 지킨다. display:none 으로 빼면 "다음" 이 옆으로 밀려
+   연달아 누를 때 빗나간다. */
+.ob-btn.ghost:disabled{visibility:hidden;cursor:default}
+
+/* ── 오른쪽: 무대 ───────────────────────────────────── */
+.ob-stage{
+  position:relative;overflow:hidden;
+  /* 채도를 한참 낮춘 연보라. 왼쪽(글 칸과 맞닿는 쪽)이 거의 흰색에 가깝고
+     오른쪽으로 갈수록 아주 조금 짙어진다 — 경계를 흰색으로 덮어 지우는 대신,
+     바탕 자체가 흰색에서 출발하게 해서 이음매가 생기지 않게 한다. */
+  background:
+    radial-gradient(60% 72% at 76% 20%,rgba(255,255,255,.7),transparent 64%),
+    radial-gradient(54% 60% at 97% 97%,rgba(206,197,255,.34),transparent 72%),
+    linear-gradient(100deg,#fdfcff 0%,#faf8ff 26%,#f6f3fe 58%,#f2eefd 84%,#f4f0fe 100%);
+}
+/* 안쪽 세로 경계. 선 대신 흰 쪽에서 보라 쪽으로 스미게 한다 — 카드 안에 선이
+   하나 더 생기면 두 장을 붙여 놓은 것처럼 보인다. */
+.ob-stage::before{
+  /* 흰 쪽에서 보라 쪽으로 스미는 띠. 선을 긋는 대신 번지게 한다 — 카드 안에
+     선이 하나 더 생기면 두 장을 붙여 놓은 것처럼 보인다.
+
+     두 단(흰색 → 투명)으로 끝내면 오히려 경계가 보인다. 알파가 직선으로 줄면
+     눈에는 중간쯤에서 갑자기 꺾이는 것으로 읽혀(밝기 인지가 선형이 아니다)
+     띠의 끝에 또렷한 자국이 남는다. 그래서 뒤로 갈수록 천천히 옅어지도록
+     여러 단으로 나눠 감쇠를 눕혔다.
+     폭도 28px 에서 넉넉히 늘렸다 — 좁으면 아무리 곱게 깎아도 단차가 보인다. */
+  /* 바탕이 이미 흰색에서 시작하므로(.ob-stage) 덮을 것이 거의 없다. 남은
+     한 끗만 지우는 얇은 띠다 — 두껍게 덮으면 다시 흰 줄이 생긴다. */
+  content:"";position:absolute;inset:0 auto 0 0;width:44px;z-index:4;
+  background:linear-gradient(90deg,
+    rgba(255,255,255,.9) 0%,
+    rgba(255,255,255,.72) 22%,
+    rgba(255,255,255,.5) 44%,
+    rgba(255,255,255,.28) 66%,
+    rgba(255,255,255,.1) 85%,
+    rgba(255,255,255,0) 100%);
+  pointer-events:none;
+}
+.ob-art-layer{
+  position:absolute;inset:0;pointer-events:none;
+  animation:ob-art-in .3s ease both;
+}
+@keyframes ob-art-in{
+  from{opacity:0;transform:scale(.97)}
+  to{opacity:1;transform:none}
+}
+
+.ob-art{
+  position:absolute;left:50%;bottom:-2%;z-index:2;
+  display:block;width:var(--art);height:auto;transform:translateX(-50%);
+  filter:drop-shadow(0 22px 28px rgba(70,66,229,.26));
+}
+/* 걸음마다 원본 비율이 다르다. 그대로 두면 어떤 걸음만 훨씬 커 보인다. */
+.ob-stage.s1 .ob-art{width:var(--art)}                         /* 달리는 흰 개미(세로로 길다) */
+.ob-stage.s2 .ob-art{width:calc(var(--art) * 1.12);bottom:2%}  /* 받침대에 블록을 놓는 장면 */
+.ob-stage.s3 .ob-art{width:calc(var(--art) * 1.16);bottom:-4%} /* 유리판 든 검정 개미(가로가 넓다) */
+.ob-stage.s4 .ob-art{width:calc(var(--art) * 1.05);bottom:4%}  /* 환호(공중에 떠 있다) */
+
+/* ── 봉인 장면 (2걸음) ──────────────────────────────── */
+/* C-01 의 BlockchainScene 을 그대로 가져와 무대 가운데 세운다.
+   씬은 원래 모달 본문에 눕는 띠라 자기 배경(옅은 보라 그라데이션)과 바깥 여백을
+   들고 있는데, 여기서는 무대가 이미 같은 계열 보라라 그 배경이 겹쳐 네모가
+   하나 더 생긴다. 그래서 씬의 겉치레만 걷어내고 안쪽 배치는 건드리지 않는다 —
+   발끝·받침대 자리는 전부 컴포넌트가 --bs-* 로 내려주는 값이라 손대면 어긋난다. */
+.ob-scene{
+  position:absolute;left:0;right:0;top:50%;
+  /* 무대(330×472)가 씬의 원래 띠(214px)보다 훨씬 높아, 그대로 두면 가운데
+     가느다란 줄 하나만 있고 위아래가 텅 빈다. 통째로 키워 무대를 채운다 —
+     양옆이 무대 밖으로 나가지만 overflow:hidden 이라 잘리고, 오히려 건물이
+     화면 밖으로 이어지는 것처럼 보여 세계가 넓어진다.
+     씬 안쪽 비율(--s · --gate)은 건드리지 않는다. 그 값들은 서로 물려 있어
+     하나만 키우면 개미가 받침대를 빗나간다 — transform 은 통째로 확대라 안전하다. */
+  transform:translateY(-50%) scale(1.22);
+}
+.ob-scene .bs{
+  margin:0;
+  background:none;      /* 무대 그라데이션을 그대로 쓴다 */
+  border-radius:0;
+}
+
+/* ── 떠다니는 장식 ──────────────────────────────────── */
+/* 위치는 무대 기준 % 라 무대가 줄어도 구성이 유지된다. 크기만 마스코트와 함께
+   줄도록 --art 에 비례시킨다. 마크업(STEPS 의 drift)은 순서만 정한다.
+   alternate 왕복이라 되돌아가며 튀는 순간이 없다. sim-onboarding.css 와 같은 방식. */
+.ob-drift{
+  position:absolute;z-index:1;display:block;height:auto;
+  will-change:transform;
+  animation:ob-float var(--dur) var(--delay) ease-in-out infinite alternate;
+}
+@keyframes ob-float{
+  from{transform:translate3d(0,0,0) rotate(var(--r0))}
+  to{transform:translate3d(var(--dx),var(--dy),0) rotate(var(--r1))}
+}
+
+/* 1걸음 예측 기록 — 초안 블록 · 반짝임 */
+.ob-stage.s1 .d1{
+  top:8%;left:6%;width:calc(var(--art) * .5);
+  --dur:7.3s;--delay:-1.1s;--dx:7px;--dy:-13px;--r0:-3deg;--r1:1.5deg;
+}
+.ob-stage.s1 .d2{
+  top:18%;right:6%;width:calc(var(--art) * .34);
+  --dur:6.1s;--delay:-2.4s;--dx:-8px;--dy:-11px;--r0:3deg;--r1:-2deg;
+}
+
+/* 2걸음 봉인 — 잠긴 블록 · 사슬 */
+.ob-stage.s2 .d1{
+  top:6%;left:4%;width:calc(var(--art) * .52);z-index:3;
+  --dur:7.1s;--delay:-1.6s;--dx:8px;--dy:-12px;--r0:-2.4deg;--r1:1.8deg;
+}
+.ob-stage.s2 .d2{
+  top:20%;right:2%;width:calc(var(--art) * .46);
+  --dur:8.4s;--delay:-3.2s;--dx:-9px;--dy:-13px;--r0:3deg;--r1:-2deg;
+}
+
+/* 3걸음 모의투자 — 연습 카드 · 화살표 */
+.ob-stage.s3 .d1{
+  top:7%;left:4%;width:calc(var(--art) * .52);
+  --dur:7.3s;--delay:-1.1s;--dx:7px;--dy:-13px;--r0:-3deg;--r1:1.5deg;
+}
+.ob-stage.s3 .d2{
+  top:14%;right:4%;width:calc(var(--art) * .44);
+  --dur:8.2s;--delay:-3.7s;--dx:9px;--dy:-12px;--r0:-4deg;--r1:2deg;
+}
+
+/* 4걸음 지갑 — 확정된 블록 · 고리 */
+.ob-stage.s4 .d1{
+  top:8%;left:5%;width:calc(var(--art) * .5);z-index:3;
+  --dur:6.9s;--delay:-2.2s;--dx:8px;--dy:-12px;--r0:-2.5deg;--r1:2deg;
+}
+.ob-stage.s4 .d2{
+  top:22%;right:3%;width:calc(var(--art) * .42);
+  --dur:7.7s;--delay:-4.1s;--dx:-9px;--dy:-14px;--r0:3deg;--r1:-2deg;
+}
+
+/* ── 닫기 ───────────────────────────────────────────── */
+/* 무대 위에 얹는다. 보라 바탕이라 흰 원을 깔아야 글리프가 보인다 */
+.ob-x{
+  position:absolute;top:12px;right:12px;z-index:5;
+  display:grid;place-items:center;width:32px;height:32px;
+  border-radius:50%;background:rgba(255,255,255,.78);color:#6a7093;
+  box-shadow:0 4px 12px -6px rgba(40,36,110,.5);
+  transition:background .14s,color .14s;
+}
+.ob-x:hover{background:#fff;color:var(--ink)}
+.ob-x:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+/* ── 좁은 화면 ──────────────────────────────────────── */
+@media(max-width:780px){
+  .ob-modal{
+    --card-h:auto;--art:170px;
+    grid-template-columns:minmax(0,1fr);grid-template-rows:170px auto;
+    max-width:440px;
+  }
+  .ob-stage{grid-row:1}
+  .ob-stage::before{inset:auto 0 0 auto;width:auto;height:72px;
+    background:linear-gradient(0deg,
+      #fff 0%,
+      rgba(255,255,255,.97) 12%,
+      rgba(255,255,255,.88) 26%,
+      rgba(255,255,255,.72) 40%,
+      rgba(255,255,255,.53) 54%,
+      rgba(255,255,255,.34) 68%,
+      rgba(255,255,255,.17) 82%,
+      rgba(255,255,255,.05) 93%,
+      rgba(255,255,255,0) 100%)}
+  .ob-copy{grid-row:2;padding:18px 22px 20px;gap:16px}
+  .ob-body h2{font-size:21px}
+  /* 좁으면 장식이 마스코트와 겹친다. 오른쪽 하나만 뺀다 */
+  .ob-stage .d2{display:none}
+
+}
+@media(max-width:430px){
+  .ob-backdrop{padding:12px}
+  .ob-modal{--art:148px;grid-template-rows:168px auto}
+  /* 띠가 낮아지면 잘리는 쪽을 발밑으로 몰아 둔다 — 더듬이와 얼굴이 잘리면
+     캐릭터를 알아볼 수 없다. 걸음별 규칙보다 약하면 안 먹으므로 넷을 다 적는다. */
+  .ob-stage.s1 .ob-art,.ob-stage.s2 .ob-art,
+  .ob-stage.s3 .ob-art,.ob-stage.s4 .ob-art{bottom:-10%}
+  .ob-body h2{font-size:19px}
+  .ob-actions{flex-direction:column-reverse;align-items:stretch;gap:8px}
+  .ob-nav{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px}
+  .ob-skip{text-align:center}
+}
+
+/* ── 낮은 화면 ──────────────────────────────────────── */
+@media (min-width:781px) and (max-height:620px){
+  .ob-modal{--card-h:calc(100vh - 40px);--art:150px}
+  .ob-copy{padding:18px 26px 18px}
+  .ob-body h2{font-size:22px}
+  .ob-checks li{padding:7px 11px}
+}
