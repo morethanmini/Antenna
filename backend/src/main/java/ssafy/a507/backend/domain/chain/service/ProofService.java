@@ -12,6 +12,7 @@ import org.web3j.utils.Numeric;
 import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
 import ssafy.a507.backend.common.security.CurrentUserProvider;
+import ssafy.a507.backend.common.security.SignatureGuard;
 import ssafy.a507.backend.domain.chain.anchor.AnchorLeaves;
 import ssafy.a507.backend.domain.chain.anchor.AnchorProof;
 import ssafy.a507.backend.domain.chain.dto.ProofResponse;
@@ -25,7 +26,7 @@ import ssafy.a507.backend.domain.prediction.repository.PredictionCommitRepositor
 import ssafy.a507.backend.domain.prediction.repository.PredictionRepository;
 
 /**
- * 3단계 검산 재료 조립 (ANT-CHAIN-06, 화면 D-03).
+ * 4단계 검산 재료 조립 (ANT-CHAIN-06, 화면 D-03).
  *
  * <p>게이팅은 두 겹이다(plan §설계). ① <b>미판정 예측 자체</b> — BASE/OPEN 이면 작성자와 유효 구독자만 본다(명세 §예측 공개 규칙,
  * 그 외 403). 판정(HIT/MISS)이 끝나면 회원 전원. ② <b>근거 salt</b> — 근거 본문이 판정 후에도 구독자 전용이라 {@code salt}
@@ -59,6 +60,7 @@ public class ProofService {
     private final AnchorProof anchorProof;
     private final SubscriptionRepository subscriptions;
     private final CurrentUserProvider currentUserProvider;
+    private final SignatureGuard signatureGuard;
 
     @Transactional(readOnly = true)
     public ProofResponse proof(long predictionId) {
@@ -103,6 +105,8 @@ public class ProofService {
                 commit == null ? null : commit.getCommitHash(),
                 commit == null ? null : commit.getSignature(),
                 commit == null ? null : commit.getSignerAddress(),
+                commit == null ? null : commit.getSignNonce(),
+                signatureGuard.chainId(),
                 commit == null ? null : commit.getRevealedAt(),
                 saltVisible ? commit.getSalt() : null,
                 batch == null ? null : anchorOf(commit, batch),

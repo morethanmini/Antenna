@@ -40,7 +40,7 @@ public record AnchorDetailResponse(
 
     /**
      * 리프 하나. {@code commitHash} 는 머클 트리에 들어간 값 그대로이고, {@code predictionId} 는 그 커밋의 주인
-     * 예측이다 — 프론트가 이 번호로 3단계 검산 화면(D-03)에 들어간다.
+     * 예측이다 — 프론트가 이 번호로 4단계 검산 화면(D-03)에 들어간다.
      *
      * <p><b>종목·기간을 함께 싣는다 (S15P21A507-237).</b> 해시만으로는 무엇이 봉인됐는지 알 수 없어 원장이
      * 읽히지 않았다. 둘 다 판정 전에도 공개 대상이다 — {@code ChannelPredictionItemResponse} 가 잠긴 건에도

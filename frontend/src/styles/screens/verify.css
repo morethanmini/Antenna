@@ -1,4 +1,4 @@
-/* D-03 3단계 검산 — [ANT-FE-VERIFY]
+/* D-03 4단계 검산 — [ANT-FE-VERIFY]
    색·간격은 app.css 토큰만 쓴다. 통과·불일치 색은 anchor-badge.css 와 같은 값을 쓴다
    (확정 #15803d · 실패 var(--danger)) — 같은 뜻이 화면마다 다른 색이면 안 된다.
 
