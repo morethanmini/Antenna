@@ -2,76 +2,28 @@
 
      GET  /predictions/slots         이번 주 슬롯 잔여
      POST /predictions               등록 — 201 슬롯 내 / 202 슬롯 초과(소각)
-     GET  /predictions/me            내 예측 (C-02) — 붙었다
+     GET  /predictions/me            내 예측 (C-02)
      GET  /predictions/{id}          예측 상세 (C-03)
-     GET  /stocks/{code}/predictions  이 종목에 걸린 남의 예측 (B-03 예측 탭)
-                                      **API 명세서에 이 항목 자체가 없다.** 프론트가
-                                      부르는 경로인데 명세에 빠져 있어 함께 올렸다.
 
-   ── 붙은 것 ────────────────────────────────────────────────
-   GET /predictions/me (ANT-PRED-06). 요청한 대로 stockName 이 항목에 들어왔고,
-   집계 네 값은 status 필터와 무관한 전량 기준이며 hitRate 는 판정 건이 없으면
-   null 이다. hitRate 는 **0~1 비율** 로 온다 — 퍼센트가 아니다.
+   ── 목업이 남아 있지 않다 ──────────────────────────────────
+   마지막 하나였던 예측 상세가 ANT-PRED-05 로 열려 실제 호출로 넘어갔다(2026-09-15).
+   MOCK 상수와 mock/predictions.ts 를 함께 지웠다.
 
-   ⚠ **status 어휘가 ALL·PENDING·HIT·MISS 다 — JUDGED 가 없다.** 그래서 화면의
+   ⚠ **status 어휘가 ALL·PENDING·HIT·MISS 다 — JUDGED 가 없다.** 그래서 C-02 의
    거르개를 "판정 완료" 한 칸이 아니라 적중·빗나감 두 칸으로 갈랐다. HIT·MISS 를
    한 번에 받으려면 두 번 불러 합쳐야 하는데, 커서 페이징에서는 페이지마다 줄
    수가 들쭉날쭉해져 못 한다. JUDGED 가 생기면 두 칸을 한 칸으로 되돌린다.
 
-   ── 백엔드가 붙으면 지울 것 ────────────────────────────────
-   MOCK 을 false 로 바꾸면 남은 것도 실제 호출로 넘어간다. 아래는 아직 없다:
-
-     GET  /predictions/slots   { weeklyLimit, used, remaining, resetsAt }
-     POST /predictions         { stockCode, direction, targetPrice, horizon,
-                                 note?, noteSalt, evidencePointIds[], signature }
-                               201 { predictionId, status:'BASE', commitHash }
-                               202 { operationId }              슬롯 초과 → M-02
-                               401 서명 주소 불일치 · 409 잔액 부족
-
-       noteSalt 와 서명 문자열 규격은 ANT-PRED-02 가 정했다 — 아래 "커밋 봉인" 절.
-       scope 는 PREDICTION 이다(결정 B4). 서버 PredictionCreateRequest.scope() 와 같은
-       값이라야 nonce 칸 sig:nonce:{userId}:prediction 이 맞는다 — PredictTab 참고.
-
-     GET /predictions/me?status=JUDGED
-       HIT·MISS 를 묶는 어휘 한 개. 지금 어휘로는 "판정 완료" 를 한 번에 받을 수
-       없어 거르개를 적중·빗나감 두 칸으로 갈라 두었다. 집계에 judgedCount 가
-       이미 있으니 목록 쪽 어휘만 맞으면 화면이 한 칸으로 돌아간다.
-
-     GET /stocks/{code}/predictions?phase=&cursor=&size=
-       종목별 예측 목록이 명세에 아직 없다. 있는 것은 /predictions/me 와
-       /channels/{userId}/predictions 뿐이라 "이 종목에 누가 무엇을 걸었나" 를
-       모을 수가 없다. 응답은 §5 게이팅을 따라야 한다:
-         · 판정 완료(HIT/MISS) — direction·targetPrice·결과까지 전체 공개
-         · 미판정(BASE/OPEN)   — 근거만 잠근다. locked:true 로 내리고
-                                 targetPrice 만 null 로 뺀다. 작성자·적중률·방향·
-                                 기간은 공개한다(존재를 감추면 구독 유인이 사라진다).
-                                 이 조합은 서버 PredictionCardResponse 가 이미
-                                 쓰고 있는 규칙이다 — Jira S15P21A507-70 참고.
-
-       phase=PENDING(BASE·OPEN) / JUDGED(HIT·MISS) 로 걸러야 한다. 화면이 두 묶음을
-       나눠 보여주는데, 섞인 목록을 클라이언트에서 거르면 페이지마다 개수가
-       들쭉날쭉해진다(커서 페이징이라 서버가 잘라 준 뒤에 걸러지기 때문).
-
-       응답에 pendingCount·judgedCount·hitRate 를 함께 내려야 한다. 탭 옆의
-       건수와 적중률은 목록 전체에 대한 값이라, 불러온 페이지로 세면 "더 보기" 를
-       누를 때마다 숫자가 바뀐다.
+   종목별 예측 목록(GET /stocks/{code}/predictions)은 이제 요청하지 않는다 —
+   2026-09-10 설계 변경으로 종목 상세가 개인을 보여주지 않고 목표가 분포만 낸다.
+   그 자리는 GET /stocks/{code}/predictions/distribution 이 채웠다.
    ─────────────────────────────────────────────────────── */
 import { api } from './client'
 import { releaseIdempotencyKey } from './idempotency'
-import * as mock from './mock/predictions'
 import { keccak256Utf8 } from '../chain/keccak'
-import type { Anchor } from './anchors'
 import type { ProofAnchorStatus } from './proof'
-import type { ClosePrice, CursorList, OperationRef } from './types'
+import type { CursorList, OperationRef } from './types'
 import type { WalletNonce } from './wallet'
-
-/**
- * 남은 목업은 **서버에 그 API 가 없는 것들뿐**이다 — 예측 상세와 종목별 예측 목록.
- * 등록(POST /predictions)과 슬롯(GET /predictions/slots)은 ANT-PRED-01 이 들어와
- * 실제 호출로 넘어갔다. 위 "백엔드가 붙으면 지울 것" 목록의 남은 두 줄이 채워지면
- * 이 상수도 함께 사라진다.
- */
-const MOCK = true
 
 /** UP/DOWN 둘뿐이다. "보합" 을 두지 않는다(§4 C-01). */
 export const DIRECTIONS = ['UP', 'DOWN'] as const
@@ -298,87 +250,75 @@ export function fetchMyPredictions(filter: MyFilter) {
 }
 
 /* ── 예측 상세 (C-03) ─────────────────────────────────────
-   잠금이 두 겹이다(§5 게이팅 표).
+   서버 PredictionDetailResponse 와 짝이다(ANT-PRED-05). 필드 이름·중첩을 그대로 옮겼다.
 
-     ① 근거 본문   미구독 → noteLocked. **만기 리빌 후에도 풀리지 않는다**
+   잠금이 두 겹이다(§5 게이팅 표). **서버가 403 을 쓰지 않는다** — 누구에게나 200 이고
+   가리는 것은 필드다.
+
+     ① locked      판정 전 + 작성자·구독자 아님 → direction · targetPrice 가 null,
+                   evidences 가 빈 배열
+     ② noteLocked  구독자 아님 → note 가 null. **판정 후에도 풀리지 않는다**
                    (payload 에 noteHash 만 들어가므로 애초에 공개 대상이 아니다)
-     ② 예측 자체   **잠그지 않는다**(2026-09-08 결정). 예측가·종목·방향·목표가·
-                   기준가·만기는 누구에게나 보인다 — 목표가까지 가리면 "누가
-                   무언가를 예측했다" 만 남아 예측가를 고를 수 없다.
-                   서버 명세(§5 · /channels/{userId}/predictions)가 아직 옛 규칙이라
-                   locked 필드는 남겨 두었다.
-                    (payload 에 noteHash 만 들어가므로 애초에 공개 대상이 아니다)
 
-   무엇을 잠그지 않는가 — commitHash · 앵커 · 서명 주소는 **언제나 공개**다.
-   이 셋이 "조작하지 않았다" 를 스스로 증명하는 재료이고, 잠그면 이 화면의
-   존재 이유가 사라진다. 그래서 locked 여도 이 값들은 내려온다.
+   무엇을 잠그지 않는가 — proof 의 커밋 해시 · 앵커 · 서명 주소는 **언제나 온다**.
+   이 셋이 "조작하지 않았다" 를 스스로 증명하는 재료이고, 해시로는 내용을 알 수 없다.
 
-   404 로 감추지 않는다. 존재 자체는 공개이며 잠금 카드와 구독 CTA 로 그린다. */
+   ⚠ **등록 직후에는 비어 있는 값이 많다.** baseDate · basePrice · settleDate 는
+   배치 B2 가 다음 영업일에 채운다(엔티티 주석: "등록 시 NULL, 배치가 채운다").
+   settleDate = baseDate + horizon 이라 기준일이 없으면 만기일도 없다 — 화면이
+   이 셋을 비어 있는 채로 그릴 수 있어야 한다. */
 export type PredictionDetail = {
-  id: string
-  stockCode: string
-  /**
-   * **명세에 없다.** GET /predictions/{id} 응답 스키마가 stockCode 만 적고 있어
-   * 서버가 붙어도 이름이 오지 않는다 — 제목이 "005930" 으로 뜬다. C-02 에서
-   * 같은 요청을 해 받아냈으므로(위 "붙은 것") 여기도 넣어 달라고 올렸다.
-   *
-   * 그때까지 화면(C-03)이 이름이 비면 종목 개요에서 가져온다. 그건 목업을 메우는
-   * 우회가 아니라 **이름이 없을 때의 폴백** 이다 — 종목이 지워진 건은 서버가
-   * 붙어도 이름이 비고, 그때도 코드보다는 그 값이 낫다.
-   */
+  id: number
+  author: { userId: number; nickname: string }
+  /** 종목이 지워졌으면 null. 그 예측도 사라지지 않는다 — 커밋은 남아야 한다 */
+  stockCode: string | null
   stockName: string | null
-  author: { userId: string; nickname: string }
   status: PredictionStatus
-  horizon: Horizon
+  /** 3~90 캘린더일 */
+  horizon: number
   createdAt: string
-  /** 만기 영업일 */
-  settleDate: string
-  /** 만기까지 남은 일수. 판정이 끝났거나 기준가 확정 전이면 null */
-  dday: number | null
 
-  /* ── 잠금 ────────────────────────────────────────────
-     **아래 값들은 잠기지 않는다**(2026-09-08 결정). 예측가를 고를 근거가 되어야
-     하므로 방향·목표가·기준가·만기는 누구에게나 온다. 구독으로 사는 것은
-     판단의 이유(noteLocked 가 가리는 note)뿐이다.
-
-     locked 는 남긴다 — 서버가 아직 옛 규칙(예측 전체 잠금)으로 답할 수 있고,
-     그때는 화면이 잠금 카드로 그린다. 명세가 정리되면 지운다. */
+  /* ── 잠금 ① ─────────────────────────────────────────── */
   locked: boolean
   direction: Direction | null
   targetPrice: number | null
-  /** 배치 B2 가 다음 영업일 종가로 확정한다. 등록 직후(BASE)는 비어 있다 */
+
+  /* ── 가격·날짜 ───────────────────────────────────────── */
+  /** 등록 때 본 직전 종가 박제. 표시용이며 기준가가 아니다 */
+  refClose: number | null
+  /** 기준가 확정 영업일. 배치 B2 가 채운다 */
+  baseDate: string | null
+  /** 기준일 종가 = 판정 출발점. 등록 직후(BASE)는 비어 있다 */
   basePrice: number | null
+  /** 만기일 = baseDate + horizon. 기준일이 없으면 이것도 없다 */
+  settleDate: string | null
   /** 만기 종가. 판정 완료만 채워진다 */
   settlePrice: number | null
   /** 목표가 대비 오차 %. 판정 완료만 */
   errorRate: number | null
+  /** 만기까지 남은 일수. 판정이 끝났거나 기준가 확정 전이면 null */
+  dday: number | null
+  /** 진행률을 그리는 재료. 실전 시세는 전일 종가뿐이라 그 거래일을 함께 받는다(§7 legal) */
+  lastClose: { close: number; tradeDate: string } | null
 
-  /* 진행률을 그리는 재료. 실전 시세는 전일 종가뿐이라 그 값으로 어디까지 왔는지
-     보여준다 — "현재가" 를 만들지 않으려고 기준일을 함께 받는다(§7 legal). */
-  lastClose: ClosePrice | null
-
-  /* ── 근거 ─────────────────────────────────────────────
-     본문은 구독자 전용이다. 잠기면 note 가 null 이고 미리보기도 주지 않는다 —
-     리포트(§5)와 달리 예측 근거는 3줄 미리보기 규칙이 없다. */
+  /* ── 잠금 ② ─────────────────────────────────────────── */
   noteLocked: boolean
   note: string | null
-  /** C-01 에서 인계받아 커밋에 묶인 근거. 등록 후 바뀌지 않는다 */
-  evidencePoints: { id: number; body: string }[]
+  /** C-01 에서 인계받아 커밋에 묶인 근거. 등록 후 바뀌지 않는다. locked 면 빈 배열 */
+  evidences: { pointId: number; kind: 'POSITIVE' | 'RISK' | 'CHECK'; body: string }[]
 
   /* ── 항상 공개 ────────────────────────────────────────
-     잠금 여부와 무관하게 내려온다(§4 C-03). */
-  commitHash: string
-  /** 서명한 지갑 주소 */
-  signerAddress: string
-  /** 이 커밋이 묶인 앵커 배치. 아직 안 묶였으면 null */
-  anchor: Anchor | null
-
-  /** 잠금을 푸는 채널. 구독 CTA 가 여기로 간다 */
-  channelId: string | null
+     커밋이 아직 없으면(등록 직후 극히 짧은 창) 해시·주소가 null 이고 anchorStatus 는 WAITING. */
+  proof: {
+    signerAddress: string | null
+    commitHash: string | null
+    anchorStatus: ProofAnchorStatus
+    anchorBlockNumber: number | null
+    revealed: boolean
+  }
 }
 
 export function getPredictionDetail(id: string) {
-  if (MOCK) return mock.predictionDetail(id)
   return api.get<PredictionDetail>(`/predictions/${id}`)
 }
 
