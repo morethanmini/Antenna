@@ -95,6 +95,43 @@ async function main() {
     { environment: 'local', contractName: 'PredictToken', version: 1, envVar: 'CONTRACT_PREDICT_TOKEN' },
   );
 
+  // ③ PredictionEventPool — nonce 2 (ANT-EVENT-01). 배팅 이벤트 돈통. 토큰의 treasury 를 그대로 쓴다.
+  const poolFactory = await ethers.getContractFactory('PredictionEventPool');
+  const pool = await poolFactory.deploy(admin, relayer, tokenAddress, treasury);
+  await pool.waitForDeployment();
+  const poolTx = pool.deploymentTransaction();
+  const poolReceipt = await poolTx.wait();
+  const poolAddress = await pool.getAddress();
+
+  // 풀이 사용자 ANT 를 옮기려면 토큰의 MOVER_ROLE 이 있어야 한다. 로컬 관리자가 배포자와 같은 계정이면 여기서 바로 준다.
+  const MOVER_ROLE = await token.MOVER_ROLE();
+  let moverGranted = false;
+  if (admin.toLowerCase() === deployer.address.toLowerCase()) {
+    await (await token.connect(deployer).grantRole(MOVER_ROLE, poolAddress)).wait();
+    moverGranted = await token.hasRole(MOVER_ROLE, poolAddress);
+  }
+  if (!moverGranted) {
+    console.log(`  ⚠ MOVER_ROLE 미부여 — 관리자(${admin})로 token.grantRole(MOVER_ROLE, ${poolAddress}) 을 직접 보내라. 그 전엔 placeBet 이 revert 한다.`);
+  }
+
+  emit(
+    {
+      network: network.name,
+      chainId,
+      address: poolAddress,
+      deployer: deployer.address,
+      admin,
+      operator: relayer,
+      token: tokenAddress,
+      treasury,
+      txHash: poolTx.hash,
+      blockNumber: poolReceipt.blockNumber,
+      moverGranted,
+    },
+    readArtifact('PredictionEventPool'),
+    { environment: 'local', contractName: 'PredictionEventPool', version: 1, envVar: 'CONTRACT_EVENT_POOL' },
+  );
+
   console.log('  잔액이 필요하면: MINT_TO=<내 지갑> npm run mint:local  (기본 10000 ANT, reason SIGNUP_BONUS)');
 }
 
