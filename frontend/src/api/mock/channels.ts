@@ -17,7 +17,7 @@
    내 채널은 이 표에 없다 — 아래 mine() 이 실제 내 id 로 만든다. */
 import { api } from '../client'
 import { ApiError } from '../errors'
-import { platformLabel, type MyProfile } from '../account'
+import type { MyProfile } from '../account'
 import type {
   Backtest, Channel, ChannelPrediction, ChannelPredictionPage, SubscribeBody,
 } from '../channels'
@@ -43,8 +43,10 @@ function base(userId: string, nickname: string): Omit<Channel, 'mySubscription' 
     bio: '반도체·2차전지 중심으로 실적 시즌마다 방향을 겁니다. 근거는 공시와 실적 발표만 씁니다.',
     interests: ['반도체', '2차전지', '자동차'],
     externalLinks: [
-      { label: '블로그', url: 'https://example.com/blog' },
-      { label: '유튜브', url: 'https://example.com/yt' },
+      { platform: 'BLOG', label: null, url: 'https://example.com/blog' },
+      { platform: 'YOUTUBE', label: null, url: 'https://example.com/yt' },
+      // 표에 없는 곳은 ETC 에 이름을 붙여 담는다
+      { platform: 'ETC', label: '브런치', url: 'https://brunch.co.kr/@antenna' },
     ],
     fee: FEE,
     stats: { hitRate: 62.5, doneCount: 48, avgError: 3.1 },
@@ -123,7 +125,7 @@ async function mine(userId: string): Promise<Channel | null> {
        ANT-AUTH-05 로 서버가 둘 다 내려준다(없으면 빈 배열). E-02 의 편집 폼이 고치는 것도
        바로 이 값이라, 저장하면 여기를 거쳐 머리에 그대로 뜬다. */
     interests: me.interests,
-    externalLinks: me.channels.map((c) => ({ label: platformLabel(c.platform), url: c.url })),
+    externalLinks: me.channels,
     mySubscription: { status: null, expiresAt: null, autoRenew: false, paidFee: null },
     isMe: true,
   }

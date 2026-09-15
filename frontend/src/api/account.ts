@@ -8,7 +8,13 @@ import { api } from './client'
 export type ChannelPlatform = 'YOUTUBE' | 'X' | 'BLOG' | 'ETC'
 
 export type UserChannel = {
+  /** 화면 아이콘을 정한다. 표에 없는 곳은 ETC 로 담고 이름을 label 로 붙인다 */
   platform: ChannelPlatform
+  /**
+   * 사용자가 붙인 이름. 없으면 플랫폼 기본 이름을 쓴다(channelLabel).
+   * MeResponse 에 @JsonInclude 가 없어 **null 로 실려 온다** — 옵셔널이 아니다.
+   */
+  label: string | null
   url: string
 }
 
@@ -64,6 +70,16 @@ export const PLATFORM_LABEL: Record<ChannelPlatform, string> = {
 
 export function platformLabel(platform: string) {
   return PLATFORM_LABEL[platform as ChannelPlatform] ?? platform
+}
+
+/**
+ * 화면에 보일 채널 이름.
+ *
+ * 사용자가 붙인 이름이 먼저다 — 표에 없는 곳(브런치·디스코드 …)을 ETC 로만 담으면
+ * 프로필에 "기타" 가 여러 개 뜬다. 아이콘은 platform 이 정하고 이름은 여기서 정한다.
+ */
+export function channelLabel(channel: { platform: string; label?: string | null }) {
+  return channel.label?.trim() || platformLabel(channel.platform)
 }
 
 /**

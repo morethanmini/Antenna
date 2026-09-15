@@ -115,7 +115,11 @@
   border:1px solid var(--rule); border-radius:8px;
   background:var(--surface); color:var(--ink); font:inherit; font-size:12.5px;
 }
-.ch-edit-links input{ flex:1 1 240px; min-width:0; }
+/* 한 채널은 한 줄이다 — 플랫폼·이름·주소·삭제. 기본 폭을 크게 잡으면 이름 칸이 생기는
+   순간 줄이 접혀 한 채널이 두 줄처럼 보인다(카드 폭이 좁다). 주소가 남는 폭을 먹고,
+   이름은 짧은 말이라 조금만 준다. 정말 좁아지면 그때 접힌다(li 가 flex-wrap). */
+.ch-edit-links input{ flex:1 1 160px; min-width:0; }
+.ch-edit-links .ch-edit-name{ flex:0 1 108px; }
 .ch-edit-links select:focus, .ch-edit-links input:focus{ outline:2px solid var(--brand-soft); outline-offset:1px; border-color:var(--brand); }
 
 /* 지우기·더하기는 값이 아니라 행 조작이라 한 단계 낮춘다 */

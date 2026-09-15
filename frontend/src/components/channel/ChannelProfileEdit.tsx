@@ -31,7 +31,7 @@ import { NICKNAME_MAX, useNicknameCheck, validateNickname } from '../../api/useN
 import { getSectorSummary } from '../../api/stocks'
 import { useAsync } from '../../api/useAsync'
 import {
-  platformLabel, type MyProfile, type ProfileUpdate, type UserChannel,
+  channelLabel, type MyProfile, type ProfileUpdate, type UserChannel,
 } from '../../api/account'
 import { useAuth } from '../../auth/context'
 import '../../styles/profile-edit.css'
@@ -40,6 +40,11 @@ const INTRODUCE_MAX = 200
 const CHANNEL_URL_MAX = 300
 /** 명세 §회원 의 네 가지. 화면 아이콘을 정하는 값이라 서버 enum 과 같은 순서로 둔다 */
 const PLATFORMS = ['YOUTUBE', 'BLOG', 'X', 'ETC'] as const
+/** 고르는 자리에서는 ETC 가 "기타" 가 아니라 할 일이다 — 고르면 이름 칸이 열린다 */
+const PLATFORM_OPTION: Record<(typeof PLATFORMS)[number], string> = {
+  YOUTUBE: '유튜브', BLOG: '블로그', X: 'X', ETC: '직접 입력',
+}
+const LABEL_MAX = 30
 
 type Field = 'nickname' | 'introduce' | 'interests' | 'channels'
 
@@ -48,7 +53,7 @@ type Props = {
     nickname: string
     bio: string | null
     interests: string[]
-    externalLinks: { label: string; url: string }[]
+    externalLinks: UserChannel[]
   }
   /** 내 채널이 아니면 누를 수 없는 읽기용만 그린다 */
   isMe: boolean
@@ -154,7 +159,7 @@ export default function ChannelProfileEdit({ profile, isMe, heading = 'h1', onSa
               <li key={l.url}>
                 {/* 외부로 나가는 링크다. 참조자 정보를 넘기지 않는다 */}
                 <a href={l.url} target="_blank" rel="noreferrer noopener">
-                  {l.label}
+                  {channelLabel(l)}
                   <ExternalIcon />
                 </a>
               </li>
@@ -339,17 +344,15 @@ function InterestsField({ current, saving, error, onCancel, onSave }: FieldProps
 
 function ChannelsField(
   { current, saving, error, onCancel, onSave }:
-  FieldProps & { current: { label: string; url: string }[] },
+  FieldProps & { current: UserChannel[] },
 ) {
-  /* 화면은 라벨로 받았는데 서버는 platform 을 받는다. 라벨에서 되짚지 않고 ETC 로
-     떨어뜨린다 — 되짚기를 만들면 라벨 문구가 바뀔 때마다 조용히 틀린다. */
-  const [rows, setRows] = useState<UserChannel[]>(
-    current.map((l) => ({ platform: 'ETC' as const, url: l.url })),
-  )
+  /* 서버가 주는 모양 그대로다 — 라벨에서 플랫폼을 되짚던 때와 달리 잃는 정보가 없다 */
+  const [rows, setRows] = useState<UserChannel[]>(current)
   const [local, setLocal] = useState<string | null>(null)
   const changed = rows.length !== current.length
     || rows.some((r, i) => r.url !== current[i]?.url)
-    || rows.some((r) => r.platform !== 'ETC')
+    || rows.some((r, i) => r.platform !== current[i]?.platform)
+    || rows.some((r, i) => (r.label ?? null) !== (current[i]?.label ?? null))
 
   function submit(event: React.FormEvent) {
     event.preventDefault()
@@ -373,12 +376,30 @@ function ChannelsField(
             <select
               aria-label={`${i + 1}번째 채널 플랫폼`}
               value={row.platform}
-              onChange={(e) => setRows(rows.map((r, j) => (
-                j === i ? { ...r, platform: e.target.value as UserChannel['platform'] } : r
-              )))}
+              onChange={(e) => setRows(rows.map((r, j) => {
+                if (j !== i) return r
+                const platform = e.target.value as UserChannel['platform']
+                /* 표에 있는 곳으로 되돌리면 직접 붙인 이름은 버린다 — 유튜브인데
+                   이름이 "브런치" 로 남아 있으면 아이콘과 글자가 어긋난다 */
+                return { ...r, platform, label: platform === 'ETC' ? r.label : null }
+              }))}
             >
-              {PLATFORMS.map((p) => <option key={p} value={p}>{platformLabel(p)}</option>)}
+              {PLATFORMS.map((p) => <option key={p} value={p}>{PLATFORM_OPTION[p]}</option>)}
             </select>
+            {/* 표에 없는 곳은 이름을 직접 붙인다. 비우면 '기타' 로 보인다(channelLabel) */}
+            {row.platform === 'ETC' && (
+              <input
+                type="text"
+                className="ch-edit-name"
+                aria-label={`${i + 1}번째 채널 이름`}
+                value={row.label ?? ''}
+                maxLength={LABEL_MAX}
+                placeholder="이름 (예: 브런치)"
+                onChange={(e) => setRows(rows.map((r, j) => (
+                  j === i ? { ...r, label: e.target.value } : r
+                )))}
+              />
+            )}
             <input
               type="url"
               aria-label={`${i + 1}번째 채널 주소`}
@@ -396,7 +417,7 @@ function ChannelsField(
           </li>
         ))}
       </ul>
-      <button type="button" className="ch-edit-add" onClick={() => setRows([...rows, { platform: 'YOUTUBE', url: '' }])}>
+      <button type="button" className="ch-edit-add" onClick={() => setRows([...rows, { platform: 'YOUTUBE', label: null, url: '' }])}>
         채널 추가
       </button>
       <p className="ch-name-hint">주소는 https 로 시작해야 합니다.</p>

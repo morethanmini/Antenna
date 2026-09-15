@@ -13,7 +13,7 @@
    컴포넌트(components/BadgeList)와 GET /users/me/badges 는 그대로 둔다. */
 import { Link } from 'react-router-dom'
 import { useApiQuery } from '../api/useApiQuery'
-import { platformLabel, type MyProfile } from '../api/account'
+import { type MyProfile } from '../api/account'
 import ChannelProfileEdit from '../components/channel/ChannelProfileEdit'
 import ProfileAvatar from '../components/channel/ProfileAvatar'
 import ErrorState from '../components/state/ErrorState'
@@ -87,9 +87,7 @@ export default function MyPage() {
                     nickname: profile.data.nickname,
                     bio: profile.data.introduce,
                     interests,
-                    externalLinks: channels.map((c) => ({
-                      label: platformLabel(c.platform), url: c.url,
-                    })),
+                    externalLinks: channels,
                   }}
                   onSaved={profile.reload}
                 />
