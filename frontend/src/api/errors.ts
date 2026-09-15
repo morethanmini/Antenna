@@ -44,9 +44,20 @@ export function toApiError(status: number, body: unknown): ApiError {
    표에 없는 code 를 즉석에서 만들지 않는다. 도메인 code 는 백엔드가
    스토리를 구현하며 표에 추가하면 여기에도 함께 반영한다. */
 export const ERROR_CODE = {
-  // 공통 3개 — 전 API 가 공유한다
+  /* 공통 6개 — 전 API 가 공유한다.
+
+     아래 셋(NOT_FOUND · METHOD_NOT_ALLOWED · UNSUPPORTED_MEDIA_TYPE)은 **우리 잘못**이다.
+     사용자가 무엇을 잘못한 것이 아니라 앱이 잘못된 주소·메서드·형식으로 불렀다는 뜻이라,
+     재시도해도 절대 풀리지 않는다(errorText 에서 retryable 을 주지 않는 이유). 명세 v0.61
+     전에는 셋 다 서버에서 500 으로 나와 "서버 고장" 과 구분되지 않았다. */
   INVALID_REQUEST: 'INVALID_REQUEST',
   UNAUTHENTICATED: 'UNAUTHENTICATED',
+  /** 매핑되지 않은 경로. 도메인 404(USER_NOT_FOUND 등)와 다르다 — 저쪽은 "그 리소스가 없다" 다 */
+  NOT_FOUND: 'NOT_FOUND',
+  /** 경로는 맞는데 그 메서드를 안 받는다 */
+  METHOD_NOT_ALLOWED: 'METHOD_NOT_ALLOWED',
+  /** Content-Type 이 없거나 application/json 이 아니다 */
+  UNSUPPORTED_MEDIA_TYPE: 'UNSUPPORTED_MEDIA_TYPE',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
   // 인증 (ANT-AUTH-02)
   PROVIDER_NOT_SUPPORTED: 'PROVIDER_NOT_SUPPORTED',

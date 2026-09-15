@@ -16,6 +16,23 @@ public enum ErrorCode {
     // 공통
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "요청 값이 올바르지 않습니다."),
     UNAUTHENTICATED(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다."),
+    /**
+     * <b>매핑되지 않은 경로</b>. 도메인 404(USER_NOT_FOUND · REPORT_NOT_FOUND …)와 다르다 —
+     * 저쪽은 "그 리소스가 없다" 이고 이것은 "그런 경로가 애초에 없다" 다.
+     *
+     * <p>프론트가 둘을 구분해야 한다: 도메인 404 는 화면이 빈 상태로 그리면 되지만, 이 코드는
+     * 클라이언트 쪽 오타이거나 서버에서 사라진 엔드포인트라 화면이 할 수 있는 일이 없다.
+     */
+    NOT_FOUND(HttpStatus.NOT_FOUND, "요청한 경로를 찾을 수 없습니다."),
+    /**
+     * 경로는 있는데 그 메서드를 받지 않는다 — {@code DELETE /predictions/1}.
+     *
+     * <p>{@link #NOT_FOUND} 와 가른다: 저쪽은 "그런 주소가 없다", 이쪽은 "주소는 맞는데 그렇게는 못 부른다" 다.
+     * 클라이언트가 고칠 곳이 다르므로 같은 code 로 뭉개지 않는다.
+     */
+    METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "이 경로에서 지원하지 않는 요청 방식입니다."),
+    /** 본문 형식을 못 읽는다 — {@code Content-Type} 이 없거나 {@code application/json} 이 아니다. */
+    UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "지원하지 않는 요청 본문 형식입니다."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다."),
 
     // 인증 (ANT-AUTH-01 · ANT-AUTH-02)
