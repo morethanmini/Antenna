@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.web3j.crypto.Hash;
 import org.web3j.utils.Numeric;
@@ -19,6 +21,7 @@ import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.chain.entity.AnchorBatch;
 import ssafy.a507.backend.domain.chain.merkle.MerkleTree;
 import ssafy.a507.backend.domain.chain.repository.AnchorBatchRepository;
+import ssafy.a507.backend.domain.monetize.repository.ReportRepository;
 import ssafy.a507.backend.domain.prediction.repository.PredictionCommitRepository;
 
 /**
@@ -44,8 +47,15 @@ class AnchorRunnerTest {
     @Autowired FakeAnchorRelayer relayer;
     @Autowired AnchorBatchRepository batches;
     @Autowired PredictionCommitRepository commits;
+    @Autowired ReportRepository reports;
+    @Autowired ssafy.a507.backend.domain.chain.service.ProofService proofService;
 
     private Long userId;
+
+    @org.junit.jupiter.api.AfterEach
+    void clearAuth() {
+        SecurityContextHolder.clearContext();
+    }
 
     @BeforeEach
     void setUp() {
@@ -93,6 +103,70 @@ class AnchorRunnerTest {
         for (long pid : List.of(p1, p2, p3)) {
             assertThat(commits.findById(pid).orElseThrow().getAnchorBatch().getId()).isEqualTo(batch.getId());
         }
+    }
+
+    // ── 리포트 리프 (ANT-CHAIN-14) ──────────────────────────────────
+
+    @Test
+    @DisplayName("리포트도 같은 트리에 들어간다 — 리프 순서는 예측 먼저, 그다음 리포트 id 오름차순")
+    void 리포트가_같은_배치에_묶인다() {
+        long p1 = insertCommit("c1", "BASE");
+        long p2 = insertCommit("c2", "BASE");
+        long r1 = insertReport("첫 리포트", "ra");
+        long r2 = insertReport("둘째 리포트", "rb");
+        relayer.thenConfirmed();
+
+        AnchorBatch batch = batches.findById(runner.run(TODAY).orElseThrow()).orElseThrow();
+
+        assertThat(batch.getCommitCount()).isEqualTo(4);
+        FakeAnchorRelayer.Call call = relayer.calls().get(0);
+        assertThat(call.leaves().stream().map(Numeric::toHexString).toList())
+                .containsExactly(hashOf("c1"), hashOf("c2"), hashOf("ra"), hashOf("rb"));
+        assertThat(Numeric.toHexString(call.root())).isEqualTo(batch.getMerkleRoot());
+
+        for (long pid : List.of(p1, p2)) {
+            assertThat(commits.findById(pid).orElseThrow().getAnchorBatch().getId()).isEqualTo(batch.getId());
+        }
+        for (long rid : List.of(r1, r2)) {
+            assertThat(reports.findById(rid).orElseThrow().getAnchorBatch().getId()).isEqualTo(batch.getId());
+        }
+    }
+
+    @Test
+    @DisplayName("리포트가 섞인 배치에서도 예측 검산의 루트가 재현된다 — 리프 목록을 만드는 곳이 하나라야 한다")
+    void 리포트가_섞여도_예측_proof_가_산다() {
+        long pid = insertCommit("c1", "HIT");
+        insertReport("같은 배치에 들어갈 리포트", "ra");
+        relayer.thenConfirmed();
+        AnchorBatch batch = batches.findById(runner.run(TODAY).orElseThrow()).orElseThrow();
+
+        /* ProofService 가 리프를 예측만으로 다시 접으면 루트가 달라져 500 이 난다(그쪽 방어선).
+           여기서 보는 것은 "접은 루트 == 저장된 루트" 가 여전히 성립하는가다.
+           principal 이름 = users.id 는 SecurityContextCurrentUserProvider 의 규약이다. */
+        authenticateAs(userId);
+        var proof = proofService.proof(pid);
+        assertThat(proof.anchor()).isNotNull();
+        assertThat(proof.anchor().merkleRoot()).isEqualTo(batch.getMerkleRoot());
+        assertThat(proof.anchor().leafCount()).isEqualTo(2);
+        assertThat(proof.anchor().leafIndex()).isZero();
+        assertThat(MerkleTree.verify(
+                        Numeric.hexStringToByteArray(proof.commitHash()),
+                        proof.anchor().merkleProof().stream().map(Numeric::hexStringToByteArray).toList(),
+                        Numeric.hexStringToByteArray(batch.getMerkleRoot())))
+                .isTrue();
+    }
+
+    @Test
+    @DisplayName("봉인 안 된 옛 리포트(body_hash NULL)는 앵커 대상이 아니다 — 소급 봉인은 하지 않는다")
+    void 봉인_안된_리포트는_빠진다() {
+        insertCommit("c1", "BASE");
+        insertUnsealedReport("이 기능 이전에 발행된 리포트");
+        relayer.thenConfirmed();
+
+        AnchorBatch batch = batches.findById(runner.run(TODAY).orElseThrow()).orElseThrow();
+
+        assertThat(batch.getCommitCount()).isEqualTo(1);
+        assertThat(relayer.calls().get(0).leaves()).hasSize(1);
     }
 
     @Test
@@ -364,5 +438,41 @@ class AnchorRunnerTest {
         em.flush();
         em.clear();
         return pid;
+    }
+
+    /** {@code ProofService} 는 인증을 요구한다. 이 테스트는 MockMvc 를 거치지 않으므로 직접 채운다. */
+    private static void authenticateAs(long id) {
+        SecurityContextHolder.getContext()
+                .setAuthentication(
+                        new UsernamePasswordAuthenticationToken(String.valueOf(id), null, List.of()));
+    }
+
+    /** 봉인된 리포트. 해시는 예측 커밋과 같은 자리(리프)라 테스트에서도 같은 seed 규칙을 쓴다. */
+    private long insertReport(String title, String seed) {
+        return insertReportRow(title, hashOf(seed), "11".repeat(32));
+    }
+
+    /** 이 기능 이전에 발행된 리포트 — body_hash·report_hash·salt 가 없다. */
+    private long insertUnsealedReport(String title) {
+        return insertReportRow(title, null, null);
+    }
+
+    private long insertReportRow(String title, String reportHash, String salt) {
+        em.createNativeQuery(
+                        """
+                        INSERT INTO reports (user_id, title, body, is_public, view_count, created_at,
+                                             body_hash, report_hash, salt)
+                        VALUES (?, ?, '본문', true, 0, CURRENT_TIMESTAMP, ?, ?, ?)
+                        """)
+                .setParameter(1, userId)
+                .setParameter(2, title)
+                .setParameter(3, reportHash == null ? null : hashOf(title))
+                .setParameter(4, reportHash)
+                .setParameter(5, salt)
+                .executeUpdate();
+        long id = ((Number) em.createNativeQuery("SELECT MAX(id) FROM reports").getSingleResult()).longValue();
+        em.flush();
+        em.clear();
+        return id;
     }
 }

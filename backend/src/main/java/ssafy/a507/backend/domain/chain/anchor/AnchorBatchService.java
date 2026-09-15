@@ -15,6 +15,8 @@ import ssafy.a507.backend.domain.chain.entity.AnchorBatch;
 import ssafy.a507.backend.domain.chain.merkle.MerkleTree;
 import ssafy.a507.backend.domain.chain.relay.AnchorResult;
 import ssafy.a507.backend.domain.chain.repository.AnchorBatchRepository;
+import ssafy.a507.backend.domain.monetize.entity.Report;
+import ssafy.a507.backend.domain.monetize.repository.ReportRepository;
 import ssafy.a507.backend.domain.prediction.entity.PredictionCommit;
 import ssafy.a507.backend.domain.prediction.repository.PredictionCommitRepository;
 
@@ -31,6 +33,8 @@ public class AnchorBatchService {
 
     private final AnchorBatchRepository batches;
     private final PredictionCommitRepository commits;
+    private final ReportRepository reports;
+    private final AnchorLeaves anchorLeaves;
     private final CommitAnchorProperties contract;
     private final ChainProperties chain;
 
@@ -38,16 +42,18 @@ public class AnchorBatchService {
     public record Payload(long batchId, byte[] merkleRoot, List<byte[]> commitHashes) {}
 
     /**
-     * 대기 커밋 전부를 새 배치로 묶는다. 0건이면 empty — 배치 행도 만들지 않는다(결정 A3).
-     * 커밋 순서 = prediction id 오름차순 = 리프 순서.
+     * 대기 리프 전부를 새 배치로 묶는다. 0건이면 empty — 배치 행도 만들지 않는다(결정 A3).
+     *
+     * <p>리프는 예측 커밋과 리포트 두 종류다(ANT-CHAIN-14). 순서 규칙은 {@link AnchorLeaves} 한 곳에 있다 —
+     * 여기서 직접 정렬하지 않는 이유가 그 javadoc 에 있다.
      */
     @Transactional
     public Optional<Payload> openBatch(LocalDate businessDate) {
-        List<PredictionCommit> pending = commits.findByAnchorBatchIsNullOrderByPredictionIdAsc();
+        List<AnchorLeaves.Leaf> pending = anchorLeaves.pending();
         if (pending.isEmpty()) {
             return Optional.empty();
         }
-        List<byte[]> leaves = toLeaves(pending);
+        List<byte[]> leaves = AnchorLeaves.bytesOf(pending);
         MerkleTree tree = MerkleTree.build(leaves);
         String root = Numeric.toHexString(tree.root());
 
@@ -55,8 +61,13 @@ public class AnchorBatchService {
                 AnchorBatch.open(
                         businessDate, root, pending.size(), contract.normalizedAddress(), chain.chainId());
         batches.save(batch);
-        for (PredictionCommit c : pending) {
+        /* 리프 목록을 만든 쿼리와 같은 순서로 다시 읽어 배치를 박는다. pending() 이 값(Leaf)만 돌려주므로
+           엔티티는 여기서 잡는다 — 그쪽이 읽기 전용이라야 ProofService 에서도 같은 메서드를 쓸 수 있다. */
+        for (PredictionCommit c : commits.findByAnchorBatchIsNullOrderByPredictionIdAsc()) {
             c.assignBatch(batch);
+        }
+        for (Report r : reports.findSealedWithoutBatch()) {
+            r.assignBatch(batch);
         }
         return Optional.of(new Payload(batch.getId(), tree.root(), leaves));
     }
@@ -72,11 +83,11 @@ public class AnchorBatchService {
         return ids;
     }
 
-    /** 기존 배치의 전송 재료. 커밋 목록은 배치에 소속된 것을 같은 순서로 다시 읽는다. */
+    /** 기존 배치의 전송 재료. 리프 목록은 배치에 소속된 것을 같은 순서로 다시 읽는다({@link AnchorLeaves}). */
     @Transactional(readOnly = true)
     public Payload payloadOf(long batchId) {
         AnchorBatch batch = batches.findById(batchId).orElseThrow();
-        List<byte[]> leaves = toLeaves(commits.findByAnchorBatchOrderByPredictionIdAsc(batch));
+        List<byte[]> leaves = AnchorLeaves.bytesOf(anchorLeaves.of(batch));
         return new Payload(batchId, Numeric.hexStringToByteArray(batch.getMerkleRoot()), leaves);
     }
 
@@ -111,11 +122,4 @@ public class AnchorBatchService {
         batches.findById(batchId).orElseThrow().markFailed(reason);
     }
 
-    private static List<byte[]> toLeaves(List<PredictionCommit> list) {
-        List<byte[]> leaves = new ArrayList<>(list.size());
-        for (PredictionCommit c : list) {
-            leaves.add(Numeric.hexStringToByteArray(c.getCommitHash()));
-        }
-        return leaves;
-    }
 }
