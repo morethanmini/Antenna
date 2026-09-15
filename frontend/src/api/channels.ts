@@ -6,23 +6,24 @@
    GET  /channels/{userId}/backtest     백테스트 (무료 · 파라미터 고정)
    POST /channels/{userId}/subscriptions 구독 개시 → 202 { operationId }
 
-   ── 백엔드 현황 (2026-09-08 확인) ────────────────────────
-   /channels 아래에 열려 있는 것은 ChannelReportController 의 {userId}/reports 하나뿐이다.
-   나머지 넷은 컨트롤러가 없다. 엔티티(Subscription · PublisherFee)와 Operation.Kind.SUBSCRIBE,
-   SignatureScope.SUBSCRIBE 는 이미 있으니 서비스·컨트롤러만 남은 것으로 보인다.
+   ── 백엔드 현황 (2026-09-15 확인) ────────────────────────
+   조회 넷이 다 열렸다 — {userId}(ANT-TOKEN-09) · {userId}/predictions(ANT-PRED-05) ·
+   {userId}/reports(ANT-COMMUNITY-01) · {userId}/backtest(ANT-TOKEN-03). 그래서 MOCK 을 껐다.
 
-   그래서 조회 넷은 MOCK 을 켜 두고, **서명은 실제로 한다** — POST /wallet/nonce 는
-   "온체인 동반 요청 전부가 쓰는 공용 창구"(서버 WalletController 주석)라 scope=SUBSCRIBE
-   가 지금도 동작한다. 진짜인 부분을 목으로 덮으면 나중에 붙일 때 무엇이 검증됐는지 알 수 없다.
+   남은 것은 구독 개시(POST {userId}/subscriptions, ANT-TOKEN-01) 하나다. 그건 지금도
+   목이고, 서명은 실제로 한다 — POST /wallet/nonce 는 "온체인 동반 요청 전부가 쓰는 공용
+   창구"(서버 WalletController 주석)라 scope=SUBSCRIBE 가 동작한다. 진짜인 부분을 목으로
+   덮으면 나중에 붙일 때 무엇이 검증됐는지 알 수 없다.
 
-   MOCK 을 false 로 바꾸고 mock/channels.ts 와 각 함수의 `if (MOCK)` 한 줄씩만 지우면 된다. */
+   ⚠️ 이 주석을 반드시 같이 고친다. 09-08 자 옛 주석이 일주일 낡은 채 남아 있어서, 이미
+   구현된 {userId}/predictions 를 "백엔드 없음" 으로 오판하게 만들었다. */
 import { api } from './client'
 import type { ChannelPlatform } from './account'
 import * as mock from './mock/channels'
 import type { CursorList } from './types'
 import type { Direction, PredictionStatus } from './predictions'
 
-const MOCK = true
+const MOCK = false
 
 /* ── 채널 프로필 ─────────────────────────────────────── */
 
