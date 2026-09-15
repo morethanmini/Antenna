@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import ssafy.a507.backend.domain.common.Track;
+import ssafy.a507.backend.domain.monetize.entity.Subscription;
 import ssafy.a507.backend.domain.prediction.entity.Prediction;
 
 public interface PredictionRepository extends JpaRepository<Prediction, Long> {
@@ -31,6 +32,43 @@ public interface PredictionRepository extends JpaRepository<Prediction, Long> {
     List<Prediction> findMyPage(
             @Param("userId") Long userId,
             @Param("statuses") Collection<Prediction.Status> statuses,
+            @Param("cursorId") Long cursorId,
+            Limit limit);
+
+    /**
+     * 예측 피드 한 페이지 (화면 F-01 예측 탭) — 여러 채널을 가로지르는 최신순 목록.
+     *
+     * <p>{@code subscriberId} 가 null 이면 scope=ALL, 값이 있으면 scope=SUBSCRIBED 다. 구독 필터를 id 목록
+     * ({@code in :ids})이 아니라 exists 서브쿼리로 쓴 이유는 {@code ReportRepository.findFeedPageRecent} 와 같다 —
+     * 구독이 하나도 없는 사용자에게 빈 컬렉션을 바인딩해야 하는데, 빈 IN 은 DB·드라이버마다 다르게 렌더된다.
+     *
+     * <p>내 예측도 뺴지 않는다. "내가 이 종목에 뭘 걸었더라" 를 피드에서 바로 보는 편이 자연스럽고,
+     * 빼려면 여기 조건이 하나 더 붙는 만큼 화면에서 "내 것" 표시를 못 하게 된다.
+     *
+     * <p>{@code join fetch} 둘 다 필요하다 — 줄마다 작성자 닉네임과 종목명을 싣는다. 종목은 <b>left</b> 다
+     * (지워진 종목의 예측도 목록에서 빠지면 안 된다).
+     */
+    @Query("""
+            select p from Prediction p
+              join fetch p.user
+              left join fetch p.stock
+             where p.track = :track
+               and p.status in :statuses
+               and (:subscriberId is null
+                    or exists (select 1 from Subscription s
+                                where s.subscriber.id = :subscriberId
+                                  and s.publisher.id = p.user.id
+                                  and s.status = :activeStatus
+                                  and (s.expiresAt is null or s.expiresAt > :now)))
+               and (:cursorId is null or p.id < :cursorId)
+             order by p.id desc
+            """)
+    List<Prediction> findFeedPage(
+            @Param("track") Track track,
+            @Param("statuses") Collection<Prediction.Status> statuses,
+            @Param("subscriberId") Long subscriberId,
+            @Param("activeStatus") Subscription.Status activeStatus,
+            @Param("now") Instant now,
             @Param("cursorId") Long cursorId,
             Limit limit);
 

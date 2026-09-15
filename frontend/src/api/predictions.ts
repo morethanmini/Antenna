@@ -9,10 +9,11 @@
    마지막 하나였던 예측 상세가 ANT-PRED-05 로 열려 실제 호출로 넘어갔다(2026-09-15).
    MOCK 상수와 mock/predictions.ts 를 함께 지웠다.
 
-   ⚠ **status 어휘가 ALL·PENDING·HIT·MISS 다 — JUDGED 가 없다.** 그래서 C-02 의
-   거르개를 "판정 완료" 한 칸이 아니라 적중·빗나감 두 칸으로 갈랐다. HIT·MISS 를
-   한 번에 받으려면 두 번 불러 합쳐야 하는데, 커서 페이징에서는 페이지마다 줄
-   수가 들쭉날쭉해져 못 한다. JUDGED 가 생기면 두 칸을 한 칸으로 되돌린다.
+   ⚠ **여기 있던 "status 어휘에 JUDGED 가 없다" 는 사실이 아니다**(2026-09-15
+   확인). 서버 MyPredictionQueryService.StatusFilter 에 JUDGED 가 있고
+   status=JUDGED 로 부르면 200 이다. 그 문장이 딸려 설명하던 "C-02 를 적중·
+   빗나감 두 칸으로 갈랐다" 도 지금 화면과 다르다 — C-02 는 서버 거르개를
+   안 쓰고 전량을 받아 화면이 단계로 가른다. 자세한 것은 아래 MY_FILTERS.
 
    종목별 예측 목록(GET /stocks/{code}/predictions)은 이제 요청하지 않는다 —
    2026-09-10 설계 변경으로 종목 상세가 개인을 보여주지 않고 목표가 분포만 낸다.
@@ -201,13 +202,22 @@ export type MyPrediction = {
   anchorStatus: ProofAnchorStatus
 }
 
-/* 상태 필터. 서버가 status 로 거른다 — 커서 페이징이라 클라이언트에서 거르면
-   페이지마다 줄 수가 들쭉날쭉해진다(B-02 · B-03 과 같은 이유).
+/* 상태 필터. 서버가 status 로 거른다 — 어휘 밖 값은 400 이다.
+   PENDING 은 BASE·OPEN 을 묶는 조회용 어휘이고 저장된 상태가 아니다.
 
-   서버 MyPredictionQueryService.StatusFilter 와 1:1 이다. **JUDGED 가 없어서**
-   판정 완료를 적중·빗나감 두 칸으로 갈랐다 — 어휘 밖 값은 서버가 400 으로
-   거절하므로, 여기서 없는 값을 만들어내면 화면이 눌리는 즉시 깨진다.
-   PENDING 은 BASE·OPEN 을 묶는 조회용 어휘이고 저장된 상태가 아니다. */
+   ⚠ **이 셋을 쓰는 화면이 지금 하나도 없다 — 지울 후보다.**
+   C-02(PredictList)가 서버 거르개를 안 쓰는 쪽으로 바뀌었다: 전량을 받아
+   화면이 단계로 가른다(그쪽 STAGES — 기록 예정 / 예측 진행 / 결과 확인).
+   fetchMyPredictions 도 호출부가 'ALL' 하나뿐이다.
+
+   여기 있던 "**JUDGED 가 없어서** 판정 완료를 적중·빗나감 두 칸으로 갈랐다"
+   는 설명은 **사실이 아니다**(2026-09-15 확인). 서버
+   MyPredictionQueryService.StatusFilter 에 JUDGED 가 있고 status=JUDGED 로
+   부르면 200 이다. 그 문장을 믿고 "JUDGED 를 못 쓴다" 고 판단하는 일이
+   실제로 있었어서 지운다.
+
+   죽은 코드까지 걷어내려면 fetchMyPredictions 시그니처를 건드려야 해
+   별도로 뺀다. */
 export const MY_FILTERS = ['ALL', 'PENDING', 'HIT', 'MISS'] as const
 export type MyFilter = (typeof MY_FILTERS)[number]
 
@@ -248,6 +258,41 @@ export function fetchMyPredictions(filter: MyFilter) {
     return api.get<MyPredictionList>('/predictions/me', { query: q })
   }
 }
+
+/* ── 예측 피드 (F-01 예측 탭) ──────────────────────────────
+   서버 PredictionFeedItemResponse 와 짝이다(ANT-PRED-05).
+
+   채널 예측 목록에 **작성자와 등록 시각**을 더한 모양이다. 채널 화면은 "이 사람의
+   예측" 이라 작성자가 머리글에 한 번 나오면 되지만, 피드는 여러 채널이 섞이므로
+   줄마다 누구 것인지 적어야 한다.
+
+   게이팅은 채널 목록과 같다 — 종목·기간은 전체 공개, 판정 전이면 방향·목표가만
+   작성자·구독자에게. 잠긴 건도 목록에서 빼지 않는다(빼면 피드가 실제보다 한가해
+   보이고 구독 유인이 사라진다). 근거 본문은 여기 없다 — 상세(C-03)에서만 본다.
+
+   scope 어휘는 리포트 피드와 같은 것을 쓴다(REPORT_SCOPES) — 한 화면의 두 탭이
+   다른 말을 쓰면 안 된다. */
+export type PredictionFeedItem = {
+  id: number
+  author: { userId: number; nickname: string }
+  /** 종목이 지워졌으면 null */
+  stockCode: string | null
+  stockName: string | null
+  /** 잠긴 건(판정 전 + 비구독)은 null */
+  direction: Direction | null
+  targetPrice: number | null
+  horizon: number
+  status: PredictionStatus
+  /** 만기까지 남은 일수. 판정이 끝났거나 기준가 확정 전이면 null */
+  dday: number | null
+  errorRate: number | null
+  /** 기준가 확정 전에는 null — 만기일 = 기준일 + horizon 이라서다 */
+  settleDate: string | null
+  createdAt: string
+  locked: boolean
+}
+
+/* 조회는 useCursorList 가 경로로 직접 한다 — GET /predictions/feed?scope=&cursor=&size= */
 
 /* ── 예측 상세 (C-03) ─────────────────────────────────────
    서버 PredictionDetailResponse 와 짝이다(ANT-PRED-05). 필드 이름·중첩을 그대로 옮겼다.

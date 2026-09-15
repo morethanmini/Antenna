@@ -10,13 +10,16 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import ssafy.a507.backend.common.idempotency.IdempotencyStore;
 import ssafy.a507.backend.common.security.CurrentUserProvider;
 import ssafy.a507.backend.domain.prediction.dto.PredictionCreateRequest;
 import ssafy.a507.backend.domain.prediction.dto.PredictionCreateResponse;
 import ssafy.a507.backend.domain.prediction.dto.PredictionDetailResponse;
+import ssafy.a507.backend.domain.prediction.dto.PredictionFeedResponse;
 import ssafy.a507.backend.domain.prediction.dto.PredictionSlotResponse;
+import ssafy.a507.backend.domain.prediction.service.MyPredictionQueryService;
 import ssafy.a507.backend.domain.prediction.service.PredictionRegisterService;
 import ssafy.a507.backend.domain.prediction.service.PredictionViewService;
 
@@ -60,8 +63,24 @@ public class PredictionController {
     }
 
     /**
+     * 예측 피드 (ANT-PRED-05, 화면 F-01 예측 탭). 구독 중인 채널들의 예측을 한 줄로 모은다.
+     *
+     * <p>{@code scope}·{@code status} 어휘는 각각 리포트 피드({@code GET /reports})·내 예측({@code /predictions/me})과
+     * 같다. 한 화면의 두 탭이 다른 말을 쓰면 안 되고, 같은 목록을 세 화면이 다른 필터로 거르면 안 된다.
+     */
+    @GetMapping("/feed")
+    public PredictionFeedResponse feed(
+            @RequestParam(required = false) PredictionViewService.Scope scope,
+            @RequestParam(required = false) MyPredictionQueryService.StatusFilter status,
+            @RequestParam(required = false) Long cursor,
+            @RequestParam(required = false) Integer size) {
+        return viewService.feed(
+                scope == null ? PredictionViewService.Scope.ALL : scope, status, cursor, size);
+    }
+
+    /**
      * 예측 상세 (ANT-PRED-05). 403 을 쓰지 않는다 — 공개 규칙이 필드 단위다({@link PredictionViewService}).
-     * {@code /slots}·{@code /me} 같은 고정 경로가 이 패턴보다 먼저 잡힌다.
+     * {@code /slots}·{@code /me}·{@code /feed} 같은 고정 경로가 이 패턴보다 먼저 잡힌다.
      */
     @GetMapping("/{predictionId}")
     public PredictionDetailResponse detail(@PathVariable long predictionId) {
