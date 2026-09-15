@@ -57,6 +57,12 @@
    공용 LockedCard 는 건드리지 않고 이 화면 안에서만 살린다. */
 .rd .state-locked-preview p{ white-space:pre-line; }
 
+/* 본문과 반응 사이에 선을 하나 둔다 — 읽기가 끝났다는 표시다 */
+.rd-reactions{
+  margin-top:22px; padding-top:18px;
+  border-top:1px solid var(--rule);
+}
+
 @media (max-width: 560px){
   .rd{ padding:20px 18px 24px; }
   .rd-title{ font-size:20px; }

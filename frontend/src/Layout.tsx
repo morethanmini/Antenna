@@ -9,8 +9,10 @@ import { useAuth } from './auth/context'
 import { takeOnboardingPending } from './auth/onboarding'
 import BriefingModal from './components/BriefingModal'
 import OnboardingTour from './components/OnboardingTour'
+import SimOnboardingTour from './components/SimOnboardingTour'
 import WalletLinkModal from './components/wallet/WalletLinkModal'
 import { useBriefingParam } from './components/briefingParam'
+import { onSimOnboardingOpen, simOnboardingSeen } from './sim/onboardingSeen'
 import { useApiQuery } from './api/useApiQuery'
 import { formatToken, type WalletBalance } from './api/wallet'
 
@@ -44,7 +46,12 @@ const MODES = {
       { key: 'report', icon: 'report', text: '리포트', href: '/reports' },
       /* 커뮤니티(F-04~F-06)는 개발 범위에서 뺐다(2026-09-14) — 항목과 아이콘,
          화면과 라우트까지 지웠다. 서버 API 는 그대로 남아 있다. */
-      { key: 'portfolio', icon: 'portfolio', text: '예측 포트폴리오', href: '/me/portfolio' },
+      /* 예측 포트폴리오(C-04)는 여기 두지 않는다 — 마이페이지의 '내 활동' 으로 옮겼다.
+         이 사이드바는 **서비스를 둘러보는 길**이다(홈·종목·랭킹·원장·리포트). 포트폴리오는
+         내 계정 안쪽 화면이라 마이페이지의 다른 항목(내 예측·내 구독·지갑)과 한 묶음이 맞다.
+         C-04 로 가는 길이 사이드바와 마이페이지 둘로 갈려 있던 것도 정리된다.
+         routes.ts 의 nav: 'portfolio' 는 그대로 둔다 — 짝이 없어지면 아무것도 활성이 아니고,
+         계정 안쪽 화면에서는 그게 맞다(/me 가 nav: 'me' 로 같은 상태다). */
     ],
   },
   sim: {
@@ -101,15 +108,19 @@ function Search() {
    홈 카드(B-01)와 **같은 함수**를 쓴다. 전에는 여기가 0 을, 홈이 목업 값을 띄워 같은
    화면에서 두 숫자가 어긋났다. 이후 — 로 바꿔 두었던 자리다(2026-09-14).
 
-   못 받았을 때도 — 다. 0 은 "잔액이 없다" 는 주장이라, 못 불러온 것과 구분돼야 한다. */
+   못 받았을 때도 — 다. 0 은 "잔액이 없다" 는 주장이라, 못 불러온 것과 구분돼야 한다.
+
+   눌러서 H-01 지갑·토큰으로 간다 — 잔액을 본 사람이 다음에 궁금한 것은 "어디서 늘고
+   줄었나" 이고, 그 답이 그 화면의 원장이다. 못 불러왔을 때(—)도 링크는 살려 둔다:
+   실패했으니 더더욱 지갑 화면에서 다시 보게 해야 한다. */
 function WalletChip() {
   const { data } = useApiQuery<WalletBalance>('/wallet/balance')
 
   return (
-    <div className="wallet">
+    <Link className="wallet" to="/me/wallet" aria-label="보유 ANT · 지갑으로">
       <i />
       <span className="num">{data ? formatToken(data.balance) : '—'}</span> ANT
-    </div>
+    </Link>
   )
 }
 
@@ -137,6 +148,30 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
     tourChecked.current = true
     setTour(takeOnboardingPending())
   }, [authed, user?.nickname])
+
+  /* G-00 모의투자 온보딩. M-09 와 같은 자리·같은 규칙이다(셸 위 오버레이, 라우트 없음).
+     다른 점은 진입 조건뿐 — 가입 직후가 아니라 **모의투자 모드로 처음 들어왔을 때**다.
+     그래서 mode 를 함께 본다. 인사이트 화면에서는 뜨지 않는다.
+
+     M-09 와 마찬가지로 ref 로 잠근다. 이 이펙트는 mode·authed·nickname 에 반응하는데,
+     한 번 판단한 뒤 그 값이 바뀌어 다시 돌면 이미 "봤다" 가 된 플래그를 읽어 **열려
+     있는 안내를 닫아 버린다**(닫자마자 markSimOnboardingSeen 이 플래그를 세운다).
+
+     인사이트로 나갔다 모의투자로 돌아와도 다시 보지 않는다 — ref 는 셸이 살아 있는
+     동안 유지되고, 플래그도 이미 서 있다. */
+  const [simTour, setSimTour] = useState(false)
+  const simChecked = useRef(false)
+  useEffect(() => {
+    if (simChecked.current || mode !== 'sim' || !authed || !user?.nickname) return
+    simChecked.current = true
+    /* 이미 본 사람에게는 false 를 넣는데, 초기값이 false 라 아무 일도 하지 않는다.
+       M-09 의 setTour(takeOnboardingPending()) 과 같은 모양이다. */
+    setSimTour(!simOnboardingSeen())
+  }, [mode, authed, user?.nickname])
+
+  /* G-01 홈의 "안내 다시 보기". 오버레이를 띄우는 곳이 셸이라 화면 안쪽에서는
+     신호만 올려 보낸다(sim/onboardingSeen.ts 의 openSimOnboarding). */
+  useEffect(() => onSimOnboardingOpen(() => setSimTour(true)), [])
 
   /* M-01 지갑 연동. **튜토리얼 안에서 열지 않는다** — 모달 3겹이 되기 때문이고,
      WalletLinkModal 머리말이 "호출부가 온보딩을 닫고 띄운다" 로 계약을 적어
@@ -268,6 +303,16 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
         <OnboardingTour
           onClose={() => setTour(false)}
           onLinkWallet={() => { setTour(false); setLinking(true) }}
+        />
+      )}
+
+      {/* M-09 가 떠 있는 동안에는 기다린다. 가입 직후 모의투자로 바로 들어온 회원에게
+          두 안내가 겹쳐 뜨면 어느 쪽을 읽는 것인지 알 수 없다 — M-09 를 닫으면
+          이 조건이 풀려 이어서 뜬다. */}
+      {simTour && !tour && (
+        <SimOnboardingTour
+          onClose={() => setSimTour(false)}
+          onStart={() => { setSimTour(false); navigate('/sim/modes') }}
         />
       )}
 

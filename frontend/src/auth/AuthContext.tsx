@@ -106,6 +106,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     setNickname: (nickname: string) =>
       setUser((prev) => (prev ? { ...prev, nickname } : prev)),
+    setAvatar: (avatarUrl: string) =>
+      setUser((prev) => (prev ? { ...prev, avatarUrl } : prev)),
     setWalletLinked: (linked: boolean) =>
       setUser((prev) => (prev ? { ...prev, walletLinked: linked } : prev)),
   }), [user, booting])

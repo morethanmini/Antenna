@@ -1,0 +1,152 @@
+/* 프로필 카드의 네 항목 — 닉네임 · 소개 · 관심 섹터 · 외부 채널.
+   컴포넌트(components/channel/ChannelProfileEdit)가 직접 들고 있는 스타일이다.
+   E-02 채널과 E-05 마이페이지가 같은 컴포넌트를 쓰므로, 어느 화면에도 딸리지
+   않게 여기에 둔다. 접두어는 ch- 그대로다 — 클래스 이름을 바꾸면 두 화면의
+   기존 선언과 갈라진다.
+   색·간격은 app.css 토큰만 쓴다. */
+.ch-bio{ margin:6px 0 0; font-size:13px; line-height:1.65; color:var(--body); }
+
+.ch-interests{ display:flex; flex-wrap:wrap; gap:5px; margin:9px 0 0; padding:0; list-style:none; }
+.ch-interests li{
+  padding:2px 9px; border-radius:999px;
+  background:var(--brand-softer); color:var(--brand-ink);
+  font-size:11.5px; font-weight:700;
+}
+
+.ch-links{ display:flex; flex-wrap:wrap; gap:12px; margin:9px 0 0; padding:0; list-style:none; }
+.ch-links a{
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:12.5px; font-weight:600; color:var(--muted); text-decoration:none;
+}
+.ch-links a:hover{ color:var(--brand-ink); }
+
+/* ── 열린 항목의 입력·버튼 ───────────────────────────── */
+.ch-name-row{ display:flex; align-items:center; flex-wrap:wrap; gap:7px; }
+.ch-name-input{
+  width:min(260px, 100%); height:38px; padding:0 11px;
+  border:1px solid var(--rule); border-radius:9px;
+  background:var(--surface); color:var(--ink);
+  font:inherit; font-size:17px; font-weight:750; letter-spacing:-.02em;
+}
+.ch-name-input:focus{ outline:2px solid var(--brand-soft); outline-offset:1px; border-color:var(--brand); }
+.ch-name-input[aria-invalid="true"]{ border-color:var(--danger); }
+.ch-name-save, .ch-name-cancel{
+  height:38px; padding:0 14px;
+  border-radius:9px; font:inherit; font-size:13px; font-weight:700; cursor:pointer;
+}
+.ch-name-save{ border:0; background:var(--brand); color:#fff; }
+.ch-name-save:hover:not(:disabled){ background:var(--brand-ink); }
+.ch-name-save:disabled{ opacity:.45; cursor:default; }
+.ch-name-cancel{ border:1px solid var(--rule); background:var(--surface); color:var(--body); }
+.ch-name-cancel:hover:not(:disabled){ background:var(--surface-2); }
+
+.ch-name-hint{ margin:0; font-size:12px; line-height:1.55; color:var(--muted); }
+.ch-name-hint.is-available{ color:#15803d; }
+.ch-name-hint.is-taken, .ch-name-hint.is-invalid{ color:var(--danger); }
+
+
+/* ── 읽기용 한 줄 — 이름표 + 값 ──────────────────────
+   이름표를 고정 폭으로 두면 값들의 왼쪽 끝이 한 줄로 선다. baseline 으로 붙여
+   이름표 글자가 값의 **첫 줄** 글자와 같은 줄에 앉는다 — center 면 소개가 세 줄일 때
+   이름표가 문단 한가운데로 내려간다. 좁아지면 이름표가 위로 올라가 두 줄이 된다. */
+.ch-field{ display:flex; align-items:baseline; gap:10px; margin:7px 0 0; min-width:0; }
+.ch-field-label{
+  flex:0 0 52px;
+  font-size:11.5px; font-weight:700; color:var(--faint); white-space:nowrap;
+}
+.ch-field-value{ min-width:0; flex:1 1 auto; }
+/* 값 안쪽의 위 여백은 이름표 줄이 대신 준다 — 둘이 겹치면 줄 간격이 벌어진다 */
+.ch-field-value > *{ margin-top:0; }
+@media (max-width:560px){
+  .ch-field{ flex-wrap:wrap; gap:2px 10px; }
+  .ch-field-label{ flex-basis:100%; }
+}
+
+/* ── 읽기용 덩어리 ──────────────────────────────────
+   E-05 는 값 아무 데나 눌러도 편집이 열린다(clickToEdit). 누를 수 있다는 것이
+   보여야 해서 커서와 옅은 배경을 준다 — 링크·버튼 위에서는 각자의 커서가 이긴다. */
+.ch-read{ min-width:0; }
+.ch-read.is-tappable{
+  cursor:pointer; border-radius:10px;
+  margin:-6px -8px; padding:6px 8px;
+  transition:background .15s ease;
+}
+.ch-read.is-tappable:hover{ background:var(--surface-2); }
+/* 안쪽 링크는 제 커서를 쓴다 — 덩어리의 pointer 가 링크까지 덮으면 구분이 없다 */
+.ch-read.is-tappable a{ cursor:pointer; }
+
+/* 아직 안 적은 값. 값처럼 진하게 그리면 적어 둔 소개로 읽힌다 */
+.ch-bio.is-empty{ color:var(--faint); font-style:italic; }
+
+/* ── 닉네임 줄 — 이름 + 작은 "수정" ─────────────────
+   수정 자리는 카드에 하나뿐이다. baseline 으로 붙여 버튼 글자가 이름 글자와 같은 줄에
+   앉는다 — flex-start 면 글자 크기 차이(제목 19px · 버튼 11px)만큼 위로 떠 보인다. */
+.ch-line{ display:flex; align-items:baseline; gap:8px; min-width:0; }
+.ch-line > *:first-child{ min-width:0; }
+/* 값보다 작고 흐리게. 호버에서만 또렷해져 훑을 때 값을 가리지 않는다 */
+.ch-line-edit{
+  flex:0 0 auto; padding:1px 7px;
+  border:1px solid var(--rule); border-radius:999px; background:var(--surface);
+  font:inherit; font-size:11px; font-weight:700; color:var(--faint);
+  line-height:1.7; cursor:pointer;
+}
+.ch-line-edit:hover{ border-color:var(--brand-soft); color:var(--brand-ink); background:var(--brand-softer); }
+.ch-line-edit:focus-visible{ outline:2px solid var(--brand); outline-offset:2px; }
+
+/* ── 편집 폼 — 네 항목을 함께 ───────────────────────
+   테두리는 **폼 하나**에만 준다. 항목마다 상자를 두르면 카드 안에 상자가 넷이라
+   무엇이 한 덩어리로 저장되는지 안 보인다. */
+.ch-edit{
+  display:flex; flex-direction:column; gap:13px;
+  margin:4px 0; padding:13px 15px; min-width:0;
+  border:1px solid var(--brand-soft); border-radius:11px; background:var(--brand-softer);
+}
+/* 폼 안의 제목. 읽기용 이름 자리를 대신하지만 값이 아니라 상태 표시라 작게 둔다 */
+.ch-edit-title{ margin:0; font-size:12.5px; font-weight:800; color:var(--brand-ink); }
+
+.ch-edit-row{ display:flex; flex-direction:column; gap:5px; margin:0; padding:0; border:0; }
+.ch-edit-label{ padding:0; font-size:11.5px; font-weight:700; color:var(--body); }
+
+.ch-edit-area{
+  width:min(440px, 100%); padding:9px 11px;
+  border:1px solid var(--rule); border-radius:9px;
+  background:var(--surface); color:var(--ink);
+  font:inherit; font-size:13px; line-height:1.65; resize:vertical;
+}
+.ch-edit-area:focus{ outline:2px solid var(--brand-soft); outline-offset:1px; border-color:var(--brand); }
+
+/* 섹터 칩. 고르는 것이지 쓰는 것이 아니라 토글로 그린다 */
+.ch-edit-chips{ display:flex; flex-wrap:wrap; gap:6px; margin:2px 0 0; padding:0; list-style:none; }
+.ch-edit-chips button{
+  padding:4px 11px; border:1px solid var(--rule); border-radius:999px;
+  background:var(--surface); color:var(--body);
+  font:inherit; font-size:12px; font-weight:600; cursor:pointer;
+}
+.ch-edit-chips button:hover{ border-color:var(--brand-soft); }
+.ch-edit-chips button.is-on{ border-color:var(--brand); background:var(--surface); color:var(--brand-ink); font-weight:700; }
+.ch-edit-chips button:focus-visible{ outline:2px solid var(--brand); outline-offset:2px; }
+
+.ch-edit-links{ display:flex; flex-direction:column; gap:6px; margin:2px 0 0; padding:0; list-style:none; }
+.ch-edit-links li{ display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
+.ch-edit-links select, .ch-edit-links input{
+  height:34px; padding:0 9px;
+  border:1px solid var(--rule); border-radius:8px;
+  background:var(--surface); color:var(--ink); font:inherit; font-size:12.5px;
+}
+/* 한 채널은 한 줄이다 — 플랫폼·이름·주소·삭제. 기본 폭을 크게 잡으면 이름 칸이 생기는
+   순간 줄이 접혀 한 채널이 두 줄처럼 보인다(카드 폭이 좁다). 주소가 남는 폭을 먹고,
+   이름은 짧은 말이라 조금만 준다. 정말 좁아지면 그때 접힌다(li 가 flex-wrap). */
+.ch-edit-links input{ flex:1 1 160px; min-width:0; }
+.ch-edit-links .ch-edit-name{ flex:0 1 108px; }
+.ch-edit-links select:focus, .ch-edit-links input:focus{ outline:2px solid var(--brand-soft); outline-offset:1px; border-color:var(--brand); }
+
+/* 지우기·더하기는 값이 아니라 행 조작이라 한 단계 낮춘다 */
+.ch-edit-drop, .ch-edit-add{
+  padding:0; border:0; background:none;
+  font:inherit; font-size:12px; font-weight:600; color:var(--muted);
+  text-decoration:underline; cursor:pointer;
+}
+.ch-edit-add{ align-self:flex-start; margin-top:4px; color:var(--brand-ink); }
+.ch-edit-drop:hover{ color:var(--danger); }
+.ch-edit-add:hover{ color:var(--brand); }
+

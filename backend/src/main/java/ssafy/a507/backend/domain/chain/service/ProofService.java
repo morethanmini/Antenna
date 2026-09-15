@@ -12,6 +12,7 @@ import org.web3j.utils.Numeric;
 import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
 import ssafy.a507.backend.common.security.CurrentUserProvider;
+import ssafy.a507.backend.domain.chain.anchor.AnchorLeaves;
 import ssafy.a507.backend.domain.chain.dto.ProofResponse;
 import ssafy.a507.backend.domain.chain.entity.AnchorBatch;
 import ssafy.a507.backend.domain.chain.merkle.MerkleTree;
@@ -26,9 +27,13 @@ import ssafy.a507.backend.domain.prediction.repository.PredictionRepository;
  * 3단계 검산 재료 조립 (ANT-CHAIN-06, 화면 D-03).
  *
  * <p>게이팅은 두 겹이다(plan §설계). ① <b>미판정 예측 자체</b> — BASE/OPEN 이면 작성자와 유효 구독자만 본다(명세 §예측 공개 규칙,
- * 그 외 403). 판정(HIT/MISS)이 끝나면 회원 전원. ② <b>근거 salt</b> — 근거 본문은 판정 후에도 구독자 전용이라 {@code salt} 는
- * 리빌 뒤에도 작성자·구독자에게만 준다(ANT-PRED-02). 비구독자의 ①단계 검산은 {@code payload.noteHash} 로 충분하다 —
+ * 그 외 403). 판정(HIT/MISS)이 끝나면 회원 전원. ② <b>근거 salt</b> — 근거 본문이 판정 후에도 구독자 전용이라 {@code salt}
+ * 도 작성자·구독자에게만 준다(ANT-PRED-02 · 결정 D6). 비구독자의 ①단계 검산은 {@code payload.noteHash} 로 충분하다 —
  * 커밋 문자열에 salt 줄이 없고 noteHash 가 그 역할을 겸하기 때문이다.
+ *
+ * <p><b>salt 에는 리빌 조건을 걸지 않는다(2026-09-15).</b> 받을 자격은 구독이지 시간이 아니다. 리빌까지 기다리게 하면
+ * 구독자가 돈을 내고도 "지금 보고 있는 근거가 봉인된 그것인가" 를 만기까지 확인할 수 없다 — 이 서비스가 파는 것이
+ * 검증 가능성인데 정작 구독자의 검산만 반쪽이 된다. 비구독자 경계는 그대로다.
  *
  * <p>구독 판정은 monetize 의 {@link SubscriptionRepository#findSubscribedPublisherIds} 하나를 쓴다. "ACTIVE 상태" 가 아니라
  * "ACTIVE + 기간 유효" 가 근거라는 정의가 거기 박혀 있고, 정의를 둘로 만들지 않는다.
@@ -50,6 +55,7 @@ public class ProofService {
 
     private final PredictionRepository predictions;
     private final PredictionCommitRepository commits;
+    private final AnchorLeaves anchorLeaves;
     private final SubscriptionRepository subscriptions;
     private final CurrentUserProvider currentUserProvider;
 
@@ -79,9 +85,16 @@ public class ProofService {
                 commit == null ? null : commit.getNoteHash(),
                 prediction.getCreatedAt());
 
-        boolean revealed = commit != null && commit.isRevealed();
-        // 겹 ②: 근거 salt 는 리빌 뒤 + 작성자·구독자만. 리빌 전에는 작성자에게도 안 준다 — 판정 전 공개는 봉인을 깨는 일이다.
-        boolean saltVisible = revealed && (own || subscriber);
+        /* 겹 ②: 근거 salt 는 작성자·구독자만. **리빌 여부는 보지 않는다**(2026-09-15).
+           전에는 revealed 까지 걸어서, 30일짜리 예측이면 구독자도 30일 뒤에야 salt 를 받았다 —
+           그때까지는 서버가 준 note 가 봉인된 그 note 인지 확인할 길이 없어 구독자의 검산이 반쪽이었다.
+           구독자는 이미 note 본문·방향·목표가를 전부 보므로 salt 를 더 준다고 새는 것이 없고,
+           커밋 문자열에 salt= 줄이 없어(CommitPayload) commitHash 를 앞당겨 계산할 수 있게 되지도 않는다.
+           작성자 쪽은 더 분명하다 — salt 는 클라이언트가 만든 값이라 원래 본인이 알고 있다.
+
+           commit null 검사를 여기 둔다 — 전에는 revealed 가 그 검사를 겸했다(등록 직후 커밋 행이
+           생기기 전 짧은 창). 빼면 작성자가 그 창에서 열 때 NPE 다. */
+        boolean saltVisible = commit != null && (own || subscriber);
 
         return new ProofResponse(
                 predictionId,
@@ -103,20 +116,22 @@ public class ProofService {
     }
 
     /**
-     * 리프 전량(prediction id 오름차순 — 배치가 트리를 만든 순서)에서 이 커밋의 proof 를 다시 접는다.
-     * 배치가 PENDING/FAILED 여도 트리는 DB 만으로 결정되므로 proof 는 내린다 — 체인에 있는지는 {@code anchorStatus} 가 말한다.
+     * 리프 전량에서 이 커밋의 proof 를 다시 접는다. 순서는 {@link AnchorLeaves} 가 정한다 — 배치가 트리를 만든
+     * 순서와 <b>같은 코드</b>여야 루트가 재현된다(리포트가 트리에 들어오면서 갈릴 뻔한 자리다, ANT-CHAIN-14).
+     *
+     * <p>배치가 PENDING/FAILED 여도 트리는 DB 만으로 결정되므로 proof 는 내린다 — 체인에 있는지는 {@code anchorStatus} 가 말한다.
      */
     private ProofResponse.Anchor anchorOf(PredictionCommit commit, AnchorBatch batch) {
-        List<PredictionCommit> leaves = commits.findByAnchorBatchOrderByPredictionIdAsc(batch);
+        List<AnchorLeaves.Leaf> leaves = anchorLeaves.of(batch);
         int leafIndex = -1;
         for (int i = 0; i < leaves.size(); i++) {
-            if (leaves.get(i).getPredictionId().equals(commit.getPredictionId())) {
+            AnchorLeaves.Leaf leaf = leaves.get(i);
+            if (leaf.kind() == AnchorLeaves.Kind.PREDICTION && leaf.id() == commit.getPredictionId()) {
                 leafIndex = i;
                 break;
             }
         }
-        MerkleTree tree = MerkleTree.build(
-                leaves.stream().map(c -> Numeric.hexStringToByteArray(c.getCommitHash())).toList());
+        MerkleTree tree = MerkleTree.build(AnchorLeaves.bytesOf(leaves));
         String root = Numeric.toHexString(tree.root());
         if (leafIndex < 0 || !root.equalsIgnoreCase(batch.getMerkleRoot())) {
             log.error(

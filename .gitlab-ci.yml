@@ -112,7 +112,7 @@ deploy-backend:
     # 주소 · 시작 블록 · RPC 는 공개값이라 여기 적는다. 비밀은 릴레이어 키 하나 — CI/CD 변수 RELAYER_PRIVATE_KEY
     # (Masked + Protected). 변수가 없으면 빈 값이 넘어가 앵커 전송 · 토큰 전송만 꺼지고 인덱서 둘은 읽기만 한다 —
     # 기동은 깨지지 않는다. INDEXER_FROM_BLOCK 은 두 운영 배포 블록 중 작은 값(PredictToken 11241835 ·
-    # CommitAnchor v3 11244276, ANT-CHAIN-13)이다 — 두 인덱서가 같은 값을 쓴다. ANCHOR_CRON · INDEXER_CRON 은 기본값(00:05 · 5초).
+    # CommitAnchor v3 11244276, ANT-CHAIN-13)이다 — 두 인덱서가 같은 값을 쓴다. ANCHOR_CRON · INDEXER_CRON 은 기본값(10분 · 5초).
     # 운영 컨트랙트를 바꾸면 이 네 줄과 deployments/README.md 를 같이 바꾼다.
     - |
       umask 077

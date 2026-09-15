@@ -19,6 +19,7 @@ import { useBriefingParam } from '../components/briefingParam'
 import { useAsync } from '../api/useAsync'
 import { DEFAULT_AVATAR, useAuth } from '../auth/context'
 import Sparkline from '../components/Sparkline'
+import StockLogo from '../components/stocks/StockLogo'
 import '../styles/home.css'
 
 const INDEX_LABEL: Record<string, string> = {
@@ -87,19 +88,6 @@ function useRotate(count: number, ms: number) {
 
   /* 목록이 짧아져도 범위를 벗어나지 않게 나머지로 접는다 */
   return { index: count > 0 ? index % count : 0, setIndex, setPaused }
-}
-
-/* 종목 로고 자산이 없어 이름 첫 글자로 배지를 만든다. 색은 종목코드에서
-   뽑아 항상 같은 색이 나오게 한다(무작위가 아니다). */
-function StockBadge({ code, name }: { code: string; name: string }) {
-  let h = 0
-  for (const ch of code) h = (h * 31 + ch.charCodeAt(0)) % 360
-  return (
-    <span className="hm-logo" aria-hidden="true"
-          style={{ background: `hsl(${h} 62% 94%)`, color: `hsl(${h} 54% 38%)` }}>
-      {name.slice(0, 1)}
-    </span>
-  )
 }
 
 /* ── 인라인 아이콘 ─────────────────────────────────────────
@@ -375,7 +363,7 @@ function Watchlist() {
                   <tr key={s.stockCode}>
                     <th scope="row">
                       <Link to={`/stocks/${s.stockCode}`}>
-                        <StockBadge code={s.stockCode} name={s.name} />
+                        <StockLogo code={s.stockCode} name={s.name} className="hm-logo" />
                         {s.name} <small className="num">{s.stockCode}</small>
                       </Link>
                     </th>
@@ -425,12 +413,19 @@ function TopPredictor() {
       {lead && (
         <>
           <div className="hm-lead">
-            {/* 서버가 사진 칸을 아직 안 내려 준다 — 모두 기본 개미 아바타다 */}
-            <img className="hm-avatar" src={DEFAULT_AVATAR} alt="" aria-hidden="true" />
+            {/* 랭킹 1위의 프로필 사진(2026-09-15). 전에는 서버가 사진 칸을 안 내려 줘
+                모두 기본 개미였다 — RankingItemResponse 에 avatarUrl 이 생겼다.
+                안 올린 사람은 null 이라 기본 개미로 떨어진다. */}
+            <img
+              className="hm-avatar" alt="" aria-hidden="true"
+              src={lead.avatarUrl ?? DEFAULT_AVATAR}
+            />
             <div className="hm-lead-id">
               <Link className="hm-lead-name" to={`/channels/${lead.userId}`}>{lead.nickname}</Link>
-              <span className="hm-lead-rank">랭킹 {lead.rank}위</span>
             </div>
+            {/* 이름 아래가 아니라 **카드 오른쪽 끝**에 세운다(2026-09-15). 이 카드가
+                하려는 말이 "1위" 인데, 이름 밑의 작은 칩으로는 지나쳐 버렸다. */}
+            <span className="hm-lead-rank">랭킹 {lead.rank}위</span>
             <dl className="hm-lead-stats">
               <div><dt>예측</dt><dd className="num">{lead.doneCount}건</dd></div>
               <div><dt>적중률</dt><dd className="num">{metric(lead.hitRate, 1, '%')}</dd></div>

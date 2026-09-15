@@ -17,7 +17,7 @@
    내 채널은 이 표에 없다 — 아래 mine() 이 실제 내 id 로 만든다. */
 import { api } from '../client'
 import { ApiError } from '../errors'
-import { platformLabel, type MyProfile } from '../account'
+import type { MyProfile } from '../account'
 import type {
   Backtest, Channel, ChannelPrediction, ChannelPredictionPage, SubscribeBody,
 } from '../channels'
@@ -36,12 +36,17 @@ function base(userId: string, nickname: string): Omit<Channel, 'mySubscription' 
   return {
     userId,
     nickname,
+    /* 남의 채널 사진은 지어낸 값이다 — GET /channels/{userId} 가 아직 없다(S15P21A507-214).
+       열리면 서버가 users.avatar_file_id 로 만든 주소를 준다. 내 채널은 아래 mine() 이
+       /users/me 의 값을 그대로 쓴다. */
     avatarUrl: '/assets/character/white_ant/antenna-profile.png',
     bio: '반도체·2차전지 중심으로 실적 시즌마다 방향을 겁니다. 근거는 공시와 실적 발표만 씁니다.',
     interests: ['반도체', '2차전지', '자동차'],
     externalLinks: [
-      { label: '블로그', url: 'https://example.com/blog' },
-      { label: '유튜브', url: 'https://example.com/yt' },
+      { platform: 'BLOG', label: null, url: 'https://example.com/blog' },
+      { platform: 'YOUTUBE', label: null, url: 'https://example.com/yt' },
+      // 표에 없는 곳은 ETC 에 이름을 붙여 담는다
+      { platform: 'ETC', label: '브런치', url: 'https://brunch.co.kr/@antenna' },
     ],
     fee: FEE,
     stats: { hitRate: 62.5, doneCount: 48, avgError: 3.1 },
@@ -82,14 +87,22 @@ const CHANNELS: Record<string, Channel> = {
    실제 id 를 물어서 그게 나면 내 채널을 만들어 준다.
 
    /users/me 는 실제로 열려 있는 API 다. 목업이 지어내는 값이 아니다. */
+/* **결과가 아니라 진행 중인 요청만** 모은다.
+
+   화면 하나가 채널·예측·리포트·백테스트를 동시에 부르면 /users/me 를 네 번 묻게 된다.
+   그 한 번의 렌더 동안만 같은 약속을 돌려주고, 끝나면 비운다.
+
+   결과를 계속 들고 있으면 **프로필을 고쳐도 머리 값이 안 바뀐다** — E-02 의 편집 폼이
+   PATCH 뒤 채널을 다시 읽는데, 목업이 옛 /users/me 를 그대로 돌려주기 때문이다.
+   실패도 캐시하지 않는다 — 로그인 전에 한 번 실패하면 로그인 뒤에도 계속 실패한다. */
 let mePromise: Promise<MyProfile> | null = null
 
 function fetchMe(): Promise<MyProfile> {
-  /* 실패를 캐시하면 로그인 뒤에도 계속 실패한다 — 거절된 약속은 지우고 다시 묻는다 */
-  mePromise ??= api.get<MyProfile>('/users/me').catch((e: unknown) => {
-    mePromise = null
-    throw e
-  })
+  mePromise ??= api
+    .get<MyProfile>('/users/me')
+    .finally(() => {
+      mePromise = null
+    })
   return mePromise
 }
 
@@ -101,16 +114,18 @@ async function mine(userId: string): Promise<Channel | null> {
   return {
     ...base(userId, me.nickname ?? '나'),
     bio: me.introduce,
+    /* 안 올렸으면 null 이고 화면이 기본 그림을 쓴다 — 목업이 그림을 지어내면
+       사진을 지워도 뭔가 걸려 있는 것처럼 보인다 */
+    avatarUrl: me.avatarUrl,
     /* 구독료를 한 번도 정하지 않은 상태다. **0 으로 두지 않는다** — 무료 채널로
        읽힌다. E-04 내 채널 구독료(S15P21A507-186)도 같은 판단으로 미설정을
        "아직 정하지 않았습니다" 로 그린다. 행이 없는 것이 곧 미설정이다. */
     fee: null,
     /* 관심 섹터·외부 채널은 /users/me 가 정본이다 — 지어내지 않고 그대로 흘려보낸다.
-       명세 §회원 에는 있으나 백엔드 MeResponse 가 아직 안 내려줘 보통 undefined 다.
-       그때는 빈 배열이 되고 헤더가 그 줄을 통째로 뺀다(마이페이지와 같은 처리).
-       서버가 열리면 내 채널 머리에 저절로 뜬다. */
-    interests: me.interests ?? [],
-    externalLinks: (me.channels ?? []).map((c) => ({ label: platformLabel(c.platform), url: c.url })),
+       ANT-AUTH-05 로 서버가 둘 다 내려준다(없으면 빈 배열). E-02 의 편집 폼이 고치는 것도
+       바로 이 값이라, 저장하면 여기를 거쳐 머리에 그대로 뜬다. */
+    interests: me.interests,
+    externalLinks: me.channels,
     mySubscription: { status: null, expiresAt: null, autoRenew: false, paidFee: null },
     isMe: true,
   }

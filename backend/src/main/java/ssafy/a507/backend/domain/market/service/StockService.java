@@ -74,6 +74,7 @@ public class StockService {
 
     /** 목록 정렬. 예측 집계 3종은 predictions 가 없어 아직 전부 코드순이다. */
     public enum Sort {
+        MARKET_CAP,
         PREDICTION_COUNT,
         UP_RATIO,
         DOWN_RATIO,
@@ -96,19 +97,25 @@ public class StockService {
      * 요약과 같은 규모다. 커서는 종목코드 그대로이고, 자리는 그 종목의 (정렬값, 코드) 로 잡는다 —
      * 관심 해제 등으로 커서 종목이 필터 밖으로 나가도 다음 페이지가 처음으로 돌아가지 않는다.
      *
+     * @param q 종목명·종목코드 부분 일치 · null 이거나 공백이면 안 거른다. 대소문자는 가리지 않는다
      * @param sector 섹터 필터 · null 이면 전체
      * @param market 시장 필터 · null 이면 전체
      * @param perMin PER 하한(포함) · null 이면 없음. PER 없는 종목은 어느 범위에도 들지 않는다
      * @param perMax PER 상한(포함) · null 이면 없음
+     * @param pbrMin PBR 하한(포함) · null 이면 없음. PER 과 같은 규칙이다 — PBR 없는 종목은 어느 범위에도 안 든다
+     * @param pbrMax PBR 상한(포함) · null 이면 없음
      * @param watchedOnly 내 관심 종목만
      * @param sort null 이면 PREDICTION_COUNT — 아직 코드순과 같다
      */
     public StockListResponse list(
             Long userId,
+            String q,
             String sector,
             Stock.Market market,
             BigDecimal perMin,
             BigDecimal perMax,
+            BigDecimal pbrMin,
+            BigDecimal pbrMax,
             boolean watchedOnly,
             Sort sort,
             String cursor,
@@ -116,6 +123,10 @@ public class StockService {
         if (perMin != null && perMax != null && perMin.compareTo(perMax) > 0) {
             throw new BusinessException(ErrorCode.INVALID_REQUEST, "perMin");
         }
+        if (pbrMin != null && pbrMax != null && pbrMin.compareTo(pbrMax) > 0) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST, "pbrMin");
+        }
+        String keyword = q == null || q.isBlank() ? null : q.trim().toLowerCase();
         int pageSize = pageSize(size);
         String after = cursor == null || cursor.isBlank() ? null : cursor;
         LocalDate baseDate = dailyQuoteRepository.findLatestTradeDate().orElse(null);
@@ -138,6 +149,14 @@ public class StockService {
             active.select(quote.get("stock").get("code"))
                     .where(cb.greaterThanOrEqualTo(quote.get("tradeDate"), activeSince));
             where.add(root.get("code").in(active));
+            /* 이름과 코드 중 하나만 걸려도 통과다 — 사람은 "삼성" 으로도 "005930" 으로도 찾는다.
+               LIKE 라 인덱스를 못 타지만 활성 종목이 300개 안팎이라 문제가 되지 않는다. */
+            if (keyword != null) {
+                String like = "%" + keyword + "%";
+                where.add(cb.or(
+                        cb.like(cb.lower(root.get("name")), like),
+                        cb.like(cb.lower(root.get("code")), like)));
+            }
             if (sector != null) {
                 where.add(cb.equal(root.get("sector"), sector));
             }
@@ -150,6 +169,12 @@ public class StockService {
             }
             if (perMax != null) {
                 where.add(cb.lessThanOrEqualTo(root.get("per"), perMax));
+            }
+            if (pbrMin != null) {
+                where.add(cb.greaterThanOrEqualTo(root.get("pbr"), pbrMin));
+            }
+            if (pbrMax != null) {
+                where.add(cb.lessThanOrEqualTo(root.get("pbr"), pbrMax));
             }
             if (watchedOnly) {
                 where.add(root.get("code").in(watched));
@@ -208,10 +233,18 @@ public class StockService {
 
     /**
      * 값이 없는 행은 뒤로, 같은 값 안에서는 코드순 — 전순서라 커서가 같은 비교로 자리를 잡는다.
-     * PER 은 낮은 순(싼 순), 등락률은 높은 순.
+     * PER 은 낮은 순(싼 순), 등락률·시가총액은 높은 순.
      */
     private static Comparator<Row> order(Sort sort) {
         Comparator<Row> byCode = Comparator.comparing(Row::code);
+        if (sort == Sort.MARKET_CAP) {
+            // 시가총액은 컬럼이 아니라 종가 × 상장주식수다. 둘 중 하나라도 없으면 null 이고 뒤로 간다
+            // — 거래정지라 종가가 없는 종목이 큰 회사인 척 위에 서면 안 된다.
+            return Comparator.<Row, BigDecimal>comparing(
+                            row -> marketCap(row.close(), row.stock().getListedShares()),
+                            Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(byCode);
+        }
         if (sort == Sort.PER) {
             return Comparator.<Row, BigDecimal>comparing(
                             row -> row.stock().getPer(), Comparator.nullsLast(Comparator.naturalOrder()))

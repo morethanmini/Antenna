@@ -14,10 +14,19 @@
 
    채널 식별자에 대하여
    채널은 회원 1인당 하나다 — GET /channels/{userId}/reports 가 userId 를 쓴다.
-   그래서 CTA 목적지는 작성자의 userId 다. */
+   그래서 CTA 목적지는 작성자의 userId 다.
+
+   좋아요·댓글 (ANT-REPORT-SOCIAL)
+   잠긴 리포트에는 반응할 수 없다 — 서버가 403 REPORT_FORBIDDEN 을 준다. locked 를
+   이미 알고 있으니 좋아요 버튼은 아예 그리지 않고, 댓글은 목록만 보여 준다(읽기는
+   허용된다 — 반응이 오가는 리포트라는 사실이 미리보기와 같은 부류의 구독 유인이다). */
 import { Link, useParams } from 'react-router-dom'
 import { useApiQuery } from '../api/useApiQuery'
-import { formatDate, type ReportDetail as Report } from '../api/reports'
+import {
+  formatDate, likeReport, unlikeReport, type ReportDetail as Report,
+} from '../api/reports'
+import LikeButton from '../components/report/LikeButton'
+import ReportComments from '../components/report/ReportComments'
 import ErrorState from '../components/state/ErrorState'
 import LockedCard from '../components/state/LockedCard'
 import '../styles/screens/report-detail.css'
@@ -79,9 +88,40 @@ export default function ReportDetail() {
               /* 작성자가 넣은 줄바꿈을 살린다. 서버는 본문을 그대로 보관한다 */
               <div className="rd-body">{report.data.body}</div>
             )}
+
+            {/* 잠긴 리포트에는 버튼을 내밀지 않는다 — 누르면 403 인 버튼은 없느니만 못하다.
+                key 로 리포트 id 를 준다: 상세에서 상세로 이동하면 훅 상태가 남아 이전
+                리포트의 좋아요 수가 잠깐 보인다. */}
+            {!report.data.locked && <Reactions key={report.data.id} report={report.data} />}
           </article>
+        )}
+
+        {report.data && (
+          <ReportComments
+            key={report.data.id}
+            reportId={report.data.id}
+            commentCount={report.data.commentCount}
+            canWrite={!report.data.locked}
+            channelId={String(report.data.author.userId)}
+          />
         )}
       </div>
     </main>
+  )
+}
+
+/* 좋아요 줄을 따로 받는 이유는 타입이다 — report.data 를 클로저(onLike)에서 다시 읽으면
+   TS 가 null 을 좁혀 주지 않는다(가변 속성 접근이라 그 사이 바뀔 수 있다고 본다).
+   인자로 한 번 받아 두면 상수라 좁혀진다. 화면 분기를 늘리지 않는 가장 작은 방법이다. */
+function Reactions({ report }: { report: Report }) {
+  return (
+    <div className="rd-reactions">
+      <LikeButton
+        likeCount={report.likeCount}
+        liked={report.liked}
+        onLike={() => likeReport(report.id)}
+        onUnlike={() => unlikeReport(report.id)}
+      />
+    </div>
   )
 }

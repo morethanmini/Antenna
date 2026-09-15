@@ -24,7 +24,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, CLIENT_ERROR_CODE } from '../../api/errors'
 import {
-  ACCEPT_ATTR, ASPECT_BY_PURPOSE, MAX_BYTES,
+  ACCEPT_ATTR, ASPECT_BY_PURPOSE, MAX_BYTES, MAX_EDGE_BY_PURPOSE,
   checkPixels, checkSize, cropToAspect, fitsAspect, formatAspect, formatBytes,
   measure, precheck, uploadImage,
   type AspectRule, type UploadPurpose, type UploadedImage,
@@ -43,8 +43,10 @@ type Picked = {
   width: number
   height: number
   previewUrl: string
-  /** 비율을 맞추려고 잘랐다면 잘리기 전 크기. 화면이 그 사실을 반드시 알려야 한다 */
+  /** 자르거나 줄였다면 손대기 전 크기. 화면이 그 사실을 반드시 알려야 한다 */
   croppedFrom?: { width: number; height: number }
+  /** 무엇을 했는지 — 문구가 갈린다 */
+  did?: { cropped: boolean; shrank: boolean }
 }
 
 type Props = {
@@ -59,6 +61,8 @@ type Props = {
 
 export default function ImageUploadModal({ purpose, onClose, onUploaded, aspect }: Props) {
   const rule = aspect ?? ASPECT_BY_PURPOSE[purpose]
+  /* 56px 자리에 4000px 사진을 저장해 둘 이유가 없다. 용도가 정한다(MAX_EDGE_BY_PURPOSE) */
+  const maxEdge = MAX_EDGE_BY_PURPOSE[purpose]
 
   const [step, setStep] = useState<Step>('pick')
   const [picked, setPicked] = useState<Picked | null>(null)
@@ -103,8 +107,9 @@ export default function ImageUploadModal({ purpose, onClose, onUploaded, aspect 
   async function choose(file: File) {
     setError(null)
 
-    // ① 파일만 보고 알 수 있는 것 — 디코딩 전에 거른다
-    const early = precheck(file, rule)
+    /* ① 파일만 보고 알 수 있는 것 — 디코딩 전에 거른다.
+       줄여서 올리는 용도는 원본 용량을 보지 않는다(precheck 머리말) */
+    const early = precheck(file, rule, maxEdge != null)
     if (early) { setError(early); return }
 
     // ② 크기와 비율은 디코딩해야 안다
@@ -124,20 +129,23 @@ export default function ImageUploadModal({ purpose, onClose, onUploaded, aspect 
       return
     }
 
-    /* ④ 비율이 어긋나면 거절하지 않고 가운데를 기준으로 잘라 맞춘다(api/uploads.ts cropToAspect).
-       올리는 것은 잘린 파일이고, 미리보기도 잘린 그림이어야 한다 — 원본을 보여 주면
-       사용자는 자기가 고른 그림이 그대로 올라가는 줄 안다. */
+    /* ④ 비율이 어긋나면 거절하지 않고 가운데를 기준으로 잘라 맞추고, 쓰는 자리보다 크면
+       줄인다(api/uploads.ts cropToAspect). 올리는 것은 그렇게 만든 파일이고, 미리보기도
+       같은 그림이어야 한다 — 원본을 보여 주면 사용자는 고른 그림이 그대로 올라가는 줄 안다. */
+    const needsCrop = rule != null && !fitsAspect(measured.width, measured.height, rule)
+    const needsShrink = maxEdge != null && Math.max(measured.width, measured.height) > maxEdge
+
     let next: Picked
-    if (rule && !fitsAspect(measured.width, measured.height, rule)) {
+    if (needsCrop || needsShrink) {
       try {
-        const cut = await cropToAspect(file, measured, rule)
-        // 자른 결과가 정말 규격 안인지 마지막으로 본다. 아주 작은 그림은 반올림이 오차를 넘는다
+        const cut = await cropToAspect(file, measured, needsCrop ? rule : undefined, maxEdge)
+        // 만든 결과가 정말 규격 안인지 마지막으로 본다. 아주 작은 그림은 반올림이 오차를 넘는다
         const stillBad = checkSize(cut.width, cut.height, rule)
         if (stillBad) throw stillBad
         URL.revokeObjectURL(measured.previewUrl)
         next = {
           file: cut.file, width: cut.width, height: cut.height,
-          previewUrl: URL.createObjectURL(cut.file), croppedFrom: cut.from,
+          previewUrl: URL.createObjectURL(cut.file), croppedFrom: cut.from, did: cut.did,
         }
       } catch (e) {
         URL.revokeObjectURL(measured.previewUrl)
@@ -266,10 +274,14 @@ export default function ImageUploadModal({ purpose, onClose, onUploaded, aspect 
                   <dd className="num">{formatBytes(picked.file.size)}</dd>
                 </div>
               </dl>
-              {/* 잘랐으면 반드시 말한다. 모르는 사이에 그림이 바뀌는 쪽이 거절보다 나쁘다 */}
-              {picked.croppedFrom && rule && (
+              {/* 손댔으면 반드시 말한다. 모르는 사이에 그림이 바뀌는 쪽이 거절보다 나쁘다.
+                  자르기와 줄이기는 사용자가 잃는 것이 달라 문구를 가른다 — 자르기는 화면
+                  밖으로 나간 부분이 없어지고, 줄이기는 크게 볼 때만 차이가 난다. */}
+              {picked.croppedFrom && picked.did && (
                 <p className="iu-cropped">
-                  {`${formatAspect(rule)} 에 맞춰 가운데를 잘랐습니다`}
+                  {picked.did.cropped && rule && `${formatAspect(rule)} 에 맞춰 가운데를 잘랐습니다`}
+                  {picked.did.cropped && picked.did.shrank && ' · '}
+                  {picked.did.shrank && '화면에 쓰는 크기로 줄였습니다'}
                   <span className="num">
                     {`${picked.croppedFrom.width} × ${picked.croppedFrom.height} → ${picked.width} × ${picked.height}`}
                   </span>

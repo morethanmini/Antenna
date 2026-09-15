@@ -38,6 +38,7 @@ class PredictionViewControllerTest {
     private static final String SAMSUNG = "005930";
     private static final String CHANNEL = "/api/v1/channels/{userId}/predictions";
     private static final String DETAIL = "/api/v1/predictions/{id}";
+    private static final String FEED = "/api/v1/predictions/feed";
 
     @Autowired
     MockMvc mockMvc;
@@ -56,6 +57,79 @@ class PredictionViewControllerTest {
         subscriberId = insertUser("구독자");
         insertStock(SAMSUNG, "삼성전자");
         insertSubscription(subscriberId, authorId, Instant.now().plus(10, ChronoUnit.DAYS));
+    }
+
+    // ── 예측 피드 (F-01 예측 탭) ───────────────────────────
+
+    @Test
+    @DisplayName("피드 — /feed 가 /{predictionId} 에 먹히지 않는다. 최신(id 내림차순)순이고 작성자가 줄마다 온다")
+    void 피드_고정경로와_정렬() throws Exception {
+        Long first = insertPrediction("HIT", "1.500");
+        Long second = insertPrediction("HIT", "2.000");
+
+        mockMvc.perform(get(FEED).with(user(String.valueOf(viewerId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(2))
+                .andExpect(jsonPath("$.items[0].id").value(second))
+                .andExpect(jsonPath("$.items[1].id").value(first))
+                .andExpect(jsonPath("$.items[0].author.nickname").value("채널주인"))
+                .andExpect(jsonPath("$.items[0].stockName").value("삼성전자"))
+                .andExpect(jsonPath("$.items[0].createdAt").exists())
+                .andExpect(jsonPath("$.hasNext").value(false));
+    }
+
+    @Test
+    @DisplayName("피드 — 게이팅이 채널 목록과 같다: 비구독자에게 판정 전 건은 방향·목표가가 없다")
+    void 피드_게이팅() throws Exception {
+        insertPrediction("OPEN", null);
+
+        mockMvc.perform(get(FEED).with(user(String.valueOf(viewerId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].locked").value(true))
+                .andExpect(jsonPath("$.items[0].direction").doesNotExist())
+                .andExpect(jsonPath("$.items[0].targetPrice").doesNotExist())
+                // 종목·기간은 판정 전에도 공개다 — 빼면 피드가 실제보다 한가해 보인다.
+                .andExpect(jsonPath("$.items[0].stockCode").value(SAMSUNG))
+                .andExpect(jsonPath("$.items[0].horizon").value(7));
+
+        mockMvc.perform(get(FEED).with(user(String.valueOf(subscriberId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].locked").value(false))
+                .andExpect(jsonPath("$.items[0].direction").value("UP"));
+    }
+
+    @Test
+    @DisplayName("피드 — scope=SUBSCRIBED 는 구독 중인 채널만. 구독이 없으면 빈 목록이다")
+    void 피드_구독_범위() throws Exception {
+        insertPrediction("HIT", "1.500");
+
+        mockMvc.perform(get(FEED).param("scope", "SUBSCRIBED").with(user(String.valueOf(subscriberId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1));
+
+        // 빈 IN 바인딩이 아니라 exists 서브쿼리라 구독 0건도 그냥 빈 목록이다(500 이 아니다).
+        mockMvc.perform(get(FEED).param("scope", "SUBSCRIBED").with(user(String.valueOf(viewerId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(0))
+                .andExpect(jsonPath("$.hasNext").value(false));
+    }
+
+    @Test
+    @DisplayName("피드 — status 필터와 커서가 /predictions/me 와 같은 어휘로 동작한다")
+    void 피드_필터와_커서() throws Exception {
+        Long hit = insertPrediction("HIT", "1.500");
+        insertPrediction("OPEN", null);
+
+        mockMvc.perform(get(FEED).param("status", "JUDGED").with(user(String.valueOf(viewerId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].id").value(hit));
+
+        mockMvc.perform(get(FEED).param("size", "1").with(user(String.valueOf(viewerId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.hasNext").value(true))
+                .andExpect(jsonPath("$.nextCursor").exists());
     }
 
     // ── 채널 예측 목록 ─────────────────────────────────────

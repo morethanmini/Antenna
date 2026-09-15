@@ -328,15 +328,15 @@ export default function Verify() {
               verdict={step2Verdict(data, check)}
             >
               <p className="vf-lead">
-                커밋은 하루치를 묶어 머클 트리로 접은 뒤 루트만 체인에 올립니다.
-                형제 해시 목록(proof)을 순서대로 접어 그 루트가 나오면, 이 커밋이 그날 배치에
+                커밋은 한 회차치를 묶어 머클 트리로 접은 뒤 루트만 체인에 올립니다.
+                형제 해시 목록(proof)을 순서대로 접어 그 루트가 나오면, 이 커밋이 그 배치에
                 들어 있었다는 뜻입니다.
               </p>
 
               {!anchor ? (
                 <ul className="vf-checks">
                   <CheckLine verdict="locked" label="아직 앵커 배치에 담기지 않았습니다">
-                    앵커 배치는 하루에 한 번 돕니다. 오늘 등록한 예측은 다음 배치에 담깁니다.
+                    앵커 배치는 10분마다 돕니다. 방금 등록한 예측은 다음 회차에 담깁니다.
                   </CheckLine>
                 </ul>
               ) : (

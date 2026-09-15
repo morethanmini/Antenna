@@ -21,6 +21,8 @@ import type { WalletLinkResult } from '../../api/wallet'
 import { formatToken, linkWallet, requestNonce, shortAddress, signingPayload } from '../../api/wallet'
 import { WALLET_INSTALL_URL, connectAddress, hasWallet, onWalletReady, personalSign } from '../../wallet/provider'
 import { errorText } from '../state/errorText'
+import TokenAutoAdd from './TokenAutoAdd'
+import NetworkAdd from './NetworkAdd'
 import { useAuth } from '../../auth/context'
 import '../../styles/screens/wallet-link.css'
 
@@ -33,6 +35,9 @@ type Step = 'connect' | 'confirm' | 'working' | 'done'
 type Draft = {
   address: string
   payload: string
+  /* 서버가 준 체인. payload 안에도 같은 값이 들어 있지만 문자열이라 다시 꺼내 쓰기 어렵다.
+     완료 화면의 토큰 안내가 어느 체인의 ANT 인지 이 값으로 고른다(TokenAddGuide). */
+  chainId: number
 }
 
 /** 재시도해도 같은 결과가 나오는 오류. "다시 시도"를 띄우면 사용자를 헛돌린다. */
@@ -80,7 +85,7 @@ export default function WalletLinkModal({
     try {
       const address = await connectAddress()
       const nonce = await requestNonce('WALLET_LINK')
-      setDraft({ address, payload: signingPayload('WALLET_LINK', address, nonce) })
+      setDraft({ address, payload: signingPayload('WALLET_LINK', address, nonce), chainId: nonce.chainId })
       setStep('confirm')
     } catch (e) {
       setError(e as ApiError)
@@ -168,6 +173,11 @@ export default function WalletLinkModal({
               </p>
             )}
 
+            {/* 연동은 끝났지만 지갑 목록에는 아직 ANT 가 없다. 이 칸이 스스로 지갑에 넣는다 —
+                "곧 지급됩니다" 를 읽은 사람이 다음에 할 일이라 묻지 않고 바로 부른다
+                (TokenAutoAdd 머리말). 실패하면 그 안에서 손으로 넣는 절차로 넘어간다. */}
+            {draft && <TokenAutoAdd chainId={draft.chainId} />}
+
             <p className="wl-note">이제 예측을 등록하고 토큰을 받을 수 있습니다.</p>
             <div className="wl-actions">
               <button
@@ -222,6 +232,12 @@ export default function WalletLinkModal({
 
                 {draft && (
                   <>
+                    {/* 네트워크는 연동보다 먼저다. 연동 자체는 체인과 무관하지만(서명 + DB),
+                        끝나는 순간 ANT 를 넣고 그건 **지갑이 보고 있는 네트워크에** 들어간다.
+                        여기 두는 이유 — 서비스 체인을 알게 되는 가장 이른 지점이 이 화면이다.
+                        chainId 는 POST /wallet/nonce 응답에 실려 오므로 연결 전에는 알 수 없다. */}
+                    <NetworkAdd chainId={draft.chainId} />
+
                     <div className="wl-field">
                       <span className="wl-label">연결할 주소</span>
                       <code className="wl-address" title={draft.address}>

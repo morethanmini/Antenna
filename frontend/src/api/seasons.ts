@@ -111,3 +111,27 @@ export const isJoinable = (s: OpenRun) => s.status !== 'CLOSED'
    소각하는 ANT 다(설계서 §4 G-03). 섞으면 안 된다. */
 export const won = (n: number) => `${n.toLocaleString('ko-KR')}원`
 export const ant = (n: number) => `${n.toLocaleString('ko-KR')} ANT`
+
+/* 만 단위로 딱 떨어질 때만 이 표기를 쓰고 아니면 won() 으로 돌아간다 — 칩은 한눈에
+   읽히는 것이 목적이라 3,000만원이 30,000,000원보다 낫지만, 단위가 안 맞는 값을
+   억지로 줄이면 반올림이 생겨 금액이 달라진다.
+   G-01 홈 히어로 칩과 G-00 온보딩이 같이 쓴다. */
+export const manwon = (n: number) =>
+  n >= 10_000 && n % 10_000 === 0 ? `${(n / 10_000).toLocaleString('ko-KR')}만원` : won(n)
+
+/**
+ * 연습 목록이 한 값으로 모일 때만 그 값을 준다.
+ *
+ * "시작 자산 3,000만원" 같은 칩은 특정 시즌이 아니라 "연습은 이런 것" 이라는 안내다.
+ * 시즌마다 초기 자금이 다르면 아무 시즌의 값이나 대표로 세우는 셈이라 거짓이 된다.
+ * 그럴 때는 undefined 를 줘서 칩을 통째로 감춘다 — §1 규칙 3 이 금지하는 건 금액 상수를
+ * 화면에 박는 것이지, 응답에 실려 온 값을 그리는 것이 아니다.
+ *
+ * G-01 홈에 있던 것을 G-00 온보딩도 쓰게 되면서 여기로 옮겼다. 두 화면이 같은 문장을
+ * 말하므로 한쪽만 고쳐져 값이 어긋나면 안 된다.
+ */
+export function agreed<K extends keyof OpenRun>(runs: OpenRun[] | undefined, key: K) {
+  if (!runs?.length) return undefined
+  const first = runs[0][key]
+  return runs.every((r) => r[key] === first) ? first : undefined
+}

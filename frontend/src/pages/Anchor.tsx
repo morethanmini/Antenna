@@ -162,29 +162,46 @@ export default function Anchor() {
                 <>
                   <ol className="ac-commit-list" start={1}>
                     {visible.map((c, i) => (
-                      <li key={c.predictionId}>
+                      <li key={`${c.kind}-${c.predictionId ?? c.reportId}`}>
                         <span className="ac-commit-no num">{i + 1}</span>
 
                         {/* 무엇이 봉인됐는지 — 해시만 있으면 이 줄이 읽히지 않는다.
+                            리프가 두 종류다(ANT-CHAIN-14): 예측은 종목·기간, 리포트는 제목.
                             종목이 지워진 예측은 코드도 이름도 없다. 그때는 자리를 비운다
                             (그 커밋도 리프에서 빠지지 않는다 — 전량이 있어야 루트가 나온다). */}
-                        <span className="ac-commit-what">
-                          {c.stockName || c.stockCode ? (
-                            <>
-                              {c.stockCode && <em className="ac-commit-code num">{c.stockCode}</em>}
-                              {c.stockName && <b className="ac-commit-stock">{c.stockName}</b>}
-                            </>
-                          ) : (
-                            <span className="ac-commit-nostock">종목 없음</span>
-                          )}
-                          <span className="ac-commit-horizon">{horizonLabel(c.horizon)}</span>
-                        </span>
+                        {c.kind === 'REPORT' ? (
+                          <span className="ac-commit-what">
+                            <em className="ac-commit-kind">리포트</em>
+                            <b className="ac-commit-stock">{c.title}</b>
+                          </span>
+                        ) : (
+                          <span className="ac-commit-what">
+                            {c.stockName || c.stockCode ? (
+                              <>
+                                {c.stockCode && <em className="ac-commit-code num">{c.stockCode}</em>}
+                                {c.stockName && <b className="ac-commit-stock">{c.stockName}</b>}
+                              </>
+                            ) : (
+                              <span className="ac-commit-nostock">종목 없음</span>
+                            )}
+                            {c.horizon !== null && (
+                              <span className="ac-commit-horizon">{horizonLabel(c.horizon)}</span>
+                            )}
+                          </span>
+                        )}
 
                         <CopyHash value={c.commitHash} head={14} tail={10} />
-                        {/* 이 커밋이 정말 루트에 들어 있는지 브라우저에서 직접 확인하는 화면으로 */}
-                        <Link className="ac-verify" to={`/ledger/verify/${c.predictionId}`}>
-                          검산<em aria-hidden="true">›</em>
-                        </Link>
+                        {/* 이 커밋이 정말 루트에 들어 있는지 브라우저에서 직접 확인하는 화면으로.
+                            리포트 검산 화면은 아직 없다 — 그 줄은 링크 없이 해시까지만 보여준다. */}
+                        {c.kind === 'PREDICTION' ? (
+                          <Link className="ac-verify" to={`/ledger/verify/${c.predictionId}`}>
+                            검산<em aria-hidden="true">›</em>
+                          </Link>
+                        ) : (
+                          <Link className="ac-verify" to={`/reports/${c.reportId}`}>
+                            리포트<em aria-hidden="true">›</em>
+                          </Link>
+                        )}
                       </li>
                     ))}
                   </ol>

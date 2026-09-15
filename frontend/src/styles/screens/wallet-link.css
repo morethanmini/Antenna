@@ -122,3 +122,86 @@
   background:var(--brand-softer);
   border-radius:8px; padding:9px 11px;
 }
+
+/* ── 완료 화면의 토큰 추가 안내 ─────────────────
+   연동 사실(위)과 구분되는 별개의 할 일이라 판을 깔고 선으로 끊는다.
+   그러면서도 완료 제목·보너스보다 조용하다 — 건너뛰어도 되는 곁들이다. */
+.wl-token{
+  display:flex; flex-direction:column; gap:8px;
+  padding:12px;
+  border:1px solid var(--rule);
+  border-radius:10px;
+  background:var(--surface-2);
+}
+.wl-token-lead{ margin:0; font-size:12.5px; line-height:1.65; color:var(--body); }
+.wl-token-lead b{ color:var(--ink); }
+
+/* 체인이 어긋났을 때. wl-error 만큼 붉지 않다 — 실패가 아니라 순서 문제다 */
+.wl-token-warn{
+  margin:0; padding:9px 11px;
+  border:1px solid #f0dcb4; border-radius:8px;
+  background:#fdf6e9;
+  font-size:11.5px; line-height:1.6; color:#8a5a12;
+}
+.wl-token-warn b{ font-weight:700; }
+
+.wl-token-add{ width:100%; }
+.wl-token-done{
+  margin:0; padding:9px 11px; border-radius:8px;
+  text-align:center;
+  font-size:12.5px; font-weight:600;
+  color:var(--brand-ink); background:var(--brand-softer);
+}
+.wl-token-hint{ margin:0; font-size:11.5px; line-height:1.6; color:var(--muted); }
+
+/* 자동 추가가 안 됐을 때만 나온다. 접지 않으므로 이 판 안에서 한 단 들여 둔다 */
+.wl-token-manual{ display:flex; flex-direction:column; gap:8px; padding-top:2px; }
+.wl-token-manual-head{ margin:0; font-size:11.5px; font-weight:700; color:var(--faint); }
+.wl-token-manual ol{
+  margin:0; padding-left:18px;
+  display:flex; flex-direction:column; gap:4px;
+  font-size:12px; line-height:1.65; color:var(--body);
+}
+.wl-token-manual ol b{ font-weight:700; color:var(--ink); }
+
+/* 주소는 한 줄을 통째로 쓰고 복사 버튼은 그 아래다 — 나란히 두면 42자가
+   버튼을 화면 밖으로 밀어낸다 */
+.wl-token-copy{ display:flex; flex-direction:column; gap:6px; }
+.wl-token-copy .wl-btn{ align-self:flex-start; padding:6px 11px; font-size:12px; }
+
+/* 이 판(wl-token)이 이미 surface-2 라 주소 칸이 같은 색으로 묻힌다 —
+   붙여 넣을 값이니 한 덩어리로 집히게 흰 바탕에 테두리를 준다 */
+.wl-token-manual .wl-address{ background:var(--surface); border:1px solid var(--rule); }
+
+/* 손으로 넣는 네트워크 값. 표지만 <table> 이 아니라 <dl> 이다 —
+   머리글 행이 없는 이름/값 쌍이라 표로 읊으면 스크린리더가 열 제목을 지어낸다. */
+.wl-net-table{ margin:0; display:flex; flex-direction:column; gap:6px; }
+.wl-net-table > div{
+  display:flex; gap:10px; align-items:baseline;
+  font-size:12px; line-height:1.6;
+}
+.wl-net-table dt{
+  flex:0 0 78px;               /* 값들의 왼쪽 끝을 한 줄로 세운다 */
+  font-weight:600; color:var(--faint);
+}
+.wl-net-table dd{ margin:0; flex:1; color:var(--body); overflow-wrap:anywhere; }
+.wl-net-table dd code{
+  font-family:var(--mono); font-size:11.5px; color:var(--ink);
+  background:var(--surface); border:1px solid var(--rule);
+  border-radius:6px; padding:2px 6px;
+}
+.wl-net-table dd em{ font-style:normal; color:var(--muted); font-size:11px; }
+
+/* 좁은 화면에서는 이름표가 위로 올라가 두 줄이 된다 — 78px 을 떼면 RPC 주소가 깨진다 */
+@media (max-width:420px){
+  .wl-net-table > div{ flex-direction:column; gap:2px; }
+  .wl-net-table dt{ flex:none; }
+}
+
+/* 충돌 안내는 문단 하나가 아니라 "지우고 다시" 절차라 경고 판 안에 단을 만든다 */
+.wl-token-warn > p{ margin:0; }
+.wl-token-warn > ol{
+  margin:6px 0 0; padding-left:17px;
+  display:flex; flex-direction:column; gap:3px;
+}
+.wl-token-warn > .wl-note{ margin-top:6px; color:#8a5a12; opacity:.85; }

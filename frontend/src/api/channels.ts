@@ -17,6 +17,7 @@
 
    MOCK 을 false 로 바꾸고 mock/channels.ts 와 각 함수의 `if (MOCK)` 한 줄씩만 지우면 된다. */
 import { api } from './client'
+import type { ChannelPlatform } from './account'
 import * as mock from './mock/channels'
 import type { CursorList } from './types'
 import type { Direction, PredictionStatus } from './predictions'
@@ -40,9 +41,16 @@ export type ChannelStats = {
   avgError: number | null
 }
 
-/** 외부 채널 링크. 라벨과 주소만 온다 — 플랫폼별 아이콘을 우리가 정하지 않는다 */
+/**
+ * 외부 채널 링크. 서버 UserDtos.ChannelResponse 와 같은 모양이다.
+ *
+ * platform 은 아이콘을, label 은 보일 이름을 정한다. label 이 없으면 플랫폼 기본 이름을
+ * 쓴다(api/account 의 channelLabel). 전에는 라벨 문자열만 받았는데, 그러면 편집 화면이
+ * 라벨에서 플랫폼을 되짚어야 했고 되짚기는 문구가 바뀔 때마다 조용히 틀린다.
+ */
 export type ExternalLink = {
-  label: string
+  platform: ChannelPlatform
+  label: string | null
   url: string
 }
 

@@ -1,5 +1,6 @@
 package ssafy.a507.backend.domain.monetize.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -16,6 +17,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 import ssafy.a507.backend.domain.account.entity.User;
+import ssafy.a507.backend.domain.chain.entity.AnchorBatch;
+import ssafy.a507.backend.domain.monetize.report.ReportSeal;
 
 /** 예측자 리포트. 목록(제목)은 미구독자에게도 보여 구독 유인으로 쓴다. */
 @Entity
@@ -57,6 +60,35 @@ public class Report {
     @Column(name = "view_count", nullable = false)
     private int viewCount;
 
+    /**
+     * 본문 봉인. {@code keccak256(body ‖ salt)} — {@link ReportSeal} 참고.
+     *
+     * <p>이 값이 있어야 앵커 대상이 된다. nullable 인 이유는 둘이다: ① {@code ddl-auto} 가 기존 행이 있는 테이블에
+     * NOT NULL 컬럼을 못 붙인다 ② 봉인 전에 발행된 리포트(이 기능 이전 것)를 앵커 대기 목록에서 자연스럽게 빼려면
+     * "해시가 없으면 대상이 아니다" 한 줄이면 된다.
+     */
+    @Column(name = "body_hash", length = 66)
+    private String bodyHash;
+
+    /** 머클 트리의 잎. {@code keccak256(ReportSeal.canonical)}. 같은 값이 두 번 나올 수 없어 UQ 다 — 커밋 해시와 같다. */
+    @Column(name = "report_hash", length = 66, unique = true)
+    private String reportHash;
+
+    /**
+     * 본문 salt. 서버가 만든 32바이트(64 hex)다 — 이유는 {@link ReportSeal} javadoc.
+     *
+     * <p>구독자 전용 리포트의 본문을 비구독자가 후보 해시로 맞추지 못하게 막는 값이라 <b>직렬화에서 항상 뺀다</b>.
+     * 예측의 {@code PredictionCommit.salt} 와 같은 취급이다.
+     */
+    @JsonIgnore
+    @Column(length = 64)
+    private String salt;
+
+    /** 소속 앵커 배치. NULL 이면 앵커 대기 상태다 — {@code PredictionCommit.anchorBatch} 와 같은 뜻이다. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "anchor_batch_id")
+    private AnchorBatch anchorBatch;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -70,5 +102,26 @@ public class Report {
         report.isPublic = isPublic;
         report.viewCount = 0;
         return report;
+    }
+
+    /**
+     * 발행 직후 봉인한다(ANT-CHAIN-14). 계산은 {@link ReportSeal} 이 끝내고 온다 — 엔티티는 계산하지 않는다.
+     *
+     * <p>한 번만 부른다. 리포트에는 수정 API 가 없고, 있어도 봉인을 다시 하면 체인에 박힌 해시와 어긋난다.
+     */
+    public void seal(ReportSeal seal) {
+        this.salt = seal.salt();
+        this.bodyHash = seal.bodyHash();
+        this.reportHash = seal.reportHash();
+    }
+
+    /**
+     * 앵커 배치에 넣는다. 한 번 넣으면 바꾸지 않는다 — 옮기면 이미 계산된 루트와 리프 목록이 어긋난다
+     * ({@code PredictionCommit.assignBatch} 와 같은 규칙).
+     */
+    public void assignBatch(AnchorBatch batch) {
+        if (this.anchorBatch == null) {
+            this.anchorBatch = batch;
+        }
     }
 }

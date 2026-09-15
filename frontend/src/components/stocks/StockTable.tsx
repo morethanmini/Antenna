@@ -5,9 +5,10 @@
    useCursorList 가 돌아 쓰지도 않을 첫 쪽을 불러온다. 탭이 꺼지면 이 컴포넌트가
    통째로 빠지므로 그 요청이 아예 나가지 않는다.
 
-   컨트롤은 API 파라미터와 1:1 이다(§4 B-02) — sector · sentiment · perMin/perMax ·
-   hasOpenPrediction · watchedOnly · sort(5종 고정). market 만 예외로 컨트롤을 두지
-   않는다: 이 서비스는 코스피만 다뤄 고를 것이 하나뿐이다.
+   컨트롤은 API 파라미터와 거의 1:1 이다(§4 B-02) — q · sector · perMin/perMax ·
+   pbrMin/pbrMax · hasOpenPrediction · watchedOnly · sort. 서버가 받지만 컨트롤을
+   두지 않는 것이 둘 있다: market 은 코스피만 다뤄 고를 것이 하나뿐이고,
+   sentiment 는 정렬과 같은 축이라 뺐다(자세한 까닭은 그 자리 주석에).
 
    실전 시세는 전일 종가만이다(§7). "현재가" 라는 말을 쓰지 않고, 기준 영업일은
    행마다 반복하지 않고 머리글에 한 번 찍는다(응답 baseDate).
@@ -15,19 +16,21 @@
    행별 UP/DOWN 집계는 응답에 실려 온다 — 행마다 /sentiment 를 부르지 않는다.
    페이지 번호는 두지 않는다(커서 페이징이라 성립하지 않는다 · §9.2).
    행을 누르면 B-03 종목 상세로 간다. */
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   addWatch, EMPTY_FILTER, fetchStocks, getSectorSummary, MARKET_LABEL, removeWatch,
   SORT_LABEL, STOCK_SORTS,
 } from '../../api/stocks'
 import type {
-  SectorSummary, Sentiment, StockFilter, StockListItem, StockListMeta, StockSort,
+  SectorSummary, StockFilter, StockListItem, StockListMeta, StockSort,
 } from '../../api/stocks'
 import { useAsync } from '../../api/useAsync'
 import { useCursorList } from '../../api/useCursorList'
 import EmptyState from '../state/EmptyState'
 import ErrorState from '../state/ErrorState'
+import RangeSlider from './RangeSlider'
+import StockLogo from './StockLogo'
 
 const won = (n: number) => n.toLocaleString('ko-KR')
 /* 0 에는 부호를 붙이지 않고 색도 주지 않는다 — 근거는 Watchlist.tsx(B-04). */
@@ -37,22 +40,6 @@ const toneOf = (rate: number | null) =>
 const dotted = (iso: string) => iso.replaceAll('-', '.')
 /** 값이 없는 칸. 0 으로 그리면 "PER 0 배" 로 읽힌다 */
 const DASH = '—'
-
-const SENTIMENT_LABEL: Record<Sentiment, string> = { UP: '상승 우세', DOWN: '하락 우세' }
-
-/* 종목 로고 자산이 없어 이름 첫 글자로 배지를 만든다. 색은 종목코드에서 뽑아
-   항상 같은 색이 나오게 한다(무작위가 아니다).
-   B-01 홈에도 같은 배지가 있다 — 세 번째 화면이 필요해지면 공용으로 뽑는다. */
-function StockBadge({ code, name }: { code: string; name: string }) {
-  let h = 0
-  for (const ch of code) h = (h * 31 + ch.charCodeAt(0)) % 360
-  return (
-    <span className="st-logo" aria-hidden="true"
-          style={{ background: `hsl(${h} 62% 92%)`, color: `hsl(${h} 54% 36%)` }}>
-      {name.slice(0, 1)}
-    </span>
-  )
-}
 
 /* 예측 심리 막대. UP 과 DOWN 이 한 줄을 나눠 갖는다 — 두 개를 따로 그리면
    합이 100 이라는 게 보이지 않는다. 비율만으로 방향을 전달하지 않도록
@@ -78,33 +65,162 @@ function SentimentBar({ upRatio, count }: { upRatio: number | null; count: numbe
   )
 }
 
-/** 상단 섹터 요약 칩. 누르면 섹터 필터가 즉시 바뀐다. */
+/** 칩 하나의 폭(px). CSS .st-sector-chip 의 flex-basis 와 같아야 한다 —
+ *  한 쪽 넘길 거리를 셀 때 "한 칸은 남긴다" 는 계산에 쓴다 */
+const CHIP_W = 148
+
+/** 스크롤 끝 판정 여유(px). 소수점 오차로 끝에 닿고도 1px 이 남는 일이 있다 */
+const EDGE_SLACK = 1
+
+/** 슬라이더에서 손을 멈췄다고 볼 시간(ms). 짧으면 끄는 도중에 요청이 나가고,
+ *  길면 놓고 나서도 목록이 안 바뀌어 고장 난 줄 안다 */
+const SETTLE_MS = 250
+
+/** PER·PBR 슬라이더의 오른쪽 끝. 이 값에 손잡이를 두면 "위로 제한 없음" 이다.
+ *  실제 분포에서 90% 선을 조금 넘겨 잡았다 — 근거는 쓰는 자리 주석에 적었다 */
+const PER_CAP = 80
+const PBR_CAP = 8
+
+/** 값이 오기 전에 깔아 두는 자리 칸 수. 1440px 화면에서 트랙에 들어가는 만큼이다 */
+const SKELETON_CHIPS = 8
+
+/**
+ * 상단 섹터 요약 칩. 누르면 섹터 필터가 즉시 바뀐다.
+ *
+ * **한 줄로 눕히고 좌우 버튼으로 넘긴다**(2026-09-14). 섹터가 23 개 + 전체 = 24 칸
+ * 이라 접어 두면 세 줄이 되는데, 그 띠가 목록 위를 덮어 정작 종목이 화면 밖으로
+ * 밀려났다. 섹터는 훑다가 하나 고르는 값이지 한눈에 다 세는 값이 아니다.
+ *
+ * 넘기는 것은 브라우저 스크롤에 맡긴다(scrollBy + scroll-behavior:smooth) —
+ * 직접 transform 으로 옮기면 트랙패드 가로 스크롤과 키보드 포커스 이동이 제
+ * 자리를 잃는다. 버튼은 그 스크롤을 대신 눌러 주는 것뿐이다.
+ */
 function SectorChips({ current, onPick }: {
   current: string | undefined
   onPick: (sector: string | undefined) => void
 }) {
   const load = useCallback(() => getSectorSummary(), [])
   const { data, error } = useAsync(load)
-  if (error || !data) return null
+
+  const trackRef = useRef<HTMLDivElement>(null)
+  /** 양쪽에 더 갈 데가 있는지. 없으면 그 버튼을 끈다 */
+  const [more, setMore] = useState({ left: false, right: false })
+
+  const measure = useCallback(() => {
+    const el = trackRef.current
+    if (!el) return
+    const max = el.scrollWidth - el.clientWidth
+    setMore((prev) => {
+      const next = { left: el.scrollLeft > EDGE_SLACK, right: el.scrollLeft < max - EDGE_SLACK }
+      return prev.left === next.left && prev.right === next.right ? prev : next
+    })
+  }, [])
+
+  /* 폭이 바뀌면 넘길 데가 있는지도 바뀐다. data 를 의존성에 두는 것은 칩이
+     생기기 전에 재면 늘 "넘길 데 없음" 이 나오기 때문이다. */
+  useEffect(() => {
+    const el = trackRef.current
+    if (!el) return
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [measure, data])
+
+  const page = useCallback((dir: -1 | 1) => {
+    const el = trackRef.current
+    if (!el) return
+    /* 보이는 만큼 넘기되 **한 칸은 남긴다** — 방금 보던 끝 칸이 다음 쪽 처음에
+       남아 있어야 어디까지 봤는지 이어진다. 좁은 화면에서 음수가 되지 않게 막는다. */
+    el.scrollBy({ left: dir * Math.max(CHIP_W, el.clientWidth - CHIP_W), behavior: 'smooth' })
+  }, [])
+
+  if (error) return null
+  /* 아직 안 왔으면 **같은 크기의 자리**를 그린다(2026-09-14).
+
+     null 을 돌려주고 있었는데, 그러면 이 줄이 통째로 없다가 생기면서 아래가
+     104px 밀린다. 옆의 필터 카드와 목록 패널은 정적 마크업이라 먼저 그려져
+     있어, 유독 이 줄만 "가장 늦게 뜬다" 로 보였다. 재 보니 실제 지연은 140ms
+     남짓이고 /stocks/sectors 가 /stocks 보다 느린 것도 아니다(둘 다 80~90ms) —
+     자리를 안 잡아 둔 것이 원인이었다. */
+  if (!data) return <SectorChipsSkeleton />
 
   return (
-    <div className="st-sectors" role="group" aria-label="섹터별 보기">
-      {data.items.map((s: SectorSummary) => {
-        const on = (s.sector ?? undefined) === current
-        return (
-          <button key={s.sector ?? 'ALL'} type="button"
-                  className={`st-sector-chip${on ? ' on' : ''}`}
-                  aria-pressed={on}
-                  onClick={() => onPick(s.sector ?? undefined)}>
-            <span className="st-sector-name">{s.sector ?? '전체 종목'}</span>
-            <span className="st-sector-meta">
-              <em className="num">{s.count}개</em>
-              <b className={`num ${toneOf(s.changeRate)}`}>{signed(s.changeRate)}</b>
-            </span>
-          </button>
-        )
-      })}
+    <div className="st-sectors">
+      <SectorNav dir={-1} disabled={!more.left} onClick={() => page(-1)} />
+      {/* 스크롤 상자 자체에는 tabIndex 를 주지 않는다 — 안쪽 칩이 전부 버튼이라
+          탭으로 닿고, 브라우저가 포커스 간 칩을 알아서 끌어온다. 탭 정거장을
+          하나 더 만들면 키보드로 지나가기만 번거로워진다. */}
+      <div
+        className="st-sector-track" ref={trackRef} onScroll={measure}
+        role="group" aria-label="섹터별 보기"
+      >
+        {data.items.map((s: SectorSummary) => {
+          const on = (s.sector ?? undefined) === current
+          return (
+            <button key={s.sector ?? 'ALL'} type="button"
+                    className={`st-sector-chip${on ? ' on' : ''}`}
+                    aria-pressed={on}
+                    onClick={() => onPick(s.sector ?? undefined)}>
+              <span className="st-sector-name">{s.sector ?? '전체 종목'}</span>
+              <span className="st-sector-meta">
+                <em className="num">{s.count}개</em>
+                <b className={`num ${toneOf(s.changeRate)}`}>{signed(s.changeRate)}</b>
+              </span>
+            </button>
+          )
+        })}
+      </div>
+      <SectorNav dir={1} disabled={!more.right} onClick={() => page(1)} />
     </div>
+  )
+}
+
+/**
+ * 값이 오기 전의 자리.
+ *
+ * 빈 상자만 두지 않고 **칩 모양을 옅게 깔아 둔다** — 같은 높이의 회색 띠만
+ * 있으면 그것대로 고장 난 화면처럼 보인다. 칸이 여덟인 것은 1440px 기준으로
+ * 트랙에 들어가는 수다. 모자라면 오른쪽이 조금 비고 넘치면 잘릴 뿐이라,
+ * 화면 폭을 재서 맞출 만한 값이 아니다.
+ *
+ * 읽어 줄 내용이 없으므로 보조기기에서는 감춘다. 목록 쪽이 제 로딩을 알린다.
+ */
+function SectorChipsSkeleton() {
+  return (
+    <div className="st-sectors" aria-hidden="true">
+      <SectorNav dir={-1} disabled />
+      <div className="st-sector-track">
+        {Array.from({ length: SKELETON_CHIPS }, (_, i) => (
+          <div key={i} className="st-sector-chip st-sector-skel">
+            <span className="st-skel st-skel-name" />
+            <span className="st-skel st-skel-meta" />
+          </div>
+        ))}
+      </div>
+      <SectorNav dir={1} disabled />
+    </div>
+  )
+}
+
+/** 섹터 줄 좌우 넘김 버튼. 화살표는 MarketMap 의 "전체 섹터" 와 같은 모양이다.
+ *  자리만 그릴 때는 누를 일이 없어 onClick 이 없다 */
+function SectorNav({ dir, disabled, onClick }: {
+  dir: -1 | 1
+  disabled: boolean
+  onClick?: () => void
+}) {
+  return (
+    <button
+      type="button" className="st-sector-nav" onClick={onClick} disabled={disabled}
+      aria-label={dir === -1 ? '이전 섹터 보기' : '다음 섹터 보기'}
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+           style={dir === 1 ? { transform: 'rotate(180deg)' } : undefined}>
+        <path d="M15 5 8 12l7 7" />
+      </svg>
+    </button>
   )
 }
 
@@ -114,12 +230,39 @@ type Props = {
 }
 
 export default function StockTable({ filter, setFilter }: Props) {
-  /* 적용된 필터와 편집 중인 값을 나눈다 — 좌측 패널은 "필터 적용" 을 눌러야
-     반영되고, 상단 섹터 칩은 즉시 반영된다(탐색용이라 한 번에 바뀌는 게 낫다).
+  /* **고르는 즉시 반영된다**(2026-09-15). 전에는 좌측 패널만 "필터 적용" 을 눌러야
+     넘어가고 상단 섹터 칩은 즉시 반영이라, 같은 화면에서 규칙이 둘로 갈려 있었다.
+     버튼을 없애고 섹터 칩 쪽으로 통일했다.
 
-     draft 는 이 안에서만 산다. 마켓맵은 관심 여부만 쓰고 그것은 누르는 즉시
-     적용되므로, 페이지가 들고 있어야 하는 것은 filter 뿐이다. */
+     그래도 draft 는 남는다 — 슬라이더는 끄는 동안 값이 이어서 바뀌므로, 화면에
+     보이는 값(draft)과 서버로 나간 값(filter)이 잠깐 어긋나는 구간이 있다. */
   const [draft, setDraft] = useState<StockFilter>(filter)
+
+  /* 반영 시점을 조건 종류에 따라 나눈다.
+
+     칩·체크박스·섹터처럼 **한 번 눌러 끝나는** 것은 기다릴 이유가 없어 바로 넘긴다.
+     슬라이더는 손잡이를 끄는 동안 수십 번 바뀌어서, 그대로 흘리면 요청이 그만큼
+     나가고 목록이 끌리는 내내 깜빡인다 — 손을 멈추고 나서 한 번만 보낸다.
+
+     apply 가 먼저 타이머를 끄는 것은, 슬라이더를 놓자마자 칩을 누른 경우에
+     뒤늦게 깨어난 타이머가 **칩을 누르기 전 값**으로 덮어쓰는 것을 막기 위해서다. */
+  const settle = useRef<number | null>(null)
+  useEffect(() => () => { if (settle.current) clearTimeout(settle.current) }, [])
+
+  const apply = useCallback((next: StockFilter) => {
+    if (settle.current) { clearTimeout(settle.current); settle.current = null }
+    setDraft(next)
+    setFilter(next)
+  }, [setFilter])
+
+  const applyWhenSettled = useCallback((next: StockFilter) => {
+    setDraft(next)
+    if (settle.current) clearTimeout(settle.current)
+    settle.current = window.setTimeout(() => {
+      settle.current = null
+      setFilter(next)
+    }, SETTLE_MS)
+  }, [setFilter])
 
   /* 관심 토글은 낙관적으로 먼저 바꾼다(§4 B-02). 목록은 훅이 들고 있어 직접
      고칠 수 없으므로, 바뀐 종목만 여기 얹고 렌더에서 덮어쓴다. 실패하면 되돌린다.
@@ -132,8 +275,9 @@ export default function StockTable({ filter, setFilter }: Props) {
   )
   const watchFix = fix.for === filter ? fix.map : {}
 
-  const perInvalid =
-    draft.perMin != null && draft.perMax != null && draft.perMin > draft.perMax
+  /* 최소·최대를 직접 적던 시절에는 역전(최소 > 최대)을 여기서 막아야 했다.
+     슬라이더는 손잡이가 서로를 지나치지 못하게 잡으므로 역전이 만들어지지 않는다 —
+     경고줄도 함께 걷었다(2026-09-15). */
 
   /* filter 가 바뀔 때만 새 조회 함수를 만든다. 매 렌더 새로 만들면 훅이
      끝없이 다시 읽는다. filter 는 setFilter 로만 바뀌므로 참조가 안정적이다. */
@@ -143,10 +287,7 @@ export default function StockTable({ filter, setFilter }: Props) {
   const baseDate = list.meta?.baseDate ?? null
   const isEmpty = !list.loading && !list.error && list.items.length === 0
 
-  const pickSector = (sector: string | undefined) => {
-    setFilter((f) => ({ ...f, sector }))
-    setDraft((d) => ({ ...d, sector }))
-  }
+  const pickSector = (sector: string | undefined) => apply({ ...draft, sector })
 
   /** 같은 필터에 얹혀 있던 보정만 이어받아 한 종목을 덮어쓴다 */
   const putFix = (code: string, on: boolean) =>
@@ -172,79 +313,97 @@ export default function StockTable({ filter, setFilter }: Props) {
 
       <div className="st-body">
         {/* ── 좌측 상세 필터 ───────────────────────────── */}
-        <form className="card st-filter"
-              onSubmit={(e) => { e.preventDefault(); if (!perInvalid) setFilter(draft) }}>
-          <h2>상세 필터</h2>
+        {/* 제출할 것이 없어 form 을 걷었다(2026-09-15) — 고르는 즉시 반영된다.
+            fieldset·legend 는 form 밖에서도 쓸 수 있다. */}
+        <div className="card st-filter">
+          {/* 제목은 눈에서만 뺐다(2026-09-15) — 칸마다 제 라벨이 있어 화면에서는
+              한 겹 더 얹을 필요가 없다. 다만 글자까지 지우면 스크린리더가 이 상자를
+              "무엇을 하는 곳" 인지 말할 수 없으므로 st-sr 로 남긴다(재무 지표 범위
+              legend 와 같은 방식). */}
+          <h2 className="st-sr">상세 필터</h2>
 
-          {/* 시장(전체·KOSPI·KOSDAQ) 칸은 뺐다(2026-09-11) — 이 서비스는 코스피만
-              다룬다. 마켓맵 쪽 칩과 같은 이유다(Stocks.tsx). 행에 찍히는 "KOSPI"
-              표시는 남긴다 — 그건 거르는 조건이 아니라 종목을 설명하는 말이다. */}
+          {/* 종목명 검색(2026-09-15).
+
+              상단바에도 검색이 있지만 저쪽은 **종목 하나로 바로 건너뛰는** 길이다.
+              여기 것은 목록을 좁히는 조건이라, 섹터·PER 같은 다른 조건과 함께
+              걸린다 — "화학 섹터에서 이름에 '한' 이 들어가는 것" 이 되는 자리다.
+
+              타자를 칠 때마다 요청을 보내면 한 글자마다 목록이 깜빡이므로,
+              슬라이더와 같이 손을 멈춘 뒤 한 번만 보낸다. */}
           <fieldset className="st-field">
-            <legend>예측 방향</legend>
-            <div className="st-chips">
-              <button type="button" className={`st-chip${!draft.sentiment ? ' on' : ''}`}
-                      aria-pressed={!draft.sentiment}
-                      onClick={() => setDraft((d) => ({ ...d, sentiment: undefined }))}>
-                전체
-              </button>
-              {(Object.keys(SENTIMENT_LABEL) as Sentiment[]).map((s) => (
-                <button key={s} type="button"
-                        className={`st-chip${draft.sentiment === s ? ' on' : ''}`}
-                        aria-pressed={draft.sentiment === s}
-                        onClick={() => setDraft((d) => ({ ...d, sentiment: s }))}>
-                  {SENTIMENT_LABEL[s]}
-                </button>
-              ))}
-            </div>
+            <legend>종목 찾기</legend>
+            <input
+              type="search" className="st-search" placeholder="종목명 또는 코드"
+              aria-label="종목명 또는 종목코드로 찾기"
+              value={draft.q ?? ''}
+              onChange={(e) => {
+                const v = e.target.value
+                applyWhenSettled({ ...draft, q: v.trim() === '' ? undefined : v })
+              }}
+            />
           </fieldset>
 
+          {/* 여기 있던 칸 둘은 뺐다.
+
+              시장(전체·KOSPI·KOSDAQ) — 이 서비스는 코스피만 다뤄 고를 것이
+              하나뿐이었다(2026-09-11). 행에 찍히는 "KOSPI" 표시는 남긴다:
+              그건 거르는 조건이 아니라 종목을 설명하는 말이다.
+
+              예측 방향(상승 우세·하락 우세) — 정렬의 "상승 의견 순"·"하락 의견 순"
+              과 같은 축이라 한 화면에 둘 이유가 없었다(2026-09-15). 정렬 쪽이 낫다:
+              거르면 경계에 걸친 종목이 아예 사라지는데, 줄 세우면 위아래로 다 보인다. */}
+
+          {/* 눈금 끝값은 실제 분포를 보고 정했다(2026-09-15 기준 코스피 상장).
+              PER 은 중앙값 15 · 90%가 64 아래인데 최대가 3228 이고, PBR 은 중앙값
+              1.07 · 90%가 5.6 아래인데 최대가 31.9 다. 최대까지 눈금을 늘리면 거의
+              모든 종목이 왼쪽 끝에 뭉쳐 고를 수가 없다. 90% 선에서 조금 여유를 둔
+              자리에서 끊고, 그 위는 손잡이를 끝에 두는 것으로 다룬다. */}
           <fieldset className="st-field">
-            <legend>PER 범위</legend>
-            <div className="st-range">
-              <input type="number" inputMode="decimal" min="0" step="0.1" placeholder="최소"
-                     aria-label="PER 최소" aria-invalid={perInvalid || undefined}
-                     value={draft.perMin ?? ''}
-                     onChange={(e) => setDraft((d) => ({
-                       ...d, perMin: e.target.value === '' ? undefined : Number(e.target.value),
-                     }))} />
-              <span aria-hidden="true">–</span>
-              <input type="number" inputMode="decimal" min="0" step="0.1" placeholder="최대"
-                     aria-label="PER 최대" aria-invalid={perInvalid || undefined}
-                     value={draft.perMax ?? ''}
-                     onChange={(e) => setDraft((d) => ({
-                       ...d, perMax: e.target.value === '' ? undefined : Number(e.target.value),
-                     }))} />
-            </div>
-            {/* 서버는 역전을 400 으로 거절한다 — 보내기 전에 여기서 막는다 */}
-            {perInvalid && (
-              <p className="st-field-err" role="alert">최소가 최대보다 큽니다</p>
-            )}
+            <legend className="st-sr">재무 지표 범위</legend>
+            <RangeSlider
+              label="PER" from={0} to={PER_CAP} step={1} unit="배"
+              value={{ min: draft.perMin, max: draft.perMax }}
+              onChange={(r) => applyWhenSettled({ ...draft, perMin: r.min, perMax: r.max })}
+            />
+            <RangeSlider
+              label="PBR" from={0} to={PBR_CAP} step={0.1} digits={1} unit="배"
+              value={{ min: draft.pbrMin, max: draft.pbrMax }}
+              onChange={(r) => applyWhenSettled({ ...draft, pbrMin: r.min, pbrMax: r.max })}
+            />
           </fieldset>
 
-          <fieldset className="st-field">
+          {/* 체크박스 둘은 한 벌로 읽히는 목록이라 다른 칸보다 촘촘하게 둔다
+              (st-field-list) — .st-field 의 gap:9px 을 그대로 쓰면 PER·PBR 슬라이더
+              사이만큼 벌어져, 두 줄이 따로 노는 항목처럼 보인다. */}
+          <fieldset className="st-field st-field-list">
             <legend>추가 조건</legend>
             <label className="st-check">
               <input type="checkbox" checked={draft.hasOpenPrediction ?? false}
-                     onChange={(e) => setDraft((d) => ({
-                       ...d, hasOpenPrediction: e.target.checked || undefined,
-                     }))} />
+                     onChange={(e) => apply({
+                       ...draft, hasOpenPrediction: e.target.checked || undefined,
+                     })} />
               내가 진행 중인 예측 있음
             </label>
             <label className="st-check">
               <input type="checkbox" checked={draft.watchedOnly ?? false}
-                     onChange={(e) => setDraft((d) => ({
-                       ...d, watchedOnly: e.target.checked || undefined,
-                     }))} />
+                     onChange={(e) => apply({
+                       ...draft, watchedOnly: e.target.checked || undefined,
+                     })} />
               관심 종목만 보기
             </label>
           </fieldset>
 
-          <button type="submit" className="st-apply" disabled={perInvalid}>필터 적용</button>
-          <button type="button" className="st-reset"
-                  onClick={() => { setDraft(EMPTY_FILTER); setFilter(EMPTY_FILTER) }}>
-            필터 초기화
-          </button>
-        </form>
+          {/* "필터 적용" 은 없앴다(2026-09-15) — 고르는 즉시 반영되므로 누를 것이
+              없다. 초기화는 남긴다: 조건을 하나씩 되돌리는 것보다 한 번에 지우는
+              길이 있어야 한다. 상자(st-actions)는 좁은 화면에서 이 버튼이 조건
+              칸들과 나란히 한 칸을 차지하도록 남겨 둔다. */}
+          <div className="st-actions">
+            <button type="button" className="st-reset"
+                    onClick={() => apply(EMPTY_FILTER)}>
+              필터 초기화
+            </button>
+          </div>
+        </div>
 
         {/* ── 우측 목록 ────────────────────────────────── */}
         <section className="card st-panel" aria-labelledby="st-list-h">
@@ -263,8 +422,7 @@ export default function StockTable({ filter, setFilter }: Props) {
               <select value={filter.sort}
                       onChange={(e) => {
                         const sort = e.target.value as StockSort
-                        setFilter((f) => ({ ...f, sort }))
-                        setDraft((d) => ({ ...d, sort }))
+                        apply({ ...draft, sort })
                       }}>
                 {STOCK_SORTS.map((s) => (
                   <option key={s} value={s}>{SORT_LABEL[s]}</option>
@@ -303,7 +461,7 @@ export default function StockTable({ filter, setFilter }: Props) {
                     <li key={s.code} className="st-item">
                       <Link className="st-link" to={`/stocks/${s.code}`}>
                         <span className="st-id">
-                          <StockBadge code={s.code} name={s.name} />
+                          <StockLogo code={s.code} name={s.name} className="st-logo" />
                           <span className="st-id-text">
                             <b className="st-name">{s.name}</b>
                             <small className="st-sub">
