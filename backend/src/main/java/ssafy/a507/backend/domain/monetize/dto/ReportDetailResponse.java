@@ -24,7 +24,10 @@ public record ReportDetailResponse(
         String body,
         String preview,
         Instant publishedAt,
-        int viewCount) {
+        int viewCount,
+        long likeCount,
+        boolean liked,
+        long commentCount) {
 
     /** 미리보기 줄 수. 명세가 "앞 3줄"로 못박은 값이다. */
     private static final int PREVIEW_LINES = 3;
@@ -38,7 +41,7 @@ public record ReportDetailResponse(
     private static final int PREVIEW_MAX_CHARS = 300;
 
     /** 전문 공개. {@code viewCount} 는 이번 열람을 반영한 값을 호출부가 넘긴다. */
-    public static ReportDetailResponse full(Report report, int viewCount) {
+    public static ReportDetailResponse full(Report report, int viewCount, Social social) {
         return new ReportDetailResponse(
                 report.getId(),
                 report.getTitle(),
@@ -48,11 +51,14 @@ public record ReportDetailResponse(
                 report.getBody(),
                 null,
                 report.getCreatedAt(),
-                viewCount);
+                viewCount,
+                social.likeCount(),
+                social.liked(),
+                social.commentCount());
     }
 
     /** 잠금. 제목·작성자·통계는 그대로 공개하고 본문만 앞 3줄로 줄인다(구독 유인). */
-    public static ReportDetailResponse locked(Report report, int viewCount) {
+    public static ReportDetailResponse locked(Report report, int viewCount, Social social) {
         return new ReportDetailResponse(
                 report.getId(),
                 report.getTitle(),
@@ -62,7 +68,20 @@ public record ReportDetailResponse(
                 null,
                 preview(report.getBody()),
                 report.getCreatedAt(),
-                viewCount);
+                viewCount,
+                social.likeCount(),
+                social.liked(),
+                social.commentCount());
+    }
+
+    /**
+     * 반응 통계 세 값. 인자로 흩뿌리지 않고 묶는 이유는 {@code full} 과 {@code locked} 가 받는
+     * 인자가 {@code (Report, int, long, boolean, long)} 이 되면 호출부에서 순서를 틀려도
+     * 컴파일이 통과하기 때문이다 — {@code viewCount} 와 {@code likeCount} 가 둘 다 숫자다.
+     *
+     * <p>세 값 모두 <b>잠긴 리포트에도 실린다</b>. 통계는 늘 공개라는 이 화면의 규칙 그대로다.
+     */
+    public record Social(long likeCount, boolean liked, long commentCount) {
     }
 
     private static String preview(String body) {

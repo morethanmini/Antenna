@@ -1,8 +1,11 @@
 package ssafy.a507.backend.domain.monetize.service;
 
 import java.time.Instant;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Limit;
@@ -22,8 +25,12 @@ import ssafy.a507.backend.domain.monetize.dto.ReportDetailResponse;
 import ssafy.a507.backend.domain.monetize.dto.ReportFeedItemResponse;
 import ssafy.a507.backend.domain.monetize.dto.ReportFeedResponse;
 import ssafy.a507.backend.domain.monetize.entity.Report;
+import ssafy.a507.backend.domain.monetize.entity.ReportComment;
 import ssafy.a507.backend.domain.monetize.entity.Subscription;
+import ssafy.a507.backend.domain.monetize.report.ReportAccess;
 import ssafy.a507.backend.domain.monetize.report.ReportSeal;
+import ssafy.a507.backend.domain.monetize.repository.ReportCommentRepository;
+import ssafy.a507.backend.domain.monetize.repository.ReportLikeRepository;
 import ssafy.a507.backend.domain.monetize.repository.ReportRepository;
 import ssafy.a507.backend.domain.monetize.repository.SubscriptionRepository;
 
@@ -51,6 +58,9 @@ public class ReportService {
     private final SubscriptionRepository subscriptionRepository;
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final ReportLikeRepository reportLikeRepository;
+    private final ReportCommentRepository reportCommentRepository;
+    private final ReportAccess reportAccess;
     private final CurrentUserProvider currentUserProvider;
 
     /** 통합 피드 탭. */
@@ -114,9 +124,15 @@ public class ReportService {
             return new ReportFeedResponse(List.of(), null, false);
         }
 
-        Set<Long> subscribed = subscribedAuthorIds(viewerId, reports);
+        Set<Long> subscribed = reportAccess.subscribedAuthorIds(viewerId, reports);
+        Social social = socialOf(viewerId, reports);
         List<ReportFeedItemResponse> items = reports.stream()
-                .map(report -> ReportFeedItemResponse.of(report, isLocked(report, viewerId, subscribed)))
+                .map(report -> ReportFeedItemResponse.of(
+                        report,
+                        reportAccess.isLocked(report, viewerId, subscribed),
+                        social.likeCount(report.getId()),
+                        social.liked(report.getId()),
+                        social.commentCount(report.getId())))
                 .toList();
 
         Report last = reports.get(reports.size() - 1);
@@ -142,10 +158,10 @@ public class ReportService {
         }
 
         // 채널 하나라 구독 판정도 한 번이면 된다.
-        Set<Long> subscribed = subscribedAuthorIds(viewerId, reports);
+        Set<Long> subscribed = reportAccess.subscribedAuthorIds(viewerId, reports);
         List<ChannelReportItemResponse> items = reports.stream()
-                .map(report ->
-                        ChannelReportItemResponse.of(report, isLocked(report, viewerId, subscribed)))
+                .map(report -> ChannelReportItemResponse.of(
+                        report, reportAccess.isLocked(report, viewerId, subscribed)))
                 .toList();
 
         Long nextCursor = hasNext ? reports.get(reports.size() - 1).getId() : null;
@@ -181,10 +197,13 @@ public class ReportService {
             viewCount += 1;
         }
 
-        boolean locked = isLocked(report, viewerId, subscribedAuthorIds(viewerId, List.of(report)));
+        boolean locked = reportAccess.isLocked(report, viewerId);
+        Social social = socialOf(viewerId, List.of(report));
+        ReportDetailResponse.Social counts = new ReportDetailResponse.Social(
+                social.likeCount(reportId), social.liked(reportId), social.commentCount(reportId));
         return locked
-                ? ReportDetailResponse.locked(report, viewCount)
-                : ReportDetailResponse.full(report, viewCount);
+                ? ReportDetailResponse.locked(report, viewCount, counts)
+                : ReportDetailResponse.full(report, viewCount, counts);
     }
 
     /** 발행 알림. 구독자가 없으면 아무것도 하지 않는다. */
@@ -213,29 +232,45 @@ public class ReportService {
         notificationRepository.saveAll(notifications);
     }
 
-    /** 본인이거나 ACTIVE 구독자면 잠기지 않는다. 전체 공개 리포트는 애초에 잠기지 않는다. */
-    private boolean isLocked(Report report, Long viewerId, Set<Long> subscribed) {
-        if (report.isPublic()) {
-            return false;
-        }
-        Long authorId = report.getUser().getId();
-        return !authorId.equals(viewerId) && !subscribed.contains(authorId);
+    /**
+     * 이 페이지의 좋아요·댓글 수와 내가 누른 것 — ANT-REPORT-SOCIAL.
+     *
+     * <p>리포트마다 세면 목록 크기만큼 쿼리가 늘어난다. 페이지의 id 를 한 번에 넘겨 세 쿼리로
+     * 끝낸다(구독 여부를 한 번에 받아오는 것과 같은 이유). 잠긴 리포트도 센다 — 통계는 늘 공개다.
+     */
+    private Social socialOf(Long viewerId, List<Report> reports) {
+        List<Long> reportIds = reports.stream().map(Report::getId).toList();
+        return new Social(
+                countsById(reportLikeRepository.countByReportIds(reportIds)),
+                countsById(reportCommentRepository.countByReportIds(
+                        reportIds, ReportComment.Status.VISIBLE)),
+                new HashSet<>(reportLikeRepository.findLikedReportIds(viewerId, reportIds)));
     }
 
-    /** 이 페이지에 등장하는 작성자 중 내가 구독 중인 사람들. 리포트마다 묻지 않고 한 번에 받는다. */
-    private Set<Long> subscribedAuthorIds(Long viewerId, List<Report> reports) {
-        Set<Long> authorIds = new HashSet<>();
-        for (Report report : reports) {
-            if (!report.isPublic()) {
-                authorIds.add(report.getUser().getId());
-            }
+    /** {@code [id, count]} 행들을 맵으로. 집계에 없는 리포트는 아래 조회부가 0 으로 읽는다. */
+    private Map<Long, Long> countsById(Collection<Object[]> rows) {
+        Map<Long, Long> counts = new HashMap<>();
+        for (Object[] row : rows) {
+            counts.put((Long) row[0], (Long) row[1]);
         }
-        authorIds.remove(viewerId);
-        if (authorIds.isEmpty()) {
-            return Set.of();
+        return counts;
+    }
+
+    /** 한 페이지분 반응 통계. 집계에 없는 리포트는 0 · false 다. */
+    private record Social(
+            Map<Long, Long> likeCounts, Map<Long, Long> commentCounts, Set<Long> likedIds) {
+
+        long likeCount(Long reportId) {
+            return likeCounts.getOrDefault(reportId, 0L);
         }
-        return new HashSet<>(subscriptionRepository.findSubscribedPublisherIds(
-                viewerId, authorIds, Subscription.Status.ACTIVE, Instant.now()));
+
+        long commentCount(Long reportId) {
+            return commentCounts.getOrDefault(reportId, 0L);
+        }
+
+        boolean liked(Long reportId) {
+            return likedIds.contains(reportId);
+        }
     }
 
     private String encodeCursor(Sort sort, Report last) {
