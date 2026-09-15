@@ -3,7 +3,7 @@
    GET /anchors?cursor=&size=  { items, nextCursor, hasNext }
    GET /commits?cursor=&size=  커밋 원장 목록 — D-01 [ANT-FE-LEDGER-LIST]
    GET /anchors/{id}           배치 상세 (리프 전량) — D-02 [ANT-FE-ANCHOR]
-   GET /predictions/{id}/proof 3단계 검산            — D-03 [ANT-FE-VERIFY]
+   GET /predictions/{id}/proof 4단계 검산            — D-03 [ANT-FE-VERIFY]
 
    백엔드 ANT-CHAIN-06 으로 셋 다 열려 있다. 목업이 아니다. */
 

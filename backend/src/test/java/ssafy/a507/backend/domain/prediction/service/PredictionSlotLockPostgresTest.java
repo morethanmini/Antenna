@@ -60,7 +60,9 @@ class PredictionSlotLockPostgresTest {
 
     @BeforeEach
     void setUp() {
-        given(signatureGuard.verify(anyLong(), any())).willReturn(WALLET);
+        // 등록이 nonce 까지 받는다(ANT-CHAIN-18). 대역이 verify 만 흉내 내면 register 가 null 을 받는다.
+        given(signatureGuard.verifyWithNonce(anyLong(), any()))
+                .willReturn(new SignatureGuard.Verified(WALLET, "a1b2c3d4e5f60718" + "2938475612345678".repeat(3)));
         userId = jdbc.queryForObject(
                 "insert into users (wallet_address, role, status, created_at, updated_at)"
                         + " values (?, 'USER', 'ACTIVE', now(), now()) returning id",

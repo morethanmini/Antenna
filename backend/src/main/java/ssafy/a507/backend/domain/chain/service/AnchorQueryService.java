@@ -63,7 +63,7 @@ public class AnchorQueryService {
      * 컨트랙트 이벤트에 남은 순서다. 이 순서를 바꾸면 같은 해시 집합이라도 루트가 달라진다.
      *
      * <p>리프마다 predictionId 를 함께 내린다(ANT-CHAIN-09, 결정 F2 를 뒤집음 — 사유는 {@link AnchorDetailResponse}).
-     * 프론트가 이 번호로 3단계 검산 화면에 들어간다. 게이팅은 여기서 하지 않는다 — 번호와 해시로는 내용을 알 수 없고,
+     * 프론트가 이 번호로 4단계 검산 화면에 들어간다. 게이팅은 여기서 하지 않는다 — 번호와 해시로는 내용을 알 수 없고,
      * 내용 공개 여부는 {@code GET /predictions/{id}/proof} 가 판단한다.
      */
     @Transactional(readOnly = true)

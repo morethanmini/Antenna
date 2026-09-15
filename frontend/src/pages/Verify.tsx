@@ -1,4 +1,4 @@
-/* D-03 3단계 검산 · /ledger/verify/:predictionId
+/* D-03 4단계 검산 · /ledger/verify/:predictionId
    담당 스토리 [ANT-FE-VERIFY]
    설계서 docs/화면설계서.md §3 D · §4 D-03
 
@@ -19,6 +19,12 @@
    있는데, 근거 본문은 이 응답에 없다(GET /predictions/{id} 쪽이다). 우리가 본문을 대신
    불러다 대조해 "맞습니다" 라고 하면 ③과 똑같이 다시 우리를 믿는 일이 된다.
 
+   ③이 2026-09-15 에 생겼다 (ANT-CHAIN-18)
+   리포트 검산(D-04)은 처음부터 서명자를 브라우저가 복원했는데, 예측은 커밋에 서명 nonce 를
+   저장하지 않아 payload 를 다시 만들 수 없었다 — "이 지갑 주인이 썼다" 만 서버 말로 받고
+   있었다. 그 한 칸을 저장하기 시작하면서 같은 강도가 됐다. 그 전에 등록된 예측은 nonce 가
+   없어 ③이 잠긴다(소급 불가). 판정 종가 대조는 ④로 밀렸다 — 내용은 그대로다.
+
    ②를 자동으로 실행하는 이유
    버튼 뒤에 두면 대부분은 누르지 않고, 그러면 이 화면은 다시 "서버가 준 값을 보여주는
    화면" 이 된다. 검산이 이 화면의 본문이므로 들어오면 바로 돈다. */
@@ -28,6 +34,7 @@ import { formatConfirmedAt } from '../api/anchors'
 import type { ApiError } from '../api/errors'
 import {
   DIRECTION_LABEL, SETTLE_LABEL, commitPreimage, fetchProof, recomputeCommitHash,
+  recoverSigner, signingPreimage,
   type Proof, type ProofAnchor,
 } from '../api/proof'
 import { useAsync } from '../api/useAsync'
@@ -112,6 +119,40 @@ function useChainCheck(anchor: ProofAnchor | null, commitHash: string | null) {
   }
 }
 
+/* ── ③ 서명자 복원 ───────────────────────────────────────
+   서버가 준 signerAddress 를 그대로 쓰면 이 화면이 없애려던 것으로 되돌아간다. 서명 문자열을
+   다시 만들어 주소를 복원하고, 대조는 화면이 한다. */
+type SignerCheck = {
+  /** 다시 만든 서명 문자열. 재료가 없으면 null */
+  preimage: string | null
+  /** 복원한 주소(소문자). 계산 중이거나 재료가 없으면 null */
+  recovered: string | null
+}
+
+function useSignerCheck(data: Proof | null): SignerCheck {
+  const preimage = useMemo(() => (data ? signingPreimage(data) : null), [data])
+  const [done, setDone] = useState<{ preimage: string; address: string } | null>(null)
+
+  useEffect(() => {
+    const signature = data?.signature
+    if (!preimage || !signature) return
+    let alive = true
+    void (async () => {
+      try {
+        const address = await recoverSigner(preimage, signature)
+        if (alive) setDone({ preimage, address })
+      } catch {
+        /* 서명이 깨졌거나 형식이 다르면 복원이 던진다. 화면은 "복원하지 못했다" 로 그린다 —
+           여기서 삼키고 recovered 를 null 로 두면 "계산 중" 과 구별되지 않으므로 빈 문자열로 남긴다. */
+        if (alive) setDone({ preimage, address: '' })
+      }
+    })()
+    return () => { alive = false }
+  }, [preimage, data?.signature])
+
+  return { preimage, recovered: done?.preimage === preimage ? done.address : null }
+}
+
 /** 해시 비교는 대소문자를 가리지 않는다 — 같은 값이 0xAB 와 0xab 로 올 수 있다. */
 function sameHash(a: string | null | undefined, b: string | null | undefined) {
   return !!a && !!b && a.toLowerCase() === b.toLowerCase()
@@ -130,6 +171,7 @@ export default function Verify() {
 
   const check = useChainCheck(data?.anchor ?? null, data?.commitHash ?? null)
   const commit = useCommitCheck(data?.payload ?? null)
+  const signer = useSignerCheck(data)
 
   /* 커밋 원장에서도, 예측 상세에서도 들어온다 — 어느 쪽으로 돌려보낼지 화면이 정할 수 없다.
      직접 주소로 들어와 돌아갈 곳이 없을 때만 커밋 원장으로 보낸다. */
@@ -154,7 +196,7 @@ export default function Verify() {
         )}
 
         <div className="page-head">
-          <h1>3단계 검산</h1>
+          <h1>4단계 검산</h1>
           {/* 이 화면이 무엇을 주장하는지 먼저 밝힌다. 아래 판정들은 우리가 내린 것이 아니다 */}
           <p>
             아래 계산은 전부 이 브라우저에서 실행됩니다.
@@ -395,9 +437,75 @@ export default function Verify() {
               )}
             </Step>
 
-            {/* ── ③ 판정 종가 대조 ────────────────────────── */}
+            {/* ── ③ 서명자 대조 — D-04 리포트 검산의 ③과 같은 뜻이다 ── */}
             <Step
               no={3}
+              title="서명자 대조"
+              formula="recover(서명 문자열, signature) == signerAddress"
+              verdict={step3Verdict(data, signer)}
+            >
+              <p className="vf-lead">
+                등록할 때 지갑으로 서명한 문자열을 브라우저가 다시 만들어, 그 서명에서 주소를
+                직접 복원합니다. 복원한 주소가 아래 주소와 같으면 <b>이 지갑의 주인이 이 내용에
+                서명했다</b>는 뜻입니다 — 서버가 알려 준 주소를 옮겨 적지 않습니다.
+              </p>
+
+              <ul className="vf-checks">
+                {!data.signature ? (
+                  <CheckLine verdict="locked" label="아직 커밋 전입니다">
+                    등록이 원장에 봉인되면 서명도 함께 남습니다.
+                  </CheckLine>
+                ) : !data.signNonce ? (
+                  /* 서명 nonce 를 저장하기 전(2026-09-15)에 등록된 예측. 실패가 아니다 —
+                     nonce 는 서버에서 이미 소비돼 사라졌고 소급해 만들 수 없다. */
+                  <CheckLine verdict="locked" label="이 예측에는 서명 문자열을 복원할 재료가 없습니다">
+                    서명에 쓰인 nonce 를 함께 저장하기 시작한 것이 2026-09-15 입니다.
+                    그 전에 등록된 예측은 이 단계만 잠기고 나머지는 그대로 계산됩니다.
+                  </CheckLine>
+                ) : !signer.preimage ? (
+                  <CheckLine verdict="locked" label="서명 문자열을 다시 만들 재료가 오지 않았습니다">
+                    종목코드와 근거 해시가 있어야 등록 당시의 문자열을 복원할 수 있습니다.
+                  </CheckLine>
+                ) : signer.recovered === null ? (
+                  <CheckLine verdict="wait" label="브라우저에서 주소를 복원하는 중…" />
+                ) : signer.recovered === '' ? (
+                  <CheckLine verdict="fail" label="서명에서 주소를 복원하지 못했습니다">
+                    서명 값이 손상됐거나 형식이 다릅니다.
+                  </CheckLine>
+                ) : (
+                  <CheckLine
+                    verdict={sameHash(signer.recovered, data.signerAddress) ? 'pass' : 'fail'}
+                    label={sameHash(signer.recovered, data.signerAddress)
+                      ? '브라우저가 복원한 주소가 서버가 말한 서명자와 같습니다'
+                      : '브라우저가 복원한 주소가 서버가 말한 서명자와 다릅니다'}
+                  >
+                    <CopyHash value={signer.recovered} head={12} tail={8} />
+                  </CheckLine>
+                )}
+              </ul>
+
+              {/* ①과 같은 이유로 문자열을 편다 — 감추면 "우리가 해 봤더니 맞더라" 가 된다 */}
+              {signer.preimage && <pre className="vf-preimage">{signer.preimage}</pre>}
+
+              <dl className="vf-fields">
+                <div>
+                  <dt>서명자</dt>
+                  <dd>{data.signerAddress
+                    ? <CopyHash value={data.signerAddress} head={12} tail={8} />
+                    : <span className="vf-none">아직 커밋 전</span>}</dd>
+                </div>
+                <div>
+                  <dt>서명</dt>
+                  <dd>{data.signature
+                    ? <CopyHash value={data.signature} head={12} tail={8} />
+                    : <span className="vf-none">아직 커밋 전</span>}</dd>
+                </div>
+              </dl>
+            </Step>
+
+            {/* ── ④ 판정 종가 대조 ────────────────────────── */}
+            <Step
+              no={4}
               title="판정 종가 대조"
               formula="settlePrice == 공공데이터 종가"
               verdict={settle ? 'manual' : 'locked'}
@@ -464,6 +572,17 @@ export default function Verify() {
 
 /* ── 단계 헤더에 붙일 종합 판정 ────────────────────────────
    한 줄이라도 어긋나면 fail 이다 — 통과한 줄이 더 많다고 통과가 아니다. */
+
+/**
+ * ③은 재료가 하나라도 없으면 잠김이다. 서명 이전 예측(nonce 없음)을 붉게 그리면
+ * "네 예측이 조작됐다" 로 읽힌다 — 그건 사실이 아니다.
+ */
+function step3Verdict(data: Proof, signer: SignerCheck): Verdict {
+  if (!data.signature || !data.signNonce || !signer.preimage) return 'locked'
+  if (signer.recovered === null) return 'wait'
+  if (signer.recovered === '') return 'fail'
+  return sameHash(signer.recovered, data.signerAddress) ? 'pass' : 'fail'
+}
 
 /** ①은 재료가 없으면 잠김, 있으면 계산이 끝나는 대로 통과/불일치다. 중간은 없다. */
 function step1Verdict(data: Proof, commit: Recompute): Verdict {

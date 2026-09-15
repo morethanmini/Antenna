@@ -1,14 +1,19 @@
 /* G-09 기록 · /sim/history — [ANT-FE-SEASON-HISTORY]
-   G-04 진행 · G-06 매매일지 · G-08 결과와 같은 규칙을 쓴다 — 카드·아이콘 배지·
-   요약 4칸의 생김새를 맞춰야 같은 게임의 여러 장면으로 읽힌다.
-   색·서체는 app.css 토큰만 쓴다. */
+   색·서체는 app.css 토큰만 쓴다.
+
+   ── 왜 카드가 하나인가 (2026-09-15) ──────────────────────
+   요약 4칸 + 목록 카드 2장 = 상자 여섯이 같은 무게로 서 있었다. 상자가 많을수록
+   화면이 꽉 찬 것처럼 보이지만, 정작 "무엇부터 보라" 는 말이 사라진다.
+   지금은 둘이다 — 숫자 셋을 읽는 띠 하나, 목록 카드 하나.
+
+   목록의 줄은 저마다 테두리를 두르지 않는다. 줄 n개에 테두리 n개가 생기면 목록이
+   아니라 작은 카드 더미가 된다. 줄 사이 실선 하나면 목록으로 읽힌다. */
 
 .sim-history{display:flex;flex-direction:column;gap:14px;word-break:keep-all}
 
 .sim-history .up{color:var(--up-vivid)}
 .sim-history .down{color:var(--down-vivid)}
 .sim-history .flat{color:var(--muted)}
-.sh-dim{color:var(--muted)}
 
 /* ── 머리 ───────────────────────────────────────────── */
 .sh-crumb{display:flex;align-items:center;gap:9px;color:#8a93ad;font-size:13.5px;font-weight:700}
@@ -16,9 +21,7 @@
 .sh-crumb i{font-style:normal;color:#c2c8da}
 
 .sh-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
-.sh-head h1{
-  margin:0;color:#0e1330;font-size:26px;font-weight:850;letter-spacing:-.03em;
-}
+.sh-head h1{margin:0;color:#0e1330;font-size:26px;font-weight:850;letter-spacing:-.03em}
 .sh-head p{margin:3px 0 0;color:var(--muted);font-size:13.5px;font-weight:700}
 
 .sh-go{
@@ -28,114 +31,133 @@
 }
 .sh-go:hover{background:var(--brand-ink)}
 
-/* ── 요약 4칸 ───────────────────────────────────────── */
-.sh-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-.sh-stat{
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
-  padding:15px 17px;border:1px solid var(--rule);border-radius:16px;
-  background:var(--surface);box-shadow:var(--shadow);
+/* ── 요약 띠 ─────────────────────────────────────────
+   칸마다 상자를 주지 않는다. 셋은 비교해서 읽는 값이라 한 판 위에 나란히 둔다. */
+.sh-figs{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  border:1px solid var(--rule);border-radius:16px;background:var(--surface);
+  box-shadow:var(--shadow);overflow:hidden;
 }
-.sh-stat-txt{display:flex;flex-direction:column;gap:3px;min-width:0}
-.sh-stat-label{color:var(--muted);font-size:12.5px;font-weight:700}
-.sh-stat-val{
-  color:#0e1330;font-size:21px;font-weight:850;letter-spacing:-.025em;
+.sh-fig{
+  display:flex;flex-direction:column;gap:2px;min-width:0;
+  padding:16px 20px;border-left:1px solid var(--rule);
+}
+.sh-fig:first-child{border-left:0}
+.sh-fig-label{color:var(--muted);font-size:12.5px;font-weight:750;letter-spacing:-.01em}
+.sh-fig-val{
+  color:#0e1330;font-size:25px;font-weight:850;letter-spacing:-.035em;line-height:1.2;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.sh-stat-sub{font-size:12px;font-weight:750;color:var(--muted)}
-.sh-stat-ico{
-  flex:none;display:grid;place-items:center;width:38px;height:38px;
-  border-radius:11px;background:var(--tint);color:var(--tone);
-}
-.sh-stat.t-done{--tone:#16a06a;--tint:#e7f6ef}
-.sh-stat.t-go{--tone:#5457e8;--tint:#ece9fd}
-.sh-stat.t-up{--tone:var(--up-vivid);--tint:#fdeceb}
-.sh-stat.t-down{--tone:var(--down-vivid);--tint:#e9f0fe}
-.sh-stat.t-flat{--tone:#8a93ad;--tint:var(--surface-2)}
+.sh-fig-sub{color:var(--faint);font-size:12px;font-weight:700}
 
-/* ── 카드 ───────────────────────────────────────────── */
+/* ── 목록 카드 ──────────────────────────────────────── */
 .sh-card{
-  padding:16px 18px;border:1px solid var(--rule);border-radius:16px;
-  background:var(--surface);box-shadow:var(--shadow);min-width:0;
+  border:1px solid var(--rule);border-radius:16px;
+  background:var(--surface);box-shadow:var(--shadow);min-width:0;overflow:hidden;
 }
-.sh-card h2{
-  display:flex;align-items:center;gap:8px;margin:0 0 12px;
-  color:var(--ink);font-size:15px;font-weight:800;letter-spacing:-.02em;
-}
-.sh-card h2 em{
-  margin-left:auto;font-style:normal;color:var(--muted);font-size:12px;font-weight:700;
-}
-.sh-h-ico{
-  flex:none;display:grid;place-items:center;width:26px;height:26px;
-  border-radius:8px;background:var(--tint);color:var(--tone);
-}
-.sh-h-ico.t-done{--tone:#16a06a;--tint:#e7f6ef}
-.sh-h-ico.t-go{--tone:#5457e8;--tint:#ece9fd}
 
-/* 정렬. 마친 시즌이 둘 이상일 때만 낸다 — 하나뿐이면 고를 것이 없다 */
-.sh-sorts{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+/* 탭. 밑줄 한 줄로 고른 것을 말한다 — 알약 버튼을 두면 아래 정렬 칩과 모양이 겹쳐
+   무엇이 상위 선택인지 알 수 없다. */
+.sh-tabs{display:flex;gap:4px;padding:0 8px;border-bottom:1px solid var(--rule)}
+.sh-tabs button{
+  position:relative;display:inline-flex;align-items:center;gap:7px;
+  padding:14px 12px 13px;border:0;background:transparent;
+  color:var(--muted);font-family:inherit;font-size:14px;font-weight:800;
+  letter-spacing:-.02em;cursor:pointer;transition:color .12s;
+}
+.sh-tabs button::after{
+  content:"";position:absolute;inset:auto 10px -1px;height:2px;
+  border-radius:2px 2px 0 0;background:transparent;
+}
+.sh-tabs button:hover{color:var(--ink)}
+.sh-tabs button.on{color:var(--brand-ink)}
+.sh-tabs button.on::after{background:var(--brand)}
+.sh-tab-ico{display:grid;place-items:center;color:currentColor;opacity:.8}
+.sh-tabs em{
+  font-style:normal;padding:1px 7px;border-radius:999px;
+  background:var(--surface-2);color:var(--muted);font-size:11.5px;font-weight:800;
+}
+.sh-tabs button.on em{background:var(--brand-soft);color:var(--brand-ink)}
+
+.sh-panel{padding:8px 10px 10px}
+
+/* 정렬 칩. 탭보다 한 단 낮은 선택이라 더 작고 조용하다 */
+.sh-sorts{display:flex;flex-wrap:wrap;gap:6px;padding:6px 6px 10px}
 .sh-sorts button{
-  height:32px;padding:0 13px;border:1px solid var(--rule);border-radius:9px;
-  color:var(--muted);font-size:12.5px;font-weight:750;
+  height:29px;padding:0 12px;border:1px solid var(--rule);border-radius:999px;
+  background:var(--surface);color:var(--muted);font-family:inherit;
+  font-size:12.5px;font-weight:750;cursor:pointer;
   transition:border-color .12s,background .12s,color .12s;
 }
-.sh-sorts button:hover{border-color:var(--brand)}
-.sh-sorts button.on{border-color:var(--brand);background:var(--brand);color:#fff}
+.sh-sorts button:hover{border-color:#c9cde0;color:var(--body)}
+.sh-sorts button.on{border-color:var(--brand-soft);background:var(--brand-soft);color:var(--brand-ink)}
 
 /* ── 시즌 한 줄 ─────────────────────────────────────── */
 /* 줄 전체가 링크다. 오른쪽 화살표만 누르게 두면 어디를 눌러야 하는지 찾아야 한다. */
-.sh-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.sh-list{list-style:none;margin:0;padding:0}
+.sh-list li + li{border-top:1px solid var(--rule)}
 .sh-row{
-  display:grid;grid-template-columns:auto minmax(0,1.6fr) minmax(0,1fr) minmax(0,.9fr) 14px;
-  align-items:center;gap:12px;
-  padding:13px 14px;border:1px solid var(--rule);border-radius:12px;
-  transition:border-color .12s,background .12s;
+  display:grid;grid-template-columns:minmax(0,1fr) auto auto 12px;
+  align-items:center;gap:16px;
+  padding:14px 12px;border-radius:10px;
+  transition:background .12s;
 }
-.sh-row:hover{border-color:var(--brand);background:var(--brand-softer)}
+.sh-row:hover{background:var(--brand-softer)}
 
-.sh-mode{
-  flex:none;padding:3px 9px;border-radius:999px;
-  background:var(--surface-2);color:var(--muted);font-size:11.5px;font-weight:750;
-}
-.sh-row b{
-  color:var(--ink);font-size:14.5px;font-weight:800;
+.sh-name{display:flex;align-items:center;gap:8px;min-width:0}
+.sh-name b{
+  color:var(--ink);font-size:15px;font-weight:800;letter-spacing:-.02em;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.sh-when{color:var(--muted);font-size:12.5px;font-weight:700;text-align:right}
-.sh-rate{font-size:14.5px;font-weight:850;text-align:right}
-/* 성적표가 없는 회차. 숫자 자리에 글이 오므로 작게 낮춰 값과 구분한다 */
-.sh-rate.flat{font-size:12px;font-weight:700}
-.sh-row > i{
-  justify-self:end;font-style:normal;color:var(--faint);font-size:15px;line-height:1;
+.sh-mode{
+  flex:none;padding:2px 8px;border-radius:999px;
+  background:var(--surface-2);color:var(--muted);font-size:11px;font-weight:800;
 }
 
-/* 진행 중 줄의 진행 막대. 수익률 자리에 들어간다 — 아직 성적이 없다 */
+.sh-when{color:var(--muted);font-size:12.5px;font-weight:700;text-align:right;white-space:nowrap}
+.sh-rate{min-width:82px;font-size:15px;font-weight:850;text-align:right;letter-spacing:-.02em}
+/* 성적표가 없는 회차. 숫자 자리에 글이 오므로 작게 낮춰 값과 구분한다 */
+.sh-rate.flat{font-size:12px;font-weight:700}
+
+/* 진행 막대. 수익률이 앉을 자리에 같은 폭으로 들어간다 — 아직 성적이 없다 */
 .sh-bar{
-  position:relative;display:block;height:6px;
+  position:relative;display:block;width:82px;height:5px;
   border-radius:999px;background:var(--surface-2);overflow:hidden;
 }
 .sh-bar i{position:absolute;inset:0 auto 0 0;background:var(--brand);border-radius:999px}
 
+.sh-chev{justify-self:end;font-style:normal;color:var(--faint);font-size:15px;line-height:1}
+.sh-row:hover .sh-chev{color:var(--brand)}
+
 .sh-empty{
   display:flex;flex-direction:column;align-items:center;gap:8px;
-  margin:0;padding:30px 20px;text-align:center;
+  margin:0;padding:38px 20px 34px;text-align:center;
   color:var(--body);font-size:14px;font-weight:700;
 }
 .sh-empty small{color:var(--muted);font-size:12.5px;font-weight:650;line-height:1.55}
 .sh-empty .sh-go{margin-top:6px}
 
 /* ── 좁은 화면 ──────────────────────────────────────── */
-@media(max-width:1100px){
-  .sh-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:860px){
+  .sh-figs{grid-template-columns:repeat(2,minmax(0,1fr))}
+  /* 셋을 둘로 접으면 셋째가 아랫줄 왼쪽에 혼자 선다 — 그 줄만 실선으로 잇는다 */
+  .sh-fig:nth-child(3){grid-column:1/-1;border-left:0;border-top:1px solid var(--rule)}
 }
 @media(max-width:760px){
-  /* 끝낸 날을 접는다 — 제목과 수익률이 먼저다 */
-  .sh-row{grid-template-columns:auto minmax(0,1.6fr) minmax(0,1fr) 14px}
-  .sh-row > .sh-when{display:none}
+  /* 마친 판은 끝낸 날을 접는다 — 제목과 수익률이 먼저다.
+     진행 중인 판은 반대로 막대를 접는다 — 몇 게임일까지 왔는지가 남아야 이어서 할 수 있다. */
+  .sh-row{grid-template-columns:minmax(0,1fr) auto 12px;gap:12px}
+  .sh-row.is-done > .sh-when{display:none}
+  .sh-row.is-go > .sh-bar{display:none}
   .sh-head h1{font-size:22px}
+  .sh-tabs button{font-size:13px;padding:13px 9px 12px}
 }
 @media(max-width:520px){
-  .sh-stats{grid-template-columns:minmax(0,1fr)}
+  .sh-figs{grid-template-columns:minmax(0,1fr)}
+  .sh-fig{border-left:0;border-top:1px solid var(--rule)}
+  .sh-fig:first-child{border-top:0}
+  .sh-fig:nth-child(3){grid-column:auto}
 }
 @media(prefers-reduced-motion:reduce){
-  .sh-go,.sh-row,.sh-sorts button{transition:none}
+  .sh-go,.sh-row,.sh-sorts button,.sh-tabs button{transition:none}
 }

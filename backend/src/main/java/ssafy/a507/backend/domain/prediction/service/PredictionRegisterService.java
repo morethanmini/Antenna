@@ -135,8 +135,10 @@ public class PredictionRegisterService {
             throw new BusinessException(ErrorCode.PREDICTION_SLOT_EXCEEDED);
         }
 
-        // ④ 서명 — 여기서 nonce 가 소비된다. 이 뒤로 실패하면 사용자는 다시 서명해야 한다.
-        String signer = signatureGuard.verify(userId, req);
+        /* ④ 서명 — 여기서 nonce 가 소비된다. 이 뒤로 실패하면 사용자는 다시 서명해야 한다.
+           nonce 까지 받아 커밋에 남긴다(ANT-CHAIN-18) — 검산 화면이 서명 문자열을 다시 조립하는 재료다.
+           이미 태운 값이라 공개해도 재사용되지 않는다. */
+        SignatureGuard.Verified verified = signatureGuard.verifyWithNonce(userId, req);
 
         // ⑤ 저장. 예측 → 근거 → 리서치 포인트 → 커밋. 전부 같은 트랜잭션 — 커밋 없는 예측은 영영 앵커되지 않는다.
         LocalDate baseDate = BusinessDays.nextWeekday(today);
@@ -151,7 +153,13 @@ public class PredictionRegisterService {
                 baseDate.plusDays(req.horizon())));
         notes.save(PredictionNote.of(prediction, req.note()));
         evidences.saveAll(points.stream().map(p -> PredictionEvidence.of(prediction, p)).toList());
-        commits.save(commitFactory.seal(prediction, req.note(), req.noteSalt(), req.signature(), signer));
+        commits.save(commitFactory.seal(
+                prediction,
+                req.note(),
+                req.noteSalt(),
+                req.signature(),
+                verified.signerAddress(),
+                verified.nonce()));
         return prediction.getId();
     }
 

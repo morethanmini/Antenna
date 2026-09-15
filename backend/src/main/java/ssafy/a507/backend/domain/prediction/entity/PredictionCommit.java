@@ -75,6 +75,21 @@ public class PredictionCommit {
     @Column(name = "signer_address", length = 42)
     private String signerAddress;
 
+    /**
+     * 서명에 쓰인 nonce (ANT-CHAIN-18). 검산 화면이 서명 문자열을 <b>다시 조립</b>하는 데 필요하다 —
+     * payload 의 마지막 줄이 {@code nonce=…} 이고, 이 값이 없으면 브라우저가 서명자 주소를 복원할 수 없어
+     * "이 지갑 주인이 썼다" 를 서버 말로만 받게 된다(리포트는 ANT-CHAIN-16 부터 저장하고 있었다).
+     *
+     * <p><b>공개해도 된다 — 이미 태운 값이다.</b> {@code SignatureGuard} 가 검증 시점에 Redis 에서 소비하고
+     * 지우므로 같은 nonce 로 다시 통과시킬 수 없다.
+     *
+     * <p>nullable 인 이유는 둘이다: ① {@code ddl-auto} 가 행이 있는 테이블에 NOT NULL 컬럼을 못 붙인다
+     * ② 이 기능 이전 예측은 nonce 가 Redis 에서 이미 사라져 <b>소급이 불가능하다</b>. 그런 건은 검산 화면에서
+     * 서명자 단계가 잠기고 나머지 단계는 그대로 돈다.
+     */
+    @Column(name = "sign_nonce", length = 64)
+    private String signNonce;
+
     /** 소속 앵커 배치. NULL이면 앵커 대기 상태다. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "anchor_batch_id")
@@ -94,7 +109,8 @@ public class PredictionCommit {
             String noteHash,
             String salt,
             String signature,
-            String signerAddress) {
+            String signerAddress,
+            String signNonce) {
         PredictionCommit c = new PredictionCommit();
         // predictionId 는 손대지 않는다 — @MapsId 가 persist 때 prediction 에서 가져온다. 직접 채우면 Spring Data save() 가
         // "이미 있는 행" 으로 보고 merge 를 타서 Hibernate 가 null identifier 로 넘어진다.
@@ -104,6 +120,7 @@ public class PredictionCommit {
         c.salt = salt;
         c.signature = signature;
         c.signerAddress = signerAddress;
+        c.signNonce = signNonce;
         return c;
     }
 
