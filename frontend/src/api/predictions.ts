@@ -249,6 +249,41 @@ export function fetchMyPredictions(filter: MyFilter) {
   }
 }
 
+/* ── 예측 피드 (F-01 예측 탭) ──────────────────────────────
+   서버 PredictionFeedItemResponse 와 짝이다(ANT-PRED-05).
+
+   채널 예측 목록에 **작성자와 등록 시각**을 더한 모양이다. 채널 화면은 "이 사람의
+   예측" 이라 작성자가 머리글에 한 번 나오면 되지만, 피드는 여러 채널이 섞이므로
+   줄마다 누구 것인지 적어야 한다.
+
+   게이팅은 채널 목록과 같다 — 종목·기간은 전체 공개, 판정 전이면 방향·목표가만
+   작성자·구독자에게. 잠긴 건도 목록에서 빼지 않는다(빼면 피드가 실제보다 한가해
+   보이고 구독 유인이 사라진다). 근거 본문은 여기 없다 — 상세(C-03)에서만 본다.
+
+   scope 어휘는 리포트 피드와 같은 것을 쓴다(REPORT_SCOPES) — 한 화면의 두 탭이
+   다른 말을 쓰면 안 된다. */
+export type PredictionFeedItem = {
+  id: number
+  author: { userId: number; nickname: string }
+  /** 종목이 지워졌으면 null */
+  stockCode: string | null
+  stockName: string | null
+  /** 잠긴 건(판정 전 + 비구독)은 null */
+  direction: Direction | null
+  targetPrice: number | null
+  horizon: number
+  status: PredictionStatus
+  /** 만기까지 남은 일수. 판정이 끝났거나 기준가 확정 전이면 null */
+  dday: number | null
+  errorRate: number | null
+  /** 기준가 확정 전에는 null — 만기일 = 기준일 + horizon 이라서다 */
+  settleDate: string | null
+  createdAt: string
+  locked: boolean
+}
+
+/* 조회는 useCursorList 가 경로로 직접 한다 — GET /predictions/feed?scope=&cursor=&size= */
+
 /* ── 예측 상세 (C-03) ─────────────────────────────────────
    서버 PredictionDetailResponse 와 짝이다(ANT-PRED-05). 필드 이름·중첩을 그대로 옮겼다.
 
