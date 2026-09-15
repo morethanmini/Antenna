@@ -74,14 +74,19 @@ export default function ReportDetail() {
                 )}
 
                 {/* 작성자 증명(ANT-CHAIN-16). 서명 이전 발행분은 키가 아예 없어 배지도 없다 —
-                    "서명이 비었다" 가 아니라 "그 기능 이전 글" 이라 빈 배지를 그리지 않는다 */}
+                    "서명이 비었다" 가 아니라 "그 기능 이전 글" 이라 빈 배지를 그리지 않는다.
+                    배지를 누르면 검산(D-04)으로 간다 — 배지는 우리 주장이고, 확인은 거기서 한다. */}
                 {report.data.signerAddress && (
-                  <span className="rd-signed" title={report.data.signerAddress}>
+                  <Link
+                    className="rd-signed"
+                    to={`/ledger/verify/report/${report.data.id}`}
+                    title={report.data.signerAddress}
+                  >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <path d="M20 6L9 17l-5-5" />
                     </svg>
                     지갑 서명
-                  </span>
+                  </Link>
                 )}
               </div>
             </header>
@@ -104,6 +109,16 @@ export default function ReportDetail() {
                 key 로 리포트 id 를 준다: 상세에서 상세로 이동하면 훅 상태가 남아 이전
                 리포트의 좋아요 수가 잠깐 보인다. */}
             {!report.data.locked && <Reactions key={report.data.id} report={report.data} />}
+
+            {/* 검산 진입점. 배지가 없는(서명 이전) 리포트에도 길을 둔다 — 봉인·앵커는 그 글에도
+                있을 수 있고, 없으면 검산 화면이 "봉인 이전 발행분" 이라고 말해 준다. */}
+            <Link className="rd-verify" to={`/ledger/verify/report/${report.data.id}`}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 3l7 3v6c0 4.2-2.8 7.6-7 9-4.2-1.4-7-4.8-7-9V6z" />
+                <path d="m9 12 2 2 4-4" />
+              </svg>
+              이 리포트가 조작되지 않았는지 직접 확인하기
+            </Link>
           </article>
         )}
 

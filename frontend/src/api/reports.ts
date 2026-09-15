@@ -94,6 +94,16 @@ export type ReportDetail = {
   commentCount: number
 }
 
+/**
+ * 리포트 단건. 화면(F-02)은 useApiQuery 로 직접 읽지만, 검산(D-04)은 본문이 필요해
+ * 훅 밖에서 부른다 — ①-1(본문 대조)과 ③(서명 재조립)이 본문을 쓴다.
+ *
+ * 잠긴 리포트는 200 + body:null 이다(404 가 아니다). 그때 그 두 줄만 잠긴다.
+ */
+export function fetchReport(reportId: string) {
+  return api.get<ReportDetail>(`/reports/${reportId}`)
+}
+
 /* ── 발행 (F-03) ──────────────────────────────────────────
    서버 ReportCreateRequest 의 제약을 그대로 옮긴다. */
 export const TITLE_MAX = 100

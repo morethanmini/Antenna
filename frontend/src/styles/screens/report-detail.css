@@ -67,6 +67,21 @@
    공용 LockedCard 는 건드리지 않고 이 화면 안에서만 살린다. */
 .rd .state-locked-preview p{ white-space:pre-line; }
 
+/* 검산 진입점. 버튼처럼 크게 두지 않는다 — 본문을 읽은 뒤의 다음 걸음이지
+   이 화면의 주된 행동이 아니다. */
+.rd-verify{
+  display:flex; align-items:center; justify-content:center; gap:7px;
+  margin-top:16px; padding:12px;
+  border:1px solid var(--rule); border-radius:10px;
+  background:var(--surface);
+  color:var(--muted); font-size:13px; font-weight:600;
+  text-decoration:none;
+}
+.rd-verify:hover{ border-color:var(--brand); color:var(--brand-ink); }
+
+/* 배지도 검산으로 가는 길이다 */
+.rd-signed:hover{ text-decoration:none; filter:brightness(.96); }
+
 /* 본문과 반응 사이에 선을 하나 둔다 — 읽기가 끝났다는 표시다 */
 .rd-reactions{
   margin-top:22px; padding-top:18px;
