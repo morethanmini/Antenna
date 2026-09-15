@@ -172,3 +172,28 @@
 /* 이 판(wl-token)이 이미 surface-2 라 주소 칸이 같은 색으로 묻힌다 —
    붙여 넣을 값이니 한 덩어리로 집히게 흰 바탕에 테두리를 준다 */
 .wl-token-manual .wl-address{ background:var(--surface); border:1px solid var(--rule); }
+
+/* 손으로 넣는 네트워크 값. 표지만 <table> 이 아니라 <dl> 이다 —
+   머리글 행이 없는 이름/값 쌍이라 표로 읊으면 스크린리더가 열 제목을 지어낸다. */
+.wl-net-table{ margin:0; display:flex; flex-direction:column; gap:6px; }
+.wl-net-table > div{
+  display:flex; gap:10px; align-items:baseline;
+  font-size:12px; line-height:1.6;
+}
+.wl-net-table dt{
+  flex:0 0 78px;               /* 값들의 왼쪽 끝을 한 줄로 세운다 */
+  font-weight:600; color:var(--faint);
+}
+.wl-net-table dd{ margin:0; flex:1; color:var(--body); overflow-wrap:anywhere; }
+.wl-net-table dd code{
+  font-family:var(--mono); font-size:11.5px; color:var(--ink);
+  background:var(--surface); border:1px solid var(--rule);
+  border-radius:6px; padding:2px 6px;
+}
+.wl-net-table dd em{ font-style:normal; color:var(--muted); font-size:11px; }
+
+/* 좁은 화면에서는 이름표가 위로 올라가 두 줄이 된다 — 78px 을 떼면 RPC 주소가 깨진다 */
+@media (max-width:420px){
+  .wl-net-table > div{ flex-direction:column; gap:2px; }
+  .wl-net-table dt{ flex:none; }
+}

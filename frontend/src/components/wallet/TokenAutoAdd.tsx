@@ -19,8 +19,8 @@
      그건 안 넣느니만 못하다 — 사용자는 넣었다고 믿는다.
    - 실패해도 완료 화면의 "확인" 을 막지 않는다. 연동은 이미 끝났다. */
 import { useEffect, useRef, useState } from 'react'
-import { ANT_DECIMALS, ANT_SYMBOL, antToken } from '../../wallet/token'
-import { currentChainId, watchToken, type WatchResult } from '../../wallet/provider'
+import { ANT_DECIMALS, ANT_SYMBOL, chainInfo, hexChainId } from '../../wallet/chain'
+import { currentChainId, ensureNetwork, watchToken, type WatchResult } from '../../wallet/provider'
 
 /* checking  지갑이 어느 체인인지 읽는 중 — 아직 아무것도 안 띄운다
    asking    지갑 확인 창이 떠 있다
@@ -32,14 +32,14 @@ export default function TokenAutoAdd({ chainId }: {
   /** 서비스가 쓰는 체인. POST /wallet/nonce 가 준 값이다 — 지갑에 묻지 않는다 */
   chainId: number
 }) {
-  const token = antToken(chainId)
+  const chain = chainInfo(chainId)
   const [phase, setPhase] = useState<Phase>('checking')
   /* 이미 한 번 불렀는가. 상태로 두면 다시 그려지는 사이에 두 번째 호출이 끼어든다 —
      지갑 창이 둘 겹쳐 뜨고 뒤엣것은 -32002 로 튕긴다. */
   const fired = useRef(false)
 
   useEffect(() => {
-    if (!token || fired.current) return
+    if (!chain || fired.current) return
     let alive = true
 
     void (async () => {
@@ -56,7 +56,7 @@ export default function TokenAutoAdd({ chainId }: {
       fired.current = true
       setPhase('asking')
       const result = await watchToken({
-        address: token.address,
+        address: chain.tokenAddress,
         symbol: ANT_SYMBOL,
         decimals: ANT_DECIMALS,
       })
@@ -64,78 +64,98 @@ export default function TokenAutoAdd({ chainId }: {
     })()
 
     return () => { alive = false }
-  }, [token, chainId])
+  }, [chain, chainId])
 
   /* 주소를 모르는 체인이면 아무것도 하지 않는다. 빈 주소로 부르면 지갑에 쓰레기가
-     들어가고, 빈 주소를 보여 주면 사용자가 아무 값이나 붙여 넣는다(wallet/token.ts). */
-  if (!token) return null
+     들어가고, 빈 주소를 보여 주면 사용자가 아무 값이나 붙여 넣는다(wallet/chain.ts). */
+  if (!chain) return null
 
   // 다시 부를 수 있는 실패. 취소했거나 앞선 창이 아직 떠 있던 경우다
   const retryable = phase === 'rejected' || phase === 'busy'
   // 자동으로 안 된 갈래. 그때만 손으로 넣는 절차를 펼친다
   const manual = retryable || phase === 'unsupported' || phase === 'wrong-network'
 
-  /* 위 가드를 지난 뒤라 token 이 있다. 함수 선언은 끌어올려져 좁힌 타입을 못 물려받으므로
-     여기서 한 번 펴 둔다 — 호출부마다 ! 를 붙이는 것보다 낫다. */
-  const options = { address: token.address, symbol: ANT_SYMBOL, decimals: ANT_DECIMALS }
+  // 아래 둘을 화살표 상수로 둔 이유 — 함수 선언은 끌어올려져 위 가드의 좁힌 타입을 못 물려받는다
+  const options = { address: chain.tokenAddress, symbol: ANT_SYMBOL, decimals: ANT_DECIMALS }
 
-  async function retry() {
+  const retry = async () => {
     setPhase('asking')
     setPhase(await watchToken(options))
   }
 
+  /* 네트워크를 바꾼 뒤 토큰까지 이어서 넣는다. 바꾸기만 하고 멈추면 사용자가 이 창에서
+     할 일이 또 하나 남는데, 그게 원래 자동으로 됐어야 하는 일이다. */
+  const switchThenAdd = async () => {
+    setPhase('asking')
+    const switched = await ensureNetwork({
+      chainId: hexChainId(chain.chainId),
+      chainName: chain.name,
+      rpcUrls: [chain.rpcUrl],
+      nativeCurrency: { name: chain.currencySymbol, symbol: chain.currencySymbol, decimals: 18 },
+    })
+    if (switched !== 'added') { setPhase(switched); return }
+    setPhase(await watchToken(options))
+  }
+
   return (
-    <div className="wl-token">
+    <div className="wl-chain">
       {phase === 'checking' && (
-        <p className="wl-token-lead">지갑에 {ANT_SYMBOL} 를 추가하는 중…</p>
+        <p className="wl-chain-lead">지갑에 {ANT_SYMBOL} 를 추가하는 중…</p>
       )}
 
       {phase === 'asking' && (
-        <p className="wl-token-lead">
+        <p className="wl-chain-lead">
           <b>지갑 창에서 {ANT_SYMBOL} 추가를 승인해 주세요.</b> 추가해야 받은 토큰이
           지갑 목록에 보입니다.
         </p>
       )}
 
       {phase === 'added' && (
-        <p className="wl-token-done">지갑에 {ANT_SYMBOL} 를 추가했습니다.</p>
+        <p className="wl-chain-done">지갑에 {ANT_SYMBOL} 를 추가했습니다.</p>
       )}
 
       {phase === 'wrong-network' && (
-        <p className="wl-token-warn" role="alert">
-          지갑이 다른 네트워크를 보고 있어 {ANT_SYMBOL} 를 추가하지 못했습니다.
-          지갑에서 <b>{token.network}</b> 로 바꾸면 아래 절차로 넣을 수 있습니다.
-        </p>
+        <>
+          <p className="wl-chain-warn" role="alert">
+            지갑이 다른 네트워크를 보고 있어 {ANT_SYMBOL} 를 추가하지 못했습니다.
+            <b>{chain.name}</b> 로 바꾸면 넣을 수 있습니다.
+          </p>
+          {/* 바꾸는 것도 우리가 부를 수 있는 일이다 — 경고만 남기면 막다른 길이 된다.
+              바꾸고 나면 그 자리에서 토큰까지 이어 넣는다. */}
+          <button type="button" className="wl-btn ghost wl-chain-add" onClick={switchThenAdd}>
+            {chain.name} 네트워크로 바꾸고 추가
+          </button>
+        </>
       )}
 
       {phase === 'rejected' && (
-        <p className="wl-token-lead">지갑 창에서 취소했습니다. {ANT_SYMBOL} 는 아직 지갑에 없습니다.</p>
+        <p className="wl-chain-lead">지갑 창에서 취소했습니다. {ANT_SYMBOL} 는 아직 지갑에 없습니다.</p>
       )}
       {phase === 'busy' && (
-        <p className="wl-token-lead">지갑이 다른 창을 처리하는 중이라 추가하지 못했습니다.</p>
+        <p className="wl-chain-lead">지갑이 다른 창을 처리하는 중이라 추가하지 못했습니다.</p>
       )}
       {phase === 'unsupported' && (
-        <p className="wl-token-lead">이 지갑은 자동 추가를 지원하지 않습니다.</p>
+        <p className="wl-chain-lead">이 지갑은 자동 추가를 지원하지 않습니다.</p>
       )}
 
       {retryable && (
-        <button type="button" className="wl-btn ghost wl-token-add" onClick={retry}>
+        <button type="button" className="wl-btn ghost wl-chain-add" onClick={retry}>
           지갑에 {ANT_SYMBOL} 추가 다시 시도
         </button>
       )}
 
       {manual && (
-        <div className="wl-token-manual">
+        <div className="wl-chain-manual">
           {/* 접지 않는다. 여기까지 왔다는 건 자동이 안 됐다는 뜻이고,
               그러면 이 절차가 유일한 길이라 한 번 더 누르게 할 이유가 없다 */}
-          <p className="wl-token-manual-head">직접 추가하는 방법</p>
+          <p className="wl-chain-manual-head">직접 추가하는 방법</p>
           <ol>
             <li>지갑 토큰 목록 오른쪽 위 점 세 개(⋮) → <b>토큰 관리</b></li>
             <li>맨 아래 <b>맞춤형 토큰 추가</b></li>
             <li><b>토큰 계약 주소</b>에 아래 주소를 붙여넣기</li>
             <li><b>토큰 추가</b></li>
           </ol>
-          <CopyAddress address={token.address} />
+          <CopyAddress address={chain.tokenAddress} />
           <p className="wl-note">기호 {ANT_SYMBOL} 와 소수점 {ANT_DECIMALS} 은 자동으로 채워집니다.</p>
         </div>
       )}
@@ -164,7 +184,7 @@ function CopyAddress({ address }: { address: string }) {
   }
 
   return (
-    <div className="wl-token-copy">
+    <div className="wl-chain-copy">
       <code className="wl-address">{address}</code>
       <button type="button" className="wl-btn ghost" onClick={copy}>
         {copied ? '복사했습니다' : '주소 복사'}

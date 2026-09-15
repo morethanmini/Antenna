@@ -229,3 +229,54 @@ export async function watchToken(token: {
     return 'unsupported'
   }
 }
+
+/* ── 지갑에 네트워크 넣기 (EIP-3085 · EIP-3326) ─────────────────
+   토큰을 넣기 전에 네트워크가 먼저다. 지갑이 다른 체인을 보고 있으면 ANT 를 넣어도
+   그 체인의 ANT 가 아니라 잔액이 영영 0 이다(TokenAutoAdd 의 wrong-network). */
+
+/** 지갑이 체인을 모른다. switch 요청에만 온다 — 그때는 add 로 넘어간다. */
+const UNKNOWN_CHAIN = 4902
+
+export type NetworkParams = {
+  /** 16진수. chain.ts 의 hexChainId 로 만든다 */
+  chainId: string
+  chainName: string
+  rpcUrls: string[]
+  nativeCurrency: { name: string; symbol: string; decimals: number }
+}
+
+/**
+ * 그 체인으로 맞춘다. **이미 넣어 둔 사람에게 추가 창을 띄우지 않는다.**
+ *
+ * 먼저 wallet_switchEthereumChain 을 부른다. 지갑이 모르는 체인이면 4902 로 답하고,
+ * 그때만 wallet_addEthereumChain 으로 넘어간다 — 추가는 지갑이 바꾸기까지 함께 묻는다.
+ *
+ * 순서를 뒤집으면(항상 add) 이미 등록한 사람도 "네트워크를 추가하시겠습니까" 를 다시 본다.
+ */
+export async function ensureNetwork(params: NetworkParams): Promise<WatchResult> {
+  const p = provider()
+  if (!p) return 'unsupported'
+
+  try {
+    await p.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: params.chainId }] })
+    return 'added'
+  } catch (e) {
+    const code = (e as { code?: unknown } | null)?.code
+    if (code === REJECTED) return 'rejected'
+    if (code === PENDING) return 'busy'
+    // 아는 체인인데 바꾸기가 안 된 것이면 추가해 봐야 소용없다
+    if (code !== UNKNOWN_CHAIN) return 'unsupported'
+  }
+
+  try {
+    /* blockExplorerUrls 를 넣지 않는다. SSAFY 체인에는 탐색기가 없고,
+       빈 배열을 주면 지갑이 형식 오류로 거절한다 — 아예 빼는 것이 맞다. */
+    await p.request({ method: 'wallet_addEthereumChain', params: [params] })
+    return 'added'
+  } catch (e) {
+    const code = (e as { code?: unknown } | null)?.code
+    if (code === REJECTED) return 'rejected'
+    if (code === PENDING) return 'busy'
+    return 'unsupported'
+  }
+}

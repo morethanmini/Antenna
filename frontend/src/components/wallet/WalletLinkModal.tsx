@@ -22,6 +22,7 @@ import { formatToken, linkWallet, requestNonce, shortAddress, signingPayload } f
 import { WALLET_INSTALL_URL, connectAddress, hasWallet, onWalletReady, personalSign } from '../../wallet/provider'
 import { errorText } from '../state/errorText'
 import TokenAutoAdd from './TokenAutoAdd'
+import NetworkAdd from './NetworkAdd'
 import { useAuth } from '../../auth/context'
 import '../../styles/screens/wallet-link.css'
 
@@ -231,6 +232,12 @@ export default function WalletLinkModal({
 
                 {draft && (
                   <>
+                    {/* 네트워크는 연동보다 먼저다. 연동 자체는 체인과 무관하지만(서명 + DB),
+                        끝나는 순간 ANT 를 넣고 그건 **지갑이 보고 있는 네트워크에** 들어간다.
+                        여기 두는 이유 — 서비스 체인을 알게 되는 가장 이른 지점이 이 화면이다.
+                        chainId 는 POST /wallet/nonce 응답에 실려 오므로 연결 전에는 알 수 없다. */}
+                    <NetworkAdd chainId={draft.chainId} />
+
                     <div className="wl-field">
                       <span className="wl-label">연결할 주소</span>
                       <code className="wl-address" title={draft.address}>
