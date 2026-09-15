@@ -196,37 +196,23 @@ export type MyPrediction = {
      (MyPredictionItemResponse.anchorStatus, 2026-09-09). 어휘는 proof 와 같은
      넷이라 C-03 과 같은 말로 그린다 — 커밋이 아직 없으면 WAITING 이다.
 
-     앵커 배치는 매일 00:05 KST 에 **전날 등록분**을 한 번에 묶는다
-     (AnchorScheduler, 주말 포함). WAITING 은 고장이 아니라 정상 대기이고,
-     화면은 그 사실을 문장으로 말해 줘야 한다. */
+     앵커 배치는 **10분마다** 그때까지 쌓인 봉인을 묶는다(AnchorScheduler,
+     주말·휴장 포함 — 2026-09-15 에 매일 00:05 에서 바뀌었다). WAITING 은
+     고장이 아니라 정상 대기이고, 화면은 그 사실을 문장으로 말해 줘야 한다.
+     문구는 AnchorStage 의 ANCHOR_BATCH_CYCLE 한 곳에서 온다. */
   anchorStatus: ProofAnchorStatus
 }
 
-/* 상태 필터. 서버가 status 로 거른다 — 어휘 밖 값은 400 이다.
-   PENDING 은 BASE·OPEN 을 묶는 조회용 어휘이고 저장된 상태가 아니다.
+/* 상태 필터 어휘(MY_FILTERS · MY_FILTER_LABEL · MyFilter)를 지웠다(2026-09-15).
 
-   ⚠ **이 셋을 쓰는 화면이 지금 하나도 없다 — 지울 후보다.**
-   C-02(PredictList)가 서버 거르개를 안 쓰는 쪽으로 바뀌었다: 전량을 받아
-   화면이 단계로 가른다(그쪽 STAGES — 기록 예정 / 예측 진행 / 결과 확인).
-   fetchMyPredictions 도 호출부가 'ALL' 하나뿐이다.
+   쓰는 화면이 하나도 없었다. C-02(PredictList)가 서버 거르개를 안 쓰는 쪽으로
+   바뀌었기 때문이다 — 전량을 받아 화면이 STAGES(기록 예정 / 예측 진행 /
+   결과 확인)로 가른다. 서버 어휘와 칸 이름조차 다르다.
 
-   여기 있던 "**JUDGED 가 없어서** 판정 완료를 적중·빗나감 두 칸으로 갈랐다"
-   는 설명은 **사실이 아니다**(2026-09-15 확인). 서버
-   MyPredictionQueryService.StatusFilter 에 JUDGED 가 있고 status=JUDGED 로
-   부르면 200 이다. 그 문장을 믿고 "JUDGED 를 못 쓴다" 고 판단하는 일이
-   실제로 있었어서 지운다.
-
-   죽은 코드까지 걷어내려면 fetchMyPredictions 시그니처를 건드려야 해
-   별도로 뺀다. */
-export const MY_FILTERS = ['ALL', 'PENDING', 'HIT', 'MISS'] as const
-export type MyFilter = (typeof MY_FILTERS)[number]
-
-export const MY_FILTER_LABEL: Record<MyFilter, string> = {
-  ALL: '전체',
-  PENDING: '판정 대기',
-  HIT: '적중',
-  MISS: '빗나감',
-}
+   서버 status 파라미터 자체는 살아 있다(ALL · PENDING · HIT · MISS · JUDGED,
+   명세 v0.29). 다시 거르개를 서버에 맡기게 되면 그때 어휘를 새로 옮기면 된다 —
+   쓰지 않는 어휘를 들고 있는 편이 더 나쁘다. 이 자리에 있던 주석이 "JUDGED 가
+   없다" 는 거짓을 주장하고 있었고, 실제로 그 문장을 믿고 잘못 판단한 일이 있었다. */
 
 /** 목록 전체에 걸리는 값. 필터를 바꿔도 네 숫자는 그대로여야 한다 */
 export type MyPredictionMeta = {
@@ -246,17 +232,17 @@ export type MyPredictionList = CursorList<MyPrediction> & MyPredictionMeta
 
 export const MY_PREDICTION_PAGE_SIZE = 12
 
-/** useCursorList 가 커서를 관리하므로 함수를 넘긴다 */
-export function fetchMyPredictions(filter: MyFilter) {
-  return (query: Record<string, string | number | boolean | undefined>) => {
-    /* ALL 은 파라미터를 아예 붙이지 않는다 — 서버가 "전체" 를 기본으로 본다 */
-    const q = {
-      ...(filter === 'ALL' ? {} : { status: filter }),
-      size: MY_PREDICTION_PAGE_SIZE,
-      ...query,
-    }
-    return api.get<MyPredictionList>('/predictions/me', { query: q })
-  }
+/**
+ * useCursorList 가 커서를 관리하므로 함수를 넘긴다.
+ *
+ * status 를 붙이지 않는다 — 서버가 "전체" 를 기본으로 보고, C-02 는 전량을 받아
+ * 화면에서 단계로 가른다. 서버에 거르개를 맡기게 되면 여기에 인자를 되살린다.
+ */
+export function fetchMyPredictions() {
+  return (query: Record<string, string | number | boolean | undefined>) =>
+    api.get<MyPredictionList>('/predictions/me', {
+      query: { size: MY_PREDICTION_PAGE_SIZE, ...query },
+    })
 }
 
 /* ── 예측 피드 (F-01 예측 탭) ──────────────────────────────

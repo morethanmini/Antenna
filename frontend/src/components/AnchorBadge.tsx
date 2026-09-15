@@ -4,8 +4,9 @@
    세 상태의 뜻이 서로 달라 색만으로 구분하지 않는다 — 아이콘과 글자를 함께 둔다.
    색각 이상이 있어도, 흑백으로 캡쳐해도 읽혀야 한다.
 
-   PENDING 은 "아직"이지 "실패"가 아니다. 배치가 하루에 한 번 도는 구조라
-   대기가 정상 상태이며, 사용자가 고장으로 오해하지 않아야 한다. */
+   PENDING 은 "아직"이지 "실패"가 아니다. 앵커가 등록과 같은 순간이 아니라
+   주기적으로 도는 배치의 일이라(10분마다, AnchorScheduler) 대기가 정상
+   상태이며, 사용자가 고장으로 오해하지 않아야 한다. */
 import { STATUS_LABEL, type AnchorStatus } from '../api/anchors'
 import '../styles/anchor-badge.css'
 
