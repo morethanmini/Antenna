@@ -27,13 +27,20 @@ public class PredictionCommitFactory {
      * @param note 근거 본문 그대로. 빈 문자열이어도 된다 — {@code keccak(noteSalt)} 도 난수라 안전하다
      * @param noteSalt 클라이언트가 만든 64 hex. 형식·"전부 같은 바이트" 만 검사한다
      * @param signature 작성자 EIP-191 서명, {@code signerAddress} 복원 주소 — 검증은 PRED-01 이 {@code SignatureGuard} 로 끝내고 온다
+     * @param signNonce 그 서명에 쓰인 nonce. 검산 화면이 서명 문자열을 다시 조립하는 재료다(ANT-CHAIN-18)
      */
     public PredictionCommit seal(
-            Prediction prediction, String note, String noteSalt, String signature, String signerAddress) {
+            Prediction prediction,
+            String note,
+            String noteSalt,
+            String signature,
+            String signerAddress,
+            String signNonce) {
         Objects.requireNonNull(prediction, "prediction");
         Objects.requireNonNull(note, "note — 근거가 없으면 빈 문자열을 넘긴다");
         String noteHash = CommitHashes.noteHash(note, noteSalt);
         String commitHash = CommitHashes.keccak256Hex(CommitPayload.of(prediction, noteHash).canonical());
-        return PredictionCommit.seal(prediction, commitHash, noteHash, noteSalt, signature, signerAddress);
+        return PredictionCommit.seal(
+                prediction, commitHash, noteHash, noteSalt, signature, signerAddress, signNonce);
     }
 }
