@@ -49,6 +49,7 @@ class AnchorRunnerTest {
     @Autowired PredictionCommitRepository commits;
     @Autowired ReportRepository reports;
     @Autowired ssafy.a507.backend.domain.chain.service.ProofService proofService;
+    @Autowired ssafy.a507.backend.domain.monetize.service.ReportProofService reportProofService;
 
     private Long userId;
 
@@ -154,6 +155,48 @@ class AnchorRunnerTest {
                         proof.anchor().merkleProof().stream().map(Numeric::hexStringToByteArray).toList(),
                         Numeric.hexStringToByteArray(batch.getMerkleRoot())))
                 .isTrue();
+    }
+
+    @Test
+    @DisplayName("리포트 리프의 proof 도 접힌다 — 예측과 섞인 트리에서 자기 자리를 찾는다 (ANT-CHAIN-17)")
+    void 리포트_proof_가_접힌다() {
+        insertCommit("c1", "HIT");
+        long rid = insertReport("검산할 리포트", "ra");
+        relayer.thenConfirmed();
+        AnchorBatch batch = batches.findById(runner.run(TODAY).orElseThrow()).orElseThrow();
+
+        authenticateAs(userId);
+        var proof = reportProofService.proof(rid);
+
+        assertThat(proof.anchor()).isNotNull();
+        assertThat(proof.anchor().merkleRoot()).isEqualTo(batch.getMerkleRoot());
+        assertThat(proof.anchor().leafCount()).isEqualTo(2);
+        // 리프 순서는 "예측 먼저, 그다음 리포트" 다(AnchorLeaves). 리포트가 뒤라 1 번이다.
+        assertThat(proof.anchor().leafIndex()).isEqualTo(1);
+
+        /* 이 단언이 이 테스트의 전부다 — 리포트 리프 + 형제 해시로 접은 루트가 체인에 박힌 루트와
+           같아야 검산 화면(D-04)의 ②가 성립한다. 리프 순서를 만드는 곳이 갈리면 여기서 깨진다. */
+        assertThat(MerkleTree.verify(
+                        Numeric.hexStringToByteArray(proof.reportHash()),
+                        proof.anchor().merkleProof().stream().map(Numeric::hexStringToByteArray).toList(),
+                        Numeric.hexStringToByteArray(batch.getMerkleRoot())))
+                .isTrue();
+    }
+
+    @Test
+    @DisplayName("리포트가 혼자인 배치도 접힌다 — 리프 1개면 루트가 곧 리프이고 proof 는 빈 배열이다")
+    void 리포트_혼자인_배치() {
+        long rid = insertReport("혼자 있는 리포트", "solo");
+        relayer.thenConfirmed();
+        AnchorBatch batch = batches.findById(runner.run(TODAY).orElseThrow()).orElseThrow();
+
+        authenticateAs(userId);
+        var proof = reportProofService.proof(rid);
+
+        assertThat(proof.anchor().leafCount()).isEqualTo(1);
+        assertThat(proof.anchor().leafIndex()).isZero();
+        assertThat(proof.anchor().merkleProof()).isEmpty();
+        assertThat(proof.anchor().merkleRoot()).isEqualTo(batch.getMerkleRoot());
     }
 
     @Test

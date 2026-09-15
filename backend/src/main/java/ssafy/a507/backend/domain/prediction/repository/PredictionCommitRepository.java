@@ -1,5 +1,6 @@
 package ssafy.a507.backend.domain.prediction.repository;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import org.springframework.data.domain.Limit;
@@ -44,10 +45,16 @@ public interface PredictionCommitRepository extends JpaRepository<PredictionComm
     List<PredictionCommit> findWithBatchByPredictionIdIn(@Param("ids") Collection<Long> ids);
 
     /**
-     * 커밋 원장 목록(화면 D-01) — 최신 커밋부터, 커서 id 미만. 커서 규칙은 {@code AnchorBatchRepository.findPage} 와 같다.
+     * 커밋 원장 목록(화면 D-01) — 최신 봉인부터 한 장.
      *
-     * <p>여기만 <b>내림차순</b>이다. 리프 조회가 오름차순인 것은 머클 트리를 접는 순서여서이고, 이 목록은 검증 재료가
-     * 아니라 "최근에 무엇이 봉인됐나" 를 보는 화면용이다.
+     * <p><b>정렬 기준이 {@code predictionId} 에서 {@code prediction.createdAt} 으로 바뀌었다 (ANT-CHAIN-15).</b>
+     * 원장이 예측 커밋과 리포트를 한 목록으로 내리게 되면서, 두 표를 섞을 공통 기준이 등록 시각밖에 없다 —
+     * 두 id 는 다른 시퀀스라 크기를 비교할 뜻이 없다. 같은 시각 안에서는 예전처럼 id 내림차순이다.
+     *
+     * <p>커서는 {@code CommitQueryService.LedgerCursor} 가 만든 {@code (createdAt, kind, id)} 셋이고,
+     * 여기 들어오는 {@code cursorId} 는 <b>커서의 종류가 PREDICTION 일 때만</b> 값이 있다. 커서가 리포트를
+     * 가리키면 같은 시각의 예측은 이미 앞 장에서 나갔으므로({@code PREDICTION} 이 같은 시각에서 앞이다)
+     * {@code createdAt < :at} 만 남는다.
      *
      * <p>연관 셋을 모두 fetch 한다 — 한 장에 20건이면 fetch 없이 60번의 추가 질의가 난다.
      * {@code stock} 과 {@code anchorBatch} 는 <b>left</b> 다: 종목이 지워진 커밋과 아직 배치에 안 묶인 커밋도
@@ -58,10 +65,13 @@ public interface PredictionCommitRepository extends JpaRepository<PredictionComm
              join fetch c.prediction p
              left join fetch p.stock
              left join fetch c.anchorBatch
-             where (:cursorId is null or c.predictionId < :cursorId)
-             order by c.predictionId desc
+             where (:at is null
+                    or p.createdAt < :at
+                    or (:cursorId is not null and p.createdAt = :at and c.predictionId < :cursorId))
+             order by p.createdAt desc, c.predictionId desc
             """)
-    List<PredictionCommit> findLedgerPage(@Param("cursorId") Long cursorId, Limit limit);
+    List<PredictionCommit> findLedgerPage(
+            @Param("at") Instant at, @Param("cursorId") Long cursorId, Limit limit);
 
     /** 리빌 대상 — 판정이 끝났는데 salt 가 아직 비공개인 커밋 (결정 A9: 판정 기준). */
     @Query(

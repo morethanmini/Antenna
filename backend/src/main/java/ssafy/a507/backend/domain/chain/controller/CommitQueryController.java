@@ -25,7 +25,7 @@ public class CommitQueryController {
 
     @GetMapping
     public CommitListResponse list(
-            @RequestParam(required = false) Long cursor, @RequestParam(required = false) Integer size) {
+            @RequestParam(required = false) String cursor, @RequestParam(required = false) Integer size) {
         currentUserProvider.currentUserId();
         return commitQueryService.list(cursor, size);
     }

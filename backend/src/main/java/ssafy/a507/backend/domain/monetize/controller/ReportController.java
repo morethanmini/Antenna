@@ -20,6 +20,8 @@ import ssafy.a507.backend.domain.monetize.dto.ReportCreateRequest;
 import ssafy.a507.backend.domain.monetize.dto.ReportCreateResponse;
 import ssafy.a507.backend.domain.monetize.dto.ReportDetailResponse;
 import ssafy.a507.backend.domain.monetize.dto.ReportFeedResponse;
+import ssafy.a507.backend.domain.monetize.dto.ReportProofResponse;
+import ssafy.a507.backend.domain.monetize.service.ReportProofService;
 import ssafy.a507.backend.domain.monetize.service.ReportService;
 
 /** 리포트 — ANT-COMMUNITY-01. 명세 §1 의 {@code Base /api/v1} 을 경로에 직접 적는다. */
@@ -31,6 +33,7 @@ public class ReportController {
     private static final String CREATE_ENDPOINT = "POST /reports";
 
     private final ReportService reportService;
+    private final ReportProofService reportProofService;
     private final IdempotencyStore idempotencyStore;
     private final CurrentUserProvider currentUserProvider;
 
@@ -80,6 +83,20 @@ public class ReportController {
         }
         return reportService.feed(
                 parseScope(scope), parseSort(sort), cursor, size);
+    }
+
+    /**
+     * 리포트 검산 재료 (ANT-CHAIN-17, 화면 D-04).
+     *
+     * <p><b>판정을 내려 주지 않는다.</b> 같은지 다른지는 브라우저가 계산한다 — 서버가 "검증됨" 이라고
+     * 말하면 증명이 아니다(D-03 이 세운 원칙).
+     *
+     * <p>리포트 자체는 막지 않는다. 봉인 해시는 제목보다 더 공개해도 되는 값이고(해시로 본문을 되돌릴 수
+     * 없다), 가리는 것은 {@code salt} 하나다 — 공개 리포트는 전원, 구독자 전용은 작성자·구독자.
+     */
+    @GetMapping("/{reportId}/proof")
+    public ReportProofResponse proof(@PathVariable Long reportId) {
+        return reportProofService.proof(reportId);
     }
 
     @GetMapping("/{reportId}")

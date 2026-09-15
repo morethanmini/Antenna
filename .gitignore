@@ -6,6 +6,11 @@
 *.ppk
 *.key
 
+# 이름이 역슬래시 한 글자인 env 파일. backend/.env 자리를 이게 쓰고 있는데
+# 위의 .env 규칙에 이름이 안 걸려서, 디렉터리를 통째로 add 하면 비밀이 딸려 들어간다
+# (2026-09-15 에 실제로 한 번 커밋됐다).
+backend/\\
+
 # 개인별 로컬 오버라이드. .env.example·.env.production 은 공개값이라 추적한다.
 .env.local
 .env.*.local

@@ -71,6 +71,9 @@ const BY_CODE: Record<string, Text> = {
   [ERROR_CODE.PREDICTION_FORBIDDEN]: { title: '아직 공개되지 않은 예측입니다', hint: '판정 전에는 작성자와 구독자만 근거를 볼 수 있습니다' },
   /* 구독하면 풀린다. 재시도로는 안 풀리므로 retryable 을 주지 않는다 — 화면이 구독 CTA 를 띄운다 */
   [ERROR_CODE.REPORT_FORBIDDEN]: { title: '구독자 전용 리포트입니다', hint: '구독하면 본문을 읽고 좋아요·댓글을 남길 수 있습니다' },
+  /* 검산 화면은 이 code 를 직접 보고 안내로 그린다(오류가 아니다). 여기 문구는 다른 화면이
+     이 code 를 만났을 때를 위한 것이다 — 재시도로 풀리지 않으므로 retryable 을 주지 않는다 */
+  [ERROR_CODE.REPORT_NOT_SEALED]: { title: '봉인 이전에 발행된 리포트입니다', hint: '체인 기록 기능 이전에 쓰인 글이라 검산할 해시가 없습니다' },
   // 체인이 잠깐 끊긴 것이라 잠시 뒤 되살아난다
   [ERROR_CODE.CHAIN_UNAVAILABLE]: { title: '체인에 연결하지 못했습니다', hint: '잠시 후 다시 시도해 주세요', retryable: true },
 

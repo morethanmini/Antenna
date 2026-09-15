@@ -14,6 +14,11 @@ import ssafy.a507.backend.domain.monetize.report.MarkdownPlain;
  * <p>키를 바꿔 내리는 이유는 전문과 미리보기를 같은 필드에 담으면 프론트가 잘린 본문을
  * 전문으로 착각해 그리기 때문이다. 명세도 잠금 응답을
  * {@code { preview: "앞 3줄", locked: true }} 로 적고 있다.
+ *
+ * <p>{@code signerAddress} 는 발행 서명에서 복원한 지갑 주소다(ANT-CHAIN-16). <b>잠긴 리포트에도 실린다</b> —
+ * 통계와 같은 부류이고, 누가 썼는지는 본문을 볼 수 있는지와 별개다. <b>서명 이전에 발행된 리포트는 이 키가
+ * 아예 없다</b>({@code NON_NULL}) — null 로 내리면 프론트가 "서명이 비었다" 와 "서명 기능 이전 글" 을
+ * 구분하지 못한다. 키가 없으면 후자다.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ReportDetailResponse(
@@ -28,7 +33,8 @@ public record ReportDetailResponse(
         int viewCount,
         long likeCount,
         boolean liked,
-        long commentCount) {
+        long commentCount,
+        String signerAddress) {
 
     /** 미리보기 줄 수. 명세가 "앞 3줄"로 못박은 값이다. */
     private static final int PREVIEW_LINES = 3;
@@ -55,7 +61,8 @@ public record ReportDetailResponse(
                 viewCount,
                 social.likeCount(),
                 social.liked(),
-                social.commentCount());
+                social.commentCount(),
+                report.getSignerAddress());
     }
 
     /** 잠금. 제목·작성자·통계는 그대로 공개하고 본문만 앞 3줄로 줄인다(구독 유인). */
@@ -72,7 +79,8 @@ public record ReportDetailResponse(
                 viewCount,
                 social.likeCount(),
                 social.liked(),
-                social.commentCount());
+                social.commentCount(),
+                report.getSignerAddress());
     }
 
     /**
