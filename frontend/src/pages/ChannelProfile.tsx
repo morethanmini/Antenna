@@ -110,6 +110,14 @@ export default function ChannelProfile() {
   /** 미리보기 띠를 띄울 조건. 남의 채널에 ?as=visitor 를 붙여도 바뀔 게 없다 */
   const previewing = (channel?.isMe ?? false) && asVisitor
 
+  /* 미리보기 안에서 **누구 눈으로** 볼지. 구독료를 정하는 사람이 정말 알고 싶은 것은
+     "구독하면 뭐가 더 보이나" 이고, 그 차이는 둘을 번갈아 봐야 보인다.
+     기본은 비구독자다 — 안 보이는 쪽이 구독 유인을 정하는 기준이라 먼저 확인할 값이다.
+     구독자 눈은 서버가 주인에게 준 값 그대로다(canRead 가 참이면 잠글 것이 없다). */
+  const [previewAs, setPreviewAs] = useState<'guest' | 'subscriber'>('guest')
+  /** 다시 잠글지. 구독자 눈으로 볼 때는 서버가 준 대로 둔다 */
+  const relock = previewing && previewAs === 'guest'
+
   /** 내 채널일 때, 비구독자에게는 가려질 건수. 판정 전이 곧 잠금 경계다(§5) */
   const lockedForOthers = (preds.data?.items ?? [])
     .filter((p) => phaseOf(p.status) === 'PENDING').length
@@ -294,7 +302,26 @@ export default function ChannelProfile() {
 
             {/* ── 예측 목록 ─────────────────────────────── */}
             <section className="ch-section">
-              <h2>예측</h2>
+              <div className="ch-section-head">
+                <h2>예측</h2>
+                {/* 미리보기에서만 뜬다. 구독으로 무엇이 열리는지는 둘을 나란히 봐야 안다 —
+                    이 줄이 없으면 주인은 "가려진 쪽" 만 보고 구독료를 정하게 된다. */}
+                {previewing && (
+                  <div className="ch-as" role="group" aria-label="누구 눈으로 볼지">
+                    {([['guest', '비구독자'], ['subscriber', '구독자']] as const).map(([key, text]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        className={previewAs === key ? 'is-on' : undefined}
+                        aria-pressed={previewAs === key}
+                        onClick={() => setPreviewAs(key)}
+                      >
+                        {text}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* 내 채널에서는 목록이 **남이 보는 것과 다르다** — 서버가 본인을 구독자와
                   같이 취급해(PredictionViewService.canRead) 판정 전 건까지 다 열어 준다.
@@ -321,7 +348,7 @@ export default function ChannelProfile() {
                     const id = String(p.id)
                     const open = openId === id
                     /* 미리보기에서는 서버가 다 열어 준 목록을 비구독자 기준으로 다시 잠근다 */
-                    const locked = previewing ? phaseOf(p.status) === 'PENDING' : p.locked
+                    const locked = relock ? phaseOf(p.status) === 'PENDING' : p.locked
                     return (
                       <li key={p.id} className={open ? 'is-open' : ''}>
                         {/* 카드째로 누를 수 있어야 한다. <button> 으로 감싸면 안쪽의
@@ -356,7 +383,7 @@ export default function ChannelProfile() {
                             없이 된다(PredictionNote 머리말) */}
                         {open && (
                           <div id={`ch-note-${id}`}>
-                            <PredictionNote id={id} isMe={owner} locked={locked} preview={previewing} />
+                            <PredictionNote id={id} isMe={owner} locked={locked} preview={relock} />
                           </div>
                         )}
                       </li>
@@ -377,7 +404,7 @@ export default function ChannelProfile() {
                 <ul className="ch-reports">
                   {reports.data.items.map((r: ChannelReportItem) => {
                     /* 미리보기에서는 구독자 전용 글이 곧 잠긴 글이다 */
-                    const locked = previewing ? !r.visibility : r.locked
+                    const locked = relock ? !r.visibility : r.locked
                     return (
                     <li key={r.id}>
                       <Link to={`/reports/${r.id}`}>
