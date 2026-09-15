@@ -75,14 +75,15 @@ public class CommitQueryService {
         Limit limit = Limit.of(pageSize + 1);
 
         List<Row> rows = new ArrayList<>();
-        for (PredictionCommit c : commits.findLedgerPage(after.at(), after.idOf(AnchorLeaves.Kind.PREDICTION), limit)) {
+        for (PredictionCommit c :
+                commits.findLedgerPage(after.at(), after.idBoundOf(AnchorLeaves.Kind.PREDICTION), limit)) {
             rows.add(new Row(
                     c.getPrediction().getCreatedAt(),
                     AnchorLeaves.Kind.PREDICTION,
                     c.getPredictionId(),
                     CommitItemResponse.of(c)));
         }
-        for (Report r : reports.findLedgerPage(after.at(), after.idOf(AnchorLeaves.Kind.REPORT), limit)) {
+        for (Report r : reports.findLedgerPage(after.at(), after.idBoundOf(AnchorLeaves.Kind.REPORT), limit)) {
             rows.add(new Row(r.getCreatedAt(), AnchorLeaves.Kind.REPORT, r.getId(), CommitItemResponse.of(r)));
         }
         rows.sort(ORDER);
@@ -120,7 +121,16 @@ public class CommitQueryService {
     private record LedgerCursor(Instant at, AnchorLeaves.Kind kind, Long id) {
 
         private static final String SEPARATOR = ":";
-        private static final LedgerCursor NONE = new LedgerCursor(null, null, null);
+
+        /**
+         * 커서가 없을 때 쓰는 시각. 모든 행이 이보다 앞서므로 첫 장이 전부 들어온다.
+         *
+         * <p>null 을 넣지 않는 이유가 여기 있다 — PostgreSQL 은 {@code :at is null} 의 파라미터 타입을
+         * 정하지 못해 질의를 거절한다. H2 는 통과시켜서 이 사고가 운영에서만 났다(2026-09-15).
+         */
+        private static final Instant FAR_FUTURE = Instant.parse("9999-12-31T23:59:59Z");
+
+        private static final LedgerCursor NONE = new LedgerCursor(FAR_FUTURE, null, null);
 
         static String encode(Instant at, AnchorLeaves.Kind kind, long id) {
             long micros = at.getEpochSecond() * 1_000_000L + at.getNano() / 1_000L;
@@ -147,9 +157,23 @@ public class CommitQueryService {
             }
         }
 
-        /** 이 종류의 표에 넘길 id 경계. 커서가 다른 종류를 가리키면 null 이고, 그때는 시각만으로 자른다. */
-        Long idOf(AnchorLeaves.Kind wanted) {
-            return kind == wanted ? id : null;
+        /**
+         * 이 종류의 표에 넘길 id 경계. <b>null 을 돌려주지 않는다</b> — 질의가 {@code :cursorId is null} 을
+         * 쓰지 않도록, 같은 뜻의 경계값으로 바꿔 넣는다.
+         *
+         * <ul>
+         *   <li>커서가 이 종류를 가리키면 그 id — 같은 시각 안에서 그보다 작은 것만 다음 장이다.
+         *   <li>커서가 <b>다른</b> 종류를 가리키면, 같은 시각의 이 종류가 앞 장에서 나갔는지로 갈린다.
+         *       정렬이 "예측 먼저" 이므로 예측은 이미 나갔고(→ {@code MIN_VALUE}, 아무것도 안 들어온다)
+         *       리포트는 아직 안 나갔다(→ {@code MAX_VALUE}, 전부 들어온다).
+         *   <li>커서 자체가 없으면 {@code at} 이 먼 미래라 이 값은 쓰이지 않는다.
+         * </ul>
+         */
+        Long idBoundOf(AnchorLeaves.Kind wanted) {
+            if (kind == wanted) {
+                return id;
+            }
+            return wanted == AnchorLeaves.Kind.PREDICTION ? Long.MIN_VALUE : Long.MAX_VALUE;
         }
     }
 }

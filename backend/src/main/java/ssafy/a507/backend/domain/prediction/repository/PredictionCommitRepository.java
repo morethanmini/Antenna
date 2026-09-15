@@ -51,10 +51,14 @@ public interface PredictionCommitRepository extends JpaRepository<PredictionComm
      * 원장이 예측 커밋과 리포트를 한 목록으로 내리게 되면서, 두 표를 섞을 공통 기준이 등록 시각밖에 없다 —
      * 두 id 는 다른 시퀀스라 크기를 비교할 뜻이 없다. 같은 시각 안에서는 예전처럼 id 내림차순이다.
      *
-     * <p>커서는 {@code CommitQueryService.LedgerCursor} 가 만든 {@code (createdAt, kind, id)} 셋이고,
-     * 여기 들어오는 {@code cursorId} 는 <b>커서의 종류가 PREDICTION 일 때만</b> 값이 있다. 커서가 리포트를
-     * 가리키면 같은 시각의 예측은 이미 앞 장에서 나갔으므로({@code PREDICTION} 이 같은 시각에서 앞이다)
-     * {@code createdAt < :at} 만 남는다.
+     * <p>커서는 {@code CommitQueryService.LedgerCursor} 가 만든 {@code (createdAt, kind, id)} 셋이다.
+     *
+     * <p><b>파라미터에 null 을 넣지 않는다.</b> 전에는 {@code :at is null} 로 "커서 없음" 을 표현했는데
+     * PostgreSQL 이 <b>null 타임스탬프 파라미터의 타입을 정하지 못해</b> 질의를 통째로 거절했다
+     * ({@code ERROR: could not determine data type of parameter $1}). H2 는 그대로 통과시켜서
+     * 로컬 테스트 전부가 초록이었고 운영에서만 500 이 났다. 그래서 경계값을 서비스가 정해 넣는다 —
+     * 첫 장이면 {@code at} 이 먼 미래라 첫 항이 늘 참이고, 커서가 리포트를 가리키면 {@code cursorId} 가
+     * {@code Long.MIN_VALUE} 라 같은 시각 예측이 자연히 빠진다(그 건들은 앞 장에서 이미 나갔다).
      *
      * <p>연관 셋을 모두 fetch 한다 — 한 장에 20건이면 fetch 없이 60번의 추가 질의가 난다.
      * {@code stock} 과 {@code anchorBatch} 는 <b>left</b> 다: 종목이 지워진 커밋과 아직 배치에 안 묶인 커밋도
@@ -65,9 +69,8 @@ public interface PredictionCommitRepository extends JpaRepository<PredictionComm
              join fetch c.prediction p
              left join fetch p.stock
              left join fetch c.anchorBatch
-             where (:at is null
-                    or p.createdAt < :at
-                    or (:cursorId is not null and p.createdAt = :at and c.predictionId < :cursorId))
+             where p.createdAt < :at
+                or (p.createdAt = :at and c.predictionId < :cursorId)
              order by p.createdAt desc, c.predictionId desc
             """)
     List<PredictionCommit> findLedgerPage(
