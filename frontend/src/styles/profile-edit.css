@@ -45,25 +45,42 @@
 .ch-name-hint.is-taken, .ch-name-hint.is-invalid{ color:var(--danger); }
 
 
-/* ── 값을 눌러 그 항목만 고친다 — 내 채널에서만 ─────
-   읽기용 글자 그대로 보이되, 누를 수 있다는 것은 보여야 한다. 버튼으로 그리면
-   제목·문단의 크기와 색이 어긋나므로 font 는 물려받고 밑줄만 호버에서 준다. */
-.ch-tap{
-  padding:0; border:0; background:none; font:inherit; color:inherit;
-  text-align:left; cursor:pointer;
-  border-radius:6px;
+/* ── 읽기용 한 줄 — 이름표 + 값 ──────────────────────
+   이름표를 고정 폭으로 두면 값들의 왼쪽 끝이 한 줄로 선다. baseline 으로 붙여
+   이름표 글자가 값의 **첫 줄** 글자와 같은 줄에 앉는다 — center 면 소개가 세 줄일 때
+   이름표가 문단 한가운데로 내려간다. 좁아지면 이름표가 위로 올라가 두 줄이 된다. */
+.ch-field{ display:flex; align-items:baseline; gap:10px; margin:7px 0 0; min-width:0; }
+.ch-field-label{
+  flex:0 0 52px;
+  font-size:11.5px; font-weight:700; color:var(--faint); white-space:nowrap;
 }
-.ch-tap:hover{ text-decoration:underline; text-decoration-style:dotted; text-underline-offset:3px; }
-.ch-tap:focus-visible{ outline:2px solid var(--brand); outline-offset:3px; }
+.ch-field-value{ min-width:0; flex:1 1 auto; }
+/* 값 안쪽의 위 여백은 이름표 줄이 대신 준다 — 둘이 겹치면 줄 간격이 벌어진다 */
+.ch-field-value > *{ margin-top:0; }
+@media (max-width:560px){
+  .ch-field{ flex-wrap:wrap; gap:2px 10px; }
+  .ch-field-label{ flex-basis:100%; }
+}
+
+/* ── 읽기용 덩어리 ──────────────────────────────────
+   E-05 는 값 아무 데나 눌러도 편집이 열린다(clickToEdit). 누를 수 있다는 것이
+   보여야 해서 커서와 옅은 배경을 준다 — 링크·버튼 위에서는 각자의 커서가 이긴다. */
+.ch-read{ min-width:0; }
+.ch-read.is-tappable{
+  cursor:pointer; border-radius:10px;
+  margin:-6px -8px; padding:6px 8px;
+  transition:background .15s ease;
+}
+.ch-read.is-tappable:hover{ background:var(--surface-2); }
+/* 안쪽 링크는 제 커서를 쓴다 — 덩어리의 pointer 가 링크까지 덮으면 구분이 없다 */
+.ch-read.is-tappable a{ cursor:pointer; }
 
 /* 아직 안 적은 값. 값처럼 진하게 그리면 적어 둔 소개로 읽힌다 */
 .ch-bio.is-empty{ color:var(--faint); font-style:italic; }
 
-/* ── 항목 한 줄 — 값 + 작은 "수정" ───────────────────
-   baseline 으로 붙인다 — 버튼 글자가 값의 글자와 같은 줄에 앉는다.
-   center 면 값이 두 줄일 때 버튼이 가운데로 내려가 무엇에 딸린 것인지 흐려지고,
-   flex-start 면 글자 크기 차이(제목 19px · 버튼 11px)만큼 위로 떠 보인다.
-   baseline 은 값이 몇 줄이든 첫 줄에 맞으므로 둘 다 피한다. */
+/* ── 닉네임 줄 — 이름 + 작은 "수정" ─────────────────
+   수정 자리는 카드에 하나뿐이다. baseline 으로 붙여 버튼 글자가 이름 글자와 같은 줄에
+   앉는다 — flex-start 면 글자 크기 차이(제목 19px · 버튼 11px)만큼 위로 떠 보인다. */
 .ch-line{ display:flex; align-items:baseline; gap:8px; min-width:0; }
 .ch-line > *:first-child{ min-width:0; }
 /* 값보다 작고 흐리게. 호버에서만 또렷해져 훑을 때 값을 가리지 않는다 */
@@ -75,19 +92,20 @@
 }
 .ch-line-edit:hover{ border-color:var(--brand-soft); color:var(--brand-ink); background:var(--brand-softer); }
 .ch-line-edit:focus-visible{ outline:2px solid var(--brand); outline-offset:2px; }
-/* 칩·링크 줄은 baseline 이 마지막 줄 기준으로 잡혀 버튼이 아래로 처진다 —
-   높이가 한 줄로 고정이라 가운데로 맞추면 값과 나란해진다. */
-.ch-line:has(> ul){ align-items:center; }
 
-/* ── 열린 항목 ──────────────────────────────────────
-   한 번에 하나만 열린다. 나머지 항목은 읽기용 그대로 남아 있어서, 열린 칸이
-   어디인지 배경으로 구분해 준다. */
-.ch-edit-row{
-  display:flex; flex-direction:column; gap:5px;
-  margin:6px 0; padding:11px 13px;
-  border:1px solid var(--brand-soft); border-radius:10px; background:var(--brand-softer);
+/* ── 편집 폼 — 네 항목을 함께 ───────────────────────
+   테두리는 **폼 하나**에만 준다. 항목마다 상자를 두르면 카드 안에 상자가 넷이라
+   무엇이 한 덩어리로 저장되는지 안 보인다. */
+.ch-edit{
+  display:flex; flex-direction:column; gap:13px;
+  margin:4px 0; padding:13px 15px; min-width:0;
+  border:1px solid var(--brand-soft); border-radius:11px; background:var(--brand-softer);
 }
-.ch-edit-label{ font-size:11.5px; font-weight:700; color:var(--brand-ink); }
+/* 폼 안의 제목. 읽기용 이름 자리를 대신하지만 값이 아니라 상태 표시라 작게 둔다 */
+.ch-edit-title{ margin:0; font-size:12.5px; font-weight:800; color:var(--brand-ink); }
+
+.ch-edit-row{ display:flex; flex-direction:column; gap:5px; margin:0; padding:0; border:0; }
+.ch-edit-label{ padding:0; font-size:11.5px; font-weight:700; color:var(--body); }
 
 .ch-edit-area{
   width:min(440px, 100%); padding:9px 11px;
