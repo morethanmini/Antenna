@@ -1,19 +1,25 @@
 package ssafy.a507.backend.domain.chain.service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
+import ssafy.a507.backend.domain.chain.anchor.AnchorLeaves;
 import ssafy.a507.backend.domain.chain.dto.AnchorDetailResponse;
 import ssafy.a507.backend.domain.chain.dto.AnchorItemResponse;
 import ssafy.a507.backend.domain.chain.dto.AnchorListResponse;
 import ssafy.a507.backend.domain.chain.entity.AnchorBatch;
 import ssafy.a507.backend.domain.chain.repository.AnchorBatchRepository;
 import ssafy.a507.backend.domain.market.entity.Stock;
+import ssafy.a507.backend.domain.monetize.entity.Report;
+import ssafy.a507.backend.domain.monetize.repository.ReportRepository;
 import ssafy.a507.backend.domain.prediction.entity.Prediction;
+import ssafy.a507.backend.domain.prediction.entity.PredictionCommit;
 import ssafy.a507.backend.domain.prediction.repository.PredictionCommitRepository;
 
 /**
@@ -34,6 +40,8 @@ public class AnchorQueryService {
 
     private final AnchorBatchRepository batches;
     private final PredictionCommitRepository commits;
+    private final ReportRepository reports;
+    private final AnchorLeaves anchorLeaves;
 
     /** 최신 배치부터. 커서는 마지막으로 받은 id 다 — 그보다 작은 id 를 다음 페이지로 준다. */
     @Transactional(readOnly = true)
@@ -62,15 +70,30 @@ public class AnchorQueryService {
     public AnchorDetailResponse detail(long id) {
         AnchorBatch batch = batches.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ANCHOR_NOT_FOUND, "id"));
-        /* 종목이 지워진 예측이 있어 stock 은 null 일 수 있다. 여기서 걸러 내면 리프가 모자라
-           루트가 재현되지 않으므로, 값만 비우고 줄은 남긴다. */
-        List<AnchorDetailResponse.Leaf> leaves = commits.findLeavesWithPredictionByAnchorBatch(batch).stream()
-                .map(c -> {
-                    Prediction p = c.getPrediction();
+
+        /* 줄 순서는 AnchorLeaves 가 정한다 — 배치가 트리를 접은 순서와 같은 코드여야 화면에서 재현된다.
+           표시 재료(종목·기간·제목)는 따로 읽어 번호로 맞춘다. 종목이 지워진 예측이 있어 stock 은 null 일
+           수 있는데, 여기서 걸러 내면 리프가 모자라 루트가 재현되지 않으므로 값만 비우고 줄은 남긴다. */
+        Map<Long, PredictionCommit> byPrediction = new HashMap<>();
+        for (PredictionCommit c : commits.findLeavesWithPredictionByAnchorBatch(batch)) {
+            byPrediction.put(c.getPredictionId(), c);
+        }
+        Map<Long, Report> byReport = new HashMap<>();
+        for (Report r : reports.findByAnchorBatchOrderByIdAsc(batch)) {
+            byReport.put(r.getId(), r);
+        }
+
+        List<AnchorDetailResponse.Leaf> leaves = anchorLeaves.of(batch).stream()
+                .map(leaf -> {
+                    if (leaf.kind() == AnchorLeaves.Kind.REPORT) {
+                        Report r = byReport.get(leaf.id());
+                        return AnchorDetailResponse.Leaf.report(leaf.id(), leaf.hash(), r.getTitle());
+                    }
+                    Prediction p = byPrediction.get(leaf.id()).getPrediction();
                     Stock stock = p.getStock();
-                    return new AnchorDetailResponse.Leaf(
-                            c.getPredictionId(),
-                            c.getCommitHash(),
+                    return AnchorDetailResponse.Leaf.prediction(
+                            leaf.id(),
+                            leaf.hash(),
                             stock == null ? null : stock.getCode(),
                             stock == null ? null : stock.getName(),
                             p.getHorizon());

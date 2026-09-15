@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import ssafy.a507.backend.domain.chain.entity.AnchorBatch;
 import ssafy.a507.backend.domain.monetize.entity.Report;
 import ssafy.a507.backend.domain.monetize.entity.Subscription;
 
@@ -111,4 +112,16 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     @Modifying
     @Query("update Report r set r.viewCount = r.viewCount + 1 where r.id = :id")
     void incrementViewCount(@Param("id") Long id);
+
+    /**
+     * 앵커 대기 중인 리포트 (ANT-CHAIN-14). 순서 규칙은 {@code AnchorLeaves} 에 있다 — 여기서 바꾸면 루트가 달라진다.
+     *
+     * <p>{@code bodyHash is not null} 로 <b>봉인된 것만</b> 고른다. 이 기능 이전에 발행된 리포트는 해시가 없어
+     * 리프를 만들 수 없고, 지금 만들어 올리면 "그때 있었다" 가 아니라 "지금 만들었다" 가 된다.
+     */
+    @Query("select r from Report r where r.bodyHash is not null and r.anchorBatch is null order by r.id asc")
+    List<Report> findSealedWithoutBatch();
+
+    /** 이 배치에 묶인 리포트. 리프 순서 재현용이라 {@link #findSealedWithoutBatch} 와 같은 정렬이어야 한다. */
+    List<Report> findByAnchorBatchOrderByIdAsc(AnchorBatch anchorBatch);
 }

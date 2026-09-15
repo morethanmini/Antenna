@@ -3,6 +3,7 @@ package ssafy.a507.backend.domain.chain.dto;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import ssafy.a507.backend.domain.chain.anchor.AnchorLeaves;
 import ssafy.a507.backend.domain.chain.entity.AnchorBatch;
 
 /**
@@ -51,13 +52,48 @@ public record AnchorDetailResponse(
      *
      * <p>{@code stockCode}·{@code stockName} 은 <b>null 일 수 있다</b>. 종목이 지워진 예측이 있고,
      * 그 커밋도 원장에서 빠지면 안 되기 때문이다(리프 전량이 있어야 루트가 재현된다).
+     *
+     * <p><b>리프가 두 종류다 (ANT-CHAIN-14).</b> {@code kind} 로 갈린다.
+     * <ul>
+     *   <li>{@code PREDICTION} — {@code predictionId}·{@code stockCode}·{@code stockName}·{@code horizon} 이 차고
+     *       {@code reportId}·{@code title} 이 null. {@code commitHash} 는 예측 커밋 해시다.
+     *   <li>{@code REPORT} — {@code reportId}·{@code title} 이 차고 나머지가 null.
+     *       {@code commitHash} 는 리포트 해시({@code ReportSeal.reportHash})다.
+     * </ul>
+     * 필드 이름 {@code commitHash} 를 그대로 둔 이유: 이 값의 뜻이 "머클 트리에 들어간 리프" 이고 두 종류가 같다.
+     * 이름을 바꾸면 프론트·명세·컨트랙트 이벤트에서 같은 값이 세 이름으로 불린다.
+     *
+     * <p>리포트 줄에 <b>본문도 {@code bodyHash} 도 싣지 않는다.</b> 구독자 전용 리포트가 섞여 있고, 원장은
+     * "무엇이 언제 봉인됐나" 까지다 — 예측 줄에서 방향·목표가를 뺀 것과 같은 규칙이다. 제목은 목록이
+     * 미구독자에게도 보여 주는 값이라(설계 §5) 싣는다.
      */
     public record Leaf(
-            long predictionId,
+            AnchorLeaves.Kind kind,
+            Long predictionId,
+            Long reportId,
             String commitHash,
             String stockCode,
             String stockName,
-            short horizon) {}
+            Short horizon,
+            String title) {
+
+        public static Leaf prediction(
+                long predictionId, String commitHash, String stockCode, String stockName, short horizon) {
+            return new Leaf(
+                    AnchorLeaves.Kind.PREDICTION,
+                    predictionId,
+                    null,
+                    commitHash,
+                    stockCode,
+                    stockName,
+                    horizon,
+                    null);
+        }
+
+        public static Leaf report(long reportId, String reportHash, String title) {
+            return new Leaf(AnchorLeaves.Kind.REPORT, null, reportId, reportHash, null, null, null, title);
+        }
+    }
 
     public static AnchorDetailResponse of(AnchorBatch b, List<Leaf> commits) {
         return new AnchorDetailResponse(

@@ -36,14 +36,35 @@ export type Anchor = {
   chainId: number
 }
 
+/** 리프 종류. 서버 AnchorLeaves.Kind 와 짝이다(ANT-CHAIN-14). */
+export const LEAF_KINDS = ['PREDICTION', 'REPORT'] as const
+export type LeafKind = (typeof LEAF_KINDS)[number]
+
 /**
- * 배치에 담긴 커밋 한 건. 서버 AnchorDetailResponse.Leaf 와 짝이다.
+ * 배치에 담긴 리프 한 건. 서버 AnchorDetailResponse.Leaf 와 짝이다.
  *
  * predictionId 가 함께 오므로 목록에서 커밋 하나를 골라 D-03 검산으로 갈 수 있다
  * (ANT-CHAIN-09 에서 결정 F2 를 뒤집어 동봉하기로 바뀌었다).
+ *
+ * **리프가 두 종류다**(ANT-CHAIN-14). `kind` 로 갈리고, 반대편 필드는 전부 null 이다.
+ *
+ *   PREDICTION  predictionId · stockCode · stockName · horizon
+ *   REPORT      reportId · title
+ *
+ * commitHash 이름을 그대로 둔 이유는 서버와 같다 — 이 값의 뜻이 "머클 트리에 들어간
+ * 리프" 이고 두 종류가 같은 자리다. 이름을 바꾸면 같은 값이 세 군데서 세 이름이 된다.
+ *
+ * 리포트 줄에는 본문도 bodyHash 도 오지 않는다. 구독자 전용 리포트가 섞여 있고,
+ * 원장은 "무엇이 언제 봉인됐나" 까지다 — 예측 줄에서 방향·목표가를 뺀 것과 같은 규칙이다.
  */
 export type AnchorLeaf = {
-  predictionId: number
+  kind: LeafKind
+  /** REPORT 면 null */
+  predictionId: number | null
+  /** PREDICTION 이면 null */
+  reportId: number | null
+  /** 리포트 제목. PREDICTION 이면 null */
+  title: string | null
   commitHash: string
   /**
    * 무엇이 봉인됐는지 알려 주는 두 값(S15P21A507-237). 해시만으로는 읽히지 않는다.
@@ -56,8 +77,8 @@ export type AnchorLeaf = {
    */
   stockCode: string | null
   stockName: string | null
-  /** 예측 기간(영업일). 7 · 14 · 30 · 90 */
-  horizon: Horizon
+  /** 예측 기간(캘린더일 3~90). REPORT 면 null */
+  horizon: Horizon | null
 }
 
 /**

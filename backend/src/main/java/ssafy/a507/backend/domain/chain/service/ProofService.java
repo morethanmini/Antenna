@@ -12,6 +12,7 @@ import org.web3j.utils.Numeric;
 import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
 import ssafy.a507.backend.common.security.CurrentUserProvider;
+import ssafy.a507.backend.domain.chain.anchor.AnchorLeaves;
 import ssafy.a507.backend.domain.chain.dto.ProofResponse;
 import ssafy.a507.backend.domain.chain.entity.AnchorBatch;
 import ssafy.a507.backend.domain.chain.merkle.MerkleTree;
@@ -54,6 +55,7 @@ public class ProofService {
 
     private final PredictionRepository predictions;
     private final PredictionCommitRepository commits;
+    private final AnchorLeaves anchorLeaves;
     private final SubscriptionRepository subscriptions;
     private final CurrentUserProvider currentUserProvider;
 
@@ -114,20 +116,22 @@ public class ProofService {
     }
 
     /**
-     * 리프 전량(prediction id 오름차순 — 배치가 트리를 만든 순서)에서 이 커밋의 proof 를 다시 접는다.
-     * 배치가 PENDING/FAILED 여도 트리는 DB 만으로 결정되므로 proof 는 내린다 — 체인에 있는지는 {@code anchorStatus} 가 말한다.
+     * 리프 전량에서 이 커밋의 proof 를 다시 접는다. 순서는 {@link AnchorLeaves} 가 정한다 — 배치가 트리를 만든
+     * 순서와 <b>같은 코드</b>여야 루트가 재현된다(리포트가 트리에 들어오면서 갈릴 뻔한 자리다, ANT-CHAIN-14).
+     *
+     * <p>배치가 PENDING/FAILED 여도 트리는 DB 만으로 결정되므로 proof 는 내린다 — 체인에 있는지는 {@code anchorStatus} 가 말한다.
      */
     private ProofResponse.Anchor anchorOf(PredictionCommit commit, AnchorBatch batch) {
-        List<PredictionCommit> leaves = commits.findByAnchorBatchOrderByPredictionIdAsc(batch);
+        List<AnchorLeaves.Leaf> leaves = anchorLeaves.of(batch);
         int leafIndex = -1;
         for (int i = 0; i < leaves.size(); i++) {
-            if (leaves.get(i).getPredictionId().equals(commit.getPredictionId())) {
+            AnchorLeaves.Leaf leaf = leaves.get(i);
+            if (leaf.kind() == AnchorLeaves.Kind.PREDICTION && leaf.id() == commit.getPredictionId()) {
                 leafIndex = i;
                 break;
             }
         }
-        MerkleTree tree = MerkleTree.build(
-                leaves.stream().map(c -> Numeric.hexStringToByteArray(c.getCommitHash())).toList());
+        MerkleTree tree = MerkleTree.build(AnchorLeaves.bytesOf(leaves));
         String root = Numeric.toHexString(tree.root());
         if (leafIndex < 0 || !root.equalsIgnoreCase(batch.getMerkleRoot())) {
             log.error(
