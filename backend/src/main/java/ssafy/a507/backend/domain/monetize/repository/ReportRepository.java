@@ -129,9 +129,10 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
      * 봉인 이전에 발행된 리포트는 앵커 대상이 아니므로 원장에도 오르지 않는다. 한쪽만 고치면
      * "원장에는 있는데 체인에는 없는 줄" 이 생긴다.
      *
-     * <p>{@code cursorId} 는 커서의 종류가 REPORT 일 때만 값이 있다. 커서가 예측을 가리키면 null 이 오고,
-     * 그때는 같은 시각의 리포트가 아직 안 나갔으므로({@code PREDICTION} 이 같은 시각에서 앞이다)
-     * {@code createdAt = :at} 인 리포트를 전부 포함해야 한다 — {@code :cursorId is null} 가지가 그것이다.
+     * <p><b>파라미터에 null 을 넣지 않는다.</b> {@code :at is null} 로 "커서 없음" 을 표현했더니 PostgreSQL 이
+     * null 타임스탬프의 타입을 정하지 못해 질의를 거절했다({@code could not determine data type of parameter}).
+     * 경계값은 서비스가 정해 넣는다 — 첫 장이면 {@code at} 이 먼 미래고, 커서가 예측을 가리키면
+     * {@code cursorId} 가 {@code Long.MAX_VALUE} 라 같은 시각 리포트가 전부 들어온다(그 건들은 아직 안 나갔다).
      *
      * <p>{@code anchorBatch} 는 left fetch 다. 아직 배치에 안 묶인 리포트도 원장에 나와야 하고
      * (다음 배치 대기), fetch 하지 않으면 한 장에 배치 수만큼 추가 질의가 난다.
@@ -140,9 +141,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
             select r from Report r
               left join fetch r.anchorBatch
             where r.bodyHash is not null
-              and (:at is null
-                   or r.createdAt < :at
-                   or (r.createdAt = :at and (:cursorId is null or r.id < :cursorId)))
+              and (r.createdAt < :at or (r.createdAt = :at and r.id < :cursorId))
             order by r.createdAt desc, r.id desc
             """)
     List<Report> findLedgerPage(@Param("at") Instant at, @Param("cursorId") Long cursorId, Limit limit);
