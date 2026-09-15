@@ -61,9 +61,13 @@ public final class UserDtos {
      * <p>url 은 <b>https 만</b> 받는다(ERD · 명세 §회원). 남의 프로필에 걸리는 링크라 http 로 받으면
      * 중간에 가로채이고, {@code javascript:} 같은 것을 저장하면 클릭 한 번이 공격이 된다. 화면에서
      * 막는 것으로는 부족하다 — API 를 직접 부르면 그만이라 서버가 최종 판정자다.
+     *
+     * <p>{@code label} 은 선택이다. 표에 없는 곳을 ETC 로 담을 때 사용자가 이름을 붙인다 —
+     * 비우면 화면이 플랫폼의 기본 이름을 쓴다. 아이콘은 {@code platform} 이 정한다.
      */
     public record ChannelRequest(
             @NotNull UserChannel.Platform platform,
+            @Size(max = 30) String label,
             @NotBlank
                     @Size(max = 300)
                     @Pattern(regexp = "https://.+", message = "채널 주소는 https 로 시작해야 합니다.")
@@ -93,9 +97,10 @@ public final class UserDtos {
             boolean walletLinked,
             String role) {}
 
-    public record ChannelResponse(UserChannel.Platform platform, String url) {
+    /** {@code label} 은 사용자가 붙인 이름. null 이면 화면이 플랫폼 기본 이름을 쓴다 */
+    public record ChannelResponse(UserChannel.Platform platform, String label, String url) {
         public static ChannelResponse from(UserChannel channel) {
-            return new ChannelResponse(channel.getPlatform(), channel.getUrl());
+            return new ChannelResponse(channel.getPlatform(), channel.getLabel(), channel.getUrl());
         }
     }
 }

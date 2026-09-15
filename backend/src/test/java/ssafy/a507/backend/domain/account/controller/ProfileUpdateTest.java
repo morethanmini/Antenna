@@ -253,5 +253,46 @@ class ProfileUpdateTest {
                 """)
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    @DisplayName("표에 없는 곳은 ETC 로 담고 이름을 직접 붙인다")
+    void keepsCustomChannelLabel() throws Exception {
+        patchMe("""
+                {"channels":[{"platform":"ETC","label":"브런치","url":"https://brunch.co.kr/@me"}]}
+                """)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.channels[0].platform").value("ETC"))
+                .andExpect(jsonPath("$.channels[0].label").value("브런치"))
+                .andExpect(jsonPath("$.channels[0].url").value("https://brunch.co.kr/@me"));
+    }
+
+    @Test
+    @DisplayName("이름을 안 보내면 null 이다 — 화면이 플랫폼 기본 이름을 쓴다")
+    void labelIsOptional() throws Exception {
+        patchMe("""
+                {"channels":[{"platform":"YOUTUBE","url":"https://youtube.com/@me"}]}
+                """)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.channels[0].label").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("공백만 있는 이름은 없는 것으로 본다")
+    void blankLabelBecomesNull() throws Exception {
+        patchMe("""
+                {"channels":[{"platform":"ETC","label":"   ","url":"https://a.com"}]}
+                """)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.channels[0].label").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("이름 30자를 넘기면 거절한다")
+    void rejectsTooLongLabel() throws Exception {
+        patchMe("{\"channels\":[{\"platform\":\"ETC\",\"label\":\"" + "가".repeat(31)
+                        + "\",\"url\":\"https://a.com\"}]}")
+                .andExpect(status().isBadRequest());
+    }
 }
+
 

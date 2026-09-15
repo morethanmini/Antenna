@@ -119,10 +119,15 @@ button{border:0;background:none;cursor:pointer}
 .topbar-signup{background:var(--brand);color:#fff;border-color:var(--brand)!important}
 .topbar-auth a:hover{border-color:#c8c9f5;color:var(--brand-ink)}
 .topbar-signup:hover{background:var(--brand-ink);color:#fff!important}
+/* 지갑(H-01)으로 가는 링크다. 누를 수 있다는 것이 보여야 해서 호버를 준다 —
+   옆의 아이콘 버튼(.iconbtn)과 같은 결로 맞춘다 */
 .wallet{
   display:flex;align-items:center;gap:7px;height:34px;padding:0 13px;
   border:1px solid var(--rule);border-radius:999px;font-weight:700;color:var(--ink);
+  text-decoration:none;transition:border-color .15s ease,background .15s ease;
 }
+.wallet:hover{border-color:var(--brand-soft);background:var(--brand-softer)}
+.wallet:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 .wallet i{width:12px;height:18px;border-radius:2px;background:var(--gold);display:block}
 .iconbtn{
   position:relative;width:32px;height:32px;border-radius:9px;color:var(--muted);
@@ -211,11 +216,28 @@ button{border:0;background:none;cursor:pointer}
 @media(min-width:901px){
   .rail-toggle{display:none}
   .rail-backdrop{display:none}
-  /* 레일이 펼쳐지면 검색창도 펼쳐진 폭만큼 밀어 가려지지 않게 한다.
+  /* 레일이 펼쳐지면 상단바와 **본문이 함께** 펼쳐진 폭만큼 밀린다. 전에는 상단바만
+     밀어서, 펼친 레일이 본문 왼쪽을 덮었다 — 카드 모서리와 본문 첫 글자가 가려졌다.
      상단바가 레일보다 먼저 오는 형제라 ~ 결합자를 못 쓴다 → :has() */
   body:has(.rail:hover) .topbar,
   body:has(.rail:focus-within) .topbar{
     padding-left:calc(var(--rail-w) + 16px);
+  }
+  body:has(.rail:hover) .main,
+  body:has(.rail:focus-within) .main{
+    padding-left:var(--rail-w);
+  }
+  /* 가운데 정렬 보정도 펼친 폭으로 바꾼다(아래 1712px 규칙과 같은 계산, 레일 폭만 다르다).
+     **기준 폭이 다르다** — 1600 + 레일 양쪽이므로 펼친 레일에서는 1600+172*2 = 1944px 이다.
+     1712px 값을 그대로 쓰면 1900px 화면에서 margin-left 가 음수가 되어 본문이 펼친 레일
+     **밑으로 끌려 들어간다**(실제로 그랬다 — 본문 왼쪽 150px, 레일 오른쪽 172px).
+     1944px 아래에서는 보정하지 않는다 — margin-inline:auto 가 레일 오른쪽 영역의 가운데에
+     두고, 그 편이 겹치는 것보다 낫다. */
+  @media (min-width:1944px){
+    body:has(.rail:hover) .main-inner,
+    body:has(.rail:focus-within) .main-inner{
+      margin-left:calc(50vw - 800px - var(--rail-w));
+    }
   }
 }
 
@@ -249,6 +271,8 @@ body.rail-open .rail-backdrop{opacity:1;pointer-events:auto}
 /* ── 메인 ─────────────────────────────────────────────── */
 .main{
   min-height:100vh;padding:var(--topbar-h) 0 0 var(--rail-mini-w);
+  /* 상단바와 같은 값이어야 둘이 한 몸처럼 움직인다(.topbar 의 transition) */
+  transition:padding-left .18s ease;
 }
 /* 본문은 화면 가운데에 놓는다. 좁을 때는 폭을 다 쓰고, 넓어지면 여기서
    멈춰 양옆이 고르게 남는다. 배율을 낮춰도 카드가 한쪽으로 쏠리지 않는다.
