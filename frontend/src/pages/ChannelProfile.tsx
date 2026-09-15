@@ -71,7 +71,7 @@ function toCard(p: ChannelPrediction) {
 export default function ChannelProfile() {
   const { userId = '' } = useParams<{ userId: string }>()
 
-  /* ?as=visitor — 내 채널을 **다른 예측가 눈으로** 본다(E-05 "내 채널 보기").
+  /* ?as=visitor — 내 채널을 **다른 예측가 눈으로** 본다(관리 화면의 띠에서 넘어온다).
      서버는 여전히 나를 주인으로 보고 다 열어 준다. 권한을 흉내 낼 방법이 없어서가
      아니라, 가리는 규칙이 단순해서 화면에서 다시 계산한다.
        locked      = 판정 전 (비구독자는 canRead=false 이므로 판정 전이 곧 잠김)
@@ -152,7 +152,7 @@ export default function ChannelProfile() {
                     : '내 채널 관리 화면입니다. 이름·소개·관심 섹터·외부 채널을 여기서 고칩니다.'}
                 </span>
                 {previewing
-                  ? <Link className="ch-preview-btn" to={`/channels/${userId}`}>프로필 수정</Link>
+                  ? <Link className="ch-preview-btn" to={`/channels/${userId}`}>내 채널 관리</Link>
                   : <Link className="ch-preview-btn" to={`/channels/${userId}?as=visitor`}>남에게 보이는 화면</Link>}
               </p>
             )}

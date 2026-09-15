@@ -93,15 +93,15 @@ export default function MyPage() {
             </div>
 
             <div className="mp-actions">
-              {/* 진입로는 하나다 — ?as=visitor, **남에게 실제로 보이는** 모습.
-                  구독료를 정하는 사람이 무엇이 가려지는지 봐야 해서 이쪽이 기본이다.
-                  고치는 자리로는 그 화면 안의 띠에서 넘어간다(프로필 수정 버튼).
-                  여기에 같은 버튼을 또 두면 같은 화면으로 가는 길이 둘이 된다 —
-                  예측 포트폴리오를 뺀 것과 같은 이유다(S15P21A507-230).
+              {/* 진입로는 하나다 — 쿼리 없는 관리 화면. 이 카드에서 이미 프로필을
+                  고칠 수 있으므로, 여기서 보내는 곳은 예측·리포트까지 함께 손보는
+                  자리여야 한다. 남에게 보이는 모습은 그 화면 안의 띠에서 넘어간다.
+                  같은 화면으로 가는 길을 둘 두지 않는다 — 예측 포트폴리오를 뺀 것과
+                  같은 이유다(S15P21A507-230).
                   환경 설정에는 프로필이 없다(S15P21A507-195 에서 옮겨 옴). */}
               {profile.data && (
-                <Link className="mp-btn solid" to={`/channels/${profile.data.id}?as=visitor`}>
-                  내 채널 보기
+                <Link className="mp-btn solid" to={`/channels/${profile.data.id}`}>
+                  내 채널 관리
                 </Link>
               )}
             </div>
