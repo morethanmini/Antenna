@@ -255,24 +255,79 @@
 .hm-star{display:inline-flex; color:var(--gold)}
 
 /* ── 주목할 예측가 ───────────────────────────────────────── */
+/* 회색(--surface-2) 에서 보라 계열로 바꿨다(2026-09-15).
+   **바탕과 테두리를 바로 위 .hm-ant-box(보유 ANT)와 같은 값으로 둔다** — 홈에서
+   세로로 잇달아 붙는 두 상자라, 반 단계만 달라도 나란히 놓였을 때 한쪽이 바랜
+   것처럼 보인다. 한 번 --brand-soft 로 내려 봤다가 되돌렸다(2026-09-15).
+   위 상자가 바뀌면 이쪽도 같이 따라가야 한다.
+
+   **칸이 셋이다** — 아바타 · 이름 · 배지. 배지를 이름 아래에 두던 것을 오른쪽
+   끝으로 뺐다(2026-09-15). 1위라는 것이 이 카드의 요지인데, 이름 밑에 붙은
+   작은 칩으로는 읽히지 않았다. */
 .hm-lead{
-  display:grid; grid-template-columns:auto minmax(0,1fr); gap:12px 13px; align-items:center;
-  padding:15px; border:1px solid var(--rule); border-radius:13px; background:var(--surface-2);
+  display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:12px 13px; align-items:center;
+  padding:15px; border:1px solid var(--rule); border-radius:13px;
+  background:var(--brand-softer);
 }
 .hm-avatar{
   width:46px; height:46px; border-radius:50%; object-fit:cover;
+  /* 사진이 늦게 올 때 잠깐 보이는 자리. 상자(--brand-softer)보다 한 단계 진해야
+     빈 동그라미가 보인다 */
   background:var(--brand-soft);
 }
 .hm-lead-id{display:flex; flex-direction:column; gap:3px; min-width:0}
 .hm-lead-name{color:var(--ink); font-size:15px; font-weight:750; letter-spacing:-.02em}
 .hm-lead-name:hover{color:var(--brand)}
+/* 금속은 **한 방향으로 흐르는 밝기 차이**에서 온다 — 단색 금색에 그림자만 얹으면
+   노란 알약이지 금이 아니다. 밝은 띠와 어두운 띠를 번갈아 넣어, 빛이 굽은 면을
+   훑고 지나간 것처럼 보이게 했다. 안쪽 box-shadow 두 줄은 위 모서리를 밝게,
+   아래 모서리를 어둡게 깎아 두께를 만든다.
+   글자색 #4a3a06 은 랭킹 화면 .rk-tier 와 같은 값이다 — 같은 금색 위의 글자다. */
 .hm-lead-rank{
-  align-self:start; padding:2px 8px; border-radius:99px;
-  background:var(--brand-soft); color:var(--brand-ink); font-size:11px; font-weight:700;
+  position:relative; overflow:hidden; justify-self:end; align-self:center;
+  padding:7px 14px; border-radius:99px; white-space:nowrap;
+  border:1px solid #d3a63a;
+  /* 띠의 폭은 그대로 두고 **어두운 쪽만 끌어올렸다**(2026-09-15). 처음엔 아래쪽을
+     #b8811d 까지 떨어뜨렸는데, 글자(#4a3a06)도 어두운 색이라 그 구간에서 글자와
+     바탕의 밝기가 붙어 "랭킹 1위" 가 읽히지 않았다. 가장 어두운 곳을 #e0bc63 에서
+     끊으니 금속의 굴곡은 남고 글자는 어디서든 뜬다. */
+  background:linear-gradient(145deg,
+    #fffaea 0%, #f9e9b4 22%, #eacd7c 45%, #fdf3ce 60%, #f0d68e 80%, #e0bc63 100%);
+  color:#4a3a06; font-size:13px; font-weight:800; letter-spacing:-.01em;
+  /* 글자 밑의 흰 줄 — 금속 위의 각인처럼 한 픽셀 띄워 윤곽을 살린다 */
+  text-shadow:0 1px 0 rgba(255,255,255,.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.85),
+    inset 0 -1px 0 rgba(150,110,30,.3),
+    0 2px 7px -3px rgba(170,125,35,.5);
+}
+
+/* 지나가는 빛. 좁은 흰 띠 하나가 배지를 왼쪽에서 오른쪽으로 훑는다.
+   **글자 위를 지난다** — 위치를 잡은 가상 요소라 본문 글자보다 나중에 그려진다.
+   반투명이라 가리지는 않고 잠깐 하얗게 스친다.
+   4.2초 중 앞의 절반 남짓만 움직이고 나머지는 밖에 멈춰 있다 — 쉬지 않고
+   번쩍이면 홈 화면 한구석에서 계속 눈을 끌어 방해가 된다. */
+.hm-lead-rank::after{
+  content:''; position:absolute; top:0; bottom:0; left:-55%; width:45%;
+  background:linear-gradient(100deg,
+    rgba(255,255,255,0) 0%, rgba(255,255,255,.85) 50%, rgba(255,255,255,0) 100%);
+  animation:hm-lead-shine 4.2s ease-in-out infinite;
+}
+@keyframes hm-lead-shine{
+  0%{ transform:translateX(0) }
+  55%,100%{ transform:translateX(400%) }
+}
+/* 움직임을 줄여 달라고 한 사람에게는 흐르게 하지 않는다. 지우는 대신 가운데
+   세워 두어, 금속의 하이라이트 한 줄로는 남게 한다. */
+@media (prefers-reduced-motion: reduce){
+  .hm-lead-rank::after{ animation:none; left:26%; opacity:.5 }
 }
 .hm-lead-stats{
   grid-column:1 / -1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:8px; margin:0; padding-top:12px; border-top:1px solid var(--rule);
+  gap:8px; margin:0; padding-top:12px;
+  /* 나눔선은 테두리와 같은 값. 상자 테두리가 --rule 인데 안쪽 선만 보라면
+     한 상자 안에서 선이 두 종류가 된다 */
+  border-top:1px solid var(--rule);
 }
 .hm-lead-stats dt{color:var(--muted); font-size:11.5px}
 .hm-lead-stats dd{margin:4px 0 0; color:var(--ink); font-size:14px; font-weight:750}

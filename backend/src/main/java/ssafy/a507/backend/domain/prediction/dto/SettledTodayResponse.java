@@ -20,10 +20,10 @@ public record SettledTodayResponse(List<Item> items) {
             Prediction.Status status,
             BigDecimal errorRate) {
 
-        public static Item from(Prediction p) {
+        public static Item from(Prediction p, String avatarUrl) {
             return new Item(
                     p.getId(),
-                    new Author(p.getUser().getId(), p.getUser().getNickname(), null),
+                    new Author(p.getUser().getId(), p.getUser().getNickname(), avatarUrl),
                     p.getDirection(),
                     p.getTargetPrice(),
                     p.getStatus(),
@@ -32,7 +32,8 @@ public record SettledTodayResponse(List<Item> items) {
     }
 
     /**
-     * 작성자. {@code avatarUrl} 은 지금 <b>항상 null</b> 이다 — users 에 사진 칸이 없다. 칸을 두는 이유는 프론트 타입이
+     * 작성자. {@code avatarUrl} 은 프로필 사진이다 — 2026-09-15부터 실제 값이 실린다(그 전에는 users 에
+     * 사진 칸이 없어 항상 null 이었다). 안 올렸으면 null 이고 화면이 기본 그림을 쓴다. 옛 주석: 칸을 두는 이유는 프론트 타입이
      * 이미 이 모양을 기다리고 있어서다(null 이면 기본 얼굴). 사진 칸은 스키마 변경이라 이 이슈 범위 밖이다.
      */
     public record Author(Long userId, String nickname, String avatarUrl) {}

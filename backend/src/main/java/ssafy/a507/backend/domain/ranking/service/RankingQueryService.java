@@ -3,6 +3,7 @@ package ssafy.a507.backend.domain.ranking.service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Limit;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ssafy.a507.backend.domain.common.Track;
 import ssafy.a507.backend.domain.ranking.dto.MyRankResponse;
+import ssafy.a507.backend.domain.account.service.AvatarUrls;
 import ssafy.a507.backend.domain.ranking.dto.RankingItemResponse;
 import ssafy.a507.backend.domain.ranking.dto.RankingListResponse;
 import ssafy.a507.backend.domain.ranking.entity.Ranking;
@@ -35,6 +37,7 @@ public class RankingQueryService {
     private static final int FIRST_RANK = 1;
 
     private final RankingRepository rankings;
+    private final AvatarUrls avatarUrls;
 
     @Transactional(readOnly = true)
     public RankingListResponse list(
@@ -54,9 +57,16 @@ public class RankingQueryService {
         if (page.isEmpty()) {
             return RankingListResponse.empty();
         }
+        /* 사진 주소는 한 번에 읽는다 — 줄마다 찾으면 한 쪽(최대 50줄)에 쿼리가 그만큼 나간다 */
+        Map<Long, String> avatars =
+                avatarUrls.byUserId(page.stream().map(Ranking::getUser).toList());
+
         // 한 필터의 행들은 같은 배치가 한꺼번에 쓴 것이라 산출 시각이 모두 같다.
         return new RankingListResponse(
-                page.get(0).getComputedAt(), page.stream().map(RankingItemResponse::from).toList());
+                page.get(0).getComputedAt(),
+                page.stream()
+                        .map(row -> RankingItemResponse.from(row, avatars.get(row.getUser().getId())))
+                        .toList());
     }
 
     /**
