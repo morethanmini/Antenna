@@ -388,7 +388,7 @@ export type PredictionDistribution = {
 export type SettledPrediction = {
   /** 서버가 숫자로 준다(Prediction.id) — 링크에 그대로 끼워 쓴다 */
   id: number
-  /** avatarUrl 은 지금 항상 null 이다 — users 에 사진 칸이 없다(서버 SettledTodayResponse.Author) */
+  /** 프로필 사진 주소. 안 올렸으면 null — 화면이 DEFAULT_AVATAR 를 쓴다 */
   author: { userId: number; nickname: string; avatarUrl: string | null }
   /** 판정 후라 방향·목표가에 잠금이 없다(§5 개정) */
   direction: Direction

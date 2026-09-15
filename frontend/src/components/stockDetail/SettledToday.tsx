@@ -35,7 +35,8 @@ const CARD_H = 36
 /** 미끄러지는 시간(ms). CSS .st-track 의 transition 과 같아야 한다 */
 const SLIDE = 380
 
-/* 서버가 사진 칸을 아직 안 내려 준다 — 값이 없으면 기본 개미 아바타를 쓴다 */
+/* 사진을 안 올린 사람은 서버가 null 을 준다 — 그때 쓰는 기본 개미 아바타.
+   2026-09-15부터 올린 사람은 실제 사진이 실려 온다(SettledTodayResponse.Author). */
 const FALLBACK_FACE = DEFAULT_AVATAR
 
 const won = (n: number) => n.toLocaleString('ko-KR')

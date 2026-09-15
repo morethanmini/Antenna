@@ -413,8 +413,13 @@ function TopPredictor() {
       {lead && (
         <>
           <div className="hm-lead">
-            {/* 서버가 사진 칸을 아직 안 내려 준다 — 모두 기본 개미 아바타다 */}
-            <img className="hm-avatar" src={DEFAULT_AVATAR} alt="" aria-hidden="true" />
+            {/* 랭킹 1위의 프로필 사진(2026-09-15). 전에는 서버가 사진 칸을 안 내려 줘
+                모두 기본 개미였다 — RankingItemResponse 에 avatarUrl 이 생겼다.
+                안 올린 사람은 null 이라 기본 개미로 떨어진다. */}
+            <img
+              className="hm-avatar" alt="" aria-hidden="true"
+              src={lead.avatarUrl ?? DEFAULT_AVATAR}
+            />
             <div className="hm-lead-id">
               <Link className="hm-lead-name" to={`/channels/${lead.userId}`}>{lead.nickname}</Link>
               <span className="hm-lead-rank">랭킹 {lead.rank}위</span>

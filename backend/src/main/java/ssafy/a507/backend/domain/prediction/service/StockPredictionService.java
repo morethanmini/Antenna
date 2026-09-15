@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,7 @@ import ssafy.a507.backend.domain.market.entity.DailyQuote;
 import ssafy.a507.backend.domain.market.repository.DailyQuoteRepository;
 import ssafy.a507.backend.domain.market.repository.StockRepository;
 import ssafy.a507.backend.domain.prediction.dto.PredictionDistributionResponse;
+import ssafy.a507.backend.domain.account.service.AvatarUrls;
 import ssafy.a507.backend.domain.prediction.dto.SettledTodayResponse;
 import ssafy.a507.backend.domain.prediction.entity.Prediction;
 import ssafy.a507.backend.domain.prediction.repository.PredictionRepository;
@@ -45,6 +47,7 @@ public class StockPredictionService {
     private final StockRepository stocks;
     private final DailyQuoteRepository quotes;
     private final PredictionRepository predictions;
+    private final AvatarUrls avatarUrls;
 
     /**
      * 판정 대기 예측의 목표가 분포. 끝난 예측은 세지 않는다 — 호가창은 지금 걸려 있는 물량이고 끝난 예측은 기록이다.
@@ -97,8 +100,12 @@ public class StockPredictionService {
         LocalDate today = LocalDate.now(KST);
         Instant from = today.atStartOfDay(KST).toInstant();
         Instant to = today.plusDays(1).atStartOfDay(KST).toInstant();
-        List<SettledTodayResponse.Item> items = predictions.findSettledBetween(code, JUDGED, from, to).stream()
-                .map(SettledTodayResponse.Item::from)
+        List<Prediction> found = predictions.findSettledBetween(code, JUDGED, from, to);
+        /* 사진 주소는 한 번에 읽는다 — 줄마다 찾으면 판정 건수만큼 쿼리가 나간다 */
+        Map<Long, String> avatars =
+                avatarUrls.byUserId(found.stream().map(Prediction::getUser).toList());
+        List<SettledTodayResponse.Item> items = found.stream()
+                .map(p -> SettledTodayResponse.Item.from(p, avatars.get(p.getUser().getId())))
                 .toList();
         return new SettledTodayResponse(items);
     }

@@ -1,7 +1,7 @@
 /* 랭킹 도메인. API 명세서 §랭킹 · 설계서 §3 E · §9.2.
 
    GET /rankings?track=&period=&sector=&seasonId=&limit=&fromRank=
-     → { computedAt, items: [{ rank, userId, nickname, score, hitRate, avgError, doneCount }] }
+     → { computedAt, items: [{ rank, userId, nickname, avatarUrl, score, hitRate, avgError, doneCount }] }
    GET /rankings/me?track=&seasonId=
      → { rank, percentile, delta, tier }
 
@@ -54,6 +54,8 @@ export type RankingRow = {
   rank: number
   userId: number
   nickname: string
+  /** 프로필 사진 주소. 안 올렸으면 null — 화면이 DEFAULT_AVATAR 를 쓴다 */
+  avatarUrl: string | null
   score: number | null
   /** 적중률 % */
   hitRate: number | null
