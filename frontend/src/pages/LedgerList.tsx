@@ -2,7 +2,7 @@
    담당 스토리 [ANT-FE-LEDGER-LIST]
    설계서 docs/화면설계서.md §3 D · §7
 
-   커밋 단위로 읽는다 — 배치 단위가 아니다
+   봉인 한 건 단위로 읽는다 — 배치 단위가 아니다
    전에는 앵커 배치 한 줄에 "#418 · 커밋 137건" 이 전부였다. 무엇이 봉인됐는지
    알 수 없어 원장이 읽히지 않았다. 배치 줄에는 종목을 적을 수도 없다 —
    한 배치에 여러 종목의 커밋이 함께 묶이기 때문이다.
@@ -22,7 +22,12 @@
    그리지 않고 "다음 배치 대기" 라고 적는다.
 
    방향·목표가·작성자는 응답에 없다. 판정 전이면 작성자·구독자만 봐야 하는 값이라
-   원장이 내리면 E-02·C-03 의 게이팅을 우회한다(서버 CommitItemResponse 주석). */
+   원장이 내리면 E-02·C-03 의 게이팅을 우회한다(서버 CommitItemResponse 주석).
+
+   줄이 두 종류다 (ANT-CHAIN-15)
+   리포트도 예측 커밋과 같은 머클 트리에 올라가는데(ANT-CHAIN-14) 이 화면이 예측만
+   보여 주고 있었다 — 체인에 올라간 것의 절반만 보여 주는 원장은 서비스가 하는 주장을
+   스스로 깎는다. 리포트 줄은 본문 없이 제목·공개범위까지만 온다. */
 import { Link } from 'react-router-dom'
 import { useCursorList } from '../api/useCursorList'
 import { formatBusinessDate, type LedgerCommit } from '../api/anchors'
@@ -43,7 +48,7 @@ export default function LedgerList() {
       <div className="main-inner">
         <div className="page-head">
           <h1>커밋 원장</h1>
-          <p>봉인된 예측이 배치로 묶여 체인에 기록된 기록입니다</p>
+          <p>봉인된 예측과 리포트가 배치로 묶여 체인에 기록된 기록입니다</p>
         </div>
 
         {/* 배치 주기를 알려 준다 — 방금 등록한 예측이 "대기" 로 있는 것을 고장으로 읽으면 안 된다.
@@ -54,7 +59,7 @@ export default function LedgerList() {
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="9" /><path d="M12 7.5V12l3 1.8" />
           </svg>
-          {`앵커는 ${ANCHOR_BATCH_CYCLE} 배치로 묶여 올라갑니다. 방금 등록한 예측은 다음 배치에 담깁니다.`}
+          {`앵커는 ${ANCHOR_BATCH_CYCLE} 배치로 묶여 올라갑니다. 방금 등록한 예측·리포트는 다음 배치에 담깁니다.`}
         </p>
 
         {error && <ErrorState error={error} onRetry={reload} />}
@@ -62,37 +67,15 @@ export default function LedgerList() {
         {!error && items.length === 0 && !loading && (
           <EmptyState
             title="봉인된 커밋이 없습니다"
-            hint="예측을 등록하면 커밋이 만들어지고 다음 배치에 담깁니다"
+            hint="예측을 등록하거나 리포트를 발행하면 봉인이 만들어지고 다음 배치에 담깁니다"
           />
         )}
 
         {items.length > 0 && (
           <ul className="lg-list">
             {items.map((c) => (
-              <li key={c.predictionId} className="lg-item">
-                {/* ── 무엇을 봉인했나 ───────────────────── */}
-                <div className="lg-what">
-                  {c.stockName || c.stockCode ? (
-                    <>
-                      <b className="lg-stock">{c.stockName ?? c.stockCode}</b>
-                      {/* 이름이 있을 때만 코드를 덧붙인다. 이름이 없으면 위가 이미 코드다 */}
-                      {c.stockName && c.stockCode && (
-                        <em className="lg-code num">{c.stockCode}</em>
-                      )}
-                    </>
-                  ) : (
-                    /* 종목이 지워진 예측. 빈칸으로 두면 데이터가 깨진 것처럼 읽힌다 */
-                    <b className="lg-stock is-none">종목 없음</b>
-                  )}
-                  <span className="lg-horizon">{horizonLabel(c.horizon)}</span>
-                  <PredictionStatus status={c.status} />
-
-                  {/* 이 커밋이 정말 루트에 들어 있는지 브라우저에서 직접 확인하는 화면으로.
-                      필드가 둘뿐이라 아래 따로 줄을 두면 카드가 비어 보인다 — 머리줄 끝에 붙인다 */}
-                  <Link className="lg-go" to={`/ledger/verify/${c.predictionId}`}>
-                    검산<em aria-hidden="true">›</em>
-                  </Link>
-                </div>
+              <li key={`${c.kind}-${c.kind === 'PREDICTION' ? c.predictionId : c.reportId}`} className="lg-item">
+                {c.kind === 'PREDICTION' ? <PredictionHead c={c} /> : <ReportHead c={c} />}
 
                 {/* ── 어디에 기록됐나 ───────────────────── */}
                 <dl className="lg-fields">
@@ -133,5 +116,50 @@ export default function LedgerList() {
         )}
       </div>
     </main>
+  )
+}
+
+/* 예측 줄의 머리 — 무엇을 봉인했나.
+   검산 링크를 머리줄 끝에 붙인다. 아래 따로 줄을 두면 카드가 비어 보인다. */
+function PredictionHead({ c }: { c: Extract<LedgerCommit, { kind: 'PREDICTION' }> }) {
+  return (
+    <div className="lg-what">
+      {c.stockName || c.stockCode ? (
+        <>
+          <b className="lg-stock">{c.stockName ?? c.stockCode}</b>
+          {/* 이름이 있을 때만 코드를 덧붙인다. 이름이 없으면 위가 이미 코드다 */}
+          {c.stockName && c.stockCode && <em className="lg-code num">{c.stockCode}</em>}
+        </>
+      ) : (
+        /* 종목이 지워진 예측. 빈칸으로 두면 데이터가 깨진 것처럼 읽힌다 */
+        <b className="lg-stock is-none">종목 없음</b>
+      )}
+      <span className="lg-horizon">{horizonLabel(c.horizon)}</span>
+      <PredictionStatus status={c.status} />
+
+      <Link className="lg-go" to={`/ledger/verify/${c.predictionId}`}>
+        검산<em aria-hidden="true">›</em>
+      </Link>
+    </div>
+  )
+}
+
+/* 리포트 줄의 머리.
+   종목 자리에 종류를, 기간 자리에 공개범위를 적는다 — 두 줄의 뼈대를 같게 두면
+   목록이 한 종류처럼 읽힌다.
+
+   링크가 둘인 이유: 제목은 리포트 본문(F-02)으로, 오른쪽 검산은 D-04 로 간다.
+   예측 줄이 검산(D-03)으로 가는 자리와 같은 자리다. */
+function ReportHead({ c }: { c: Extract<LedgerCommit, { kind: 'REPORT' }> }) {
+  return (
+    <div className="lg-what">
+      <b className="lg-stock">리포트</b>
+      <Link className="lg-title" to={`/reports/${c.reportId}`}>{c.title}</Link>
+      <span className="lg-horizon">{c.visibility ? '공개' : '구독자 전용'}</span>
+
+      <Link className="lg-go" to={`/ledger/verify/report/${c.reportId}`}>
+        검산<em aria-hidden="true">›</em>
+      </Link>
+    </div>
   )
 }

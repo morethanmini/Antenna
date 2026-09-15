@@ -81,28 +81,54 @@ export type AnchorLeaf = {
   horizon: Horizon | null
 }
 
-/**
- * 커밋 원장의 한 줄. 서버 CommitItemResponse 와 짝이다 — GET /commits.
- *
- * 원장을 **배치가 아니라 커밋 단위**로 읽는다. 배치 줄에는 종목을 적을 수 없다 —
- * 한 배치에 여러 종목의 커밋이 함께 묶이기 때문이다.
- *
- * 방향·목표가·작성자는 오지 않는다. 판정 전이면 작성자·구독자만 봐야 하는 값이라
- * 원장이 내리면 E-02·C-03 의 게이팅을 우회한다(서버 DTO 주석).
- */
-export type LedgerCommit = {
-  predictionId: number
+/** 원장 한 줄의 공통부 — 무엇이 봉인됐든 해시와 배치 자리는 같다. */
+type LedgerBase = {
+  /** 머클 트리에 들어간 리프. 예측이면 커밋 해시, 리포트면 리포트 해시다 */
   commitHash: string
-  /** 종목이 지워진 예측이 있어 null 일 수 있다. 그 커밋도 원장에서 빠지지 않는다 */
-  stockCode: string | null
-  stockName: string | null
-  horizon: Horizon
-  status: PredictionStatus
   /** 아직 배치에 안 묶였으면 셋 다 null — 봉인은 끝났고 다음 배치를 기다리는 중이다 */
   anchorId: number | null
   businessDate: string | null
   anchorStatus: AnchorStatus | null
 }
+
+/**
+ * 커밋 원장의 한 줄. 서버 CommitItemResponse 와 짝이다 — GET /commits.
+ *
+ * 원장을 **배치가 아니라 봉인 한 건 단위**로 읽는다. 배치 줄에는 종목을 적을 수 없다 —
+ * 한 배치에 여러 종목의 커밋이 함께 묶이기 때문이다.
+ *
+ * **줄이 두 종류다 (ANT-CHAIN-15).** kind 로 갈리는 판별 유니온이라, 화면이 kind 를
+ * 좁히면 그쪽 필드는 null 검사 없이 쓸 수 있다. 배치 상세(AnchorLeaf)와 같은 어휘다.
+ *
+ * 방향·목표가·작성자는 두 종류 모두 오지 않는다. 판정 전이면 작성자·구독자만 봐야 하는
+ * 값이라 원장이 내리면 E-02·C-03 의 게이팅을 우회한다(서버 DTO 주석). 리포트 줄의
+ * 본문·bodyHash 도 같은 이유로 없다 — 제목과 공개범위까지다.
+ */
+export type LedgerCommit =
+  | (LedgerBase & {
+      kind: 'PREDICTION'
+      predictionId: number
+      /** 종목이 지워진 예측이 있어 null 일 수 있다. 그 커밋도 원장에서 빠지지 않는다 */
+      stockCode: string | null
+      stockName: string | null
+      horizon: Horizon
+      status: PredictionStatus
+      reportId: null
+      title: null
+      visibility: null
+    })
+  | (LedgerBase & {
+      kind: 'REPORT'
+      reportId: number
+      title: string
+      /** true 면 공개, false 면 구독자 전용. 본문이 아니라 범위만 온다 */
+      visibility: boolean
+      predictionId: null
+      stockCode: null
+      stockName: null
+      horizon: null
+      status: null
+    })
 
 /**
  * 앵커 배치 상세. 서버 AnchorDetailResponse 와 짝이다 — 목록에 없는 넷이 더 온다.
