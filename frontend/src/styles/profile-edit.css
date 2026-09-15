@@ -62,6 +62,19 @@
   .ch-field-label{ flex-basis:100%; }
 }
 
+/* ── 읽기용 덩어리 ──────────────────────────────────
+   E-05 는 값 아무 데나 눌러도 편집이 열린다(clickToEdit). 누를 수 있다는 것이
+   보여야 해서 커서와 옅은 배경을 준다 — 링크·버튼 위에서는 각자의 커서가 이긴다. */
+.ch-read{ min-width:0; }
+.ch-read.is-tappable{
+  cursor:pointer; border-radius:10px;
+  margin:-6px -8px; padding:6px 8px;
+  transition:background .15s ease;
+}
+.ch-read.is-tappable:hover{ background:var(--surface-2); }
+/* 안쪽 링크는 제 커서를 쓴다 — 덩어리의 pointer 가 링크까지 덮으면 구분이 없다 */
+.ch-read.is-tappable a{ cursor:pointer; }
+
 /* 아직 안 적은 값. 값처럼 진하게 그리면 적어 둔 소개로 읽힌다 */
 .ch-bio.is-empty{ color:var(--faint); font-style:italic; }
 

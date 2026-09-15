@@ -69,11 +69,20 @@ type Props = {
    * 목차가 어긋난다.
    */
   heading?: 'h1' | 'h2'
+  /**
+   * 값이 있는 자리를 아무 데나 눌러도 편집이 열린다(E-05 마이페이지).
+   *
+   * E-02 채널은 켜지 않는다 — 그쪽은 **남에게 보여 주는 화면**이라 훑어보다 잘못 눌러
+   * 폼이 열리면 당황스럽고, 카드 안에 밖으로 나가는 링크가 함께 있다.
+   */
+  clickToEdit?: boolean
   /** 저장 뒤 채널을 다시 읽는다 — 머리의 값이 서버 값으로 맞춰진다 */
   onSaved: () => void
 }
 
-export default function ChannelProfileEdit({ profile, isMe, heading = 'h1', onSaved }: Props) {
+export default function ChannelProfileEdit(
+  { profile, isMe, heading = 'h1', clickToEdit = false, onSaved }: Props,
+) {
   const Heading = heading
   const [editing, setEditing] = useState(false)
 
@@ -90,8 +99,18 @@ export default function ChannelProfileEdit({ profile, isMe, heading = 'h1', onSa
     )
   }
 
+  /* 링크·버튼에서 시작한 클릭은 지나간다 — 외부 채널 링크를 누른 사람은 그리로 가려는
+     것이지 프로필을 고치려는 것이 아니다. 키보드는 아래 "수정" 버튼이 맡는다:
+     이 덩어리를 role="button" 으로 만들면 카드 전체가 하나의 거대한 버튼으로 읽힌다. */
+  const open = clickToEdit && isMe
+    ? (event: React.MouseEvent) => {
+        if ((event.target as HTMLElement).closest('a, button')) return
+        setEditing(true)
+      }
+    : undefined
+
   return (
-    <>
+    <div className={open ? 'ch-read is-tappable' : 'ch-read'} onClick={open}>
       {/* ── 닉네임 · 수정 자리는 여기 하나뿐이다 ───── */}
       <div className={isMe ? 'ch-line' : undefined}>
         <Heading>{profile.nickname}</Heading>
@@ -149,7 +168,7 @@ export default function ChannelProfileEdit({ profile, isMe, heading = 'h1', onSa
           )}
         </Field>
       )}
-    </>
+    </div>
   )
 }
 

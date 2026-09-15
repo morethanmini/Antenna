@@ -76,13 +76,15 @@ export default function MyPage() {
 
             <div className="mp-who">
               {/* 닉네임·소개·관심 섹터·외부 채널은 E-02 채널 머리와 **같은 컴포넌트**가
-                  그린다. 값을 눌러 그 항목만 고친다. 두 화면이 같은 값을 각자 그리면
-                  한쪽만 고쳐져 표시가 갈린다 — 실제로 그래서 마이페이지에는 편집이
-                  없었다(S15P21A507-54). 여기는 늘 내 프로필이라 isMe 를 물을 것이 없다. */}
+                  그린다. 두 화면이 같은 값을 각자 그리면 한쪽만 고쳐져 표시가 갈린다 —
+                  실제로 그래서 마이페이지에는 편집이 없었다(S15P21A507-54).
+                  여기는 늘 내 프로필이라 isMe 를 물을 것이 없고, clickToEdit 으로
+                  값 아무 데나 눌러도 열리게 한다 — 남에게 보여 주는 화면이 아니다. */}
               {profile.data && (
                 <ChannelProfileEdit
                   isMe
                   heading="h2"
+                  clickToEdit
                   profile={{
                     nickname: profile.data.nickname,
                     bio: profile.data.introduce,
