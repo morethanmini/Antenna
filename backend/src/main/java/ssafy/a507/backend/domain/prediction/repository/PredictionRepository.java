@@ -2,6 +2,7 @@ package ssafy.a507.backend.domain.prediction.repository;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -183,4 +184,35 @@ public interface PredictionRepository extends JpaRepository<Prediction, Long> {
                and c.anchorBatch.status = ssafy.a507.backend.domain.chain.entity.AnchorBatch$Status.CONFIRMED
             """)
     long countAnchored(@Param("userId") Long userId);
+
+    /**
+     * 백테스트 재료 — 구간 안에 판정된 REAL 예측의 (방향, 기준가, 판정가) (ANT-TOKEN-03).
+     *
+     * <p>엔티티가 아니라 세 값만 꺼내는 이유는 계산에 그것뿐이고, 예측은 사람마다 계속 늘어서다.
+     * {@code base_price}·{@code settle_price} 가 비어 있는 행은 뺀다 — 판정 배치가 채우는 값이라
+     * HIT/MISS 면 늘 차 있지만, 없으면 수익률을 만들 수 없어 <b>표본에서 빠지는</b> 편이 맞다.
+     */
+    @Query("""
+            select p.direction, p.basePrice, p.settlePrice from Prediction p
+             where p.user.id = :userId
+               and p.track = ssafy.a507.backend.domain.common.Track.REAL
+               and p.status in (ssafy.a507.backend.domain.prediction.entity.Prediction$Status.HIT,
+                                ssafy.a507.backend.domain.prediction.entity.Prediction$Status.MISS)
+               and p.settledOn >= :from
+               and p.basePrice is not null
+               and p.settlePrice is not null
+               and p.basePrice > 0
+            """)
+    List<Object[]> backtestRows(@Param("userId") Long userId, @Param("from") LocalDate from);
+
+    /** 백테스트 구간의 양 끝을 잡는다 — 그 사람의 가장 이른/늦은 판정일. 표본이 없으면 빈 값 */
+    @Query("""
+            select min(p.settledOn), max(p.settledOn) from Prediction p
+             where p.user.id = :userId
+               and p.track = ssafy.a507.backend.domain.common.Track.REAL
+               and p.status in (ssafy.a507.backend.domain.prediction.entity.Prediction$Status.HIT,
+                                ssafy.a507.backend.domain.prediction.entity.Prediction$Status.MISS)
+               and p.settledOn >= :from
+            """)
+    List<Object[]> settledSpan(@Param("userId") Long userId, @Param("from") LocalDate from);
 }
