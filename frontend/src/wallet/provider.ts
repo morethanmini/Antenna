@@ -10,7 +10,9 @@ import { ApiError, CLIENT_ERROR_CODE } from '../api/errors'
 
 /** EIP-1193 요청 인터페이스. 지갑이 주입하는 객체의 우리가 쓰는 부분만 적는다. */
 type Eip1193 = {
-  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>
+  /* params 가 배열만은 아니다 — wallet_watchAsset 은 객체 하나를 받는다(EIP-747).
+     배열로 좁혀 두면 그 호출이 타입에서 막힌다. */
+  request: (args: { method: string; params?: unknown[] | Record<string, unknown> }) => Promise<unknown>
 }
 
 declare global {
@@ -151,5 +153,137 @@ export async function personalSign(message: string, address: string): Promise<st
   } catch (e) {
     if (e instanceof ApiError) throw e
     throw fromProviderError(e)
+  }
+}
+
+/* ── 지갑에 토큰 추가 (EIP-747) ───────────────────────────────
+   서명·연결과 달리 이쪽은 **표시**의 문제다. 연동만 해서는 지갑 목록에 ANT 가
+   없어 잔액이 0 처럼 보인다 — 토큰을 받아도 지갑에서는 아무 일도 안 일어난 것 같다. */
+
+/**
+ * 지갑이 지금 보고 있는 체인. 토큰이 **어느 네트워크에 추가될지**가 이 값으로 정해진다.
+ *
+ * 서명 payload 에는 절대 쓰지 않는다 — 그쪽은 서버가 준 chainId 다(api/wallet.ts).
+ * 여기서만 지갑에 직접 묻는 이유는, 알고 싶은 것이 "서비스가 어느 체인인가" 가 아니라
+ * "사용자가 지금 어디를 열어 두었나" 이기 때문이다.
+ *
+ * 실패를 던지지 않고 null 로 눕힌다. 체인을 못 읽었다고 완료 화면이 깨지면 안 된다 —
+ * 연동은 이미 끝났고 토큰 추가는 곁들이다.
+ */
+export async function currentChainId(): Promise<number | null> {
+  const p = provider()
+  if (!p) return null
+  try {
+    const hex = await p.request({ method: 'eth_chainId' })
+    if (typeof hex !== 'string') return null
+    const id = Number.parseInt(hex, 16)
+    return Number.isNaN(id) ? null : id
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 토큰 추가 결과. 넷을 오류 하나로 합치지 않는다 — 사용자가 할 일이 다르다.
+ *
+ * added       지갑 목록에 들어갔다
+ * rejected    지갑 창에서 사용자가 취소했다 — 다시 부르면 된다
+ * busy        앞선 지갑 창이 아직 떠 있다 — 잠시 뒤 다시 부르면 된다
+ * unsupported 이 지갑은 wallet_watchAsset 을 모른다 — 손으로 넣는 수밖에 없다
+ * conflict    같은 RPC·체인을 쓰는 항목이 지갑에 이미 있다 — 지우고 다시 넣어야 한다
+ */
+export type WatchResult = 'added' | 'rejected' | 'busy' | 'conflict' | 'unsupported'
+
+/* EIP-1193 4200 = 지갑이 이 메서드를 구현하지 않음. JSON-RPC -32601 도 같은 뜻으로 온다. */
+const UNSUPPORTED = [4200, -32601]
+
+/**
+ * wallet_watchAsset. 목록에 이미 있으면 지갑이 창을 띄우지 않고 true 만 돌려주기도 한다.
+ *
+ * params 가 배열이 아니라 객체다(EIP-747). 다른 메서드처럼 배열로 감싸면 지갑이 거절한다.
+ *
+ * ApiError 로 바꾸지 않는다. 이 호출의 실패는 전부 "그럼 손으로 넣으세요" 한 곳으로
+ * 모이므로, errorText 를 태워 문구를 나눠 봐야 화면이 할 일이 달라지지 않는다.
+ */
+export async function watchToken(token: {
+  address: string
+  symbol: string
+  decimals: number
+}): Promise<WatchResult> {
+  const p = provider()
+  if (!p) return 'unsupported'
+  try {
+    const ok = await p.request({
+      method: 'wallet_watchAsset',
+      params: { type: 'ERC20', options: token },
+    })
+    /* 표준은 boolean 을 약속하지만 지갑마다 undefined 를 주기도 한다.
+       거부는 보통 throw 로 오므로, 여기까지 왔으면 false 아닌 한 넣은 것으로 본다. */
+    return ok === false ? 'rejected' : 'added'
+  } catch (e) {
+    const code = (e as { code?: unknown } | null)?.code
+    if (code === REJECTED) return 'rejected'
+    /* 연동 서명 창이 닫히기 전에 자동으로 부르면 여기로 온다. 실패가 아니라 순서 문제라
+       '이 지갑은 못 한다' 로 뭉뚱그리면 다시 부르면 될 사람을 손으로 넣게 만든다. */
+    if (code === PENDING) return 'busy'
+    if (typeof code === 'number' && UNSUPPORTED.includes(code)) return 'unsupported'
+    return 'unsupported'
+  }
+}
+
+/* ── 지갑에 네트워크 넣기 (EIP-3085 · EIP-3326) ─────────────────
+   토큰을 넣기 전에 네트워크가 먼저다. 지갑이 다른 체인을 보고 있으면 ANT 를 넣어도
+   그 체인의 ANT 가 아니라 잔액이 영영 0 이다(TokenAutoAdd 의 wrong-network). */
+
+/** 지갑이 체인을 모른다. switch 요청에만 온다 — 그때는 add 로 넘어간다. */
+const UNKNOWN_CHAIN = 4902
+
+/* JSON-RPC '잘못된 인자'. add 요청에서 이 코드는 대개 **이미 있는 항목과 부딪혔다**는 뜻이다 —
+   같은 RPC 주소가 다른 체인 ID 로 등록돼 있거나, 그 RPC 가 스스로 밝힌 체인이 우리가 적어 보낸
+   값과 다를 때 지갑이 이걸로 거절한다. 지갑 문구로 갈라내지 않는다 — 지갑을 바꾸면 죽는 분기가 된다. */
+const INVALID_PARAMS = -32602
+
+export type NetworkParams = {
+  /** 16진수. chain.ts 의 hexChainId 로 만든다 */
+  chainId: string
+  chainName: string
+  rpcUrls: string[]
+  nativeCurrency: { name: string; symbol: string; decimals: number }
+}
+
+/**
+ * 그 체인으로 맞춘다. **이미 넣어 둔 사람에게 추가 창을 띄우지 않는다.**
+ *
+ * 먼저 wallet_switchEthereumChain 을 부른다. 지갑이 모르는 체인이면 4902 로 답하고,
+ * 그때만 wallet_addEthereumChain 으로 넘어간다 — 추가는 지갑이 바꾸기까지 함께 묻는다.
+ *
+ * 순서를 뒤집으면(항상 add) 이미 등록한 사람도 "네트워크를 추가하시겠습니까" 를 다시 본다.
+ */
+export async function ensureNetwork(params: NetworkParams): Promise<WatchResult> {
+  const p = provider()
+  if (!p) return 'unsupported'
+
+  try {
+    await p.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: params.chainId }] })
+    return 'added'
+  } catch (e) {
+    const code = (e as { code?: unknown } | null)?.code
+    if (code === REJECTED) return 'rejected'
+    if (code === PENDING) return 'busy'
+    // 아는 체인인데 바꾸기가 안 된 것이면 추가해 봐야 소용없다
+    if (code !== UNKNOWN_CHAIN) return 'unsupported'
+  }
+
+  try {
+    /* blockExplorerUrls 를 넣지 않는다. SSAFY 체인에는 탐색기가 없고,
+       빈 배열을 주면 지갑이 형식 오류로 거절한다 — 아예 빼는 것이 맞다. */
+    await p.request({ method: 'wallet_addEthereumChain', params: [params] })
+    return 'added'
+  } catch (e) {
+    const code = (e as { code?: unknown } | null)?.code
+    if (code === REJECTED) return 'rejected'
+    if (code === PENDING) return 'busy'
+    if (code === INVALID_PARAMS) return 'conflict'
+    return 'unsupported'
   }
 }
