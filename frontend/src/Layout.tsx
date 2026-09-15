@@ -106,15 +106,19 @@ function Search() {
    홈 카드(B-01)와 **같은 함수**를 쓴다. 전에는 여기가 0 을, 홈이 목업 값을 띄워 같은
    화면에서 두 숫자가 어긋났다. 이후 — 로 바꿔 두었던 자리다(2026-09-14).
 
-   못 받았을 때도 — 다. 0 은 "잔액이 없다" 는 주장이라, 못 불러온 것과 구분돼야 한다. */
+   못 받았을 때도 — 다. 0 은 "잔액이 없다" 는 주장이라, 못 불러온 것과 구분돼야 한다.
+
+   눌러서 H-01 지갑·토큰으로 간다 — 잔액을 본 사람이 다음에 궁금한 것은 "어디서 늘고
+   줄었나" 이고, 그 답이 그 화면의 원장이다. 못 불러왔을 때(—)도 링크는 살려 둔다:
+   실패했으니 더더욱 지갑 화면에서 다시 보게 해야 한다. */
 function WalletChip() {
   const { data } = useApiQuery<WalletBalance>('/wallet/balance')
 
   return (
-    <div className="wallet">
+    <Link className="wallet" to="/me/wallet" aria-label="보유 ANT · 지갑으로">
       <i />
       <span className="num">{data ? formatToken(data.balance) : '—'}</span> ANT
-    </div>
+    </Link>
   )
 }
 

@@ -119,10 +119,15 @@ button{border:0;background:none;cursor:pointer}
 .topbar-signup{background:var(--brand);color:#fff;border-color:var(--brand)!important}
 .topbar-auth a:hover{border-color:#c8c9f5;color:var(--brand-ink)}
 .topbar-signup:hover{background:var(--brand-ink);color:#fff!important}
+/* 지갑(H-01)으로 가는 링크다. 누를 수 있다는 것이 보여야 해서 호버를 준다 —
+   옆의 아이콘 버튼(.iconbtn)과 같은 결로 맞춘다 */
 .wallet{
   display:flex;align-items:center;gap:7px;height:34px;padding:0 13px;
   border:1px solid var(--rule);border-radius:999px;font-weight:700;color:var(--ink);
+  text-decoration:none;transition:border-color .15s ease,background .15s ease;
 }
+.wallet:hover{border-color:var(--brand-soft);background:var(--brand-softer)}
+.wallet:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 .wallet i{width:12px;height:18px;border-radius:2px;background:var(--gold);display:block}
 .iconbtn{
   position:relative;width:32px;height:32px;border-radius:9px;color:var(--muted);
