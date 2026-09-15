@@ -32,6 +32,7 @@ import { useAsync } from '../api/useAsync'
 import { formatToken } from '../api/wallet'
 import PredictionCard from '../components/prediction/PredictionCard'
 import ChannelProfileEdit from '../components/channel/ChannelProfileEdit'
+import ProfileAvatar from '../components/channel/ProfileAvatar'
 import PredictionNote from '../components/channel/PredictionNote'
 import SubscribeModal from '../components/channel/SubscribeModal'
 import EmptyState from '../components/state/EmptyState'
@@ -159,7 +160,15 @@ export default function ChannelProfile() {
 
             {/* ── 채널 헤더 ─────────────────────────────── */}
             <header className="ch-head">
-              {channel.avatarUrl && <img className="ch-avatar" src={channel.avatarUrl} alt="" />}
+              {/* 사진은 값들과 다른 자리에 있어 ChannelProfileEdit 밖이다(ProfileAvatar 머리말).
+                  안 올렸으면 서버가 null 을 주고 컴포넌트가 기본 그림을 쓴다 — 여기서 &&
+                  로 감싸면 사진 없는 사람은 바꾸는 자리까지 사라진다. */}
+              <ProfileAvatar
+                src={channel.avatarUrl}
+                isMe={owner}
+                className="ch-avatar"
+                onSaved={ch.reload}
+              />
               <div className="ch-id">
                 {/* 닉네임·소개·관심 섹터·외부 채널 넷을 통째로 맡긴다 — 읽기용 표시까지
                     포함이다. 화면과 컴포넌트가 나눠 그리면 누를 수 있는 자리와 고쳐지는

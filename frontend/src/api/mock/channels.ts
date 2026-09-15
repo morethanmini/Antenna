@@ -36,6 +36,9 @@ function base(userId: string, nickname: string): Omit<Channel, 'mySubscription' 
   return {
     userId,
     nickname,
+    /* 남의 채널 사진은 지어낸 값이다 — GET /channels/{userId} 가 아직 없다(S15P21A507-214).
+       열리면 서버가 users.avatar_file_id 로 만든 주소를 준다. 내 채널은 아래 mine() 이
+       /users/me 의 값을 그대로 쓴다. */
     avatarUrl: '/assets/character/white_ant/antenna-profile.png',
     bio: '반도체·2차전지 중심으로 실적 시즌마다 방향을 겁니다. 근거는 공시와 실적 발표만 씁니다.',
     interests: ['반도체', '2차전지', '자동차'],
@@ -109,6 +112,9 @@ async function mine(userId: string): Promise<Channel | null> {
   return {
     ...base(userId, me.nickname ?? '나'),
     bio: me.introduce,
+    /* 안 올렸으면 null 이고 화면이 기본 그림을 쓴다 — 목업이 그림을 지어내면
+       사진을 지워도 뭔가 걸려 있는 것처럼 보인다 */
+    avatarUrl: me.avatarUrl,
     /* 구독료를 한 번도 정하지 않은 상태다. **0 으로 두지 않는다** — 무료 채널로
        읽힌다. E-04 내 채널 구독료(S15P21A507-186)도 같은 판단으로 미설정을
        "아직 정하지 않았습니다" 로 그린다. 행이 없는 것이 곧 미설정이다. */

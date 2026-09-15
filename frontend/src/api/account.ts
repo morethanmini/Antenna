@@ -16,6 +16,8 @@ export type MyProfile = {
   id: number
   nickname: string
   introduce: string | null
+  /** 프로필 사진 주소. 안 올렸으면 null — 화면이 DEFAULT_AVATAR 를 쓴다 */
+  avatarUrl: string | null
   /* 서버가 내려준다(ANT-AUTH-05). 없으면 **빈 배열**이라 옵셔널이 아니다 —
      null 을 내리지 않기로 서버와 맞췄다(MeResponse 머리말). */
   /** 관심 섹터. 배열 전체 교체 방식이라 부분 수정이 없다 */
@@ -81,6 +83,11 @@ export type ProfileUpdate = {
   nickname?: string
   /** 200자까지. 빈 문자열을 보내면 지운 것으로 본다 */
   introduce?: string
+  /**
+   * POST /uploads 가 준 fileId(purpose=PROFILE). 빈 문자열이면 지운다.
+   * 남이 올린 파일이거나 용도가 다르면 400 이다 — 서버가 소유자와 용도를 본다.
+   */
+  avatarFileId?: string
   interests?: string[]
   /** url 은 https 만 받는다. 아니면 400(피싱 차단) */
   channels?: UserChannel[]

@@ -15,8 +15,8 @@ import { Link } from 'react-router-dom'
 import { useApiQuery } from '../api/useApiQuery'
 import { platformLabel, type MyProfile } from '../api/account'
 import ChannelProfileEdit from '../components/channel/ChannelProfileEdit'
+import ProfileAvatar from '../components/channel/ProfileAvatar'
 import ErrorState from '../components/state/ErrorState'
-import { useAuth } from '../auth/context'
 import '../styles/screens/mypage.css'
 
 /* 허브가 보내는 곳. 목록 화면이 있는 것만 둔다.
@@ -45,7 +45,6 @@ const ICON: Record<string, React.ReactNode> = {
 }
 
 export default function MyPage() {
-  const { user } = useAuth()
   const profile = useApiQuery<MyProfile>('/users/me')
 
   /* 서버가 빈 배열로 내려주므로(ANT-AUTH-05) null 가드는 필요 없다.
@@ -66,8 +65,13 @@ export default function MyPage() {
           <ErrorState error={profile.error} onRetry={profile.reload} />
         ) : (
           <section className="mp-profile">
-            {/* /users/me 에 프로필 이미지 필드가 없다 — 셸이 쓰는 기본 이미지를 그대로 쓴다 */}
-            <img className="mp-avatar" src={user?.avatarUrl} alt="" />
+            {/* 사진은 카드 왼쪽이라 ChannelProfileEdit 밖이다(ProfileAvatar 머리말) */}
+            <ProfileAvatar
+              src={profile.data?.avatarUrl ?? null}
+              isMe={profile.data != null}
+              className="mp-avatar"
+              onSaved={profile.reload}
+            />
 
             <div className="mp-who">
               {/* 닉네임·소개·관심 섹터·외부 채널은 E-02 채널 머리와 **같은 컴포넌트**가

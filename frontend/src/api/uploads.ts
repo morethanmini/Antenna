@@ -24,7 +24,7 @@ import { ApiError, CLIENT_ERROR_CODE, toApiError } from './errors'
 import { idempotencyKey, releaseIdempotencyKey } from './idempotency'
 
 /** 서버 UploadFile.Purpose 와 짝이다. 화면마다 무엇에 쓰는 그림인지 서버가 알아야 한다. */
-export const UPLOAD_PURPOSES = ['AD', 'REPORT', 'POST'] as const
+export const UPLOAD_PURPOSES = ['AD', 'REPORT', 'POST', 'PROFILE'] as const
 export type UploadPurpose = (typeof UPLOAD_PURPOSES)[number]
 
 /** 서버 UploadResponse 와 짝이다. */
@@ -70,8 +70,12 @@ export const AD_ASPECT = { ratio: 4, tolerance: 0.05 } as const
 export type AspectRule = { ratio: number; tolerance: number }
 
 /** 화면별 제약. 모달이 파라미터로 받는다(설계 제약) */
+/** 프로필 사진은 정사각이다 — 동그랗게 잘라 그리므로 가로세로가 다르면 한쪽이 잘린다 */
+export const PROFILE_ASPECT: AspectRule = { ratio: 1, tolerance: 0.05 }
+
 export const ASPECT_BY_PURPOSE: Partial<Record<UploadPurpose, AspectRule>> = {
   AD: AD_ASPECT,
+  PROFILE: PROFILE_ASPECT,
 }
 
 /* ── 로컬 검증 ─────────────────────────────────────────── */

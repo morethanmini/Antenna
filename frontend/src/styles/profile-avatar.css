@@ -1,0 +1,24 @@
+/* 프로필 사진 — components/channel/ProfileAvatar 가 들고 있는 스타일.
+   E-02 채널과 E-05 마이페이지가 같은 컴포넌트를 쓰므로 어느 화면에도 딸리지 않게 여기 둔다.
+   사진의 크기·모양은 화면이 준 클래스(.ch-avatar · .mp-avatar)가 정한다 — 여기서는
+   그 아래 붙는 버튼만 그린다. */
+
+.pa{ display:flex; flex-direction:column; align-items:center; gap:6px; flex:0 0 auto; }
+
+/* 사진 아래 한 줄. 사진보다 좁아지지 않게 두 개를 나란히 둔다 */
+.pa-acts{ display:flex; align-items:center; gap:6px; }
+
+/* 값이 아니라 행동이라 작게 둔다 — 항목 옆의 "수정"(.ch-line-edit)과 같은 무게로 맞춘다 */
+.pa-btn{
+  padding:1px 7px;
+  border:1px solid var(--rule); border-radius:999px; background:var(--surface);
+  font:inherit; font-size:11px; font-weight:700; color:var(--faint);
+  line-height:1.7; white-space:nowrap; cursor:pointer;
+}
+.pa-btn:hover{ border-color:var(--brand-soft); color:var(--brand-ink); background:var(--brand-softer); }
+.pa-btn:focus-visible{ outline:2px solid var(--brand); outline-offset:2px; }
+.pa-btn:disabled{ opacity:.45; cursor:default; }
+/* 지우는 것은 되돌릴 수 없으니 호버에서만 경고색을 쓴다 — 늘 빨가면 눈이 그리로 간다 */
+.pa-btn.is-drop:hover{ border-color:var(--danger); color:var(--danger); background:var(--surface); }
+
+.pa-error{ margin:0; max-width:12em; font-size:11px; line-height:1.5; color:var(--danger); text-align:center; }
