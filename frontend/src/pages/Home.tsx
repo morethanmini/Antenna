@@ -19,6 +19,7 @@ import { useBriefingParam } from '../components/briefingParam'
 import { useAsync } from '../api/useAsync'
 import { DEFAULT_AVATAR, useAuth } from '../auth/context'
 import Sparkline from '../components/Sparkline'
+import { CONTEST, CONTEST_PATH, PHASE_LABEL, phaseAt, stamp } from '../event/contest'
 import StockLogo from '../components/stocks/StockLogo'
 import '../styles/home.css'
 
@@ -506,6 +507,37 @@ function Sponsored() {
   )
 }
 
+/* J-01 대회로 가는 배너. **대회 페이지로 들어오는 길이 이것과 링크 둘뿐**이라
+   (사이드바에 메뉴를 만들지 않았다) 홈에서 눈에 띄어야 한다. 그래서 좌우 한 칸씩
+   차지하지 않고 두 칸을 통째로 가로지른다.
+
+   대회가 끝나면 지운다. 날짜가 지났다고 저절로 사라지게 하지 않은 것은,
+   결과 공개 뒤에도 순위를 보러 오는 길이 남아야 하기 때문이다. */
+function ContestBanner() {
+  const phase = phaseAt()
+  /* 단계마다 등을 떠미는 말이 달라야 한다. 끝난 대회에 "지금 참가" 라고
+     적어 두면 눌러 보고 나서야 끝난 걸 안다. */
+  const cta =
+    phase === 'before' ? '대회 보기'
+    : phase === 'open' ? '지금 예측하기'
+    : phase === 'judging' ? '내 예측 확인'
+    : '결과 보기'
+
+  return (
+    <Link className="hm-event" to={CONTEST_PATH}>
+      <span className="hm-event-badge">{PHASE_LABEL[phase]}</span>
+      <span className="hm-event-text">
+        <b>{CONTEST.name}</b>
+        <em>{CONTEST.lede}</em>
+      </span>
+      {phase === 'open' && (
+        <span className="hm-event-when num">{stamp(CONTEST.closesAt)} 마감</span>
+      )}
+      <span className="hm-event-cta">{cta} ›</span>
+    </Link>
+  )
+}
+
 /* 배너가 히어로보다 짧게 끝나 남는 자리를 메운다. 데이터를 부르지 않는
    지름길 모음이라 로딩·실패 상태가 없다. */
 function QuickLinks() {
@@ -534,6 +566,8 @@ export default function Home() {
             <Sponsored />
             <QuickLinks />
           </div>
+          {/* 두 칸을 가로지른다 — 아래 카드 줄을 밀지 않고 한 줄만 쓴다 */}
+          <ContestBanner />
           <MarketOverview />
           <MyAssets />
           <Watchlist />
