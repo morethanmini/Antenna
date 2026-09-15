@@ -14,6 +14,7 @@
 import { Link } from 'react-router-dom'
 import { useApiQuery } from '../api/useApiQuery'
 import { platformLabel, type MyProfile } from '../api/account'
+import ChannelProfileEdit from '../components/channel/ChannelProfileEdit'
 import ErrorState from '../components/state/ErrorState'
 import { useAuth } from '../auth/context'
 import '../styles/screens/mypage.css'
@@ -69,16 +70,26 @@ export default function MyPage() {
             <img className="mp-avatar" src={user?.avatarUrl} alt="" />
 
             <div className="mp-who">
-              <h2>{profile.data ? profile.data.nickname : '…'}</h2>
-              <p className="mp-introduce">
-                {profile.data?.introduce || '소개가 아직 없습니다'}
-              </p>
-
-              {interests.length > 0 && (
-                <ul className="mp-interests" aria-label="관심 섹터">
-                  {interests.map((s) => <li key={s}>{s}</li>)}
-                </ul>
+              {/* 닉네임·소개·관심 섹터·외부 채널은 E-02 채널 머리와 **같은 컴포넌트**가
+                  그린다. 값을 눌러 그 항목만 고친다. 두 화면이 같은 값을 각자 그리면
+                  한쪽만 고쳐져 표시가 갈린다 — 실제로 그래서 마이페이지에는 편집이
+                  없었다(S15P21A507-54). 여기는 늘 내 프로필이라 isMe 를 물을 것이 없다. */}
+              {profile.data && (
+                <ChannelProfileEdit
+                  isMe
+                  heading="h2"
+                  profile={{
+                    nickname: profile.data.nickname,
+                    bio: profile.data.introduce,
+                    interests,
+                    externalLinks: channels.map((c) => ({
+                      label: platformLabel(c.platform), url: c.url,
+                    })),
+                  }}
+                  onSaved={profile.reload}
+                />
               )}
+              {!profile.data && <h2>…</h2>}
             </div>
 
             <div className="mp-actions">
@@ -97,23 +108,8 @@ export default function MyPage() {
           </section>
         )}
 
-        {/* ── 외부 채널 ────────────────────────────────── */}
-        {channels.length > 0 && (
-          <section className="mp-block">
-            <h3>외부 채널</h3>
-            <ul className="mp-channels">
-              {channels.map((c) => (
-                <li key={c.url}>
-                  {/* 명세상 https 만 저장된다. 외부로 나가므로 새 탭 + noreferrer */}
-                  <a href={c.url} target="_blank" rel="noreferrer noopener">
-                    <span className="mp-channel-platform">{platformLabel(c.platform)}</span>
-                    <span className="mp-channel-url">{c.url}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+        {/* 외부 채널은 프로필 카드 안으로 들어갔다 — 같은 값을 카드와 별도 섹션이
+            나눠 그리고 있었고, 고치는 자리는 카드 쪽이다(S15P21A507-54). */}
 
         {/* ── 활동 진입점 ──────────────────────────────── */}
         <section className="mp-block">

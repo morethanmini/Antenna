@@ -79,20 +79,8 @@ export default function ChannelProfile() {
        리포트 잠김 = 구독자 전용 글
      서버의 PredictionViewService.canRead 와 같은 경계다. 규칙이 바뀌면 여기도 바꾼다.
      주인용 편집 화면은 쿼리 없는 /channels/{내 id} 쪽이다. */
-  const [params, setParams] = useSearchParams()
+  const [params] = useSearchParams()
   const asVisitor = params.get('as') === 'visitor'
-  /* 미리보기의 "프로필 수정" 에서 넘어오면 폼을 편 채로 연다 — 거기서 한 번 더
-     누르게 하면 "수정하러 왔는데 또 눌러야 하나" 가 된다 */
-  const wantsEdit = params.get('edit') === '1'
-  /* 폼을 닫으면 그 표시를 지운다. 저장하면 채널을 다시 읽는데, 그때 편집 컴포넌트가
-     잠깐 언마운트됐다 다시 붙으면서 edit=1 을 보고 폼을 또 연다 — 저장했는데 편집
-     화면에 그대로 있는 것처럼 보인다. 히스토리는 쌓지 않는다(탭 전환과 같은 판단). */
-  const closeEdit = useCallback(() => {
-    if (!wantsEdit) return
-    const next = new URLSearchParams(params)
-    next.delete('edit')
-    setParams(next, { replace: true })
-  }, [wantsEdit, params, setParams])
 
   const loadChannel = useCallback(() => fetchChannel(userId), [userId])
   const loadPredictions = useCallback(() => fetchChannelPredictions(userId), [userId])
@@ -164,7 +152,7 @@ export default function ChannelProfile() {
                     : '내 채널 관리 화면입니다. 이름·소개·관심 섹터·외부 채널을 여기서 고칩니다.'}
                 </span>
                 {previewing
-                  ? <Link className="ch-preview-btn" to={`/channels/${userId}?edit=1`}>프로필 수정</Link>
+                  ? <Link className="ch-preview-btn" to={`/channels/${userId}`}>프로필 수정</Link>
                   : <Link className="ch-preview-btn" to={`/channels/${userId}?as=visitor`}>남에게 보이는 화면</Link>}
               </p>
             )}
@@ -173,41 +161,15 @@ export default function ChannelProfile() {
             <header className="ch-head">
               {channel.avatarUrl && <img className="ch-avatar" src={channel.avatarUrl} alt="" />}
               <div className="ch-id">
-                {/* 내 채널이면 여기서 바로 고친다 — 남에게 보이는 값이라
-                    보이는 자리에서 고치는 편이 맞다(S15P21A507-195 에서 설정에서 옮겨 옴).
-                    편집 중에는 아래 소개·섹터·링크를 폼이 대신 그린다 — 같은 값을
-                    읽기용과 편집용으로 두 번 그리면 어느 쪽이 저장될 값인지 알 수 없다. */}
+                {/* 닉네임·소개·관심 섹터·외부 채널 넷을 통째로 맡긴다 — 읽기용 표시까지
+                    포함이다. 화면과 컴포넌트가 나눠 그리면 누를 수 있는 자리와 고쳐지는
+                    자리가 어긋난다. 내 채널이면 값을 눌러 그 항목만 고친다
+                    (S15P21A507-195 에서 설정에서 옮겨 옴). */}
                 <ChannelProfileEdit
                   profile={channel}
                   isMe={owner}
-                  startOpen={wantsEdit}
-                  onExit={closeEdit}
                   onSaved={ch.reload}
                 />
-                {!owner && channel.bio && <p className="ch-bio">{channel.bio}</p>}
-
-                {!owner && channel.interests.length > 0 && (
-                  <ul className="ch-interests">
-                    {channel.interests.map((tag) => <li key={tag}>{tag}</li>)}
-                  </ul>
-                )}
-
-                {!owner && channel.externalLinks.length > 0 && (
-                  <ul className="ch-links">
-                    {channel.externalLinks.map((l) => (
-                      <li key={l.url}>
-                        {/* 외부로 나가는 링크다. 참조자 정보를 넘기지 않는다 */}
-                        <a href={l.url} target="_blank" rel="noreferrer noopener">
-                          {l.label}
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                            <path d="M14 5h5v5" /><path d="M19 5l-8 8" />
-                            <path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4" />
-                          </svg>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                )}
               </div>
             </header>
 
