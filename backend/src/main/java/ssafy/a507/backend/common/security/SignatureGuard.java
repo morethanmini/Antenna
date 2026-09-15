@@ -27,6 +27,16 @@ public class SignatureGuard {
     /** r(32) + s(32) + v(1). */
     private static final int SIGNATURE_BYTES = 65;
 
+    /**
+     * 검증 결과 — 서명자 주소와 <b>이번에 태운 nonce</b>.
+     *
+     * <p>nonce 를 돌려주는 이유는 검산이다(ANT-CHAIN-17). 서명 payload 에 nonce 가 들어가므로,
+     * 나중에 브라우저가 payload 를 재조립해 주소를 복원하려면 그 값을 알아야 한다. Redis 의
+     * nonce 는 소비되면 사라지니 쓰는 쪽이 저장해 둔다. <b>공개해도 안전하다</b> — 이미 소비된
+     * 값이라 그 서명을 다시 쓸 수 없다.
+     */
+    public record Verified(String signerAddress, String nonce) {}
+
     private final SignatureNonceStore nonceStore;
     private final UserRepository userRepository;
 
@@ -59,6 +69,11 @@ public class SignatureGuard {
      * 지갑 미연동은 nonce를 태우기 전에 먼저 걸러 낸다 — 성공할 수 없는 요청에 nonce를 쓰지 않는다.
      */
     public String verify(Long userId, WalletSigned request) {
+        return verifyWithNonce(userId, request).signerAddress();
+    }
+
+    /** {@link #verify} 와 같은 검증이고, 태운 nonce 까지 돌려준다 — 검산에 쓰는 쪽이 저장한다. */
+    public Verified verifyWithNonce(Long userId, WalletSigned request) {
         // Optional.map으로 필드를 바로 꺼내면 안 된다 — 지갑이 NULL일 때 Optional이 비어
         // "계정 없음"과 "지갑 미연동"이 같은 오류로 뭉개진다. 프론트는 후자에서 연동 화면으로 보낸다.
         User user =
@@ -70,12 +85,16 @@ public class SignatureGuard {
             throw new BusinessException(ErrorCode.WALLET_NOT_LINKED);
         }
 
-        String recovered = recover(userId, request);
+        String nonce = nonceStore.consume(userId, request.scope());
+        if (nonce == null) {
+            throw new BusinessException(ErrorCode.NONCE_NOT_FOUND);
+        }
+        String recovered = recoverAddress(request.signingPayload(nonce, chainId), request.signature());
         // 저장 시점에 소문자로 눕혀 두므로 equals로 충분하다.
         if (!linked.equals(recovered)) {
             throw new BusinessException(ErrorCode.SIGNER_MISMATCH, "signature");
         }
-        return recovered;
+        return new Verified(recovered, nonce);
     }
 
     /**

@@ -174,7 +174,16 @@ public enum ErrorCode {
      * 댓글은 본문에 대한 반응이고, 좋아요만 허용하면 읽지 않고 누른 인기순이 된다.
      * 프론트는 이 code 로 구독 CTA 를 띄운다 — {@code PREDICTION_FORBIDDEN} 과 같은 쓰임이다.
      */
-    REPORT_FORBIDDEN(HttpStatus.FORBIDDEN, "구독자 전용 리포트에는 구독자만 반응할 수 있습니다.");
+    REPORT_FORBIDDEN(HttpStatus.FORBIDDEN, "구독자 전용 리포트에는 구독자만 반응할 수 있습니다."),
+
+    // 리포트 검산 (ANT-CHAIN-17)
+    /**
+     * 봉인 이전에 발행된 리포트의 검산을 요청했다({@code body_hash} NULL). 404 지만
+     * {@code REPORT_NOT_FOUND} 와 다른 code 인 이유는 <b>리포트는 있기 때문</b>이다 — 없는 것으로 말하면
+     * 화면이 "지워진 글" 로 그린다. 소급 봉인을 하지 않기로 한 결정(ANT-CHAIN-14)의 겉면이라, 프론트는
+     * 이 code 로 "봉인 이전 발행분" 이라고 적는다.
+     */
+    REPORT_NOT_SEALED(HttpStatus.NOT_FOUND, "봉인 이전에 발행된 리포트입니다.");
 
     private final HttpStatus status;
     private final String message;

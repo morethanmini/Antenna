@@ -90,14 +90,15 @@ public class ReportService {
     @Transactional
     public Long create(ReportCreateRequest request) {
         Long userId = currentUserProvider.currentUserId();
-        String signerAddress = signatureGuard.verify(userId, request);
+        // nonce 까지 받는다 — 검산이 서명 payload 를 재조립하는 데 쓴다(ANT-CHAIN-17).
+        SignatureGuard.Verified verified = signatureGuard.verifyWithNonce(userId, request);
         User author = userRepository
                 .findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHENTICATED));
 
         Report report = reportRepository.save(
                 Report.create(author, request.title(), request.body(), request.visibility()));
-        report.sign(request.signature(), signerAddress);
+        report.sign(request.signature(), verified.signerAddress(), verified.nonce());
         /* 발행 즉시 봉인한다(ANT-CHAIN-14). 다음 앵커 회차(10분)가 이 해시를 머클 트리에 얹는다.
            저장 뒤에 부르는 이유는 없다 — 해시 재료에 id 가 들어가지 않으므로 순서는 자유다. 같은
            트랜잭션 안이라 변경 감지로 UPDATE 가 나간다. */

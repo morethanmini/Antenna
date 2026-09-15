@@ -107,6 +107,16 @@ public class Report {
     @Column(name = "signer_address", length = 42)
     private String signerAddress;
 
+    /**
+     * 서명 payload 에 박힌 1회용 nonce (ANT-CHAIN-17).
+     *
+     * <p>검산이 이 값을 쓴다. 브라우저가 {@code signerAddress} 를 그대로 믿지 않고 서명에서 직접 주소를
+     * 복원하려면 payload 를 재조립해야 하고, 거기에 nonce 가 들어간다. Redis 의 nonce 는 소비되면
+     * 사라지므로 여기 남긴다. <b>공개해도 안전하다</b> — 이미 태운 값이라 그 서명을 다시 쓸 수 없다.
+     */
+    @Column(name = "sign_nonce", length = 64)
+    private String signNonce;
+
     /** 소속 앵커 배치. NULL 이면 앵커 대기 상태다 — {@code PredictionCommit.anchorBatch} 와 같은 뜻이다. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "anchor_batch_id")
@@ -142,9 +152,10 @@ public class Report {
      * 발행 서명을 남긴다 (ANT-CHAIN-16). 봉인과 나눠 부르는 이유는 둘이 다른 것을 증명해서다 —
      * 봉인은 "이 내용이 안 바뀌었다", 서명은 "이 지갑 주인이 썼다".
      */
-    public void sign(String signature, String signerAddress) {
+    public void sign(String signature, String signerAddress, String signNonce) {
         this.signature = signature;
         this.signerAddress = signerAddress;
+        this.signNonce = signNonce;
     }
 
     /**
