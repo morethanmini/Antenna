@@ -84,6 +84,16 @@ public class User {
         this.nickname = nickname;
     }
 
+    /**
+     * 프로필 소개를 바꾼다.
+     *
+     * <p>빈 문자열은 null 로 눕힌다 — "지웠다"와 "아직 안 썼다"는 화면에서 같은 상태이고, 둘을 따로
+     * 저장하면 {@code introduce != null} 로 판단하는 쪽이 빈 문단을 그린다.
+     */
+    public void changeIntroduce(String introduce) {
+        this.introduce = (introduce == null || introduce.isBlank()) ? null : introduce.strip();
+    }
+
     /** false 면 온보딩을 마치지 않은 회원이다. */
     public boolean hasNickname() {
         return nickname != null;
