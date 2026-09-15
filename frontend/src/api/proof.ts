@@ -84,9 +84,12 @@ export type Proof = {
   signerAddress: string | null
   revealedAt: string | null
   /**
-   * **근거 salt(= 등록 때 클라이언트가 만든 noteSalt)** 다. 리빌 뒤 작성자·구독자만
+   * **근거 salt(= 등록 때 클라이언트가 만든 noteSalt)** 다. 작성자·구독자만
    * 받는다(결정 D6) — 근거 본문이 판정 후에도 구독자 전용인데, noteHash 가 공개된
    * 마당에 salt 까지 주면 짧은 근거를 후보 해시로 맞춰 볼 수 있어서다.
+   *
+   * 리빌 여부와 무관하다(2026-09-15). 구독자는 등록 직후부터 받는다 — 받을 자격이
+   * 구독이지 시간이 아니고, 만기까지 기다리게 하면 돈을 낸 쪽의 검산만 반쪽이 된다.
    *
    * ①단계에는 필요 없다(payload.noteHash 로 충분하다). 이 값이 있으면 자기 근거
    * 본문으로 `keccak256(note ‖ salt) == noteHash` 를 한 겹 더 확인할 수 있는데,

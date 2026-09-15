@@ -146,10 +146,12 @@ app:
     predict-token:
       # ANT 토큰(ANT-CHAIN-03). 비워 두면 토큰 기능만 꺼지고 서버는 정상 부팅한다.
       address: ${CONTRACT_PREDICT_TOKEN:}
-    # 앵커 배치(ANT-CHAIN-02). 매일 00:05 KST, 주말 포함 — 앵커는 시세가 필요 없고 주말 등록분을
-    # 월요일까지 무보호로 두면 안 된다. 실행 시각에 anchor_batch_id 가 NULL 인 커밋 전부가 한 배치다.
+    # 앵커 배치(ANT-CHAIN-02). 10분마다, 주말·휴장 포함 — 앵커는 시세가 필요 없다.
+    # 실행 시각에 anchor_batch_id 가 NULL 인 커밋 전부가 한 배치다.
+    # 하루 한 번(00:05)에서 줄였다(2026-09-15): 아침 등록분이 다음 날 새벽까지 체인 밖에 있었고,
+    # 검산 화면이 등록 직후 "다음 배치 대기" 로만 보였다. gasPrice 0 이라 회차를 늘리는 값이 싸다.
     anchor:
-      cron: ${ANCHOR_CRON:0 5 0 * * *}
+      cron: ${ANCHOR_CRON:0 */10 * * * *}
       # receipt 를 이만큼 기다리고 못 받으면 "전송됨·미확정"으로 둔다. 다음 실행이 anchoredAt 으로 확인한다.
       receipt-timeout-seconds: 60
       # RPC 장애일 때만 즉시 재시도. revert 는 다시 보내도 같아서 재시도하지 않는다.

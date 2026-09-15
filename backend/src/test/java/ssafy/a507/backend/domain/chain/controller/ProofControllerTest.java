@@ -83,7 +83,8 @@ class ProofControllerTest {
                     .andExpect(jsonPath("$.payload.noteHash").value(noteHashOf("seed")))
                     .andExpect(jsonPath("$.anchor").value((Object) null))
                     .andExpect(jsonPath("$.anchorStatus").value("WAITING"))
-                    .andExpect(jsonPath("$.salt").value((Object) null))
+                    // 미판정·리빌 전이어도 작성자는 salt 를 받는다(2026-09-15) — 근거 대조를 만기까지 미룰 이유가 없다.
+                    .andExpect(jsonPath("$.salt").value(SALT))
                     .andExpect(jsonPath("$.settle").value((Object) null));
         }
 
@@ -107,7 +108,9 @@ class ProofControllerTest {
 
             mockMvc.perform(get("/api/v1/predictions/{id}/proof", pid).with(user(str(otherId))))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.commitHash").value(hashOf("seed")));
+                    .andExpect(jsonPath("$.commitHash").value(hashOf("seed")))
+                    // 판정 전이라도 구독자는 salt 를 받는다 — 이것이 없으면 돈을 내고도 근거 대조가 만기까지 막힌다.
+                    .andExpect(jsonPath("$.salt").value(SALT));
         }
 
         @Test
@@ -157,21 +160,34 @@ class ProofControllerTest {
         }
 
         @Test
-        @DisplayName("리빌 전에는 작성자에게도 salt 가 없다 — 판정 전 공개는 봉인을 깨는 일이다")
-        void 리빌_전_salt_없음() throws Exception {
+        @DisplayName("리빌 전에도 작성자·구독자는 salt 를 받는다 — 받을 자격은 구독이지 시간이 아니다(2026-09-15)")
+        void 리빌_전에도_구독자는_salt() throws Exception {
             long pid = insertPrediction(authorId, "HIT");
             insertCommit(pid, "b", null);
+            long subscriberId = insertUser();
+            insertSubscription(subscriberId, authorId, "ACTIVE", Instant.now().plusSeconds(86_400));
 
+            // 작성자 — 리빌 전(revealedAt null)이어도 salt 가 나간다.
             mockMvc.perform(get("/api/v1/predictions/{id}/proof", pid).with(user(str(authorId))))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.salt").value((Object) null))
                     .andExpect(jsonPath("$.revealedAt").value((Object) null))
+                    .andExpect(jsonPath("$.salt").value(SALT))
                     // noteHash 는 salt 가 아니라 공개 값 — 리빌 전에도 (볼 수 있는 사람에게는) 나간다.
                     .andExpect(jsonPath("$.payload.noteHash").value(noteHashOf("b")));
+
+            mockMvc.perform(get("/api/v1/predictions/{id}/proof", pid).with(user(str(subscriberId))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.revealedAt").value((Object) null))
+                    .andExpect(jsonPath("$.salt").value(SALT));
+
+            // 경계는 그대로다 — 비구독자는 리빌 전에도 후에도 salt 가 없다.
+            mockMvc.perform(get("/api/v1/predictions/{id}/proof", pid).with(user(str(otherId))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.salt").value((Object) null));
         }
 
         @Test
-        @DisplayName("리빌 뒤 비구독자는 salt 없이 noteHash 로 ①단계를 검산한다 — salt(근거 salt)는 작성자·구독자만 받는다")
+        @DisplayName("비구독자는 salt 없이 noteHash 로 ①단계를 검산한다 — salt(근거 salt)는 작성자·구독자만 받는다")
         void 리빌_후_salt_는_구독자만() throws Exception {
             long pid = insertPrediction(authorId, "HIT");
             insertCommit(pid, "a", Instant.parse("2026-10-05T04:31:00Z"));
