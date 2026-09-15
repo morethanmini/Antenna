@@ -12,7 +12,9 @@ import org.web3j.utils.Numeric;
 import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
 import ssafy.a507.backend.common.security.CurrentUserProvider;
+import ssafy.a507.backend.common.security.SignatureGuard;
 import ssafy.a507.backend.domain.chain.anchor.AnchorLeaves;
+import ssafy.a507.backend.domain.chain.anchor.AnchorProof;
 import ssafy.a507.backend.domain.chain.dto.ProofResponse;
 import ssafy.a507.backend.domain.chain.entity.AnchorBatch;
 import ssafy.a507.backend.domain.chain.merkle.MerkleTree;
@@ -24,7 +26,7 @@ import ssafy.a507.backend.domain.prediction.repository.PredictionCommitRepositor
 import ssafy.a507.backend.domain.prediction.repository.PredictionRepository;
 
 /**
- * 3단계 검산 재료 조립 (ANT-CHAIN-06, 화면 D-03).
+ * 4단계 검산 재료 조립 (ANT-CHAIN-06, 화면 D-03).
  *
  * <p>게이팅은 두 겹이다(plan §설계). ① <b>미판정 예측 자체</b> — BASE/OPEN 이면 작성자와 유효 구독자만 본다(명세 §예측 공개 규칙,
  * 그 외 403). 판정(HIT/MISS)이 끝나면 회원 전원. ② <b>근거 salt</b> — 근거 본문이 판정 후에도 구독자 전용이라 {@code salt}
@@ -55,9 +57,10 @@ public class ProofService {
 
     private final PredictionRepository predictions;
     private final PredictionCommitRepository commits;
-    private final AnchorLeaves anchorLeaves;
+    private final AnchorProof anchorProof;
     private final SubscriptionRepository subscriptions;
     private final CurrentUserProvider currentUserProvider;
+    private final SignatureGuard signatureGuard;
 
     @Transactional(readOnly = true)
     public ProofResponse proof(long predictionId) {
@@ -102,6 +105,8 @@ public class ProofService {
                 commit == null ? null : commit.getCommitHash(),
                 commit == null ? null : commit.getSignature(),
                 commit == null ? null : commit.getSignerAddress(),
+                commit == null ? null : commit.getSignNonce(),
+                signatureGuard.chainId(),
                 commit == null ? null : commit.getRevealedAt(),
                 saltVisible ? commit.getSalt() : null,
                 batch == null ? null : anchorOf(commit, batch),
@@ -116,45 +121,13 @@ public class ProofService {
     }
 
     /**
-     * 리프 전량에서 이 커밋의 proof 를 다시 접는다. 순서는 {@link AnchorLeaves} 가 정한다 — 배치가 트리를 만든
-     * 순서와 <b>같은 코드</b>여야 루트가 재현된다(리포트가 트리에 들어오면서 갈릴 뻔한 자리다, ANT-CHAIN-14).
+     * 리프 전량에서 이 커밋의 proof 를 다시 접는다. 접기·가드는 {@link AnchorProof} 가 한다 —
+     * 리포트 검산(ANT-CHAIN-17)이 같은 코드를 쓴다.
      *
      * <p>배치가 PENDING/FAILED 여도 트리는 DB 만으로 결정되므로 proof 는 내린다 — 체인에 있는지는 {@code anchorStatus} 가 말한다.
      */
     private ProofResponse.Anchor anchorOf(PredictionCommit commit, AnchorBatch batch) {
-        List<AnchorLeaves.Leaf> leaves = anchorLeaves.of(batch);
-        int leafIndex = -1;
-        for (int i = 0; i < leaves.size(); i++) {
-            AnchorLeaves.Leaf leaf = leaves.get(i);
-            if (leaf.kind() == AnchorLeaves.Kind.PREDICTION && leaf.id() == commit.getPredictionId()) {
-                leafIndex = i;
-                break;
-            }
-        }
-        MerkleTree tree = MerkleTree.build(AnchorLeaves.bytesOf(leaves));
-        String root = Numeric.toHexString(tree.root());
-        if (leafIndex < 0 || !root.equalsIgnoreCase(batch.getMerkleRoot())) {
-            log.error(
-                    "배치 {} 의 리프로 접은 루트 {} 가 저장된 루트 {} 와 다르다 (leafIndex {}). DB 가 깨졌다 — proof 를 내리지 않는다",
-                    batch.getId(),
-                    root,
-                    batch.getMerkleRoot(),
-                    leafIndex);
-            throw new BusinessException(ErrorCode.INTERNAL_ERROR);
-        }
-        List<String> proof = tree.proof(leafIndex).stream().map(Numeric::toHexString).toList();
-        return new ProofResponse.Anchor(
-                batch.getId(),
-                batch.getMerkleRoot(),
-                proof,
-                leafIndex,
-                leaves.size(),
-                batch.getStatus(),
-                batch.getTxHash(),
-                batch.getBlockNumber(),
-                batch.getConfirmedAt(),
-                batch.getContractAddress(),
-                batch.getChainId());
+        return anchorProof.of(AnchorLeaves.Kind.PREDICTION, commit.getPredictionId(), batch);
     }
 
     /**

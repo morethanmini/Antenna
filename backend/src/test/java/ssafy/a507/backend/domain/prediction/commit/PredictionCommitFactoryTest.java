@@ -33,6 +33,7 @@ class PredictionCommitFactoryTest {
     private static final String NOTE = "3분기 실적 컨센서스 상회 전망";
     private static final String SIGNATURE = "0x" + "ab".repeat(65);
     private static final String SIGNER = "0x" + "11".repeat(20);
+    private static final String NONCE = "9f3c1b7d2e4a5608" + "1122334455667788".repeat(3);
 
     @Autowired PredictionCommitFactory factory;
     @Autowired PredictionCommitRepository commits;
@@ -55,7 +56,7 @@ class PredictionCommitFactoryTest {
     void 봉인_저장_재조회() {
         Prediction prediction = insertPrediction();
 
-        PredictionCommit sealed = factory.seal(prediction, NOTE, SALT, SIGNATURE, SIGNER);
+        PredictionCommit sealed = factory.seal(prediction, NOTE, SALT, SIGNATURE, SIGNER, NONCE);
         commits.save(sealed);
         em.flush();
         em.clear();
@@ -70,6 +71,8 @@ class PredictionCommitFactoryTest {
         assertThat(found.getSalt()).isEqualTo(SALT);
         assertThat(found.getSignature()).isEqualTo(SIGNATURE);
         assertThat(found.getSignerAddress()).isEqualTo(SIGNER);
+        // 검산 화면이 서명 문자열을 다시 조립하는 재료다(ANT-CHAIN-18). 빠지면 ③이 통째로 잠긴다.
+        assertThat(found.getSignNonce()).isEqualTo(NONCE);
         assertThat(found.getAnchorBatch()).isNull();
         assertThat(found.isRevealed()).isFalse();
         // 앵커 배치가 긁어가는 쿼리에 잡혀야 한다 — 이게 "매일 빈손" 을 끝내는 조건이다.
@@ -82,8 +85,8 @@ class PredictionCommitFactoryTest {
     void noteSalt_만_달라도_다른_커밋() {
         Prediction p1 = insertPrediction();
         Prediction p2 = insertPrediction();
-        PredictionCommit a = factory.seal(p1, NOTE, SALT, SIGNATURE, SIGNER);
-        PredictionCommit b = factory.seal(p2, NOTE, "fedcba9876543210".repeat(4), SIGNATURE, SIGNER);
+        PredictionCommit a = factory.seal(p1, NOTE, SALT, SIGNATURE, SIGNER, NONCE);
+        PredictionCommit b = factory.seal(p2, NOTE, "fedcba9876543210".repeat(4), SIGNATURE, SIGNER, NONCE);
         assertThat(a.getNoteHash()).isNotEqualTo(b.getNoteHash());
         assertThat(a.getCommitHash()).isNotEqualTo(b.getCommitHash());
     }
@@ -101,9 +104,9 @@ class PredictionCommitFactoryTest {
     @DisplayName("noteSalt 형식이 틀리면 봉인하지 않는다 — 000…0 도 거절")
     void noteSalt_형식_오류() {
         Prediction prediction = insertPrediction();
-        assertThatThrownBy(() -> factory.seal(prediction, NOTE, "00".repeat(32), SIGNATURE, SIGNER))
+        assertThatThrownBy(() -> factory.seal(prediction, NOTE, "00".repeat(32), SIGNATURE, SIGNER, NONCE))
                 .isInstanceOf(BusinessException.class);
-        assertThatThrownBy(() -> factory.seal(prediction, NOTE, "0x" + SALT.substring(2), SIGNATURE, SIGNER))
+        assertThatThrownBy(() -> factory.seal(prediction, NOTE, "0x" + SALT.substring(2), SIGNATURE, SIGNER, NONCE))
                 .isInstanceOf(BusinessException.class);
     }
 

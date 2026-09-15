@@ -101,6 +101,10 @@ export const SIGNATURE_SCOPES = {
   PREDICTION: 'prediction',
   PREDICTION_BURN: 'prediction-burn',
   SUBSCRIBE: 'subscribe',
+  /* 리포트 발행(ANT-CHAIN-16). 태그가 report 가 아닌 이유 — 봉인 문자열 첫 줄이 이미
+     antenna:report:v1 이다. 같게 두면 서명 payload 와 봉인 문자열이 첫 줄까지 같아져
+     한쪽을 다른 쪽으로 오인·재사용할 여지가 생긴다(예측의 prediction/commit 과 같은 판단). */
+  REPORT_PUBLISH: 'report-publish',
   AD: 'ad',
   SEASON_JOIN: 'season-join',
 } as const

@@ -1,14 +1,14 @@
-/* 3단계 검산 재료. API 명세서 §온체인 검증 · 설계서 §3 D · §4 D-03.
+/* 4단계 검산 재료. API 명세서 §온체인 검증 · 설계서 §3 D · §4 D-03.
 
    GET /predictions/{id}/proof → ProofResponse  (백엔드 ANT-CHAIN-06, 구현 완료)
 
-   서버는 검증하지 않는다. 이 응답은 계산의 "입력값" 이고, 세 단계의 계산은
+   서버는 검증하지 않는다. 이 응답은 계산의 "입력값" 이고, 네 단계의 계산은
    전부 브라우저가 한다 — 서버가 "검증됨" 이라고 답해 주면 그건 증명이 아니다.
 
    앵커 전(anchorStatus WAITING)에도 200 이다 — anchor 가 null 로 올 뿐이다.
    화면은 그때 ②를 잠근 채 ①만 계산한다. */
 import { api } from './client'
-import { commitHash, commitPayload } from './predictions'
+import { commitHash, commitPayload, predictionSigningPayload } from './predictions'
 
 /** 배치 상태 + "아직 배치에 안 들어감". 서버 ProofResponse.AnchorStatus 와 짝이다. */
 export const PROOF_ANCHOR_STATUSES = ['WAITING', 'PENDING', 'CONFIRMED', 'FAILED'] as const
@@ -81,7 +81,21 @@ export type Proof = {
   commitHash: string | null
   /** EIP-191 personal_sign. 작성자 부인방지용 재료다 */
   signature: string | null
+  /**
+   * 서버가 복원했다고 말하는 주소. **③은 이 값을 옮겨 적지 않는다** — 아래 둘로
+   * 브라우저가 직접 복원한 주소와 맞춰 보고, 그 대조 결과만 화면에 쓴다.
+   */
   signerAddress: string | null
+  /**
+   * 서명에 쓰인 nonce (ANT-CHAIN-18). 서명 문자열의 마지막 줄이라 이게 없으면
+   * payload 를 다시 만들 수 없다.
+   *
+   * 이 기능 이전에 등록된 예측은 null 이다 — 실패가 아니라 ③이 잠기는 상태다.
+   * 소급은 불가능하다(nonce 는 서버에서 이미 소비돼 사라졌다).
+   */
+  signNonce: string | null
+  /** 서명 문자열의 chainId 줄. 커밋 유무와 무관하게 늘 온다 */
+  chainId: number
   revealedAt: string | null
   /**
    * **근거 salt(= 등록 때 클라이언트가 만든 noteSalt)** 다. 작성자·구독자만
@@ -137,6 +151,32 @@ export function commitPreimage(payload: ProofPayload): string | null {
 
 /** 브라우저가 직접 계산한 commitHash. 서버 값과의 대조는 화면이 한다 — 여기서 판정하지 않는다. */
 export const recomputeCommitHash = commitHash
+
+/* ── ③단계 재료 조립 (ANT-CHAIN-18) ──────────────────────
+   등록 화면(C-01)이 서명할 때 쓴 함수를 그대로 쓴다 — ①이 commitPayload 를 공유하는 것과
+   같은 이유다. 조립 규칙이 두 벌이면 규격이 바뀔 때 한쪽만 고쳐지고, 화면에는 원인 없는
+   "서명자 불일치" 만 뜬다. */
+
+/**
+ * 서명 문자열을 다시 만든다. 재료가 덜 왔으면 null 이다.
+ *
+ * 리포트 검산(D-04)보다 쉽다 — 저쪽은 `keccak256(body)` 를 만들려고 본문을 따로 불러와야
+ * 하는데, 예측은 서명 대상 다섯 줄이 이 응답 안에 이미 있다.
+ *
+ * null 이 되는 경우 셋: 아직 서명 nonce 를 저장하지 않던 시절의 예측, 커밋 전(noteHash 없음),
+ * 종목이 지워진 예측(stockCode 없음). 셋 다 실패가 아니라 "재료가 없다" 다.
+ */
+export function signingPreimage(proof: Proof): string | null {
+  const { stockCode, noteHash, direction, targetPrice, horizon } = proof.payload
+  if (!proof.signNonce || stockCode === null || noteHash === null) return null
+  return predictionSigningPayload(
+    { stockCode, direction, targetPrice, horizon, noteHash },
+    { nonce: proof.signNonce, chainId: proof.chainId },
+  )
+}
+
+/** 서명에서 주소를 복원한다. 리포트 검산과 같은 함수다 — 규칙을 두 벌로 두지 않는다. */
+export { recoverSigner } from '../chain/keccak' 
 
 export const DIRECTION_LABEL: Record<ProofPayload['direction'], string> = {
   UP: '상승',

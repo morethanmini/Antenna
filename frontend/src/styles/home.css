@@ -114,11 +114,13 @@
   background:var(--brand); color:#fff; font-size:14px; font-weight:700;
 }
 .hm-cta:hover{background:var(--brand-ink)}
-/* 마스코트는 카드보다 크게 잡고 아래로 흘려보낸다. .hm-hero 가 overflow:hidden
-   이라 하체가 잘리고, 음수 마진 덕에 카드 높이는 글자가 정한다. */
+/* 마스코트는 카드보다 크게 잡고 아래로 살짝 흘려보낸다. .hm-hero 가 overflow:hidden
+   이라 아래가 잘리고, 음수 마진 덕에 카드 높이는 글자가 정한다.
+   가로형 단체 그림(1536×1024)이라 폭을 넓히고 잘라내는 양은 줄였다 — 세로가 짧아
+   예전 값(-58px)을 그대로 두면 그림의 3분의 1이 날아간다. */
 .hm-hero-art{
-  align-self:end; width:268px; height:auto;
-  margin:0 -10px -58px 0;
+  align-self:end; width:330px; height:auto;
+  margin:0 -14px -14px 0;
 }
 
 /* ── 시장 Overview — 지수 셋을 가로로 세운다 ──────────────── */
@@ -336,6 +338,49 @@
   background:var(--brand); color:#fff; font-size:13px; font-weight:700; text-align:center;
 }
 .hm-lead-btn:hover{background:var(--brand-ink)}
+
+/* ── 대회 배너 ───────────────────────────────────────────
+   J-01 로 가는 유일한 화면 안 통로다. 좌우 두 칸을 통째로 가로질러 한 줄을
+   차지한다 — 카드 하나로 넣으면 옆 카드와 같은 무게로 읽혀, 이 줄이 이벤트라는
+   것이 안 보인다.
+   색은 히어로(보라)와 같은 계열로 두되 한 단계 어둡게 간다. 같은 값이면 바로
+   위 히어로와 한 덩어리로 붙어 보인다. */
+.hm-event{
+  grid-column:1 / -1;
+  display:flex; align-items:center; gap:14px;
+  padding:16px 20px; border-radius:14px; text-decoration:none;
+  background:linear-gradient(135deg,var(--brand-ink) 0%,#3a3da8 100%);
+  color:#fff;
+  transition:transform .14s, box-shadow .14s;
+}
+.hm-event:hover{transform:translateY(-1px); box-shadow:0 12px 26px -18px rgba(20,20,60,.7)}
+.hm-event:focus-visible{outline:2px solid var(--brand); outline-offset:3px}
+
+.hm-event-badge{
+  flex:none; padding:4px 10px; border-radius:999px;
+  background:var(--gold); color:#4a3a06; font-size:11.5px; font-weight:800;
+}
+/* margin-right:auto 가 여기 붙는다 — 마감 줄이 없는 단계에서도 버튼이 오른쪽
+   끝에 서야 한다. 미는 것은 하나만 해야 하므로 마감 줄에는 걸지 않는다 */
+.hm-event-text{display:flex; flex-direction:column; gap:2px; min-width:0; margin-right:auto}
+.hm-event-text b{color:#fff; font-size:15px; font-weight:800; letter-spacing:-.02em}
+.hm-event-text em{
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  color:rgba(255,255,255,.78); font-style:normal; font-size:12.5px;
+}
+.hm-event-when{
+  flex:none;
+  color:rgba(255,255,255,.82); font-size:12px; font-weight:700;
+  font-variant-numeric:tabular-nums;
+}
+.hm-event-cta{
+  flex:none; padding:8px 14px; border-radius:999px;
+  background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3);
+  color:#fff; font-size:12.5px; font-weight:750; white-space:nowrap;
+}
+@media (max-width:760px){
+  .hm-event{flex-wrap:wrap; gap:10px}
+}
 
 .hm-top{list-style:none; margin:0; padding:0; display:grid; gap:2px}
 .hm-top li{

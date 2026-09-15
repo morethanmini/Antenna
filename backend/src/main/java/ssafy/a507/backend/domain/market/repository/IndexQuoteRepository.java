@@ -33,4 +33,11 @@ public interface IndexQuoteRepository extends JpaRepository<IndexQuote, Long> {
             @Param("code") IndexCode code,
             @Param("from") LocalDate from,
             @Param("to") LocalDate to);
+
+    /**
+     * 그 날짜 이하의 가장 늦은 종가 (ANT-TOKEN-03 백테스트). 휴장일이 들어와도 직전 거래일 것을 준다 —
+     * 예측 판정일이 늘 거래일인 것은 아니다(만기가 휴장이면 이후 첫 거래일로 판정한다).
+     */
+    Optional<IndexQuote> findFirstByIndexCodeAndTradeDateLessThanEqualOrderByTradeDateDesc(
+            IndexCode indexCode, LocalDate tradeDate);
 }

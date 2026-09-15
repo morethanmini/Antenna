@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import jakarta.persistence.EntityManager;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -20,16 +21,21 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import org.web3j.crypto.Credentials;
 import org.web3j.crypto.Hash;
+import org.web3j.crypto.Keys;
+import org.web3j.crypto.Sign;
 import org.web3j.utils.Numeric;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.chain.entity.AnchorBatch;
+import ssafy.a507.backend.common.security.SignatureGuard;
 import ssafy.a507.backend.domain.chain.merkle.MerkleTree;
+import ssafy.a507.backend.support.WalletSignatures;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * ANT-CHAIN-06 — 3단계 검산 proof. H2.
+ * ANT-CHAIN-06 · ANT-CHAIN-18 — 검산 proof. H2.
  *
  * <p>예측·커밋·구독은 팩터리가 없어(PRED-01·02 몫) 네이티브 INSERT 로 심는다. 게이팅 두 겹(미판정 예측 / 근거 salt)과
  * proof 의 실제 유효성({@link MerkleTree#verify})을 본다. 체인은 부르지 않는다 — 루트 대조는 브라우저 몫이다.
@@ -37,7 +43,7 @@ import tools.jackson.databind.json.JsonMapper;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
-@DisplayName("3단계 검산 proof API")
+@DisplayName("예측 검산 proof API")
 class ProofControllerTest {
 
     private static final String CONTRACT = "0x07f8cfe2bc6174d62be8226e5e8699ffbf0d6d6a";
@@ -319,6 +325,90 @@ class ProofControllerTest {
         mockMvc.perform(get("/api/v1/predictions/{id}/proof", 1)).andExpect(status().isUnauthorized());
     }
 
+    /**
+     * ③ 서명자 대조 (ANT-CHAIN-18).
+     *
+     * <p>여기서 보는 것은 "서버가 준 {@code signerAddress} 가 맞나" 가 아니다 — 그건 서버 말을 서버 말로 확인하는
+     * 일이다. <b>응답에 든 값만으로 서명 문자열을 다시 조립해 주소를 복원할 수 있는가</b>를 본다. 브라우저가 할 일을
+     * 그대로 한다. 재료가 한 줄이라도 빠지면 이 테스트가 깨진다.
+     */
+    @Nested
+    @DisplayName("서명자 대조 재료")
+    class Signer {
+
+        /** 테스트 전용 키. 어디에도 쓰이지 않는 값이다. */
+        private static final String PRIVATE_KEY =
+                "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d";
+        private static final String NONCE = "3f8c1d5b7e2a49065b1e7c3a9d24f8061c7b3e5a92d4608f7a3c1e5b9d268047";
+
+        @Autowired SignatureGuard signatureGuard;
+
+        @Test
+        @DisplayName("응답 값만으로 서명 문자열을 다시 만들면 서명자 주소가 복원된다 — 서버 주소를 옮겨 적지 않는다")
+        void 브라우저가_서명자를_복원한다() throws Exception {
+            Credentials wallet = Credentials.create(PRIVATE_KEY);
+            long pid = insertPrediction(authorId, "OPEN");
+            String noteHash = noteHashOf("seed");
+            String payload = signingPayload(noteHash, signatureGuard.chainId(), NONCE);
+            String signature = WalletSignatures.sign(payload, wallet);
+            insertSignedCommit(pid, "seed", signature, wallet.getAddress(), NONCE);
+
+            String body = mockMvc.perform(get("/api/v1/predictions/{id}/proof", pid).with(user(str(authorId))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.signNonce").value(NONCE))
+                    .andExpect(jsonPath("$.chainId").value((int) signatureGuard.chainId()))
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+
+            // 여기부터가 브라우저 몫 — 응답만 보고 문자열을 다시 만든다.
+            JsonNode res = JSON.readTree(body);
+            String rebuilt = signingPayload(
+                    res.get("payload").get("noteHash").asString(),
+                    res.get("chainId").asLong(),
+                    res.get("signNonce").asString());
+            assertThat(recover(rebuilt, res.get("signature").asString()))
+                    .isEqualToIgnoringCase(res.get("signerAddress").asString());
+        }
+
+        @Test
+        @DisplayName("이 기능 이전 커밋은 signNonce 가 null — 실패가 아니라 ③이 잠기는 상태다")
+        void 옛_커밋은_nonce_가_없다() throws Exception {
+            long pid = insertPrediction(authorId, "OPEN");
+            insertCommit(pid, "seed", null);
+
+            mockMvc.perform(get("/api/v1/predictions/{id}/proof", pid).with(user(str(authorId))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.signNonce").value((Object) null))
+                    // chainId 는 커밋과 무관하게 늘 온다 — 지금 이 서버가 선 체인이다.
+                    .andExpect(jsonPath("$.chainId").value((int) signatureGuard.chainId()));
+        }
+
+        /** 서버 {@code PredictionCreateRequest.signingPayload} 와 같은 문자열이어야 한다. */
+        private String signingPayload(String noteHash, long chainId, String nonce) {
+            return "antenna:prediction:v1"
+                    + "\nstockCode=005930"
+                    + "\ndirection=UP"
+                    + "\ntargetPrice=80000.00"
+                    + "\nhorizon=30"
+                    + "\nnoteHash=" + noteHash
+                    + "\nchainId=" + chainId
+                    + "\nnonce=" + nonce;
+        }
+
+        private String recover(String payload, String signature) throws Exception {
+            byte[] raw = Numeric.hexStringToByteArray(signature);
+            byte[] r = new byte[32];
+            byte[] sPart = new byte[32];
+            System.arraycopy(raw, 0, r, 0, 32);
+            System.arraycopy(raw, 32, sPart, 0, 32);
+            Sign.SignatureData data = new Sign.SignatureData(raw[64], r, sPart);
+            return "0x"
+                    + Keys.getAddress(
+                            Sign.signedPrefixedMessageToKey(payload.getBytes(StandardCharsets.UTF_8), data));
+        }
+    }
+
     // ── 픽스처 ──────────────────────────────────────────────────────
 
     private static String str(long id) {
@@ -377,6 +467,26 @@ class ProofControllerTest {
                 .setParameter(5, "0x" + "ab".repeat(65))
                 .setParameter(6, "0x" + "11".repeat(20))
                 .setParameter(7, revealedAt)
+                .executeUpdate();
+        em.flush();
+        em.clear();
+    }
+
+    /** 실제 서명·nonce 가 든 커밋. {@link #insertCommit} 과 달리 ③ 재료가 진짜 값이다. */
+    private void insertSignedCommit(long pid, String seed, String signature, String signer, String nonce) {
+        em.createNativeQuery(
+                        """
+                        INSERT INTO prediction_commits
+                          (prediction_id, commit_hash, note_hash, salt, signature, signer_address, sign_nonce)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        """)
+                .setParameter(1, pid)
+                .setParameter(2, hashOf(seed))
+                .setParameter(3, noteHashOf(seed))
+                .setParameter(4, SALT)
+                .setParameter(5, signature)
+                .setParameter(6, signer)
+                .setParameter(7, nonce)
                 .executeUpdate();
         em.flush();
         em.clear();

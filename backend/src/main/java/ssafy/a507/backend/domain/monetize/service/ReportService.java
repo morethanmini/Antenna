@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
 import ssafy.a507.backend.common.security.CurrentUserProvider;
+import ssafy.a507.backend.common.security.SignatureGuard;
 import ssafy.a507.backend.domain.account.entity.Notification;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.account.repository.NotificationRepository;
@@ -61,6 +62,7 @@ public class ReportService {
     private final ReportLikeRepository reportLikeRepository;
     private final ReportCommentRepository reportCommentRepository;
     private final ReportAccess reportAccess;
+    private final SignatureGuard signatureGuard;
     private final CurrentUserProvider currentUserProvider;
 
     /** 통합 피드 탭. */
@@ -75,15 +77,28 @@ public class ReportService {
         POPULAR
     }
 
+    /**
+     * 리포트 발행.
+     *
+     * <p><b>서명을 먼저 검증한다(ANT-CHAIN-16).</b> 저장 뒤에 확인하면 실패한 발행이 행으로 남고, 그 행은
+     * 삭제 API 가 없어 지울 수단이 없다. {@code verify} 는 지갑 미연동(404 가 아니라 {@code WALLET_NOT_LINKED})과
+     * 서명자 불일치({@code SIGNER_MISMATCH})를 갈라 주고, nonce 도 여기서 소비된다 — 같은 서명을 두 번 쓸 수 없다.
+     *
+     * <p>멱등성 키와 겹치지 않는다. 같은 키로 재시도하면 컨트롤러가 최초 결과를 돌려주므로 이 메서드가
+     * 다시 불리지 않고, 따라서 nonce 도 한 번만 탄다.
+     */
     @Transactional
     public Long create(ReportCreateRequest request) {
         Long userId = currentUserProvider.currentUserId();
+        // nonce 까지 받는다 — 검산이 서명 payload 를 재조립하는 데 쓴다(ANT-CHAIN-17).
+        SignatureGuard.Verified verified = signatureGuard.verifyWithNonce(userId, request);
         User author = userRepository
                 .findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHENTICATED));
 
         Report report = reportRepository.save(
                 Report.create(author, request.title(), request.body(), request.visibility()));
+        report.sign(request.signature(), verified.signerAddress(), verified.nonce());
         /* 발행 즉시 봉인한다(ANT-CHAIN-14). 다음 앵커 회차(10분)가 이 해시를 머클 트리에 얹는다.
            저장 뒤에 부르는 이유는 없다 — 해시 재료에 id 가 들어가지 않으므로 순서는 자유다. 같은
            트랜잭션 안이라 변경 감지로 UPDATE 가 나간다. */

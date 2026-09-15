@@ -169,16 +169,35 @@
    보이면 안 된다. */
 .sot-stage{
   position:relative;overflow:hidden;
+  /* 채도를 한참 낮춘 연보라. 왼쪽(글 칸과 맞닿는 쪽)이 거의 흰색에 가깝고
+     오른쪽으로 갈수록 아주 조금 짙어진다 — 경계를 흰색으로 덮어 지우는 대신,
+     바탕 자체가 흰색에서 출발하게 해서 이음매가 생기지 않게 한다. */
   background:
-    radial-gradient(58% 70% at 74% 22%,rgba(255,255,255,.85),transparent 62%),
-    radial-gradient(52% 58% at 96% 96%,rgba(196,186,255,.5),transparent 70%),
-    linear-gradient(140deg,#f2f0ff 0%,#eae7fd 46%,#e5e1fc 76%,#f1ecff 100%);
+    radial-gradient(60% 72% at 76% 20%,rgba(255,255,255,.7),transparent 64%),
+    radial-gradient(54% 60% at 97% 97%,rgba(206,197,255,.34),transparent 72%),
+    linear-gradient(100deg,#fdfcff 0%,#faf8ff 26%,#f6f3fe 58%,#f2eefd 84%,#f4f0fe 100%);
 }
 /* 안쪽 세로 경계. 선을 긋는 대신 흰 쪽에서 보라 쪽으로 한 번 스미게 한다 —
    카드 안에 선이 하나 더 생기면 두 장을 붙여 놓은 것처럼 보인다. */
 .sot-stage::before{
-  content:"";position:absolute;inset:0 auto 0 0;width:28px;z-index:4;
-  background:linear-gradient(90deg,#fff,rgba(255,255,255,0));
+  /* 흰 쪽에서 보라 쪽으로 스미는 띠. 선을 긋는 대신 번지게 한다 — 카드 안에
+     선이 하나 더 생기면 두 장을 붙여 놓은 것처럼 보인다.
+
+     두 단(흰색 → 투명)으로 끝내면 오히려 경계가 보인다. 알파가 직선으로 줄면
+     눈에는 중간쯤에서 갑자기 꺾이는 것으로 읽혀(밝기 인지가 선형이 아니다)
+     띠의 끝에 또렷한 자국이 남는다. 그래서 뒤로 갈수록 천천히 옅어지도록
+     여러 단으로 나눠 감쇠를 눕혔다.
+     폭도 28px 에서 넉넉히 늘렸다 — 좁으면 아무리 곱게 깎아도 단차가 보인다. */
+  /* 바탕이 이미 흰색에서 시작하므로(.ob-stage) 덮을 것이 거의 없다. 남은
+     한 끗만 지우는 얇은 띠다 — 두껍게 덮으면 다시 흰 줄이 생긴다. */
+  content:"";position:absolute;inset:0 auto 0 0;width:44px;z-index:4;
+  background:linear-gradient(90deg,
+    rgba(255,255,255,.9) 0%,
+    rgba(255,255,255,.72) 22%,
+    rgba(255,255,255,.5) 44%,
+    rgba(255,255,255,.28) 66%,
+    rgba(255,255,255,.1) 85%,
+    rgba(255,255,255,0) 100%);
   pointer-events:none;
 }
 /* 그림 전체가 장식이라 마우스를 받지 않는다 — 글자 선택이나 커서가 걸리지 않게 */
@@ -282,8 +301,17 @@
     max-width:440px;
   }
   .sot-stage{grid-row:1}
-  .sot-stage::before{inset:auto 0 0 auto;width:auto;height:24px;
-    background:linear-gradient(0deg,#fff,rgba(255,255,255,0))}
+  .sot-stage::before{inset:auto 0 0 auto;width:auto;height:72px;
+    background:linear-gradient(0deg,
+      #fff 0%,
+      rgba(255,255,255,.97) 12%,
+      rgba(255,255,255,.88) 26%,
+      rgba(255,255,255,.72) 40%,
+      rgba(255,255,255,.53) 54%,
+      rgba(255,255,255,.34) 68%,
+      rgba(255,255,255,.17) 82%,
+      rgba(255,255,255,.05) 93%,
+      rgba(255,255,255,0) 100%)}
   .sot-art{bottom:-8%}
   .sot-copy{grid-row:2;padding:18px 22px 20px;gap:16px}
   .sot-title{font-size:21px}

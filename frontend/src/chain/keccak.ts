@@ -29,3 +29,14 @@ export async function keccak256Utf8(text: string) {
   const { keccak256, toUtf8Bytes } = await ethers()
   return keccak256(toUtf8Bytes(text))
 }
+
+/**
+ * 서명에서 서명자 주소를 복원한다. **서버가 준 signerAddress 를 믿지 않는 부분이다.**
+ *
+ * 리포트 검산(D-04)과 예측 검산(D-03)이 같은 함수를 쓴다 — 복원 규칙이 두 벌이면
+ * 한쪽만 고쳐졌을 때 두 화면이 같은 서명에 다른 답을 낸다.
+ */
+export async function recoverSigner(preimage: string, signature: string) {
+  const { verifyMessage } = await ethers()
+  return verifyMessage(preimage, signature).toLowerCase()
+}

@@ -10,10 +10,19 @@
    GET /seasons/me 하나다. v0.39 에서 제목·종료 시각·최종 수익률이 붙어(대연님)
    목록에 필요한 값이 한 응답에 다 온다 — 시즌마다 상세를 다시 부르지 않는다.
 
+   ── 두 목록은 탭 하나다 (2026-09-15) ─────────────────────
+   이어서 할 연습과 마친 시즌을 카드 두 장으로 세워 두니, 한 화면에 요약 4칸 + 카드
+   2장 + 정렬 줄이 동시에 서서 어디부터 봐야 하는지가 없었다. 둘은 **같은 목록의 두
+   상태**라 나란히 펼쳐 둘 이유가 없다 — 탭으로 접고, 개수는 탭 이름이 말한다.
+   기본 탭은 이어서 할 연습이다. 진행 중인 판이 있는 사람이 여기 온 이유가 그것이다.
+
+   요약도 3칸으로 줄였다. "진행 중 n개" 는 탭 이름이 이미 말하므로 칸을 따로 두면
+   같은 숫자가 한 화면에 두 번 뜬다.
+
    ── 배지는 뺐다 ──────────────────────────────────────────
    설계서 §G-09 는 "기록·배지" 지만 배지는 MVP 가 아니다(2026-09-09). GET /users/me/badges
    도 서버에 없다. 자리만 만들어 두면 빈 상자가 화면을 차지하기만 하므로 통째로 뺐다 —
-   배지가 생기면 마친 시즌 아래에 카드 하나를 더하면 된다. */
+   배지가 생기면 목록 아래에 카드 하나를 더하면 된다. */
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError } from '../api/errors'
@@ -25,6 +34,7 @@ import ErrorState from '../components/state/ErrorState'
 import '../styles/screens/sim-history.css'
 
 type Sort = 'RECENT' | 'BEST' | 'WORST'
+type Tab = 'ONGOING' | 'DONE'
 
 const SORTS: { key: Sort; label: string }[] = [
   { key: 'RECENT', label: '최근순' },
@@ -48,66 +58,76 @@ const Ico = ({ size = 18, children }: { size?: number; children: ReactNode }) =>
   </svg>
 )
 
-function Stat({ tone, label, value, sub, icon }: {
-  tone: string
+/** 요약 한 칸. 아이콘 타일을 두지 않는다 — 숫자 셋을 나란히 읽는 자리라
+    칸마다 색 타일이 붙으면 숫자보다 타일이 먼저 보인다. */
+function Figure({ label, value, sub, tone }: {
   label: string
   value: string
-  sub?: ReactNode
-  icon: ReactNode
+  sub: string
+  tone?: string
 }) {
   return (
-    <div className={`sh-stat t-${tone}`}>
-      <div className="sh-stat-txt">
-        <span className="sh-stat-label">{label}</span>
-        <b className="sh-stat-val num">{value}</b>
-        {sub && <span className="sh-stat-sub num">{sub}</span>}
-      </div>
-      <span className="sh-stat-ico" aria-hidden="true">{icon}</span>
+    <div className="sh-fig">
+      <span className="sh-fig-label">{label}</span>
+      <b className={`sh-fig-val num ${tone ?? ''}`}>{value}</b>
+      <span className="sh-fig-sub">{sub}</span>
     </div>
   )
 }
 
-/** 완료 회차 한 줄. 누르면 그 판의 결과로 간다 */
-function DoneRow({ run }: { run: MyRun }) {
+/* 한 줄. 마친 판은 성적을, 진행 중인 판은 남은 길이를 오른쪽에 둔다 —
+   같은 자리에 "그 판이 지금 무엇인지" 가 온다.
+
+   모드 배지는 목록에 모드가 섞였을 때만 낸다. 연습만 있는 목록에서 모든 줄에
+   "연습" 이 붙으면 구분하는 정보가 아니라 같은 글자가 n번 반복되는 것이다. */
+function RunRow({ run, showMode }: { run: MyRun; showMode: boolean }) {
+  const isDone = run.endedAt != null || run.returnRate != null
   const r = run.returnRate
   const ended = endedLabel(run.endedAt)
+  const pct = progressOf(run.currentDay, run.lengthDays)
+
   return (
     <li>
-      <Link className="sh-row" to={`/sim/${run.seasonId}/result`}>
-        <span className="sh-mode">{MODE_LABEL[run.mode]}</span>
-        <b>{run.title}</b>
-        <span className="sh-when">{ended ?? `${run.lengthDays}게임일`}</span>
-        {/* 결과가 없는 완료 회차도 있다 — 끝냈지만 성적표를 안 굳힌 판이다 */}
-        <span className={`sh-rate num ${r == null ? 'flat' : signOf(r)}`}>
-          {r == null ? '성적표 없음' : rate(r)}
+      <Link
+        className={`sh-row ${isDone ? 'is-done' : 'is-go'}`}
+        to={isDone ? `/sim/${run.seasonId}/result` : `/sim/${run.seasonId}/play`}
+      >
+        <span className="sh-name">
+          {showMode && <span className="sh-mode">{MODE_LABEL[run.mode]}</span>}
+          <b>{run.title}</b>
         </span>
-        <i aria-hidden="true">›</i>
+
+        {isDone ? (
+          <>
+            <span className="sh-when">{ended ?? `${run.lengthDays}게임일`}</span>
+            {/* 결과가 없는 완료 회차도 있다 — 끝냈지만 성적표를 안 굳힌 판이다 */}
+            <span className={`sh-rate num ${r == null ? 'flat' : signOf(r)}`}>
+              {r == null ? '성적표 없음' : rate(r)}
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="sh-when num">DAY {run.currentDay} / {run.lengthDays}</span>
+            {/* 막대를 화면 끝까지 늘리지 않는다 — 길이가 정보인 것은 찬 비율이지 폭이 아니다 */}
+            <span className="sh-bar" aria-hidden="true"><i style={{ width: `${pct}%` }} /></span>
+          </>
+        )}
+
+        <i className="sh-chev" aria-hidden="true">›</i>
       </Link>
     </li>
   )
 }
 
-/** 진행 중 회차 한 줄. 누르면 이어서 한다 */
-function OngoingRow({ run }: { run: MyRun }) {
-  const pct = progressOf(run.currentDay, run.lengthDays)
-  return (
-    <li>
-      <Link className="sh-row sh-row-go" to={`/sim/${run.seasonId}/play`}>
-        <span className="sh-mode">{MODE_LABEL[run.mode]}</span>
-        <b>{run.title}</b>
-        <span className="sh-when num">DAY {run.currentDay} / {run.lengthDays}</span>
-        <span className="sh-bar" aria-hidden="true"><i style={{ width: `${pct}%` }} /></span>
-        <i aria-hidden="true">›</i>
-      </Link>
-    </li>
-  )
-}
+/** 목록에 모드가 섞여 있는가. 섞였을 때만 줄마다 모드를 적는다 */
+const mixedModes = (rows: MyRun[]) => new Set(rows.map((r) => r.mode)).size > 1
 
 export default function SeasonHistory() {
   const [ongoing, setOngoing] = useState<MyRun[] | null>(null)
   const [done, setDone] = useState<MyRun[]>([])
   const [loadError, setLoadError] = useState<ApiError | null>(null)
   const [sort, setSort] = useState<Sort>('RECENT')
+  const [tab, setTab] = useState<Tab>('ONGOING')
 
   useEffect(() => {
     let alive = true
@@ -116,6 +136,8 @@ export default function SeasonHistory() {
         if (!alive) return
         setOngoing(r.ongoing)
         setDone(r.done)
+        /* 이어서 할 판이 없는 사람에게 빈 탭을 먼저 보여 줄 이유가 없다 */
+        setTab(r.ongoing.length > 0 ? 'ONGOING' : 'DONE')
         setLoadError(null)
       })
       .catch((e) => { if (alive) setLoadError(e instanceof ApiError ? e : null) })
@@ -135,6 +157,8 @@ export default function SeasonHistory() {
     })
   }, [done, sort])
 
+  const sortedOngoing = useMemo(() => [...(ongoing ?? [])].sort(recentFirst), [ongoing])
+
   const scored = done.filter((r) => r.returnRate != null)
   const avg = scored.length
     ? scored.reduce((a, r) => a + (r.returnRate ?? 0), 0) / scored.length
@@ -153,6 +177,23 @@ export default function SeasonHistory() {
     )
   }
 
+  const rows = tab === 'ONGOING' ? sortedOngoing : sortedDone
+  const showMode = mixedModes(rows)
+  const TABS: { key: Tab; label: string; count: number; icon: ReactNode }[] = [
+    {
+      key: 'ONGOING',
+      label: '이어서 할 연습',
+      count: ongoing.length,
+      icon: <Ico size={15}><path d="m10 8.5 6 3.5-6 3.5z" /><circle cx="12" cy="12" r="9" /></Ico>,
+    },
+    {
+      key: 'DONE',
+      label: '마친 시즌',
+      count: done.length,
+      icon: <Ico size={15}><path d="M5 13l4 4L19 7" /></Ico>,
+    },
+  ]
+
   return (
     <main className="main">
       <div className="main-inner sim-history">
@@ -170,93 +211,84 @@ export default function SeasonHistory() {
           <Link className="sh-go" to="/sim/modes">새로 시작하기</Link>
         </header>
 
-        {/* ── 요약 4칸 ─────────────────────────────────── */}
-        <section className="sh-stats" aria-label="기록 요약">
-          <Stat
-            tone="done"
+        {/* ── 요약 3칸 ─────────────────────────────────── */}
+        <section className="sh-figs" aria-label="기록 요약">
+          <Figure
             label="마친 시즌"
             value={`${done.length}개`}
-            sub={<span className="sh-dim">{scored.length}개 성적표 있음</span>}
-            icon={<Ico><path d="M5 13l4 4L19 7" /></Ico>}
+            sub={done.length === 0
+              ? '아직 없습니다'
+              : scored.length === done.length ? '모두 성적표 있음' : `${scored.length}개 성적표 있음`}
           />
-          <Stat
-            tone="go"
-            label="진행 중"
-            value={`${ongoing.length}개`}
-            sub={<span className="sh-dim">{ongoing.length > 0 ? '이어서 할 수 있습니다' : '없습니다'}</span>}
-            icon={<Ico><path d="m10 8.5 6 3.5-6 3.5z" /><circle cx="12" cy="12" r="9" /></Ico>}
-          />
-          <Stat
-            tone={avg == null ? 'flat' : avg > 0 ? 'up' : avg < 0 ? 'down' : 'flat'}
+          <Figure
             label="평균 수익률"
             value={avg == null ? '—' : rate(avg)}
-            sub={<span className="sh-dim">{scored.length === 0 ? '성적표가 없습니다' : `${scored.length}개 평균`}</span>}
-            icon={<Ico><path d="M4 16.5 9 11l3.5 3.5L20 7" /><path d="M15.5 7H20v4.5" /></Ico>}
+            sub={scored.length === 0 ? '성적표가 없습니다' : `${scored.length}개 평균`}
+            tone={avg == null ? 'flat' : signOf(avg)}
           />
-          <Stat
-            tone={best == null ? 'flat' : best > 0 ? 'up' : 'down'}
+          <Figure
             label="가장 좋았던 판"
             value={best == null ? '—' : rate(best)}
-            sub={<span className="sh-dim">최고 수익률</span>}
-            icon={<Ico><path d="M7 4h10v5a5 5 0 0 1-10 0z" /><path d="M10 19h4M12 14v5M8.5 21h7" /></Ico>}
+            sub={best == null ? '아직 없습니다' : '최고 수익률'}
+            tone={best == null ? 'flat' : signOf(best)}
           />
         </section>
 
-        {/* ── 진행 중 ──────────────────────────────────── */}
-        {ongoing.length > 0 && (
-          <section className="sh-card">
-            <h2>
-              <span className="sh-h-ico t-go" aria-hidden="true">
-                <Ico size={15}><path d="m10 8.5 6 3.5-6 3.5z" /><circle cx="12" cy="12" r="9" /></Ico>
-              </span>
-              이어서 할 연습
-              <em>{ongoing.length}개</em>
-            </h2>
-            <ul className="sh-list">
-              {[...ongoing].sort(recentFirst).map((r) => (
-                <OngoingRow key={r.seasonId} run={r} />
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {/* ── 마친 시즌 ────────────────────────────────── */}
+        {/* ── 목록. 진행 중과 마친 시즌은 같은 목록의 두 상태다 ── */}
         <section className="sh-card">
-          <h2>
-            <span className="sh-h-ico t-done" aria-hidden="true">
-              <Ico size={15}><path d="M5 13l4 4L19 7" /></Ico>
-            </span>
-            마친 시즌
-            <em>{done.length}개</em>
-          </h2>
+          <div className="sh-tabs" role="tablist" aria-label="기록 종류">
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                role="tab"
+                id={`sh-tab-${t.key}`}
+                aria-selected={tab === t.key}
+                aria-controls="sh-panel"
+                className={tab === t.key ? 'on' : undefined}
+                onClick={() => setTab(t.key)}
+              >
+                <span className="sh-tab-ico" aria-hidden="true">{t.icon}</span>
+                {t.label}
+                <em className="num">{t.count}</em>
+              </button>
+            ))}
+          </div>
 
-          {done.length > 1 && (
-            <div className="sh-sorts" role="group" aria-label="정렬">
-              {SORTS.map((x) => (
-                <button
-                  key={x.key}
-                  type="button"
-                  aria-pressed={sort === x.key}
-                  className={sort === x.key ? 'on' : undefined}
-                  onClick={() => setSort(x.key)}
-                >
-                  {x.label}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="sh-panel" id="sh-panel" role="tabpanel" aria-labelledby={`sh-tab-${tab}`}>
+            {/* 정렬은 마친 시즌에만, 그것도 둘 이상일 때만 — 하나뿐이면 고를 것이 없다 */}
+            {tab === 'DONE' && done.length > 1 && (
+              <div className="sh-sorts" role="group" aria-label="정렬">
+                {SORTS.map((x) => (
+                  <button
+                    key={x.key}
+                    type="button"
+                    aria-pressed={sort === x.key}
+                    className={sort === x.key ? 'on' : undefined}
+                    onClick={() => setSort(x.key)}
+                  >
+                    {x.label}
+                  </button>
+                ))}
+              </div>
+            )}
 
-          {done.length === 0 ? (
-            <p className="sh-empty">
-              아직 끝까지 마친 시즌이 없습니다.
-              <small>마지막 게임일까지 가면 성적표와 함께 여기에 쌓입니다.</small>
-              <Link className="sh-go" to="/sim/practice">연습 고르러 가기</Link>
-            </p>
-          ) : (
-            <ul className="sh-list">
-              {sortedDone.map((r) => <DoneRow key={r.seasonId} run={r} />)}
-            </ul>
-          )}
+            {rows.length === 0 ? (
+              <p className="sh-empty">
+                {tab === 'ONGOING' ? '이어서 할 연습이 없습니다.' : '아직 끝까지 마친 시즌이 없습니다.'}
+                <small>
+                  {tab === 'ONGOING'
+                    ? '연습을 시작하면 마지막으로 본 게임일에서 이어집니다.'
+                    : '마지막 게임일까지 가면 성적표와 함께 여기에 쌓입니다.'}
+                </small>
+                <Link className="sh-go" to="/sim/practice">연습 고르러 가기</Link>
+              </p>
+            ) : (
+              <ul className="sh-list">
+                {rows.map((r) => <RunRow key={r.seasonId} run={r} showMode={showMode} />)}
+              </ul>
+            )}
+          </div>
         </section>
 
         {loadError && <ErrorState error={loadError} onRetry={() => setLoadError(null)} inline />}

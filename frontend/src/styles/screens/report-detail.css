@@ -38,6 +38,16 @@
 .rd-author:hover{ color:var(--brand-ink); text-decoration:underline; }
 .rd-dot{ color:var(--faint); }
 
+/* 작성자 증명 배지. 구독자 공개(브랜드색)와 색을 나눈다 — 하나는 판매 조건,
+   하나는 무결성이라 같은 색으로 묶으면 뜻이 섞인다. */
+.rd-signed{
+  display:inline-flex; align-items:center; gap:4px;
+  margin-left:2px; padding:3px 9px;
+  border-radius:999px;
+  background:var(--ok-soft); color:var(--ok);
+  font-size:11.5px; font-weight:700;
+}
+
 .rd-private{
   margin-left:2px; padding:3px 9px;
   border-radius:999px;
@@ -45,17 +55,33 @@
   font-size:11.5px; font-weight:700;
 }
 
-/* 작성자가 넣은 줄바꿈을 살린다. 서버가 본문을 그대로 보관하므로
-   여기서 접으면 문단 구분이 사라진다. */
+/* 본문은 마크다운으로 그린다(components/report/Markdown). 줄바꿈·문단·목록 같은
+   요소 사이 리듬은 styles/markdown.css 가 정하고, 여기서는 이 화면의 글자만 정한다 —
+   두 곳이 같은 것을 정하면 갈린다.
+   white-space:pre-wrap 은 걷어냈다. 홑 줄바꿈은 remark-breaks 가 <br> 로 살리므로
+   남겨 두면 문단 사이 빈 줄이 두 번 세어져 간격이 벌어진다. */
 .rd-body{
-  white-space:pre-wrap;
-  overflow-wrap:anywhere;      /* 공백 없는 긴 URL 이 카드를 밀어내지 않게 */
   font-size:15px; line-height:1.85; color:var(--body);
 }
 
 /* 잠금 미리보기도 서버가 "앞 3줄"로 잘라 준 값이라 줄바꿈이 의미를 갖는다.
    공용 LockedCard 는 건드리지 않고 이 화면 안에서만 살린다. */
 .rd .state-locked-preview p{ white-space:pre-line; }
+
+/* 검산 진입점. 버튼처럼 크게 두지 않는다 — 본문을 읽은 뒤의 다음 걸음이지
+   이 화면의 주된 행동이 아니다. */
+.rd-verify{
+  display:flex; align-items:center; justify-content:center; gap:7px;
+  margin-top:16px; padding:12px;
+  border:1px solid var(--rule); border-radius:10px;
+  background:var(--surface);
+  color:var(--muted); font-size:13px; font-weight:600;
+  text-decoration:none;
+}
+.rd-verify:hover{ border-color:var(--brand); color:var(--brand-ink); }
+
+/* 배지도 검산으로 가는 길이다 */
+.rd-signed:hover{ text-decoration:none; filter:brightness(.96); }
 
 /* 본문과 반응 사이에 선을 하나 둔다 — 읽기가 끝났다는 표시다 */
 .rd-reactions{

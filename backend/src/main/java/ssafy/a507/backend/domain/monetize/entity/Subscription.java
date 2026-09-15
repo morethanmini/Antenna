@@ -104,4 +104,39 @@ public class Subscription {
         this.startedAt = now;
         this.expiresAt = now.plus(PERIOD_DAYS, java.time.temporal.ChronoUnit.DAYS);
     }
+
+    /**
+     * 접수 (ANT-TOKEN-01). PENDING 으로 시작하고 기간은 비운다 — 개시·만료는 확정 시각 기준이라
+     * {@link #activate} 가 채운다. 접수 시각으로 30일을 세면 체인이 밀린 만큼 구독이 짧아진다.
+     *
+     * <p>{@code fee} 는 <b>결제 시점 가격을 박제</b>한 값이다. 채널이 나중에 값을 올려도 이 구독은
+     * 만료까지 이 가격이고, 자동 갱신 배치도 이 값이 아니라 그때의 현재가로 다시 결제한다.
+     *
+     * <p>{@code autoRenew} 는 true 로 시작한다 — 최초 구독 서명에 위임 승인이 들어가 있고(명세 §4.2),
+     * 끄는 길은 따로 있다(DELETE /subscriptions/{id}/renewal, ANT-TOKEN-05).
+     */
+    public static Subscription request(User subscriber, User publisher, BigInteger fee) {
+        Subscription s = new Subscription();
+        s.subscriber = subscriber;
+        s.publisher = publisher;
+        s.fee = fee;
+        s.status = Status.PENDING;
+        s.autoRenew = true;
+        return s;
+    }
+
+    /**
+     * 접수했는데 전송이 못 나갔다 (ANT-TOKEN-01). 안 닫으면 영원히 PENDING 인 행이 남아 중복 구독
+     * 검사에 걸려 사용자가 다시 시도할 수 없다. {@code AdBanner.reject()} 와 같은 규칙이다.
+     *
+     * <p>이미 ACTIVE 면 건드리지 않는다 — 전송은 실패로 보였는데 인덱서가 먼저 확정을 본 경우,
+     * 여기서 EXPIRED 로 내리면 결제된 구독이 닫힌다.
+     */
+    public void expire() {
+        if (this.status == Status.ACTIVE) {
+            return;
+        }
+        this.status = Status.EXPIRED;
+        this.canceledAt = Instant.now();
+    }
 }

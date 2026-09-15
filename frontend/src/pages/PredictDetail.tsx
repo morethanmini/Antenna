@@ -291,7 +291,7 @@ export default function PredictDetail() {
 
             {/* 검산 진입점. 이 화면의 신뢰가 거기서 완성된다(티켓) */}
             <Link className="pd-verify" to={`/ledger/verify/${d.id}`}>
-              3단계로 직접 검산하기
+              4단계로 직접 검산하기
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                    strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="m9 6 6 6-6 6" />

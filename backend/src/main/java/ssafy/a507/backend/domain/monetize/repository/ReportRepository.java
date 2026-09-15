@@ -122,6 +122,31 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     @Query("select r from Report r where r.bodyHash is not null and r.anchorBatch is null order by r.id asc")
     List<Report> findSealedWithoutBatch();
 
+    /**
+     * 커밋 원장 목록(화면 D-01)의 리포트 줄 (ANT-CHAIN-15). 최신 발행부터, 같은 시각이면 id 내림차순.
+     *
+     * <p>{@code bodyHash is not null} 은 {@link #findSealedWithoutBatch} 와 <b>같은 기준</b>이다 —
+     * 봉인 이전에 발행된 리포트는 앵커 대상이 아니므로 원장에도 오르지 않는다. 한쪽만 고치면
+     * "원장에는 있는데 체인에는 없는 줄" 이 생긴다.
+     *
+     * <p>{@code cursorId} 는 커서의 종류가 REPORT 일 때만 값이 있다. 커서가 예측을 가리키면 null 이 오고,
+     * 그때는 같은 시각의 리포트가 아직 안 나갔으므로({@code PREDICTION} 이 같은 시각에서 앞이다)
+     * {@code createdAt = :at} 인 리포트를 전부 포함해야 한다 — {@code :cursorId is null} 가지가 그것이다.
+     *
+     * <p>{@code anchorBatch} 는 left fetch 다. 아직 배치에 안 묶인 리포트도 원장에 나와야 하고
+     * (다음 배치 대기), fetch 하지 않으면 한 장에 배치 수만큼 추가 질의가 난다.
+     */
+    @Query("""
+            select r from Report r
+              left join fetch r.anchorBatch
+            where r.bodyHash is not null
+              and (:at is null
+                   or r.createdAt < :at
+                   or (r.createdAt = :at and (:cursorId is null or r.id < :cursorId)))
+            order by r.createdAt desc, r.id desc
+            """)
+    List<Report> findLedgerPage(@Param("at") Instant at, @Param("cursorId") Long cursorId, Limit limit);
+
     /** 이 배치에 묶인 리포트. 리프 순서 재현용이라 {@link #findSealedWithoutBatch} 와 같은 정렬이어야 한다. */
     List<Report> findByAnchorBatchOrderByIdAsc(AnchorBatch anchorBatch);
 }

@@ -2,6 +2,7 @@ package ssafy.a507.backend.domain.prediction.repository;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -133,6 +134,22 @@ public interface PredictionRepository extends JpaRepository<Prediction, Long> {
     List<Object[]> countMineByStatus(@Param("userId") Long userId);
 
     /**
+     * 위와 같되 트랙을 좁힌다. {@code track} 이 null 이면 둘 다 센다 — 기존 호출부의 뜻 그대로다.
+     *
+     * <p>한 표에 REAL 과 REPLAY 가 함께 들어간다(스키마의 {@code ck_predictions_target_matches_track}).
+     * 채널 실적(ANT-TOKEN-09)처럼 "실전 성적"을 묻는 자리는 REAL 만 세야 한다 — 모의투자 성적이 섞이면
+     * 적중률이 조용히 달라지고, 오류가 아니라 숫자만 틀리므로 눈치채기 어렵다.
+     */
+    @Query("""
+            select p.status, count(p) from Prediction p
+             where p.user.id = :userId
+               and (:track is null or p.track = :track)
+             group by p.status
+            """)
+    List<Object[]> countByStatusAndTrack(
+            @Param("userId") Long userId, @Param("track") Track track);
+
+    /**
      * 판정된 내 예측의 평균 오차 (C-04). 판정이 없으면 빈 값이다 — 0 이 아니다.
      *
      * <p>{@code avg} 를 DB 에 맡기는 이유는 목록을 끌어와 평균을 내면 예측이 늘수록 읽는 행이 느는데,
@@ -146,6 +163,17 @@ public interface PredictionRepository extends JpaRepository<Prediction, Long> {
             """)
     Optional<BigDecimal> avgErrorOfSettled(@Param("userId") Long userId);
 
+    /** 위와 같되 트랙을 좁힌다. {@code track} 이 null 이면 둘 다 본다 — {@link #countByStatusAndTrack} 와 짝이다. */
+    @Query("""
+            select avg(p.errorRate) from Prediction p
+             where p.user.id = :userId
+               and (:track is null or p.track = :track)
+               and p.status in (ssafy.a507.backend.domain.prediction.entity.Prediction$Status.HIT,
+                                ssafy.a507.backend.domain.prediction.entity.Prediction$Status.MISS)
+            """)
+    Optional<BigDecimal> avgErrorOfSettledByTrack(
+            @Param("userId") Long userId, @Param("track") Track track);
+
     /**
      * 체인에 <b>박힌</b> 내 커밋 수 (C-04). 배치가 CONFIRMED 인 것만 센다 — PENDING 은 아직 안 올라간
      * 것이고 FAILED 는 못 올라간 것이라, 둘을 anchored 라 부르면 화면이 거짓말을 한다.
@@ -156,4 +184,35 @@ public interface PredictionRepository extends JpaRepository<Prediction, Long> {
                and c.anchorBatch.status = ssafy.a507.backend.domain.chain.entity.AnchorBatch$Status.CONFIRMED
             """)
     long countAnchored(@Param("userId") Long userId);
+
+    /**
+     * 백테스트 재료 — 구간 안에 판정된 REAL 예측의 (방향, 기준가, 판정가) (ANT-TOKEN-03).
+     *
+     * <p>엔티티가 아니라 세 값만 꺼내는 이유는 계산에 그것뿐이고, 예측은 사람마다 계속 늘어서다.
+     * {@code base_price}·{@code settle_price} 가 비어 있는 행은 뺀다 — 판정 배치가 채우는 값이라
+     * HIT/MISS 면 늘 차 있지만, 없으면 수익률을 만들 수 없어 <b>표본에서 빠지는</b> 편이 맞다.
+     */
+    @Query("""
+            select p.direction, p.basePrice, p.settlePrice from Prediction p
+             where p.user.id = :userId
+               and p.track = ssafy.a507.backend.domain.common.Track.REAL
+               and p.status in (ssafy.a507.backend.domain.prediction.entity.Prediction$Status.HIT,
+                                ssafy.a507.backend.domain.prediction.entity.Prediction$Status.MISS)
+               and p.settledOn >= :from
+               and p.basePrice is not null
+               and p.settlePrice is not null
+               and p.basePrice > 0
+            """)
+    List<Object[]> backtestRows(@Param("userId") Long userId, @Param("from") LocalDate from);
+
+    /** 백테스트 구간의 양 끝을 잡는다 — 그 사람의 가장 이른/늦은 판정일. 표본이 없으면 빈 값 */
+    @Query("""
+            select min(p.settledOn), max(p.settledOn) from Prediction p
+             where p.user.id = :userId
+               and p.track = ssafy.a507.backend.domain.common.Track.REAL
+               and p.status in (ssafy.a507.backend.domain.prediction.entity.Prediction$Status.HIT,
+                                ssafy.a507.backend.domain.prediction.entity.Prediction$Status.MISS)
+               and p.settledOn >= :from
+            """)
+    List<Object[]> settledSpan(@Param("userId") Long userId, @Param("from") LocalDate from);
 }

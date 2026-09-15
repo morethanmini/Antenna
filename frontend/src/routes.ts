@@ -20,6 +20,7 @@ import Portfolio from './pages/Portfolio'
 import LedgerList from './pages/LedgerList'
 import Anchor from './pages/Anchor'
 import Verify from './pages/Verify'
+import VerifyReport from './pages/VerifyReport'
 import Ranking, { SimRanking } from './pages/Ranking'
 import ChannelProfile from './pages/ChannelProfile'
 import SubscriptionList from './pages/SubscriptionList'
@@ -45,6 +46,7 @@ import Ad from './pages/Ad'
 import AdminAbuse from './pages/AdminAbuse'
 import AdminUser from './pages/AdminUser'
 import AdminSeason from './pages/AdminSeason'
+import EventContest from './pages/EventContest'
 
 export type Access =
   /** 비로그인도 볼 수 있다 — 설계서 §1 기준 A-01 하나뿐 */
@@ -97,7 +99,10 @@ export const ROUTES: PageMeta[] = [
   // ── D. 온체인 검증 ───────────────────────────────────
   { screen: 'D-01', element: LedgerList, path: '/ledger', title: '커밋 원장', access: 'user', mode: 'insight', nav: 'ledger', story: 'ANT-FE-LEDGER-LIST' },
   { screen: 'D-02', element: Anchor, path: '/ledger/anchors/:id', title: '앵커 배치 상세', access: 'user', mode: 'insight', nav: 'ledger', story: 'ANT-FE-ANCHOR' },
-  { screen: 'D-03', element: Verify, path: '/ledger/verify/:predictionId', title: '3단계 검산', access: 'user', mode: 'insight', nav: 'ledger', story: 'ANT-FE-VERIFY' },
+  { screen: 'D-03', element: Verify, path: '/ledger/verify/:predictionId', title: '4단계 검산', access: 'user', mode: 'insight', nav: 'ledger', story: 'ANT-FE-VERIFY' },
+  /* 리포트 검산. 예측 검산과 경로를 나눈 이유는 id 가 다른 시퀀스라서다 —
+     /ledger/verify/:id 하나로 두면 12 가 예측인지 리포트인지 알 수 없다. */
+  { screen: 'D-04', element: VerifyReport, path: '/ledger/verify/report/:reportId', title: '리포트 검산', access: 'user', mode: 'insight', nav: 'ledger', story: 'ANT-CHAIN-17' },
 
   // ── E. 채널 · 구독 ───────────────────────────────────
   { screen: 'E-01', element: Ranking, path: '/rankings', title: '주가 예측 랭킹', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'predictor-market-page', story: 'ANT-FE-RANKING' },
@@ -149,4 +154,11 @@ export const ROUTES: PageMeta[] = [
   { screen: 'I-01', element: AdminAbuse, path: '/admin/abuse-reports', title: '신고 처리', access: 'admin', mode: 'insight', nav: 'home', story: 'ANT-FE-ADMIN-ABUSE' },
   { screen: 'I-02', element: AdminUser, path: '/admin/users', title: '회원 제재', access: 'admin', mode: 'insight', nav: 'home', story: 'ANT-FE-ADMIN-USER' },
   { screen: 'I-03', element: AdminSeason, path: '/admin/seasons', title: '시즌 운영', access: 'admin', mode: 'sim', nav: 'home', story: 'ANT-FE-ADMIN-SEASON' },
+
+  /* ── J. 이벤트 ───────────────────────────────────────
+     설계서 §3 에 없는 화면이다. 이벤트용으로 뒤에 붙은 것이라 A~I 를 밀지 않으려고
+     새 글자를 쓴다 — 설계서는 그대로 두고 여기만 늘린다.
+     **nav 가 없다.** 사이드바에 메뉴를 만들지 않는 화면이라, 어느 메뉴를 켤지
+     정할 것이 없다. 들어오는 길은 링크와 홈 배너뿐이다. */
+  { screen: 'J-01', element: EventContest, path: '/events/scalping', title: '천하제일 단타대회', access: 'user', mode: 'insight', bodyClass: 'event-contest-page', story: 'ANT-FE-EVENT-CONTEST' },
 ]
