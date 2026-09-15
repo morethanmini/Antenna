@@ -41,6 +41,7 @@ import {
   type Candle, type SeasonNews, type Side, type Ticker,
 } from '../api/seasonPlay'
 import { useApiQuery } from '../api/useApiQuery'
+import MascotSay from '../components/MascotSay'
 import CandleChart from '../components/sim/CandleChart'
 import IndicatorPane, { type PaneKind } from '../components/sim/IndicatorPane'
 import PortfolioDonut, { type DonutSlice } from '../components/sim/PortfolioDonut'
@@ -81,6 +82,74 @@ const PANE_H = 130
 const OVERLAYS: IndicatorKind[] = ['MA5', 'MA15', 'MA30', 'BOLL']
 const PANES: PaneKind[] = ['RSI']
 const INDICATORS: IndicatorKind[] = [...OVERLAYS, ...PANES]
+
+/* ── 보조지표가 무엇인지 ───────────────────────────────────
+   차트에 선을 켜 놓고도 그게 무슨 선인지 모르면 켠 의미가 없다. 지표 버튼 바로
+   아래에서 개미가 한 줄로 말해 주고, 더 보고 싶은 사람만 편다.
+
+   **해석은 관례이지 정답이 아니다.** 마지막 줄에 그렇게 적는다 — 여기 적힌 것을
+   매매 규칙으로 읽으면 안 된다. 우리는 투자 조언을 하지 않는다.
+
+   INDICATORS 와 같은 순서로 적는다. 지표가 늘거나 빠지면 이 표도 같이 고친다 —
+   코드에서 자동으로 만들 수 있는 값이 아니다(설명은 사람이 쓴다). */
+const INDICATOR_HELP: { key: string; term: string; body: string }[] = [
+  {
+    key: 'MA',
+    term: 'MA5 · MA15 · MA30',
+    body: '최근 5·15·30일 종가의 평균을 이은 선입니다. 선이 위를 향하면 오름세, 아래를 향하면 내림세로 읽습니다. 짧은 선이 긴 선을 뚫고 올라가는 자리를 흐름이 바뀌는 신호로 보기도 합니다.',
+  },
+  {
+    key: 'BOLL',
+    term: '볼린저밴드',
+    body: '평균선 위아래로 최근 변동폭만큼 띠를 두릅니다. 값은 보통 띠 안에서 움직이고, 띠가 좁아지면 곧 크게 움직일 수 있다는 뜻으로 읽습니다.',
+  },
+  {
+    key: 'RSI',
+    term: 'RSI',
+    body: '최근 오른 힘과 내린 힘을 견줘 0~100 으로 나타냅니다. 70 위면 많이 올랐다, 30 아래면 많이 내렸다고 보는 편입니다. 축이 달라 차트 아래 칸에 따로 그립니다.',
+  },
+]
+
+function IndicatorHelp() {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="sp-help">
+      <MascotSay
+        trailing={
+          <button
+            type="button" className="sp-help-more"
+            aria-expanded={open}
+            onClick={() => setOpen((v) => !v)}
+          >
+            {open ? '접기' : '더보기'}
+          </button>
+        }
+      >
+        <p>
+          <b>보조지표</b>는 캔들만으로 안 보이는 흐름을 선으로 그린 것입니다.
+          오른쪽 <b>지표</b> 버튼에서 켜고 끌 수 있어요.
+        </p>
+      </MascotSay>
+
+      {/* 펼친 내용은 줄 안에 넣지 않고 아래로 띄운다. 머리줄에 얹힌 자리라
+          안에서 늘리면 종목명·가격이 아래로 밀려 화면이 통째로 움직인다.
+          지표 드롭다운(.sp-indpop)과 같은 방식이다. */}
+      {open && (
+        <dl className="sp-help-pop">
+          {INDICATOR_HELP.map((h) => (
+            <div key={h.key}>
+              <dt>{h.term}</dt>
+              <dd>{h.body}</dd>
+            </div>
+          ))}
+          <p className="sp-help-note">
+            모두 널리 쓰이는 해석일 뿐 맞는 답은 아닙니다. 판단은 직접 하세요.
+          </p>
+        </dl>
+      )}
+    </div>
+  )
+}
 
 /* 서버가 막은 이유를 사람 말로 바꾼다. 훅이 오류 코드를 이 몇 가지로 좁혀 준다 */
 const REJECT_TEXT: Record<string, string> = {
@@ -479,6 +548,10 @@ export default function SeasonPlay() {
                   </span>
                 )}
               </div>
+              {/* 가격과 지표 버튼 사이의 빈 칸. 머리줄이 space-between 이라 가운데가
+                  늘 비어 있었고, "지표가 뭔데" 가 떠오르는 자리도 정확히 여기다. */}
+              <IndicatorHelp />
+
               <div className="sp-tools">
                 {/* 지표를 접어 둔다. 버튼 다섯 개를 늘 펴 두면 차트 위 두 줄을 먹는데,
                     지표를 바꾸는 일은 종목을 바꾸는 것보다도 드물다. */}
