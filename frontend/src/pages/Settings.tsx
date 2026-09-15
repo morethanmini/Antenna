@@ -25,6 +25,7 @@
 import { useCallback, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/context'
+import { openOnboardingTour } from '../auth/onboarding'
 import LockedCard from '../components/state/LockedCard'
 import ChannelFeeSection from '../components/settings/ChannelFeeSection'
 import WalletLinkModal from '../components/wallet/WalletLinkModal'
@@ -108,6 +109,20 @@ export default function Settings() {
             </ul>
           </section>
         )}
+
+        {/* ── 안내 다시 보기 ────────────────────────────
+            위 "아직 마치지 않은 설정" 은 남은 할 일이 있을 때만 나온다. 다 마친
+            사람에게도 안내를 다시 볼 자리는 있어야 한다 — M-09 는 가입 직후
+            한 번뿐이라, 건너뛰었거나 그 기능이 생기기 전에 가입한 회원은 아예
+            본 적이 없다.
+            라우트가 없는 오버레이라 링크로는 못 열고 셸에 신호를 올린다. */}
+        <section className="st-block st-replay">
+          <h2>서비스 안내</h2>
+          <p>예측 기록·봉인·모의투자·지갑 연동을 네 걸음으로 다시 봅니다.</p>
+          <button type="button" className="st-btn" onClick={openOnboardingTour}>
+            안내 다시 보기
+          </button>
+        </section>
 
         {/* ── 탭 ────────────────────────────────────────
             잠긴 둘(알림·트레이딩 뷰)도 탭으로 남긴다. 빼면 그런 설정이 있다는 것

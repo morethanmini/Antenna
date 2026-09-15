@@ -40,3 +40,26 @@ export function takeOnboardingPending(): boolean {
     return false
   }
 }
+
+/* ── 다시 열기 ─────────────────────────────────────────────
+   M-09 는 가입 직후 isNew 가 참인 그 한 번만 뜬다. 건너뛰면 다시 볼 길이
+   없었다 — 이미 가입한 회원은 영영 못 본다는 뜻이기도 하다.
+
+   G-00 모의투자 온보딩이 같은 문제를 window 이벤트로 풀었으므로(sim/onboardingSeen.ts)
+   여기도 같은 방식을 쓴다. 안내를 띄우는 곳은 셸이고 화면은 신호만 올린다.
+
+   **pending 플래그를 다시 세우지 않는다.** 그건 "로그인 직후" 라는 한 흐름의
+   표시라, 며칠 뒤 설정 화면에서 세우면 뜻이 달라진다. 여는 것과 최초 1회 판정은
+   별개다. */
+const OPEN = 'antena:onboarding'
+
+/** 화면 안쪽에서 튜토리얼을 다시 연다. 듣는 곳은 셸 하나뿐이다. */
+export function openOnboardingTour() {
+  window.dispatchEvent(new Event(OPEN))
+}
+
+/** 셸이 구독한다. 해제 함수를 돌려주므로 useEffect 에서 그대로 반환하면 된다. */
+export function onOnboardingOpen(fn: () => void) {
+  window.addEventListener(OPEN, fn)
+  return () => window.removeEventListener(OPEN, fn)
+}
