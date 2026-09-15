@@ -113,7 +113,7 @@ public class UserService {
         channels.saveAll(
                 requests.stream()
                         .filter(request -> seen.add(request.url()))
-                        .map(request -> UserChannel.of(user, request.platform(), request.url()))
+                        .map(request -> UserChannel.of(user, request.platform(), request.label(), request.url()))
                         .toList());
     }
 
