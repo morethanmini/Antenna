@@ -13,6 +13,13 @@ public enum SignatureScope {
     PREDICTION("prediction"),
     PREDICTION_BURN("prediction-burn"),
     SUBSCRIBE("subscribe"),
+    /**
+     * 리포트 발행(ANT-CHAIN-16). 태그가 {@code report} 가 아니라 {@code report-publish} 인 이유 —
+     * 봉인 헤더가 이미 {@code antenna:report:v1} 이다({@code ReportSeal.HEADER}). 태그를 {@code report}
+     * 로 두면 서명 payload 첫 줄과 봉인 문자열 첫 줄이 같아져, 한쪽 문자열을 다른 쪽으로 오인·재사용할 여지가
+     * 생긴다. 예측이 {@code antenna:prediction:v1}(서명) 과 {@code antenna:commit:v1}(봉인)로 갈라 둔 것과 같은 이유다.
+     */
+    REPORT_PUBLISH("report-publish"),
     AD("ad"),
     SEASON_JOIN("season-join");
 
