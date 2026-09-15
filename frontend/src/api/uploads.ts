@@ -78,6 +78,20 @@ export const ASPECT_BY_PURPOSE: Partial<Record<UploadPurpose, AspectRule>> = {
   PROFILE: PROFILE_ASPECT,
 }
 
+/**
+ * 용도별 최대 변(px). 이보다 크면 줄여서 올린다.
+ *
+ * 프로필은 화면에서 **56px 언저리**로 그린다(.ch-avatar · .mp-avatar). 2배 화면을 셈해도
+ * 112px 이면 충분한데, 나중에 더 크게 쓰는 자리가 생겨도 견디도록 256 으로 둔다. 휴대폰
+ * 사진 한 장이 4000px·4MB 인데 그대로 두면 56px 자리에 쓰려고 그 용량을 계속 저장한다.
+ *
+ * 목록에 없는 용도는 줄이지 않는다 — 광고 배너는 크게 걸리고, 리포트 본문 그림은 사용자가
+ * 확대해서 본다. 무엇을 줄여도 되는지는 그리는 자리가 정한다.
+ */
+export const MAX_EDGE_BY_PURPOSE: Partial<Record<UploadPurpose, number>> = {
+  PROFILE: 256,
+}
+
 /* ── 로컬 검증 ─────────────────────────────────────────── */
 
 /**
@@ -87,8 +101,14 @@ export const ASPECT_BY_PURPOSE: Partial<Record<UploadPurpose, AspectRule>> = {
  * 서버와 같은 code 를 쓴다. 화면이 로컬·서버 오류를 같은 문구로 그릴 수 있어야 하고,
  * 그러면 나중에 검사를 서버로만 몰아도 화면이 안 바뀐다.
  */
-export function precheck(file: File, aspect?: AspectRule): ApiError | null {
-  if (file.size > MAX_BYTES) {
+/**
+ * @param willShrink 줄여서 올릴 것이라면 용량은 여기서 보지 않는다. 8MB 짜리 휴대폰 사진이
+ *   256px·130KB 로 줄어 올라갈 텐데, 원본 용량만 보고 미리 거절하면 올릴 수 있는 사진을
+ *   막는 셈이다. 줄인 뒤의 용량은 cropToAspect 가 다시 보고, 서버가 최종 판정자다.
+ *   화소 수(MAX_PIXELS)는 그대로 본다 — 디코딩 자체가 실패하는 크기는 줄일 수도 없다.
+ */
+export function precheck(file: File, aspect?: AspectRule, willShrink = false): ApiError | null {
+  if (!willShrink && file.size > MAX_BYTES) {
     return new ApiError({ code: 'FILE_TOO_LARGE', message: 'local', field: 'file' }, 400)
   }
   /* type 이 빈 문자열로 오는 경우가 있다(확장자 없는 파일). 그때는 막지 않고 서버에 맡긴다
@@ -149,39 +169,54 @@ export function fitsAspect(width: number, height: number, aspect: AspectRule) {
 
    늘리지 않는다. 4:1 자리에 1:1 그림을 늘려 넣으면 얼굴도 글자도 뭉개진다. */
 
-/** 자르기 결과. 잘라야 할 이유가 없으면 crop 자체를 부르지 않는다 */
+/** 다시 그린 결과. 자를 것도 줄일 것도 없으면 아예 부르지 않는다 */
 export type CroppedImage = {
   file: File
   width: number
   height: number
-  /** 잘리기 전 크기. 화면이 "1600×900 → 1200×300" 을 보여줄 수 있게 */
+  /** 손대기 전 크기. 화면이 "1600×900 → 1200×300" 을 보여줄 수 있게 */
   from: { width: number; height: number }
+  /** 무엇을 했는지. 화면 문구가 갈린다 */
+  did: { cropped: boolean; shrank: boolean }
 }
 
 /** 캔버스가 다시 뽑아낼 수 있는 형식. 그 외(그리고 형식 없음)는 png 로 떨어뜨린다 */
 const ENCODABLE = ['image/png', 'image/jpeg', 'image/webp']
 
 /**
- * 가운데를 기준으로 잘라 비율을 맞춘다.
+ * 올리기 좋게 다시 그린다 — 가운데를 기준으로 자르고, 너무 크면 줄인다.
+ *
+ * 둘을 한 번에 하는 이유는 캔버스를 한 번만 거치기 위해서다. 자른 뒤 다시 줄이면 두 번
+ * 다시 뽑게 되고, 손실 형식(jpeg)에서는 그만큼 더 뭉갠다.
  *
  * 원본 형식을 지킨다 — png 를 jpeg 로 바꾸면 투명한 배경이 검게 칠해진다. 다만 다시 뽑는
  * 과정이라 **바이트 수는 원본과 다르다**(보통 줄지만 늘 그렇지는 않다). 그래서 여기서
  * 용량을 한 번 더 본다. 서버가 최종 판정자인 것은 그대로다.
+ *
+ * @param aspect 없으면 자르지 않는다
+ * @param maxEdge 없으면 줄이지 않는다. **늘리지는 않는다** — 작은 그림을 키우면 뭉갠다
  */
 export async function cropToAspect(
   file: File,
   size: { width: number; height: number },
-  aspect: AspectRule,
+  aspect?: AspectRule,
+  maxEdge?: number,
 ): Promise<CroppedImage> {
   const { width, height } = size
-  const wide = width / height > aspect.ratio
+  const wide = aspect ? width / height > aspect.ratio : false
 
   /* 넓으면 좌우를, 높으면 위아래를 덜어 낸다. 어느 쪽이든 남는 변은 건드리지 않는다 —
      양쪽을 다 줄이면 원본보다 작아져 화질을 공짜로 버린다. */
-  const w = wide ? Math.round(height * aspect.ratio) : width
-  const h = wide ? height : Math.round(width / aspect.ratio)
+  const w = !aspect ? width : wide ? Math.round(height * aspect.ratio) : width
+  const h = !aspect ? height : wide ? height : Math.round(width / aspect.ratio)
   const sx = Math.round((width - w) / 2)
   const sy = Math.round((height - h) / 2)
+
+  /* 자른 뒤의 크기를 기준으로 줄인다. 긴 변을 maxEdge 에 맞추고 짧은 변은 비례로 —
+     따로 정하면 비율이 틀어져 방금 맞춘 aspect 가 깨진다. */
+  const scale = maxEdge ? Math.min(1, maxEdge / Math.max(w, h)) : 1
+  const outW = Math.max(1, Math.round(w * scale))
+  const outH = Math.max(1, Math.round(h * scale))
 
   const mime = ENCODABLE.includes(file.type) ? file.type : 'image/png'
   /* from-image 를 명시한다. measure() 의 <img> 는 EXIF 회전을 적용해 크기를 재는데
@@ -190,11 +225,14 @@ export async function cropToAspect(
   const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
   try {
     const canvas = document.createElement('canvas')
-    canvas.width = w
-    canvas.height = h
+    canvas.width = outW
+    canvas.height = outH
     const ctx = canvas.getContext('2d')
     if (!ctx) throw new ApiError({ code: CLIENT_ERROR_CODE.CLIENT_UPLOAD_FAILED, message: 'no 2d context' }, 0)
-    ctx.drawImage(bitmap, sx, sy, w, h, 0, 0, w, h)
+    /* 크게 줄일 때 기본 보간은 계단이 진다. 브라우저의 고품질 축소를 켠다 */
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
+    ctx.drawImage(bitmap, sx, sy, w, h, 0, 0, outW, outH)
 
     /* jpeg·webp 는 품질을 정해 주지 않으면 브라우저마다 다르다. 0.92 는 눈으로 구분이
        거의 안 되면서 용량이 크게 붇지 않는 선이다. png 는 무손실이라 이 값을 무시한다. */
@@ -203,14 +241,20 @@ export async function cropToAspect(
       throw new ApiError({ code: CLIENT_ERROR_CODE.CLIENT_UPLOAD_FAILED, message: 'encode failed' }, 0)
     }
     if (blob.size > MAX_BYTES) {
-      // 자르고도 5MB 를 넘겼다. 여기서 품질을 더 떨어뜨리면 사용자가 모르는 사이에 흐려진다.
+      // 자르고 줄이고도 5MB 를 넘겼다. 여기서 품질을 더 떨어뜨리면 사용자가 모르는 사이에 흐려진다.
       throw new ApiError({ code: 'FILE_TOO_LARGE', message: 'after crop', field: 'file' }, 400)
     }
 
     /* 이름과 lastModified 를 원본 그대로 둔다 — 사용자가 자기 파일로 알아보고,
        멱등 키 scope 가 이 둘을 쓰기 때문이다(같은 파일을 다시 골라도 같은 키가 나간다). */
     const cropped = new File([blob], file.name, { type: mime, lastModified: file.lastModified })
-    return { file: cropped, width: w, height: h, from: { width, height } }
+    return {
+      file: cropped,
+      width: outW,
+      height: outH,
+      from: { width, height },
+      did: { cropped: w !== width || h !== height, shrank: scale < 1 },
+    }
   } finally {
     bitmap.close()
   }
