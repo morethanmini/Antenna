@@ -36,6 +36,8 @@ export type AuthState = {
   signOut: () => void
   /** 온보딩에서 닉네임을 확정한 뒤 셸의 표시 이름을 갱신한다. */
   setNickname: (nickname: string) => void
+  /** 프로필 사진을 바꾼 뒤 셸의 그림도 맞춘다 — 사이드바가 옛 그림을 들고 있으면 안 저장된 것처럼 보인다 */
+  setAvatar: (avatarUrl: string) => void
   /** M-01 연동 성공 뒤 세운다. 이게 없으면 연동하고도 C-01 이 계속 모달을 띄운다. */
   setWalletLinked: (linked: boolean) => void
 }

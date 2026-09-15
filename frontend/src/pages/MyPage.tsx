@@ -14,8 +14,9 @@
 import { Link } from 'react-router-dom'
 import { useApiQuery } from '../api/useApiQuery'
 import { platformLabel, type MyProfile } from '../api/account'
+import ChannelProfileEdit from '../components/channel/ChannelProfileEdit'
+import ProfileAvatar from '../components/channel/ProfileAvatar'
 import ErrorState from '../components/state/ErrorState'
-import { useAuth } from '../auth/context'
 import '../styles/screens/mypage.css'
 
 /* 허브가 보내는 곳. 목록 화면이 있는 것만 둔다.
@@ -44,12 +45,10 @@ const ICON: Record<string, React.ReactNode> = {
 }
 
 export default function MyPage() {
-  const { user } = useAuth()
   const profile = useApiQuery<MyProfile>('/users/me')
 
-  /* 배열은 여기서 한 번 정규화한다. 백엔드 MeResponse 가 아직 이 필드를
-     내려주지 않아 undefined 로 온다 — 아래에서 .length 를 바로 읽으면
-     렌더 중 TypeError 가 나 앱 전체가 흰 화면이 된다. */
+  /* 서버가 빈 배열로 내려주므로(ANT-AUTH-05) null 가드는 필요 없다.
+     profile.data 자체가 로딩 중 undefined 라 옵셔널 체이닝만 남긴다. */
   const interests = profile.data?.interests ?? []
   const channels = profile.data?.channels ?? []
 
@@ -66,55 +65,55 @@ export default function MyPage() {
           <ErrorState error={profile.error} onRetry={profile.reload} />
         ) : (
           <section className="mp-profile">
-            {/* /users/me 에 프로필 이미지 필드가 없다 — 셸이 쓰는 기본 이미지를 그대로 쓴다 */}
-            <img className="mp-avatar" src={user?.avatarUrl} alt="" />
+            {/* 사진은 카드 왼쪽이라 ChannelProfileEdit 밖이다(ProfileAvatar 머리말) */}
+            <ProfileAvatar
+              src={profile.data?.avatarUrl ?? null}
+              isMe={profile.data != null}
+              className="mp-avatar"
+              onSaved={profile.reload}
+            />
 
             <div className="mp-who">
-              <h2>{profile.data ? profile.data.nickname : '…'}</h2>
-              <p className="mp-introduce">
-                {profile.data?.introduce || '소개가 아직 없습니다'}
-              </p>
-
-              {interests.length > 0 && (
-                <ul className="mp-interests" aria-label="관심 섹터">
-                  {interests.map((s) => <li key={s}>{s}</li>)}
-                </ul>
+              {/* 닉네임·소개·관심 섹터·외부 채널은 E-02 채널 머리와 **같은 컴포넌트**가
+                  그린다. 값을 눌러 그 항목만 고친다. 두 화면이 같은 값을 각자 그리면
+                  한쪽만 고쳐져 표시가 갈린다 — 실제로 그래서 마이페이지에는 편집이
+                  없었다(S15P21A507-54). 여기는 늘 내 프로필이라 isMe 를 물을 것이 없다. */}
+              {profile.data && (
+                <ChannelProfileEdit
+                  isMe
+                  heading="h2"
+                  profile={{
+                    nickname: profile.data.nickname,
+                    bio: profile.data.introduce,
+                    interests,
+                    externalLinks: channels.map((c) => ({
+                      label: platformLabel(c.platform), url: c.url,
+                    })),
+                  }}
+                  onSaved={profile.reload}
+                />
               )}
+              {!profile.data && <h2>…</h2>}
             </div>
 
             <div className="mp-actions">
-              {/* 진입로는 하나다 — ?as=visitor, **남에게 실제로 보이는** 모습.
-                  구독료를 정하는 사람이 무엇이 가려지는지 봐야 해서 이쪽이 기본이다.
-                  고치는 자리로는 그 화면 안의 띠에서 넘어간다(프로필 수정 버튼).
-                  여기에 같은 버튼을 또 두면 같은 화면으로 가는 길이 둘이 된다 —
-                  예측 포트폴리오를 뺀 것과 같은 이유다(S15P21A507-230).
+              {/* 진입로는 하나다 — 쿼리 없는 관리 화면. 이 카드에서 이미 프로필을
+                  고칠 수 있으므로, 여기서 보내는 곳은 예측·리포트까지 함께 손보는
+                  자리여야 한다. 남에게 보이는 모습은 그 화면 안의 띠에서 넘어간다.
+                  같은 화면으로 가는 길을 둘 두지 않는다 — 예측 포트폴리오를 뺀 것과
+                  같은 이유다(S15P21A507-230).
                   환경 설정에는 프로필이 없다(S15P21A507-195 에서 옮겨 옴). */}
               {profile.data && (
-                <Link className="mp-btn solid" to={`/channels/${profile.data.id}?as=visitor`}>
-                  내 채널 보기
+                <Link className="mp-btn solid" to={`/channels/${profile.data.id}`}>
+                  내 채널 관리
                 </Link>
               )}
             </div>
           </section>
         )}
 
-        {/* ── 외부 채널 ────────────────────────────────── */}
-        {channels.length > 0 && (
-          <section className="mp-block">
-            <h3>외부 채널</h3>
-            <ul className="mp-channels">
-              {channels.map((c) => (
-                <li key={c.url}>
-                  {/* 명세상 https 만 저장된다. 외부로 나가므로 새 탭 + noreferrer */}
-                  <a href={c.url} target="_blank" rel="noreferrer noopener">
-                    <span className="mp-channel-platform">{platformLabel(c.platform)}</span>
-                    <span className="mp-channel-url">{c.url}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+        {/* 외부 채널은 프로필 카드 안으로 들어갔다 — 같은 값을 카드와 별도 섹션이
+            나눠 그리고 있었고, 고치는 자리는 카드 쪽이다(S15P21A507-54). */}
 
         {/* ── 활동 진입점 ──────────────────────────────── */}
         <section className="mp-block">

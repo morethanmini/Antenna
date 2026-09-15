@@ -51,6 +51,16 @@ public class User {
     @Column(length = 200)
     private String introduce;
 
+    /**
+     * 프로필 사진. upload_files.id 를 가리킨다.
+     *
+     * <p>연관(@ManyToOne)으로 두지 않는다 — 프로필을 읽을 때마다 업로드 행을 함께 끌고 오게
+     * 되고, 파일이 지워지면 회원 조회가 통째로 깨진다. id 만 들고 있다가 못 찾으면 사진이
+     * 없는 것으로 그린다. NULL 이면 한 번도 올리지 않았다는 뜻이다.
+     */
+    @Column(name = "avatar_file_id", length = 36)
+    private String avatarFileId;
+
     /** SSAFY WALLET 연동 주소. 소문자로 정규화하며 NULL이면 예측을 등록할 수 없다. */
     @Column(name = "wallet_address", unique = true, length = 42)
     private String walletAddress;
@@ -82,6 +92,25 @@ public class User {
     /** 온보딩·프로필 수정에서 닉네임을 확정한다. 중복 검사는 서비스가 먼저 한다. */
     public void changeNickname(String nickname) {
         this.nickname = nickname;
+    }
+
+    /**
+     * 프로필 소개를 바꾼다.
+     *
+     * <p>빈 문자열은 null 로 눕힌다 — "지웠다"와 "아직 안 썼다"는 화면에서 같은 상태이고, 둘을 따로
+     * 저장하면 {@code introduce != null} 로 판단하는 쪽이 빈 문단을 그린다.
+     */
+    public void changeIntroduce(String introduce) {
+        this.introduce = (introduce == null || introduce.isBlank()) ? null : introduce.strip();
+    }
+
+    /**
+     * 프로필 사진을 바꾼다. null 이면 지운 것으로 본다 — 기본 그림으로 돌아간다.
+     *
+     * <p>파일이 내 것인지, 용도가 PROFILE 인지는 서비스가 먼저 본다. 엔티티는 통과한 값을 담는다.
+     */
+    public void changeAvatar(String fileId) {
+        this.avatarFileId = fileId;
     }
 
     /** false 면 온보딩을 마치지 않은 회원이다. */

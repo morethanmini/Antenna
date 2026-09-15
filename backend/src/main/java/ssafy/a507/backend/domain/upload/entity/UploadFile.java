@@ -38,7 +38,9 @@ public class UploadFile {
     public enum Purpose {
         AD,
         REPORT,
-        POST
+        POST,
+        /** 프로필 사진. 정사각으로 올라오고 users.avatar_file_id 가 가리킨다 (ANT-AUTH-05) */
+        PROFILE
     }
 
     @Id

@@ -31,7 +31,8 @@ import { fetchChannelReports, formatDate, type ChannelReportItem } from '../api/
 import { useAsync } from '../api/useAsync'
 import { formatToken } from '../api/wallet'
 import PredictionCard from '../components/prediction/PredictionCard'
-import ChannelNickname from '../components/channel/ChannelNickname'
+import ChannelProfileEdit from '../components/channel/ChannelProfileEdit'
+import ProfileAvatar from '../components/channel/ProfileAvatar'
 import PredictionNote from '../components/channel/PredictionNote'
 import SubscribeModal from '../components/channel/SubscribeModal'
 import EmptyState from '../components/state/EmptyState'
@@ -71,7 +72,7 @@ function toCard(p: ChannelPrediction) {
 export default function ChannelProfile() {
   const { userId = '' } = useParams<{ userId: string }>()
 
-  /* ?as=visitor — 내 채널을 **다른 예측가 눈으로** 본다(E-05 "내 채널 보기").
+  /* ?as=visitor — 내 채널을 **다른 예측가 눈으로** 본다(관리 화면의 띠에서 넘어온다).
      서버는 여전히 나를 주인으로 보고 다 열어 준다. 권한을 흉내 낼 방법이 없어서가
      아니라, 가리는 규칙이 단순해서 화면에서 다시 계산한다.
        locked      = 판정 전 (비구독자는 canRead=false 이므로 판정 전이 곧 잠김)
@@ -149,49 +150,35 @@ export default function ChannelProfile() {
                 <span>
                   {previewing
                     ? '다른 예측가에게 보이는 화면입니다. 가려지는 범위는 규칙대로 다시 계산해 보여 줍니다.'
-                    : '내 채널 관리 화면입니다. 이름은 여기서 바로 고칩니다.'}
+                    : '내 채널 관리 화면입니다. 이름·소개·관심 섹터·외부 채널을 여기서 고칩니다.'}
                 </span>
                 {previewing
-                  ? <Link className="ch-preview-btn" to={`/channels/${userId}`}>프로필 수정</Link>
+                  ? <Link className="ch-preview-btn" to={`/channels/${userId}`}>내 채널 관리</Link>
                   : <Link className="ch-preview-btn" to={`/channels/${userId}?as=visitor`}>남에게 보이는 화면</Link>}
               </p>
             )}
 
             {/* ── 채널 헤더 ─────────────────────────────── */}
             <header className="ch-head">
-              {channel.avatarUrl && <img className="ch-avatar" src={channel.avatarUrl} alt="" />}
+              {/* 사진은 값들과 다른 자리에 있어 ChannelProfileEdit 밖이다(ProfileAvatar 머리말).
+                  안 올렸으면 서버가 null 을 주고 컴포넌트가 기본 그림을 쓴다 — 여기서 &&
+                  로 감싸면 사진 없는 사람은 바꾸는 자리까지 사라진다. */}
+              <ProfileAvatar
+                src={channel.avatarUrl}
+                isMe={owner}
+                className="ch-avatar"
+                onSaved={ch.reload}
+              />
               <div className="ch-id">
-                {/* 내 채널이면 여기서 바로 고친다 — 남에게 보이는 값이라
-                    보이는 자리에서 고치는 편이 맞다(S15P21A507-195 에서 설정에서 옮겨 옴) */}
-                <ChannelNickname
-                  nickname={channel.nickname}
+                {/* 닉네임·소개·관심 섹터·외부 채널 넷을 통째로 맡긴다 — 읽기용 표시까지
+                    포함이다. 화면과 컴포넌트가 나눠 그리면 누를 수 있는 자리와 고쳐지는
+                    자리가 어긋난다. 내 채널이면 값을 눌러 그 항목만 고친다
+                    (S15P21A507-195 에서 설정에서 옮겨 옴). */}
+                <ChannelProfileEdit
+                  profile={channel}
                   isMe={owner}
                   onSaved={ch.reload}
                 />
-                {channel.bio && <p className="ch-bio">{channel.bio}</p>}
-
-                {channel.interests.length > 0 && (
-                  <ul className="ch-interests">
-                    {channel.interests.map((tag) => <li key={tag}>{tag}</li>)}
-                  </ul>
-                )}
-
-                {channel.externalLinks.length > 0 && (
-                  <ul className="ch-links">
-                    {channel.externalLinks.map((l) => (
-                      <li key={l.url}>
-                        {/* 외부로 나가는 링크다. 참조자 정보를 넘기지 않는다 */}
-                        <a href={l.url} target="_blank" rel="noreferrer noopener">
-                          {l.label}
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                            <path d="M14 5h5v5" /><path d="M19 5l-8 8" />
-                            <path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4" />
-                          </svg>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                )}
               </div>
             </header>
 

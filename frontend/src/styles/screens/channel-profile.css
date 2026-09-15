@@ -40,56 +40,6 @@
 .ch-avatar{ flex:0 0 auto; width:56px; height:56px; border-radius:999px; object-fit:cover; background:var(--surface-2); }
 .ch-id{ min-width:0; }
 .ch-id h1{ margin:0; font-size:19px; font-weight:800; color:var(--ink); letter-spacing:-.02em; }
-.ch-bio{ margin:6px 0 0; font-size:13px; line-height:1.65; color:var(--body); }
-
-.ch-interests{ display:flex; flex-wrap:wrap; gap:5px; margin:9px 0 0; padding:0; list-style:none; }
-.ch-interests li{
-  padding:2px 9px; border-radius:999px;
-  background:var(--brand-softer); color:var(--brand-ink);
-  font-size:11.5px; font-weight:700;
-}
-
-.ch-links{ display:flex; flex-wrap:wrap; gap:12px; margin:9px 0 0; padding:0; list-style:none; }
-.ch-links a{
-  display:inline-flex; align-items:center; gap:4px;
-  font-size:12.5px; font-weight:600; color:var(--muted); text-decoration:none;
-}
-.ch-links a:hover{ color:var(--brand-ink); }
-
-/* ── 닉네임 — 내 채널이면 여기서 고친다 ──────────────── */
-.ch-name{ display:flex; align-items:baseline; flex-wrap:wrap; gap:9px; }
-/* 제목 옆의 보조 행동이다. 버튼처럼 크게 그리면 채널 이름보다 눈에 띈다 */
-.ch-name-edit{
-  padding:0; border:0; background:none; font:inherit;
-  font-size:12px; font-weight:600; color:var(--brand-ink);
-  text-decoration:underline; cursor:pointer;
-}
-.ch-name-edit:hover{ color:var(--brand); }
-
-.ch-name-form{ display:flex; flex-direction:column; gap:5px; }
-.ch-name-row{ display:flex; align-items:center; flex-wrap:wrap; gap:7px; }
-.ch-name-input{
-  width:min(260px, 100%); height:38px; padding:0 11px;
-  border:1px solid var(--rule); border-radius:9px;
-  background:var(--surface); color:var(--ink);
-  font:inherit; font-size:17px; font-weight:750; letter-spacing:-.02em;
-}
-.ch-name-input:focus{ outline:2px solid var(--brand-soft); outline-offset:1px; border-color:var(--brand); }
-.ch-name-input[aria-invalid="true"]{ border-color:var(--danger); }
-.ch-name-save, .ch-name-cancel{
-  height:38px; padding:0 14px;
-  border-radius:9px; font:inherit; font-size:13px; font-weight:700; cursor:pointer;
-}
-.ch-name-save{ border:0; background:var(--brand); color:#fff; }
-.ch-name-save:hover:not(:disabled){ background:var(--brand-ink); }
-.ch-name-save:disabled{ opacity:.45; cursor:default; }
-.ch-name-cancel{ border:1px solid var(--rule); background:var(--surface); color:var(--body); }
-.ch-name-cancel:hover:not(:disabled){ background:var(--surface-2); }
-
-.ch-name-hint{ margin:0; font-size:12px; line-height:1.55; color:var(--muted); }
-.ch-name-hint.is-available{ color:#15803d; }
-.ch-name-hint.is-taken, .ch-name-hint.is-invalid{ color:var(--danger); }
-
 /* ── 실적 통계 — 세 개 고정 ──────────────────────────── */
 .ch-stats{
   display:grid; grid-template-columns:repeat(3, 1fr); gap:1px;

@@ -18,7 +18,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
-/** 예측자 외부 채널. 피싱 차단을 위해 url은 https만 허용한다. */
+/**
+ * 예측자의 외부 채널 (ERD user_channels · ANT-AUTH-05).
+ *
+ * <p>플랫폼은 화면 아이콘을 정하는 값이라 네 가지로 닫는다(ERD). 섹터와 달리 서비스가 늘려 가는
+ * 어휘가 아니므로 enum 으로 둔다 — 오타난 플랫폼이 들어오면 아이콘 없이 그려지는 편보다 400 이 낫다.
+ *
+ * <p><b>url 은 https 만 받는다</b>(ERD · 명세 §회원). 남의 프로필에 걸리는 링크라 http·javascript:
+ * 같은 것을 그대로 두면 피싱 통로가 된다. 검사는 요청 DTO 가 한다 — 엔티티는 이미 통과한 값을 담는다.
+ */
 @Entity
 @Table(
         name = "user_channels",
@@ -30,6 +38,7 @@ import org.hibernate.annotations.CreationTimestamp;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserChannel {
 
+    /** 화면 아이콘을 정한다. 표에 없는 곳은 ETC 로 담는다. */
     public enum Platform {
         YOUTUBE,
         BLOG,
@@ -55,4 +64,12 @@ public class UserChannel {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+
+    public static UserChannel of(User user, Platform platform, String url) {
+        UserChannel channel = new UserChannel();
+        channel.user = user;
+        channel.platform = platform;
+        channel.url = url;
+        return channel;
+    }
 }
