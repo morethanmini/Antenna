@@ -80,22 +80,16 @@ export default function PredictDetail() {
   const navigate = useNavigate()
   const cameFromApp = useLocation().key !== 'default'
 
-  /* 앵커 상태만은 실제 서버에서 읽는다. GET /predictions/{id}/proof 는 이미 열려
-     있고(ANT-CHAIN-06), anchorStatus 하나로 WAITING·PENDING·CONFIRMED·FAILED 를
-     내려 준다 — 상세 본문이 아직 목업이어도 이 값은 참이다.
-
-     숫자 id 일 때만 묻는다. 서버 예측 id 는 long 이라 목업 픽스처의 'p2' 같은
-     id 로 부르면 400 이 난다. GET /predictions/{id} 가 붙어 상세가 실제
-     데이터가 되면 이 갈래는 사라진다. */
-  const isServerId = /^\d+$/.test(id)
-  const proof = useBlock(() => fetchProof(id), [id], isServerId)
+  /* 배치 번호를 쓰려고 검산 응답을 따로 읽는다. 상세의 proof 는 앵커 상태와 블록
+     번호까지만 주고 배치 id 를 주지 않아서, 그것만으로는 배치 상세(D-02)로 가는
+     링크를 만들 수 없다. 못 받으면 상세가 준 상태값으로 물러난다. */
+  const proof = useBlock(() => fetchProof(id), [id])
 
   /* 종목명이 비어 오면 종목 개요에서 가져온다.
 
-     제목에 코드만 뜨면("000080") 무슨 종목인지 알 수 없다. 서버가 붙으면
-     stockName 이 실려 오므로 이 호출은 일어나지 않는다 — 이름이 없을 때만 부른다.
-     지금은 목업이 이름을 모른다(예측 목록 응답에 종목명이 없어서다). 나중에도
-     종목이 지워진 건은 이름이 비는데, 그때도 코드보다는 이 값이 낫다. */
+     제목에 코드만 뜨면("000080") 무슨 종목인지 알 수 없다. 서버가 stockName 을
+     실어 주므로 이 호출은 보통 일어나지 않는다 — 종목이 지워진 건만 이름이 비고,
+     그때도 코드보다는 이 값이 낫다. */
   const code = q.data?.stockCode ?? null
   const needName = q.data != null && q.data.stockName === null && code !== null
   const profile = useBlock(() => getProfile(code as string), [code], needName)
@@ -110,9 +104,10 @@ export default function PredictDetail() {
     )
   }
 
-  /* 403 이면 본문이 없다. 그때도 없는 것처럼 감추지 않고 잠금과 CTA 를 그린다.
-     다만 어느 채널을 구독해야 하는지는 응답이 없어 알 수 없다 — 서버가 200 +
-     locked 로 내려 주면 채널까지 안내할 수 있다(api/predictions.ts 요청 목록). */
+  /* 서버는 이 화면에 403 을 쓰지 않는다 — 누구에게나 200 이고 가리는 것은 필드다
+     (PredictionViewService). 그래도 분기를 남긴다: 잠금 판단이 서버 쪽에 있어서
+     규칙이 되돌아가면 여기가 아니라 응답이 먼저 바뀌고, 그때 화면이 오류로
+     떨어지는 것보다 잠금 카드로 떨어지는 편이 낫다. */
   if (!d) {
     return (
       <main className="main">
@@ -131,8 +126,8 @@ export default function PredictDetail() {
     )
   }
 
-  /* 이름 → 개요에서 받은 이름 → 코드 순. 코드는 항상 온다 */
-  const stock = d.stockName ?? profile.data?.corpName ?? d.stockCode
+  /* 이름 → 개요에서 받은 이름 → 코드 순. 종목이 지워졌으면 셋 다 없다 */
+  const stock = d.stockName ?? profile.data?.corpName ?? d.stockCode ?? '지워진 종목'
 
   /* 진행률은 미판정 건에서만 뜻이 있다. 판정이 끝나면 답은 오차율이고, 진행 막대는
      같은 이야기를 한 번 더 하면서 "아직 가는 중" 처럼 읽히게 만든다.
@@ -188,8 +183,10 @@ export default function PredictDetail() {
             <dl className="pd-figures">
               <div>
                 <dt>방향</dt>
-                <dd className={d.direction === 'UP' ? 'up' : 'down'}>
-                  {d.direction === 'UP' ? '상승' : '하락'}
+                {/* 잠긴 건(판정 전 + 비구독)은 null 이다. 삼항으로 갈라 두면 null 이
+                    '하락' 으로 떨어져 서버가 가린 값을 화면이 지어내게 된다. */}
+                <dd className={d.direction === null ? undefined : d.direction === 'UP' ? 'up' : 'down'}>
+                  {d.direction === null ? '—' : d.direction === 'UP' ? '상승' : '하락'}
                 </dd>
               </div>
               <div>
@@ -207,8 +204,13 @@ export default function PredictDetail() {
               </div>
               <div>
                 <dt>{d.settlePrice === null ? '만기' : '만기 종가'}</dt>
+                {/* 만기일 = 기준일 + horizon 이라 기준가가 확정되기 전에는 만기일도 없다 */}
                 <dd className="num">
-                  {d.settlePrice === null ? dot(d.settleDate) : won(d.settlePrice)}
+                  {d.settlePrice !== null
+                    ? won(d.settlePrice)
+                    : d.settleDate === null
+                    ? <span className="pd-pending">기준가 확정 후 정해집니다</span>
+                    : dot(d.settleDate)}
                 </dd>
               </div>
             </dl>
@@ -218,7 +220,7 @@ export default function PredictDetail() {
             {/* 전일 종가로 진행률을 그렸다는 사실을 밝힌다 — "현재가" 가 아니다 */}
             {pending && d.lastClose && (
               <p className="pd-basis num">
-                {`${dot(d.lastClose.asOf)} 종가 ${won(d.lastClose.close)} 기준`}
+                {`${dot(d.lastClose.tradeDate)} 종가 ${won(d.lastClose.close)} 기준`}
               </p>
             )}
 
@@ -249,48 +251,38 @@ export default function PredictDetail() {
             <dl className="pd-proof">
               <div>
                 <dt>커밋 해시</dt>
-                <dd className="num">{d.commitHash}</dd>
+                {/* 등록 직후 커밋 행이 생기기 전 아주 짧은 창에서는 비어 온다 */}
+                <dd className="num">
+                  {d.proof.commitHash ?? <span className="pd-pending">봉인 중</span>}
+                </dd>
               </div>
               <div>
                 <dt>서명 주소</dt>
-                <dd className="num">{d.signerAddress}</dd>
+                <dd className="num">
+                  {d.proof.signerAddress ?? <span className="pd-pending">봉인 중</span>}
+                </dd>
               </div>
               <div>
                 <dt>앵커</dt>
                 <dd>
-                  {/* 실제 증명이 있으면 그것으로 그린다. 목업 상세로 들어온
-                      경우(숫자가 아닌 id)에만 픽스처 값으로 물러난다. */}
-                  {proof.data ? (
-                    proof.data.anchor === null ? (
-                      /* 아직 배치에 안 들어갔다. 서버가 anchor 를 null 로 두고
-                         상태값 하나로 대기를 말한다 — 없는 배치 번호를 만들지 않는다 */
-                      <span className="pd-pending">
-                        {PROOF_STATUS_LABEL[proof.data.anchorStatus]}
-                      </span>
-                    ) : (
-                      <span className="pd-anchor">
-                        <AnchorBadge status={proof.data.anchor.status} />
-                        <Link className="pd-anchor-link" to={`/ledger/anchors/${proof.data.anchor.batchId}`}>
-                          {`배치 #${proof.data.anchor.batchId}`}
-                        </Link>
-                        {proof.data.anchor.blockNumber !== null && (
-                          <span className="num">
-                            {`블록 ${proof.data.anchor.blockNumber.toLocaleString('ko-KR')}`}
-                          </span>
-                        )}
-                      </span>
-                    )
-                  ) : d.anchor === null ? (
-                    <span className="pd-pending">아직 배치에 묶이지 않았습니다</span>
-                  ) : (
+                  {/* 배치 번호는 검산 응답에만 있다. 그것으로 배치 상세(D-02) 링크를
+                      만들고, 못 받았으면 상세가 준 상태값만 말한다 — 없는 배치
+                      번호를 지어내지 않는다. */}
+                  {proof.data?.anchor ? (
                     <span className="pd-anchor">
-                      <AnchorBadge status={d.anchor.status} />
-                      <Link className="pd-anchor-link" to={`/ledger/anchors/${d.anchor.id}`}>
-                        {`배치 #${d.anchor.id}`}
+                      <AnchorBadge status={proof.data.anchor.status} />
+                      <Link className="pd-anchor-link" to={`/ledger/anchors/${proof.data.anchor.batchId}`}>
+                        {`배치 #${proof.data.anchor.batchId}`}
                       </Link>
-                      {d.anchor.blockNumber !== null && (
-                        <span className="num">{`블록 ${d.anchor.blockNumber.toLocaleString('ko-KR')}`}</span>
+                      {proof.data.anchor.blockNumber !== null && (
+                        <span className="num">
+                          {`블록 ${proof.data.anchor.blockNumber.toLocaleString('ko-KR')}`}
+                        </span>
                       )}
+                    </span>
+                  ) : (
+                    <span className="pd-pending">
+                      {PROOF_STATUS_LABEL[proof.data?.anchorStatus ?? d.proof.anchorStatus]}
                     </span>
                   )}
                 </dd>
@@ -309,11 +301,11 @@ export default function PredictDetail() {
 
           {/* ── 근거 포인트 ────────────────────────────────
               C-01 에서 인계받아 커밋에 묶인 값이다. 등록 후 바뀌지 않는다 */}
-          {d.evidencePoints.length > 0 && (
+          {d.evidences.length > 0 && (
             <section className="pd-card">
               <h2>고른 근거</h2>
               <ul className="pd-points">
-                {d.evidencePoints.map((p) => <li key={p.id}>{p.body}</li>)}
+                {d.evidences.map((p) => <li key={p.pointId}>{p.body}</li>)}
               </ul>
             </section>
           )}
@@ -328,7 +320,7 @@ export default function PredictDetail() {
             <SubscriptionGate
               locked={d.noteLocked}
               label="근거 본문"
-              channelId={d.channelId}
+              channelId={String(d.author.userId)}
             >
               {d.note === null
                 ? <p className="pd-hint">작성자가 판단을 남기지 않았습니다.</p>
