@@ -6,7 +6,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from './auth/context'
-import { takeOnboardingPending } from './auth/onboarding'
+import { onOnboardingOpen, takeOnboardingPending } from './auth/onboarding'
 import BriefingModal from './components/BriefingModal'
 import OnboardingTour from './components/OnboardingTour'
 import SimOnboardingTour from './components/SimOnboardingTour'
@@ -148,6 +148,10 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
     tourChecked.current = true
     setTour(takeOnboardingPending())
   }, [authed, user?.nickname])
+
+  /* H-03 환경 설정의 "안내 다시 보기". 띄우는 곳이 셸이라 화면은 신호만 올린다
+     (auth/onboarding.ts 의 openOnboardingTour). G-00 과 같은 방식이다. */
+  useEffect(() => onOnboardingOpen(() => setTour(true)), [])
 
   /* G-00 모의투자 온보딩. M-09 와 같은 자리·같은 규칙이다(셸 위 오버레이, 라우트 없음).
      다른 점은 진입 조건뿐 — 가입 직후가 아니라 **모의투자 모드로 처음 들어왔을 때**다.

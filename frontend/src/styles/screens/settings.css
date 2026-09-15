@@ -156,6 +156,18 @@
 /* 온보딩 보완 안내 안의 버튼은 줄 높이에 맞춰 조금 낮춘다 */
 .st-onboarding .st-btn{ height:34px; padding:0 13px; font-size:12.5px; }
 
+/* ── 안내 다시 보기 ───────────────────────────────
+   위 "아직 마치지 않은 설정" 과 달리 할 일이 없어도 늘 있는 자리다. 그래서
+   브랜드 색을 쓰지 않는다 — 재촉하는 안내가 아니라 언제든 열어 보는 서랍이다. */
+.st-replay p{
+  margin:0 0 12px;
+  color:var(--muted); font-size:13px; line-height:1.6;
+}
+.st-replay .st-btn{
+  border:1px solid var(--rule); background:var(--surface); color:var(--body);
+}
+.st-replay .st-btn:hover{ background:var(--surface-2); }
+
 @media (max-width: 560px){
   .st-row{ flex-wrap:wrap; }
   .st-row .st-btn{ width:100%; }
