@@ -422,8 +422,10 @@ function TopPredictor() {
             />
             <div className="hm-lead-id">
               <Link className="hm-lead-name" to={`/channels/${lead.userId}`}>{lead.nickname}</Link>
-              <span className="hm-lead-rank">랭킹 {lead.rank}위</span>
             </div>
+            {/* 이름 아래가 아니라 **카드 오른쪽 끝**에 세운다(2026-09-15). 이 카드가
+                하려는 말이 "1위" 인데, 이름 밑의 작은 칩으로는 지나쳐 버렸다. */}
+            <span className="hm-lead-rank">랭킹 {lead.rank}위</span>
             <dl className="hm-lead-stats">
               <div><dt>예측</dt><dd className="num">{lead.doneCount}건</dd></div>
               <div><dt>적중률</dt><dd className="num">{metric(lead.hitRate, 1, '%')}</dd></div>
