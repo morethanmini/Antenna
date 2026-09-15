@@ -1,0 +1,68 @@
+/* 리포트 본문 마크다운. 화면(.rd-body 등)이 폰트 크기·색을 정하고
+   여기서는 **요소 사이의 리듬**만 정한다 — 두 곳이 같은 것을 정하면 갈린다. */
+
+.md{ overflow-wrap:anywhere; }   /* 공백 없는 긴 URL 이 카드를 밀어내지 않게 */
+
+/* 지연 로딩 중 원문. 렌더된 뒤와 자리가 크게 튀지 않도록 같은 줄간격을 준다 */
+.md-plain{ white-space:pre-wrap; }
+
+/* 문단 사이만 띄우고 첫·끝 여백은 없앤다 — 바깥 카드가 이미 padding 을 갖고 있다 */
+.md > :first-child{ margin-top:0; }
+.md > :last-child{ margin-bottom:0; }
+.md p{ margin:0 0 1em; }
+
+/* 제목. h1 을 본문 글자보다 크게 두지 않는다 — 화면 제목(리포트 제목)이 이미 위에 있고,
+   본문 안의 h1 이 그보다 커지면 무엇이 글의 제목인지 흐려진다 */
+.md h1, .md h2, .md h3, .md h4{
+  margin:1.6em 0 .6em;
+  line-height:1.4; font-weight:700; color:var(--ink);
+}
+.md h1{ font-size:1.25em; }
+.md h2{ font-size:1.15em; }
+.md h3{ font-size:1.05em; }
+.md h4{ font-size:1em; }
+
+.md ul, .md ol{ margin:0 0 1em; padding-left:1.4em; }
+.md li{ margin:.25em 0; }
+.md li > ul, .md li > ol{ margin:.25em 0; }
+
+.md a{ color:var(--brand-ink); text-decoration:underline; text-underline-offset:2px; }
+.md a:hover{ color:var(--brand); }
+
+.md blockquote{
+  margin:0 0 1em; padding:.1em 0 .1em 1em;
+  border-left:3px solid var(--brand-soft);
+  color:var(--muted);
+}
+
+.md code{
+  font-family:var(--mono); font-size:.88em;
+  background:var(--surface-2); border:1px solid var(--rule);
+  border-radius:5px; padding:1px 5px;
+}
+/* 코드 블록 안의 code 는 낱말 강조가 아니라 덩어리라 테두리를 걷어낸다 */
+.md pre{
+  margin:0 0 1em; padding:12px 14px;
+  background:var(--surface-2); border:1px solid var(--rule); border-radius:9px;
+  overflow-x:auto;                 /* 긴 줄은 본문이 아니라 이 상자가 스크롤한다 */
+}
+.md pre code{ background:none; border:0; padding:0; font-size:.85em; line-height:1.7; }
+
+.md hr{ margin:1.6em 0; border:0; border-top:1px solid var(--rule); }
+
+/* 표는 좁은 화면에서 본문을 밀어내므로 제 상자 안에서만 가로 스크롤한다 */
+.md-table-wrap{ margin:0 0 1em; overflow-x:auto; }
+.md table{ border-collapse:collapse; width:100%; font-size:.94em; }
+.md th, .md td{ border:1px solid var(--rule); padding:7px 10px; text-align:left; }
+.md th{ background:var(--surface-2); font-weight:700; color:var(--ink); }
+
+/* 본문 이미지. 원본이 크더라도 폭을 넘지 않게 하고, 비율은 그대로 둔다 */
+.md-img{
+  display:block; max-width:100%; height:auto;
+  margin:.4em 0 1em; border-radius:9px; border:1px solid var(--rule);
+}
+
+/* GFM 체크박스. 읽는 화면이라 누를 수 없고(react-markdown 이 disabled 로 준다),
+   그래도 목록 글머리 자리를 차지하므로 글자와 나란히 세운다 */
+.md input[type="checkbox"]{ margin-right:.4em; vertical-align:middle; }
+.md li:has(> input[type="checkbox"]){ list-style:none; margin-left:-1.2em; }
