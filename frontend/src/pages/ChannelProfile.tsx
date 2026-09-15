@@ -31,7 +31,7 @@ import { fetchChannelReports, formatDate, type ChannelReportItem } from '../api/
 import { useAsync } from '../api/useAsync'
 import { formatToken } from '../api/wallet'
 import PredictionCard from '../components/prediction/PredictionCard'
-import ChannelNickname from '../components/channel/ChannelNickname'
+import ChannelProfileEdit from '../components/channel/ChannelProfileEdit'
 import PredictionNote from '../components/channel/PredictionNote'
 import SubscribeModal from '../components/channel/SubscribeModal'
 import EmptyState from '../components/state/EmptyState'
@@ -79,8 +79,20 @@ export default function ChannelProfile() {
        리포트 잠김 = 구독자 전용 글
      서버의 PredictionViewService.canRead 와 같은 경계다. 규칙이 바뀌면 여기도 바꾼다.
      주인용 편집 화면은 쿼리 없는 /channels/{내 id} 쪽이다. */
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const asVisitor = params.get('as') === 'visitor'
+  /* 미리보기의 "프로필 수정" 에서 넘어오면 폼을 편 채로 연다 — 거기서 한 번 더
+     누르게 하면 "수정하러 왔는데 또 눌러야 하나" 가 된다 */
+  const wantsEdit = params.get('edit') === '1'
+  /* 폼을 닫으면 그 표시를 지운다. 저장하면 채널을 다시 읽는데, 그때 편집 컴포넌트가
+     잠깐 언마운트됐다 다시 붙으면서 edit=1 을 보고 폼을 또 연다 — 저장했는데 편집
+     화면에 그대로 있는 것처럼 보인다. 히스토리는 쌓지 않는다(탭 전환과 같은 판단). */
+  const closeEdit = useCallback(() => {
+    if (!wantsEdit) return
+    const next = new URLSearchParams(params)
+    next.delete('edit')
+    setParams(next, { replace: true })
+  }, [wantsEdit, params, setParams])
 
   const loadChannel = useCallback(() => fetchChannel(userId), [userId])
   const loadPredictions = useCallback(() => fetchChannelPredictions(userId), [userId])
@@ -149,10 +161,10 @@ export default function ChannelProfile() {
                 <span>
                   {previewing
                     ? '다른 예측가에게 보이는 화면입니다. 가려지는 범위는 규칙대로 다시 계산해 보여 줍니다.'
-                    : '내 채널 관리 화면입니다. 이름은 여기서 바로 고칩니다.'}
+                    : '내 채널 관리 화면입니다. 이름·소개·관심 섹터·외부 채널을 여기서 고칩니다.'}
                 </span>
                 {previewing
-                  ? <Link className="ch-preview-btn" to={`/channels/${userId}`}>프로필 수정</Link>
+                  ? <Link className="ch-preview-btn" to={`/channels/${userId}?edit=1`}>프로필 수정</Link>
                   : <Link className="ch-preview-btn" to={`/channels/${userId}?as=visitor`}>남에게 보이는 화면</Link>}
               </p>
             )}
@@ -162,21 +174,25 @@ export default function ChannelProfile() {
               {channel.avatarUrl && <img className="ch-avatar" src={channel.avatarUrl} alt="" />}
               <div className="ch-id">
                 {/* 내 채널이면 여기서 바로 고친다 — 남에게 보이는 값이라
-                    보이는 자리에서 고치는 편이 맞다(S15P21A507-195 에서 설정에서 옮겨 옴) */}
-                <ChannelNickname
-                  nickname={channel.nickname}
+                    보이는 자리에서 고치는 편이 맞다(S15P21A507-195 에서 설정에서 옮겨 옴).
+                    편집 중에는 아래 소개·섹터·링크를 폼이 대신 그린다 — 같은 값을
+                    읽기용과 편집용으로 두 번 그리면 어느 쪽이 저장될 값인지 알 수 없다. */}
+                <ChannelProfileEdit
+                  profile={channel}
                   isMe={owner}
+                  startOpen={wantsEdit}
+                  onExit={closeEdit}
                   onSaved={ch.reload}
                 />
-                {channel.bio && <p className="ch-bio">{channel.bio}</p>}
+                {!owner && channel.bio && <p className="ch-bio">{channel.bio}</p>}
 
-                {channel.interests.length > 0 && (
+                {!owner && channel.interests.length > 0 && (
                   <ul className="ch-interests">
                     {channel.interests.map((tag) => <li key={tag}>{tag}</li>)}
                   </ul>
                 )}
 
-                {channel.externalLinks.length > 0 && (
+                {!owner && channel.externalLinks.length > 0 && (
                   <ul className="ch-links">
                     {channel.externalLinks.map((l) => (
                       <li key={l.url}>

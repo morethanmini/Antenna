@@ -82,14 +82,22 @@ const CHANNELS: Record<string, Channel> = {
    실제 id 를 물어서 그게 나면 내 채널을 만들어 준다.
 
    /users/me 는 실제로 열려 있는 API 다. 목업이 지어내는 값이 아니다. */
+/* **결과가 아니라 진행 중인 요청만** 모은다.
+
+   화면 하나가 채널·예측·리포트·백테스트를 동시에 부르면 /users/me 를 네 번 묻게 된다.
+   그 한 번의 렌더 동안만 같은 약속을 돌려주고, 끝나면 비운다.
+
+   결과를 계속 들고 있으면 **프로필을 고쳐도 머리 값이 안 바뀐다** — E-02 의 편집 폼이
+   PATCH 뒤 채널을 다시 읽는데, 목업이 옛 /users/me 를 그대로 돌려주기 때문이다.
+   실패도 캐시하지 않는다 — 로그인 전에 한 번 실패하면 로그인 뒤에도 계속 실패한다. */
 let mePromise: Promise<MyProfile> | null = null
 
 function fetchMe(): Promise<MyProfile> {
-  /* 실패를 캐시하면 로그인 뒤에도 계속 실패한다 — 거절된 약속은 지우고 다시 묻는다 */
-  mePromise ??= api.get<MyProfile>('/users/me').catch((e: unknown) => {
-    mePromise = null
-    throw e
-  })
+  mePromise ??= api
+    .get<MyProfile>('/users/me')
+    .finally(() => {
+      mePromise = null
+    })
   return mePromise
 }
 
@@ -106,11 +114,10 @@ async function mine(userId: string): Promise<Channel | null> {
        "아직 정하지 않았습니다" 로 그린다. 행이 없는 것이 곧 미설정이다. */
     fee: null,
     /* 관심 섹터·외부 채널은 /users/me 가 정본이다 — 지어내지 않고 그대로 흘려보낸다.
-       명세 §회원 에는 있으나 백엔드 MeResponse 가 아직 안 내려줘 보통 undefined 다.
-       그때는 빈 배열이 되고 헤더가 그 줄을 통째로 뺀다(마이페이지와 같은 처리).
-       서버가 열리면 내 채널 머리에 저절로 뜬다. */
-    interests: me.interests ?? [],
-    externalLinks: (me.channels ?? []).map((c) => ({ label: platformLabel(c.platform), url: c.url })),
+       ANT-AUTH-05 로 서버가 둘 다 내려준다(없으면 빈 배열). E-02 의 편집 폼이 고치는 것도
+       바로 이 값이라, 저장하면 여기를 거쳐 머리에 그대로 뜬다. */
+    interests: me.interests,
+    externalLinks: me.channels.map((c) => ({ label: platformLabel(c.platform), url: c.url })),
     mySubscription: { status: null, expiresAt: null, autoRenew: false, paidFee: null },
     isMe: true,
   }

@@ -90,6 +90,54 @@
 .ch-name-hint.is-available{ color:#15803d; }
 .ch-name-hint.is-taken, .ch-name-hint.is-invalid{ color:var(--danger); }
 
+/* ── 프로필 편집 폼 — 내 채널에서만 ──────────────────
+   읽기용 값(.ch-bio·.ch-interests·.ch-links)은 편집 중에 감춘다. 같은 값을 두 벌
+   그리면 어느 쪽이 저장될 값인지 알 수 없다(ChannelProfile 의 !owner 조건). */
+.ch-edit{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+.ch-edit-row{ display:flex; flex-direction:column; gap:5px; margin:0; padding:0; border:0; }
+.ch-edit-row > label, .ch-edit-row > legend{
+  padding:0; font-size:12px; font-weight:700; color:var(--body);
+}
+
+.ch-edit-area{
+  width:min(440px, 100%); padding:9px 11px;
+  border:1px solid var(--rule); border-radius:9px;
+  background:var(--surface); color:var(--ink);
+  font:inherit; font-size:13px; line-height:1.65; resize:vertical;
+}
+.ch-edit-area:focus{ outline:2px solid var(--brand-soft); outline-offset:1px; border-color:var(--brand); }
+
+/* 섹터 칩. 고르는 것이지 쓰는 것이 아니라 토글로 그린다 */
+.ch-edit-chips{ display:flex; flex-wrap:wrap; gap:6px; margin:2px 0 0; padding:0; list-style:none; }
+.ch-edit-chips button{
+  padding:4px 11px; border:1px solid var(--rule); border-radius:999px;
+  background:var(--surface); color:var(--body);
+  font:inherit; font-size:12px; font-weight:600; cursor:pointer;
+}
+.ch-edit-chips button:hover{ border-color:var(--brand-soft); }
+.ch-edit-chips button.is-on{ border-color:var(--brand); background:var(--brand-softer); color:var(--brand-ink); font-weight:700; }
+.ch-edit-chips button:focus-visible{ outline:2px solid var(--brand); outline-offset:2px; }
+
+.ch-edit-links{ display:flex; flex-direction:column; gap:6px; margin:2px 0 0; padding:0; list-style:none; }
+.ch-edit-links li{ display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
+.ch-edit-links select, .ch-edit-links input{
+  height:34px; padding:0 9px;
+  border:1px solid var(--rule); border-radius:8px;
+  background:var(--surface); color:var(--ink); font:inherit; font-size:12.5px;
+}
+.ch-edit-links input{ flex:1 1 240px; min-width:0; }
+.ch-edit-links select:focus, .ch-edit-links input:focus{ outline:2px solid var(--brand-soft); outline-offset:1px; border-color:var(--brand); }
+
+/* 지우기·더하기는 값이 아니라 행 조작이라 한 단계 낮춘다 */
+.ch-edit-drop, .ch-edit-add{
+  padding:0; border:0; background:none;
+  font:inherit; font-size:12px; font-weight:600; color:var(--muted);
+  text-decoration:underline; cursor:pointer;
+}
+.ch-edit-add{ align-self:flex-start; margin-top:4px; color:var(--brand-ink); }
+.ch-edit-drop:hover{ color:var(--danger); }
+.ch-edit-add:hover{ color:var(--brand); }
+
 /* ── 실적 통계 — 세 개 고정 ──────────────────────────── */
 .ch-stats{
   display:grid; grid-template-columns:repeat(3, 1fr); gap:1px;

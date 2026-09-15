@@ -47,9 +47,8 @@ export default function MyPage() {
   const { user } = useAuth()
   const profile = useApiQuery<MyProfile>('/users/me')
 
-  /* 배열은 여기서 한 번 정규화한다. 백엔드 MeResponse 가 아직 이 필드를
-     내려주지 않아 undefined 로 온다 — 아래에서 .length 를 바로 읽으면
-     렌더 중 TypeError 가 나 앱 전체가 흰 화면이 된다. */
+  /* 서버가 빈 배열로 내려주므로(ANT-AUTH-05) null 가드는 필요 없다.
+     profile.data 자체가 로딩 중 undefined 라 옵셔널 체이닝만 남긴다. */
   const interests = profile.data?.interests ?? []
   const channels = profile.data?.channels ?? []
 
