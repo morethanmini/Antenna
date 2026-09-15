@@ -83,6 +83,32 @@ const OVERLAYS: IndicatorKind[] = ['MA5', 'MA15', 'MA30', 'BOLL']
 const PANES: PaneKind[] = ['RSI']
 const INDICATORS: IndicatorKind[] = [...OVERLAYS, ...PANES]
 
+/* ── 하루가 넘어가면 저절로 펴진다 ───────────────────────
+   뉴스와 AI 요약은 주문 카드보다 아래에 있어, 차트 보고 주문하면 시선이 거기서
+   끝나 아래로 안 내려간다. 그날 읽을 것이 생겼을 때 스스로 펴서 알린다.
+
+   **효과(useEffect)를 쓰지 않는다.** 열림 여부를 상태로 들고 하루가 바뀔 때마다
+   고쳐 넣으면 렌더가 한 번 더 돌고, 접었다가 다시 펴지는 깜빡임도 생긴다.
+   "덮어쓴 적이 없으면 내용이 있을 때 펴 둔다" 는 규칙이면 계산만으로 끝난다.
+
+   **접어 둔 것은 그 게임일 동안만 존중한다.** 오늘 안 볼래, 는 오늘의 뜻이지
+   앞으로 영영 보지 않겠다는 뜻이 아니다 — 다음 날 새 소식이 오면 다시 편다.
+   그래서 덮어쓴 값에 게임일을 함께 적어 둔다.
+
+   점(dot)은 읽을 것이 있는데 접혀 있을 때만 찍는다. 펴면 곧바로 사라진다. */
+type Override = { day: number; open: boolean }
+
+function useDayPanel(day: number, hasContent: boolean) {
+  const [override, setOverride] = useState<Override | null>(null)
+  const mine = override?.day === day ? override : null
+  const open = mine ? mine.open : hasContent
+  return {
+    open,
+    dot: hasContent && !open,
+    toggle: (next: boolean) => setOverride({ day, open: next }),
+  }
+}
+
 /* ── 보조지표가 무엇인지 ───────────────────────────────────
    차트에 선을 켜 놓고도 그게 무슨 선인지 모르면 켠 의미가 없다. 지표 버튼 바로
    아래에서 개미가 한 줄로 말해 주고, 더 보고 싶은 사람만 편다.
@@ -285,6 +311,17 @@ export default function SeasonPlay() {
     { day: sim.day, tickerId: selected ?? undefined },
   )
 
+  /* 두 칸이 그릴 것. **조기 return(시즌 로딩·오류·미참가)보다 위에 둔다** —
+     바로 아래 useDayPanel 이 훅이라, return 아래로 내려가면 어떤 렌더에서는
+     호출되고 어떤 렌더에서는 안 되어 훅 규칙이 깨진다. */
+  const todayHint = hints.data?.items.find((n) => n.gameDay === sim.day) ?? null
+  const newsItems = (news.data?.items ?? []).filter((n) => n.kind !== 'AI_HINT')
+
+  /* 그날 읽을 것이 있으면 저절로 편다. 불러오는 중에는 아직 모르므로 펴지 않는다 —
+     빈 상자가 열렸다 닫히면 화면이 한 번 튄다. */
+  const hintPanel = useDayPanel(sim.day, !hints.loading && !!todayHint)
+  const newsPanel = useDayPanel(sim.day, !news.loading && newsItems.length > 0)
+
   const heldQty = useMemo(
     () => Object.fromEntries(sim.positions.map((p) => [p.tickerId, p.qty])),
     [sim.positions],
@@ -357,8 +394,7 @@ export default function SeasonPlay() {
     )
   }
 
-  const todayHint = hints.data?.items.find((n) => n.gameDay === sim.day) ?? null
-  const newsItems = (news.data?.items ?? []).filter((n) => n.kind !== 'AI_HINT')
+
   const ticker = tickers.find((t) => t.tickerId === selected) ?? null
   const bars = selected === null ? undefined : candles[selected]
   const price = selected === null ? null : sim.priceOf(selected)
@@ -449,6 +485,11 @@ export default function SeasonPlay() {
             <h1>{s.title}</h1>
             <p>연습 시즌 · 종목 {s.tickerCount}개</p>
           </div>
+          {/* 제목과 진행 표시 사이의 빈 칸. 여기가 화면에서 가장 넓게 남는 자리다 —
+              차트 카드 머리줄에 뒀더니 종목명·가격·지표 버튼과 폭을 다투다가
+              좁은 칸에서 버튼 위로 겹쳤다. */}
+          <IndicatorHelp />
+
           <div className="sp-day">
             <span className="sp-daychip num">
               <Ico size={15}><path d="m10 8.5 6 3.5-6 3.5z" /><circle cx="12" cy="12" r="9" /></Ico>
@@ -548,10 +589,6 @@ export default function SeasonPlay() {
                   </span>
                 )}
               </div>
-              {/* 가격과 지표 버튼 사이의 빈 칸. 머리줄이 space-between 이라 가운데가
-                  늘 비어 있었고, "지표가 뭔데" 가 떠오르는 자리도 정확히 여기다. */}
-              <IndicatorHelp />
-
               <div className="sp-tools">
                 {/* 지표를 접어 둔다. 버튼 다섯 개를 늘 펴 두면 차트 위 두 줄을 먹는데,
                     지표를 바꾸는 일은 종목을 바꾸는 것보다도 드물다. */}
@@ -780,14 +817,19 @@ export default function SeasonPlay() {
         </div>
 
         {/* ── 아래 두 칸 (접이식) ──────────────────────────
-            뉴스와 AI 힌트는 자리만 잡는다. season_news 가 0행이고 목업을 넣지 않는다 —
-            가짜 뉴스는 나중에 통째로 버려야 하고, 문장이 시대 단서 규칙과도 엉킨다.
+            빈 상자 둘이 펴져 있으면 화면을 차지하기만 하므로, 읽을 것이 없으면
+            접어 둔다 — 접힌 줄에 무엇이 올 자리인지 적어 두면 그것만으로 뜻이 전해진다.
 
-            접어 둔다. 빈 상자 둘이 펴져 있으면 화면을 차지하기만 하고, 접힌 줄에
-            무엇이 올 자리인지 적어 두면 그것만으로 뜻이 전해진다. */}
+            읽을 것이 생기면 저절로 편다(useDayPanel). 이 칸들이 주문 카드보다
+            아래라, 차트 보고 주문하면 시선이 거기서 끝나 아래로 안 내려간다.
+            접어 둔 사람에게는 그 게임일 동안 다시 펴지 않고 점만 찍는다. */}
         <div className="sp-later">
-          <details className="sp-fold">
+          <details
+            className="sp-fold" open={hintPanel.open}
+            onToggle={(e) => hintPanel.toggle((e.currentTarget as HTMLDetailsElement).open)}
+          >
             <summary>
+              {hintPanel.dot && <i className="sp-dot" aria-label="읽지 않은 요약" />}
               <span className="sp-h-ico t-ai" aria-hidden="true">
                 <Ico size={15}><path d="m12 4 1.6 3.6L17 9.2l-3.4 1.6L12 14.4l-1.6-3.6L7 9.2l3.4-1.6z" /><path d="M18 15.5 18.8 17l1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8z" /></Ico>
               </span>
@@ -811,8 +853,12 @@ export default function SeasonPlay() {
             </div>
           </details>
 
-          <details className="sp-fold">
+          <details
+            className="sp-fold" open={newsPanel.open}
+            onToggle={(e) => newsPanel.toggle((e.currentTarget as HTMLDetailsElement).open)}
+          >
             <summary>
+              {newsPanel.dot && <i className="sp-dot" aria-label="읽지 않은 소식" />}
               <span className="sp-h-ico t-news" aria-hidden="true">
                 <Ico size={15}><path d="M5 4h11v16H5z" /><path d="M16 8h3v9.5a2.5 2.5 0 0 1-5 0" /><path d="M8 8h5M8 11.5h5M8 15h3" /></Ico>
               </span>
