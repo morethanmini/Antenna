@@ -10,7 +10,9 @@ import { ApiError, CLIENT_ERROR_CODE } from '../api/errors'
 
 /** EIP-1193 요청 인터페이스. 지갑이 주입하는 객체의 우리가 쓰는 부분만 적는다. */
 type Eip1193 = {
-  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>
+  /* params 가 배열만은 아니다 — wallet_watchAsset 은 객체 하나를 받는다(EIP-747).
+     배열로 좁혀 두면 그 호출이 타입에서 막힌다. */
+  request: (args: { method: string; params?: unknown[] | Record<string, unknown> }) => Promise<unknown>
 }
 
 declare global {
@@ -151,5 +153,79 @@ export async function personalSign(message: string, address: string): Promise<st
   } catch (e) {
     if (e instanceof ApiError) throw e
     throw fromProviderError(e)
+  }
+}
+
+/* ── 지갑에 토큰 추가 (EIP-747) ───────────────────────────────
+   서명·연결과 달리 이쪽은 **표시**의 문제다. 연동만 해서는 지갑 목록에 ANT 가
+   없어 잔액이 0 처럼 보인다 — 토큰을 받아도 지갑에서는 아무 일도 안 일어난 것 같다. */
+
+/**
+ * 지갑이 지금 보고 있는 체인. 토큰이 **어느 네트워크에 추가될지**가 이 값으로 정해진다.
+ *
+ * 서명 payload 에는 절대 쓰지 않는다 — 그쪽은 서버가 준 chainId 다(api/wallet.ts).
+ * 여기서만 지갑에 직접 묻는 이유는, 알고 싶은 것이 "서비스가 어느 체인인가" 가 아니라
+ * "사용자가 지금 어디를 열어 두었나" 이기 때문이다.
+ *
+ * 실패를 던지지 않고 null 로 눕힌다. 체인을 못 읽었다고 완료 화면이 깨지면 안 된다 —
+ * 연동은 이미 끝났고 토큰 추가는 곁들이다.
+ */
+export async function currentChainId(): Promise<number | null> {
+  const p = provider()
+  if (!p) return null
+  try {
+    const hex = await p.request({ method: 'eth_chainId' })
+    if (typeof hex !== 'string') return null
+    const id = Number.parseInt(hex, 16)
+    return Number.isNaN(id) ? null : id
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 토큰 추가 결과. 넷을 오류 하나로 합치지 않는다 — 사용자가 할 일이 다르다.
+ *
+ * added       지갑 목록에 들어갔다
+ * rejected    지갑 창에서 사용자가 취소했다 — 다시 부르면 된다
+ * busy        앞선 지갑 창이 아직 떠 있다 — 잠시 뒤 다시 부르면 된다
+ * unsupported 이 지갑은 wallet_watchAsset 을 모른다 — 손으로 넣는 수밖에 없다
+ */
+export type WatchResult = 'added' | 'rejected' | 'busy' | 'unsupported'
+
+/* EIP-1193 4200 = 지갑이 이 메서드를 구현하지 않음. JSON-RPC -32601 도 같은 뜻으로 온다. */
+const UNSUPPORTED = [4200, -32601]
+
+/**
+ * wallet_watchAsset. 목록에 이미 있으면 지갑이 창을 띄우지 않고 true 만 돌려주기도 한다.
+ *
+ * params 가 배열이 아니라 객체다(EIP-747). 다른 메서드처럼 배열로 감싸면 지갑이 거절한다.
+ *
+ * ApiError 로 바꾸지 않는다. 이 호출의 실패는 전부 "그럼 손으로 넣으세요" 한 곳으로
+ * 모이므로, errorText 를 태워 문구를 나눠 봐야 화면이 할 일이 달라지지 않는다.
+ */
+export async function watchToken(token: {
+  address: string
+  symbol: string
+  decimals: number
+}): Promise<WatchResult> {
+  const p = provider()
+  if (!p) return 'unsupported'
+  try {
+    const ok = await p.request({
+      method: 'wallet_watchAsset',
+      params: { type: 'ERC20', options: token },
+    })
+    /* 표준은 boolean 을 약속하지만 지갑마다 undefined 를 주기도 한다.
+       거부는 보통 throw 로 오므로, 여기까지 왔으면 false 아닌 한 넣은 것으로 본다. */
+    return ok === false ? 'rejected' : 'added'
+  } catch (e) {
+    const code = (e as { code?: unknown } | null)?.code
+    if (code === REJECTED) return 'rejected'
+    /* 연동 서명 창이 닫히기 전에 자동으로 부르면 여기로 온다. 실패가 아니라 순서 문제라
+       '이 지갑은 못 한다' 로 뭉뚱그리면 다시 부르면 될 사람을 손으로 넣게 만든다. */
+    if (code === PENDING) return 'busy'
+    if (typeof code === 'number' && UNSUPPORTED.includes(code)) return 'unsupported'
+    return 'unsupported'
   }
 }
