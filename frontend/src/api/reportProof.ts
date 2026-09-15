@@ -4,7 +4,7 @@
    서버는 재료만 준다. 같은지 다른지는 이 파일의 함수와 화면이 계산한다 —
    서버가 "검증됨" 이라고 말하면 증명이 아니다(D-03 이 세운 원칙). */
 import { api } from './client'
-import { ethers, keccak256Utf8 } from '../chain/keccak'
+import { keccak256Utf8 } from '../chain/keccak'
 import type { ProofAnchor } from './proof'
 
 /**
@@ -92,13 +92,6 @@ export async function signingPreimage(
   ].join('\n')
 }
 
-/**
- * 서명에서 서명자 주소를 복원한다. **서버가 준 `signerAddress` 를 믿지 않는 부분이다.**
- *
- * ethers 를 동적으로 불러온다 — 검산 화면에 들어오기 전까지 번들에 싣지 않는다
- * (chain/keccak.ts 와 같은 방식).
- */
-export async function recoverSigner(preimage: string, signature: string) {
-  const { verifyMessage } = await ethers()
-  return verifyMessage(preimage, signature).toLowerCase()
-}
+/* 서명자 복원은 chain/keccak.ts 한 곳에 있다 — 예측 검산(D-03)도 같은 함수를 쓴다.
+   여기서 다시 내보내는 것은 이 파일만 읽는 화면이 import 를 두 군데서 끌어오지 않게 하려는 것이다. */
+export { recoverSigner } from '../chain/keccak' 
