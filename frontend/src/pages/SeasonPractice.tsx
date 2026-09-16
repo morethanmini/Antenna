@@ -304,13 +304,6 @@ export default function SeasonPractice() {
             <h1>연습하기</h1>
             <p>부담 없이 전략을 연습하고 투자 흐름을 익혀보세요.</p>
           </div>
-          {/* 시작 버튼은 헤더 오른쪽 — 바로 아래 요약 스트립의 "시작할 수 있는 연습" 칸 위다.
-              오른쪽 열 맨 아래에 두면 주제·AI 가이드를 다 지나야 보였다. */}
-          <div className="pr-cta">
-            <Link to={startAt}>
-              {first ? '연습 시작하기' : '모드 선택으로 이동'} <em aria-hidden="true">›</em>
-            </Link>
-          </div>
         </header>
 
         <Summary going={going} done={done} open={open} openFailed={topicsFailure !== null} />
