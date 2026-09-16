@@ -12,59 +12,27 @@
 
    대회 정의(날짜·종목·글귀)는 event/contest.ts 한 곳에 있다. 이 파일에는
    날짜를 적지 않는다 — 일정이 밀릴 때 고칠 곳이 둘이 되면 하나를 빠뜨린다. */
-import { Link } from 'react-router-dom'
-import { fetchStocks } from '../api/stocks'
-import type { StockListItem } from '../api/stocks'
+import { fetchEvent, fetchEventBySlug, type EventHome } from '../api/events'
 import { useAsync } from '../api/useAsync'
-import { DEFAULT_AVATAR } from '../auth/context'
-import StockLogo from '../components/stocks/StockLogo'
-import {
-  BANNER_BASE,
-  CONTEST,
-  CONTEST_CODES,
-  HERO,
-  RULES,
-  cardHref,
-  phaseAt,
-  stamp,
-} from '../event/contest'
+import EventEntryForm from '../components/event/EventEntryForm'
+import EventLeaderboard from '../components/event/EventLeaderboard'
+import EventMyEntries from '../components/event/EventMyEntries'
+import EventStocks from '../components/event/EventStocks'
+import { BANNER_BASE, CONTEST, HERO, RULES, phaseAt, stamp } from '../event/contest'
 import '../styles/screens/event-contest.css'
 
-/** 못 찾은 종목의 자리. 상장폐지·코드 오타로 한 칸이 비어도 열 칸은 선다 —
- *  한 칸이 사라지면 "열 종목" 이라는 말과 화면이 어긋난다 */
-const missing = (code: string): StockListItem => ({
-  code, name: code, sector: null, market: null,
-  prevClose: null, changeRate: null, per: null, pbr: null, marketCap: null,
-  predictionCount: 0, upRatio: null, watched: false,
-})
+/* 회차를 slug 로 찾고 홈을 읽는다. 쿼리 둘이다.
 
-/* 10개 종목을 한 번에 받는 파라미터가 서버에 없다(StockFilter 에 codes 가 없다).
-   그래서 코드마다 q= 로 한 건씩 부르고 동시에 기다린다 — 열 번이라 감당되는
-   수고이고, 서버에 codes 를 새로 뚫는 것보다 손이 적다. 종목이 크게 늘면
-   그때 서버 쪽을 여는 게 맞다.
+   전에는 contest.ts 의 CONTEST_CODES 를 돌며 종목 상세를 **열 번** 불렀다. 그 목록이
+   화면 상수였는데, idx 가 온체인 커밋의 재료라 서버 목록과 하나만 어긋나도 배팅이
+   엉뚱한 종목에 걸린다. 이제 서버가 순서까지 정해 준다(2026-09-16).
 
-   **모듈 스코프 함수다.** useAsync 는 load 가 바뀌면 다시 읽으므로 컴포넌트
-   안에서 만들면 매 렌더 새로 읽는다(useAsync 머리말). */
-function loadContestStocks(): Promise<StockListItem[]> {
-  return Promise.all(
-    CONTEST_CODES.map(async (code) => {
-      try {
-        /* fetchStocks 는 필터를 받아 **함수를 돌려준다**(커서는 부르는 쪽 몫).
-           여기선 커서가 없으니 빈 질의로 한 번만 부른다. */
-        const page = await fetchStocks({ q: code, sort: 'MARKET_CAP' })({})
-        /* q 는 이름·코드 부분 일치라 다른 종목이 딸려 올 수 있다 */
-        return page.items.find((s) => s.code === code) ?? missing(code)
-      } catch {
-        return missing(code)
-      }
-    }),
-  )
+   **모듈 스코프 함수다.** useAsync 는 load 가 바뀌면 다시 읽으므로 컴포넌트 안에서
+   만들면 매 렌더 새로 읽는다(useAsync 머리말). */
+async function loadContest(): Promise<EventHome | null> {
+  const found = await fetchEventBySlug(CONTEST.id)
+  return found ? fetchEvent(found.eventId) : null
 }
-
-const pct = (n: number | null) =>
-  n === null ? '—' : `${n > 0 ? '+' : ''}${n.toFixed(2)}%`
-
-const won = (n: number | null) => (n === null ? '—' : `${n.toLocaleString('ko-KR')}원`)
 
 /* 머리 — 대회 이름 · 한 줄 소개 · 다음 마감 · 규칙을 한 카드에 담는다.
 
@@ -147,123 +115,54 @@ function Hero({ phase }: { phase: ReturnType<typeof phaseAt> }) {
   )
 }
 
-/** 종목 카드 한 장 */
-function StockCard({ s, phase }: { s: StockListItem; phase: ReturnType<typeof phaseAt> }) {
-  const rate = s.changeRate ?? null
-  const tone = rate === null ? '' : rate > 0 ? ' is-up' : rate < 0 ? ' is-down' : ''
-
-  return (
-    <li>
-      <Link className="ev-card" to={cardHref(s.code, phase)}>
-        <StockLogo code={s.code} name={s.name} className="ev-card-logo" />
-        <b className="ev-card-name">{s.name}</b>
-        <span className="ev-card-code num">{s.code}</span>
-        <span className="ev-card-price num">{won(s.prevClose ?? null)}</span>
-        {/* 등락은 낱말이 없어 색만 남는다 — 부호를 반드시 붙인다 */}
-        <span className={`ev-card-rate num${tone}`}>{pct(rate)}</span>
-        <span className="ev-card-go" aria-hidden="true">
-          {phase === 'open' ? '예측하기 ›' : '종목 보기 ›'}
-        </span>
-      </Link>
-    </li>
-  )
-}
-
-/** 대회 종목 10 */
-function Stocks({ phase }: { phase: ReturnType<typeof phaseAt> }) {
-  const { data, loading, error, reload } = useAsync(loadContestStocks)
-
-  return (
-    <section className="card ev-block" aria-labelledby="ev-stocks-h">
-      <header className="ev-block-head">
-        <h2 id="ev-stocks-h">대회 종목 {CONTEST_CODES.length}</h2>
-        {/* 등록 창이 닫혀 있을 때는 아무 말도 하지 않는다. "열리면 예측할 수
-            있습니다" 는 지금 할 수 있는 일이 없다는 말을 길게 적은 것이라,
-            규칙에 이미 적힌 날짜를 한 번 더 읽게 만들 뿐이다. */}
-        {phase === 'open' && <p>카드를 누르면 그 종목의 예측 등록으로 바로 갑니다.</p>}
-      </header>
-
-      {loading && (
-        /* 자리를 미리 잡아 둔다. 카드가 없다가 열 장이 한 번에 나타나면
-           아래 규칙 칸이 통째로 밀려 내려간다 */
-        <ul className="ev-cards" aria-hidden="true">
-          {CONTEST_CODES.map((code) => (
-            <li key={code}><span className="ev-card is-skel" /></li>
-          ))}
-        </ul>
-      )}
-
-      {error && (
-        <p className="ev-state">
-          종목을 불러오지 못했어요.{' '}
-          <button type="button" className="ev-retry" onClick={reload}>다시 시도</button>
-        </p>
-      )}
-
-      {data && (
-        <ul className="ev-cards">
-          {data.map((s) => <StockCard key={s.code} s={s} phase={phase} />)}
-        </ul>
-      )}
-    </section>
-  )
-}
-
-
-/** 참가자 타일 */
-function People() {
-  /* **아직 서버가 참가자를 주지 않는다.** "이 대회에 등록한 사람" 을 가려내려면
-     예측에 대회 표시가 붙어야 하는데, 그 표시는 등록 양식에 붙을 대회 전용
-     요소와 함께 정해진다. 그때 이 함수만 실제 호출로 바꾸면 된다 —
-     화면은 빈 목록도 그릴 줄 알아야 하므로 지금 그 길을 먼저 만들어 둔다. */
-  const people: { userId: number; nickname: string; avatarUrl: string | null }[] = []
-
-  return (
-    <section className="card ev-block" aria-labelledby="ev-people-h">
-      <header className="ev-block-head">
-        <h2 id="ev-people-h">참가자 {people.length > 0 && <span className="num">{people.length}</span>}</h2>
-        {/* 아무도 없을 때만 안내한다. 이미 이름이 올라와 있으면 그 줄이
-            무엇을 하라는 말인지 설명하고 있어, 같은 말을 한 번 더 할 이유가 없다 */}
-        {people.length === 0 && <p>대회 종목에 예측을 등록하면 여기에 이름이 올라갑니다.</p>}
-      </header>
-
-      {people.length === 0 ? (
-        <p className="ev-state is-quiet">
-          아직 참가자가 없어요. 첫 번째로 이름을 올려 보세요.
-        </p>
-      ) : (
-        <ul className="ev-tiles">
-          {people.map((p) => (
-            <li key={p.userId}>
-              {/* 칸이 좁아 닉네임이 잘린다. 손을 얹으면 전체가 뜨도록 title 을 단다 —
-                  잘리지 않은 이름에도 붙지만, 잘렸는지 아닌지는 CSS 만으로 알 수 없다 */}
-              <Link className="ev-tile" to={`/channels/${p.userId}`} title={p.nickname}>
-                {/* 사진을 안 올린 사람은 서버가 null 을 준다. 빈 문자열을 넣으면
-                    브라우저가 **지금 주소를 다시 부른다** — 기본 개미로 떨어뜨린다 */}
-                <img className="ev-tile-face" src={p.avatarUrl ?? DEFAULT_AVATAR}
-                     alt="" aria-hidden="true" />
-                <span className="ev-tile-name">{p.nickname}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  )
-}
-
 export default function EventContest() {
-  /* 단계는 렌더할 때 한 번 센다. 초 단위로 다시 세지 않는 것은, 이 화면이
-     열려 있는 동안 창이 열리거나 닫히는 순간을 실시간으로 넘길 만큼
-     중요하지 않아서다 — 새로고침하거나 카드를 누를 때 다시 센다. */
+  /* 머리의 단계는 contest.ts 의 날짜로 센다(그림·문구가 그 값을 쓴다). 종목·등록·순위는
+     **서버의 phase** 를 따른다 — 접수는 서버 크론이 세 조건(시각·기준가·온체인)을 보고
+     열기 때문에, 시각만 지났다고 열린 것이 아니다. 두 값을 섞지 않는다. */
   const phase = phaseAt()
+  const { data, loading, error, reload } = useAsync(loadContest)
 
   return (
     <main className="main">
       <div className="main-inner ev" aria-labelledby="ev-h">
         <Hero phase={phase} />
-        <Stocks phase={phase} />
-        <People />
+
+        {loading && (
+          /* 자리를 미리 잡는다. 카드가 없다가 한 번에 나타나면 아래가 통째로 밀린다 */
+          <section className="card ev-block" aria-hidden="true">
+            <ul className="ev-cards">
+              {Array.from({ length: 10 }, (_, i) => (
+                <li key={i}><span className="ev-card is-skel" /></li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {error && (
+          <section className="card ev-block">
+            <p className="ev-state">
+              대회 정보를 불러오지 못했어요.{' '}
+              <button type="button" className="ev-retry" onClick={reload}>다시 시도</button>
+            </p>
+          </section>
+        )}
+
+        {/* 회차가 아직 안 만들어졌을 수도 있다. 그때 화면이 깨지지 않게 한 줄로 말한다 */}
+        {!loading && !error && !data && (
+          <section className="card ev-block">
+            <p className="ev-state is-quiet">대회를 준비하고 있어요. 곧 열립니다.</p>
+          </section>
+        )}
+
+        {data && (
+          <>
+            <EventStocks event={data} />
+            {/* 등록은 서버가 ENTRY 라고 할 때만 연다 */}
+            {data.phase === 'ENTRY' && <EventEntryForm event={data} onDone={reload} />}
+            <EventMyEntries eventId={data.eventId} />
+            <EventLeaderboard eventId={data.eventId} />
+          </>
+        )}
       </div>
     </main>
   )
