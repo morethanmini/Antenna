@@ -1,5 +1,6 @@
 package ssafy.a507.backend.domain.event.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -37,4 +38,49 @@ public interface PredictionEventBetRepository extends JpaRepository<PredictionEv
     default List<PredictionEventBet> findPendingWithFailedOperation() {
         return findPendingWithFailedOperation(PredictionEventBet.Status.PENDING, Operation.Status.FAILED);
     }
+
+    /**
+     * 종목별 방향별 배팅 집계 — 홈 화면의 풀·배당률 재료 (ANT-EVENT-04).
+     *
+     * <p>돌려주는 행은 {@code [eventStockId, direction, sumStake, count]} 다. 종목 카드 10장을
+     * 한 번에 채우려고 이벤트 단위로 묶어 읽는다 — 카드마다 부르면 페이지 한 장에 쿼리가 열 번이다.
+     *
+     * <p><b>PENDING 은 뺀다.</b> 전송 중이라 체인에 아직 안 올라간 돈이고, 그 전송이 실패하면
+     * 남의 배당률만 흔들어 놓는다. 반대로 FAILED 도 뺀다 — 그 둘을 뺀 나머지가 "체인에 있는 돈" 이다.
+     */
+    @Query("""
+            select b.eventStock.id, p.direction, sum(b.stake), count(b)
+              from PredictionEventBet b
+              join b.prediction p
+             where b.event.id = :eventId
+               and b.betStatus in :live
+             group by b.eventStock.id, p.direction
+            """)
+    List<Object[]> sumStakeByStockAndDirection(
+            @Param("eventId") Long eventId, @Param("live") Collection<PredictionEventBet.Status> live);
+
+    /** 체인에 올라간 것으로 보는 상태들 — 풀 집계의 기준이다. PENDING(전송 중)·FAILED(못 올라감)는 뺀다. */
+    List<PredictionEventBet.Status> LIVE_FOR_POOL =
+            List.of(
+                    PredictionEventBet.Status.ACTIVE,
+                    PredictionEventBet.Status.REVEALED,
+                    PredictionEventBet.Status.SETTLED,
+                    PredictionEventBet.Status.REFUNDED);
+
+    default List<Object[]> sumStakeByStockAndDirection(Long eventId) {
+        return sumStakeByStockAndDirection(eventId, LIVE_FOR_POOL);
+    }
+
+    /**
+     * 내 배팅 전부 — 홈 화면의 {@code mine} 과 {@code me} 요약 재료.
+     *
+     * <p>{@code prediction} 을 페치 조인한다. 카드가 방향·목표가를 보여주는데 {@code open-in-view: false}
+     * 라 서비스 밖에서 지연 로딩이 터진다.
+     */
+    @Query("""
+            select b from PredictionEventBet b
+              join fetch b.prediction
+             where b.event.id = :eventId and b.user.id = :userId
+            """)
+    List<PredictionEventBet> findMine(@Param("eventId") Long eventId, @Param("userId") Long userId);
 }
