@@ -5,10 +5,20 @@
 
 .sb-loading{ margin:24px 0; font-size:var(--fs-lg); color:var(--muted); }
 
-.sb-list{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:10px; }
+/* 격자. 카드 하나가 화면 폭을 다 쓰던 것을 고친다(S15P21A507-273) — 안에 든 게 얼굴·이름·상태·
+   구독료·기간 정도라 넓은 화면에서 오른쪽이 텅 비었다. 320px 을 최소로 잡으면 본문 폭에서 셋,
+   태블릿에 둘, 폰에 하나다. auto-fill 인 이유 — auto-fit 이면 카드가 하나뿐일 때 다시 통째로
+   늘어나 고치기 전 모양으로 돌아간다. min(320px,100%) 는 320px 이 안 나오는 폰에서 넘치지 않게. */
+.sb-list{
+  margin:0; padding:0; list-style:none;
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap:12px;
+}
+/* 같은 줄의 카드는 높이를 맞춘다. 정보량이 같은데 높이가 들쭉날쭉하면 빠진 게 있어 보인다 */
+.sb-list > li{ display:flex; min-width:0; }
 
 .sb-item{
-  padding:15px 18px;
+  flex:1; min-width:0; display:flex; flex-direction:column;
+  padding:16px 18px;
   background:var(--surface);
   border:1px solid var(--rule);
   border-radius:12px;
@@ -16,8 +26,11 @@
 /* 지난 구독은 한 걸음 물러나 보이게 한다 — 지우지는 않는다(이력이라 남긴다) */
 .sb-item.is-expired{ background:var(--surface-2); }
 
-.sb-head{ display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+.sb-head{ display:flex; align-items:center; gap:10px; }
+/* 예측가 얼굴. 채널 머리(56px)보다 작고 홈 1위 카드(46px)와 비슷하게 — 목록 한 칸의 크기다 */
+.sb-avatar{ flex:0 0 auto; width:44px; height:44px; border-radius:50%; object-fit:cover; background:var(--surface-2); }
 .sb-channel{
+  flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;   /* 긴 닉네임이 배지를 밀어내지 않게 */
   font-size:var(--fs-xl); font-weight:var(--fw-heavy); color:var(--ink);
   letter-spacing:-.01em; text-decoration:none;
 }
@@ -27,7 +40,25 @@
 .sb-badge.is-active{ background:#e7f5ec; color:#15803d; }
 .sb-badge.is-expired{ background:var(--rule); color:var(--muted); }
 
-.sb-facts{ display:flex; flex-wrap:wrap; gap:6px 26px; margin:11px 0 0; }
+/* flex:1 로 남는 높이를 먹어 아래 안내·조작이 카드 바닥에 붙는다. align-content 가 없으면 줄이 벌어진다 */
+/* 관심 섹터. 이름 아래 작게 — 금액보다 먼저 '무엇을 보는 사람인가' 가 읽혀야 한다.
+   칩을 진하게 두면 상태 배지와 경쟁하므로 테두리 없이 바탕만 옅게 깐다. */
+.sb-sectors{
+  list-style:none; margin:10px 0 0; padding:0;
+  display:flex; flex-wrap:wrap; gap:4px;
+}
+.sb-sectors li{
+  padding:2px 8px; border-radius:999px;
+  background:var(--surface-2); color:var(--muted);
+  font-size:var(--fs-xs); font-weight:var(--fw-bold);
+}
+/* 지난 구독 카드는 바탕이 이미 surface-2 라 칩이 묻힌다 */
+.sb-item.is-expired .sb-sectors li{ background:var(--rule); }
+
+/* 값이 없는 칸. 숫자가 아니므로 num 을 쓰지 않고 한 단계 연하게 둔다 */
+.sb-none{ color:var(--faint); font-size:var(--fs-md); font-weight:var(--fw-normal); }
+
+.sb-facts{ flex:1; align-content:flex-start; display:flex; flex-wrap:wrap; gap:6px 22px; margin:12px 0 0; }
 .sb-facts > div{ display:flex; flex-direction:column; gap:2px; }
 .sb-facts dt{ font-size:var(--fs-xs); color:var(--muted); }
 .sb-facts dd{ margin:0; font-size:var(--fs-lg); font-weight:var(--fw-bold); color:var(--ink); }
@@ -42,6 +73,10 @@
   border-top:1px dashed var(--rule);
 }
 .sb-renew .sb-note{ margin:0; }
+/* 자동 갱신 여부를 글자 앞머리에 세운다. 색으로만 알리지 않는다 — 글자가 이미 말한다 */
+.sb-renew-state{ font-weight:var(--fw-heavy); }
+.sb-renew-state.is-on{ color:#15803d; }
+.sb-renew-state.is-off{ color:var(--muted); }
 
 .sb-btn{
   flex:0 0 auto;
@@ -82,4 +117,41 @@
   .sb-renew .sb-btn{ width:100%; }
   .sb-confirm-actions{ flex-direction:column-reverse; }
   .sb-confirm-actions .sb-btn{ width:100%; }
+}
+
+/* ── 카드를 눌러 채널로 (S15P21A507-273) ─────────────────
+   누를 수 있다는 것이 모양으로 보여야 한다. 그림자까지 주면 목록이 들썩이므로
+   테두리 색과 바탕만 바꾼다. */
+.sb-item{ cursor:pointer; transition:border-color .14s, background .14s; }
+.sb-item:hover{ border-color:var(--brand-soft); background:var(--brand-softer); }
+/* 지난 구독은 눌러도 채널로 가지만, 살아 있는 구독처럼 밝아지지는 않게 한다 */
+.sb-item.is-expired:hover{ background:var(--rule); }
+/* 안쪽 링크·버튼은 카드 hover 를 물려받지 않는다 — 제 배경을 지킨다 */
+.sb-item:hover .sb-btn{ background:var(--surface); }
+
+/* ── 체인 해시 말풍선 — 커서를 따라온다 ──────────────────
+   position:fixed 라 카드의 overflow 나 격자 칸에 갇히지 않는다.
+   pointer-events:none 이 핵심이다: 이게 없으면 말풍선이 커서 아래로 들어가
+   카드의 mouseleave 가 터지고 말풍선이 깜빡인다. */
+.sb-hash-tip{
+  position:fixed; z-index:50; pointer-events:none;
+  max-width:min(420px, 90vw);
+  padding:8px 11px;
+  border:1px solid var(--rule); border-radius:9px;
+  background:var(--surface); box-shadow:var(--shadow);
+}
+.sb-hash-label{
+  display:block; margin-bottom:3px;
+  font-size:var(--fs-xs); font-weight:var(--fw-bold); color:var(--muted);
+}
+.sb-hash-tip code{
+  font-family:var(--mono); font-size:var(--fs-xs); color:var(--ink);
+  overflow-wrap:anywhere;   /* 66자가 한 줄로 화면을 넘지 않게 */
+}
+
+/* 손가락 입력에는 hover 가 없다. 말풍선이 안 뜨는 것은 맞지만, 카드가 눌리는 느낌은
+   남겨 둔다 — 누르면 채널로 가는 것은 마우스와 똑같다. */
+@media (hover:none){
+  .sb-item:hover{ border-color:var(--rule); background:var(--surface); }
+  .sb-item.is-expired:hover{ background:var(--surface-2); }
 }

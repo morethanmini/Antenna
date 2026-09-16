@@ -25,6 +25,11 @@ public record MySubscriptionListResponse(List<Item> items) {
             Publisher publisher,
             String fee,
             Subscription.Status status,
+            /**
+             * 구독이 개시된 시각. <b>PENDING 은 null</b> 이다 — 결제가 체인에서 확정될 때
+             * 인덱서가 채운다(Subscription.activate). 화면은 "언제부터 구독했는가" 로 쓴다.
+             */
+            Instant startedAt,
             /** 개시 +30일. PENDING 은 아직 개시 전이라 null 이다 */
             Instant expiresAt,
             /** 만료일에 배치 B4 가 재결제할지. 해지하면 false */
@@ -36,19 +41,38 @@ public record MySubscriptionListResponse(List<Item> items) {
              */
             String txHash) {
 
-        public static Item of(Subscription s) {
-            User p = s.getPublisher();
+        /** {@code publisher} 는 호출부가 목록 전체를 한 번에 모아 만든다 — 줄마다 찾으면 N+1 이다 */
+        public static Item of(Subscription s, Publisher publisher) {
             return new Item(
                     s.getId(),
-                    new Publisher(p.getId(), p.getNickname()),
+                    publisher,
                     s.getFee() == null ? null : s.getFee().toString(),
                     s.getStatus(),
+                    s.getStartedAt(),
                     s.getExpiresAt(),
                     s.isAutoRenew(),
                     s.getTxHash());
         }
     }
 
-    /** 구독 대상 채널. 목록에서 채널로 나가는 링크에 쓴다 */
-    public record Publisher(Long userId, String nickname) {}
+    /**
+     * 구독 대상 채널. 목록에서 채널로 나가는 링크에 쓴다.
+     *
+     * <p>{@code avatarUrl} 은 예측가의 프로필 사진이다(S15P21A507-273). 안 올렸거나 파일이 사라졌으면
+     * null 이고 화면이 기본 아바타를 그린다. 이름을 {@code MeResponse}·{@code ChannelProfileResponse} 와
+     * 같게 둔다 — 같은 값에 화면마다 다른 이름이 붙으면 그게 더 헷갈린다.
+     */
+    public record Publisher(
+            Long userId,
+            String nickname,
+            String avatarUrl,
+            /** 관심 섹터. 담은 순서대로다. 안 고른 사람은 빈 배열 */
+            List<String> interests,
+            /**
+             * 가장 최근 예측 시각(REAL 만). 한 건도 없으면 null 이다.
+             *
+             * <p>구독은 <b>앞으로 올 예측</b>을 사는 것이라, 마지막 활동이 언제인지가 갱신을
+             * 정하는 근거가 된다. 그래서 목록에 둔다.
+             */
+            Instant latestPredictionAt) {}
 }
