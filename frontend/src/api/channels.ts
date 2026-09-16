@@ -10,10 +10,10 @@
    조회 넷이 다 열렸다 — {userId}(ANT-TOKEN-09) · {userId}/predictions(ANT-PRED-05) ·
    {userId}/reports(ANT-COMMUNITY-01) · {userId}/backtest(ANT-TOKEN-03). 그래서 MOCK 을 껐다.
 
-   남은 것은 구독 개시(POST {userId}/subscriptions, ANT-TOKEN-01) 하나다. 그건 지금도
-   목이고, 서명은 실제로 한다 — POST /wallet/nonce 는 "온체인 동반 요청 전부가 쓰는 공용
-   창구"(서버 WalletController 주석)라 scope=SUBSCRIBE 가 동작한다. 진짜인 부분을 목으로
-   덮으면 나중에 붙일 때 무엇이 검증됐는지 알 수 없다.
+   구독 개시(POST {userId}/subscriptions, ANT-TOKEN-01)도 실제다. 서명 원문은 아래
+   subscribeSigningPayload — 서버 SubscriptionService.Signed 와 바이트가 같아야 한다.
+   범용 빌더(api/wallet.ts signingPayload)는 지갑 연동 전용이라 여기 쓰면 안 된다 —
+   2026-09-16 까지 그걸 쓰고 있어서 운영에서 구독이 전부 SIGNER_MISMATCH 로 막혔다.
 
    ⚠️ 이 주석을 반드시 같이 고친다. 09-08 자 옛 주석이 일주일 낡은 채 남아 있어서, 이미
    구현된 {userId}/predictions 를 "백엔드 없음" 으로 오판하게 만들었다. */
@@ -22,6 +22,7 @@ import type { ChannelPlatform } from './account'
 import * as mock from './mock/channels'
 import type { CursorList } from './types'
 import type { Direction, PredictionStatus } from './predictions'
+import type { WalletNonce } from './wallet'
 
 const MOCK = false
 
@@ -192,6 +193,28 @@ export type SubscribeBody = {
  * 키를 유지해야 결제가 두 번 나가지 않는다(설계서 §1).
  */
 export const subscribeScope = (userId: string) => `subscription:${userId}`
+
+/**
+ * 서명 대상 문자열. **서버 SubscriptionService.Signed.signingPayload 와 바이트가 같아야 한다.**
+ *
+ * 요청 본문에는 서명뿐이고 publisherId·fee 는 서버가 제 값으로 다시 조립한다 — 그래서 여기
+ * 넣는 값이 서버 값과 한 글자라도 다르면 복원 주소가 달라져 SIGNER_MISMATCH(401) 다.
+ * - fee 는 GET /channels/{userId} 의 fee 문자열 **그대로**. 서버가 BigInteger.toString() 으로
+ *   찍으므로 "15000" 이다. formatToken 을 거치면 쉼표가 붙어 어긋난다.
+ * - operatorAuthorize=true 는 값이 아니라 고정 문자열이다(서버 상수). 자동 갱신 위임 승인.
+ * - fee 가 null(구독료 미설정)이면 "fee=null" 이 나가는데, 서버는 서명 검증 앞단에서
+ *   FEE_NOT_SET(409) 로 거절하므로 여기서 따로 막지 않는다. E-02 는 그 채널에 버튼도 안 낸다.
+ */
+export function subscribeSigningPayload(publisherId: string, fee: string | null, nonce: WalletNonce) {
+  return [
+    'antenna:subscribe:v1',
+    `publisherId=${publisherId}`,
+    `fee=${fee}`,
+    'operatorAuthorize=true',
+    `chainId=${nonce.chainId}`,
+    `nonce=${nonce.nonce}`,
+  ].join('\n')
+}
 
 export function subscribe(userId: string, body: SubscribeBody) {
   if (MOCK) return mock.subscribe(userId, body)

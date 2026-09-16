@@ -10,10 +10,10 @@
    - 결제 시점의 fee 가 박제된다. 이후 채널이 가격을 바꿔도 기존 구독은 옛 가격이다.
 
    operatorAuthorize 에 대해
-   설계서에만 있고 백엔드·컨트랙트 어디에도 구현이 없다(2026-09-08 확인). 제약이
-   요구하는 것은 "모달에서 고지한다" 뿐이라 지금 지킬 수 있다 — 승인 필드를 지어내지
-   않고 문구로만 알린다. 서명 payload 에 항목이 생기면 api/wallet.ts 의
-   signingPayload 와 함께 고친다.
+   서명 원문에 operatorAuthorize=true 가 고정 문자열로 들어간다(서버 SubscriptionService.
+   Signed, 2026-09-16 확인). 위임을 실제로 체인에 거는 경로는 아직 없고 ANT-TOKEN-06 몫이다 —
+   그래서 승인 필드를 따로 두지 않고 문구로 고지한다. 원문은 api/channels.ts 의
+   subscribeSigningPayload 한 곳에만 있다.
 
    M-01 에서 배운 것을 그대로 잇는다
    - 지갑이 없으면 서명 창을 띄우지 않고 M-01 로 먼저 보낸다. 실패시켜 놓고
@@ -25,10 +25,10 @@
    결제는 체인에서 진행 중이고 화면이 붙어 있을 이유가 없다. 닫지 못하게 하면
    3분짜리 대기에 사용자를 묶어 둔다. 서명 중(signing)만 잠근다. */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { subscribe, type Channel } from '../../api/channels'
-import type { ApiError } from '../../api/errors'
+import { subscribe, subscribeSigningPayload, type Channel } from '../../api/channels'
+import { ERROR_CODE, type ApiError } from '../../api/errors'
 import { useOperation } from '../../api/operations'
-import { formatToken, requestNonce, signingPayload } from '../../api/wallet'
+import { formatToken, requestNonce } from '../../api/wallet'
 import { connectAddress, hasWallet, personalSign } from '../../wallet/provider'
 import { useAuth } from '../../auth/context'
 import { errorText } from '../state/errorText'
@@ -102,7 +102,12 @@ export default function SubscribeModal({ channel, onClose, onSubscribed, onNeedW
     try {
       const address = await connectAddress()
       const nonce = await requestNonce('SUBSCRIBE')
-      const signature = await personalSign(signingPayload('SUBSCRIBE', address, nonce), address)
+      /* 원문은 구독 전용이다. 범용 빌더(address·chainId·nonce)로 서명하면 서버가 조립한
+         원문(publisherId·fee·operatorAuthorize)과 달라 복원 주소가 어긋나고, 지갑을 바꿔도
+         절대 통과하지 않는 SIGNER_MISMATCH 가 난다(2026-09-16 운영에서 실제로 났다). */
+      const signature = await personalSign(
+        subscribeSigningPayload(channel.userId, channel.fee, nonce), address,
+      )
 
       const { operationId: id } = await subscribe(channel.userId, { signature })
       setOperationId(id)
@@ -117,7 +122,7 @@ export default function SubscribeModal({ channel, onClose, onSubscribed, onNeedW
     }
   }
 
-  const text = error ? errorText(error) : null
+  const text = error ? subscribeErrorText(error) : null
   /* 구독료 미설정(fee === null) 채널은 E-02 가 구독 버튼 자체를 내주지 않아 여기 닿지
      않는다. 그래도 금액 자리를 빈 문자열로 두지 않는다 — 만약 닿았을 때 "결제 금액"
      칸이 비면 얼마가 빠져나가는지 모르는 채로 서명하게 된다. */
@@ -228,4 +233,17 @@ export default function SubscribeModal({ channel, onClose, onSubscribed, onNeedW
       </div>
     </div>
   )
+}
+
+/* SIGNER_MISMATCH 는 구독에서 뜻이 둘이다 — 다른 지갑으로 서명했거나, 서명 뒤 접수 전에
+   채널이 구독료를 바꿔 서버가 **새 fee 로 원문을 조립**했거나(서버 Signed 주석 — 모르는 값으로
+   결제되느니 거절한다). 서버가 둘을 같은 코드로 내리므로 공용 문구("연동하려는 주소의 계정으로
+   바꾸라")는 후자에서 사용자를 엉뚱한 곳으로 보낸다. 여기서만 두 갈래를 함께 말한다. */
+function subscribeErrorText(error: ApiError) {
+  if (error.code !== ERROR_CODE.SIGNER_MISMATCH) return errorText(error)
+  return {
+    title: '서명이 맞지 않습니다',
+    hint: '구독료가 방금 바뀌었거나 다른 지갑으로 서명했습니다. 채널을 새로고침해 금액을 확인한 뒤 다시 서명해 주세요',
+    retryable: true,
+  }
 }
