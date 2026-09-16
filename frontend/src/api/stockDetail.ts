@@ -21,11 +21,6 @@
    놓치면 다음이 한 달·석 달 뒤다. 공시 배치(매일)에 붙은 fillIfEmpty() 를 한 번
    돌리자 개황 311종목 · 재무 916행 · 공시 597건이 들어왔다.
 
-   ── 아직 서버가 없는 것 ────────────────────────────────
-   GET /stocks/{code}/sentiment 예측 심리. ANT-PRED-06 · 담당자 없음.
-                               AI 와 무관하다 — predictions 의 UP/DOWN 집계이고
-                               표에는 이미 행이 있다. 코드가 없을 뿐이다.
-
    **이 파일에 목업이 없다.** 없는 것은 화면이 "왜 없는지" 를 적는다 —
    지어낸 값을 실제 값 옆에 두면 어느 쪽이 참인지 알 수 없다.
    ─────────────────────────────────────────────────────── */
@@ -51,22 +46,6 @@ export type StockSummary = {
   pbr: number | null
   predictionCount: number
   watching: boolean
-}
-
-/**
- * 예측 심리. 서버가 아직 없어(GET /stocks/{code}/sentiment · ANT-PRED-06) 화면이
- * 이 자리에 "아직 제공되지 않는다" 만 적는다. **목업으로 그리지 않는다** — 같은
- * 카드의 브리핑·재무가 실제 값이라 지어낸 비율이 참으로 읽힌다.
- *
- * 타입은 남긴다. 서버가 붙는 날 화면이 이 모양을 그대로 받으면 된다.
- */
-export type StockSentiment = {
-  upRatio: number | null
-  downRatio: number | null
-  /** 판정 대기 중인 예측 수 */
-  sampleSize: number
-  /** 기간별 쏠림. horizon 은 C-01 과 같은 5·10·20·60 고정이다 */
-  byHorizon: { horizon: number; upRatio: number | null; sampleSize: number }[]
 }
 
 /** 문서 출처. 서버 ResearchDocument.Source 와 짝이다. */
@@ -205,13 +184,9 @@ export function getPrices(code: string, from?: string, to?: string) {
   return api.get<{ items: ClosePoint[] }>(`/stocks/${code}/prices`, { query: { from, to } })
 }
 
-/* 최신순 고정이라 커서는 id 하나다. 지금 화면은 첫 페이지만 쓰지만
-   응답 계약은 커서 목록이므로 타입을 줄이지 않는다. */
-export function getDocuments(code: string) {
-  return api.get<{ items: StockDocument[]; nextCursor: number | null; hasNext: boolean }>(
-    `/stocks/${code}/documents`,
-  )
-}
+/* 공시·뉴스 목록에는 조회 함수를 두지 않는다. 최신순 고정의 커서 목록이라
+   화면이 useCursorList 에 경로를 그대로 넘긴다(커밋 원장·리포트 피드와 같다).
+   응답 계약은 CursorList<StockDocument> 다. */
 
 export function getPoints(code: string) {
   return api.get<PointGroups>(`/stocks/${code}/points`)

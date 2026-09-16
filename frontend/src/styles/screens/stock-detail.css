@@ -430,6 +430,36 @@
 .stock-detail-page .sd-facts dd,
 .stock-detail-page .sd-metrics dd{margin:0;color:var(--ink);font-size:13.5px;font-weight:700}
 
+/* ── 쪽 넘기기(같은 업종) · 더 보기(공시·뉴스) ──────────── */
+
+/* 같은 업종은 서버가 전량을 주므로 화면이 잘라 그린다. 조작부는 표 아래 가운데에
+   두고, 쪽이 하나뿐이면 아예 그리지 않는다(누를 데 없는 화살표만 남는다). */
+.stock-detail-page .sd-pager{
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  margin-top:10px; color:var(--muted); font-size:12.5px;
+}
+.stock-detail-page .sd-pager button{
+  width:28px; height:28px;
+  display:inline-flex; align-items:center; justify-content:center;
+  border:1px solid var(--rule); border-radius:8px;
+  background:var(--surface); color:var(--body);
+  font-size:14px; line-height:1; cursor:pointer;
+}
+.stock-detail-page .sd-pager button:hover:not(:disabled){color:var(--brand-ink); border-color:#c8c9f5}
+/* 끝에 닿으면 끈다. 감추지 않는 이유는 섹터 줄과 같다 — 사라지면 줄 폭이 튄다 */
+.stock-detail-page .sd-pager button:disabled{opacity:.32; cursor:default}
+.stock-detail-page .sd-pager button:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+
+/* 목록 화면들의 "더 보기" 와 같은 모양이다(커밋 원장 · 리포트 댓글) */
+.stock-detail-page .sd-more{
+  display:block; width:100%; margin-top:12px; padding:10px 0;
+  border:1px solid var(--rule); border-radius:10px;
+  background:var(--surface); color:var(--body);
+  font-size:13px; font-weight:700; cursor:pointer;
+}
+.stock-detail-page .sd-more:hover:not(:disabled){background:var(--surface-2); color:var(--ink)}
+.stock-detail-page .sd-more:disabled{opacity:.6; cursor:default}
+
 /* ── 표(재무 · 경쟁사) ─────────────────────────────────── */
 .stock-detail-page .sd-table-wrap{overflow-x:auto}
 .stock-detail-page .sd-table{width:100%;border-collapse:collapse;font-size:13px}
