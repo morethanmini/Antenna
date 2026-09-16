@@ -9,6 +9,7 @@ import { useAuth } from './auth/context'
 import { onOnboardingOpen, takeOnboardingPending } from './auth/onboarding'
 import BriefingModal from './components/BriefingModal'
 import ConfirmDialog from './components/ConfirmDialog'
+import NotificationBell from './components/NotificationBell'
 import OnboardingTour from './components/OnboardingTour'
 import SimOnboardingTour from './components/SimOnboardingTour'
 import WalletLinkModal from './components/wallet/WalletLinkModal'
@@ -224,12 +225,10 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
           {authed ? (
             <>
               <WalletChip />
-              {/* 미확인 뱃지는 H-02 [ANT-FE-NOTIFICATION] 이 채운다 */}
-              <Link className="iconbtn" to="/notifications" aria-label="알림">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 8a6 6 0 1 0-12 0c0 6-3 7-3 7h18s-3-1-3-7" /><path d="M13.7 21a2 2 0 0 1-3.4 0" />
-                </svg>
-              </Link>
+              {/* 알림은 페이지가 아니라 이 자리에서 여는 팝업이다(H-02).
+                  data-bell 은 팝업이 "바깥을 눌렀나" 를 가릴 때 이 버튼을 알아보는
+                  표시다 — 없으면 종을 누를 때 팝업이 닫히고 곧바로 다시 열린다. */}
+              <NotificationBell />
               <Link className="iconbtn" to="/settings" aria-label="설정">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="3" />
