@@ -318,7 +318,7 @@ export default function SeasonPlay() {
   }
 
   /* 종목을 바꾸면 보는 구간을 끝으로 되돌린다. 봉 수가 종목마다 다르므로 남겨 두면
-     같은 번호가 다른 자리를 가리킨다(진행일이 바뀔 때 되돌리는 것은 차트 안쪽 몫이다). */
+     같은 번호가 다른 자리를 가리킨다(진행일이 바뀔 때는 바로 위 barsDay 블록이 되돌린다). */
   if (viewTicker !== selected) {
     setViewTicker(selected)
     setView(null)
