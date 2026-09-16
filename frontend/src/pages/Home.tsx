@@ -189,7 +189,7 @@ function Hero() {
           </svg>
         </Link>
       </div>
-      <img className="hm-hero-art" src="/assets/character/antenna-characters-welcome.png" alt=""
+      <img className="hm-hero-art" src="/assets/character/antenna-characters-welcome.webp" alt=""
            aria-hidden="true" />
     </section>
   )
