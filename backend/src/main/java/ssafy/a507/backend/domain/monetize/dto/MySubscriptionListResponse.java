@@ -28,7 +28,13 @@ public record MySubscriptionListResponse(List<Item> items) {
             /** 개시 +30일. PENDING 은 아직 개시 전이라 null 이다 */
             Instant expiresAt,
             /** 만료일에 배치 B4 가 재결제할지. 해지하면 false */
-            boolean renewEnabled) {
+            boolean renewEnabled,
+            /**
+             * 결제 tx 해시. 인덱서가 ACTIVE 로 올리며 붙이므로 PENDING 은 null 이다(ANT-TOKEN-10).
+             * 구독은 커밋 원장(앵커)에 오르지 않는다 — 온체인 흔적은 이 tx 하나라, 화면이 "내 결제가
+             * 체인에 있다" 를 보여 줄 근거가 이것뿐이다. SSAFY 체인엔 탐색기가 없어 복사용으로만 쓴다.
+             */
+            String txHash) {
 
         public static Item of(Subscription s) {
             User p = s.getPublisher();
@@ -38,7 +44,8 @@ public record MySubscriptionListResponse(List<Item> items) {
                     s.getFee() == null ? null : s.getFee().toString(),
                     s.getStatus(),
                     s.getExpiresAt(),
-                    s.isAutoRenew());
+                    s.isAutoRenew(),
+                    s.getTxHash());
         }
     }
 

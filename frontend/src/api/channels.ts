@@ -98,6 +98,8 @@ export type Channel = {
    */
   fee: string | null
   stats: ChannelStats
+  /** 지금 유효한 구독자 수. 개인은 안 내려온다 — 수만 */
+  subscriberCount: number
   mySubscription: MySubscription
   /** 내 채널이면 구독 카드 대신 설정 안내를 그린다 */
   isMe: boolean
