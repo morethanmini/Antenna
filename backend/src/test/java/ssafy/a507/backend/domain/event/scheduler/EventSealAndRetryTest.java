@@ -21,6 +21,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.transaction.support.TransactionTemplate;
 import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.domain.account.entity.User;
+import ssafy.a507.backend.domain.chain.service.FakeTokenRelayer;
 import ssafy.a507.backend.domain.event.relay.ScriptedPoolRelayer;
 import ssafy.a507.backend.domain.event.service.EventAdminService;
 import ssafy.a507.backend.domain.event.service.EventEntryService;
@@ -41,7 +42,7 @@ import ssafy.a507.backend.domain.event.service.EventEntryService;
  * <p>{@code @Transactional} 롤백을 쓰지 않는다 — 전송이 "활성 트랜잭션 안에서는 거부" 가 계약이다.
  */
 @SpringBootTest
-@Import(ScriptedPoolRelayer.Config.class)
+@Import({ScriptedPoolRelayer.Config.class, FakeTokenRelayer.Config.class})
 @DisplayName("이벤트 봉인 · 재전송 크론")
 class EventSealAndRetryTest {
 
@@ -51,6 +52,7 @@ class EventSealAndRetryTest {
     @Autowired EventAdminService eventAdminService;
     @Autowired EventEntryService eventEntryService;
     @Autowired ScriptedPoolRelayer poolRelayer;
+    @Autowired FakeTokenRelayer tokenRelayer;
     @Autowired EntityManager em;
     @Autowired TransactionTemplate tx;
 
@@ -61,6 +63,9 @@ class EventSealAndRetryTest {
     @BeforeEach
     void setUp() {
         poolRelayer.reset();
+        tokenRelayer.reset();
+        // 재전송은 보내기 전에 체인 잔액을 다시 본다 — 넉넉히 채워 둔다.
+        tokenRelayer.withBalance(BigInteger.valueOf(1_000_000));
         adminId = insertUser("봉인관리자", "ADMIN", "0x1111111111111111111111111111111111111111");
         bettorId = insertUser("봉인배팅러", "USER", "0x2222222222222222222222222222222222222222");
         insertStock();
@@ -194,6 +199,50 @@ class EventSealAndRetryTest {
 
         assertThat(eventEntryService.retryFailedBets()).isZero();
         assertThat(poolRelayer.calls()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("잔액이 배팅금보다 적으면 보내지 않는다 — 작업 행만 쌓고 어차피 실패한다")
+    void 잔액_부족이면_보류() {
+        long id = openEvent(Instant.now().plus(1, ChronoUnit.HOURS));
+        failedBet(id);
+        tokenRelayer.withBalance(BigInteger.valueOf(999)); // 배팅금 1000
+
+        assertThat(eventEntryService.retryFailedBets()).isZero();
+
+        assertThat(poolRelayer.calls()).isEmpty();
+        // 상태도 작업 id 도 그대로다 — 건드리지 않았다
+        assertThat(scalar("SELECT bet_status FROM prediction_event_bets")).isEqualTo("FAILED");
+        assertThat(scalar("SELECT operation_id FROM prediction_event_bets")).isEqualTo("op-failed");
+        assertThat(scalar("SELECT attempts FROM prediction_event_bets")).isEqualTo("1");
+    }
+
+    @Test
+    @DisplayName("충전하면 다음 회차에 나간다 — 횟수 상한 대신 잔액을 보는 이유다")
+    void 충전하면_다음_회차에_나간다() {
+        long id = openEvent(Instant.now().plus(1, ChronoUnit.HOURS));
+        failedBet(id);
+        tokenRelayer.withBalance(BigInteger.valueOf(999));
+        assertThat(eventEntryService.retryFailedBets()).isZero();
+
+        tokenRelayer.withBalance(BigInteger.valueOf(5_000));
+
+        assertThat(eventEntryService.retryFailedBets()).isEqualTo(1);
+        assertThat(poolRelayer.callsOf("placeBet")).hasSize(1);
+        assertThat(scalar("SELECT bet_status FROM prediction_event_bets")).isEqualTo("PENDING");
+    }
+
+    @Test
+    @DisplayName("체인이 꺼져 있으면 그 회차를 건너뛴다 — 크론이 터지면 뒤에 오는 사람도 잃는다")
+    void 체인_장애면_건너뛴다() {
+        long id = openEvent(Instant.now().plus(1, ChronoUnit.HOURS));
+        failedBet(id);
+        tokenRelayer.disable();
+
+        assertThat(eventEntryService.retryFailedBets()).isZero();
+
+        assertThat(poolRelayer.calls()).isEmpty();
+        assertThat(scalar("SELECT bet_status FROM prediction_event_bets")).isEqualTo("FAILED");
     }
 
     @Test
