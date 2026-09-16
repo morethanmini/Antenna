@@ -131,7 +131,9 @@ class EventAdminControllerTest {
     void slug_중복은_거부() throws Exception {
         mockMvc.perform(create(admin, body(2))).andExpect(status().isAccepted());
 
-        mockMvc.perform(create(admin, body(2))).andExpect(status().is5xxServerError());
+        mockMvc.perform(create(admin, body(2)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("EVENT_DUPLICATE_SLUG"));
 
         assertThat(count("SELECT count(*) FROM prediction_events")).isEqualTo(1);
     }

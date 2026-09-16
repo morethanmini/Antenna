@@ -9,6 +9,9 @@ import ssafy.a507.backend.domain.event.entity.PredictionEvent;
 
 public interface PredictionEventRepository extends JpaRepository<PredictionEvent, Long> {
 
+    /** 같은 slug 가 둘이면 화면이 어느 회차를 열지 갈린다. UNIQUE 가 최종 방어선이고 이건 409 로 돌려주기 위한 것이다. */
+    boolean existsBySlug(String slug);
+
     /** 목록. 최근 회차가 위다 — 이번엔 하나뿐이지만 다음 회차가 생겨도 배너가 옛것을 집지 않는다. */
     List<PredictionEvent> findAllByOrderByIdDesc();
 
