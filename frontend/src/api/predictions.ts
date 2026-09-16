@@ -319,6 +319,9 @@ export type PredictionDetail = {
   refClose: number | null
   /** 기준가 확정 영업일. 배치 B2 가 채운다 */
   baseDate: string | null
+  /** 기준가를 실제로 딴 거래일. 기준일이 휴장이면 그 뒤 첫 거래일이라 baseDate 와 다를 수 있다.
+      확정 전이거나 이 필드가 생기기 전(ANT-PRED-09)에 확정된 옛 행은 null */
+  basedOn: string | null
   /** 기준일 종가 = 판정 출발점. 등록 직후(BASE)는 비어 있다 */
   basePrice: number | null
   /** 만기일 = baseDate + horizon. 기준일이 없으면 이것도 없다 */

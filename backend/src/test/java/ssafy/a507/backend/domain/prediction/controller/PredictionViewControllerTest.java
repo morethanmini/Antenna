@@ -226,6 +226,31 @@ class PredictionViewControllerTest {
     // ── 예측 상세 ─────────────────────────────────────────
 
     @Test
+    @DisplayName("상세 — basedOn 은 기준가를 실제로 딴 거래일이다. 기준일(휴장)과 다를 수 있고, 이 컬럼 전에 확정된 옛 행은 null(ANT-PRED-09)")
+    void 상세_basedOn() throws Exception {
+        Long fresh = insertFullPrediction("HIT", "2.5");
+        em.createNativeQuery("UPDATE predictions SET base_date = ?, base_price = 70000, based_on = ? WHERE id = ?")
+                .setParameter(1, LocalDate.of(2026, 5, 5))   // 어린이날 — 시세 없음
+                .setParameter(2, LocalDate.of(2026, 5, 7))
+                .setParameter(3, fresh)
+                .executeUpdate();
+        // 커밋 없이 만든다 — insertFullPrediction 은 같은 commit_hash 를 또 넣어 유니크에 걸린다
+        Long legacy = insertPrediction("HIT", "2.5");
+        em.createNativeQuery("UPDATE predictions SET base_date = ?, base_price = 70000 WHERE id = ?")
+                .setParameter(1, LocalDate.of(2026, 5, 5))
+                .setParameter(2, legacy)
+                .executeUpdate();
+
+        mockMvc.perform(get(DETAIL, fresh).with(user(String.valueOf(viewerId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.baseDate").value("2026-05-05"))
+                .andExpect(jsonPath("$.basedOn").value("2026-05-07"));
+        mockMvc.perform(get(DETAIL, legacy).with(user(String.valueOf(viewerId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.basedOn").value((Object) null));
+    }
+
+    @Test
     @DisplayName("상세 — 비구독자·판정 전: 403 이 아니라 200. 방향·목표가·근거 포인트·본문이 잠기고 proof 는 온다")
     void 상세_비구독자_판정전() throws Exception {
         Long id = insertFullPrediction("OPEN", null);

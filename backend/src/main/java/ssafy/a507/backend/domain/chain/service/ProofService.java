@@ -148,7 +148,9 @@ public class ProofService {
         if (pricedOn != null && p.getStock() != null) {
             sourceUrl = PUBLIC_DATA_PRICE_URL.formatted(BAS_DT.format(pricedOn), p.getStock().getCode());
         }
+        // 기준가 쪽도 같은 규칙 — 실제로 딴 거래일, 옛 행은 기준일 (ANT-PRED-09)
+        LocalDate basedOn = p.getBasedOn() != null ? p.getBasedOn() : p.getBaseDate();
         return new ProofResponse.Settle(
-                p.getStatus(), pricedOn, p.getSettlePrice(), p.getBasePrice(), p.getErrorRate(), sourceUrl);
+                p.getStatus(), pricedOn, p.getSettlePrice(), p.getBasePrice(), basedOn, p.getErrorRate(), sourceUrl);
     }
 }
