@@ -66,6 +66,8 @@ export type ProofAnchor = {
  */
 export type ProofSettle = {
   status: 'HIT' | 'MISS'
+  /** 실제로 판정에 쓴 거래일. 만기일이 휴장이면 그 뒤 첫 거래일이라 만기와 다를 수 있고,
+      sourceUrl 의 basDt 와 늘 같다(ANT-CHAIN-19). 화면은 이 값을 "판정일" 로 적는다 */
   settleDate: string
   settlePrice: number | null
   basePrice: number | null

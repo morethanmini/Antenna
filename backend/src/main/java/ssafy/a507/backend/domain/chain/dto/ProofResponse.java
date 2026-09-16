@@ -89,6 +89,9 @@ public record ProofResponse(
     /**
      * 판정 결과. HIT/MISS 뒤에만 채운다. {@code sourceUrl} 은 공공데이터포털의 같은 종목·날짜 조회 주소 — 인증키는 붙이지 않으니
      * 사용자가 자기 키로 열어 종가를 대조한다(④).
+     *
+     * <p>{@code settleDate} 는 <b>실제로 판정에 쓴 거래일</b>(settled_on)이다. 만기일이 휴장이면 그 뒤 첫 거래일이라 만기일과
+     * 다를 수 있고, {@code sourceUrl} 의 basDt 와 늘 같다(ANT-CHAIN-19). 옛 행(settled_on 없음)만 만기일로 물러선다.
      */
     public record Settle(
             Prediction.Status status,
