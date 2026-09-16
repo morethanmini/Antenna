@@ -139,4 +139,19 @@ public class Subscription {
         this.status = Status.EXPIRED;
         this.canceledAt = Instant.now();
     }
+
+    /**
+     * 자동 갱신 해지 (ANT-TOKEN-05). <b>구독을 끊지 않는다</b> — 상태는 ACTIVE 그대로고 만료일까지
+     * 열람 권한이 유지된다. 끄는 것은 다음 주기 결제뿐이다(설계서 §4 E-03 이 못 박은 제약).
+     *
+     * <p>이미 꺼져 있으면 {@code canceledAt} 을 덮지 않는다. 화면에 해지 시각을 적을 때 두 번째
+     * 요청이 시각을 뒤로 밀면 "언제 껐는지" 가 사라진다. 같은 요청을 두 번 보내도 결과가 같다.
+     */
+    public void cancelRenewal(Instant now) {
+        if (!this.autoRenew) {
+            return;
+        }
+        this.autoRenew = false;
+        this.canceledAt = now;
+    }
 }
