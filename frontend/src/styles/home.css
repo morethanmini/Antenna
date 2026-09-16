@@ -356,6 +356,77 @@
 .hm-event:hover{transform:translateY(-1px); box-shadow:0 12px 26px -18px rgba(20,20,60,.7)}
 .hm-event:focus-visible{outline:2px solid var(--brand); outline-offset:3px}
 
+/* ── 그림 배너 ───────────────────────────────────────────
+   완성본 한 장이 아니라 **겹을 쌓는다**. 받은 완성본은 4.69:1 인데 이 자리는
+   9:1 이라, 한 장으로 쓰면 세로로 잘라 제목·캐릭터를 버리거나 비율대로 넣어
+   홈을 통째로 밀어내는 수밖에 없었다. 조각으로 받으면 다시 배치하면 된다.
+
+   **자를 하나로 쓴다 — 띠 높이(cqh).** 크기는 높이 기준, 가로 간격은 폭 기준으로
+   섞었더니 배너가 높아질 때 캡슐이 제목을 파고들었다. 가로까지 cqh 로 재면
+   조각 사이가 조각 크기와 같은 비율로 움직여 어느 폭에서도 겹치지 않는다.
+   늘어난 폭은 그냥 여백이 된다 — 배너가 원래 그렇게 동작한다.
+
+   cqh 가 이 상자의 높이를 가리키려면 container-type:size 가 있어야 한다. */
+.hm-event.is-art{
+  position:relative; display:block; padding:0; border-radius:0; background:none;
+  aspect-ratio:9 / 1;
+  container-type:size;
+  /* 캐릭터가 위 카드 위로 넘쳐 나와야 한다 */
+  z-index:1;
+}
+.hm-event.is-art:hover{transform:translateY(-2px); box-shadow:none}
+.hm-event.is-art:focus-visible{outline-offset:6px; border-radius:18px}
+/* **겹은 전부 클릭을 받지 않는다.** 캐릭터가 띠 밖으로 넘치는데, 넘친 그림도
+   제 몫의 클릭을 받아서 위 카드의 바로가기 링크를 통째로 먹은 적이 있다.
+   링크는 .hm-event 상자(= 띠)가 받는다 */
+.hm-event.is-art img{display:block; pointer-events:none}
+
+/* 띠 안쪽 — 배경·차트·색종이는 여기서 잘린다 */
+.hm-ev-clip{
+  position:absolute; inset:0; border-radius:16px; overflow:hidden;
+  /* 그림이 늦게 뜰 때 흰 네모가 번쩍이지 않게 바탕을 미리 깐다 */
+  background:#0f0a46;
+}
+.hm-ev-bg{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+/* 차트는 캐릭터 왼쪽에서 올라오는 그림이라 캐릭터와 같은 쪽 끝에서 잰다 */
+.hm-ev-chart{position:absolute; right:60cqh; top:-6cqh; height:118cqh; width:auto; opacity:.92}
+/* 색종이는 원본이 3:1 캔버스에 흩뿌린 것이라 통째로 얹으면 리본 한 장이
+   제목만 해진다. 줄여서 오른쪽에만 둔다 — 왼쪽은 글자 자리다 */
+.hm-ev-confetti{position:absolute; height:64cqh; width:auto; opacity:.85}
+.hm-ev-confetti.is-a{right:150cqh; top:-12cqh}
+.hm-ev-confetti.is-b{right:34cqh; top:26cqh; transform:scaleX(-1); opacity:.6}
+
+/* 왼쪽 글 묶음. 세로 가운데 정렬이라 위아래 여백이 저절로 같아진다 */
+.hm-ev-lead{
+  position:absolute; left:4cqh; top:50%; transform:translateY(-50%);
+  display:flex; align-items:center; gap:3cqh;
+}
+.hm-ev-pill{height:30cqh; width:auto}
+.hm-ev-words{display:flex; flex-direction:column; align-items:flex-start; gap:2cqh}
+.hm-ev-titlebox{position:relative; display:block}
+.hm-ev-title{height:40cqh; width:auto}
+/* 왕관 자리는 **제목 폭의 %** 다. 그래야 제목이 커지든 작아지든 같은 글자
+   위에 얹힌다 — cqh 로 잡으면 제목과 어긋난다 */
+.hm-ev-crown{position:absolute; left:34%; top:-76%; height:34cqh; width:auto}
+.hm-ev-copy{height:13cqh; width:auto}
+
+/* 캐릭터는 띠 위로 넘친다. 스티커는 캐릭터 옆에서 캔들과 겹쳐 안 읽혀,
+   비어 있는 가운데로 옮겼다 — 여백도 함께 메운다 */
+.hm-ev-mascot{position:absolute; right:3cqh; bottom:-4cqh; height:130cqh; width:auto}
+.hm-ev-sticker{position:absolute; left:56%; top:24cqh; height:34cqh; width:auto}
+
+/* 띠가 낮아지면 장식부터 접는다. 작아진 스티커는 읽히지도 않으면서 지저분하다.
+   창 폭이 아니라 **띠 높이**가 기준이라 컨테이너 질의를 쓴다.
+
+   **선택자를 .hm-event 아래로 한 번 더 묶는다.** 위의
+   .hm-event.is-art img{display:block} 이 (0,3,0) 이라 그냥 .hm-ev-sticker(0,1,0)
+   로 적으면 display:none 이 져서 규칙이 있어도 안 먹는다 —
+   @container 는 특정도를 올려 주지 않는다. */
+@container (height <= 124px){
+  .hm-event.is-art .hm-ev-sticker{display:none}
+  .hm-event.is-art .hm-ev-confetti.is-b{display:none}
+}
+
 .hm-event-badge{
   flex:none; padding:4px 10px; border-radius:999px;
   background:var(--gold); color:#4a3a06; font-size:11.5px; font-weight:800;

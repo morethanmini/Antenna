@@ -19,7 +19,7 @@ import { useBriefingParam } from '../components/briefingParam'
 import { useAsync } from '../api/useAsync'
 import { DEFAULT_AVATAR, useAuth } from '../auth/context'
 import Sparkline from '../components/Sparkline'
-import { CONTEST, CONTEST_PATH, PHASE_LABEL, phaseAt, stamp } from '../event/contest'
+import { BANNER, BANNER_BASE, CONTEST, CONTEST_PATH, PHASE_LABEL, dayStamp, phaseAt } from '../event/contest'
 import StockLogo from '../components/stocks/StockLogo'
 import '../styles/home.css'
 
@@ -515,13 +515,47 @@ function Sponsored() {
    결과 공개 뒤에도 순위를 보러 오는 길이 남아야 하기 때문이다. */
 function ContestBanner() {
   const phase = phaseAt()
-  /* 단계마다 등을 떠미는 말이 달라야 한다. 끝난 대회에 "지금 참가" 라고
-     적어 두면 눌러 보고 나서야 끝난 걸 안다. */
-  const cta =
-    phase === 'before' ? '대회 보기'
-    : phase === 'open' ? '지금 예측하기'
-    : phase === 'judging' ? '내 예측 확인'
-    : '결과 보기'
+  const art = BANNER[phase]
+
+  /* 그림이 있는 단계는 **겹을 쌓아** 그린다. 완성본 한 장을 쓰지 않는 이유는
+     그 그림이 4.69:1 이고 이 자리는 9:1 이라, 한 장으로는 자르거나 홈을
+     밀어내는 수밖에 없기 때문이다(event/contest.ts 머리말).
+
+     **글자는 전부 그림 안에 있다.** 그래서 겹은 모두 장식으로 두고(alt=""),
+     읽을 말은 링크의 aria-label 하나로 모은다 — 그림 조각마다 alt 를 나눠
+     달면 스크린리더가 토막 난 문장을 읽는다. */
+  if (art) {
+    return (
+      <Link className="hm-event is-art" to={CONTEST_PATH} aria-label={art.alt}>
+        {/* 띠 안쪽 — 배경·차트·색종이는 여기서 잘린다 */}
+        <span className="hm-ev-clip" aria-hidden="true">
+          <img className="hm-ev-bg" src={BANNER_BASE.bg} alt="" />
+          <img className="hm-ev-chart" src={BANNER_BASE.chart} alt="" />
+          <img className="hm-ev-confetti is-a" src={BANNER_BASE.confetti} alt="" />
+          <img className="hm-ev-confetti is-b" src={BANNER_BASE.confetti} alt="" />
+        </span>
+
+        {/* 왼쪽 글 묶음 — 캡슐 · (제목+왕관) · 문구 */}
+        <span className="hm-ev-lead" aria-hidden="true">
+          <img className="hm-ev-pill" src={art.pill} alt="" />
+          <span className="hm-ev-words">
+            <span className="hm-ev-titlebox">
+              <img className="hm-ev-title" src={art.title} alt="" />
+              <img className="hm-ev-crown" src={BANNER_BASE.crown} alt="" />
+            </span>
+            <img className="hm-ev-copy" src={art.copy} alt="" />
+          </span>
+        </span>
+
+        <img className="hm-ev-sticker" src={BANNER_BASE.sticker} alt="" aria-hidden="true" />
+        <img className="hm-ev-mascot" src={BANNER_BASE.mascot} alt="" aria-hidden="true" />
+      </Link>
+    )
+  }
+
+  /* 그림이 없는 단계(등록은 닫혔고 결과는 아직)는 글자로 그린다. 맞는 말이
+     적힌 캡슐이 없어서다 — contest.ts 의 BANNER 참고. */
+  const cta = "내 예측 확인"
 
   return (
     <Link className="hm-event" to={CONTEST_PATH}>
@@ -530,9 +564,9 @@ function ContestBanner() {
         <b>{CONTEST.name}</b>
         <em>{CONTEST.lede}</em>
       </span>
-      {phase === 'open' && (
-        <span className="hm-event-when num">{stamp(CONTEST.closesAt)} 마감</span>
-      )}
+      {/* 여기까지 왔다는 건 등록이 이미 닫혔다는 뜻이라 마감 시각을 적지 않는다.
+          대신 다음에 올 일(결과 공개일)을 적는다 */}
+      <span className="hm-event-when num">{dayStamp(CONTEST.revealDate)} 공개</span>
       <span className="hm-event-cta">{cta} ›</span>
     </Link>
   )

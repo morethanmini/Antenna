@@ -75,6 +75,66 @@ export const PHASE_LABEL: Record<Phase, string> = {
   done: '결과 공개',
 }
 
+/* ── 배너 그림 ────────────────────────────────────────────
+   배너는 **한 장이 아니라 여러 겹**이다. 처음엔 완성본 한 장을 받아 썼는데,
+   그 그림이 4.69:1 이고 홈의 배너 자리는 그보다 한참 길고 낮아서 — 세로로
+   자르면 제목도 캐릭터도 안 남고, 비율대로 넣으면 홈이 통째로 밀렸다.
+
+   조각으로 받으면 우리 비율에 맞춰 **다시 배치**할 수 있다. 배경·차트·색종이는
+   추상 무늬라 늘리거나 잘라도 티가 안 나고, 제목·캡슐·캐릭터만 비율을 지키면
+   된다. 자리 값은 home.css 가 띠 높이(cqh) 하나로 잰다.
+
+   단계가 바뀌면 **캡슐·제목·문구 세 장만** 갈아끼운다. 나머지는 공통이다. */
+
+const ART = (name: string) => `/assets/event/${name}.webp`
+
+/** 단계와 무관하게 늘 깔리는 겹 */
+export const BANNER_BASE = {
+  bg: ART('bg'),
+  chart: ART('chart'),
+  confetti: ART('confetti'),
+  crown: ART('crown'),
+  mascot: ART('mascot'),
+  sticker: ART('sticker'),
+}
+
+export type BannerArt = {
+  pill: string
+  title: string
+  copy: string
+  /** 그림에 구워진 글자를 그대로 옮긴 것. 스크린리더는 이것만 읽는다 */
+  alt: string
+}
+
+/**
+ * 단계별로 갈아끼우는 세 장.
+ *
+ * **judging 이 없다.** 등록은 닫혔고 결과는 아직인 구간인데, 받은 캡슐이
+ * "시작 전 · 대회 진행 중 · 대회 종료" 셋뿐이라 맞는 말이 없다. 끝나지도 않은
+ * 대회에 "대회 종료" 를 붙이거나, 닫힌 등록에 "진행 중" 을 붙이는 것보다
+ * 글자 배너로 떨어지는 편이 낫다. 캡슐 한 장을 더 받으면 여기 한 줄만 는다.
+ */
+export const BANNER: Partial<Record<Phase, BannerArt>> = {
+  before: {
+    pill: ART('pill-before'),
+    title: ART('title-main'),
+    copy: ART('copy-before'),
+    alt: '천하제일 단타대회 — 시작 전. 오늘의 급등주를 맞혀라! 수익률 예측 최강자는 누구?',
+  },
+  open: {
+    pill: ART('pill-open'),
+    title: ART('title-main'),
+    copy: ART('copy-before'),
+    alt: '천하제일 단타대회 — 대회 진행 중. 오늘의 급등주를 맞혀라! 수익률 예측 최강자는 누구?',
+  },
+  done: {
+    pill: ART('pill-done'),
+    title: ART('title-done'),
+    copy: ART('copy-done'),
+    alt: '천하제일 단타대회 — 대회 종료. 최종 랭킹 공개. 단타왕은 누구? 지금 최종 순위를 확인하세요!',
+  },
+}
+
 /** 대회 페이지 주소. 링크로 퍼뜨리는 주소라 한 곳에서만 만든다 */
 export const CONTEST_PATH = `/events/${CONTEST.id}`
 
