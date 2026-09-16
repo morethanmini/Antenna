@@ -142,6 +142,29 @@ class TokenIndexerTest {
     }
 
     @Test
+    @DisplayName("내 채널 반응 알림을 끈 발행자에게는 구독 확정 알림이 가지 않는다(ANT-NOTIFY-02)")
+    void subscribed_notification_off() {
+        User sub = user(WALLET_A);
+        User creator = user(WALLET_B);
+        em.createNativeQuery("""
+                        INSERT INTO user_settings (user_id, notify_verdict, notify_season, notify_social, notify_channel, chart_view, updated_at)
+                        VALUES (?, true, true, false, true, 'BEGINNER', CURRENT_TIMESTAMP)
+                        """)
+                .setParameter(1, creator.getId())
+                .executeUpdate();
+        Long subId = pendingSubscription(sub, creator);
+        String tx = tx("s2");
+        op(sub, Operation.Kind.SUBSCRIBE, Operation.ResourceType.SUBSCRIPTION, subId, tx);
+        source.add(subscribed(tx, 123, WALLET_A, WALLET_B, 30_000, 21_000, 9_000));
+
+        indexer.poll(now);
+
+        assertThat(em.find(Subscription.class, subId).getStatus()).isEqualTo(Subscription.Status.ACTIVE);
+        assertThat(em.createQuery("select count(n) from Notification n where n.user.id = :id", Long.class)
+                .setParameter("id", creator.getId()).getSingleResult()).isZero();
+    }
+
+    @Test
     @DisplayName("광고 소각 확정 → AdBanner ACTIVE + tx_hash (소유자가 열어 둔 activate)")
     void ad_activated() {
         User a = user(WALLET_A);

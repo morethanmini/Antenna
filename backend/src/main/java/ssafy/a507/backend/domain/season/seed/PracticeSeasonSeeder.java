@@ -60,11 +60,11 @@ public class PracticeSeasonSeeder implements ApplicationRunner {
      * <p>길이는 25~44게임일이다 — 참가자가 하루씩 직접 넘기므로 80번을 누르게 하면 끝까지 가는
      * 사람이 없다. 대신 앞에 워밍업 봉 120개가 붙어 사건 전의 추세를 끌어서 볼 수 있다.
      *
-     * <p><b>seed 를 2021~2025 로 올렸다(2026-09-16).</b> 워밍업을 30에서 120으로 늘렸는데
-     * ({@code SeasonCreateService.WARMUP_DAYS}) 이 시더는 (모드, 대표 업종, seed) 가 같은 시즌이
-     * 있으면 건너뛰므로, seed 를 그대로 두면 이미 만들어진 시즌이 옛 봉 수로 남는다. 값을 바꾸면
-     * {@link #removeStale()} 이 옛 시즌을 지우고 새로 만든다 — 다만 <b>참가자가 있는 시즌은
-     * 남으므로</b> 그쪽은 {@link #extendWarmup()} 이 빠진 앞쪽 봉만 채운다.
+     * <p><b>seed 는 바꾸지 않는다.</b> 워밍업을 30에서 120으로 늘리면서(2026-09-16) 재생성을
+     * 노리고 seed 를 2021~2025 로 올린 적이 있는데, <b>참가자가 있는 시즌은 지워지지 않으므로</b>
+     * 옛 시즌이 남은 채 새 시즌이 하나 더 생겨 운영 목록이 9장이 됐다. 봉이 모자란 시즌은
+     * {@link #extendWarmup()} 이 앞쪽 봉만 채우니 seed 를 올릴 이유가 없다. 2011~2015 로 되돌린다 —
+     * 다음 기동 때 {@link #removeStale()} 이 2021~2025 짜리 중 참가자 없는 시즌을 지운다.
      *
      * <p><b>제목이 사건을 드러낸다.</b> 예전에는 연도·사건 이름을 카드에 쓰지 않았다 — 결과를 아는
      * 채로 시작하면 예측이 아니라 복기가 되기 때문이다. 대회 모드를 접고 연습만 남기면서 뒤집었다:
@@ -86,7 +86,7 @@ public class PracticeSeasonSeeder implements ApplicationRunner {
                     TICKER_COUNT,
                     44,
                     INITIAL_CASH,
-                    2021L),
+                    2011L),
             new SeasonSpec(
                     Season.Mode.PRACTICE,
                     "전쟁이 터진 날",
@@ -96,7 +96,7 @@ public class PracticeSeasonSeeder implements ApplicationRunner {
                     TICKER_COUNT,
                     40,
                     INITIAL_CASH,
-                    2022L),
+                    2012L),
             new SeasonSpec(
                     Season.Mode.PRACTICE,
                     "하루 만의 폭락, 엔캐리 청산",
@@ -106,7 +106,7 @@ public class PracticeSeasonSeeder implements ApplicationRunner {
                     TICKER_COUNT,
                     30,
                     INITIAL_CASH,
-                    2023L),
+                    2013L),
             new SeasonSpec(
                     Season.Mode.PRACTICE,
                     "트럼프 재당선과 환율 급등",
@@ -116,7 +116,7 @@ public class PracticeSeasonSeeder implements ApplicationRunner {
                     TICKER_COUNT,
                     25,
                     INITIAL_CASH,
-                    2024L),
+                    2014L),
             new SeasonSpec(
                     Season.Mode.PRACTICE,
                     "비상계엄과 탄핵 정국",
@@ -126,7 +126,7 @@ public class PracticeSeasonSeeder implements ApplicationRunner {
                     TICKER_COUNT,
                     40,
                     INITIAL_CASH,
-                    2025L));
+                    2015L));
 
     private final SeasonRepository seasonRepository;
     private final SeasonParticipantRepository participantRepository;

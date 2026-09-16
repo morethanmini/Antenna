@@ -78,7 +78,7 @@ app:
   token:
     amounts:
       signup-bonus: 10000
-      slot-over: 1000
+      slot-over: 500
       ad-per-day: 1000
     # 가입 보너스 재시도(ANT-TOKEN-07). 테스트는 SignupBonusService.retryOnce() 를 직접 부른다 — 스케줄은 끈다.
     bonus-retry-cron: "-"

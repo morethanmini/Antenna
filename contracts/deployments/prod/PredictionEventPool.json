@@ -1,0 +1,18 @@
+{
+  "contract": "PredictionEventPool",
+  "version": 1,
+  "environment": "prod",
+  "network": "ssafy",
+  "chainId": 31221,
+  "address": "0xc0cD9D8a7A29B0D6358CbB6acE6BD59b6E9F12aa",
+  "deployer": "0xed9A22D3c39e5ddf161638b82a18a96134707491",
+  "admin": "0xed9A22D3c39e5ddf161638b82a18a96134707491",
+  "operator": "0x55085F3F5568ED3936A734DbaEF179F8045322E3",
+  "token": "0xEee56721cd2c0383139756c88B6DB06024a412Cb",
+  "treasury": "0x1E189420b1Abb9F1ff3A556bd068C5B03b6B17bB",
+  "txHash": "0x82c73720164b40469c1dadc2f5801aaf8bd17e3e14b693884c7ec730e870c2fa",
+  "blockNumber": 11288437,
+  "gasUsed": 2463193,
+  "moverGranted": false,
+  "deployedAt": "2026-09-16T11:15:45.321Z"
+}

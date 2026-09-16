@@ -184,27 +184,28 @@ class PredictionControllerTest {
     // ── 슬롯 ──────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("하루 3건까지 — 4번째는 409 PREDICTION_SLOT_EXCEEDED 이고 slots 가 used/remaining 을 그대로 보여준다")
+    @DisplayName("하루 3건까지 — 4번째는 소각 경로인데 체인이 꺼진 이 컨텍스트에서는 503 CHAIN_UNAVAILABLE 이고, slots 가 used/remaining 을 그대로 보여준다")
     void 슬롯_3건() throws Exception {
         mockMvc.perform(get(URL + "/slots").with(user(str(userId))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.freeLimit").value(3))
                 .andExpect(jsonPath("$.used").value(0))
                 .andExpect(jsonPath("$.remaining").value(3))
-                .andExpect(jsonPath("$.overCost").value("1000")); // decimals 0 — 1,000 ANT 그대로 (금액표 ANT-TOKEN-08)
+                .andExpect(jsonPath("$.overCost").value("500")); // decimals 0 — 500 ANT 그대로 (금액표 ANT-TOKEN-08 · PRED-10 에서 조정)
 
         for (int i = 0; i < 3; i++) {
             perform(signed(request(SAMSUNG, "UP", "8100" + i, 7, List.of()), wallet), UUID.randomUUID().toString())
                     .andExpect(status().isCreated());
         }
+        // 4번째부터는 소각(202)이다 — 체인이 있을 때의 모양은 PredictionBurnControllerTest 가 본다.
         perform(signed(request(SAMSUNG, "UP", "85000", 7, List.of()), wallet), UUID.randomUUID().toString())
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("PREDICTION_SLOT_EXCEEDED"));
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("CHAIN_UNAVAILABLE"));
 
         mockMvc.perform(get(URL + "/slots").with(user(str(userId))))
                 .andExpect(jsonPath("$.used").value(3))
                 .andExpect(jsonPath("$.remaining").value(0));
-        // 슬롯 초과는 서명 검증 앞에서 끊긴다 — nonce 가 남아 있어야 한다.
+        // 체인 확인은 서명 검증 앞이다 — nonce 가 남아 있어야 한다.
         assertThat(nonceStore.consume(userId, SignatureScope.PREDICTION)).isNotNull();
     }
 

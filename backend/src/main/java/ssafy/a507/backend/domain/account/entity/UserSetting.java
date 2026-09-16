@@ -14,6 +14,7 @@ import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.UpdateTimestamp;
 
 /** 알림·표시 설정. users와 PK를 공유하며, 행이 없으면 전부 기본값이다. */
@@ -45,9 +46,17 @@ public class UserSetting {
     @Column(name = "notify_season", nullable = false)
     private boolean notifySeason;
 
-    /** 구독 발생·구독료 변경 알림. */
+    /** 내 채널 반응 — 새 구독자·내 리포트 댓글·좋아요. */
     @Column(name = "notify_social", nullable = false)
     private boolean notifySocial;
+
+    /**
+     * 구독 채널 소식 — 리포트 발행·예측 등록·구독료 변경. 명세의 셋에 더한 넷째(2026-09-16).
+     * 행이 있는 표에 NOT NULL 을 더하므로 DEFAULT 를 같이 준다 — 없으면 ddl-auto 가 조용히 실패한다.
+     */
+    @Column(name = "notify_channel", nullable = false)
+    @ColumnDefault("true")
+    private boolean notifyChannel;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "chart_view", nullable = false, length = 10)
@@ -56,4 +65,35 @@ public class UserSetting {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private Instant updatedAt;
+
+    /** 행이 없을 때의 값 — 전부 켜짐, 초급 뷰. 저장하지 않는 응답용. */
+    public static UserSetting defaults() {
+        UserSetting s = new UserSetting();
+        s.notifyVerdict = true;
+        s.notifySeason = true;
+        s.notifySocial = true;
+        s.notifyChannel = true;
+        s.chartView = ChartView.BEGINNER;
+        return s;
+    }
+
+    /** 첫 변경 때 만드는 행. 값은 {@link #update} 가 바로 덮어쓴다. */
+    public static UserSetting defaultsFor(User user) {
+        UserSetting s = defaults();
+        s.user = user;
+        return s;
+    }
+
+    public void update(
+            boolean notifyVerdict,
+            boolean notifySeason,
+            boolean notifySocial,
+            boolean notifyChannel,
+            ChartView chartView) {
+        this.notifyVerdict = notifyVerdict;
+        this.notifySeason = notifySeason;
+        this.notifySocial = notifySocial;
+        this.notifyChannel = notifyChannel;
+        this.chartView = chartView;
+    }
 }
