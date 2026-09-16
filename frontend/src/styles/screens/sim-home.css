@@ -34,8 +34,8 @@ body.sim-home-page{
 
   --hero-py:30px;      /* 히어로 위아래 여백 */
   --hero-px:44px;
-  --title:36px;
-  --lead:16px;
+  --title:var(--fs-title-hero);
+  --lead:var(--fs-2xl);
   --mb-flag:12px;
   --mb-title:10px;
   --mb-lead:18px;
@@ -72,29 +72,31 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
   display:grid;grid-template-columns:minmax(0,1fr) minmax(400px,1fr);
   align-items:center;gap:20px;
   padding:var(--hero-py) 0 var(--hero-py) var(--hero-px);
-  border:1px solid #e4e1fa;border-radius:26px;
+  border:1px solid var(--wash-line);border-radius:26px;
+  /* 판 자체는 --wash 다. 위에 얹은 두 겹은 이 히어로가 세로로 길어서 주는
+     빛 얼룩이라 짧은 띠(B-01 대회 배너)에는 따라가지 않는다. */
   background:
     radial-gradient(58% 74% at 76% 24%,rgba(255,255,255,.85),transparent 62%),
     radial-gradient(46% 62% at 96% 96%,rgba(196,186,255,.45),transparent 70%),
-    linear-gradient(118deg,#f2f0ff 0%,#ebe8fd 44%,#e6e2fc 74%,#f1ecff 100%);
+    var(--wash);
 }
 .sh-hero-copy{position:relative;z-index:1;min-width:0}
 
 .sh-flag{
   display:inline-block;margin-bottom:var(--mb-flag);padding:6px 14px;border-radius:10px;
-  background:rgba(255,255,255,.82);color:var(--brand);font-size:13px;font-weight:800;
+  background:rgba(255,255,255,.82);color:var(--brand);font-size:var(--fs-base);font-weight:var(--fw-heavy);
 }
 .sh-title{
-  margin:0 0 var(--mb-title);color:#141a3c;font-size:var(--title);font-weight:850;
-  letter-spacing:-.04em;line-height:1.25;text-wrap:balance;
+  margin:0 0 var(--mb-title);color:var(--ink);font-size:var(--title);
+  line-height:1.25;text-wrap:balance;
 }
 .sh-title em{color:var(--brand);font-style:normal}
-.sh-lead{margin:0 0 var(--mb-lead);color:#6a7093;font-size:var(--lead);line-height:1.65;font-weight:600}
+.sh-lead{margin:0 0 var(--mb-lead);color:#6a7093;font-size:var(--lead);line-height:1.65;font-weight:var(--fw-normal)}
 
 .sh-progress{display:flex;align-items:center;gap:16px;margin:0 0 var(--mb-prog);max-width:520px}
 .sim-home .sh-bar{flex:1;min-width:0;height:11px;border-radius:999px;background:rgba(255,255,255,.75);overflow:hidden}
 .sim-home .sh-bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#8a7bf5,var(--brand))}
-.sh-progress b{flex:none;color:#2a3054;font:800 17px var(--mono)}
+.sh-progress b{flex:none;color:#2a3054;font:var(--fw-heavy) var(--fs-2xl) var(--mono)}
 
 /* ── 칩 3종 ─────────────────────────────────────────── */
 /* 진행 중이면 내 회차 상태, 아니면 연습이 어떤 것인지를 알린다.
@@ -108,14 +110,14 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
   box-shadow:0 6px 18px -12px rgba(60,56,150,.45);
 }
 .sim-home .sh-stat svg{flex:none;color:var(--brand)}
-.sim-home .sh-stat dt{margin:0 0 3px;color:#8b90ad;font-size:12px;font-weight:750;line-height:1.2}
-.sim-home .sh-stat dd{margin:0;color:#1c2245;font-size:16px;font-weight:850;line-height:1.2;white-space:nowrap}
+.sim-home .sh-stat dt{margin:0 0 3px;color:#8b90ad;font-size:var(--fs-sm);font-weight:var(--fw-bold);line-height:1.2}
+.sim-home .sh-stat dd{margin:0;color:#1c2245;font-size:var(--fs-2xl);font-weight:var(--fw-black);line-height:1.2;white-space:nowrap}
 
 /* ── 히어로 버튼 ────────────────────────────────────── */
 /* 시안은 주 버튼 하나다. "지난 기록 보기" 는 아래 패널의 "전체 보기" 가 맡는다. */
 .sh-btn{
   display:inline-flex;align-items:center;gap:11px;height:var(--btn-h);padding:0 28px;
-  border-radius:16px;font-size:17px;font-weight:800;letter-spacing:-.025em;
+  border-radius:16px;font-size:var(--fs-2xl);font-weight:var(--fw-heavy);letter-spacing:-.025em;
   transition:filter .15s,transform .06s;
 }
 .sh-btn:active{transform:translateY(1px)}
@@ -227,25 +229,25 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
 .sh-panel-head{display:flex;align-items:center;gap:10px;margin:0 0 14px}
 .sh-panel-head h2{
   display:flex;align-items:center;gap:10px;margin:0;
-  color:var(--ink);font-size:18.5px;font-weight:850;letter-spacing:-.028em;
+  color:var(--ink);font-size:var(--fs-3xl);font-weight:var(--fw-black);letter-spacing:-.028em;
 }
 .sh-panel-head h2 svg{color:var(--brand)}
-.sh-panel-head a{margin-left:auto;color:#8a93ad;font-size:13.5px;font-weight:700;white-space:nowrap}
+.sh-panel-head a{margin-left:auto;color:#8a93ad;font-size:var(--fs-lg);font-weight:var(--fw-bold);white-space:nowrap}
 .sh-panel-head a:hover{color:var(--brand)}
 /* "안내 다시 보기" — G-00 은 라우트가 없는 오버레이라 링크가 아니라 버튼이다.
    생김새는 옆 칸의 "전체 보기" 링크와 같아야 한다. 같은 자리에서 같은 무게로 읽히는
    것이 목적이라 요소가 a 냐 button 이냐로 달라 보이면 안 된다. */
 .sh-relink{
-  margin-left:auto;padding:0;color:#8a93ad;font-size:13.5px;font-weight:700;
+  margin-left:auto;padding:0;color:#8a93ad;font-size:var(--fs-lg);font-weight:var(--fw-bold);
   white-space:nowrap;transition:color .14s;
 }
 .sh-relink:hover{color:var(--brand)}
 
 /* 로딩·빈 상태 한 줄. 오류는 공용 ErrorState(state.css)가 그린다. */
-.sh-state{margin:0;padding:22px 0;color:var(--faint);font-size:14px;font-weight:650;text-align:center}
+.sh-state{margin:0;padding:22px 0;color:var(--faint);font-size:var(--fs-lg);font-weight:var(--fw-bold);text-align:center}
 
 /* 상태 배지 — 최근 목록 */
-.sh-state-tag{padding:5px 11px;border-radius:9px;font-size:12px;font-weight:800;white-space:nowrap}
+.sh-state-tag{padding:5px 11px;border-radius:9px;font-size:var(--fs-sm);font-weight:var(--fw-heavy);white-space:nowrap}
 .sh-state-tag.live{background:var(--brand-soft);color:var(--brand)}
 .sh-state-tag.done{background:var(--brand-softer);color:#6f6bcf}
 
@@ -259,17 +261,17 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
   border:1px solid var(--rule);border-radius:14px;
 }
 .sh-run-main{min-width:0}
-.sh-run-main b{display:block;color:#1b2245;font-size:15px;font-weight:800;line-height:1.4}
+.sh-run-main b{display:block;color:#1b2245;font-size:var(--fs-xl);font-weight:var(--fw-heavy);line-height:1.4}
 .sh-run-main small{
   display:flex;align-items:center;gap:8px;margin-top:4px;
-  color:#98a0b6;font:650 12px var(--mono);
+  color:#98a0b6;font:var(--fw-bold) var(--fs-sm) var(--mono);
 }
 .sh-dot{width:3px;height:3px;border-radius:50%;background:#c5cbd8}
 
 /* 내 수익률. 벤치마크(시장 수익률)는 응답에 없어 한 칸뿐이다. */
 .sim-home .sh-rate{margin:0;text-align:right;white-space:nowrap}
-.sim-home .sh-rate dt{margin:0 0 3px;color:#98a0b6;font-size:11.5px;font-weight:700}
-.sim-home .sh-rate dd{margin:0;font-size:16.5px;font-weight:850}
+.sim-home .sh-rate dt{margin:0 0 3px;color:#98a0b6;font-size:var(--fs-xs);font-weight:var(--fw-bold)}
+.sim-home .sh-rate dd{margin:0;font-size:var(--fs-2xl);font-weight:var(--fw-black)}
 .sim-home .sh-rate dd.up{color:var(--up)}
 .sim-home .sh-rate dd.down{color:var(--down)}
 
@@ -278,7 +280,7 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
 .sh-replay{
   grid-column:4;
   padding:9px 15px;border:1px solid #cdc9f7;border-radius:11px;
-  color:var(--brand);font-size:13px;font-weight:800;white-space:nowrap;
+  color:var(--brand);font-size:var(--fs-base);font-weight:var(--fw-heavy);white-space:nowrap;
 }
 .sh-replay:hover{background:var(--brand-softer);border-color:var(--brand)}
 
@@ -287,7 +289,7 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
   display:flex;align-items:center;justify-content:center;gap:7px;
   width:100%;margin:14px 0 0;padding:10px 0;
   border:1px solid var(--rule);border-radius:12px;background:transparent;
-  color:#7b8298;font-size:13px;font-weight:750;cursor:pointer;
+  color:#7b8298;font-size:var(--fs-base);font-weight:var(--fw-bold);cursor:pointer;
   transition:color .15s,border-color .15s,background .15s;
 }
 .sh-more:hover{border-color:#cdc9f7;background:var(--brand-softer);color:var(--brand)}
@@ -300,7 +302,7 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
 /* 칸 사이 꺾쇠. 마크업에 넣지 않는 이유는 읽어 줄 내용이 아니어서다. */
 .sh-step + .sh-step::before{
   content:'›';position:absolute;left:-8px;top:calc(var(--step-ico) / 2 - 12px);
-  color:#c9cddb;font-size:22px;font-weight:700;line-height:1;
+  color:#c9cddb;font-size:var(--fs-4xl);font-weight:var(--fw-bold);line-height:1;
 }
 .sh-step-ico{
   display:grid;place-items:center;
@@ -310,22 +312,22 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
 .sh-step-no{
   position:absolute;top:-4px;left:50%;margin-left:calc(var(--step-ico) / 2 - 14px);
   display:grid;place-items:center;width:20px;height:20px;border-radius:50%;
-  background:var(--brand);color:#fff;font-size:11px;font-weight:800;
+  background:var(--brand);color:#fff;font-size:var(--fs-2xs);font-weight:var(--fw-heavy);
 }
-.sh-step b{color:#28304f;font-size:14px;font-weight:800}
-.sh-step em{margin-top:4px;color:#8b92a8;font-style:normal;font-size:12px;font-weight:650;line-height:1.5}
+.sh-step b{color:#28304f;font-size:var(--fs-lg);font-weight:var(--fw-heavy)}
+.sh-step em{margin-top:4px;color:#8b92a8;font-style:normal;font-size:var(--fs-sm);font-weight:var(--fw-bold);line-height:1.5}
 
 .sh-tip{
   display:flex;align-items:flex-start;gap:10px;margin:auto 0 0;padding:13px 15px;
   border-radius:14px;background:var(--brand-softer);
 }
 .sh-tip svg{flex:none;margin-top:1px;color:var(--brand)}
-.sh-tip b{display:block;margin-bottom:3px;color:#3a3f66;font-size:13px;font-weight:800;line-height:1.45}
-.sh-tip span{color:#8288a8;font-size:12px;font-weight:650;line-height:1.5}
+.sh-tip b{display:block;margin-bottom:3px;color:#3a3f66;font-size:var(--fs-base);font-weight:var(--fw-heavy);line-height:1.45}
+.sh-tip span{color:#8288a8;font-size:var(--fs-sm);font-weight:var(--fw-bold);line-height:1.5}
 
 /* ── 좁은 화면 ──────────────────────────────────────── */
 @media(max-width:1320px){
-  body.sim-home-page{--title:31px}
+  body.sim-home-page{--title:var(--fs-title-lg)}
   .sh-hero{grid-template-columns:minmax(0,1fr) minmax(360px,.85fr)}
 }
 @media(max-width:1200px){
@@ -339,9 +341,9 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
   .sh-panels{grid-template-columns:minmax(0,1fr)}
 }
 @media(max-width:760px){
-  body.sim-home-page{--title:25px;--hero-px:20px;--panel-px:20px}
+  body.sim-home-page{--title:var(--fs-title);--hero-px:20px;--panel-px:20px}
   .sh-hero{border-radius:20px}
-  .sh-lead{font-size:15px}
+  .sh-lead{font-size:var(--fs-xl)}
   .sh-btn{width:100%;justify-content:center}
   /* 수익률과 버튼을 아랫줄로 내린다 */
   .sh-run{grid-template-columns:auto minmax(0,1fr) auto;row-gap:12px}
@@ -358,7 +360,7 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
 @media (min-width:1121px) and (max-height:900px){
   body.sim-home-page{
     --page-pt:20px;--page-pb:24px;--block-gap:14px;
-    --hero-py:22px;--title:30px;--lead:15px;
+    --hero-py:22px;--title:var(--fs-title-lg);--lead:var(--fs-xl);
     --mb-flag:10px;--mb-title:8px;--mb-lead:14px;--mb-prog:12px;--mb-stats:16px;
     --stat-py:10px;--stat-px:15px;--btn-h:52px;
     --art:260px;
@@ -368,7 +370,7 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
 @media (min-width:1121px) and (max-height:790px){
   body.sim-home-page{
     --page-pt:16px;--page-pb:18px;--block-gap:12px;
-    --hero-py:18px;--title:27px;--lead:14.5px;
+    --hero-py:18px;--title:var(--fs-title);--lead:var(--fs-lg);
     --mb-lead:12px;--mb-prog:10px;--mb-stats:13px;
     --stat-py:9px;--stat-px:14px;--btn-h:48px;
     --art:230px;
@@ -378,7 +380,7 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
 @media (min-width:1121px) and (max-height:700px){
   body.sim-home-page{
     --page-pt:12px;--page-pb:14px;--block-gap:10px;
-    --hero-py:14px;--title:24px;--lead:14px;
+    --hero-py:14px;--title:var(--fs-title);--lead:var(--fs-lg);
     --mb-flag:8px;--mb-title:6px;--mb-lead:10px;--mb-prog:8px;--mb-stats:11px;
     --stat-py:8px;--stat-px:12px;--btn-h:44px;
     --art:200px;

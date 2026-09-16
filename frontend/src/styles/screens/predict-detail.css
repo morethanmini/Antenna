@@ -19,28 +19,27 @@
 .prediction-detail-page .pd-back{
   display:inline-flex;align-items:center;gap:5px;margin-bottom:6px;
   padding:0;border:0;background:none;font:inherit;cursor:pointer;
-  color:var(--muted);font-size:12.5px;font-weight:600;border-radius:8px;
+  color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-normal);border-radius:8px;
 }
 .prediction-detail-page .pd-back:hover{color:var(--ink)}
 .prediction-detail-page .pd-back:focus-visible{outline:2px solid var(--brand);outline-offset:3px}
 
 .prediction-detail-page .pd-title{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 .prediction-detail-page .pd-title h1{
-  margin:0;font-size:25px;line-height:1.2;
-  font-weight:750;letter-spacing:-.03em;color:var(--ink);
+  margin:0;line-height:1.2;color:var(--ink);
 }
 .prediction-detail-page .pd-title h1 a{color:inherit;border-radius:7px}
 .prediction-detail-page .pd-title h1 a:hover{color:var(--brand);text-decoration:underline}
 .prediction-detail-page .pd-title h1 a:focus-visible{outline:2px solid var(--brand);outline-offset:3px}
-.prediction-detail-page .pd-code{color:var(--faint);font-size:13.5px;font-weight:600}
+.prediction-detail-page .pd-code{color:var(--faint);font-size:var(--fs-lg);font-weight:var(--fw-normal)}
 
 .prediction-detail-page .pd-by{
-  display:flex;align-items:baseline;gap:9px;margin:6px 0 0;font-size:12.5px;
+  display:flex;align-items:baseline;gap:9px;margin:6px 0 0;font-size:var(--fs-md);
 }
-.prediction-detail-page .pd-by a{color:var(--ink);font-weight:700;border-radius:6px}
+.prediction-detail-page .pd-by a{color:var(--ink);font-weight:var(--fw-bold);border-radius:6px}
 .prediction-detail-page .pd-by a:hover{color:var(--brand);text-decoration:underline}
 .prediction-detail-page .pd-by a:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
-.prediction-detail-page .pd-by span{color:var(--faint);font-size:11.5px}
+.prediction-detail-page .pd-by span{color:var(--faint);font-size:var(--fs-xs)}
 
 /* ── 카드 ────────────────────────────────────────────────
    두 열로 놓고, 예측 내용만 전폭을 쓴다 — 진행 막대가 좁으면 읽히지 않는다. */
@@ -60,14 +59,14 @@
 }
 
 .prediction-detail-page .pd-card h2{
-  margin:0 0 12px;font-size:15px;font-weight:750;letter-spacing:-.015em;color:var(--ink);
+  margin:0 0 12px;font-size:var(--fs-xl);font-weight:var(--fw-bold);letter-spacing:-.015em;color:var(--ink);
 }
 /* "구독자 전용" 처럼 제목에 딸린 꼬리표 */
 .prediction-detail-page .pd-card h2 span{
-  margin-left:2px;color:var(--faint);font-size:11.5px;font-weight:600;
+  margin-left:2px;color:var(--faint);font-size:var(--fs-xs);font-weight:var(--fw-normal);
 }
 .prediction-detail-page .pd-hint{
-  margin:0 0 14px;color:var(--muted);font-size:12.5px;line-height:1.65;word-break:keep-all;
+  margin:0 0 14px;color:var(--muted);font-size:var(--fs-md);line-height:1.65;word-break:keep-all;
 }
 
 /* ── 목표 · 기준가 ───────────────────────────────────────── */
@@ -78,18 +77,18 @@
   .prediction-detail-page .pd-figures{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 .prediction-detail-page .pd-figures div{display:grid;gap:3px;min-width:0}
-.prediction-detail-page .pd-figures dt{color:var(--muted);font-size:11.5px}
+.prediction-detail-page .pd-figures dt{color:var(--muted);font-size:var(--fs-xs)}
 .prediction-detail-page .pd-figures dd{
-  margin:0;font-size:17px;font-weight:750;letter-spacing:-.02em;color:var(--ink);
+  margin:0;font-size:var(--fs-2xl);font-weight:var(--fw-bold);letter-spacing:-.02em;color:var(--ink);
 }
 .prediction-detail-page .up{color:var(--up)}
 .prediction-detail-page .down{color:var(--down)}
 /* 아직 정해지지 않은 값. 0 으로 그리지 않고 언제 정해지는지 말로 알린다 */
 .prediction-detail-page .pd-pending{
-  font-size:12.5px;font-weight:600;color:var(--faint);
+  font-size:var(--fs-md);font-weight:var(--fw-normal);color:var(--faint);
 }
 /* 기준가 옆 "MM.DD 종가". 값이 어느 날 종가인지 — 기준일이 휴장이면 그 뒤 첫 거래일이다 */
-.prediction-detail-page .pd-on{ margin-left:6px; font-size:11.5px; font-weight:600; color:var(--muted); }
+.prediction-detail-page .pd-on{ margin-left:6px; font-size:var(--fs-xs); font-weight:var(--fw-normal); color:var(--muted); }
 
 /* ── 진행 막대 ───────────────────────────────────────────
    기준가에서 목표가까지를 100 으로 본다. 100 을 넘기면 색을 바꿔 알린다. */
@@ -107,37 +106,37 @@
 .prediction-detail-page .pd-bar-val{
   flex:none;display:flex;align-items:baseline;gap:6px;margin:0;
 }
-.prediction-detail-page .pd-bar-val b{font-size:15px;font-weight:750;color:var(--brand)}
+.prediction-detail-page .pd-bar-val b{font-size:var(--fs-xl);font-weight:var(--fw-bold);color:var(--brand)}
 .prediction-detail-page .pd-bar.is-passed + .pd-bar-val b{color:#0a7f3d}
-.prediction-detail-page .pd-bar-val span{color:var(--faint);font-size:11.5px}
+.prediction-detail-page .pd-bar-val span{color:var(--faint);font-size:var(--fs-xs)}
 
 /* 진행률을 무엇으로 그렸는지 밝힌다 — "현재가" 가 아니라 전일 종가다 */
 .prediction-detail-page .pd-basis{
-  margin:7px 0 0;color:var(--faint);font-size:11.5px;
+  margin:7px 0 0;color:var(--faint);font-size:var(--fs-xs);
 }
 
 .prediction-detail-page .pd-error{
   display:flex;align-items:baseline;gap:8px;
   margin:16px 0 0;padding-top:14px;border-top:1px solid var(--rule);
-  font-size:12.5px;
+  font-size:var(--fs-md);
 }
 .prediction-detail-page .pd-error span{color:var(--muted)}
-.prediction-detail-page .pd-error b{font-size:15px;font-weight:750;color:var(--ink)}
+.prediction-detail-page .pd-error b{font-size:var(--fs-xl);font-weight:var(--fw-bold);color:var(--ink)}
 /* 목표가에 가깝게 맞힌 건은 강조한다 — 이 서비스가 파는 값어치다 */
 .prediction-detail-page .pd-error b.is-near{color:#0a7f3d}
 
 .prediction-detail-page .pd-dday{
-  margin:14px 0 0;color:var(--brand-ink);font-size:12.5px;font-weight:750;
+  margin:14px 0 0;color:var(--brand-ink);font-size:var(--fs-md);font-weight:var(--fw-bold);
 }
 
 /* ── 조작 불가 근거 ──────────────────────────────────────
    해시·주소는 64·42자라 반드시 줄바꿈을 허용한다. 넘치면 카드를 밀어낸다. */
 .prediction-detail-page .pd-proof{margin:0;display:grid;gap:12px}
 .prediction-detail-page .pd-proof div{display:grid;gap:3px;min-width:0}
-.prediction-detail-page .pd-proof dt{color:var(--muted);font-size:11.5px}
+.prediction-detail-page .pd-proof dt{color:var(--muted);font-size:var(--fs-xs)}
 .prediction-detail-page .pd-proof dd{
   margin:0;min-width:0;
-  color:var(--body);font-family:var(--mono);font-size:11.5px;
+  color:var(--body);font-family:var(--mono);font-size:var(--fs-xs);
   line-height:1.6;word-break:break-all;
 }
 
@@ -145,17 +144,17 @@
   display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:var(--sans);
 }
 .prediction-detail-page .pd-anchor-link{
-  color:var(--brand);font-size:12.5px;font-weight:700;border-radius:6px;
+  color:var(--brand);font-size:var(--fs-md);font-weight:var(--fw-bold);border-radius:6px;
 }
 .prediction-detail-page .pd-anchor-link:hover{text-decoration:underline}
 .prediction-detail-page .pd-anchor-link:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
-.prediction-detail-page .pd-anchor span{color:var(--faint);font-size:11.5px}
+.prediction-detail-page .pd-anchor span{color:var(--faint);font-size:var(--fs-xs)}
 
 /* 검산 진입점. 이 화면의 신뢰가 거기서 완성되므로 눈에 띄게 둔다 */
 .prediction-detail-page .pd-verify{
   display:inline-flex;align-items:center;gap:4px;
   height:38px;margin:16px 0 0;padding:0 16px;border-radius:10px;
-  background:var(--brand);color:#fff;font-size:13px;font-weight:750;
+  background:var(--brand);color:#fff;font-size:var(--fs-base);font-weight:var(--fw-bold);
   transition:background .14s;
 }
 .prediction-detail-page .pd-verify:hover{background:#4a43e8}
@@ -166,12 +165,12 @@
 .prediction-detail-page .pd-points li{
   padding:11px 13px;border:1px solid var(--rule);border-radius:11px;
   background:var(--surface-2);
-  color:var(--body);font-size:12.5px;line-height:1.65;word-break:keep-all;
+  color:var(--body);font-size:var(--fs-md);line-height:1.65;word-break:keep-all;
 }
 
 /* 작성자가 쓴 글이라 줄바꿈을 그대로 살린다 */
 .prediction-detail-page .pd-note{
-  margin:0;color:var(--body);font-size:13.5px;line-height:1.75;
+  margin:0;color:var(--body);font-size:var(--fs-lg);line-height:1.75;
   white-space:pre-wrap;word-break:keep-all;
 }
 

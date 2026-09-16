@@ -19,7 +19,7 @@
   margin:0 0 14px;border-radius:10px;
 }
 .auth .auth-brand .mark{width:27px;height:27px;flex:none;color:var(--brand)}
-.auth .auth-brand .name{font-size:19px;font-weight:800;letter-spacing:-.01em;color:var(--ink)}
+.auth .auth-brand .name{font-size:var(--fs-3xl);font-weight:var(--fw-heavy);letter-spacing:-.01em;color:var(--ink)}
 .auth .auth-brand:focus-visible{outline:2px solid var(--brand);outline-offset:3px}
 
 .auth .auth-shell{
@@ -39,10 +39,10 @@
 .auth .intro-copy h1{
   margin:0 0 14px;font-size:clamp(26px,2.4vw,38px);line-height:1.26;
   /* 코멘트 반영: 제목 두께 800 → 880 (+10%). 가변 폰트면 그대로, 아니면 가장 가까운 900 으로 렌더된다. */
-  font-weight:880;letter-spacing:-.035em;color:var(--ink);text-wrap:balance;
+  font-weight:var(--fw-black);letter-spacing:-.035em;color:var(--ink);text-wrap:balance;
 }
 .auth .intro-copy .lead{
-  margin:0 0 21px;font-size:14px;line-height:1.65;color:var(--muted);
+  margin:0 0 21px;font-size:var(--fs-lg);line-height:1.65;color:var(--muted);
 }
 
 .auth .feats{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:13px}
@@ -52,7 +52,7 @@
   background:#fff;color:var(--brand);
   box-shadow:0 1px 2px rgba(20,20,27,.05),0 10px 24px -16px rgba(58,60,140,.6);
 }
-.auth .feat h3{margin:0;font-size:15px;font-weight:700;letter-spacing:-.01em;color:var(--ink)}
+.auth .feat h3{margin:0;font-size:var(--fs-xl);font-weight:var(--fw-bold);letter-spacing:-.01em;color:var(--ink)}
 
 .auth .intro-art{position:relative;margin:0;min-width:0;display:grid;place-items:end center}
 .auth .intro-art img{
@@ -73,14 +73,14 @@
 }
 .auth .sso h2{
   margin:0 0 12px;text-align:center;color:var(--ink);
-  font-size:29px;font-weight:800;letter-spacing:-.025em;
+  font-size:var(--fs-7xl);font-weight:var(--fw-heavy);letter-spacing:-.025em;
 }
-.auth .sso .sub{margin:0 0 30px;text-align:center;color:var(--muted);font-size:14.5px}
+.auth .sso .sub{margin:0 0 30px;text-align:center;color:var(--muted);font-size:var(--fs-lg)}
 
 .auth .sso-btn{
   display:flex;align-items:center;justify-content:center;gap:12px;
   width:100%;height:62px;border:0;border-radius:14px;
-  font-family:inherit;font-size:16px;font-weight:750;letter-spacing:-.01em;cursor:pointer;
+  font-family:inherit;font-size:var(--fs-2xl);font-weight:var(--fw-bold);letter-spacing:-.01em;cursor:pointer;
   transition:background .15s,border-color .15s,transform .06s,box-shadow .15s;
 }
 .auth .sso-btn+.sso-btn{margin-top:14px}
@@ -98,7 +98,7 @@
 .auth .sso-btn.google{border:1px solid var(--rule);background:#fff;color:var(--ink)}
 .auth .sso-btn.google:not(:disabled):hover{border-color:#bfc4da;background:#fbfbff}
 
-.auth .sso-status{margin:18px 0 0;min-height:20px;text-align:center;font-size:13px;line-height:1.6}
+.auth .sso-status{margin:18px 0 0;min-height:20px;text-align:center;font-size:var(--fs-base);line-height:1.6}
 .auth .sso-status .err{color:var(--danger)}
 
 @media (prefers-reduced-motion:reduce){
@@ -120,13 +120,13 @@
 @media (max-width:520px){
   .auth{padding:34px 20px 32px}
   .auth .auth-brand{margin-bottom:18px}
-  .auth .intro-copy h1{font-size:27px}
+  .auth .intro-copy h1{font-size:var(--fs-6xl)}
   .auth .feats{gap:15px}
   .auth .feat-ic{width:44px;height:44px;border-radius:13px}
   .auth .sso{padding:36px 22px;border-radius:22px}
-  .auth .sso h2{font-size:25px}
+  .auth .sso h2{font-size:var(--fs-5xl)}
   .auth .sso .sub{margin-bottom:30px}
-  .auth .sso-btn{height:58px;font-size:15px}
+  .auth .sso-btn{height:58px;font-size:var(--fs-xl)}
 }
 
 /* 준비 중 버튼 — 눌릴 수 없다는 게 색과 커서로 드러나야 한다 */
@@ -134,7 +134,7 @@
   background:var(--surface-2);border:1px solid var(--rule);color:var(--faint);
   box-shadow:none;opacity:1;cursor:not-allowed;
 }
-.auth .sso-note{margin:9px 0 0;text-align:center;color:var(--faint);font-size:12px}
+.auth .sso-note{margin:9px 0 0;text-align:center;color:var(--faint);font-size:var(--fs-sm)}
 
 /* 백엔드 없이 화면을 볼 때 쓰는 임시 진입로.
    실제 로그인 버튼과 헷갈리지 않게 점선 아래로 내리고 흐리게 둔다. */
@@ -142,11 +142,11 @@
   margin-top:20px;padding-top:16px;border-top:1px dashed var(--rule);
   display:flex;flex-direction:column;gap:9px;
 }
-.auth .dev-signin-label{text-align:center;color:var(--faint);font-size:11px}
+.auth .dev-signin-label{text-align:center;color:var(--faint);font-size:var(--fs-2xs)}
 .auth .dev-signin-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .auth .dev-signin-row button{
   height:38px;border:1px solid var(--rule);border-radius:10px;background:var(--surface-2);
-  color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;
+  color:var(--muted);font-family:inherit;font-size:var(--fs-md);font-weight:var(--fw-normal);cursor:pointer;
   transition:background .15s,color .15s;
 }
 .auth .dev-signin-row button:hover{background:#fff;color:var(--ink)}
@@ -161,15 +161,15 @@
 }
 .auth .cb-brand{margin-bottom:20px}
 .auth .cb-card{width:100%;padding:40px 36px;align-items:center;text-align:center}
-.auth .cb-card h2{margin:0 0 10px;font-size:23px}
+.auth .cb-card h2{margin:0 0 10px;font-size:var(--fs-4xl)}
 .auth .cb-card .sub{margin:0}
-.auth .cb-hint{margin:22px 0 0;color:var(--faint);font-size:12.5px}
+.auth .cb-hint{margin:22px 0 0;color:var(--faint);font-size:var(--fs-md)}
 /* 실패 사유 상자. 색·크기·정렬을 스스로 정하므로 .sub 를 겸하지 않는다 —
    두 클래스를 겹치면 .cb-card .sub{margin:0} 과 특정도로 다투게 된다. */
 .auth .cb-reason{
   margin:0 0 26px;padding:12px 14px;text-align:center;
   border:1px solid var(--rule);border-radius:12px;background:var(--surface-2);
-  color:var(--body);font-size:13.5px;line-height:1.6;word-break:keep-all;
+  color:var(--body);font-size:var(--fs-lg);line-height:1.6;word-break:keep-all;
 }
 .auth .cb-card .sso-btn{width:100%}
 
@@ -192,10 +192,10 @@
 }
 
 /* A-02 온보딩 닉네임 — [ANT-AUTH-03] */
-.auth .nickname-input{width:100%;height:56px;padding:0 16px;border:1px solid var(--rule);border-radius:14px;background:#fff;color:var(--ink);font-family:inherit;font-size:16px;font-weight:600}
+.auth .nickname-input{width:100%;height:56px;padding:0 16px;border:1px solid var(--rule);border-radius:14px;background:#fff;color:var(--ink);font-family:inherit;font-size:var(--fs-2xl);font-weight:var(--fw-normal)}
 .auth .nickname-input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(88,80,244,.14)}
 .auth .nickname-input[aria-invalid="true"]{border-color:#dc2626}
-.auth .nickname-hint{margin:9px 2px 20px;font-size:13px;color:var(--muted);min-height:18px}
+.auth .nickname-hint{margin:9px 2px 20px;font-size:var(--fs-base);color:var(--muted);min-height:18px}
 .auth .nickname-hint.is-available{color:#15803d}
 .auth .nickname-hint.is-taken,.auth .nickname-hint.is-invalid{color:#dc2626}
 .auth .sso-btn:disabled{opacity:.5;cursor:not-allowed}

@@ -57,13 +57,73 @@
   --sans:"Pretendard Variable","Pretendard","IBM Plex Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
   --shadow:0 1px 2px rgba(20,20,27,.04),0 10px 28px -22px rgba(20,20,27,.28);
+
+  /* 연보라 판. 모의투자 홈 히어로(G-01)가 혼자 쓰던 결인데, 인사이트 홈
+     히어로(B-01)도 같이 쓴다 — 두 모드의 첫 화면이라 같은 결로 보여야 한다.
+     값을 양쪽에 베껴 두면 한쪽만 바뀌어 조용히 어긋나므로 여기 한 번만 적는다.
+     --wash-line 은 그 판의 테두리다.
+
+     ⚠ 넓은 면 전용이다. 가는 띠에 쓰면 흰 카드 사이에서 묻힌다 —
+     대회 배너(.hm-event)가 진한 보라로 남아 있는 이유다. */
+  --wash:linear-gradient(118deg,#f2f0ff 0%,#ebe8fd 44%,#e6e2fc 74%,#f1ecff 100%);
+  --wash-line:#e4e1fa;
+
+  /* ── 글자 크기 ─────────────────────────────────────────
+     여태 화면마다 숫자를 직접 박아 43 종으로 갈려 있었다 — 12.5 · 11.5 · 13 · 12 ·
+     13.5 · 14.5 · 15.5 · 16.5 · 18.5 … 반픽셀만 여덟 종이었고, "여기가 13 이었나
+     13.5 였나" 를 매번 다시 재야 했다. 15 단계로 줄이고 여기 한 번만 적는다.
+
+     많이 쓰이던 값(12.5 · 11.5 · 11 · 12)은 그대로 살렸다. 화면을 흔들지 않고
+     종류만 줄이는 것이 이번 목적이라, 값을 예쁘게 만들자고 전부 정수로 밀지
+     않았다. 대신 쓰임이 적던 반픽셀·홀수값은 가장 가까운 단계로 흡수했다
+     (13.5·14.5→14 · 15.5→15 · 16·16.5→17 · 18·18.5·20→19 · 21·23→22 ·
+      25→24 · 27→26 · 28·29·31→30 · 36→34).
+
+     ⚠ 제목 단계(--fs-xl 위)는 아직 촘촘하다. 페이지 제목이 화면마다 13 종으로
+     갈려 있어서 그 값들을 일단 담아 둔 것이다 — 제목을 통일하고 나면
+     19 · 24 · 30 정도만 남기고 여기서 지우면 된다. */
+  --fs-3xs:10.5px;  /* 배지 · 차트 축 라벨. 한글은 여기가 하한이다 */
+  --fs-2xs:11px;
+  --fs-xs:11.5px;
+  --fs-sm:12px;
+  --fs-md:12.5px;   /* 가장 많이 쓰인다 — 표 · 칩 · 보조 라벨 */
+  --fs-base:13px;
+  --fs-lg:14px;     /* body 기본값과 같다 */
+  --fs-xl:15px;
+  --fs-2xl:17px;
+  --fs-3xl:19px;
+  --fs-4xl:22px;
+  --fs-5xl:24px;    /* 공용 .page-head h1 */
+  --fs-6xl:26px;
+  --fs-7xl:30px;
+  --fs-8xl:34px;    /* 히어로 */
+
+  /* 페이지 제목 3 단계. 여태 화면마다 h1 을 새로 정의해 13 종으로 갈려 있었다 —
+     같은 깊이의 화면인데 종목 탐색 29 · 연습하기 34 · 랭킹 24 가 전부 달랐다.
+     크기를 깎는 쪽이 아니라 단계를 정하는 쪽으로 맞춘다(작아진 화면은 없다). */
+  --fs-title-hero:var(--fs-8xl);  /* 34 — 배경 배너·일러스트를 낀 랜딩 */
+  --fs-title-lg:var(--fs-7xl);    /* 30 — 목록·진행 화면의 머리 */
+  --fs-title:var(--fs-5xl);       /* 24 — 그 밖의 전부 */
+
+  /* ── 글자 굵기 ─────────────────────────────────────────
+     아홉 종(400·500·600·650·700·750·800·850·880)이 섞여 있었다. 650 과 700,
+     750 과 800 은 나란히 놓아야 겨우 구분되는 차이라 뜻을 나누지 못하고
+     사람마다 다르게 골랐다. 네 단계로 줄인다.
+
+     --fw-base 는 예외다. 본문이 굵어지면 안 되는 자리(리포트 작성 textarea)가
+     하나 있어서 남겨 둔다 — 새로 쓸 일은 없다. */
+  --fw-base:400;    /* 쓰지 않는다. textarea 본문 한 곳 전용 */
+  --fw-normal:600;  /* 보조 · 캡션 */
+  --fw-bold:700;    /* 기본 강조 — 옛 650 · 750 이 여기로 모였다 */
+  --fw-heavy:800;   /* 제목 */
+  --fw-black:850;   /* 히어로 제목 */
 }
 
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
   margin:0;background:var(--ground);color:var(--body);
-  font:14px/1.6 var(--sans);-webkit-font-smoothing:antialiased;
+  font:var(--fs-lg)/1.6 var(--sans);-webkit-font-smoothing:antialiased;
 }
 a{color:inherit;text-decoration:none}
 button,input,select{font:inherit;color:inherit}
@@ -101,7 +161,7 @@ button{border:0;background:none;cursor:pointer}
   background:var(--surface-2);border-radius:10px;
 }
 .modeswitch a{
-  flex:1;padding:6px 4px;border-radius:7px;font-size:12.5px;font-weight:700;
+  flex:1;padding:6px 4px;border-radius:7px;font-size:var(--fs-md);font-weight:var(--fw-bold);
   color:var(--muted);white-space:nowrap;text-align:center;
   transition:background .15s,color .15s;
 }
@@ -113,7 +173,7 @@ button{border:0;background:none;cursor:pointer}
 .topbar-auth a{
   display:grid;place-items:center;height:34px;padding:0 14px;
   border:1px solid var(--rule);border-radius:9px;
-  font-size:12px;font-weight:750;white-space:nowrap;
+  font-size:var(--fs-sm);font-weight:var(--fw-bold);white-space:nowrap;
 }
 .topbar-login{background:#fff;color:var(--body)}
 .topbar-signup{background:var(--brand);color:#fff;border-color:var(--brand)!important}
@@ -123,7 +183,7 @@ button{border:0;background:none;cursor:pointer}
    옆의 아이콘 버튼(.iconbtn)과 같은 결로 맞춘다 */
 .wallet{
   display:flex;align-items:center;gap:7px;height:34px;padding:0 13px;
-  border:1px solid var(--rule);border-radius:999px;font-weight:700;color:var(--ink);
+  border:1px solid var(--rule);border-radius:999px;font-weight:var(--fw-bold);color:var(--ink);
   text-decoration:none;transition:border-color .15s ease,background .15s ease;
 }
 .wallet:hover{border-color:var(--brand-soft);background:var(--brand-softer)}
@@ -137,7 +197,7 @@ button{border:0;background:none;cursor:pointer}
 .badge{
   position:absolute;top:-2px;right:-2px;min-width:16px;height:16px;padding:0 4px;
   border-radius:999px;background:var(--danger);color:#fff;
-  font-size:10px;font-weight:700;line-height:16px;text-align:center;
+  font-size:var(--fs-3xs);font-weight:var(--fw-bold);line-height:16px;text-align:center;
 }
 
 /* ── 사이드바 ─────────────────────────────────────────── */
@@ -187,7 +247,7 @@ button{border:0;background:none;cursor:pointer}
 .nav{display:flex;flex-direction:column;gap:3px}
 .nav a{
   display:flex;align-items:center;gap:9px;height:35px;padding:0 9px;
-  border-radius:8px;font-size:12.5px;font-weight:600;color:var(--muted);
+  border-radius:8px;font-size:var(--fs-md);font-weight:var(--fw-normal);color:var(--muted);
   white-space:nowrap;
 }
 .nav a:hover{background:var(--surface-2);color:var(--ink)}
@@ -199,7 +259,7 @@ button{border:0;background:none;cursor:pointer}
 .rail-foot{margin-top:auto}
 .btn-login{
   display:block;width:100%;height:38px;border-radius:9px;
-  background:var(--brand);color:#fff;font-size:12.5px;font-weight:700;
+  background:var(--brand);color:#fff;font-size:var(--fs-md);font-weight:var(--fw-bold);
   line-height:38px;text-align:center;
 }
 .btn-login:hover{background:var(--brand-ink)}
@@ -285,12 +345,52 @@ body.rail-open .rail-backdrop{opacity:1;pointer-events:auto}
   .main-inner{margin-left:calc(50vw - 800px - var(--rail-mini-w))}
 }
 .page-head{margin-bottom:24px}
-.page-head h1{margin:0 0 6px;font-size:24px;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
+
+/* ── 페이지 제목 ───────────────────────────────────────
+   크기·굵기·자간만 여기서 정한다. 여백·행간·text-wrap 은 화면 쪽에 남겨 둔다 —
+   제목 옆에 버튼이 붙는 화면, 두 줄로 접히는 화면이 제각각이라서다.
+   색도 여기서 정하지 않는다: 단타대회(J-01)만 진한 배경이라 흰 글씨다.
+
+   ⚠ 화면 CSS 가 이 파일보다 **뒤에** 실려야 반응형 단계가 먹는다(main.tsx 참고). */
+
+/* 1 단계 · 히어로 34px
+   단타대회(J-01)는 여기 없다 — 제목이 글자가 아니라 그림(.ev-hero-title)이라
+   글자 크기를 줄 자리가 없다. 나중에 글자로 돌아오면 여기 넣으면 된다. */
+.sh-title,
+.pr-head h1,
+.sj-head h1{
+  font-size:var(--fs-title-hero);font-weight:var(--fw-black);letter-spacing:-.035em;
+}
+/* 2 단계 · 큰 제목 30px
+   인사이트 홈(B-01)이 히어로인데 여기 있는 이유 — 제목 칸이 일러스트에 밀려
+   399px 뿐이라 34px 이면 "…도와드려요." 의 마지막 글자가 셋째 줄로 떨어진다
+   (2행 실측 415px). <br> 로 나눈 두 줄이 의도된 카피라 그쪽을 살렸다.
+
+   ⚠ 카피를 줄이면 34px 로 올릴 수 있다 — 둘째 줄이 34px 에서 399px 안에
+   들어오면 된다. 지금 카피는 16px 모자란다. */
+.hm-hero h1,
+.ss-head h1,
+.stocks-page .st-hero h1,
+.my-predictions-page .mp-head h1,
+.sp-title h1,
+.rs-head h1,
+.st-head h1,
+.sh-head h1{
+  font-size:var(--fs-title-lg);font-weight:var(--fw-black);letter-spacing:-.03em;
+}
+/* 3 단계 · 일반 24px */
+.page-head h1,
+.watchlist-page .wl-head h1,
+.prediction-detail-page .pd-title h1,
+.ac-title h1{
+  font-size:var(--fs-title);font-weight:var(--fw-heavy);letter-spacing:-.02em;
+}
+.page-head h1{margin:0 0 6px;color:var(--ink)}
 .page-head p{margin:0;color:var(--muted)}
 .route{
   display:inline-block;margin-bottom:10px;padding:3px 10px;border-radius:999px;
   background:var(--brand-softer);color:var(--brand-ink);
-  font-family:var(--mono);font-size:12px;font-weight:600;
+  font-family:var(--mono);font-size:var(--fs-sm);font-weight:var(--fw-normal);
 }
 
 .grid{display:grid;gap:16px}
@@ -300,12 +400,12 @@ body.rail-open .rail-backdrop{opacity:1;pointer-events:auto}
   background:var(--surface);border:1px solid var(--rule);border-radius:16px;
   padding:20px;box-shadow:var(--shadow);
 }
-.card h2{margin:0 0 4px;font-size:15px;font-weight:700;color:var(--ink)}
-.card p{margin:0;color:var(--muted);font-size:13px}
+.card h2{margin:0 0 4px;font-size:var(--fs-xl);font-weight:var(--fw-bold);color:var(--ink)}
+.card p{margin:0;color:var(--muted);font-size:var(--fs-base)}
 .placeholder{
   display:grid;place-items:center;min-height:180px;margin-top:14px;
   border:1px dashed var(--rule);border-radius:12px;
-  background:var(--surface-2);color:var(--faint);font-size:13px;
+  background:var(--surface-2);color:var(--faint);font-size:var(--fs-base);
 }
 .placeholder.tall{min-height:320px}
 
@@ -344,9 +444,9 @@ body.rail-open .rail-backdrop{opacity:1;pointer-events:auto}
   object-fit:cover;background:var(--brand-soft);
 }
 .rail-me span{flex:1;min-width:0}
-.rail-me b{display:block;overflow:hidden;color:var(--ink);font-size:12.5px;font-weight:800;text-overflow:ellipsis;white-space:nowrap}
-.rail-me small{display:block;margin-top:2px;color:var(--brand);font-size:11.5px;font-weight:750}
-.rail-me em{flex:none;font-style:normal;color:#b3b9c9;font-size:15px}
+.rail-me b{display:block;overflow:hidden;color:var(--ink);font-size:var(--fs-md);font-weight:var(--fw-heavy);text-overflow:ellipsis;white-space:nowrap}
+.rail-me small{display:block;margin-top:2px;color:var(--brand);font-size:var(--fs-xs);font-weight:var(--fw-bold)}
+.rail-me em{flex:none;font-style:normal;color:#b3b9c9;font-size:var(--fs-xl)}
 .rail-me:hover em{color:var(--brand)}
 
 /* 접힘 상태 — 아바타만 남기고 카드 테두리를 지운다.

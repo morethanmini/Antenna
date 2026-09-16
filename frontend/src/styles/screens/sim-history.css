@@ -16,17 +16,17 @@
 .sim-history .flat{color:var(--muted)}
 
 /* ── 머리 ───────────────────────────────────────────── */
-.sh-crumb{display:flex;align-items:center;gap:9px;color:#8a93ad;font-size:13.5px;font-weight:700}
+.sh-crumb{display:flex;align-items:center;gap:9px;color:#8a93ad;font-size:var(--fs-lg);font-weight:var(--fw-bold)}
 .sh-crumb a:hover{color:var(--brand)}
 .sh-crumb i{font-style:normal;color:#c2c8da}
 
 .sh-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
-.sh-head h1{margin:0;color:#0e1330;font-size:26px;font-weight:850;letter-spacing:-.03em}
-.sh-head p{margin:3px 0 0;color:var(--muted);font-size:13.5px;font-weight:700}
+.sh-head h1{margin:0;color:var(--ink)}
+.sh-head p{margin:3px 0 0;color:var(--muted);font-size:var(--fs-lg);font-weight:var(--fw-bold)}
 
 .sh-go{
   display:inline-flex;align-items:center;height:38px;padding:0 16px;
-  border-radius:11px;background:var(--brand);color:#fff;font-size:14px;font-weight:800;
+  border-radius:11px;background:var(--brand);color:#fff;font-size:var(--fs-lg);font-weight:var(--fw-heavy);
   transition:background .14s;
 }
 .sh-go:hover{background:var(--brand-ink)}
@@ -43,12 +43,12 @@
   padding:16px 20px;border-left:1px solid var(--rule);
 }
 .sh-fig:first-child{border-left:0}
-.sh-fig-label{color:var(--muted);font-size:12.5px;font-weight:750;letter-spacing:-.01em}
+.sh-fig-label{color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold);letter-spacing:-.01em}
 .sh-fig-val{
-  color:#0e1330;font-size:25px;font-weight:850;letter-spacing:-.035em;line-height:1.2;
+  color:#0e1330;font-size:var(--fs-5xl);font-weight:var(--fw-black);letter-spacing:-.035em;line-height:1.2;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.sh-fig-sub{color:var(--faint);font-size:12px;font-weight:700}
+.sh-fig-sub{color:var(--faint);font-size:var(--fs-sm);font-weight:var(--fw-bold)}
 
 /* ── 목록 카드 ──────────────────────────────────────── */
 .sh-card{
@@ -62,7 +62,7 @@
 .sh-tabs button{
   position:relative;display:inline-flex;align-items:center;gap:7px;
   padding:14px 12px 13px;border:0;background:transparent;
-  color:var(--muted);font-family:inherit;font-size:14px;font-weight:800;
+  color:var(--muted);font-family:inherit;font-size:var(--fs-lg);font-weight:var(--fw-heavy);
   letter-spacing:-.02em;cursor:pointer;transition:color .12s;
 }
 .sh-tabs button::after{
@@ -75,7 +75,7 @@
 .sh-tab-ico{display:grid;place-items:center;color:currentColor;opacity:.8}
 .sh-tabs em{
   font-style:normal;padding:1px 7px;border-radius:999px;
-  background:var(--surface-2);color:var(--muted);font-size:11.5px;font-weight:800;
+  background:var(--surface-2);color:var(--muted);font-size:var(--fs-xs);font-weight:var(--fw-heavy);
 }
 .sh-tabs button.on em{background:var(--brand-soft);color:var(--brand-ink)}
 
@@ -86,7 +86,7 @@
 .sh-sorts button{
   height:29px;padding:0 12px;border:1px solid var(--rule);border-radius:999px;
   background:var(--surface);color:var(--muted);font-family:inherit;
-  font-size:12.5px;font-weight:750;cursor:pointer;
+  font-size:var(--fs-md);font-weight:var(--fw-bold);cursor:pointer;
   transition:border-color .12s,background .12s,color .12s;
 }
 .sh-sorts button:hover{border-color:#c9cde0;color:var(--body)}
@@ -106,18 +106,18 @@
 
 .sh-name{display:flex;align-items:center;gap:8px;min-width:0}
 .sh-name b{
-  color:var(--ink);font-size:15px;font-weight:800;letter-spacing:-.02em;
+  color:var(--ink);font-size:var(--fs-xl);font-weight:var(--fw-heavy);letter-spacing:-.02em;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .sh-mode{
   flex:none;padding:2px 8px;border-radius:999px;
-  background:var(--surface-2);color:var(--muted);font-size:11px;font-weight:800;
+  background:var(--surface-2);color:var(--muted);font-size:var(--fs-2xs);font-weight:var(--fw-heavy);
 }
 
-.sh-when{color:var(--muted);font-size:12.5px;font-weight:700;text-align:right;white-space:nowrap}
-.sh-rate{min-width:82px;font-size:15px;font-weight:850;text-align:right;letter-spacing:-.02em}
+.sh-when{color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold);text-align:right;white-space:nowrap}
+.sh-rate{min-width:82px;font-size:var(--fs-xl);font-weight:var(--fw-black);text-align:right;letter-spacing:-.02em}
 /* 성적표가 없는 회차. 숫자 자리에 글이 오므로 작게 낮춰 값과 구분한다 */
-.sh-rate.flat{font-size:12px;font-weight:700}
+.sh-rate.flat{font-size:var(--fs-sm);font-weight:var(--fw-bold)}
 
 /* 진행 막대. 수익률이 앉을 자리에 같은 폭으로 들어간다 — 아직 성적이 없다 */
 .sh-bar{
@@ -126,15 +126,15 @@
 }
 .sh-bar i{position:absolute;inset:0 auto 0 0;background:var(--brand);border-radius:999px}
 
-.sh-chev{justify-self:end;font-style:normal;color:var(--faint);font-size:15px;line-height:1}
+.sh-chev{justify-self:end;font-style:normal;color:var(--faint);font-size:var(--fs-xl);line-height:1}
 .sh-row:hover .sh-chev{color:var(--brand)}
 
 .sh-empty{
   display:flex;flex-direction:column;align-items:center;gap:8px;
   margin:0;padding:38px 20px 34px;text-align:center;
-  color:var(--body);font-size:14px;font-weight:700;
+  color:var(--body);font-size:var(--fs-lg);font-weight:var(--fw-bold);
 }
-.sh-empty small{color:var(--muted);font-size:12.5px;font-weight:650;line-height:1.55}
+.sh-empty small{color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold);line-height:1.55}
 .sh-empty .sh-go{margin-top:6px}
 
 /* ── 좁은 화면 ──────────────────────────────────────── */
@@ -149,8 +149,8 @@
   .sh-row{grid-template-columns:minmax(0,1fr) auto 12px;gap:12px}
   .sh-row.is-done > .sh-when{display:none}
   .sh-row.is-go > .sh-bar{display:none}
-  .sh-head h1{font-size:22px}
-  .sh-tabs button{font-size:13px;padding:13px 9px 12px}
+  .sh-head h1{font-size:var(--fs-title)}
+  .sh-tabs button{font-size:var(--fs-base);padding:13px 9px 12px}
 }
 @media(max-width:520px){
   .sh-figs{grid-template-columns:minmax(0,1fr)}

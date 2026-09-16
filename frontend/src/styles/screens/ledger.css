@@ -7,7 +7,7 @@
   margin:0 0 14px; padding:9px 12px;
   border:1px solid var(--brand-soft); border-radius:9px;
   background:var(--brand-softer);
-  font-size:12px; color:var(--brand-ink);
+  font-size:var(--fs-sm); color:var(--brand-ink);
 }
 .lg-note svg{ flex:0 0 auto; }
 
@@ -26,27 +26,27 @@
   display:flex; align-items:center; flex-wrap:wrap;
   gap:8px; margin-bottom:10px;
 }
-.lg-stock{ font-size:15px; font-weight:800; color:var(--ink); letter-spacing:-.01em; }
+.lg-stock{ font-size:var(--fs-xl); font-weight:var(--fw-heavy); color:var(--ink); letter-spacing:-.01em; }
 /* 종목이 지워진 건. 이름 자리라 굵게 두되 색으로 가른다 */
 .lg-stock.is-none{ color:var(--faint); }
-.lg-code{ font-style:normal; font-size:12px; color:var(--faint); }
-.lg-horizon{ font-size:12.5px; color:var(--muted); }
+.lg-code{ font-style:normal; font-size:var(--fs-sm); color:var(--faint); }
+.lg-horizon{ font-size:var(--fs-md); color:var(--muted); }
 /* 리포트 줄의 제목. 종목명 자리가 아니라 그 옆이라 본문 굵기로 두고, 링크임을 색으로 알린다.
    긴 제목이 검산 링크를 밀어내지 않게 줄인다 — 이름 자리는 "리포트" 네 글자로 이미 찼다 */
 .lg-title{
   min-width:0; max-width:min(100%, 30ch);
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  font-size:13.5px; font-weight:600; color:var(--brand-ink); text-decoration:none;
+  font-size:var(--fs-lg); font-weight:var(--fw-normal); color:var(--brand-ink); text-decoration:none;
 }
 .lg-title:hover{ text-decoration:underline; }
 
 /* 배치 칸 — 번호·영업일·상태가 한 줄에 선다 */
 .lg-batch{ display:flex; align-items:center; flex-wrap:wrap; gap:7px; }
-.lg-batch a{ font-weight:700; color:var(--brand-ink); text-decoration:none; }
+.lg-batch a{ font-weight:var(--fw-bold); color:var(--brand-ink); text-decoration:none; }
 .lg-batch a:hover{ text-decoration:underline; }
-.lg-date{ font-size:12px; color:var(--muted); }
+.lg-date{ font-size:var(--fs-sm); color:var(--muted); }
 /* 대기는 실패가 아니다 — 경고색을 쓰지 않는다 */
-.lg-waiting{ margin:0; font-size:12.5px; color:var(--muted); }
+.lg-waiting{ margin:0; font-size:var(--fs-md); color:var(--muted); }
 
 /* ── 필드 ────────────────────────────────────── */
 .lg-fields{
@@ -56,11 +56,11 @@
 .lg-field{ display:flex; align-items:baseline; gap:8px; min-width:0; }
 .lg-field dt{
   flex:0 0 auto; width:52px;
-  font-size:11.5px; font-weight:600; color:var(--faint);
+  font-size:var(--fs-xs); font-weight:var(--fw-normal); color:var(--faint);
 }
 .lg-field dd{
   margin:0; min-width:0;
-  font-size:12.5px; color:var(--body);
+  font-size:var(--fs-md); color:var(--body);
   overflow:hidden; text-overflow:ellipsis;
 }
 
@@ -69,7 +69,7 @@
 .lg-go{
   flex:0 0 auto; margin-left:auto;
   display:inline-flex; align-items:center; gap:3px;
-  font-size:12.5px; font-weight:600; color:var(--brand-ink);
+  font-size:var(--fs-md); font-weight:var(--fw-normal); color:var(--brand-ink);
   text-decoration:none;
 }
 .lg-go:hover{ text-decoration:underline; }
@@ -81,12 +81,12 @@
   margin-top:12px; padding:11px;
   border:1px solid var(--rule); border-radius:10px;
   background:var(--surface); color:var(--body);
-  font-family:inherit; font-size:13px; font-weight:600;
+  font-family:inherit; font-size:var(--fs-base); font-weight:var(--fw-normal);
   cursor:pointer;
 }
 .lg-more:hover{ background:var(--surface-2); }
 
-.lg-loading{ margin:12px 0 0; text-align:center; font-size:12.5px; color:var(--muted); }
+.lg-loading{ margin:12px 0 0; text-align:center; font-size:var(--fs-md); color:var(--muted); }
 
 @media (max-width: 560px){
   .lg-fields{ grid-template-columns:1fr; }

@@ -72,16 +72,16 @@
 }
 .my-predictions-page .mp-next-cap{
   display:flex;align-items:center;gap:5px;margin:0 0 6px;
-  font-size:11.5px;font-weight:700;opacity:.82;
+  font-size:var(--fs-xs);font-weight:var(--fw-bold);opacity:.82;
 }
 .my-predictions-page .mp-next-t{
   display:flex;align-items:baseline;gap:3px;margin:0 0 10px;
   padding-right:60px;
 }
-.my-predictions-page .mp-next-t b{font-size:28px;font-weight:800;letter-spacing:-.03em;line-height:1.1}
-.my-predictions-page .mp-next-t i{font-style:normal;font-size:13px;font-weight:700;margin-right:6px;opacity:.85}
+.my-predictions-page .mp-next-t b{font-size:var(--fs-7xl);font-weight:var(--fw-heavy);letter-spacing:-.03em;line-height:1.1}
+.my-predictions-page .mp-next-t i{font-style:normal;font-size:var(--fs-base);font-weight:var(--fw-bold);margin-right:6px;opacity:.85}
 .my-predictions-page .mp-next-sub{
-  margin:0;font-size:11.5px;line-height:1.55;opacity:.8;word-break:keep-all;
+  margin:0;font-size:var(--fs-xs);line-height:1.55;opacity:.8;word-break:keep-all;
 }
 
 /* 적중률 */
@@ -105,21 +105,20 @@
 }
 .my-predictions-page .mp-stat-v{flex:1;display:flex;flex-direction:column;gap:1px;min-width:0}
 .my-predictions-page .mp-stat-v b{
-  font-size:24px;line-height:1.15;font-weight:800;
+  font-size:var(--fs-5xl);line-height:1.15;font-weight:var(--fw-heavy);
   letter-spacing:-.03em;color:var(--brand);
 }
-.my-predictions-page .mp-stat-v i{font-style:normal;color:var(--faint);font-size:11.5px}
+.my-predictions-page .mp-stat-v i{font-style:normal;color:var(--faint);font-size:var(--fs-xs)}
 .my-predictions-page .mp-stat > svg{flex:none;color:var(--faint)}
 
 /* ── 머리 ────────────────────────────────────────────────
    적중률은 곁칸(.mp-stat)으로 갔다. 여기 남는 건 제목과 한 줄 설명뿐이다. */
 .my-predictions-page .mp-head{margin:0}
 .my-predictions-page .mp-head h1{
-  margin:0 0 6px;font-size:30px;line-height:1.15;
-  font-weight:800;letter-spacing:-.04em;color:var(--ink);
+  margin:0 0 6px;line-height:1.15;color:var(--ink);
 }
 .my-predictions-page .mp-head p{
-  margin:0;color:var(--muted);font-size:13.5px;line-height:1.6;word-break:keep-all;
+  margin:0;color:var(--muted);font-size:var(--fs-lg);line-height:1.6;word-break:keep-all;
 }
 
 /* ── 세 걸음 안내 ────────────────────────────────────────
@@ -130,7 +129,7 @@
   background:var(--surface);border:1px solid var(--rule);
 }
 .my-predictions-page .mp-flow h2{
-  margin:0 0 12px;font-size:12.5px;font-weight:750;color:var(--ink);
+  margin:0 0 12px;font-size:var(--fs-md);font-weight:var(--fw-bold);color:var(--ink);
 }
 .my-predictions-page .mp-flow ol{list-style:none;display:grid;gap:14px;margin:0;padding:0}
 .my-predictions-page .mp-flow li{
@@ -147,10 +146,10 @@
 }
 .my-predictions-page .mp-flow div{display:flex;flex-direction:column;gap:2px;min-width:0}
 .my-predictions-page .mp-flow b{
-  font-size:12.5px;font-weight:750;color:var(--ink);word-break:keep-all;
+  font-size:var(--fs-md);font-weight:var(--fw-bold);color:var(--ink);word-break:keep-all;
 }
 .my-predictions-page .mp-flow span{
-  color:var(--muted);font-size:11px;line-height:1.5;word-break:keep-all;
+  color:var(--muted);font-size:var(--fs-2xs);line-height:1.5;word-break:keep-all;
 }
 /* 가운데 걸음(자정 배치)만 브랜드색을 입힌다 */
 .my-predictions-page .mp-flow li:nth-child(2) .mp-flow-ic{background:var(--brand);color:#fff}
@@ -160,11 +159,11 @@
   display:flex;align-items:flex-start;gap:8px;
   margin:14px 0 0;padding:11px 13px;border-radius:12px;
   background:var(--brand-softer);
-  color:var(--muted);font-size:11px;line-height:1.5;word-break:keep-all;
+  color:var(--muted);font-size:var(--fs-2xs);line-height:1.5;word-break:keep-all;
 }
 .my-predictions-page .mp-tip > span{
   flex:none;display:inline-flex;align-items:center;gap:3px;
-  color:var(--brand-ink);font-size:10.5px;font-weight:800;letter-spacing:.02em;
+  color:var(--brand-ink);font-size:var(--fs-3xs);font-weight:var(--fw-heavy);letter-spacing:.02em;
 }
 
 /* ── 거르개 · 정렬 ───────────────────────────────────────
@@ -178,7 +177,7 @@
   display:inline-flex;align-items:center;gap:8px;
   height:42px;padding:0 20px;border:1px solid var(--rule);border-radius:999px;
   background:var(--surface);
-  color:var(--muted);font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer;
+  color:var(--muted);font-family:inherit;font-size:var(--fs-lg);font-weight:var(--fw-bold);cursor:pointer;
   transition:background .14s,color .14s,border-color .14s;
 }
 .my-predictions-page .mp-filters button:hover{color:var(--ink);border-color:#c8ccdd}
@@ -190,7 +189,7 @@
 .my-predictions-page .mp-n{
   min-width:22px;height:22px;padding:0 7px;border-radius:999px;
   display:inline-grid;place-items:center;
-  background:var(--surface-2);color:var(--muted);font-size:11.5px;font-weight:750;
+  background:var(--surface-2);color:var(--muted);font-size:var(--fs-xs);font-weight:var(--fw-bold);
 }
 .my-predictions-page .mp-filters button.is-on .mp-n{background:rgba(255,255,255,.24);color:#fff}
 
@@ -198,7 +197,7 @@
 .my-predictions-page .mp-sort select{
   appearance:none;height:42px;padding:0 36px 0 18px;
   border:1px solid var(--rule);border-radius:12px;background:var(--surface);
-  color:var(--body);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;
+  color:var(--body);font-family:inherit;font-size:var(--fs-base);font-weight:var(--fw-bold);cursor:pointer;
 }
 .my-predictions-page .mp-sort select:hover{border-color:#c8ccdd}
 .my-predictions-page .mp-sort select:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
@@ -230,7 +229,7 @@
 .my-predictions-page .mp-group-meta{flex:none;display:flex;align-items:center;gap:9px}
 .my-predictions-page .mp-count{
   flex:none;padding:5px 11px;border-radius:999px;
-  background:var(--surface-2);color:var(--muted);font-size:11.5px;font-weight:750;
+  background:var(--surface-2);color:var(--muted);font-size:var(--fs-xs);font-weight:var(--fw-bold);
 }
 
 .my-predictions-page .mp-rows{list-style:none;margin:0;padding:0}
@@ -298,9 +297,9 @@
   display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;min-width:0;
 }
 .my-predictions-page .mp-card > .mp-panel.is-anchor b{
-  white-space:normal;font-size:12.5px;font-weight:700;
+  white-space:normal;font-size:var(--fs-md);font-weight:var(--fw-bold);
 }
-.my-predictions-page .mp-card > .mp-panel.is-anchor span{font-size:11.5px}
+.my-predictions-page .mp-card > .mp-panel.is-anchor span{font-size:var(--fs-xs)}
 /* 두 문장을 가운뎃점으로 잇는다. 줄이 갈리면 점은 사라진다 */
 .my-predictions-page .mp-card > .mp-panel.is-anchor span::before{
   content:'·';margin-right:8px;color:var(--rule);
@@ -316,22 +315,22 @@
 .my-predictions-page .mp-logo{
   flex:none;display:grid;place-items:center;width:48px;height:48px;
   border-radius:999px;background:var(--brand-softer);
-  color:var(--brand-ink);font-size:17px;font-weight:800;
+  color:var(--brand-ink);font-size:var(--fs-2xl);font-weight:var(--fw-heavy);
 }
 .my-predictions-page .mp-stock{
   display:flex;flex-direction:column;gap:2px;min-width:0;border-radius:7px;
 }
 .my-predictions-page .mp-stock b{
-  font-size:15px;font-weight:750;letter-spacing:-.02em;color:var(--ink);
+  font-size:var(--fs-xl);font-weight:var(--fw-bold);letter-spacing:-.02em;color:var(--ink);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.my-predictions-page .mp-stock span{color:var(--faint);font-size:11.5px}
+.my-predictions-page .mp-stock span{color:var(--faint);font-size:var(--fs-xs)}
 .my-predictions-page .mp-stock:hover b{color:var(--brand);text-decoration:underline}
 .my-predictions-page .mp-stock:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 /* 종목이 지워진 예측. 링크가 아니라 <p> 라 여백을 지우고, 눌릴 것처럼
    보이지 않게 강조를 낮춘다 */
 .my-predictions-page .mp-stock.is-gone{margin:0}
-.my-predictions-page .mp-stock.is-gone b{color:var(--faint);font-weight:600}
+.my-predictions-page .mp-stock.is-gone b{color:var(--faint);font-weight:var(--fw-normal)}
 
 /* ── 무엇 ────────────────────────────────────────────────*/
 .my-predictions-page .mp-body{display:flex;flex-direction:column;gap:9px;min-width:0}
@@ -344,7 +343,7 @@
 .my-predictions-page .mp-anchored{
   display:inline-flex;align-items:center;gap:5px;
   padding:5px 11px;border-radius:999px;
-  font-size:12px;font-weight:750;white-space:nowrap;
+  font-size:var(--fs-sm);font-weight:var(--fw-bold);white-space:nowrap;
 }
 /* 대기는 정상 상태다 — 경고색을 쓰지 않는다 */
 .my-predictions-page .mp-stage.is-anchor{background:var(--brand-soft);color:var(--brand-ink)}
@@ -360,7 +359,7 @@
 
 .my-predictions-page .mp-anchored{
   align-self:flex-start;margin:0;padding:0;
-  color:var(--ok);font-size:11.5px;font-weight:700;
+  color:var(--ok);font-size:var(--fs-xs);font-weight:var(--fw-bold);
 }
 
 .my-predictions-page .mp-figures{
@@ -371,14 +370,14 @@
   border-left:1px solid var(--rule);
 }
 .my-predictions-page .mp-figures > div:first-child{border-left:0;padding-left:0}
-.my-predictions-page .mp-figures dt{color:var(--faint);font-size:11.5px;font-weight:600;white-space:nowrap}
+.my-predictions-page .mp-figures dt{color:var(--faint);font-size:var(--fs-xs);font-weight:var(--fw-normal);white-space:nowrap}
 .my-predictions-page .mp-figures dd{
-  margin:0;font-size:13.5px;font-weight:750;color:var(--ink);white-space:nowrap;
+  margin:0;font-size:var(--fs-lg);font-weight:var(--fw-bold);color:var(--ink);white-space:nowrap;
 }
 .my-predictions-page .mp-err{color:var(--body)}
 /* 목표가에 가깝게 맞힌 건은 강조한다 — 이 서비스가 파는 값어치다 */
 .my-predictions-page .mp-err.is-near{color:var(--hit)}
-.my-predictions-page .mp-none{color:var(--faint);font-weight:600}
+.my-predictions-page .mp-none{color:var(--faint);font-weight:var(--fw-normal)}
 
 /* ── 지금 어디 ───────────────────────────────────────────*/
 .my-predictions-page .mp-panel{
@@ -394,11 +393,11 @@
 .my-predictions-page .mp-panel.is-anchor.is-failed{background:#fdeeee}
 .my-predictions-page .mp-panel.is-anchor div{display:flex;flex-direction:column;gap:4px;min-width:0}
 .my-predictions-page .mp-panel.is-anchor b{
-  font-size:13px;font-weight:750;line-height:1.5;color:var(--ink);
+  font-size:var(--fs-base);font-weight:var(--fw-bold);line-height:1.5;color:var(--ink);
   white-space:pre-line;word-break:keep-all;
 }
 .my-predictions-page .mp-panel.is-anchor span{
-  color:var(--muted);font-size:11.5px;line-height:1.5;word-break:keep-all;
+  color:var(--muted);font-size:var(--fs-xs);line-height:1.5;word-break:keep-all;
 }
 .my-predictions-page .mp-panel.is-anchor.is-failed b{color:var(--danger)}
 /* 블록 둘이 사슬로 이어지는 그림. 앵커가 배치로 묶인다는 뜻을 그대로 그린다 */
@@ -413,13 +412,13 @@
   flex-direction:column;align-items:stretch;justify-content:center;gap:5px;
   background:var(--surface-2);
 }
-.my-predictions-page .mp-until{margin:0;text-align:center;color:var(--muted);font-size:11.5px;font-weight:600}
+.my-predictions-page .mp-until{margin:0;text-align:center;color:var(--muted);font-size:var(--fs-xs);font-weight:var(--fw-normal)}
 .my-predictions-page .mp-dday{
   margin:0;text-align:center;
-  font-size:26px;line-height:1.1;font-weight:800;letter-spacing:-.03em;color:var(--brand);
+  font-size:var(--fs-6xl);line-height:1.1;font-weight:var(--fw-heavy);letter-spacing:-.03em;color:var(--brand);
 }
 .my-predictions-page .mp-wait{
-  margin:0;text-align:center;color:var(--faint);font-size:11.5px;line-height:1.55;word-break:keep-all;
+  margin:0;text-align:center;color:var(--faint);font-size:var(--fs-xs);line-height:1.55;word-break:keep-all;
 }
 /* 기간 진행 바. 가격이 아니라 시간이다 — 기준일에서 만기일까지 얼마나 왔나 */
 .my-predictions-page .mp-bar{
@@ -438,7 +437,7 @@
 }
 .my-predictions-page .mp-bar-ends{
   display:flex;justify-content:space-between;margin-top:7px;
-  color:var(--faint);font-size:10.5px;
+  color:var(--faint);font-size:var(--fs-3xs);
 }
 .my-predictions-page .mp-bar-ends span{display:flex;flex-direction:column;gap:1px}
 .my-predictions-page .mp-bar-ends span:last-child{align-items:flex-end}
@@ -448,9 +447,9 @@
 .my-predictions-page .mp-panel.is-done{background:var(--ok-soft)}
 .my-predictions-page .mp-panel.is-done.is-miss{background:var(--surface-2)}
 .my-predictions-page .mp-panel.is-done div{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
-.my-predictions-page .mp-panel.is-done b{font-size:14.5px;font-weight:800;color:var(--ok)}
+.my-predictions-page .mp-panel.is-done b{font-size:var(--fs-lg);font-weight:var(--fw-heavy);color:var(--ok)}
 .my-predictions-page .mp-panel.is-done.is-miss b{color:var(--body)}
-.my-predictions-page .mp-panel.is-done span{color:var(--muted);font-size:11.5px}
+.my-predictions-page .mp-panel.is-done span{color:var(--muted);font-size:var(--fs-xs)}
 .my-predictions-page .mp-trophy{
   flex:none;display:grid;place-items:center;width:42px;height:42px;
   border-radius:999px;background:var(--surface);color:var(--ok);
@@ -460,7 +459,7 @@
   flex:none;display:inline-flex;align-items:center;gap:2px;
   height:36px;padding:0 12px 0 15px;
   border:1px solid var(--rule);border-radius:11px;background:var(--surface);
-  color:var(--ink);font-size:12.5px;font-weight:750;white-space:nowrap;
+  color:var(--ink);font-size:var(--fs-md);font-weight:var(--fw-bold);white-space:nowrap;
 }
 .my-predictions-page .mp-cta:hover{border-color:#c8ccdd;background:#fbfbfe}
 .my-predictions-page .mp-cta:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
@@ -472,7 +471,7 @@
   display:inline-flex;align-items:center;gap:2px;
   height:34px;padding:0 11px 0 14px;
   border:1px solid var(--rule);border-radius:11px;background:var(--surface);
-  color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap;
+  color:var(--muted);font-size:var(--fs-sm);font-weight:var(--fw-bold);white-space:nowrap;
 }
 .my-predictions-page .mp-more:hover{color:var(--ink);border-color:#c8ccdd}
 .my-predictions-page .mp-more:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
@@ -480,7 +479,7 @@
 .my-predictions-page .mp-load{
   width:100%;height:44px;margin-top:12px;
   border:1px solid var(--rule);border-radius:12px;background:var(--surface);
-  color:var(--muted);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;
+  color:var(--muted);font-family:inherit;font-size:var(--fs-base);font-weight:var(--fw-bold);cursor:pointer;
 }
 .my-predictions-page .mp-load:hover:not(:disabled){color:var(--ink);border-color:#c8ccdd}
 .my-predictions-page .mp-load:disabled{cursor:progress}

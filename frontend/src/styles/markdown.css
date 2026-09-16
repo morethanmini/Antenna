@@ -15,7 +15,7 @@
    본문 안의 h1 이 그보다 커지면 무엇이 글의 제목인지 흐려진다 */
 .md h1, .md h2, .md h3, .md h4{
   margin:1.6em 0 .6em;
-  line-height:1.4; font-weight:700; color:var(--ink);
+  line-height:1.4; font-weight:var(--fw-bold); color:var(--ink);
 }
 .md h1{ font-size:1.25em; }
 .md h2{ font-size:1.15em; }
@@ -54,7 +54,7 @@
 .md-table-wrap{ margin:0 0 1em; overflow-x:auto; }
 .md table{ border-collapse:collapse; width:100%; font-size:.94em; }
 .md th, .md td{ border:1px solid var(--rule); padding:7px 10px; text-align:left; }
-.md th{ background:var(--surface-2); font-weight:700; color:var(--ink); }
+.md th{ background:var(--surface-2); font-weight:var(--fw-bold); color:var(--ink); }
 
 /* 본문 이미지. 원본이 크더라도 폭을 넘지 않게 하고, 비율은 그대로 둔다 */
 .md-img{

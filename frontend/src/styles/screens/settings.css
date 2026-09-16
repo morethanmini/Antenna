@@ -17,7 +17,7 @@
   position:relative; flex:0 0 auto;
   padding:9px 14px;
   border:0; background:none; font:inherit;
-  font-size:13px; font-weight:600; color:var(--muted);
+  font-size:var(--fs-base); font-weight:var(--fw-normal); color:var(--muted);
   white-space:nowrap; cursor:pointer;
 }
 .st-tabs button:hover{ color:var(--ink); }
@@ -41,7 +41,7 @@
 }
 .st-block > h2{
   margin:0 0 14px;
-  font-size:14px; font-weight:700; color:var(--ink);
+  font-size:var(--fs-lg); font-weight:var(--fw-bold); color:var(--ink);
 }
 
 /* ── 온보딩 보완 ─────────────────────────────── */
@@ -54,20 +54,20 @@
 }
 .st-onboarding > h2{
   margin:0 0 10px;
-  font-size:13.5px; font-weight:700; color:var(--brand-ink);
+  font-size:var(--fs-lg); font-weight:var(--fw-bold); color:var(--brand-ink);
 }
 .st-onboarding ul{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:10px; }
 .st-onboarding li{
   display:flex; align-items:center; flex-wrap:wrap; gap:4px 10px;
 }
-.st-onboarding li b{ font-size:13px; font-weight:700; color:var(--ink); }
-.st-onboarding li span{ flex:1 1 260px; font-size:12.5px; color:var(--body); }
+.st-onboarding li b{ font-size:var(--fs-base); font-weight:var(--fw-bold); color:var(--ink); }
+.st-onboarding li span{ flex:1 1 260px; font-size:var(--fs-md); color:var(--body); }
 
 /* ── 필드 ────────────────────────────────────── */
 .st-field{ display:flex; flex-direction:column; gap:7px; }
 .st-field + .st-field{ margin-top:16px; }
 
-.st-label{ font-size:11.5px; font-weight:600; color:var(--faint); }
+.st-label{ font-size:var(--fs-xs); font-weight:var(--fw-normal); color:var(--faint); }
 
 .st-row{ display:flex; gap:8px; align-items:center; }
 
@@ -76,7 +76,7 @@
   height:40px; padding:0 12px;
   border:1px solid var(--rule); border-radius:9px;
   background:var(--surface); color:var(--ink);
-  font-family:inherit; font-size:14px; font-weight:600;
+  font-family:inherit; font-size:var(--fs-lg); font-weight:var(--fw-normal);
 }
 .st-input:focus{
   outline:none; border-color:var(--brand);
@@ -84,7 +84,7 @@
 }
 .st-input[aria-invalid="true"]{ border-color:var(--danger); }
 
-.st-hint{ margin:0; font-size:12px; line-height:1.5; color:var(--muted); min-height:17px; }
+.st-hint{ margin:0; font-size:var(--fs-sm); line-height:1.5; color:var(--muted); min-height:17px; }
 .st-hint.is-available{ color:#15803d; }
 .st-hint.is-taken, .st-hint.is-invalid{ color:var(--danger); }
 
@@ -92,14 +92,14 @@
 .st-readonly{
   margin:0; padding:9px 11px;
   background:var(--surface-2); border-radius:8px;
-  font-size:13px; line-height:1.6; color:var(--body);
+  font-size:var(--fs-base); line-height:1.6; color:var(--body);
 }
 
 .st-tags{ margin:0; padding:0; list-style:none; display:flex; flex-wrap:wrap; gap:6px; }
 .st-tags li{
   padding:4px 10px;
   background:var(--brand-soft); color:var(--brand-ink);
-  border-radius:999px; font-size:12px; font-weight:600;
+  border-radius:999px; font-size:var(--fs-sm); font-weight:var(--fw-normal);
 }
 
 .st-channels{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:6px; }
@@ -112,16 +112,16 @@
 .st-channels a:hover{ background:var(--brand-softer); }
 .st-channel-platform{
   flex:0 0 auto;
-  font-size:11.5px; font-weight:700; color:var(--brand-ink);
+  font-size:var(--fs-xs); font-weight:var(--fw-bold); color:var(--brand-ink);
 }
 .st-channel-url{
-  font-size:12.5px; color:var(--body);
+  font-size:var(--fs-md); color:var(--body);
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 
 .st-note{
   margin:14px 0 0;
-  font-size:12px; line-height:1.6; color:var(--muted);
+  font-size:var(--fs-sm); line-height:1.6; color:var(--muted);
 }
 
 /* ── 준비 중 목록 (잠긴 카드 안) ──────────────── */
@@ -131,12 +131,12 @@
   text-align:left;
 }
 .st-pending li{ display:flex; flex-direction:column; gap:2px; }
-.st-pending li b{ font-size:12.5px; font-weight:600; color:var(--body); }
-.st-pending li span{ font-size:11.5px; color:var(--muted); }
+.st-pending li b{ font-size:var(--fs-md); font-weight:var(--fw-normal); color:var(--body); }
+.st-pending li span{ font-size:var(--fs-xs); color:var(--muted); }
 
 .st-pending-note{
   margin:8px 0 0;
-  font-size:12px; line-height:1.6; color:var(--muted);
+  font-size:var(--fs-sm); line-height:1.6; color:var(--muted);
 }
 
 /* ── 버튼 ────────────────────────────────────── */
@@ -144,7 +144,7 @@
   flex:0 0 auto;
   height:40px; padding:0 15px;
   border-radius:9px;
-  font-size:13px; font-weight:600;
+  font-size:var(--fs-base); font-weight:var(--fw-normal);
   cursor:pointer;
 }
 .st-btn.solid{ border:1px solid var(--brand); background:var(--brand); color:#fff; }
@@ -154,14 +154,14 @@
 .st-btn:disabled{ opacity:.5; cursor:not-allowed; }
 
 /* 온보딩 보완 안내 안의 버튼은 줄 높이에 맞춰 조금 낮춘다 */
-.st-onboarding .st-btn{ height:34px; padding:0 13px; font-size:12.5px; }
+.st-onboarding .st-btn{ height:34px; padding:0 13px; font-size:var(--fs-md); }
 
 /* ── 안내 다시 보기 ───────────────────────────────
    위 "아직 마치지 않은 설정" 과 달리 할 일이 없어도 늘 있는 자리다. 그래서
    브랜드 색을 쓰지 않는다 — 재촉하는 안내가 아니라 언제든 열어 보는 서랍이다. */
 .st-replay p{
   margin:0 0 12px;
-  color:var(--muted); font-size:13px; line-height:1.6;
+  color:var(--muted); font-size:var(--fs-base); line-height:1.6;
 }
 .st-replay .st-btn{
   border:1px solid var(--rule); background:var(--surface); color:var(--body);

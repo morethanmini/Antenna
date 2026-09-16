@@ -6,9 +6,9 @@
   padding:16px 18px; margin-bottom:12px;
   background:var(--surface); border:1px solid var(--rule); border-radius:12px;
 }
-.ad-card h2{ margin:0 0 4px; font-size:14px; font-weight:800; color:var(--ink); letter-spacing:-.01em; }
+.ad-card h2{ margin:0 0 4px; font-size:var(--fs-lg); font-weight:var(--fw-heavy); color:var(--ink); letter-spacing:-.01em; }
 
-.ad-hint{ margin:4px 0 0; font-size:12px; line-height:1.6; color:var(--muted); }
+.ad-hint{ margin:4px 0 0; font-size:var(--fs-sm); line-height:1.6; color:var(--muted); }
 .ad-hint.is-bad{ color:var(--danger); }
 
 /* ── 배너 ────────────────────────────────────────────── */
@@ -17,7 +17,7 @@
   width:100%; margin-top:10px; padding:26px 18px;
   border:1.5px dashed var(--rule); border-radius:11px;
   background:var(--surface-2);
-  font:inherit; font-size:13.5px; font-weight:700; color:var(--body); cursor:pointer;
+  font:inherit; font-size:var(--fs-lg); font-weight:var(--fw-bold); color:var(--body); cursor:pointer;
 }
 .ad-pick:hover{ border-color:var(--brand-soft); background:var(--brand-softer); color:var(--brand-ink); }
 .ad-pick svg{ color:var(--brand); }
@@ -32,7 +32,7 @@
 .ad-banner-foot{
   display:flex; align-items:center; justify-content:space-between;
   gap:10px; margin-top:8px;
-  font-size:12px; color:var(--muted);
+  font-size:var(--fs-sm); color:var(--muted);
 }
 
 /* ── 입력 ────────────────────────────────────────────── */
@@ -40,14 +40,14 @@
   width:100%; margin-top:9px; padding:9px 12px;
   border:1px solid var(--rule); border-radius:9px;
   background:var(--surface);
-  font:inherit; font-size:13.5px; color:var(--ink);
+  font:inherit; font-size:var(--fs-lg); color:var(--ink);
 }
 .ad-input:focus{ outline:2px solid var(--brand-soft); outline-offset:-1px; border-color:var(--brand); }
 .ad-input[aria-invalid="true"]{ border-color:var(--danger); }
 .ad-input.is-num{ width:100px; text-align:right; font-variant-numeric:tabular-nums; }
 
 .ad-days{ display:flex; align-items:baseline; gap:7px; }
-.ad-days span{ font-size:13px; color:var(--body); }
+.ad-days span{ font-size:var(--fs-base); color:var(--body); }
 
 /* ── 비용 (SignConfirm) ──────────────────────────────── */
 .ad-cost{
@@ -57,11 +57,11 @@
 }
 .ad-cost-line{
   display:flex; align-items:baseline; justify-content:space-between; gap:12px;
-  font-size:13px; color:var(--body);
+  font-size:var(--fs-base); color:var(--body);
 }
 /* 이 화면에서 가장 중요한 숫자다 — 서명 전에 눈에 들어와야 한다 */
-.ad-cost-line b{ font-size:21px; font-weight:800; color:var(--ink); letter-spacing:-.02em; }
-.ad-cost-note{ margin:9px 0 0; font-size:12.5px; line-height:1.65; color:var(--body); }
+.ad-cost-line b{ font-size:var(--fs-4xl); font-weight:var(--fw-heavy); color:var(--ink); letter-spacing:-.02em; }
+.ad-cost-note{ margin:9px 0 0; font-size:var(--fs-md); line-height:1.65; color:var(--body); }
 
 /* ── 진행 · 완료 ─────────────────────────────────────── */
 .ad-progress{
@@ -69,8 +69,8 @@
   padding:44px 20px; text-align:center;
   background:var(--surface); border:1px solid var(--rule); border-radius:12px;
 }
-.ad-progress-title{ margin:0; font-size:15px; font-weight:800; color:var(--ink); }
-.ad-sub{ margin:0; font-size:12.5px; line-height:1.6; color:var(--muted); max-width:340px; }
+.ad-progress-title{ margin:0; font-size:var(--fs-xl); font-weight:var(--fw-heavy); color:var(--ink); }
+.ad-sub{ margin:0; font-size:var(--fs-md); line-height:1.6; color:var(--muted); max-width:340px; }
 
 .ad-spinner{
   width:26px; height:26px; margin-bottom:2px;
@@ -92,7 +92,7 @@
   display:flex; flex-direction:column; align-items:flex-start; gap:4px;
   margin:0 0 12px; padding:10px 12px;
   border:1px solid #f3c9c9; border-radius:9px; background:#fdf4f4;
-  font-size:12.5px; line-height:1.6; color:var(--danger);
+  font-size:var(--fs-md); line-height:1.6; color:var(--danger);
 }
 .ad-error span{ color:var(--body); }
 
@@ -103,7 +103,7 @@
   padding:10px 18px;
   border:1px solid var(--rule); border-radius:9px;
   background:var(--surface);
-  font:inherit; font-size:13px; font-weight:700; color:var(--body);
+  font:inherit; font-size:var(--fs-base); font-weight:var(--fw-bold); color:var(--body);
   text-decoration:none; cursor:pointer;
 }
 .ad-btn:hover:not(:disabled){ border-color:var(--brand-soft); background:var(--brand-softer); color:var(--brand-ink); }

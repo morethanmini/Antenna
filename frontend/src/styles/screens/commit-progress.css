@@ -28,7 +28,7 @@
 }
 .cp-eyebrow{
   margin:0; min-width:0;
-  color:var(--muted); font-size:12.5px; font-weight:600;
+  color:var(--muted); font-size:var(--fs-md); font-weight:var(--fw-normal);
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 .cp-x{
@@ -44,7 +44,7 @@
 
 .cp-title{
   margin:12px 0 0; text-align:center;
-  font-size:18px; line-height:1.4; font-weight:750; letter-spacing:-.02em;
+  font-size:var(--fs-3xl); line-height:1.4; font-weight:var(--fw-bold); letter-spacing:-.02em;
   color:var(--ink); word-break:keep-all;
 }
 
@@ -58,7 +58,7 @@
   padding:10px 13px;
   border:1px solid var(--rule); border-radius:11px;
   background:var(--surface-2);
-  font-size:13px; font-weight:700; color:var(--muted);
+  font-size:var(--fs-base); font-weight:var(--fw-bold); color:var(--muted);
 }
 .cp-step.is-done{ border-color:var(--brand-softer); background:var(--brand-softer); color:var(--ink); }
 .cp-step.is-busy{ border-color:var(--brand); background:var(--surface); color:var(--ink); }
@@ -88,17 +88,17 @@
   margin:12px 0 0; padding:11px 13px;
   border-radius:10px;
   background:var(--brand-softer);
-  color:var(--ink); font-size:12.5px; line-height:1.65;
+  color:var(--ink); font-size:var(--fs-md); line-height:1.65;
   word-break:keep-all;
 }
-.cp-note b{ font-weight:750 }
+.cp-note b{ font-weight:var(--fw-bold)}
 
 /* ── 잠금 고지 ─────────────────────────────────── */
 .cp-lock{
   display:flex; align-items:flex-start; gap:7px;
   margin:12px 0 0; padding:10px 12px;
   border-radius:10px; background:var(--surface-2);
-  color:var(--muted); font-size:12px; line-height:1.6;
+  color:var(--muted); font-size:var(--fs-sm); line-height:1.6;
   word-break:keep-all;
 }
 .cp-lock svg{ flex:none; margin-top:2px; color:var(--faint) }
@@ -111,7 +111,7 @@
 .cp-btn{
   display:inline-flex; align-items:center; justify-content:center;
   height:40px; border-radius:10px;
-  font-family:inherit; font-size:13px; font-weight:750;
+  font-family:inherit; font-size:var(--fs-base); font-weight:var(--fw-bold);
   cursor:pointer; text-decoration:none;
 }
 .cp-btn.solid{ border:1px solid var(--brand); background:var(--brand); color:#fff; }
