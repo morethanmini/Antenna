@@ -40,7 +40,6 @@ import Leaderboard from './pages/Leaderboard'
 import SeasonResult from './pages/SeasonResult'
 import SeasonHistory from './pages/SeasonHistory'
 import Wallet from './pages/Wallet'
-import Notification from './pages/Notification'
 import Settings from './pages/Settings'
 import Ad from './pages/Ad'
 import AdminAbuse from './pages/AdminAbuse'
@@ -147,7 +146,11 @@ export const ROUTES: PageMeta[] = [
 
   // ── H. 지갑 · 알림 · 설정 · 광고 ─────────────────────
   { screen: 'H-01', element: Wallet, path: '/me/wallet', title: '지갑 · 토큰', access: 'user', mode: 'insight', nav: 'portfolio', story: 'ANT-FE-WALLET' },
-  { screen: 'H-02', element: Notification, path: '/notifications', title: '알림함', access: 'user', mode: 'insight', nav: 'home', story: 'ANT-FE-NOTIFICATION' },
+  /* H-02 알림함은 **라우트를 두지 않는다**(2026-09-16). 알림은 보러 가는 것이
+     아니라 하던 일 옆에서 확인하고 닫는 것이라, 상단바 종에서 여는 팝업
+     하나로 끝낸다(components/NotificationBell). 설계서 §3 H-02 에는 이 경로가
+     적혀 있지만 문서는 팀 공용이라 손대지 않았고, 이 주석이 그 차이를 적어
+     두는 자리다. */
   { screen: 'H-03', element: Settings, path: '/settings', title: '환경 설정', access: 'user', mode: 'insight', nav: 'home', story: 'ANT-FE-SETTINGS' },
   { screen: 'H-04', element: Ad, path: '/ads/new', title: '광고 등록', access: 'user', mode: 'insight', nav: 'home', story: 'ANT-FE-AD' },
 
