@@ -28,11 +28,11 @@ import org.springframework.transaction.support.TransactionTemplate;
 import ssafy.a507.backend.domain.event.relay.FakePoolRelayer;
 
 /**
- * POST /api/v1/admin/events · PUT …/base-price — ANT-EVENT-04 (작업명세 v1.2 §3-6·7).
+ * POST /api/v1/admin/events · PUT …/base-price · POST …/open — ANT-EVENT-04 (작업명세 v1.2 §3-6·7).
  *
  * <p>여기서 고정하는 것은 넷이다 — <b>관리자만</b> 부를 수 있을 것(매처가 아니라 서비스 안 role 비교,
  * §0.2 ④) · 기준가가 있으면 복사하고 없으면 null 로 두어 응답에 보일 것 · <b>생성이 온체인
- * {@code openEvent} 를 보낼 것</b> · 그 전송이 실패해도 이벤트 행은 남을 것.
+ * {@code openEvent} 를 보낼 것</b> · 그 전송이 실패해도 이벤트 행은 남고 다시 보낼 수 있을 것.
  *
  * <p>{@code @Transactional} 롤백을 쓰지 않는다 — 전송이 "활성 트랜잭션 안에서는 거부" 가 계약이라
  * 테스트 트랜잭션 안에서 부르면 그 계약이 먼저 터진다({@code EventEntryControllerTest} 와 같다).
@@ -45,6 +45,7 @@ class EventAdminControllerTest {
 
     private static final String CREATE = "/api/v1/admin/events";
     private static final String BASE_PRICE = "/api/v1/admin/events/{eventId}/stocks/{idx}/base-price";
+    private static final String OPEN = "/api/v1/admin/events/{eventId}/open";
     private static final LocalDate BASE_DATE = LocalDate.of(2026, 9, 17);
     private static final List<String> CODES = List.of("005930", "000660");
 
@@ -142,6 +143,53 @@ class EventAdminControllerTest {
         assertThat(scalar("SELECT tx_hash FROM operations ORDER BY created_at DESC LIMIT 1")).isNull();
         assertThat(scalar("SELECT status FROM operations ORDER BY created_at DESC LIMIT 1"))
                 .isEqualTo("PENDING");
+    }
+
+    @Test
+    @DisplayName("전송이 못 나갔으면 같은 이벤트에 다시 보낸다 — 다시 만들면 종목 idx 가 어긋난다")
+    void openEvent_재전송() throws Exception {
+        poolRelayer.disable();
+        mockMvc.perform(create(admin, body(2))).andExpect(status().isAccepted());
+        long eventId = count("SELECT max(id) FROM prediction_events");
+
+        poolRelayer.reset();
+        mockMvc.perform(post(OPEN, eventId).with(user(String.valueOf(admin))).with(csrf()))
+                .andExpect(status().isAccepted());
+
+        assertThat(poolRelayer.callsOf("openEvent")).hasSize(1);
+        assertThat(count("SELECT count(*) FROM prediction_events")).isEqualTo(1);
+        // 작업이 하나 더 생긴다 — 옛 작업은 인덱서가 SEND_LOST 로 닫는다
+        assertThat(count("SELECT count(*) FROM operations WHERE kind = 'EVENT_ADMIN'")).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("이미 열린 이벤트는 다시 보내지 않는다 — 컨트랙트가 BadState 로 거부한다")
+    void 이미_열렸으면_재전송_거부() throws Exception {
+        mockMvc.perform(create(admin, body(2))).andExpect(status().isAccepted());
+        long eventId = count("SELECT max(id) FROM prediction_events");
+        // 인덱서가 EventOpened 를 보고 하는 일
+        update("UPDATE prediction_events SET open_tx_hash = '0xopened' WHERE id = " + eventId);
+        poolRelayer.reset();
+
+        mockMvc.perform(post(OPEN, eventId).with(user(String.valueOf(admin))).with(csrf()))
+                .andExpect(status().isConflict());
+
+        assertThat(poolRelayer.calls()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("재전송도 관리자만 — 일반 회원은 403 이고 전송도 안 나간다")
+    void 재전송은_관리자만() throws Exception {
+        poolRelayer.disable();
+        mockMvc.perform(create(admin, body(2))).andExpect(status().isAccepted());
+        long eventId = count("SELECT max(id) FROM prediction_events");
+        poolRelayer.reset();
+
+        mockMvc.perform(post(OPEN, eventId).with(user(String.valueOf(member))).with(csrf()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("EVENT_ADMIN_ONLY"));
+
+        assertThat(poolRelayer.calls()).isEmpty();
     }
 
     @Test

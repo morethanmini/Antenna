@@ -32,12 +32,23 @@ public class EventAdminController {
 
     /**
      * 이벤트 생성. 202 인 이유는 온체인 {@code openEvent} 전송이 뒤따라서다 —
-     * 행을 먼저 커밋하고 {@code openEvent} 를 그 뒤에 보낸다 — 전송이 실패해도 이벤트 행은 남는다.
+     * 행을 먼저 커밋하고 {@code openEvent} 를 그 뒤에 보낸다 — 전송이 실패해도 이벤트는 남고,
+     * {@code POST …/open} 으로 다시 보낼 수 있다.
      */
     @PostMapping
     public ResponseEntity<EventCreateResponse> create(@Valid @RequestBody EventCreateRequest request) {
         return ResponseEntity.status(HttpStatus.ACCEPTED)
                 .body(eventAdminService.create(currentUserProvider.currentUserId(), request));
+    }
+
+    /**
+     * {@code openEvent} 재전송 — 생성 때 전송이 못 나갔을 때(체인 장애 등) 쓰는 길. 이벤트 행은 그대로
+     * 두고 tx 만 다시 보낸다. 다시 만들면 종목 칸 {@code idx} 가 달라져 이미 걸린 배팅의 커밋과 어긋난다.
+     */
+    @PostMapping("/{eventId}/open")
+    public ResponseEntity<Void> open(@PathVariable Long eventId) {
+        eventAdminService.openNow(currentUserProvider.currentUserId(), eventId);
+        return ResponseEntity.accepted().build();
     }
 
     /**

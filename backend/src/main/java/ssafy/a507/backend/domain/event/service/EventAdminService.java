@@ -121,6 +121,39 @@ public class EventAdminService {
                 new EventCreateResponse(event.getId(), operation.getId(), saved), operation.getId());
     }
 
+    /**
+     * {@code openEvent} 재전송 — 생성 때 전송이 못 나갔을 때의 길.
+     *
+     * <p>있어야 하는 이유: 전송이 실패해도 이벤트 행은 남는데, 다시 만들면 종목 칸의 {@code idx} 가
+     * 달라져 이미 걸린 배팅의 커밋과 어긋난다. 실패한 이벤트를 버리는 대신 같은 행에 다시 보낸다.
+     *
+     * <p>이미 {@code open_tx_hash} 가 있으면 보내지 않는다 — 컨트랙트가 {@code BadState} 로 거부한다.
+     */
+    public void openNow(Long adminUserId, Long eventId) {
+        record ToSend(String operationId, int stockCount, BigInteger minStake, BigInteger maxStake) {}
+        ToSend send =
+                tx.execute(s -> {
+                    User admin = requireAdmin(adminUserId);
+                    PredictionEvent event =
+                            events.findById(eventId)
+                                    .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "eventId"));
+                    if (event.getOpenTxHash() != null) {
+                        throw new BusinessException(ErrorCode.EVENT_NOT_OPEN, "eventId");
+                    }
+                    List<PredictionEventStock> cards = eventStocks.findCardsByEventId(eventId);
+                    if (cards.isEmpty()) {
+                        throw new BusinessException(ErrorCode.EVENT_STOCK_NOT_INCLUDED, "eventId");
+                    }
+                    Operation operation =
+                            operationService.accept(
+                                    admin, Operation.Kind.EVENT_ADMIN, Operation.ResourceType.EVENT, eventId);
+                    return new ToSend(
+                            operation.getId(), cards.size(), event.getMinStake(), event.getMaxStake());
+                });
+        dispatcher.dispatchOpen(
+                send.operationId(), eventId, send.stockCount(), send.minStake(), send.maxStake());
+    }
+
     /** 기준가 수동 입력. 배치가 늦거나 실패했을 때 쓰는 길이다(§1 "없으면 관리자가 넣는다"). */
     @Transactional
     public void fixBasePrice(Long adminUserId, Long eventId, short idx, BigDecimal basePrice) {
