@@ -161,4 +161,12 @@ public interface PredictionEventBetRepository extends JpaRepository<PredictionEv
             """)
     List<PredictionEventBet> findMineDetailed(@Param("eventId") Long eventId, @Param("userId") Long userId);
 
+    /**
+     * 상태별 배팅 수 — 관리자 상태 화면 (ANT-EVENT-06). 돌려주는 행은 {@code [status, count]} 다.
+     *
+     * <p>상태마다 세면 여섯 번이다. 관리자 화면 한 장에 쿼리 여섯은 과하고, 무엇보다 "합이 안 맞는"
+     * 순간(집계 사이에 인덱서가 상태를 바꾸는)이 생긴다.
+     */
+    @Query("select b.betStatus, count(b) from PredictionEventBet b where b.event.id = :eventId group by b.betStatus")
+    List<Object[]> countByStatus(@Param("eventId") Long eventId);
 }

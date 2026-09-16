@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -14,6 +15,8 @@ import ssafy.a507.backend.common.security.CurrentUserProvider;
 import ssafy.a507.backend.domain.event.dto.BasePriceUpdateRequest;
 import ssafy.a507.backend.domain.event.dto.EventCreateRequest;
 import ssafy.a507.backend.domain.event.dto.EventCreateResponse;
+import ssafy.a507.backend.domain.event.dto.EventSettleResponse;
+import ssafy.a507.backend.domain.event.dto.EventSettlementStatusResponse;
 import ssafy.a507.backend.domain.event.service.EventAdminService;
 
 /**
@@ -70,5 +73,28 @@ public class EventAdminController {
         eventAdminService.fixBasePrice(
                 currentUserProvider.currentUserId(), eventId, idx, request.basePrice());
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 정산 트리거 — 화요일 13:30 판정 배치 뒤에 누른다. 202 이고 진행은 {@code GET …/status} 로 본다.
+     *
+     * <p>러너가 온체인 tx 를 순서대로 보내며 몇 분이 걸려 비동기다. 두 번 눌러도 안전하다 — 러너가
+     * 온체인 상태를 읽어 끝난 단계를 건너뛰고, 도는 중이면 409 {@code EVENT_SETTLING} 이다.
+     */
+    @PostMapping("/{eventId}/settle")
+    public ResponseEntity<EventSettleResponse> settle(@PathVariable Long eventId) {
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .body(eventAdminService.settle(currentUserProvider.currentUserId(), eventId));
+    }
+
+    /**
+     * 정산 상태 — 돌릴 수 있나({@code reasons}) · 어디까지 갔나({@code run}) · 배팅이 성한가({@code bets}).
+     *
+     * <p>{@code reasons} 가 여기 있는 이유: {@code EVENT_NOT_READY} 는 코드만 나르고 무엇이 빠졌는지를
+     * 못 싣는다. 그 문구를 읽을 자리가 없으면 관리자는 409 만 보고 무엇을 고쳐야 할지 모른다.
+     */
+    @GetMapping("/{eventId}/status")
+    public EventSettlementStatusResponse status(@PathVariable Long eventId) {
+        return eventAdminService.settlementStatus(currentUserProvider.currentUserId(), eventId);
     }
 }
