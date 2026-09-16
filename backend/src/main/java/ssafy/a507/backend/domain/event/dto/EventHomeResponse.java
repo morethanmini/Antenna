@@ -1,6 +1,5 @@
 package ssafy.a507.backend.domain.event.dto;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -16,6 +15,11 @@ import ssafy.a507.backend.domain.prediction.entity.Prediction;
  *
  * <p><b>남의 방향·목표가는 실리지 않는다.</b> 집계(풀·건수·배당률)만 공개하고, {@code mine} 에만
  * 내 값이 들어간다 — §1 "비공개" 규칙이다.
+ *
+ * <p><b>null 은 키를 남긴다.</b> 이 도메인의 null 은 "가려진 값" 이 아니라 "아직 정해지지 않은 값"
+ * 이다(정산 전 배당·순위, 미입력 기준가, 안 건 종목). {@code @JsonInclude(NON_NULL)} 로 키를 빼면
+ * TypeScript 에서 {@code undefined} 가 되어 {@code === null} 분기가 통째로 빠진다 — 작업명세 §4 의
+ * 응답 예시도 {@code "paid": null} 처럼 키를 남겨 적었다.
  */
 public record EventHomeResponse(
         Long eventId,
@@ -33,7 +37,6 @@ public record EventHomeResponse(
     /** 회차마다 달라질 수 있어 응답에 싣는다 — 화면이 500·2000·5 를 하드코딩하면 다음 회차에 어긋난다 */
     public record Rules(BigInteger minStake, BigInteger maxStake, short minStocks, int stockCount) {}
 
-    @JsonInclude(JsonInclude.Include.NON_NULL)
     public record StockCard(
             short idx,
             String stockCode,

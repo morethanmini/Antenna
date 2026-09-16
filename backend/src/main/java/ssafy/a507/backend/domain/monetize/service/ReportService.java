@@ -1,5 +1,6 @@
 package ssafy.a507.backend.domain.monetize.service;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.HashMap;
@@ -9,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Limit;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ssafy.a507.backend.common.error.BusinessException;
@@ -52,6 +54,9 @@ public class ReportService {
     private static final int DEFAULT_PAGE_SIZE = 20;
     private static final int MAX_PAGE_SIZE = 50;
 
+    /** 같은 사람의 같은 리포트 열람을 다시 세기까지의 간격 */
+    private static final Duration VIEW_ONCE_PER = Duration.ofHours(24);
+
     /** 알림 종류 키. {@code notifications.type} 은 24자 제한이다. */
     private static final String NOTIFICATION_TYPE = "REPORT_PUBLISHED";
 
@@ -64,6 +69,7 @@ public class ReportService {
     private final ReportAccess reportAccess;
     private final SignatureGuard signatureGuard;
     private final CurrentUserProvider currentUserProvider;
+    private final StringRedisTemplate redis;
 
     /** 통합 피드 탭. */
     public enum Scope {
@@ -190,11 +196,12 @@ public class ReportService {
      * 잠긴 미리보기도 열람으로 센다 — 목록에서 눌러 들어온 유입이고, 그것이 인기순이
      * 나타내려는 값이다.
      *
-     * <p>작성자 본인의 열람은 세지 않는다. 다만 이것은 <b>어뷰징 방지가 아니다</b> — 열람자별
-     * 중복 제거가 없어서 다른 계정으로 새로고침하거나 이 엔드포인트를 반복 호출하면
-     * {@code sort=POPULAR} 순위는 얼마든지 움직인다. 자기 글을 눌렀다가 자기 순위를 올리는
-     * 무심한 경우 하나를 없애는 정도이고, 순위가 값을 가지게 되면 (열람자, 리포트) 단위
-     * 중복 제거(Redis SETNX + TTL)가 필요하다.
+     * <p>작성자 본인의 열람은 세지 않고, <b>같은 사람은 하루에 한 번만 센다</b>(2026-09-16).
+     * 전에는 열 때마다 셌는데, 목록에서 들어갔다 뒤로 갔다를 반복하면 그 수만큼 올라갔다.
+     * 인당 평생 한 번으로 하지 않은 이유 — 사용자가 적을 때 그 수가 그대로 드러난다.
+     * 열쇠는 (리포트, 열람자) 이고 Redis SETNX + 24시간 TTL 이다(넣었으면 오늘 첫 열람).
+     * 자정 기준이 아니라 마지막으로 센 때부터 24시간이다 — 키에 날짜를 넣어 자정에 맞추는
+     * 것보다 단순하고, 하루 한 번이라는 뜻은 같다.
      */
     @Transactional
     public ReportDetailResponse detail(Long reportId) {
@@ -205,7 +212,7 @@ public class ReportService {
 
         boolean own = report.getUser().getId().equals(viewerId);
         int viewCount = report.getViewCount();
-        if (!own) {
+        if (!own && firstViewToday(reportId, viewerId)) {
             reportRepository.incrementViewCount(reportId);
             // UPDATE 는 영속성 컨텍스트를 거치지 않아 엔티티 값이 옛것이다. 응답에는 이번
             // 열람이 반영된 값을 담는다 — 눌러 들어왔는데 숫자가 그대로면 버그로 보인다.
@@ -221,6 +228,12 @@ public class ReportService {
                 : ReportDetailResponse.full(report, viewCount, counts);
     }
 
+    /** 이 사람이 이 리포트를 오늘 처음 여는가. 키를 넣을 수 있었으면 처음이다 */
+    private boolean firstViewToday(Long reportId, Long viewerId) {
+        String key = "report:view:" + reportId + ":" + viewerId;
+        return Boolean.TRUE.equals(redis.opsForValue().setIfAbsent(key, "1", VIEW_ONCE_PER));
+    }
+
     /** 발행 알림. 구독자가 없으면 아무것도 하지 않는다. */
     private void notifySubscribers(User author, Report report) {
         List<Long> subscriberIds = subscriptionRepository.findSubscriberIds(
@@ -232,7 +245,9 @@ public class ReportService {
         // 닉네임은 nullable 이다 — NULL 이면 온보딩 미완료다(User.nickname). 그대로 이어붙이면
         // 알림 한 줄이 "null · 제목" 으로 나간다. 발행을 막을 근거는 명세에 없으므로 제목만 남긴다.
         String nickname = author.getNickname();
-        String body = nickname == null ? report.getTitle() : nickname + " · " + report.getTitle();
+        // 구독자는 어느 쪽이든 받지만, 여는 것이 구독자만 볼 수 있는 글인지는 알아야 한다.
+        String body = (nickname == null ? report.getTitle() : nickname + " · " + report.getTitle())
+                + (report.isPublic() ? " · 공개" : " · 구독자 전용");
         String linkPath = "/reports/" + report.getId();
         List<Notification> notifications = subscriberIds.stream()
                 // getReferenceById 는 프록시라 SELECT 를 내지 않는다. 알림 행에 필요한 것은

@@ -75,6 +75,18 @@ public class EventBetDispatcher {
         }
     }
 
+    /**
+     * 이벤트 열기. OPEN 전이는 여기서 하지 않는다 — 인덱서가 {@code EventOpened} 로 {@code open_tx_hash} 를
+     * 적고, 매분 크론이 그 값과 {@code opensAt}·기준가를 함께 보고 {@code event.open()} 한다.
+     *
+     * <p>컨트랙트는 {@code openEvent} 를 받은 순간 열리지만 서비스는 {@code opensAt} 이 돼야 연다. 그래서
+     * 이 tx 는 접수 시작보다 <b>먼저</b> 나가도 된다 — 오히려 먼저 나가야 크론이 열 수 있다.
+     */
+    public void dispatchOpen(
+            String operationId, long eventId, int stockCount, BigInteger minStake, BigInteger maxStake) {
+        send(operationId, "openEvent", () -> pool.openEvent(eventId, stockCount, minStake, maxStake));
+    }
+
     /** 봉인. SEALED 전이는 인덱서가 한다 — 여기서는 tx 만 보낸다(§0.3). */
     public void dispatchSeal(String operationId, long eventId) {
         send(operationId, "seal", () -> pool.seal(eventId));

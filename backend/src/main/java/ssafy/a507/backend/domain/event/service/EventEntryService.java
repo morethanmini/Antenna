@@ -9,8 +9,10 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -335,22 +337,97 @@ public class EventEntryService {
      * 두면 인덱서가 즉시 다시 FAILED 로 만들어 무한 재전송이 된다. {@code retry()} 가 작업 id 교체 ·
      * PENDING · {@code attempts++} 를 한 번에 한다.
      *
-     * <p>횟수 상한은 두지 않는다 — 잔액이 모자라 실패한 사용자가 충전하면 다음 회차에 나가야 하고,
-     * 창은 {@code sealsAt} 이 닫는다.
+     * <p><b>보내기 전에 잔액을 다시 본다.</b> 등록 때 본 잔액은 최대 22시간 전 값이다(접수 창이 그만큼
+     * 열려 있다). 안 보면 잔액이 모자라 실패한 배팅을 마감까지 10분마다 다시 보내고, 그때마다 새
+     * {@code Operation} 행이 생긴다 — 배팅 한 건에 쓰레기 작업 130개다. 횟수 상한 대신 잔액을 보는
+     * 이유는 <b>충전한 사용자를 살리기 위해서</b>다. 상한은 "충전했는데 이미 끊긴" 경우를 못 되돌린다.
+     *
+     * <p>세 걸음으로 나눈 것은 체인 조회를 트랜잭션 밖에 두려는 것이다 — 후보 읽기(트랜잭션) →
+     * 잔액 확인(밖) → 재발행(트랜잭션). {@code balanceOf} 는 네트워크 호출이라 DB 트랜잭션을 잡은
+     * 채로 하면 커넥션이 그 시간만큼 묶인다.
      */
     public int retryFailedBets() {
-        List<EventBetDispatcher.Bet> sends = tx.execute(s -> reissue());
+        List<Candidate> candidates = tx.execute(s -> candidates());
+        if (candidates.isEmpty()) {
+            return 0;
+        }
+        Set<Long> payable = payable(candidates);
+        if (payable.isEmpty()) {
+            return 0;
+        }
+        List<EventBetDispatcher.Bet> sends = tx.execute(s -> reissue(payable));
         dispatcher.dispatchBets(sends);
         return sends.size();
     }
 
-    private List<EventBetDispatcher.Bet> reissue() {
-        List<PredictionEventBet> retryable = bets.findRetryable(Instant.now());
-        List<EventBetDispatcher.Bet> sends = new ArrayList<>(retryable.size());
-        for (PredictionEventBet bet : retryable) {
+    /** 재전송 후보 한 건. 트랜잭션 밖으로 나가므로 엔티티를 담지 않는다. */
+    private record Candidate(Long predictionId, Long userId, String wallet, BigInteger stake) {}
+
+    private List<Candidate> candidates() {
+        List<Candidate> list = new ArrayList<>();
+        for (PredictionEventBet bet : bets.findRetryable(Instant.now())) {
             String wallet = bet.getUser().getWalletAddress();
             if (wallet == null || wallet.isBlank()) {
                 // 등록 뒤에 지갑을 끊은 경우. 보낼 곳이 없으니 FAILED 로 둔다.
+                continue;
+            }
+            list.add(new Candidate(bet.getPredictionId(), bet.getUser().getId(), wallet, bet.getStake()));
+        }
+        return list;
+    }
+
+    /**
+     * 지금 잔액으로 실제로 나갈 수 있는 배팅만 고른다.
+     *
+     * <p>사용자마다 지갑을 <b>한 번만</b> 조회한다. 전송 중인 내 배팅(PENDING)도 빼는 것은 등록 때와
+     * 같은 규칙이다 — 곧 잔액에서 사라질 돈이다. 예측 id 순으로 담아 같은 회차에서 결과가 흔들리지
+     * 않게 한다(먼저 건 것이 먼저 살아난다).
+     *
+     * <p>체인이 꺼져 있으면 그 사용자는 통째로 건너뛴다. 크론은 10분 뒤 다시 돈다 — 여기서 터뜨리면
+     * 뒤에 오는 사용자들까지 그 회차를 잃는다.
+     */
+    private Set<Long> payable(List<Candidate> candidates) {
+        Map<Long, List<Candidate>> byUser = new LinkedHashMap<>();
+        for (Candidate c : candidates) {
+            byUser.computeIfAbsent(c.userId(), k -> new ArrayList<>()).add(c);
+        }
+
+        Set<Long> payable = new HashSet<>();
+        for (Map.Entry<Long, List<Candidate>> entry : byUser.entrySet()) {
+            Long userId = entry.getKey();
+            List<Candidate> mine = entry.getValue();
+            mine.sort(Comparator.comparing(Candidate::predictionId));
+
+            BigInteger remaining;
+            try {
+                remaining = tokenRelayer.balanceOf(mine.get(0).wallet())
+                        .subtract(tx.execute(s -> bets.sumPendingStake(userId)));
+            } catch (RuntimeException e) {
+                log.warn("[EVENT] 재전송 잔액 확인 실패 — 회원 {} 건너뜀: {}", userId, e.toString());
+                continue;
+            }
+
+            for (Candidate c : mine) {
+                if (remaining.compareTo(c.stake()) < 0) {
+                    log.info(
+                            "[EVENT] 배팅 {} 재전송 보류 — 잔액 {} < 배팅금 {}",
+                            c.predictionId(),
+                            remaining,
+                            c.stake());
+                    continue;
+                }
+                payable.add(c.predictionId());
+                remaining = remaining.subtract(c.stake());
+            }
+        }
+        return payable;
+    }
+
+    private List<EventBetDispatcher.Bet> reissue(Set<Long> payable) {
+        List<PredictionEventBet> retryable = bets.findRetryable(Instant.now());
+        List<EventBetDispatcher.Bet> sends = new ArrayList<>(payable.size());
+        for (PredictionEventBet bet : retryable) {
+            if (!payable.contains(bet.getPredictionId())) {
                 continue;
             }
             Operation operation =
@@ -363,7 +440,7 @@ public class EventEntryService {
             sends.add(new EventBetDispatcher.Bet(
                     operation.getId(),
                     bet.getEvent().getId(),
-                    wallet,
+                    bet.getUser().getWalletAddress(),
                     bet.getEventStock().getIdx(),
                     bet.getStake(),
                     bet.getEventCommit()));

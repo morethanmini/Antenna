@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -14,6 +15,8 @@ import ssafy.a507.backend.common.security.CurrentUserProvider;
 import ssafy.a507.backend.domain.event.dto.BasePriceUpdateRequest;
 import ssafy.a507.backend.domain.event.dto.EventCreateRequest;
 import ssafy.a507.backend.domain.event.dto.EventCreateResponse;
+import ssafy.a507.backend.domain.event.dto.EventSettleResponse;
+import ssafy.a507.backend.domain.event.dto.EventSettlementStatusResponse;
 import ssafy.a507.backend.domain.event.service.EventAdminService;
 
 /**
@@ -32,12 +35,23 @@ public class EventAdminController {
 
     /**
      * 이벤트 생성. 202 인 이유는 온체인 {@code openEvent} 전송이 뒤따라서다 —
-     * <b>R1 단계에서는 DB 행까지만</b> 만들고 전송은 릴레이어가 붙은 뒤에 잇는다(§0.2 ②).
+     * 행을 먼저 커밋하고 {@code openEvent} 를 그 뒤에 보낸다 — 전송이 실패해도 이벤트는 남고,
+     * {@code POST …/open} 으로 다시 보낼 수 있다.
      */
     @PostMapping
     public ResponseEntity<EventCreateResponse> create(@Valid @RequestBody EventCreateRequest request) {
         return ResponseEntity.status(HttpStatus.ACCEPTED)
                 .body(eventAdminService.create(currentUserProvider.currentUserId(), request));
+    }
+
+    /**
+     * {@code openEvent} 재전송 — 생성 때 전송이 못 나갔을 때(체인 장애 등) 쓰는 길. 이벤트 행은 그대로
+     * 두고 tx 만 다시 보낸다. 다시 만들면 종목 칸 {@code idx} 가 달라져 이미 걸린 배팅의 커밋과 어긋난다.
+     */
+    @PostMapping("/{eventId}/open")
+    public ResponseEntity<Void> open(@PathVariable Long eventId) {
+        eventAdminService.openNow(currentUserProvider.currentUserId(), eventId);
+        return ResponseEntity.accepted().build();
     }
 
     /**
@@ -59,5 +73,28 @@ public class EventAdminController {
         eventAdminService.fixBasePrice(
                 currentUserProvider.currentUserId(), eventId, idx, request.basePrice());
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 정산 트리거 — 화요일 13:30 판정 배치 뒤에 누른다. 202 이고 진행은 {@code GET …/status} 로 본다.
+     *
+     * <p>러너가 온체인 tx 를 순서대로 보내며 몇 분이 걸려 비동기다. 두 번 눌러도 안전하다 — 러너가
+     * 온체인 상태를 읽어 끝난 단계를 건너뛰고, 도는 중이면 409 {@code EVENT_SETTLING} 이다.
+     */
+    @PostMapping("/{eventId}/settle")
+    public ResponseEntity<EventSettleResponse> settle(@PathVariable Long eventId) {
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .body(eventAdminService.settle(currentUserProvider.currentUserId(), eventId));
+    }
+
+    /**
+     * 정산 상태 — 돌릴 수 있나({@code reasons}) · 어디까지 갔나({@code run}) · 배팅이 성한가({@code bets}).
+     *
+     * <p>{@code reasons} 가 여기 있는 이유: {@code EVENT_NOT_READY} 는 코드만 나르고 무엇이 빠졌는지를
+     * 못 싣는다. 그 문구를 읽을 자리가 없으면 관리자는 409 만 보고 무엇을 고쳐야 할지 모른다.
+     */
+    @GetMapping("/{eventId}/status")
+    public EventSettlementStatusResponse status(@PathVariable Long eventId) {
+        return eventAdminService.settlementStatus(currentUserProvider.currentUserId(), eventId);
     }
 }

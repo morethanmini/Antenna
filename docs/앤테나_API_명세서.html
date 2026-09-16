@@ -30,14 +30,14 @@ pre code{background:none;padding:0;color:inherit}.callout{background:var(--soft)
 footer{margin-top:50px;padding-top:14px;border-top:1px solid var(--line);color:var(--sub);font-size:12px}.small{font-size:12.3px;color:var(--sub)}
 @media(max-width:880px){.layout{grid-template-columns:1fr}nav{display:none}}
 </style></head>
-<body><div class=layout><nav><div class=brand>엔테나 API 명세서</div><div class=ver>v0.63 · 2026-09-15</div>
+<body><div class=layout><nav><div class=brand>엔테나 API 명세서</div><div class=ver>v0.70 · 2026-09-16</div>
 <a href="#map">0. 큰그림(인터페이스 맵)</a><a href="#common">1. 공통 규약</a>
 <div class=grp>2. REST API</div>
 <a href="#tag-async">비동기 작업</a><a href="#tag-auth">인증</a><a href="#tag-users">회원</a><a href="#tag-wallet">지갑·토큰</a>
 <a href="#tag-market">홈·시세</a><a href="#tag-research">리서치·AI</a><a href="#tag-predict">예측</a>
 <a href="#tag-verify">온체인 검증</a><a href="#tag-channel">채널·구독</a><a href="#tag-feed">리포트·글</a>
 <a href="#tag-upload">첨부·업로드</a><a href="#tag-ads">광고</a><a href="#tag-season">모의투자</a><a href="#tag-ranking">랭킹</a>
-<a href="#tag-notif">알림</a><a href="#tag-admin">관리자</a>
+<a href="#tag-event">대회·배팅</a><a href="#tag-notif">알림</a><a href="#tag-admin">관리자</a>
 <div class=grp>인터페이스</div>
 <a href="#stomp">3. 실시간(STOMP)</a><a href="#chain">4. 온체인</a><a href="#ext">5. 외부 API 연동</a><a href="#batch">6. 배치</a>
 </nav><main>
@@ -67,6 +67,10 @@ footer{margin-top:50px;padding-top:14px;border-top:1px solid var(--line);color:v
 <tr><td><b>시스템</b></td><td>—</td><td>—</td><td>이벤트 인덱싱</td><td>—</td><td>B1~B6</td></tr>
 </table>
 <div class="changelog" style="margin:0 0 20px;padding:12px 16px;border-left:5px solid #e8a13c;background:#fff8e6;border-radius:0 8px 8px 0;font-size:12.5px;line-height:1.7;font-family:system-ui,-apple-system,"Malgun Gothic",sans-serif;color:#3a3730;"><b style="display:block;margin-bottom:6px;font-size:13px;">변경 로그 (최신이 위)</b>
+<div><b>v0.70</b> · 2026-09-16 · 이상민(SM) · <code>SM_ANT-EVENT-04~06</code> — <b>§대회·배팅 신설(엔드포인트 10 + 재전송 1).</b> 업앤다운 회차의 REST 층이 전부 붙었다 — 목록·홈·묶음 등록·내 배팅·순위 다섯(user)과 생성·기준가·봉인·정산·상태 다섯(admin), 그리고 <code>openEvent</code> 재전송 하나. 컨트랙트·릴레이어·인덱서·정산 러너는 ANT-EVENT-01~03(김성령) 이 먼저 깔았고 이 버전은 그 위의 REST 다.<br>
+<b>§지갑·토큰</b> — 서명 스코프에 <code>EVENT_ENTRY</code>(<code>event-entry</code>) 추가. 한 서명에 5~10 종목이 함께 들어간다: 종목마다 받으면 지갑 팝업이 다섯 번 뜨고, 그 사이 하나만 거절해도 "5종목 이상" 규칙이 깨진 채 절반만 등록된다. 원장 사유 셋 추가 — <code>EVENT_STAKE</code>(배팅금이 풀로) · <code>EVENT_PAYOUT</code>(정산 배당) · <code>EVENT_REFUND</code>(무승부·미리빌 환불). 목록의 스코프 표기가 실제 enum 과 어긋나 있어 <code>PREDICTION</code>·<code>REPORT_PUBLISH</code> 도 함께 채웠다.<br>
+<b>결정 둘을 명세에 박았다.</b> ① <b>정산 전에는 순위를 내리지 않는다</b> — 봉인 뒤 "예상 순위" 를 주기로 했던 초안을 09-16 에 뒤집었다. 승패를 모르는데 화면에 순위로 뜨면 사용자는 현재 등수로 읽고, 서버가 현재가로 임시 판정하는 것은 더 나쁘다. <code>items</code> 를 비우고 <code>notice</code> 로 공개 시각을 말한다. ② <b>이벤트 참가는 무료 예측 슬롯을 쓰지 않는다</b> — 이벤트는 ANT 를 내고 참가하는 별개 규칙인데, 참가 예측도 <code>predictions</code> 행을 만들어 하루 3건이 그대로 닳고 있었다(<code>prediction_event_bets</code> 행이 붙은 예측을 빼고 센다).<br>
+<b>금액은 전부 정수 ANT</b>(decimals 0) 다. 같은 날 ERD v0.18 에서 <code>token_ledger.delta</code>·<code>subscriptions.fee</code>·<code>publisher_fees.fee</code> 설명이 <code>wei</code> 로 남아 있던 것을 함께 바로잡았다. 근거: 지라 S15P21A507-265·269·274·275</div>
 <div><b>v0.69</b> · 2026-09-15 · 이상민(SM) · <code>SM_ANT-TOKEN-01</code> — <b>§채널·구독 <code>POST /channels/{userId}/subscriptions</code> 구현(ANT-TOKEN-01).</b> <b>구독 행을 만드는 코드가 리포에 하나도 없었다</b> — 게이팅 셋(리포트 잠금 · 예측 근거 · 증명)은 "구독자면 연다" 분기를 갖고 있었지만 그 분기에 들어갈 사용자가 존재할 수 없었다. 체인 층(릴레이어 <code>subscribe</code> · <code>dispatchSubscribe</code> · 인덱서의 ACTIVE 전이)은 이미 있어 REST 층만 더했다. <b>409 코드 이름을 명시했다</b> — 기존에는 "409 자기 구독 · 중복 구독 · 잔액 부족" 한 줄뿐이라 프론트가 <code>code</code> 로 분기할 수 없었다(<code>SELF_SUBSCRIBE</code> · <code>ALREADY_SUBSCRIBED</code> · <code>FEE_NOT_SET</code>). <b>구독료를 요청 본문에서 뺐다</b>(서명 페이로드에는 유지). 검증 순서 · 트랜잭션 분리 · PENDING 게이팅 · 중복 규칙을 문서에 박았다. <code>publisherShare</code> 는 스키마·ERD 에 칸이 없어 저장하지 않는다. 근거: 지라 S15P21A507-37, 화면설계서 E-02.</div>
 <div><b>v0.68</b> · 2026-09-15 · 임대연(DY) · <code>DY_ANT-CHAIN-18</code> — <b>예측 검산에 서명자 대조 · <code>GET /predictions/{id}/proof</code> 에 <code>signNonce</code>·<code>chainId</code> 추가.</b> 리포트 검산(D-04)은 ③에서 브라우저가 서명 문자열을 <b>다시 조립해</b> 주소를 복원하는데, 예측 검산(D-03)은 그걸 못 했다 — <code>prediction_commits</code> 에 서명 nonce 가 없어 payload 의 마지막 줄(<code>nonce=…</code>)을 만들 수 없었다. 그래서 예측만 <b>"이 지갑 주인이 썼다" 를 서버 말로</b> 받고 있었다. 같은 원장에 실리는 두 종류인데 검증 강도가 갈렸고, 예측이 이 서비스의 주된 기록이다. ① <code>prediction_commits.sign_nonce varchar(64)</code> 추가(<code>ddl-auto</code>, nullable) — 등록에서 <code>SignatureGuard.verifyWithNonce</code> 로 바꿔 함께 저장한다(리포트 발행이 v0.65 부터 쓰던 메서드다). ② proof 응답에 <code>signNonce</code>·<code>chainId</code> 를 싣는다. <b>nonce 는 이미 태운 값</b>이라 공개해도 재사용되지 않는다 — 검증 시점에 Redis 에서 소비·삭제된다. v0.65 가 리포트에서 같은 판단을 했다. ③ <b>화면이 3단계에서 4단계가 된다</b> — ③ 서명자 대조가 들어오고 판정 종가 대조가 ④로 밀린다(내용은 그대로). ③의 뜻이 D-03·D-04 에서 같아진다. ④ <b>이 기능 이전에 등록된 예측은 <code>signNonce</code> 가 null</b> 이고 ③이 잠긴다 — 실패가 아니다. 소급은 불가능하다: nonce 는 서버에서 이미 사라졌고 복원할 방법이 없다. 나머지 단계는 그대로 돈다. <b>서명·봉인 규격은 바뀌지 않았다</b> — 저장하는 값이 하나 늘 뿐이라 이전에 앵커된 커밋도 ①·②가 그대로 검증된다. 근거: 지라 S15P21A507-251, 화면설계서 D-03</div>
 <div><b>v0.67</b> · 2026-09-15 · 이상민(SM) · <code>SM_ANT-TOKEN-03</code> — <b>§채널·구독 <code>GET /channels/{userId}/backtest</code> 구현(ANT-TOKEN-03).</b> E-02 의 마지막 목업이었다. 이것까지 붙어 프론트 <code>api/channels.ts</code> 의 <code>MOCK</code> 을 껐다 — 조회 넷(프로필·예측·리포트·백테스트)이 모두 실 API 다. 남은 목은 구독 개시(ANT-TOKEN-01) 하나다.<br><b>지라 AC 를 따르지 않고 명세를 따랐다.</b> AC 는 <code>POST /users/{id}/backtest</code> · 1,000 PRT 소각 · 기간·초기금 파라미터였는데, 명세는 <b>GET · 무료 · 파라미터 고정</b>이고 화면도 그렇게 만들어져 있었다. 충돌하면 명세서가 이긴다 — 결제·소각·서명을 만들지 않았다.<br><b>응답 필드를 화면에 맞췄다</b> — <code>benchmarkReturn</code>→<code>benchmarkRate</code>, <code>maxDrawdown</code>·<code>trades[]</code> 제거, <code>months</code>·<code>principal</code>·<code>sampleCount</code>·<code>computedAt</code> 추가. ANT-TOKEN-09(v0.64)와 같은 판단이다.<br><b>계산 규칙 넷을 명세에 박았다</b> — 대상(3개월·판정분·REAL) · DOWN 부호 반전 · 균등 배분 · 벤치마크 구간은 본인 판정일 양 끝. 규칙이 문서에 없으면 나중에 숫자가 달라져도 무엇이 바뀐 것인지 알 수 없다. 근거: 지라 S15P21A507-39, 화면설계서 E-02.</div>
@@ -368,7 +372,7 @@ nonce=&lt;POST /wallet/nonce 로 발급받은 값&gt;</pre>
 <h4>요청 본문</h4>
 <table>
 <tr><th>필드</th><th>타입</th><th>설명</th></tr>
-<tr><td class=pn>scope <b class=req>*</b></td><td class=pt>enum</td><td><code>WALLET_LINK</code> · <code>PREDICTION_BURN</code> · <code>SUBSCRIBE</code> · <code>AD</code> · <code>SEASON_JOIN</code>. payload 첫 줄의 용도 태그와 nonce 칸을 동시에 정한다</td></tr>
+<tr><td class=pn>scope <b class=req>*</b></td><td class=pt>enum</td><td><code>WALLET_LINK</code> · <code>PREDICTION</code> · <code>PREDICTION_BURN</code> · <code>SUBSCRIBE</code> · <code>EVENT_ENTRY</code> · <code>REPORT_PUBLISH</code> · <code>AD</code> · <code>SEASON_JOIN</code>. payload 첫 줄의 용도 태그와 nonce 칸을 동시에 정한다</td></tr>
 </table>
 <h4>응답</h4>
 <div class=resp><span class="rc ok"><b>200</b> <code>{ nonce, chainId }</code></span><span class="rc er"><b>400</b> <code>INVALID_REQUEST</code> scope 누락</span></div></div>
@@ -399,7 +403,7 @@ nonce=&lt;POST /wallet/nonce 로 발급받은 값&gt;</pre>
 <h4>파라미터</h4>
 <table>
 <tr><th>이름</th><th>위치</th><th>타입</th><th>설명</th></tr>
-<tr><td class=pn>reason</td><td>query</td><td class=pt>string</td><td>선택 · SIGNUP_BONUS | SLOT_OVER | SUBSCRIBE | SUBSCRIBE_INCOME | AD_PAY | SEASON_ENTRY | SEASON_REWARD. 그 밖이면 400 <code>INVALID_REQUEST</code>(field=reason)</td></tr>
+<tr><td class=pn>reason</td><td>query</td><td class=pt>string</td><td>선택 · SIGNUP_BONUS | SLOT_OVER | SUBSCRIBE | SUBSCRIBE_INCOME | AD_PAY | SEASON_ENTRY | SEASON_REWARD | EVENT_STAKE | EVENT_PAYOUT | EVENT_REFUND. 그 밖이면 400 <code>INVALID_REQUEST</code>(field=reason)</td></tr>
 <tr><td class=pn>cursor / size</td><td>query</td><td class=pt>long / int</td><td>커서 = 마지막으로 받은 항목의 id(응답 <code>nextCursor</code>). size 기본 20 · 최대 100</td></tr>
 </table>
 <h4>응답</h4>
@@ -1195,6 +1199,113 @@ nonce=&lt;POST /wallet/nonce 로 발급받은 값&gt;</pre>
 </table>
 <h4>응답</h4>
 <div class=resp><span class="rc ok"><b>200</b> <code>{ rank, percentile, delta, tier }</code></span><span class="rc ok"><b>204</b> 랭킹에 들지 않았다 — 스냅샷 전이거나 <b>판정 수가 3 건 미만</b>(v0.35 확정)이다. <b>404 가 아니다.</b> 랭킹 화면이 목록과 이 요청을 <code>Promise.all</code> 로 함께 던지므로 404 면 페이지가 통째로 오류가 된다. 프론트 클라이언트는 204 를 <code>undefined</code> 로 받아 카드만 감춘다</span><span class="rc er"><b>400</b> track 누락 · track 어휘 밖(REAL|REPLAY)</span></div></div>
+</details>
+<h3 class=tag id=tag-event>대회·배팅<span class=d>업앤다운 회차 · ANT 풀 · 온체인 정산 (ANT-EVENT)</span></h3><div class=callout><b>한 회차의 흐름</b> — 관리자가 종목 10개로 이벤트를 만들면(<code>openEvent</code> tx) <b>SCHEDULED</b>. 매분 크론이 세 조건(<code>opensAt</code> 도달 · 기준가 완비 · <code>open_tx_hash</code> 있음)을 보고 <b>OPEN</b> 으로 올린다. 사용자가 5~10 종목을 <b>한 요청</b>으로 등록하고, <code>sealsAt</code> 이 지나면 크론이 봉인 tx 를 보낸다. 판정 배치 뒤 관리자가 정산을 누르면 리빌 → 종목 판정 → 배분 → 순위 굳힘이 돈다.<br>
+<b>상태는 인덱서가 쓴다</b> — REST 가 직접 바꾸는 전이는 <code>SCHEDULED → OPEN</code> 하나뿐이다. "열림" 만 온체인 사건이 아니라 <b>시각</b>이라서다. 나머지(SEALED·REVEALED·RESOLVED·SETTLED · 배팅 상태 · 배당)는 체인 로그를 보고 인덱서가 채운다.<br>
+<b><code>phase</code></b> 는 여섯 갈래 <code>status</code> 를 화면용 넷으로 접은 값이다 — <code>BEFORE</code>(아직 안 열림) · <code>ENTRY</code>(등록 가능) · <code>SEALED</code>(접수 마감, 결과 대기 · REVEALED·RESOLVED 포함) · <code>SETTLED</code>. 프론트가 온체인 진행 순서를 알 필요가 없게 한다.<br>
+<b>남의 방향·목표가는 나가지 않는다.</b> 종목 카드에는 집계(풀·건수·배당률)만 싣고 개별 값은 <code>mine</code> 에만 담는다. 금액은 전부 <b>정수 ANT</b>(decimals 0).</div>
+<details class=ep><summary><span class="m g">GET</span><span class=path>/events</span><span class=sm>이벤트 목록 · 🔐</span></summary>
+<div class=body><div class=desc>배너·탭 진입점. 최근 회차가 위다. 종목·풀은 싣지 않는다 — 그건 홈 몫이다.</div>
+<h4>응답</h4>
+<div class=resp><span class="rc ok"><b>200</b> <code>{ items: [{ eventId, title, status, phase, opensAt, sealsAt, baseDate, settleDate }] }</code></span></div></div>
+</details>
+<details class=ep><summary><span class="m g">GET</span><span class=path>/events/{eventId}</span><span class=sm>이벤트 홈 · 🔐</span></summary>
+<div class=body><div class=desc>일정·규칙·종목 카드·내 참가 요약. 카드 10장을 쿼리 넷으로 채운다(이벤트 · 종목 · 배팅 집계 · 내 배팅).</div>
+<h4>응답</h4>
+<div class=resp><span class="rc ok"><b>200</b> <code>{ eventId, title, status, phase, opensAt, sealsAt, baseDate, settleDate, rules: { minStake, maxStake, minStocks, stockCount }, stocks: [{ idx, stockCode, name, basePrice, lastPrice, pool: { up, down, upCount, downCount, oddsUp, oddsDown }, mine, result }], me: { stockCount, staked, qualified, remainingStocks, paid, net, rank } }</code></span><span class="rc er"><b>404</b> <code>EVENT_NOT_FOUND</code></span></div>
+<p class=small><b>풀에서 PENDING·FAILED 를 뺀다</b> — 전송 중인 돈과 못 올라간 돈이라, 넣으면 실패한 전송이 남의 배당률을 흔든다. <b>배당률 = (전체 풀) ÷ (그 방향 풀)</b>, 소수 둘째 자리. <b>해당 풀이 0 이면 null</b> — 0 으로 나눌 수 없고 0 배당은 "걸면 아무것도 못 받는다" 는 거짓이다(화면은 대시로 그린다). <code>basePrice</code> 가 없으면 <b>null</b> 이다 — 0 으로 채우면 승패가 거짓으로 갈린다. <code>lastPrice</code> 는 표시용이고 판정에 쓰지 않는다. <code>me.paid</code>·<code>net</code>·<code>rank</code> 는 정산 전 null.</p></div>
+</details>
+<details class=ep><summary><span class="m p">POST</span><span class=path>/events/{eventId}/entries</span><span class=sm>묶음 등록 · 🔐 ✍️ 🔁 202</span></summary>
+<div class=body><div class=desc>5~10 종목을 <b>서명 한 번</b>으로 등록한다. 첫 참가는 <code>minStocks</code> 이상, 두 번째부터는 한 종목씩 더해도 된다. <code>Idempotency-Key</code> 필수.</div>
+<h4>요청 본문</h4>
+<table>
+<tr><th>필드</th><th>타입</th><th>설명</th></tr>
+<tr><td class=pn>items <b class=req>*</b></td><td class=pt>array</td><td>1~10개. 항목 안 종목 중복 불가</td></tr>
+<tr><td class=pn>items[].stockCode <b class=req>*</b></td><td class=pt>string</td><td>숫자 6자리. 이벤트 종목이어야 한다</td></tr>
+<tr><td class=pn>items[].direction <b class=req>*</b></td><td class=pt>enum</td><td><code>UP</code> · <code>DOWN</code></td></tr>
+<tr><td class=pn>items[].targetPrice <b class=req>*</b></td><td class=pt>number</td><td>소수 둘째 자리까지. 직전 종가와 방향이 맞아야 한다</td></tr>
+<tr><td class=pn>items[].stake <b class=req>*</b></td><td class=pt>int</td><td>정수 ANT. <code>minStake ≤ stake ≤ maxStake</code></td></tr>
+<tr><td class=pn>items[].note</td><td class=pt>string</td><td>근거. <b>빈 문자열 허용</b> — noteSalt 가 있어 해시는 여전히 난수다</td></tr>
+<tr><td class=pn>items[].noteSalt <b class=req>*</b></td><td class=pt>string</td><td>소문자 64 hex. 클라이언트가 만든 32바이트</td></tr>
+<tr><td class=pn>items[].evidencePointIds</td><td class=pt>int[]</td><td>선택. 같은 종목의 리서치 포인트</td></tr>
+<tr><td class=pn>signature <b class=req>*</b></td><td class=pt>string</td><td>아래 페이로드 1회 서명. <code>scope=event-entry</code></td></tr>
+</table>
+<h4>서명 페이로드</h4>
+<pre><code>antenna:event-entry:v1
+eventId=1
+005930/UP/93000.00/0x&lt;noteHash&gt;/1000
+000660/DOWN/210000.00/0x&lt;noteHash&gt;/500
+chainId=31221
+nonce=&lt;POST /wallet/nonce&gt;</code></pre>
+<h4>응답</h4>
+<div class=resp><span class="rc ok"><b>202</b> <code>{ eventId, entries: [{ stockCode, predictionId, commitHash, operationId }], me: { stockCount, staked, qualified, remainingStocks } }</code> → 종목마다 GET /operations/{operationId} 폴링</span><span class="rc er"><b>400</b> <code>EVENT_MIN_STOCKS</code>(field=items) · <code>EVENT_STOCK_NOT_INCLUDED</code> · <code>EVENT_STAKE_OUT_OF_RANGE</code>(field=stake) · <code>INVALID_REQUEST</code>(field=items · 항목 중복)</span><span class="rc er"><b>401</b> <code>SIGNER_MISMATCH</code></span><span class="rc er"><b>409</b> <code>EVENT_NOT_OPEN</code> · <code>EVENT_SEALED</code> · <code>EVENT_STOCK_ALREADY_BET</code> · <code>EVENT_INSUFFICIENT_BALANCE</code></span><span class="rc er"><b>404</b> <code>EVENT_NOT_FOUND</code></span></div>
+<p class=small><b>왜 묶음인가</b> — "첫 참가는 5종목 이상" 을 등록 시점에 막으려면 다섯 개가 한 요청에 있어야 하고, 서명도 한 번이면 지갑 팝업이 다섯 번 뜨지 않는다. 종목마다 따로 받으면 그 사이 하나만 거절해도 규칙이 깨진 채 절반만 등록된다.<br>
+<b>검증 순서</b> — 사용자 행 잠금 → 접수 창 → 항목 중복 → 최소 종목 수 → 이벤트 종목·중복 배팅 → 금액 범위 → 잔액 → 항목별 기존 검사 → <b>서명</b>. 서명이 맨 뒤인 것은 nonce 가 1회용이어서다: 먼저 검증하면 409 로 돌려보내는 요청에서도 nonce 가 사라져 다섯 종목을 다시 서명해야 한다.<br>
+<b>잔액은 체인에서 읽는다</b>(원장 아님 — 인덱서 지연이 있어 방금 쓴 돈이 남아 보인다). 전송 중인 내 배팅(PENDING) 합계도 뺀다.<br>
+<b>행을 먼저 커밋하고 tx 를 보낸다.</b> 인덱서는 로그의 (이벤트, 지갑, 종목 idx)로 배팅 행을 찾으므로 행이 먼저 있어야 한다. 전송이 실패해도 <b>응답은 202</b> 다 — 열 종목 중 하나가 실패했다고 요청 전체를 실패로 돌릴 수 없고, 그 하나는 재시도 크론이 봉인 전까지 다시 보낸다. <b>기존 <code>POST /predictions</code> 는 손대지 않았고, 이벤트 참가는 무료 슬롯 3건을 쓰지 않는다.</b><br>
+<b><code>targetPrice</code> 는 항상 소수 둘째 자리</b>(<code>93000.00</code>)로 서명 문자열에 들어간다 — 서버와 프론트가 같은 문자열을 만들어야 한다. 고정 벡터: <code>backend/src/test/resources/event/event-entry-signature-fixture.json</code>. 온체인 커밋은 서명에 들어가지 않는다(서버가 같은 재료로 만든다).</p></div>
+</details>
+<details class=ep><summary><span class="m g">GET</span><span class=path>/events/{eventId}/me</span><span class=sm>내 배팅 · 🔐</span></summary>
+<div class=body><div class=desc>내가 건 것만 <code>idx</code> 순으로. 홈은 종목 카드가 주인공이고 여기는 내 배팅이 주인공이라 tx 해시·작업 id·오차까지 준다.</div>
+<h4>응답</h4>
+<div class=resp><span class="rc ok"><b>200</b> <code>{ phase, summary: { stockCount, staked, qualified, paid, net, avgError, rank }, entries: [{ predictionId, idx, stockCode, name, direction, targetPrice, stake, betStatus, txHash, operationId, result: { closePrice, winner, payout, errorRate } }] }</code></span><span class="rc er"><b>404</b> <code>EVENT_NOT_FOUND</code></span></div>
+<p class=small><b>미참가는 404 가 아니라 빈 목록</b>이다 — 이벤트는 있고 내 기록만 없다. <b>자격 미달이어도 자기 성적은 본다</b>(순위 밖인 것과 기록이 없는 것은 다르다). <code>paid</code>·<code>net</code>·<code>rank</code>·<code>avgError</code> 는 정산 전 null — 0 으로 내리면 "본전"·"꼴찌" 로 읽힌다. <code>avgError</code> 는 <b>HIT 인 예측만</b>의 평균이다(MISS 를 섞으면 많이 틀린 사람이 유리해진다). <code>betStatus</code> 화면 문구: PENDING "전송 중" · ACTIVE "확정" · FAILED "실패 — 봉인 전이면 재시도 중" · SETTLED/REFUNDED "정산 완료".</p></div>
+</details>
+<details class=ep><summary><span class="m g">GET</span><span class=path>/events/{eventId}/leaderboard</span><span class=sm>회차 순위 · 🔐</span></summary>
+<div class=body><div class=desc>커서 페이징(<code>cursor</code> = 앞 페이지 마지막 등수 · <code>size</code> 기본 20 · 최대 100).</div>
+<h4>응답</h4>
+<div class=resp><span class="rc ok"><b>200</b> <code>{ phase, notice, items: [{ rank, userId, nickname, stockCount, staked, paid, net, profitRate, hitCount, doneCount, avgError, qualified }], me, nextCursor }</code></span><span class="rc er"><b>404</b> <code>EVENT_NOT_FOUND</code></span></div>
+<p class=small><b>정산 전에는 <code>items</code> 가 비고 <code>notice</code> 만 온다</b>(09-16 결정). 봉인 뒤라도 예상 순위를 내리지 않는다 — 승패를 모르는데 화면에 순위로 뜨면 사용자는 현재 등수로 읽고, 서버가 현재가로 임시 판정하는 것은 더 나쁘다. 정산 뒤에는 <code>prediction_event_results</code>(굳힌 표)에서 <code>qualified = true</code> 만 <code>rank</code> 순으로 읽는다 — 페이지마다 집계 쿼리를 돌리지 않는다.<br>
+<b>정렬</b>: 순이익 → HIT 평균 오차(없으면 맨 뒤) → 첫 등록 시각 → 회원 id. <b>자격</b> = 참가 종목 수 ≥ <code>minStocks</code>. 체인에 못 올라간 배팅(FAILED)은 집계 밖이다 — 돈이 안 움직였다.<br>
+<code>profitRate</code>(= <code>net ÷ staked × 100</code>)는 서버가 계산한다 — 프론트가 정수 나눗셈으로 만들면 −0 이 생기고 반올림도 갈린다. <b>미참가·자격 미달은 <code>me</code> 가 null</b> 이다(자기 성적은 <code>/me</code> 가 준다). 커서가 이상하면 400 이 아니라 처음부터 준다 — 오래된 커서 하나로 목록을 영영 못 열면 안 된다.</p></div>
+</details>
+<details class=ep><summary><span class="m p">POST</span><span class=path>/admin/events</span><span class=sm>이벤트 생성 · 🔐 관리자 202</span></summary>
+<div class=body><div class=desc>이벤트 행 + 종목 + 기준가 복사 + <code>EVENT_ADMIN</code> 작업, 그리고 온체인 <code>openEvent</code> 전송.</div>
+<h4>요청 본문</h4>
+<table>
+<tr><th>필드</th><th>타입</th><th>설명</th></tr>
+<tr><td class=pn>title <b class=req>*</b></td><td class=pt>string</td><td>화면 제목(80자)</td></tr>
+<tr><td class=pn>opensAt · sealsAt <b class=req>*</b></td><td class=pt>datetime</td><td>접수 창. <code>opensAt &lt; sealsAt</code></td></tr>
+<tr><td class=pn>baseDate · settleDate <b class=req>*</b></td><td class=pt>date</td><td>기준일·판정일. <code>baseDate ≤ opensAt</code> 날짜 · <code>settleDate &gt; baseDate</code></td></tr>
+<tr><td class=pn>minStake · maxStake <b class=req>*</b></td><td class=pt>int</td><td>배팅 1건 허용 범위(정수 ANT)</td></tr>
+<tr><td class=pn>minStocks <b class=req>*</b></td><td class=pt>int</td><td>첫 제출 최소 종목 수 · 순위 자격 기준</td></tr>
+<tr><td class=pn>stockCodes <b class=req>*</b></td><td class=pt>string[]</td><td>순서가 곧 <code>idx</code>. 중복 불가 · 전부 상장 · <code>minStocks</code> 이상</td></tr>
+</table>
+<h4>응답</h4>
+<div class=resp><span class="rc ok"><b>202</b> <code>{ eventId, operationId, stocks: [{ idx, stockCode, basePrice }] }</code></span><span class="rc er"><b>400</b> <code>INVALID_REQUEST</code> · <code>STOCK_NOT_FOUND</code></span><span class="rc er"><b>403</b> <code>EVENT_ADMIN_ONLY</code></span></div>
+<p class=small>기준가는 <code>daily_quotes(종목, baseDate).close</code> 를 복사하고 <b>없으면 null 로 두어 응답에 보여준다</b> — 기준가가 들어오는 13:00 배치와 접수 13:30 사이가 30분뿐이라 기다릴 수 없다. 하나라도 비면 크론이 열지 않는다. <b>권한은 서비스 안에서 본다</b>(JWT <code>role</code> 클레임을 Spring 권한으로 바꾸는 컨버터가 없어 매처·<code>@PreAuthorize</code> 는 <code>SecurityConfig</code> 수정이 함께 필요하다). 행을 먼저 커밋하고 <code>openEvent</code> 를 그 뒤에 보낸다 — 전송이 실패해도 이벤트 행은 남는다.</p></div>
+</details>
+<details class=ep><summary><span class="m p">POST</span><span class=path>/admin/events/{eventId}/open</span><span class=sm>openEvent 재전송 · 🔐 관리자 202</span></summary>
+<div class=body><div class=desc>생성 때 전송이 못 나갔을 때(체인 장애 등) 같은 행에 tx 만 다시 보낸다.</div>
+<h4>응답</h4>
+<div class=resp><span class="rc ok"><b>202</b> 본문 없음</span><span class="rc er"><b>403</b> <code>EVENT_ADMIN_ONLY</code></span><span class="rc er"><b>409</b> <code>EVENT_NOT_OPEN</code> 이미 <code>open_tx_hash</code> 가 있다</span><span class="rc er"><b>404</b> <code>EVENT_NOT_FOUND</code></span></div>
+<p class=small><b>다시 만들면 안 된다</b> — 종목 칸 <code>idx</code> 는 온체인 커밋 <code>keccak(eventId, idx, side, noteHash)</code> 의 재료라, 이벤트를 새로 만들면 이미 걸린 배팅이 리빌 때 <code>BadCommit</code> 으로 전부 튕긴다.</p></div>
+</details>
+<details class=ep><summary><span class="m u">PUT</span><span class=path>/admin/events/{eventId}/stocks/{idx}/base-price</span><span class=sm>기준가 수동 입력 · 🔐 관리자</span></summary>
+<div class=body><div class=desc>13:00 배치가 늦거나 실패했을 때 접수(13:30)를 지키는 길.</div>
+<h4>요청 본문</h4>
+<table><tr><th>필드</th><th>타입</th><th>설명</th></tr>
+<tr><td class=pn>basePrice <b class=req>*</b></td><td class=pt>number</td><td>기준일 종가. 소수 둘째 자리</td></tr></table>
+<h4>응답</h4>
+<div class=resp><span class="rc ok"><b>204</b></span><span class="rc er"><b>400</b> <code>EVENT_STOCK_NOT_INCLUDED</code></span><span class="rc er"><b>403</b> <code>EVENT_ADMIN_ONLY</code></span><span class="rc er"><b>404</b> <code>EVENT_NOT_FOUND</code></span></div></div>
+</details>
+<details class=ep><summary><span class="m p">POST</span><span class=path>/admin/events/{eventId}/seal</span><span class=sm>봉인 · 🔐 관리자 202</span></summary>
+<div class=body><div class=desc>접수를 닫고 온체인 <code>seal</code> 을 보낸다. 평소에는 매분 크론이 <code>sealsAt</code> 을 보고 하고, 이 길은 크론이 못 돌았거나 일찍 닫아야 할 때 쓴다.</div>
+<h4>응답</h4>
+<div class=resp><span class="rc ok"><b>202</b> 본문 없음</span><span class="rc er"><b>403</b> <code>EVENT_ADMIN_ONLY</code></span><span class="rc er"><b>409</b> <code>EVENT_NOT_OPEN</code></span><span class="rc er"><b>404</b> <code>EVENT_NOT_FOUND</code></span></div>
+<p class=small><b>상태는 바꾸지 않는다</b> — SEALED 전이는 인덱서가 <code>EventSealed</code> 를 보고 한다. 미리 적으면 전송이 실패했을 때 체인은 열려 있는데 서비스만 닫힌다. 같은 이벤트에 두 번 보내지 않는 것은 <code>seal_tx_hash is null</code> 조건이다.</p></div>
+</details>
+<details class=ep><summary><span class="m p">POST</span><span class=path>/admin/events/{eventId}/settle</span><span class=sm>정산 트리거 · 🔐 관리자 202</span></summary>
+<div class=body><div class=desc>판정 배치 뒤에 누른다. 리빌 → 종목 판정 → 배분 → 순위 굳힘. <b>비동기</b>.</div>
+<h4>응답</h4>
+<div class=resp><span class="rc ok"><b>202</b> <code>{ eventId, runId }</code> → 진행은 GET /admin/events/{eventId}/status</span><span class="rc er"><b>403</b> <code>EVENT_ADMIN_ONLY</code></span><span class="rc er"><b>409</b> <code>EVENT_NOT_READY</code> 전제 미충족 · <code>EVENT_SETTLING</code> 같은 이벤트가 도는 중 · <code>EVENT_SETTLE_TX_REVERTED</code></span><span class="rc er"><b>503</b> <code>CHAIN_UNAVAILABLE</code> · <code>EVENT_SETTLE_TIMEOUT</code></span><span class="rc er"><b>404</b> <code>EVENT_NOT_FOUND</code></span></div>
+<p class=small>러너가 tx 10건 이상을 순서대로 보내며 receipt 를 기다려 <b>몇 분</b>이 걸린다 — 요청 스레드에서 붙들면 게이트웨이가 먼저 끊는다. <b>두 번 눌러도 안전하다</b>: 온체인 상태를 읽어 끝난 단계를 건너뛴다. 전제는 누르기 전에 보므로 안 될 요청은 실행 행을 남기지 않는다. <code>runId</code> 는 <code>event_settlement_runs</code> 행의 id 라 서버가 죽어도 남는다 — 202 가 실행 행보다 먼저 나갈 수 있어 <b>null 일 수 있다</b>(상태 API 로 다시 묻는다). <code>EVENT_NOT_READY</code> 는 코드만 나르고 무엇이 빠졌는지는 상태 API 의 <code>reasons</code> 가 말한다.</p></div>
+</details>
+<details class=ep><summary><span class="m g">GET</span><span class=path>/admin/events/{eventId}/status</span><span class=sm>정산 상태 · 🔐 관리자</span></summary>
+<div class=body><div class=desc>돌릴 수 있나(<code>reasons</code>) · 어디까지 갔나(<code>run</code>) · 배팅이 성한가(<code>bets</code>).</div>
+<h4>응답</h4>
+<div class=resp><span class="rc ok"><b>200</b> <code>{ eventId, status, phase, ready, reasons: [string], run: { runId, phase, done, total, errorCode, errorMessage, startedAt, finishedAt }, bets: { total, pending, active, failed, settled }, frozenResults }</code></span><span class="rc er"><b>403</b> <code>EVENT_ADMIN_ONLY</code></span><span class="rc er"><b>404</b> <code>EVENT_NOT_FOUND</code></span></div>
+<p class=small><code>run.phase</code>: CHECKING · REVEALING · RESOLVING · SETTLING · SWEEPING · VERIFYING · DONE · FAILED. 한 번도 안 돌렸으면 <code>run</code> 은 null. <code>bets.pending</code>·<code>failed</code> 가 남아 있으면 정산 전에 손봐야 한다.</p></div>
 </details>
 <h3 class=tag id=tag-notif>알림<span class=d>알림함·읽음 + STOMP 푸시</span></h3><div class=callout><b>발송 이벤트</b> — 판정 결과(HIT/MISS) · 시즌 진행/종료/보상 · 구독 발생 ·
 <b>구독료 변경</b> · 구독 만료/갱신 실패 · 구독 채널 리포트 발행.

@@ -16,7 +16,12 @@ import org.springframework.transaction.annotation.Transactional;
 import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
 import ssafy.a507.backend.common.security.SignatureGuard;
+import ssafy.a507.backend.domain.account.entity.Notification;
 import ssafy.a507.backend.domain.account.entity.User;
+import ssafy.a507.backend.domain.account.repository.NotificationRepository;
+import ssafy.a507.backend.domain.account.repository.UserRepository;
+import ssafy.a507.backend.domain.monetize.entity.Subscription;
+import ssafy.a507.backend.domain.monetize.repository.SubscriptionRepository;
 import ssafy.a507.backend.domain.chain.config.TokenAmountProperties;
 import ssafy.a507.backend.domain.market.entity.DailyQuote;
 import ssafy.a507.backend.domain.market.entity.Stock;
@@ -80,6 +85,9 @@ public class PredictionRegisterService {
     private final int freePerDay;
     /** 슬롯 초과 소각액은 토큰 금액표 한 곳에서 읽는다(ANT-TOKEN-08). */
     private final TokenAmountProperties amounts;
+    private final SubscriptionRepository subscriptions;
+    private final NotificationRepository notifications;
+    private final UserRepository users;
 
     public PredictionRegisterService(
             EntityManager em,
@@ -93,7 +101,10 @@ public class PredictionRegisterService {
             SignatureGuard signatureGuard,
             PredictionCommitFactory commitFactory,
             @Value("${app.prediction.slot.free-per-day:3}") int freePerDay,
-            TokenAmountProperties amounts) {
+            TokenAmountProperties amounts,
+            SubscriptionRepository subscriptions,
+            NotificationRepository notifications,
+            UserRepository users) {
         this.em = em;
         this.predictions = predictions;
         this.notes = notes;
@@ -106,6 +117,9 @@ public class PredictionRegisterService {
         this.commitFactory = commitFactory;
         this.freePerDay = freePerDay;
         this.amounts = amounts;
+        this.subscriptions = subscriptions;
+        this.notifications = notifications;
+        this.users = users;
     }
 
     /** 등록. 성공하면 예측 id — 멱등 저장소에 이 값만 남기고 응답은 {@link #created} 가 다시 만든다. */
@@ -160,7 +174,34 @@ public class PredictionRegisterService {
                 req.signature(),
                 verified.signerAddress(),
                 verified.nonce()));
+        notifySubscribers(user, prediction, stock);
         return prediction.getId();
+    }
+
+    /**
+     * ACTIVE 구독자에게 새 예측 알림. 리포트 발행(ReportService.notifySubscribers)과 같은 대상·같은 방식이다 —
+     * 알림 행에 필요한 것은 FK 뿐이라 구독자 수만큼 User 를 적재하지 않는다(getReferenceById).
+     * 판정 전 예측은 구독자만 볼 수 있으므로 받는 사람은 전부 열 수 있다.
+     */
+    private void notifySubscribers(User author, Prediction prediction, Stock stock) {
+        List<Long> subscriberIds = subscriptions.findSubscriberIds(
+                author.getId(), Subscription.Status.ACTIVE, Instant.now());
+        if (subscriberIds.isEmpty()) {
+            return;
+        }
+        String nickname = author.getNickname();
+        String body = (nickname == null ? "구독 중인 채널" : nickname) + " · " + stock.getName() + " "
+                + (prediction.getDirection() == Prediction.Direction.UP ? "상승" : "하락")
+                + " · 목표가 " + prediction.getTargetPrice().toPlainString() + "원";
+        String linkPath = "/predictions/" + prediction.getId();
+        notifications.saveAll(subscriberIds.stream()
+                .map(id -> Notification.create(
+                        users.getReferenceById(id),
+                        "PREDICTION_REGISTERED",
+                        "구독 채널에 새 예측이 등록되었습니다",
+                        body,
+                        linkPath))
+                .toList());
     }
 
     /** 201 응답 재료. 멱등 재시도도 이 경로로 같은 응답을 만든다. 남의 예측 id 가 오면 404 로 감춘다. */

@@ -57,6 +57,7 @@ public enum ErrorCode {
     // 피드 글 (ANT-COMMUNITY-02)
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "글을 찾을 수 없습니다."),
     REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "리포트를 찾을 수 없습니다."),
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다."),
     PREDICTION_NOT_FOUND(HttpStatus.NOT_FOUND, "예측을 찾을 수 없습니다."),
 
     // 댓글 · 좋아요 (ANT-COMMUNITY-03)
@@ -218,7 +219,6 @@ public enum ErrorCode {
     EVENT_STOCK_ALREADY_BET(HttpStatus.CONFLICT, "이미 배팅한 종목입니다."),
     EVENT_STAKE_OUT_OF_RANGE(HttpStatus.BAD_REQUEST, "배팅 금액은 500 ~ 2,000 ANT 사이여야 합니다."),
     EVENT_INSUFFICIENT_BALANCE(HttpStatus.CONFLICT, "ANT 잔액이 부족합니다."),
-    EVENT_BASE_PRICE_MISSING(HttpStatus.CONFLICT, "기준가가 없는 종목이 있습니다."),
     EVENT_NOT_READY(HttpStatus.CONFLICT, "정산 조건이 아직 갖춰지지 않았습니다."),
     // 정산 러너 (ANT-EVENT-03). 셋 다 "다시 누르면 온체인 상태를 읽어 이어 간다" 가 대응이다.
     EVENT_SETTLING(HttpStatus.CONFLICT, "정산이 이미 진행 중입니다."),

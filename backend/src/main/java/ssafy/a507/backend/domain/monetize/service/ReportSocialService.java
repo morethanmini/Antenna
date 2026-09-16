@@ -15,6 +15,8 @@ import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
 import ssafy.a507.backend.common.security.CurrentUserProvider;
 import ssafy.a507.backend.domain.account.entity.User;
+import ssafy.a507.backend.domain.account.entity.Notification;
+import ssafy.a507.backend.domain.account.repository.NotificationRepository;
 import ssafy.a507.backend.domain.account.repository.UserRepository;
 import ssafy.a507.backend.domain.community.dto.AuthorResponse;
 import ssafy.a507.backend.domain.monetize.dto.ReportCommentCreateRequest;
@@ -52,11 +54,16 @@ public class ReportSocialService {
     private static final int DEFAULT_PAGE_SIZE = 20;
     private static final int MAX_PAGE_SIZE = 50;
 
+    /** {@code notifications.type} 은 24자 제한이다. */
+    private static final String LIKE_NOTIFICATION = "REPORT_LIKE";
+    private static final String COMMENT_NOTIFICATION = "REPORT_COMMENT";
+
     private final ReportRepository reportRepository;
     private final ReportLikeRepository reportLikeRepository;
     private final ReportCommentRepository reportCommentRepository;
     private final ReportCommentLikeRepository reportCommentLikeRepository;
     private final UserRepository userRepository;
+    private final NotificationRepository notificationRepository;
     private final ReportAccess reportAccess;
     private final CurrentUserProvider currentUserProvider;
 
@@ -71,7 +78,52 @@ public class ReportSocialService {
         }
         User user = currentUser(userId);
         save(() -> reportLikeRepository.save(ReportLike.create(report, user)));
+        notifyLike(report, user);
         return reportLikeRepository.countByReportId(reportId);
+    }
+
+    /**
+     * 작성자에게 좋아요 알림. <b>(리포트, 사람)당 한 번</b>이다 — 취소했다 다시 누르는 것을 그때마다
+     * 알리면 한 사람이 남의 알림함을 채울 수 있다. 이미 보낸 적이 있는지는 {@code actor} 로 본다.
+     * 내 글에 내가 누른 것은 알리지 않는다.
+     */
+    private void notifyLike(Report report, User liker) {
+        User author = report.getUser();
+        if (author.getId().equals(liker.getId())) {
+            return;
+        }
+        String linkPath = "/reports/" + report.getId();
+        if (notificationRepository.existsByUser_IdAndActor_IdAndTypeAndLinkPath(
+                author.getId(), liker.getId(), LIKE_NOTIFICATION, linkPath)) {
+            return;
+        }
+        notificationRepository.save(Notification.create(
+                author,
+                liker,
+                LIKE_NOTIFICATION,
+                "리포트에 좋아요가 달렸습니다",
+                actorName(liker) + " 님이 \"" + report.getTitle() + "\" 을 좋아합니다",
+                linkPath));
+    }
+
+    /** 작성자에게 댓글 알림. 내가 단 댓글은 알리지 않는다. 댓글은 매번 알린다 — 매번 새 말이다. */
+    private void notifyComment(Report report, User commenter, String body) {
+        User author = report.getUser();
+        if (author.getId().equals(commenter.getId())) {
+            return;
+        }
+        notificationRepository.save(Notification.create(
+                author,
+                commenter,
+                COMMENT_NOTIFICATION,
+                "리포트에 댓글이 달렸습니다",
+                actorName(commenter) + " · " + body,
+                "/reports/" + report.getId()));
+    }
+
+    /** 닉네임은 nullable 이다(온보딩 미완료). "null 님이" 로 나가지 않게. */
+    private static String actorName(User user) {
+        return user.getNickname() == null ? "누군가" : user.getNickname();
     }
 
     /** 없던 좋아요의 취소도 204 다. 두 번 눌러도 결과가 같은 쪽이 화면에 맞다. */
@@ -89,7 +141,9 @@ public class ReportSocialService {
         User author = currentUser(userId);
 
         ReportComment comment = ReportComment.create(report, author, request.body());
-        return reportCommentRepository.save(comment).getId();
+        Long id = reportCommentRepository.save(comment).getId();
+        notifyComment(report, author, request.body());
+        return id;
     }
 
     /**

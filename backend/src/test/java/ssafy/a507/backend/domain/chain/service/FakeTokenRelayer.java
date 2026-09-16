@@ -114,6 +114,10 @@ public class FakeTokenRelayer implements TokenRelayer {
 
     @Override
     public BigInteger balanceOf(String address) {
+        // 진짜 릴레이어(Web3jTokenRelayer)가 requireEnabled() 로 먼저 막는다 — 꺼져 있으면 잔액도 못 읽는다.
+        if (!enabled) {
+            throw new BusinessException(ErrorCode.CHAIN_UNAVAILABLE);
+        }
         return balance;
     }
 

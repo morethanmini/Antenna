@@ -1,5 +1,6 @@
 package ssafy.a507.backend.domain.event.controller;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -44,7 +45,7 @@ import ssafy.a507.backend.common.security.SignatureNonceStore;
 import ssafy.a507.backend.common.security.SignatureScope;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.chain.service.FakeTokenRelayer;
-import ssafy.a507.backend.domain.event.relay.FakePoolRelayer;
+import ssafy.a507.backend.domain.event.relay.ScriptedPoolRelayer;
 import ssafy.a507.backend.support.TestNonceStoreConfig;
 import ssafy.a507.backend.support.WalletSignatures;
 
@@ -66,7 +67,7 @@ import ssafy.a507.backend.support.WalletSignatures;
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import({TestNonceStoreConfig.class, FakeTokenRelayer.Config.class, FakePoolRelayer.Config.class})
+@Import({TestNonceStoreConfig.class, FakeTokenRelayer.Config.class, ScriptedPoolRelayer.Config.class})
 @DisplayName("배팅 이벤트 묶음 등록 API")
 class EventEntryControllerTest {
 
@@ -86,7 +87,7 @@ class EventEntryControllerTest {
     @Autowired TransactionTemplate tx;
     @Autowired SignatureNonceStore nonceStore;
     @Autowired FakeTokenRelayer tokenRelayer;
-    @Autowired FakePoolRelayer poolRelayer;
+    @Autowired ScriptedPoolRelayer poolRelayer;
 
     @MockitoBean StringRedisTemplate redis;
 
@@ -154,7 +155,7 @@ class EventEntryControllerTest {
                 // 이벤트 종목이 6개고 5개를 걸었다
                 .andExpect(jsonPath("$.me.remainingStocks").value(1))
                 // 정산 전이라 null 이다 — 0 으로 내리면 "본전" 으로 읽힌다
-                .andExpect(jsonPath("$.me.paid").doesNotExist());
+                .andExpect(jsonPath("$.me.paid").value(nullValue()));
     }
 
     @Test
@@ -201,7 +202,7 @@ class EventEntryControllerTest {
     void 전송_확인() throws Exception {
         mockMvc.perform(entries(items(5), "key-1")).andExpect(status().isAccepted());
 
-        List<FakePoolRelayer.Call> sent = poolRelayer.callsOf("placeBet");
+        List<ScriptedPoolRelayer.Call> sent = poolRelayer.callsOf("placeBet");
         assertThat(sent).hasSize(5);
         assertThat(sent.get(0).wallet()).isEqualToIgnoringCase(credentials.getAddress());
         assertThat(sent.get(0).stockIdx()).isZero();

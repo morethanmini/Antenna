@@ -133,6 +133,14 @@ class PredictionSettlementRunnerTest {
         BatchRun run = batchRun();
         assertThat(run.getVerifiedCount()).isEqualTo(1);
         assertThat(run.getHitCount()).isEqualTo(1);
+        // 판정이 나면 예측 주인에게 VERDICT 알림 — 그 예측으로 이어진다
+        assertThat(jdbc.queryForList(
+                        "select body, link_path from notifications where user_id = ? and type = 'VERDICT'", userId))
+                .singleElement()
+                .satisfies(row -> {
+                    assertThat((String) row.get("body")).contains("적중");
+                    assertThat(row.get("link_path")).isEqualTo("/predictions/" + id);
+                });
     }
 
     @Test
@@ -147,6 +155,9 @@ class PredictionSettlementRunnerTest {
         BatchRun run = batchRun();
         assertThat(run.getVerifiedCount()).isEqualTo(1);
         assertThat(run.getHitCount()).isZero();
+        assertThat(jdbc.queryForObject(
+                        "select body from notifications where user_id = ? and type = 'VERDICT'", String.class, userId))
+                .contains("미적중");
     }
 
     @Test
@@ -375,6 +386,7 @@ class PredictionSettlementRunnerTest {
      * 시드가 쓰는 {@code stocks}·{@code daily_quotes} 는 내 종목코드만 지운다.
      */
     private void clean() {
+        jdbc.update("delete from notifications");
         jdbc.update("delete from prediction_commits");
         jdbc.update("delete from prediction_evidences");
         jdbc.update("delete from prediction_notes");

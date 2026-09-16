@@ -134,6 +134,11 @@ class TokenIndexerTest {
         assertThat(s.getStartedAt()).isEqualTo(now);
         assertThat(s.getExpiresAt()).isEqualTo(now.plus(30, ChronoUnit.DAYS));
         assertThat(reload(op).getStatus()).isEqualTo(Operation.Status.SUCCEEDED);
+        // 구독이 확정되는 순간이 곧 "누군가 나를 구독했다" 다 — 202 접수 때가 아니라 여기서 알린다
+        assertThat(em.createQuery(
+                        "select n.linkPath from Notification n where n.user.id = :id and n.type = 'SUBSCRIBE'", String.class)
+                .setParameter("id", creator.getId())
+                .getResultList()).containsExactly("/channels/" + creator.getId());
     }
 
     @Test

@@ -102,6 +102,26 @@ class PredictionControllerTest {
     // ── 정상 ──────────────────────────────────────────────────────
 
     @Test
+    @DisplayName("예측을 올리면 ACTIVE 구독자에게 PREDICTION_REGISTERED 알림이 쌓이고 그 예측으로 이어진다")
+    void 등록_구독자_알림() throws Exception {
+        long subscriber = insertUser(null);
+        long pending = insertUser(null);
+        insertSubscription(subscriber, userId, "ACTIVE");
+        insertSubscription(pending, userId, "PENDING");
+        em.flush();
+
+        String body = perform(signed(request(SAMSUNG, "UP", "82000", 30, List.of(pointId)), wallet), UUID.randomUUID().toString())
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        long id = JSON.readTree(body).get("id").asLong();
+        em.flush();
+
+        assertThat(count("SELECT count(*) FROM notifications WHERE user_id = " + subscriber
+                + " AND type = 'PREDICTION_REGISTERED' AND link_path = '/predictions/" + id + "'")).isEqualTo(1);
+        assertThat(count("SELECT count(*) FROM notifications WHERE user_id = " + pending)).isZero();
+    }
+
+    @Test
     @DisplayName("서명한 예측을 올리면 201 — 예측·근거·리서치 포인트·커밋이 한 번에 저장되고 앵커 대기(WAITING)다")
     void 등록_성공() throws Exception {
         PredictionCreateRequest req = signed(request(SAMSUNG, "UP", "82000", 30, List.of(pointId)), wallet);
@@ -354,6 +374,18 @@ class PredictionControllerTest {
         em.persist(user);
         em.flush();
         return user.getId();
+    }
+
+    private void insertSubscription(long subscriberId, long publisherId, String status) {
+        em.createNativeQuery("""
+                        INSERT INTO subscriptions
+                          (subscriber_id, publisher_id, fee, status, auto_renew, created_at, updated_at)
+                        VALUES (?, ?, 0, ?, false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                        """)
+                .setParameter(1, subscriberId)
+                .setParameter(2, publisherId)
+                .setParameter(3, status)
+                .executeUpdate();
     }
 
     private void insertStock(String code, String name) {
