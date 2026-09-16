@@ -1,5 +1,6 @@
 package ssafy.a507.backend.domain.event.controller;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -158,7 +159,7 @@ class EventSettleAdminControllerTest {
                 .andExpect(jsonPath("$.reasons.length()").value(2))
                 .andExpect(jsonPath("$.reasons[0]").value("월요일 종가가 없다"))
                 // 한 번도 안 돌렸으면 run 은 없다
-                .andExpect(jsonPath("$.run").doesNotExist())
+                .andExpect(jsonPath("$.run").value(nullValue()))
                 .andExpect(jsonPath("$.bets.total").value(0))
                 .andExpect(jsonPath("$.frozenResults").value(0));
     }

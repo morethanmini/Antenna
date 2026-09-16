@@ -1,6 +1,5 @@
 package ssafy.a507.backend.domain.event.dto;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.Instant;
 import java.util.List;
 import ssafy.a507.backend.domain.event.entity.EventSettlementRun;
@@ -15,6 +14,11 @@ import ssafy.a507.backend.domain.event.entity.PredictionEvent;
  * <p>{@code reasons} 를 여기 두는 이유: {@code EVENT_NOT_READY} 는 코드 하나만 나르고 "무엇이
  * 빠졌는지" 를 못 싣는다({@code BusinessException} 이 공용이라 ANT-EVENT-03 이 안 고쳤다). 그 문구를
  * 읽을 자리가 없으면 관리자는 409 만 보고 무엇을 고쳐야 할지 모른다.
+ *
+ * <p><b>null 은 키를 남긴다.</b> 이 도메인의 null 은 "가려진 값" 이 아니라 "아직 정해지지 않은 값"
+ * 이다(정산 전 배당·순위, 미입력 기준가, 안 건 종목). {@code @JsonInclude(NON_NULL)} 로 키를 빼면
+ * TypeScript 에서 {@code undefined} 가 되어 {@code === null} 분기가 통째로 빠진다 — 작업명세 §4 의
+ * 응답 예시도 {@code "paid": null} 처럼 키를 남겨 적었다.
  */
 public record EventSettlementStatusResponse(
         Long eventId,
@@ -29,7 +33,6 @@ public record EventSettlementStatusResponse(
         int frozenResults) {
 
     /** 마지막 실행. 한 번도 안 돌렸으면 null */
-    @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Run(
             Long runId,
             EventSettlementRun.Phase phase,

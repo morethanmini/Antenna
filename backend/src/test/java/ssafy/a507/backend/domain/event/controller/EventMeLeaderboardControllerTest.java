@@ -1,5 +1,6 @@
 package ssafy.a507.backend.domain.event.controller;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -118,10 +119,10 @@ class EventMeLeaderboardControllerTest {
                 .andExpect(jsonPath("$.summary.staked").value(1700))
                 .andExpect(jsonPath("$.summary.qualified").value(true))
                 // 정산 전이라 없다 — 0 으로 내리면 "본전" 으로 읽힌다
-                .andExpect(jsonPath("$.summary.paid").doesNotExist())
-                .andExpect(jsonPath("$.summary.net").doesNotExist())
-                .andExpect(jsonPath("$.summary.rank").doesNotExist())
-                .andExpect(jsonPath("$.summary.avgError").doesNotExist());
+                .andExpect(jsonPath("$.summary.paid").value(nullValue()))
+                .andExpect(jsonPath("$.summary.net").value(nullValue()))
+                .andExpect(jsonPath("$.summary.rank").value(nullValue()))
+                .andExpect(jsonPath("$.summary.avgError").value(nullValue()));
     }
 
     @Test
@@ -161,7 +162,7 @@ class EventMeLeaderboardControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.summary.qualified").value(false))
                 .andExpect(jsonPath("$.summary.net").value(-500))
-                .andExpect(jsonPath("$.summary.rank").doesNotExist());
+                .andExpect(jsonPath("$.summary.rank").value(nullValue()));
     }
 
     @Test
@@ -185,7 +186,7 @@ class EventMeLeaderboardControllerTest {
                 .andExpect(jsonPath("$.phase").value("ENTRY"))
                 .andExpect(jsonPath("$.items.length()").value(0))
                 .andExpect(jsonPath("$.notice").isNotEmpty())
-                .andExpect(jsonPath("$.me").doesNotExist());
+                .andExpect(jsonPath("$.me").value(nullValue()));
     }
 
     @Test
@@ -211,7 +212,7 @@ class EventMeLeaderboardControllerTest {
         mockMvc.perform(get(BOARD, event.getId()).with(user(String.valueOf(winner.getId()))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.phase").value("SETTLED"))
-                .andExpect(jsonPath("$.notice").doesNotExist())
+                .andExpect(jsonPath("$.notice").value(nullValue()))
                 // 자격 미달(1종목)인 loser 는 목록에 없다
                 .andExpect(jsonPath("$.items.length()").value(1))
                 .andExpect(jsonPath("$.items[0].rank").value(1))
@@ -225,7 +226,7 @@ class EventMeLeaderboardControllerTest {
                 .andExpect(jsonPath("$.items[0].hitCount").value(1))
                 .andExpect(jsonPath("$.items[0].doneCount").value(2))
                 .andExpect(jsonPath("$.me.rank").value(1))
-                .andExpect(jsonPath("$.nextCursor").doesNotExist());
+                .andExpect(jsonPath("$.nextCursor").value(nullValue()));
     }
 
     @Test
@@ -236,7 +237,7 @@ class EventMeLeaderboardControllerTest {
         mockMvc.perform(get(BOARD, event.getId()).with(user(String.valueOf(loser.getId()))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items.length()").value(1))
-                .andExpect(jsonPath("$.me").doesNotExist());
+                .andExpect(jsonPath("$.me").value(nullValue()));
     }
 
     @Test
