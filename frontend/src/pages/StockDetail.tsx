@@ -142,8 +142,10 @@ export default function StockDetail() {
                         오른쪽으로 민다 — 둘에 각각 margin-left:auto 를 주면 남는
                         폭을 반씩 나눠 가져 카드가 가운데로 떠 버린다. */}
                     <div className="sd-ident-right">
-                      {/* 오늘 판정된 예측. 없으면 스스로 아무것도 그리지 않는다 */}
-                      <SettledToday code={code} />
+                      {/* 오늘 판정된 예측. 없으면 스스로 아무것도 그리지 않는다.
+                          **대회로 들어왔으면 접는다** — 이 문으로 온 사람은 대회 종목에
+                          예측을 걸러 온 것이라, 오늘 끝난 남의 예측이 할 말이 없다. */}
+                      {!eventMode && <SettledToday code={code} />}
 
                       <button
                         type="button"

@@ -174,6 +174,22 @@ export const BANNER: Record<Phase, BannerArt> = {
   },
 }
 
+/**
+ * 대회 예측의 **고정 기간**(캘린더일).
+ *
+ * 대회는 시작일 종가를 기준으로 판정일 종가를 맞히는 것이라, 기간이 사람마다
+ * 다를 수 없다. 숫자를 박지 않고 두 날짜에서 뽑는 이유는 일정이 하루 밀렸을 때
+ * 여기만 옛 값으로 남는 일을 막기 위해서다.
+ *
+ * 서버가 이벤트 예측에 한해 기준일을 등록 당일로 잡아 주어야 이 값이 맞는다
+ * (docs/기획_랭킹_이벤트탭.md §5.3). 평소 규칙대로면 기준일이 다음 평일이라
+ * 만기가 하루 밀린다.
+ */
+export const CONTEST_HORIZON = Math.round(
+  (Date.parse(`${CONTEST.targetDate}T00:00:00+09:00`)
+    - Date.parse(`${CONTEST.startDate}T00:00:00+09:00`)) / 86_400_000,
+)
+
 /** 대회 페이지 주소. 링크로 퍼뜨리는 주소라 한 곳에서만 만든다 */
 export const CONTEST_PATH = `/events/${CONTEST.id}`
 
