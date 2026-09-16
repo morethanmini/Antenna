@@ -30,6 +30,7 @@ import {
 } from '../api/subscriptions'
 import { useAsync } from '../api/useAsync'
 import { formatToken } from '../api/wallet'
+import { DEFAULT_AVATAR } from '../auth/context'
 import AnchorBadge from '../components/AnchorBadge'
 import CopyHash from '../components/CopyHash'
 import EmptyState from '../components/state/EmptyState'
@@ -121,6 +122,13 @@ function Row({ sub, confirming, busy, error, onAsk, onCancelAsk, onConfirm }: Ro
   return (
     <article className={`sb-item is-${status.toLowerCase()}`}>
       <div className="sb-head">
+        {/* 예측가 얼굴. 구독은 "이 사람을 산 것" 인데 목록에는 이름 글자만 있었다(S15P21A507-273).
+            안 올린 사람은 기본 개미다 — 서버가 null 을 준다. 장식이라 alt 는 비운다:
+            바로 옆 링크가 이름을 읽어 주므로 사진까지 읽으면 두 번 듣는다. */}
+        <img
+          className="sb-avatar" alt="" aria-hidden="true"
+          src={publisher.avatarUrl ?? DEFAULT_AVATAR}
+        />
         <Link className="sb-channel" to={`/channels/${publisher.userId}`}>
           {publisher.nickname}
         </Link>

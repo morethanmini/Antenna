@@ -5,6 +5,7 @@
 
    타입은 명세서가 준 스키마 그대로다 —
      GET  200 { items: [{ id, publisher, fee, status, expiresAt, renewEnabled }] }
+           publisher = { userId, nickname, avatarUrl }   (avatarUrl 은 S15P21A507-273 에서 추가)
      DELETE 204
    서버는 ANT-TOKEN-05 에서 열었다(MySubscriptionController).
 
@@ -29,6 +30,8 @@ export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number]
 export type Publisher = {
   userId: string
   nickname: string
+  /** 프로필 사진 주소. 안 올렸으면 null — 화면이 DEFAULT_AVATAR 를 쓴다 (S15P21A507-273) */
+  avatarUrl: string | null
 }
 
 /**

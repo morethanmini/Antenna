@@ -5,10 +5,20 @@
 
 .sb-loading{ margin:24px 0; font-size:var(--fs-lg); color:var(--muted); }
 
-.sb-list{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:10px; }
+/* 격자. 카드 하나가 화면 폭을 다 쓰던 것을 고친다(S15P21A507-273) — 안에 든 게 얼굴·이름·상태·
+   구독료·기간 정도라 넓은 화면에서 오른쪽이 텅 비었다. 320px 을 최소로 잡으면 본문 폭에서 셋,
+   태블릿에 둘, 폰에 하나다. auto-fill 인 이유 — auto-fit 이면 카드가 하나뿐일 때 다시 통째로
+   늘어나 고치기 전 모양으로 돌아간다. min(320px,100%) 는 320px 이 안 나오는 폰에서 넘치지 않게. */
+.sb-list{
+  margin:0; padding:0; list-style:none;
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap:12px;
+}
+/* 같은 줄의 카드는 높이를 맞춘다. 정보량이 같은데 높이가 들쭉날쭉하면 빠진 게 있어 보인다 */
+.sb-list > li{ display:flex; min-width:0; }
 
 .sb-item{
-  padding:15px 18px;
+  flex:1; min-width:0; display:flex; flex-direction:column;
+  padding:16px 18px;
   background:var(--surface);
   border:1px solid var(--rule);
   border-radius:12px;
@@ -16,8 +26,11 @@
 /* 지난 구독은 한 걸음 물러나 보이게 한다 — 지우지는 않는다(이력이라 남긴다) */
 .sb-item.is-expired{ background:var(--surface-2); }
 
-.sb-head{ display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+.sb-head{ display:flex; align-items:center; gap:10px; }
+/* 예측가 얼굴. 채널 머리(56px)보다 작고 홈 1위 카드(46px)와 비슷하게 — 목록 한 칸의 크기다 */
+.sb-avatar{ flex:0 0 auto; width:44px; height:44px; border-radius:50%; object-fit:cover; background:var(--surface-2); }
 .sb-channel{
+  flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;   /* 긴 닉네임이 배지를 밀어내지 않게 */
   font-size:var(--fs-xl); font-weight:var(--fw-heavy); color:var(--ink);
   letter-spacing:-.01em; text-decoration:none;
 }
@@ -27,7 +40,8 @@
 .sb-badge.is-active{ background:#e7f5ec; color:#15803d; }
 .sb-badge.is-expired{ background:var(--rule); color:var(--muted); }
 
-.sb-facts{ display:flex; flex-wrap:wrap; gap:6px 26px; margin:11px 0 0; }
+/* flex:1 로 남는 높이를 먹어 아래 안내·조작이 카드 바닥에 붙는다. align-content 가 없으면 줄이 벌어진다 */
+.sb-facts{ flex:1; align-content:flex-start; display:flex; flex-wrap:wrap; gap:6px 22px; margin:12px 0 0; }
 .sb-facts > div{ display:flex; flex-direction:column; gap:2px; }
 .sb-facts dt{ font-size:var(--fs-xs); color:var(--muted); }
 .sb-facts dd{ margin:0; font-size:var(--fs-lg); font-weight:var(--fw-bold); color:var(--ink); }
