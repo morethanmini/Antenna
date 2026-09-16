@@ -1,5 +1,6 @@
 package ssafy.a507.backend.domain.event.controller;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -77,7 +78,7 @@ class EventQueryControllerTest {
                 .andExpect(jsonPath("$.stocks[0].name").value("삼성전자"))
                 .andExpect(jsonPath("$.stocks[0].basePrice").value(91000.00))
                 .andExpect(jsonPath("$.stocks[1].idx").value(1))
-                .andExpect(jsonPath("$.stocks[1].basePrice").doesNotExist());
+                .andExpect(jsonPath("$.stocks[1].basePrice").value(nullValue()));
     }
 
     @Test
@@ -91,7 +92,7 @@ class EventQueryControllerTest {
                 .andExpect(jsonPath("$.stocks[0].pool.up").value(1000))
                 .andExpect(jsonPath("$.stocks[0].pool.upCount").value(1))
                 // 남의 것이라 mine 은 비어 있다
-                .andExpect(jsonPath("$.stocks[0].mine").doesNotExist());
+                .andExpect(jsonPath("$.stocks[0].mine").value(nullValue()));
     }
 
     @Test
@@ -122,8 +123,8 @@ class EventQueryControllerTest {
                 .andExpect(jsonPath("$.stocks[0].pool.oddsDown").value(4.00))
                 // 아무도 안 건 종목은 양쪽 다 null
                 .andExpect(jsonPath("$.stocks[1].pool.up").value(0))
-                .andExpect(jsonPath("$.stocks[1].pool.oddsUp").doesNotExist())
-                .andExpect(jsonPath("$.stocks[1].pool.oddsDown").doesNotExist());
+                .andExpect(jsonPath("$.stocks[1].pool.oddsUp").value(nullValue()))
+                .andExpect(jsonPath("$.stocks[1].pool.oddsDown").value(nullValue()));
     }
 
     @Test
@@ -162,9 +163,9 @@ class EventQueryControllerTest {
                 .andExpect(jsonPath("$.me.qualified").value(false))
                 // 이벤트 종목 2개 중 1개를 걸었다
                 .andExpect(jsonPath("$.me.remainingStocks").value(1))
-                .andExpect(jsonPath("$.me.paid").doesNotExist())
-                .andExpect(jsonPath("$.me.net").doesNotExist())
-                .andExpect(jsonPath("$.me.rank").doesNotExist());
+                .andExpect(jsonPath("$.me.paid").value(nullValue()))
+                .andExpect(jsonPath("$.me.net").value(nullValue()))
+                .andExpect(jsonPath("$.me.rank").value(nullValue()));
     }
 
     @Test
@@ -172,7 +173,7 @@ class EventQueryControllerTest {
     void 정산_전_result_는_null() throws Exception {
         mockMvc.perform(get(HOME, eventId).with(user(String.valueOf(me))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.stocks[0].result").doesNotExist());
+                .andExpect(jsonPath("$.stocks[0].result").value(nullValue()));
     }
 
     @Test

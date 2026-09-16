@@ -1,6 +1,5 @@
 package ssafy.a507.backend.domain.event.dto;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
@@ -16,6 +15,11 @@ import ssafy.a507.backend.domain.event.entity.PredictionEventResult;
  *
  * <p>정산 뒤에는 {@code prediction_event_results}(ANT-EVENT-03 이 굳힌 표)만 읽는다 — 페이지마다
  * 집계 쿼리를 돌리지 않는다.
+ *
+ * <p><b>null 은 키를 남긴다.</b> 이 도메인의 null 은 "가려진 값" 이 아니라 "아직 정해지지 않은 값"
+ * 이다(정산 전 배당·순위, 미입력 기준가, 안 건 종목). {@code @JsonInclude(NON_NULL)} 로 키를 빼면
+ * TypeScript 에서 {@code undefined} 가 되어 {@code === null} 분기가 통째로 빠진다 — 작업명세 §4 의
+ * 응답 예시도 {@code "paid": null} 처럼 키를 남겨 적었다.
  */
 public record EventLeaderboardResponse(
         EventPhase phase,
@@ -31,7 +35,6 @@ public record EventLeaderboardResponse(
      *     으로 만들면 −0 이나 반올림이 갈린다
      * @param doneCount 정산된 종목 수. 화면의 "적중 n/m" 에서 m 이다
      */
-    @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Item(
             Integer rank,
             Long userId,

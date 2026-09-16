@@ -1,5 +1,6 @@
 package ssafy.a507.backend.domain.event.controller;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -98,7 +99,7 @@ class EventAdminControllerTest {
                 .andExpect(jsonPath("$.stocks[0].basePrice").value(91000.00))
                 .andExpect(jsonPath("$.stocks[1].stockCode").value("000660"))
                 // 기준가가 없는 종목은 null 이다 — 0 으로 채우면 승패가 거짓으로 갈린다
-                .andExpect(jsonPath("$.stocks[1].basePrice").doesNotExist());
+                .andExpect(jsonPath("$.stocks[1].basePrice").value(nullValue()));
     }
 
     @Test

@@ -1,6 +1,5 @@
 package ssafy.a507.backend.domain.event.dto;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
@@ -17,6 +16,11 @@ import ssafy.a507.backend.domain.prediction.entity.Prediction;
  *
  * <p>{@code paid}·{@code net}·{@code rank} 는 정산 전 null 이다 — 0 으로 내리면 "본전" 과 "꼴찌" 로
  * 읽힌다.
+ *
+ * <p><b>null 은 키를 남긴다.</b> 이 도메인의 null 은 "가려진 값" 이 아니라 "아직 정해지지 않은 값"
+ * 이다(정산 전 배당·순위, 미입력 기준가, 안 건 종목). {@code @JsonInclude(NON_NULL)} 로 키를 빼면
+ * TypeScript 에서 {@code undefined} 가 되어 {@code === null} 분기가 통째로 빠진다 — 작업명세 §4 의
+ * 응답 예시도 {@code "paid": null} 처럼 키를 남겨 적었다.
  */
 public record EventMeResponse(EventPhase phase, Summary summary, List<Entry> entries) {
 
@@ -24,7 +28,6 @@ public record EventMeResponse(EventPhase phase, Summary summary, List<Entry> ent
      * @param avgError HIT 인 예측만의 평균 오차(09-16 담당자 확정). MISS 를 섞으면 "많이 틀린 사람이
      *     적게 참가해서" 평균이 좋아진다
      */
-    @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Summary(
             int stockCount,
             BigInteger staked,
@@ -41,7 +44,6 @@ public record EventMeResponse(EventPhase phase, Summary summary, List<Entry> ent
      * 화면이 폴링으로 알아야 하고, 확정된 배팅은 사용자가 체인에서 직접 확인할 수 있어야 한다.
      * 이 대회의 값은 "온체인이라 검증된다" 는 것이라 그 링크를 숨길 이유가 없다.
      */
-    @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Entry(
             Long predictionId,
             short idx,

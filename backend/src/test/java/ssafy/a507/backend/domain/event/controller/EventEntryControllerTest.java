@@ -1,5 +1,6 @@
 package ssafy.a507.backend.domain.event.controller;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -154,7 +155,7 @@ class EventEntryControllerTest {
                 // 이벤트 종목이 6개고 5개를 걸었다
                 .andExpect(jsonPath("$.me.remainingStocks").value(1))
                 // 정산 전이라 null 이다 — 0 으로 내리면 "본전" 으로 읽힌다
-                .andExpect(jsonPath("$.me.paid").doesNotExist());
+                .andExpect(jsonPath("$.me.paid").value(nullValue()));
     }
 
     @Test
