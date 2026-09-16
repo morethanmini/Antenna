@@ -44,7 +44,7 @@ import ssafy.a507.backend.common.security.SignatureNonceStore;
 import ssafy.a507.backend.common.security.SignatureScope;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.chain.service.FakeTokenRelayer;
-import ssafy.a507.backend.domain.event.relay.FakePoolRelayer;
+import ssafy.a507.backend.domain.event.relay.ScriptedPoolRelayer;
 import ssafy.a507.backend.support.TestNonceStoreConfig;
 import ssafy.a507.backend.support.WalletSignatures;
 
@@ -66,7 +66,7 @@ import ssafy.a507.backend.support.WalletSignatures;
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import({TestNonceStoreConfig.class, FakeTokenRelayer.Config.class, FakePoolRelayer.Config.class})
+@Import({TestNonceStoreConfig.class, FakeTokenRelayer.Config.class, ScriptedPoolRelayer.Config.class})
 @DisplayName("배팅 이벤트 묶음 등록 API")
 class EventEntryControllerTest {
 
@@ -86,7 +86,7 @@ class EventEntryControllerTest {
     @Autowired TransactionTemplate tx;
     @Autowired SignatureNonceStore nonceStore;
     @Autowired FakeTokenRelayer tokenRelayer;
-    @Autowired FakePoolRelayer poolRelayer;
+    @Autowired ScriptedPoolRelayer poolRelayer;
 
     @MockitoBean StringRedisTemplate redis;
 
@@ -201,7 +201,7 @@ class EventEntryControllerTest {
     void 전송_확인() throws Exception {
         mockMvc.perform(entries(items(5), "key-1")).andExpect(status().isAccepted());
 
-        List<FakePoolRelayer.Call> sent = poolRelayer.callsOf("placeBet");
+        List<ScriptedPoolRelayer.Call> sent = poolRelayer.callsOf("placeBet");
         assertThat(sent).hasSize(5);
         assertThat(sent.get(0).wallet()).isEqualToIgnoringCase(credentials.getAddress());
         assertThat(sent.get(0).stockIdx()).isZero();

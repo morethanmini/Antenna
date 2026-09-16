@@ -143,4 +143,30 @@ public interface PredictionEventBetRepository extends JpaRepository<PredictionEv
              where b.event.id = :eventId and b.user.id = :userId
             """)
     List<PredictionEventBet> findMine(@Param("eventId") Long eventId, @Param("userId") Long userId);
+
+    /**
+     * 내 배팅 — {@code GET /events/{id}/me} 용 (ANT-EVENT-06).
+     *
+     * <p>{@link #findMine} 과 달리 <b>종목까지 페치</b>하고 {@code idx} 순으로 준다. 그 화면은 종목코드·
+     * 이름·판정 결과를 함께 보여주는데, {@code open-in-view: false} 라 DTO 를 만드는 시점에는
+     * 세션이 닫혀 있다. 홈은 이미 종목을 따로 읽어 두므로 그쪽에는 이 페치가 낭비다.
+     */
+    @Query("""
+            select b from PredictionEventBet b
+              join fetch b.prediction
+              join fetch b.eventStock s
+              join fetch s.stock
+             where b.event.id = :eventId and b.user.id = :userId
+             order by s.idx
+            """)
+    List<PredictionEventBet> findMineDetailed(@Param("eventId") Long eventId, @Param("userId") Long userId);
+
+    /**
+     * 상태별 배팅 수 — 관리자 상태 화면 (ANT-EVENT-06). 돌려주는 행은 {@code [status, count]} 다.
+     *
+     * <p>상태마다 세면 여섯 번이다. 관리자 화면 한 장에 쿼리 여섯은 과하고, 무엇보다 "합이 안 맞는"
+     * 순간(집계 사이에 인덱서가 상태를 바꾸는)이 생긴다.
+     */
+    @Query("select b.betStatus, count(b) from PredictionEventBet b where b.event.id = :eventId group by b.betStatus")
+    List<Object[]> countByStatus(@Param("eventId") Long eventId);
 }

@@ -22,18 +22,21 @@ import ssafy.a507.backend.domain.event.dto.EventHomeResponse.Result;
 import ssafy.a507.backend.domain.event.dto.EventHomeResponse.Rules;
 import ssafy.a507.backend.domain.event.dto.EventHomeResponse.StockCard;
 import ssafy.a507.backend.domain.event.dto.EventListResponse;
+import ssafy.a507.backend.domain.event.dto.EventMeResponse;
 import ssafy.a507.backend.domain.event.dto.EventPhase;
 import ssafy.a507.backend.domain.event.entity.PredictionEvent;
 import ssafy.a507.backend.domain.event.entity.PredictionEventBet;
 import ssafy.a507.backend.domain.event.entity.PredictionEventStock;
+import ssafy.a507.backend.domain.event.entity.PredictionEventResult;
 import ssafy.a507.backend.domain.event.repository.PredictionEventBetRepository;
 import ssafy.a507.backend.domain.event.repository.PredictionEventRepository;
+import ssafy.a507.backend.domain.event.repository.PredictionEventResultRepository;
 import ssafy.a507.backend.domain.event.repository.PredictionEventStockRepository;
 import ssafy.a507.backend.domain.market.repository.DailyQuoteRepository;
 import ssafy.a507.backend.domain.prediction.entity.Prediction;
 
 /**
- * 이벤트 조회 — ANT-EVENT-04, 화면 J-01. 작업명세 v1.2 §3-1·2 · §4.
+ * 이벤트 조회 — ANT-EVENT-04·06, 화면 J-01. 작업명세 v1.2 §3-1·2·4 · §4.
  *
  * <p><b>남의 방향·목표가는 나가지 않는다.</b> 종목 카드는 집계(풀·건수·배당률)만 싣고, 개별 값은
  * {@code mine} 에만 담는다 — §1 "비공개" 규칙이다. 그래서 집계 쿼리가 방향별 합계만 읽고 행을
@@ -52,6 +55,7 @@ public class EventQueryService {
     private final PredictionEventRepository events;
     private final PredictionEventStockRepository eventStocks;
     private final PredictionEventBetRepository bets;
+    private final PredictionEventResultRepository results;
     private final DailyQuoteRepository dailyQuotes;
     private final CurrentUserProvider currentUserProvider;
 
@@ -99,7 +103,7 @@ public class EventQueryService {
                 event.getSettleDate(),
                 new Rules(event.getMinStake(), event.getMaxStake(), event.getMinStocks(), cards.size()),
                 stocks,
-                meOf(event, mine.values(), cards.size()));
+                meOf(event, mine.values(), cards.size(), rankOf(eventId, viewerId)));
     }
 
     /** 한 종목·한 방향의 합계와 건수 */
@@ -166,10 +170,13 @@ public class EventQueryService {
     /**
      * 내 참가 요약. {@code paid}·{@code net} 은 정산 전 null 이다 — 0 은 "본전"으로 읽힌다.
      *
-     * <p>{@code rank} 는 R3(순위)에서 채운다. 여기서는 늘 null 이다.
+     * <p>{@code rank} 는 정산 뒤 굳힌 표에서 온다. 그전에는 null 이다 — 등수를 만들어 내지 않는다.
      */
     private Me meOf(
-            PredictionEvent event, java.util.Collection<PredictionEventBet> mine, int stockCountInEvent) {
+            PredictionEvent event,
+            java.util.Collection<PredictionEventBet> mine,
+            int stockCountInEvent,
+            Integer rank) {
         int stockCount = mine.size();
         BigInteger staked = BigInteger.ZERO;
         BigInteger paid = BigInteger.ZERO;
@@ -189,7 +196,65 @@ public class EventQueryService {
                 Math.max(0, stockCountInEvent - stockCount),
                 anyPaid ? paid : null,
                 anyPaid ? paid.subtract(staked) : null,
-                null);
+                rank);
+    }
+
+    /**
+     * 굳힌 순위. 정산 전에는 행이 없어 null 이다 — 그때 등수를 만들어 내지 않는다(§4, 09-16 결정).
+     * 자격 미달이면 {@code rank} 자체가 null 로 굳어 있다.
+     */
+    private Integer rankOf(Long eventId, Long viewerId) {
+        if (viewerId == null) {
+            return null;
+        }
+        return results.findByEventIdAndUserId(eventId, viewerId)
+                .map(PredictionEventResult::getRank)
+                .orElse(null);
+    }
+
+    /**
+     * 내 배팅 — 화면 J-01 의 "내 참가 내역" 탭 (ANT-EVENT-06, §4).
+     *
+     * <p>홈과 겹쳐 보이지만 주인공이 다르다. 홈은 종목 카드가 주인공이라 내 배팅이 카드에 딸린 값으로
+     * 들어가고, 여기는 내가 건 것만 모아 tx 해시·작업 id·오차까지 준다.
+     *
+     * <p>쿼리는 둘이다 — 배팅(+예측·종목 페치) · 굳힌 순위 한 줄. 종목·예측을 페치하지 않으면
+     * {@code open-in-view: false} 라 DTO 를 만들 때 지연 로딩이 터진다.
+     */
+    @Transactional(readOnly = true)
+    public EventMeResponse me(Long eventId, Long viewerId) {
+        PredictionEvent event =
+                events.findById(eventId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "eventId"));
+
+        List<PredictionEventBet> mine = bets.findMineDetailed(eventId, viewerId);
+        List<EventMeResponse.Entry> entries = new ArrayList<>(mine.size());
+        BigInteger staked = BigInteger.ZERO;
+        BigInteger paid = BigInteger.ZERO;
+        boolean anyPaid = false;
+        for (PredictionEventBet bet : mine) {
+            entries.add(EventMeResponse.Entry.of(bet));
+            staked = staked.add(bet.getStake());
+            if (bet.getPayout() != null) {
+                paid = paid.add(bet.getPayout());
+                anyPaid = true;
+            }
+        }
+
+        PredictionEventResult frozen =
+                results.findByEventIdAndUserId(eventId, viewerId).orElse(null);
+        return new EventMeResponse(
+                EventPhase.of(event.getStatus()),
+                new EventMeResponse.Summary(
+                        mine.size(),
+                        staked,
+                        mine.size() >= event.getMinStocks(),
+                        anyPaid ? paid : null,
+                        anyPaid ? paid.subtract(staked) : null,
+                        // 평균 오차는 굳힌 표에서 읽는다 — HIT 만 세는 규칙이 거기 한 곳에 있다(§8).
+                        frozen == null ? null : frozen.getAvgError(),
+                        frozen == null ? null : frozen.getRank()),
+                entries);
     }
 
     /**
