@@ -162,6 +162,11 @@
   margin:0 -14px -14px 0;
 }
 
+/* 한 마리짜리는 **키로 잰다.** 세로가 더 긴 그림이라(560×611) 폭을 맞추면 카드보다
+   높아져 얼굴부터 잘린다. 카드 높이는 여전히 왼쪽 글자가 정하고, 이 그림은 그 안에서
+   바닥에 선다. */
+.hm-hero-art.is-one{width:auto; height:275px}
+
 /* ── 시장 Overview — 지수 셋을 가로로 세운다 ──────────────── */
 .hm-indices{
   list-style:none; margin:0; padding:0;

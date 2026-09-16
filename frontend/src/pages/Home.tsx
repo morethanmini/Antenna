@@ -189,7 +189,12 @@ function Hero() {
           </svg>
         </Link>
       </div>
-      <img className="hm-hero-art" src="/assets/character/antenna-characters-welcome.webp" alt=""
+      {/* 개미 한 마리. 둘이 선 그림(antenna-characters-welcome)은 바탕 그림 위에 얹으니
+          오른쪽이 두 겹으로 무거웠다. 한 마리는 자리를 덜 먹고 바탕의 빛줄기를 가리지 않는다.
+
+          **차트판을 든 판을 골랐다.** black_ant/README 가 이 포즈의 자리를 "예측 등록 유도" 로
+          적어 뒀고, 이 카드의 버튼이 "예측 시작하기" 다 — 그림과 버튼이 같은 말을 한다. */}
+      <img className="hm-hero-art is-one" src="/assets/character/hero-ant.webp" alt=""
            aria-hidden="true" />
     </section>
   )
