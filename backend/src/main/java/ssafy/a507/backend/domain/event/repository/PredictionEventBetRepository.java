@@ -143,4 +143,22 @@ public interface PredictionEventBetRepository extends JpaRepository<PredictionEv
              where b.event.id = :eventId and b.user.id = :userId
             """)
     List<PredictionEventBet> findMine(@Param("eventId") Long eventId, @Param("userId") Long userId);
+
+    /**
+     * 내 배팅 — {@code GET /events/{id}/me} 용 (ANT-EVENT-06).
+     *
+     * <p>{@link #findMine} 과 달리 <b>종목까지 페치</b>하고 {@code idx} 순으로 준다. 그 화면은 종목코드·
+     * 이름·판정 결과를 함께 보여주는데, {@code open-in-view: false} 라 DTO 를 만드는 시점에는
+     * 세션이 닫혀 있다. 홈은 이미 종목을 따로 읽어 두므로 그쪽에는 이 페치가 낭비다.
+     */
+    @Query("""
+            select b from PredictionEventBet b
+              join fetch b.prediction
+              join fetch b.eventStock s
+              join fetch s.stock
+             where b.event.id = :eventId and b.user.id = :userId
+             order by s.idx
+            """)
+    List<PredictionEventBet> findMineDetailed(@Param("eventId") Long eventId, @Param("userId") Long userId);
+
 }
