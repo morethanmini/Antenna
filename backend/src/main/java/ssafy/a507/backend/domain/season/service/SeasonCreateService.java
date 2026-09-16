@@ -48,8 +48,15 @@ import ssafy.a507.backend.domain.season.repository.SeasonTickerRepository;
 @RequiredArgsConstructor
 public class SeasonCreateService {
 
-    /** 첫 게임일 앞에 함께 담는 과거 봉 수. 수집 시작(2020-01-02) 앞이면 있는 만큼만 담는다. */
-    public static final int WARMUP_DAYS = 30;
+    /**
+     * 첫 게임일 앞에 함께 담는 과거 봉 수. 수집 시작(2020-01-02) 앞이면 있는 만큼만 담는다.
+     *
+     * <p>30에서 120으로 늘렸다(2026-09-16). 진행 화면 차트를 끌어서 과거를 볼 수 있게 되면서
+     * 한 달치로는 끌 데가 없었다 — 사건 전의 추세를 보려고 끄는 것인데 첫날 이전이 한 달뿐이면
+     * 몇 번 끌다 끝에 닿는다. 봉 자체는 종목당 90행이 더 늘 뿐이고, 진행일 절단이 그대로
+     * 미래를 막으므로 커닝이 되지 않는다({@code game_day <= 0} 은 시즌 시작 전 구간이다).
+     */
+    public static final int WARMUP_DAYS = 120;
 
     private final StockRepository stockRepository;
     private final DailyQuoteRepository dailyQuoteRepository;
