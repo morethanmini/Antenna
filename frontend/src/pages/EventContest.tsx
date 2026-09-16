@@ -12,7 +12,13 @@
 
    대회 정의(날짜·종목·글귀)는 event/contest.ts 한 곳에 있다. 이 파일에는
    날짜를 적지 않는다 — 일정이 밀릴 때 고칠 곳이 둘이 되면 하나를 빠뜨린다. */
-import { fetchEvent, fetchEventBySlug, type EventHome } from '../api/events'
+import { useState } from 'react'
+import {
+  fetchEvent,
+  fetchEventBySlug,
+  type EventEntryAccepted,
+  type EventHome,
+} from '../api/events'
 import { useAsync } from '../api/useAsync'
 import EventEntryForm from '../components/event/EventEntryForm'
 import EventLeaderboard from '../components/event/EventLeaderboard'
@@ -121,6 +127,11 @@ export default function EventContest() {
      열기 때문에, 시각만 지났다고 열린 것이 아니다. 두 값을 섞지 않는다. */
   const phase = phaseAt()
   const { data, loading, error, reload } = useAsync(loadContest)
+  /* 등록 결과를 **부모가 들고 있다.** 폼이 들고 있으면 등록 직후 reload 가 도는 동안
+     data 가 잠깐 null 이 되어 폼이 언마운트되고, 성공 화면이 그대로 사라진다 —
+     사용자 눈에는 폼이 비워진 것으로만 보여 등록이 됐는지 알 수 없다(2026-09-16 확인).
+     그래서 data 가드 밖에 둔다. */
+  const [accepted, setAccepted] = useState<EventEntryAccepted | null>(null)
 
   return (
     <main className="main">
@@ -154,11 +165,35 @@ export default function EventContest() {
           </section>
         )}
 
+        {/* data 가드 밖이다 — 다시 읽는 동안에도 남아 있어야 한다 */}
+        {accepted && (
+          <section className="card ev-block ev-done" aria-live="polite">
+            <header className="ev-block-head">
+              <h2>등록했습니다</h2>
+              <p>
+                {accepted.entries.length}종목 · 지금 블록체인에 올리는 중입니다.
+                아래 <b>내 참가 내역</b>에서 확정을 확인할 수 있습니다.
+              </p>
+            </header>
+            <p className="ev-state is-quiet">
+              {accepted.me.qualified
+                ? `참가 자격을 채웠습니다 (${accepted.me.stockCount}종목).`
+                : `순위에 들려면 종목을 더 골라야 합니다. 지금 ${accepted.me.stockCount}종목입니다.`}
+            </p>
+          </section>
+        )}
+
         {data && (
           <>
             <EventStocks event={data} />
-            {/* 등록은 서버가 ENTRY 라고 할 때만 연다 */}
-            {data.phase === 'ENTRY' && <EventEntryForm event={data} onDone={reload} />}
+            {/* 등록은 서버가 ENTRY 라고 할 때만 연다. 등록 뒤에도 폼은 남는다 —
+                이미 건 종목은 잠기고 남은 종목을 이어서 고를 수 있다 */}
+            {data.phase === 'ENTRY' && (
+              <EventEntryForm
+                event={data}
+                onDone={(r) => { setAccepted(r); reload() }}
+              />
+            )}
             <EventMyEntries eventId={data.eventId} />
             <EventLeaderboard eventId={data.eventId} />
           </>

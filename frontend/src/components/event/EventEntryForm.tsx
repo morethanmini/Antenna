@@ -78,17 +78,21 @@ function flaw(r: Row, e: EventHome, lastPrice: number | null): string | null {
   return null
 }
 
+/**
+ * @param onDone 등록이 끝났을 때. **결과를 부모에게 넘긴다** — 성공 화면을 이 컴포넌트가 들고
+ *   있으면 부모가 다시 읽는 동안 이 컴포넌트가 언마운트되면서 그 화면이 통째로 사라진다
+ *   (2026-09-16 로컬에서 확인: 등록은 됐는데 폼만 비워져 사용자가 성공을 알 수 없었다).
+ */
 export default function EventEntryForm({
   event,
   onDone,
 }: {
   event: EventHome
-  onDone: () => void
+  onDone: (accepted: EventEntryAccepted) => void
 }) {
   const [rows, setRows] = useState<Row[]>(() => initialRows(event))
   const [busy, setBusy] = useState<null | 'signing' | 'sending'>(null)
   const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState<EventEntryAccepted | null>(null)
 
   const lastPriceOf = (code: string) =>
     event.stocks.find((s) => s.stockCode === code)?.lastPrice ?? null
@@ -137,32 +141,12 @@ export default function EventEntryForm({
       const signature = await personalSign(payload, address)
 
       setBusy('sending')
-      setDone(await registerEntries(event.eventId, { items, signature }))
-      onDone()
+      onDone(await registerEntries(event.eventId, { items, signature }))
     } catch (e) {
       setError(message(e))
     } finally {
       setBusy(null)
     }
-  }
-
-  if (done) {
-    return (
-      <section className="card ev-block" aria-live="polite">
-        <header className="ev-block-head">
-          <h2>등록했습니다</h2>
-          <p>
-            {done.entries.length}종목 · 지금 블록체인에 올리는 중입니다.
-            아래 <b>내 참가 내역</b>에서 확정을 확인할 수 있습니다.
-          </p>
-        </header>
-        <p className="ev-state is-quiet">
-          {done.me.qualified
-            ? `참가 자격을 채웠습니다 (${done.me.stockCount}종목).`
-            : `순위에 들려면 ${event.rules.minStocks}종목 이상이어야 합니다. 지금 ${done.me.stockCount}종목입니다.`}
-        </p>
-      </section>
-    )
   }
 
   return (
