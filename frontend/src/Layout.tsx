@@ -8,6 +8,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from './auth/context'
 import { onOnboardingOpen, takeOnboardingPending } from './auth/onboarding'
 import BriefingModal from './components/BriefingModal'
+import ConfirmDialog from './components/ConfirmDialog'
 import OnboardingTour from './components/OnboardingTour'
 import SimOnboardingTour from './components/SimOnboardingTour'
 import WalletLinkModal from './components/wallet/WalletLinkModal'
@@ -129,6 +130,7 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
   const navigate = useNavigate()
   // 좁은 화면 서랍 전용. 넓은 화면은 접힌 레일이 늘 떠 있어 여닫을 상태가 없다.
   const [railOpen, setRailOpen] = useState(false)
+  const [confirmingSignOut, setConfirmingSignOut] = useState(false)
 
   /* M-09 온보딩 튜토리얼. **홈이 아니라 셸에 둔다** — 비로그인 딥링크로 막혔던
      회원은 가입 뒤 홈이 아니라 그 경로로 착지한다(returnTo). 홈에만 걸면 그
@@ -236,10 +238,13 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
                 </svg>
               </Link>
               {/* refresh 는 httpOnly 쿠키라 브라우저가 직접 못 지운다.
-                  서버에 폐기를 요청하는 이 버튼이 유일한 정리 수단이다. */}
+                  서버에 폐기를 요청하는 이 버튼이 유일한 정리 수단이다.
+
+                  바로 나가지 않고 한 번 더 묻는다 — 이 아이콘은 알림·설정과 붙어 있어
+                  잘못 누르기 쉬운데, 되돌리려면 OAuth 를 다시 타야 한다. */}
               <button
                 className="iconbtn" type="button" aria-label="로그아웃"
-                onClick={() => { signOut(); navigate('/login', { replace: true }) }}
+                onClick={() => setConfirmingSignOut(true)}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M15 17v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v2" />
@@ -324,6 +329,17 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
 
       {briefing.id !== null && (
         <BriefingModal id={briefing.id} onClose={briefing.close} />
+      )}
+
+      {confirmingSignOut && (
+        <ConfirmDialog
+          title="정말 로그아웃할까요?"
+          description="이 브라우저의 세션이 끝납니다. 다시 이용하려면 로그인 화면에서 한 번 더 로그인해야 합니다."
+          confirmLabel="로그아웃"
+          tone="danger"
+          onCancel={() => setConfirmingSignOut(false)}
+          onConfirm={() => { signOut(); navigate('/login', { replace: true }) }}
+        />
       )}
     </>
   )
