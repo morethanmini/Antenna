@@ -375,7 +375,7 @@ class PoolIndexerTest {
     @Test
     @DisplayName("풀 주소가 없으면 꺼진다 — 릴레이어 키는 안 본다")
     void 주소_없으면_꺼짐() {
-        PoolIndexer off = new PoolIndexer(source, service, props, new EventPoolProperties(null));
+        PoolIndexer off = new PoolIndexer(source, service, props, new EventPoolProperties(null, null));
         assertThat(off.isEnabled()).isFalse();
         assertThat(indexer.isEnabled()).isTrue();
     }

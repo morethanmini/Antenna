@@ -41,7 +41,7 @@ class TokenIndexerE2ELiveTest {
                 new ChainConnection(props),
                 new CommitAnchorProperties(null),
                 new PredictTokenProperties(System.getenv("CONTRACT_PREDICT_TOKEN")),
-                new EventPoolProperties(null));
+                new EventPoolProperties(null, null));
     }
 
     @Test

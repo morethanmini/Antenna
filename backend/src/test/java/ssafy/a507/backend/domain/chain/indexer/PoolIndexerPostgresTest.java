@@ -76,13 +76,13 @@ class PoolIndexerPostgresTest {
     }
 
     @Test
-    @DisplayName("ddl-auto 가 테이블 셋과 UNIQUE 넷을 만들었고, bets 의 PK 는 prediction_id 다")
+    @DisplayName("ddl-auto 가 이벤트 테이블 넷과 UNIQUE 넷을 만들었고, bets 의 PK 는 prediction_id 다")
     void 스키마() {
         List<String> tables =
                 jdbc.queryForList(
                         "select table_name from information_schema.tables where table_schema = 'public' and table_name like 'prediction_event%' order by 1",
                         String.class);
-        assertThat(tables).containsExactly("prediction_event_bets", "prediction_event_stocks", "prediction_events");
+        assertThat(tables).containsExactly("prediction_event_bets", "prediction_event_results", "prediction_event_stocks", "prediction_events"); // results 는 EVENT-03
 
         List<String> uniques =
                 jdbc.queryForList(

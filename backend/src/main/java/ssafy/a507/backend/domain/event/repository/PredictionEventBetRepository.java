@@ -107,6 +107,31 @@ public interface PredictionEventBetRepository extends JpaRepository<PredictionEv
     List<PredictionEventBet> findRetryable(@Param("now") Instant now);
 
     /**
+     * 정산 러너(ANT-EVENT-03)의 후보 — 체인에 올라간(bet_index 있음) 배팅 중 주어진 상태. 리빌 후보는 ACTIVE, 정산 후보는
+     * ACTIVE·REVEALED. 예측을 페치한다(방향·판정 상태가 필요하고 러너는 트랜잭션 밖에서 값을 쓴다).
+     */
+    @Query("""
+            select b from PredictionEventBet b
+              join fetch b.prediction
+             where b.event.id = :eventId
+               and b.betStatus in :statuses
+               and b.betIndex is not null
+             order by b.betIndex asc
+            """)
+    List<PredictionEventBet> findOnChainByStatus(
+            @Param("eventId") Long eventId, @Param("statuses") Collection<PredictionEventBet.Status> statuses);
+
+    /** 순위 굳힘(ANT-EVENT-03) 재료 — 이벤트의 배팅 전부(예측·회원 페치). FAILED·PENDING 도 포함해 돌려주고 서비스가 가른다. */
+    @Query("""
+            select b from PredictionEventBet b
+              join fetch b.prediction
+              join fetch b.user
+             where b.event.id = :eventId
+             order by b.createdAt asc, b.predictionId asc
+            """)
+    List<PredictionEventBet> findAllForResults(@Param("eventId") Long eventId);
+
+    /**
      * 내 배팅 전부 — 홈 화면의 {@code mine} 과 {@code me} 요약 재료.
      *
      * <p>{@code prediction} 을 페치 조인한다. 카드가 방향·목표가를 보여주는데 {@code open-in-view: false}

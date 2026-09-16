@@ -220,6 +220,10 @@ public enum ErrorCode {
     EVENT_INSUFFICIENT_BALANCE(HttpStatus.CONFLICT, "ANT 잔액이 부족합니다."),
     EVENT_BASE_PRICE_MISSING(HttpStatus.CONFLICT, "기준가가 없는 종목이 있습니다."),
     EVENT_NOT_READY(HttpStatus.CONFLICT, "정산 조건이 아직 갖춰지지 않았습니다."),
+    // 정산 러너 (ANT-EVENT-03). 셋 다 "다시 누르면 온체인 상태를 읽어 이어 간다" 가 대응이다.
+    EVENT_SETTLING(HttpStatus.CONFLICT, "정산이 이미 진행 중입니다."),
+    EVENT_SETTLE_TX_REVERTED(HttpStatus.CONFLICT, "블록체인이 정산 트랜잭션을 거절했습니다. 상태를 확인하고 다시 실행하세요."),
+    EVENT_SETTLE_TIMEOUT(HttpStatus.SERVICE_UNAVAILABLE, "정산 트랜잭션 확정을 기다리다 시간이 초과됐습니다. 다시 실행하세요."),
 
     /**
      * 관리자 전용 엔드포인트를 일반 회원이 불렀다 (작업명세 v1.2 §0.2 ④).
