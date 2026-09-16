@@ -536,6 +536,8 @@ export default function Verify() {
                     </span>
                     <dl className="vf-settle-nums">
                       <div><dt>기준가</dt><dd className="num">{won(settle.basePrice)}</dd></div>
+                      {/* 기준가를 딴 거래일. 판정일과 같은 규칙 — 기준일이 휴장이면 그 뒤 첫 거래일 */}
+                      <div><dt>기준가 거래일</dt><dd className="num">{settle.basedOn}</dd></div>
                       <div><dt>판정 종가</dt><dd className="num">{won(settle.settlePrice)}</dd></div>
                       <div><dt>목표가</dt><dd className="num">{won(data.payload.targetPrice)}</dd></div>
                       <div><dt>오차율</dt><dd className="num">{settle.errorRate === null ? '—' : `${settle.errorRate}%`}</dd></div>

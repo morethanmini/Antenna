@@ -195,11 +195,16 @@ export default function PredictDetail() {
               </div>
               <div>
                 <dt>기준가</dt>
-                {/* 배치 B2 가 다음 영업일 종가로 확정한다. 빈 값을 0 으로 그리지 않는다 */}
+                {/* 배치 B2 가 다음 영업일 종가로 확정한다. 빈 값을 0 으로 그리지 않는다.
+                    확정됐으면 어느 날 종가인지 같이 적는다 — 기준일이 휴장이면 그 뒤 첫 거래일이라
+                    기준일과 다를 수 있고, 날짜 없이 값만 두면 시세 없는 날의 종가로 읽힌다(ANT-PRED-09) */}
                 <dd className="num">
                   {d.basePrice === null
                     ? <span className="pd-pending">다음 영업일 종가로 확정</span>
                     : won(d.basePrice)}
+                  {d.basePrice !== null && d.basedOn && (
+                    <small className="pd-on">{`${dot(d.basedOn)} 종가`}</small>
+                  )}
                 </dd>
               </div>
               <div>

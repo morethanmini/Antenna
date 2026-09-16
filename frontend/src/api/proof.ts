@@ -71,6 +71,8 @@ export type ProofSettle = {
   settleDate: string
   settlePrice: number | null
   basePrice: number | null
+  /** 기준가를 실제로 딴 거래일. settleDate 와 같은 규칙 — 기준일이 휴장이면 그 뒤 첫 거래일(ANT-PRED-09) */
+  basedOn: string
   errorRate: number | null
   sourceUrl: string | null
 }

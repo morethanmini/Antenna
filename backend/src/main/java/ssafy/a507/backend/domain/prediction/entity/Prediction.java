@@ -139,6 +139,16 @@ public class Prediction {
     @Column(name = "settled_on")
     private LocalDate settledOn;
 
+    /**
+     * 실제로 기준가를 딴 거래일. base_date 가 휴장(공휴일)이면 그 이후 첫 거래일이라 둘이 다를 수 있다 (ANT-PRED-09).
+     *
+     * <p>{@code settled_on} 의 짝이다. base_date 는 등록 때 약속한 날짜라 옮기지 않는데(옮기면 settle_date 까지 밀린다),
+     * 그러면 "5월 5일 종가 54,600" 처럼 시세가 없는 날의 종가로 읽히는 응답이 나갔다. 어느 날 종가인지를 여기 남긴다.
+     * 이 컬럼이 생기기 전에 확정된 행은 null 이다 — 읽는 쪽은 base_date 로 물러선다.
+     */
+    @Column(name = "based_on")
+    private LocalDate basedOn;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 8)
     private Status status;
@@ -218,10 +228,13 @@ public class Prediction {
      *
      * <p>{@code baseDate} 는 건드리지 않는다. 휴장이라 다음 거래일 종가를 썼더라도 등록 때 약속한 날짜는 그대로 둔다 —
      * settle_date 가 base_date + horizon 이라 여기서 옮기면 이미 사용자에게 나간 만기일까지 밀린다.
-     * 실제로 어느 날 종가를 썼는지는 기준가 쪽에서는 남기지 않는다. 검산 대상은 판정 종가 하나뿐이다.
+     * 대신 실제로 어느 날 종가를 썼는지는 {@code basedOn} 에 남긴다(ANT-PRED-09) — {@link #settle} 의 settledOn 과 같은 이유.
+     *
+     * @param basedOn 실제로 종가를 가져온 거래일. base_date 와 다를 수 있다
      */
-    public void fixBasePrice(BigDecimal basePrice) {
+    public void fixBasePrice(BigDecimal basePrice, LocalDate basedOn) {
         this.basePrice = basePrice;
+        this.basedOn = basedOn;
         this.status = Status.OPEN;
     }
 

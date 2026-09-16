@@ -88,6 +88,8 @@
 .prediction-detail-page .pd-pending{
   font-size:12.5px;font-weight:600;color:var(--faint);
 }
+/* 기준가 옆 "MM.DD 종가". 값이 어느 날 종가인지 — 기준일이 휴장이면 그 뒤 첫 거래일이다 */
+.prediction-detail-page .pd-on{ margin-left:6px; font-size:11.5px; font-weight:600; color:var(--muted); }
 
 /* ── 진행 막대 ───────────────────────────────────────────
    기준가에서 목표가까지를 100 으로 본다. 100 을 넘기면 색을 바꿔 알린다. */
