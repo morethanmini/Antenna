@@ -7,9 +7,6 @@
 구운 것이 `bg.webp` 다. 잘라 내고(투명 여백 제거) 폭을 줄인 결과라, 합계 11MB 가
 588KB 로 줄어 있다.
 
-**구운 파일은 아직 이 브랜치에 없다.** 배너를 화면에 붙이는 변경과 함께 들어온다.
-여기 있는 것은 원본 조각뿐이다.
-
 ## 왜 완성본 한 장이 아니라 조각인가
 
 처음엔 완성본 한 장을 받아 썼다. 그런데 그 그림이 **4.69:1** 이고 홈의 배너 자리는
@@ -38,18 +35,19 @@
 | --- | --- | --- | --- |
 | 시작 전 | `pill-before.png` | `title-main.png` | `copy-before.png` |
 | 대회 진행 중 | `pill-open.png` | `title-main.png` | `copy-before.png` |
+| 결과 집계 중 | `pill-judging.png` | `title-main.png` | `copy-before.png` |
 | 대회 종료 | `pill-done.png` | `title-done.png` | `copy-done.png` |
 
 자리 값은 `src/styles/home.css` 의 `.hm-ev-*` 가 띠 높이(`cqh`) 하나로 잰다.
 왕관만 예외로 **제목 폭의 %** 다 — 제목이 바뀌어도 같은 글자 위에 얹혀야 해서다
 (`title-main` 383px, `title-done` 333px 로 폭이 다르다).
 
-## 없는 것
+## 단계를 더 만들 때
 
-**"결과 집계 중"(등록 마감 ~ 결과 공개) 캡슐이 없다.** 지금 캡슐 셋으로는 그
-구간에 맞는 말이 없어, 그동안은 글자로 된 배너가 대신 나온다. 캡슐 한 장이 더
-생기면 `pill-judging.png` 로 넣고 `src/event/contest.ts` 의 `BANNER` 에 한 줄만
-더하면 된다.
+`src/event/contest.ts` 의 `BANNER` 는 `Partial` 이 아니라 `Record<Phase, …>` 다.
+단계를 새로 만들면 캡슐·제목·문구 세 장도 같이 만들어야 하고, 안 만들면 컴파일이
+막는다. 한동안 "결과 집계 중" 만 비어 있어 그 구간이 글자 배너로 떨어졌는데
+(2026-09-16 에 캡슐을 받아 채웠다), 그런 구멍이 조용히 생기지 않게 하려는 것이다.
 
 ## 다시 구우려면
 

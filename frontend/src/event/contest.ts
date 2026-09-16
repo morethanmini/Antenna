@@ -107,14 +107,15 @@ export type BannerArt = {
 }
 
 /**
- * 단계별로 갈아끼우는 세 장.
+ * 단계별로 갈아끼우는 세 장. 나머지 여섯 겹은 네 단계가 함께 쓴다.
  *
- * **judging 이 없다.** 등록은 닫혔고 결과는 아직인 구간인데, 받은 캡슐이
- * "시작 전 · 대회 진행 중 · 대회 종료" 셋뿐이라 맞는 말이 없다. 끝나지도 않은
- * 대회에 "대회 종료" 를 붙이거나, 닫힌 등록에 "진행 중" 을 붙이는 것보다
- * 글자 배너로 떨어지는 편이 낫다. 캡슐 한 장을 더 받으면 여기 한 줄만 는다.
+ * **네 단계가 모두 그림을 갖는다**(2026-09-16). 한동안 judging 만 비어 있었는데
+ * — 등록은 닫혔고 결과는 아직인 구간이라 "대회 종료" 도 "진행 중" 도 거짓말이
+ * 된다 — "결과 집계 중" 캡슐을 받아 채웠다. Partial 이 아니라 Record 인 이유가
+ * 이것이다. 단계를 새로 만들면 그림도 같이 만들어야 한다는 뜻이고, 안 만들면
+ * 컴파일이 막는다.
  */
-export const BANNER: Partial<Record<Phase, BannerArt>> = {
+export const BANNER: Record<Phase, BannerArt> = {
   before: {
     pill: ART('pill-before'),
     title: ART('title-main'),
@@ -126,6 +127,12 @@ export const BANNER: Partial<Record<Phase, BannerArt>> = {
     title: ART('title-main'),
     copy: ART('copy-before'),
     alt: '천하제일 단타대회 — 대회 진행 중. 오늘의 급등주를 맞혀라! 수익률 예측 최강자는 누구?',
+  },
+  judging: {
+    pill: ART('pill-judging'),
+    title: ART('title-main'),
+    copy: ART('copy-before'),
+    alt: '천하제일 단타대회 — 결과 집계 중. 오늘의 급등주를 맞혀라! 수익률 예측 최강자는 누구?',
   },
   done: {
     pill: ART('pill-done'),

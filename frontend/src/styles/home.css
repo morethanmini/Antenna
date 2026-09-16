@@ -347,14 +347,11 @@
    위 히어로와 한 덩어리로 붙어 보인다. */
 .hm-event{
   grid-column:1 / -1;
-  display:flex; align-items:center; gap:14px;
-  padding:16px 20px; border-radius:14px; text-decoration:none;
-  background:linear-gradient(135deg,var(--brand-ink) 0%,#3a3da8 100%);
-  color:#fff;
-  transition:transform .14s, box-shadow .14s;
+  text-decoration:none;
+  transition:transform .14s;
 }
-.hm-event:hover{transform:translateY(-1px); box-shadow:0 12px 26px -18px rgba(20,20,60,.7)}
-.hm-event:focus-visible{outline:2px solid var(--brand); outline-offset:3px}
+.hm-event:hover{transform:translateY(-2px)}
+.hm-event:focus-visible{outline:2px solid var(--brand); outline-offset:6px; border-radius:18px}
 
 /* ── 그림 배너 ───────────────────────────────────────────
    완성본 한 장이 아니라 **겹을 쌓는다**. 받은 완성본은 4.69:1 인데 이 자리는
@@ -366,7 +363,10 @@
    조각 사이가 조각 크기와 같은 비율로 움직여 어느 폭에서도 겹치지 않는다.
    늘어난 폭은 그냥 여백이 된다 — 배너가 원래 그렇게 동작한다.
 
-   cqh 가 이 상자의 높이를 가리키려면 container-type:size 가 있어야 한다. */
+   cqh 가 이 상자의 높이를 가리키려면 container-type:size 가 있어야 한다.
+
+   is-art 는 한동안 글자로 된 배너와 갈라 쓰던 이름이다. 캡슐이 네 단계에 다
+   생기면서 글자 배너가 없어졌지만, 마크업과 짝이 맞아 그대로 둔다. */
 .hm-event.is-art{
   position:relative; display:block; padding:0; background:none;
   aspect-ratio:9 / 1;
@@ -377,8 +377,7 @@
      모서리를 여기서 깎으므로 안쪽 .hm-ev-clip 과 같은 값이어야 한다 */
   overflow:hidden; border-radius:16px;
 }
-.hm-event.is-art:hover{transform:translateY(-2px); box-shadow:none}
-.hm-event.is-art:focus-visible{outline-offset:6px; border-radius:18px}
+
 /* **겹은 전부 클릭을 받지 않는다.** 캐릭터가 띠 밖으로 넘치는데, 넘친 그림도
    제 몫의 클릭을 받아서 위 카드의 바로가기 링크를 통째로 먹은 적이 있다.
    링크는 .hm-event 상자(= 띠)가 받는다 */
@@ -467,31 +466,6 @@
   .hm-event.is-art .hm-ev-confetti.is-b{display:none}
 }
 
-.hm-event-badge{
-  flex:none; padding:4px 10px; border-radius:999px;
-  background:var(--gold); color:#4a3a06; font-size:11.5px; font-weight:800;
-}
-/* margin-right:auto 가 여기 붙는다 — 마감 줄이 없는 단계에서도 버튼이 오른쪽
-   끝에 서야 한다. 미는 것은 하나만 해야 하므로 마감 줄에는 걸지 않는다 */
-.hm-event-text{display:flex; flex-direction:column; gap:2px; min-width:0; margin-right:auto}
-.hm-event-text b{color:#fff; font-size:15px; font-weight:800; letter-spacing:-.02em}
-.hm-event-text em{
-  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  color:rgba(255,255,255,.78); font-style:normal; font-size:12.5px;
-}
-.hm-event-when{
-  flex:none;
-  color:rgba(255,255,255,.82); font-size:12px; font-weight:700;
-  font-variant-numeric:tabular-nums;
-}
-.hm-event-cta{
-  flex:none; padding:8px 14px; border-radius:999px;
-  background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3);
-  color:#fff; font-size:12.5px; font-weight:750; white-space:nowrap;
-}
-@media (max-width:760px){
-  .hm-event{flex-wrap:wrap; gap:10px}
-}
 
 .hm-top{list-style:none; margin:0; padding:0; display:grid; gap:2px}
 .hm-top li{
