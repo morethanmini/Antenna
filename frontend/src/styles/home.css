@@ -442,8 +442,12 @@
    22cqh 가 그 한계다 — 더 키우면 띠 위로 잘려 나간다.
    왕관도 **제목 한가운데**에 세운다. 34% 는 "천하제일" 과 "단타" 사이라,
    글자만 보면 그럴듯해도 제목 전체로는 왼쪽에 쏠려 있었다.
-   translateX 로 제 폭의 절반을 되물리므로 왕관이 커지고 작아져도 축은 그대로다 */
-.hm-ev-crown{position:absolute; left:50%; transform:translateX(-50%); top:-32%; height:22cqh; width:auto}
+   translateX 로 제 폭의 절반을 되물리므로 왕관이 커지고 작아져도 축은 그대로다.
+   **-32% 는 왕관 아랫자락이 글자 위로 9px 내려와 겹쳤다.** 제목에 얹힌 것이
+   아니라 글자를 파먹는 것으로 보여, 왕관 아랫변이 글자 윗변에 닿을 때까지
+   올린다(-46%). 띠 위로는 5px 밖에 안 남으니 **여기서 더 올리면 잘린다** —
+   더 띄우고 싶으면 왕관 키(22cqh)부터 줄여야 한다 */
+.hm-ev-crown{position:absolute; left:50%; transform:translateX(-50%); top:-46%; height:22cqh; width:auto}
 /* 13 -> 11cqh. 문구가 짧아지면서 글자 하나하나가 커 보여 제목과 다투었다 */
 .hm-ev-copy{height:11cqh; width:auto}
 
