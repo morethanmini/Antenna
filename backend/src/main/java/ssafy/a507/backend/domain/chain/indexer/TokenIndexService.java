@@ -13,6 +13,7 @@ import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.account.entity.Notification;
 import ssafy.a507.backend.domain.account.repository.NotificationRepository;
 import ssafy.a507.backend.domain.account.repository.UserRepository;
+import ssafy.a507.backend.domain.account.service.NotificationGate;
 import ssafy.a507.backend.domain.chain.entity.ChainEvent;
 import ssafy.a507.backend.domain.chain.entity.Operation;
 import ssafy.a507.backend.domain.chain.entity.TokenLedger;
@@ -56,6 +57,7 @@ public class TokenIndexService {
     private final SubscriptionRepository subscriptions;
     private final AdBannerRepository banners;
     private final NotificationRepository notifications;
+    private final NotificationGate notificationGate;
     /** Boot 4 = Jackson 3. 웹 계층 매퍼 빈에 기대지 않고 여기서 만든다({@code AnchorIndexService} 와 같은 이유). */
     private final JsonMapper json = JsonMapper.builder().build();
 
@@ -66,7 +68,8 @@ public class TokenIndexService {
             UserRepository users,
             SubscriptionRepository subscriptions,
             AdBannerRepository banners,
-            NotificationRepository notifications) {
+            NotificationRepository notifications,
+            NotificationGate notificationGate) {
         this.events = events;
         this.operations = operations;
         this.ledger = ledger;
@@ -74,6 +77,7 @@ public class TokenIndexService {
         this.subscriptions = subscriptions;
         this.banners = banners;
         this.notifications = notifications;
+        this.notificationGate = notificationGate;
     }
 
     /**
@@ -223,6 +227,9 @@ public class TokenIndexService {
      * 순간이다 — 접수 때 알리면 결제가 되돌려진 구독까지 알린 셈이 된다.
      */
     private void notifySubscribed(Subscription s) {
+        if (!notificationGate.allows(s.getPublisher().getId(), "SUBSCRIBE")) {
+            return;
+        }
         String nickname = s.getSubscriber().getNickname();
         notifications.save(Notification.create(
                 s.getPublisher(),

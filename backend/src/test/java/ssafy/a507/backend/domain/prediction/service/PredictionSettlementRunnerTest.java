@@ -144,6 +144,20 @@ class PredictionSettlementRunnerTest {
     }
 
     @Test
+    @DisplayName("판정 알림을 끈 사람에게는 VERDICT 가 가지 않는다 — 판정 자체는 그대로(ANT-NOTIFY-02)")
+    void 판정_알림_설정_끔() {
+        jdbc.update("insert into user_settings (user_id, notify_verdict, notify_season, notify_social, notify_channel, chart_view, updated_at)"
+                + " values (?, false, true, true, true, 'BEGINNER', now())", userId);
+        insertQuote(STOCK, MON, "85000");
+        long id = givenOpen(MON, Prediction.Direction.UP, "82000", "80000");
+
+        runner.run(BUSINESS_DATE);
+
+        assertThat(predictions.findById(id).orElseThrow().getStatus()).isEqualTo(Prediction.Status.HIT);
+        assertThat(jdbc.queryForObject("select count(*) from notifications where user_id = ?", Long.class, userId)).isZero();
+    }
+
+    @Test
     @DisplayName("방향을 틀리면 MISS — 판정 건수에는 들어가고 적중 건수에는 안 들어간다")
     void 판정_MISS() {
         insertQuote(STOCK, MON, "79000");
@@ -387,6 +401,7 @@ class PredictionSettlementRunnerTest {
      */
     private void clean() {
         jdbc.update("delete from notifications");
+        jdbc.update("delete from user_settings");
         jdbc.update("delete from prediction_commits");
         jdbc.update("delete from prediction_evidences");
         jdbc.update("delete from prediction_notes");
