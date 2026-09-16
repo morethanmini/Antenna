@@ -39,6 +39,26 @@
 | 대회 종료 | `pill-done.png` | `title-done.png` | `copy-done.png` |
 
 자리 값은 `src/styles/home.css` 의 `.hm-ev-*` 가 띠 높이(`cqh`) 하나로 잰다.
+
+## 대회 페이지 머리 (J-01)
+
+홈 배너와 다른 자리다 — `/events/scalping` 맨 위 카드에 쓴다. 배경·캐릭터는 위
+조각을 그대로 쓰고, 아래 여섯 장이 더 붙는다.
+
+| 파일 | 무엇 |
+| --- | --- |
+| `hero-pill-event.png` | `이벤트` 금색 캡슐 |
+| `hero-title.png` | `천하제일 단타대회` 두 줄 제목 |
+| `hero-lede.png` | 한 줄 소개 |
+| `hero-opens-at.png` | `등록 시작 ǀ 9월 18일 (금) 13:10` |
+| `hero-rules-title.png` | `대회 규칙` |
+| `hero-rules.png` | 규칙 네 줄 패널 |
+
+**`hero-opens-at` 에는 날짜가 구워져 있다.** 시작 전에만 맞는 말이라 그 단계에서만
+쓰고, 등록이 닫힌 뒤에는 글자로 그린다. 나머지 단계 그림이 생기면 그때 바꾼다.
+
+**`hero-rules` 도 날짜가 구워져 있다.** 일정이 바뀌면 `contest.ts` 의 `RULES`(읽어
+주는 기기용 글)와 이 그림이 어긋나므로 **둘 다** 고쳐야 한다.
 왕관만 예외로 **제목 폭의 %** 다 — 제목이 바뀌어도 같은 글자 위에 얹혀야 해서다
 (`title-main` 383px, `title-done` 333px 로 폭이 다르다).
 

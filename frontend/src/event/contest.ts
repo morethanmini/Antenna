@@ -20,6 +20,8 @@ export const CONTEST = {
   /** 한 줄 소개. 홈 배너와 대회 머리가 같은 문장을 쓴다 */
   lede: '정해진 10개 종목, 같은 날 판정. 방향과 정확도를 한 줄로 세웁니다.',
 
+  /** 대회가 시작하는 날(YYYY-MM-DD) */
+  startDate: '2026-09-18',
   /** 등록 창이 열리는 순간 */
   opensAt: '2026-09-18T13:10:00+09:00',
   /** 등록 창이 닫히는 순간 */
@@ -87,6 +89,36 @@ export const PHASE_LABEL: Record<Phase, string> = {
    단계가 바뀌면 **캡슐·제목·문구 세 장만** 갈아끼운다. 나머지는 공통이다. */
 
 const ART = (name: string) => `/assets/event/${name}.webp`
+
+/**
+ * 대회 페이지(J-01) 머리에 쓰는 조각.
+ *
+ * **opensAt 만 날짜가 그림에 구워져 있다.** "등록 시작 · 9월 18일 (금) 13:10" 이라
+ * 시작 전에만 맞는 말이다. 다른 단계에서는 이 그림을 쓰지 않고 글자로 그린다 —
+ * 등록이 닫힌 뒤에 "등록 시작" 이 떠 있으면 거짓말이 된다.
+ */
+export const HERO = {
+  event: ART('hero-pill-event'),
+  title: ART('hero-title'),
+  lede: ART('hero-lede'),
+  opensAt: ART('hero-opens-at'),
+  rulesTitle: ART('hero-rules-title'),
+  rules: ART('hero-rules'),
+}
+
+/**
+ * 대회 규칙 네 줄. 순서가 곧 시간 순서다.
+ *
+ * 화면에는 그림(HERO.rules)으로 나가지만, **그림에 구워진 글자는 읽어 주는
+ * 기기가 못 읽는다.** 그래서 같은 내용을 여기 글로도 두고 화면 밖에 함께 깐다.
+ * 날짜가 바뀌면 이 글과 그림이 어긋나므로 그림도 같이 다시 받아야 한다.
+ */
+export const RULES: { k: string; v: string }[] = [
+  { k: '시작', v: `${dayStamp(CONTEST.startDate)} 시작합니다.` },
+  { k: '등록', v: `${stamp(CONTEST.opensAt)} ~ ${stamp(CONTEST.closesAt)} 사이에만 예측을 등록할 수 있습니다.` },
+  { k: '판정', v: `${dayStamp(CONTEST.targetDate)} 종가를 맞히는 대회입니다.` },
+  { k: '공개', v: `결과는 ${dayStamp(CONTEST.revealDate)}에 공개합니다.` },
+]
 
 /** 단계와 무관하게 늘 깔리는 겹 */
 export const BANNER_BASE = {
