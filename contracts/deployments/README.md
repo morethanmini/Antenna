@@ -70,6 +70,7 @@ chain 컨테이너가 8545 를 쥐고 있으면 손으로 띄운 노드는 못 �
 | 수납(구독 30%) | #2 | `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC` |
 | CommitAnchor v3 | #0 nonce 0 | `0x5FbDB2315678afecb367f032d93F642f64180aa3` |
 | PredictToken | #0 nonce 1 | `0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512` |
+| PredictionEventPool (ANT-EVENT-01) | #0 nonce 2 | `0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0` — `deploy:local` 이 MOVER_ROLE 까지 준다 |
 
 **새 노드에서 배포하면 두 주소가 늘 같다**(ANT-CHAIN-14) — 서버를 붙일 때 주소를 매번 찾지 않아도 된다.
 `deploy.js` 의 배포 순서(CommitAnchor → PredictToken)를 바꾸면 주소가 바뀐다. 릴레이어 #1 의 키는 `npx hardhat node` 가 화면에 찍는다(공개 테스트 키).
