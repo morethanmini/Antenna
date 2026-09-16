@@ -36,6 +36,8 @@ import { useBlock } from '../../api/useBlock'
 import WalletLinkModal from '../wallet/WalletLinkModal'
 import CommitProgressModal, { type CommitPhase } from '../prediction/CommitProgressModal'
 import SlideToSign from '../prediction/SlideToSign'
+import EventBet, { EventBanner, betAmount, BET_MIN, BET_MAX } from './EventBet'
+import { CONTEST, CONTEST_PATH, stamp } from '../../event/contest'
 import ErrorState from '../state/ErrorState'
 import { ApiError } from '../../api/errors'
 import { POINT_KINDS, POINT_LABEL, getPoints } from '../../api/stockDetail'
@@ -54,6 +56,9 @@ import { connectAddress, hasWallet, personalSign } from '../../wallet/provider'
 import { useAuth } from '../../auth/context'
 
 const DIRECTION_LABEL: Record<Direction, string> = { UP: '오른다', DOWN: '내린다' }
+
+/** 남은 글자를 알리기 시작하는 지점. 이만큼 남았을 때부터 보인다 */
+const NOTE_WARN_LEFT = 500
 
 /* 등락률 고르개에 놓을 값. 왼쪽 분포표가 5% 폭이라 같은 눈금을 쓴다 — 두 곳의
    눈금이 다르면 "+10% 에 열네 명" 을 보고 +10% 를 골랐는데 다른 칸에 떨어진다. */
@@ -92,9 +97,17 @@ type Props = {
   onGoInfo: () => void
   form: PredictForm
   onForm: (next: (prev: PredictForm) => PredictForm) => void
+  /**
+   * 대회(J-01)로 들어왔는가. 참일 때만 배너와 배팅 카드가 붙는다 — 회차 id·등록
+   * 창·대회 종목 셋을 부모가 이미 확인했다(StockDetail). 평소 경로로 온 사람에게는
+   * 이 화면에 배팅이라는 말 자체가 없다.
+   */
+  eventMode?: boolean
 }
 
-export default function PredictTab({ code, summary, picked, onPick, onGoInfo, form, onForm }: Props) {
+export default function PredictTab({
+  code, summary, picked, onPick, onGoInfo, form, onForm, eventMode = false,
+}: Props) {
   const { user, setWalletLinked } = useAuth()
 
   const slots = useBlock(() => getSlots(), [])
@@ -106,6 +119,7 @@ export default function PredictTab({ code, summary, picked, onPick, onGoInfo, fo
   const setTarget = (v: string) => onForm((f) => ({ ...f, target: v }))
   const setHorizon = (v: Horizon) => onForm((f) => ({ ...f, horizon: v }))
   const setNote = (v: string) => onForm((f) => ({ ...f, note: v }))
+  const setBet = (v: string) => onForm((f) => ({ ...f, bet: v }))
   /* 사람이 직접 고른 방향. 이때부터 목표가가 방향을 바꾸지 않는다 */
   const setDirection = (v: Direction) =>
     onForm((f) => ({ ...f, direction: v, directionTouched: true }))
@@ -229,6 +243,15 @@ export default function PredictTab({ code, summary, picked, onPick, onGoInfo, fo
   const remaining = slots.data?.remaining ?? 0
   const overSlot = slots.data ? remaining <= 0 : false
 
+  /* 이벤트 배팅. 이벤트가 아니면 폼에 값이 있어도 없는 셈 친다 — 배너로 들어왔다가
+     주소에서 event 를 지우고 새로고침하면 화면에 보이지도 않는 금액이 걸린 채
+     서명 발판의 문구만 "예측하고 배팅하기" 로 남는다. */
+  const bet = eventMode ? betAmount(form.bet) : 0
+  /* 한도를 벗어나면 등록을 막는다. 카드가 경고를 띄우고 있는데 발판이 열려 있으면
+     걸린 줄 알고 서명한다 — 배팅은 취소할 수 없는 쪽에 붙는 결정이다.
+     컨트랙트도 StakeOutOfRange 로 되돌리지만, 거기까지 가면 서명은 이미 끝난 뒤다. */
+  const betOutOfRange = bet > 0 && (bet < BET_MIN || bet > BET_MAX)
+
   async function submit() {
     if (!draft) return
     setFailure(null)
@@ -264,6 +287,9 @@ export default function PredictTab({ code, summary, picked, onPick, onGoInfo, fo
       const signature = await personalSign(payload, address)
       // 지갑 승인이 끝났다. 여기서부터가 사용자가 기다리는 구간이다
       setPhase('committing')
+      /* 배팅 금액은 아직 싣지 않는다. POST /predictions 에 betAmount 가 없어
+         지금 얹으면 400 이고, 커밋·서명 문자열에는 애초에 들어가지 않는다
+         (EventBet.tsx 머리말). 서버가 칸을 열면 draft 옆에 나란히 넘긴다. */
       setResult(await createPrediction(draft, signature))
       setPhase('settled')
       /* 다음 예측은 새 난수로 봉인한다. 같은 noteSalt 를 두 번 쓰면 같은 근거가 같은
@@ -345,7 +371,15 @@ export default function PredictTab({ code, summary, picked, onPick, onGoInfo, fo
      먼저 확인하고 내 판단을 적는 흐름이라 둘을 나란히 둔다. */
   return (
     <div className="sd-grid">
-      <PredictionDepth code={code} span={6} />
+      {/* 왼쪽 기둥 — 대회 배너와 예측 분포가 **한 열 안에** 선다.
+          배너를 격자 전체로 빼면 두 카드가 통째로 아래로 밀리고, 오른쪽 등록
+          카드에 붙이면 폼이 배너만큼 길어져 옆 칸이 그만큼 빈다. 남들이 어떻게
+          걸었는지 보는 쪽에 얹어 두면 어느 카드도 길어지지 않는다. */}
+      <div className="sd-col" data-span="6">
+        {eventMode && <EventBanner name={CONTEST.name} closesAt={stamp(CONTEST.closesAt)} />}
+
+        <PredictionDepth code={code} />
+      </div>
 
       <Panel
         title="예측 등록하기"
@@ -537,17 +571,47 @@ export default function PredictTab({ code, summary, picked, onPick, onGoInfo, fo
               실제로 눌러 확인했다. 서버가 풀어 주면 그때 pf-opt 로 바꾼다. */}
           <li className="pf-step">
             <h3><i className="pf-no">4</i>내 판단 <span className="pf-req">필수 · 구독자 전용</span></h3>
+            {/* 남은 글자는 **칸 안쪽**에 겹쳐 띄운다. 칸 아래 한 줄로 두면 4,500 자를
+                넘는 순간 그 줄이 생기며 아래가 통째로 밀린다 — 글을 쓰는 중에 발판이
+                움직이는 것이라, 자리를 차지하지 않는 곳에 놓는다. */}
+            <div className="sd-note-wrap">
             <textarea
               className="sd-note"
               value={note}
               maxLength={NOTE_MAX}
-              rows={3}
+              /* 두 줄로 연다. 세 줄이면 빈 칸이 카드에서 가장 큰 덩어리가 되는데,
+                 여기 적는 글은 대개 한두 줄이고 길게 쓰는 사람은 늘려 쓰면 된다
+                 (resize:vertical). */
+              rows={2}
               placeholder="왜 이렇게 보는지 적어 두면, 만기 뒤에 스스로 판단을 되짚을 수 있습니다."
               onChange={(e) => setNote(e.target.value)}
             />
-            <p className="sd-help sd-note-count num">{`${note.length} / ${NOTE_MAX}`}</p>
+            {/* 평소에는 적지 않는다(2026-09-16). 5,000 자는 여기 적는 글의 길이와
+                거리가 멀어 늘 띄워 두면 평생 볼 일 없는 숫자가 칸마다 붙어 있다.
+                한계가 눈앞일 때만 말해 준다 — maxLength 로 조용히 막히면
+                왜 안 써지는지 알 길이 없다. */}
+            {NOTE_MAX - note.length <= NOTE_WARN_LEFT && (
+              <span className="sd-note-left num" role="status">
+                {`${NOTE_MAX - note.length}자 남음`}
+              </span>
+            )}
+            </div>
           </li>
         </ol>
+
+        {/* 배팅은 **단계에 끼어들지 않는다.** ①~④ 는 이벤트든 아니든 같은 네 개이고,
+            배팅은 그 뒤에 얹히는 이벤트 전용 카드다. 번호 사이에 밀어 넣으면 같은
+            화면의 단계 수가 경로에 따라 달라진다.
+            자리가 발판 바로 위인 것도 뜻이 있다 — 돈을 거는 결정은 서명 직전에
+            마지막으로 한 번 더 보이는 게 맞다. */}
+        {eventMode && (
+          <EventBet
+            value={form.bet}
+            onChange={setBet}
+            direction={direction}
+            contestPath={CONTEST_PATH}
+          />
+        )}
 
         {/* 커밋 미리보기 + 서명 */}
         <div className="pf-sign">
@@ -584,9 +648,13 @@ export default function PredictTab({ code, summary, picked, onPick, onGoInfo, fo
               끝나는지 알 수 없다. 못 누르는 상태로 자리를 지키게 한다. */}
           <SlideToSign
             onConfirm={submit}
-            disabled={!draft}
+            disabled={!draft || betOutOfRange}
             busy={submitting}
-            label={overSlot ? '슬롯을 다 썼습니다' : '밀어서 등록하기'}
+            label={
+              overSlot ? '슬롯을 다 썼습니다'
+                : bet > 0 ? '예측하고 배팅하기'
+                  : '밀어서 등록하기'
+            }
             busyLabel="서명중입니다…"
           />
 
