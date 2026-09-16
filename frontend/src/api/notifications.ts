@@ -11,6 +11,7 @@
    PATCH  /notifications/{id}/read  204
    PATCH  /notifications/read-all   204
    DELETE /notifications/{id}       204 · 남의 것은 404
+   DELETE /notifications            204 · 내 것 전부
 
    응답의 readAt(시각 | null)을 화면용 read(불리언)로 바꿔 들고 있는다 — 화면이
    묻는 것은 "읽었나" 뿐이고, 언제 읽었는지는 어디에도 그리지 않는다.
@@ -104,7 +105,12 @@ export function markAllRead() {
   return api.patch<void>('/notifications/read-all')
 }
 
-/** 한 건 삭제. 읽음과 달리 되돌릴 수 없어 화면이 확인 없이 지우는 대신 한 건씩만 지운다 */
+/** 한 건 삭제. 되돌릴 수 없지만 한 건이라 확인 없이 지운다 */
 export function deleteNotification(id: number) {
   return api.delete<void>(`/notifications/${id}`)
+}
+
+/** 모두 삭제. 되돌릴 수 없어 화면이 확인 창을 먼저 띄운다(NotificationBell) */
+export function deleteAllNotifications() {
+  return api.delete<void>('/notifications')
 }
