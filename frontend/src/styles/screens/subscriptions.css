@@ -118,3 +118,40 @@
   .sb-confirm-actions{ flex-direction:column-reverse; }
   .sb-confirm-actions .sb-btn{ width:100%; }
 }
+
+/* ── 카드를 눌러 채널로 (S15P21A507-273) ─────────────────
+   누를 수 있다는 것이 모양으로 보여야 한다. 그림자까지 주면 목록이 들썩이므로
+   테두리 색과 바탕만 바꾼다. */
+.sb-item{ cursor:pointer; transition:border-color .14s, background .14s; }
+.sb-item:hover{ border-color:var(--brand-soft); background:var(--brand-softer); }
+/* 지난 구독은 눌러도 채널로 가지만, 살아 있는 구독처럼 밝아지지는 않게 한다 */
+.sb-item.is-expired:hover{ background:var(--rule); }
+/* 안쪽 링크·버튼은 카드 hover 를 물려받지 않는다 — 제 배경을 지킨다 */
+.sb-item:hover .sb-btn{ background:var(--surface); }
+
+/* ── 체인 해시 말풍선 — 커서를 따라온다 ──────────────────
+   position:fixed 라 카드의 overflow 나 격자 칸에 갇히지 않는다.
+   pointer-events:none 이 핵심이다: 이게 없으면 말풍선이 커서 아래로 들어가
+   카드의 mouseleave 가 터지고 말풍선이 깜빡인다. */
+.sb-hash-tip{
+  position:fixed; z-index:50; pointer-events:none;
+  max-width:min(420px, 90vw);
+  padding:8px 11px;
+  border:1px solid var(--rule); border-radius:9px;
+  background:var(--surface); box-shadow:var(--shadow);
+}
+.sb-hash-label{
+  display:block; margin-bottom:3px;
+  font-size:var(--fs-xs); font-weight:var(--fw-bold); color:var(--muted);
+}
+.sb-hash-tip code{
+  font-family:var(--mono); font-size:var(--fs-xs); color:var(--ink);
+  overflow-wrap:anywhere;   /* 66자가 한 줄로 화면을 넘지 않게 */
+}
+
+/* 손가락 입력에는 hover 가 없다. 말풍선이 안 뜨는 것은 맞지만, 카드가 눌리는 느낌은
+   남겨 둔다 — 누르면 채널로 가는 것은 마우스와 똑같다. */
+@media (hover:none){
+  .sb-item:hover{ border-color:var(--rule); background:var(--surface); }
+  .sb-item.is-expired:hover{ background:var(--surface-2); }
+}

@@ -21,8 +21,8 @@
    해지에 확인 단계를 두는 이유
    **다시 켜는 API 가 없다.** 명세에 DELETE 만 있고 되살리는 경로가 없어, 실수로 누르면
    이 화면에서 되돌릴 방법이 없다. 토글처럼 보이게 만들지 않는다. */
-import { useCallback, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { formatExpiry } from '../api/channels'
 import type { ApiError } from '../api/errors'
 import {
@@ -32,7 +32,6 @@ import { useAsync } from '../api/useAsync'
 import { formatDateTime, formatToken } from '../api/wallet'
 import { DEFAULT_AVATAR } from '../auth/context'
 import AnchorBadge from '../components/AnchorBadge'
-import CopyHash from '../components/CopyHash'
 import EmptyState from '../components/state/EmptyState'
 import ErrorState from '../components/state/ErrorState'
 import '../styles/screens/subscriptions.css'
@@ -118,9 +117,50 @@ type RowProps = {
 
 function Row({ sub, confirming, busy, error, onAsk, onCancelAsk, onConfirm }: RowProps) {
   const { publisher, fee, status, startedAt, expiresAt, renewEnabled, txHash } = sub
+  const navigate = useNavigate()
+
+  /* 해시 말풍선. 보이는지만 state 로 두고 **자리는 ref 로 직접 옮긴다** —
+     mousemove 마다 setState 하면 초당 수십 번 다시 그린다. 위치는 화면에만 있는 값이라
+     React 를 거칠 이유가 없다. */
+  const [hashOpen, setHashOpen] = useState(false)
+  const tipRef = useRef<HTMLDivElement>(null)
+
+  function moveTip(event: React.MouseEvent) {
+    const tip = tipRef.current
+    if (!tip) return
+    /* position:fixed 라 clientX/Y 를 그대로 쓴다. 커서를 살짝 비껴 두지 않으면
+       말풍선이 커서를 덮어 hover 가 깜빡인다(pointer-events:none 이라 실제로는 안 덮지만
+       시각적으로 가린다). */
+    tip.style.left = `${event.clientX + 16}px`
+    tip.style.top = `${event.clientY + 18}px`
+  }
+
+  /* 카드를 누르면 그 예측가의 채널로. 안의 링크·버튼에서 시작한 클릭은 지나간다 —
+     닉네임 링크를 누른 사람은 그리로 가려는 것이고, 해지 버튼을 누른 사람은 해지하려는 것이다.
+     덩어리를 role="button" 으로 만들지 않는다: 안에 링크와 버튼이 있어 스크린리더가
+     카드 전체를 거대한 버튼 하나로 읽고 그것들이 그 안에 갇힌다. 키보드 길은 닉네임 링크다. */
+  function openChannel(event: React.MouseEvent) {
+    if ((event.target as HTMLElement).closest('a, button')) return
+    navigate(`/channels/${publisher.userId}`)
+  }
 
   return (
-    <article className={`sb-item is-${status.toLowerCase()}`}>
+    <article
+      className={`sb-item is-${status.toLowerCase()}`}
+      onClick={openChannel}
+      onMouseEnter={() => { if (txHash) setHashOpen(true) }}
+      onMouseLeave={() => setHashOpen(false)}
+      onMouseMove={hashOpen ? moveTip : undefined}
+    >
+      {/* 체인 기록. 카드 안에 줄로 두지 않고 hover 로 옮겼다 — 구독이 커밋 원장(D-01)에
+          오르지 않아 온체인 흔적이 이 해시뿐인데, 평소에 읽을 값은 아니다.
+          pointer-events:none 이라 커서를 따라와도 아래 카드의 hover 가 끊기지 않는다. */}
+      {hashOpen && txHash && (
+        <div className="sb-hash-tip" ref={tipRef} role="tooltip">
+          <span className="sb-hash-label">체인 기록</span>
+          <code>{txHash}</code>
+        </div>
+      )}
       <div className="sb-head">
         {/* 예측가 얼굴. 구독은 "이 사람을 산 것" 인데 목록에는 이름 글자만 있었다(S15P21A507-273).
             안 올린 사람은 기본 개미다 — 서버가 null 을 준다. 장식이라 alt 는 비운다:
@@ -176,14 +216,6 @@ function Row({ sub, confirming, busy, error, onAsk, onCancelAsk, onConfirm }: Ro
           </dd>
         </div>
 
-        {/* 결제 tx. 구독은 커밋 원장(D-01)에 오르지 않아 온체인 흔적이 이 해시뿐이다.
-            SSAFY 체인엔 탐색기가 없어 D-02 처럼 복사만 둔다. PENDING 은 아직 없어 자리째 뺀다 */}
-        {txHash && (
-          <div>
-            <dt>체인 기록</dt>
-            <dd><CopyHash value={txHash} /></dd>
-          </div>
-        )}
       </dl>
 
       {/* ── 자동 갱신 ─────────────────────────────────
