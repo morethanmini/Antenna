@@ -5,7 +5,8 @@
 
    타입은 명세서가 준 스키마 그대로다 —
      GET  200 { items: [{ id, publisher, fee, status, expiresAt, renewEnabled }] }
-           publisher = { userId, nickname, avatarUrl }   (avatarUrl 은 S15P21A507-273 에서 추가)
+           publisher = { userId, nickname, avatarUrl, interests, latestPredictionAt }  (S15P21A507-273)
+           item 에 startedAt 추가 — 구독 시점
      DELETE 204
    서버는 ANT-TOKEN-05 에서 열었다(MySubscriptionController).
 
@@ -32,6 +33,13 @@ export type Publisher = {
   nickname: string
   /** 프로필 사진 주소. 안 올렸으면 null — 화면이 DEFAULT_AVATAR 를 쓴다 (S15P21A507-273) */
   avatarUrl: string | null
+  /** 관심 섹터. 담은 순서대로. 안 고른 사람은 빈 배열 (S15P21A507-273) */
+  interests: string[]
+  /**
+   * 가장 최근 예측 시각(REAL 만). 한 건도 없으면 null.
+   * 구독은 앞으로 올 예측을 사는 것이라, 마지막 활동이 갱신을 정하는 근거다.
+   */
+  latestPredictionAt: string | null
 }
 
 /**
@@ -47,6 +55,8 @@ export type Subscription = {
   /** 정수 ANT 문자열. 결제 시점 박제값 */
   fee: string
   status: SubscriptionStatus
+  /** 구독이 개시된 시각. PENDING 은 아직 개시 전이라 null 이다 */
+  startedAt: string | null
   /** 개시 +30일. PENDING 은 아직 개시 전이라 null 이다 */
   expiresAt: string | null
   /** 만료일에 배치 B4 가 재결제할지. 해지하면 false */
