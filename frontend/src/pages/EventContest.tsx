@@ -25,7 +25,6 @@ import {
   HERO,
   RULES,
   cardHref,
-  dayStamp,
   phaseAt,
   stamp,
 } from '../event/contest'
@@ -82,7 +81,7 @@ function Hero({ phase }: { phase: ReturnType<typeof phaseAt> }) {
   const next =
     phase === 'before' ? { label: '등록 시작', at: stamp(CONTEST.opensAt) }
     : phase === 'open' ? { label: '등록 마감', at: stamp(CONTEST.closesAt) }
-    : phase === 'judging' ? { label: '결과 공개', at: dayStamp(CONTEST.revealDate) }
+    : phase === 'judging' ? { label: '결과 공개', at: stamp(CONTEST.revealAt) }
     : null
 
   return (
@@ -105,12 +104,14 @@ function Hero({ phase }: { phase: ReturnType<typeof phaseAt> }) {
         </h1>
         <img className="ev-hero-lede" src={HERO.lede} alt={CONTEST.lede} />
 
-        {/* 그림에 날짜가 구워져 있어 시작 전에만 쓴다. 그 뒤로는 글자로 그린다 —
-            등록이 닫힌 뒤에 "등록 시작" 이 떠 있으면 거짓말이 된다 */}
-        {phase === 'before' ? (
-          <img className="ev-hero-next" src={HERO.opensAt}
-               alt={`${next?.label} ${next?.at}`} />
-        ) : next ? (
+        {/* **시작 전에도 글자로 그린다.** 원래는 그림(HERO.opensAt)을 썼는데 거기
+            "13:10" 이 구워져 있고, 담당자 확정값이 13:30 으로 바뀌었다(2026-09-16).
+            날짜가 박힌 그림은 일정이 흔들릴 때마다 조용히 거짓말을 한다 — 여기만
+            글자로 돌리면 contest.ts 한 곳을 고치는 것으로 끝난다.
+            새 그림을 받으면 아래 한 줄을 되살리면 된다:
+              {phase === 'before' ? <img className="ev-hero-next" src={HERO.opensAt}
+                 alt={`${next?.label} ${next?.at}`} /> : …} */}
+        {next ? (
           <p className="ev-next">
             <b>{next.label}</b>
             <span className="num">{next.at}</span>
