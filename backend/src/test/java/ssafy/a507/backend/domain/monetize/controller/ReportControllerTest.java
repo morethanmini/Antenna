@@ -102,7 +102,7 @@ class ReportControllerTest {
         flush();
     }
 
-    /** Redis 대신 맵. get·set(TTL) 두 연산만 쓰므로 그 둘만 흉내낸다. */
+    /** Redis 대신 맵. get·set(TTL)·setIfAbsent(TTL) 세 연산만 쓰므로 그 셋만 흉내낸다. */
     private void stubRedis() {
         @SuppressWarnings("unchecked")
         ValueOperations<String, String> ops = mock(ValueOperations.class);
@@ -115,6 +115,9 @@ class ReportControllerTest {
                 })
                 .given(ops)
                 .set(anyString(), anyString(), any(Duration.class));
+        // 열람 중복 제거(SETNX). 없을 때만 넣고 넣었는지를 돌려준다.
+        given(ops.setIfAbsent(anyString(), anyString(), any(Duration.class)))
+                .willAnswer(call -> redisStore.putIfAbsent(call.getArgument(0), call.getArgument(1)) == null);
     }
 
     // ── POST /reports ───────────────────────────────────────
@@ -615,6 +618,34 @@ class ReportControllerTest {
         flush();
 
         assertThat(viewCountOf(reportId)).isEqualTo(6);
+    }
+
+    @Test
+    @DisplayName("같은 사람의 같은 날 재열람은 세지 않는다 — 들어갔다 나왔다 반복해도 1 이다")
+    void 열람_같은_사람은_하루_한_번() throws Exception {
+        Long reportId = insertReport(authorId, "카운트", true, 5);
+        flush();
+
+        mockMvc.perform(get(URL + "/" + reportId).with(user(String.valueOf(viewerId))))
+                .andExpect(jsonPath("$.viewCount").value(6));
+        // 테스트는 한 트랜잭션이라 JPQL UPDATE 뒤의 엔티티가 옛값이다. 운영은 요청마다 새로 읽는다.
+        flush();
+        mockMvc.perform(get(URL + "/" + reportId).with(user(String.valueOf(viewerId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.viewCount").value(6));
+        flush();
+
+        assertThat(viewCountOf(reportId)).isEqualTo(6);
+        // 열쇠가 (리포트, 열람자) 라 다른 사람은 따로 센다.
+        Long other = insertUser("다른열람자");
+        flush();
+        mockMvc.perform(get(URL + "/" + reportId).with(user(String.valueOf(other))))
+                .andExpect(jsonPath("$.viewCount").value(7));
+        flush();
+
+        assertThat(viewCountOf(reportId)).isEqualTo(7);
+        assertThat(redisStore).containsKeys(
+                "report:view:" + reportId + ":" + viewerId, "report:view:" + reportId + ":" + other);
     }
 
     @Test
