@@ -135,7 +135,7 @@ class EventResultServiceTest {
     private void bet(User user, PredictionEventStock stock, PredictionEventBet.Status status, long stake, Integer payout, boolean hit, String errorRate) {
         Prediction p =
                 Prediction.register(user, stock.getStock(), Prediction.Direction.UP, new BigDecimal("93000.00"), new BigDecimal("91000.00"), (short) 4, BASE_DATE, SETTLE_DATE);
-        p.fixBasePrice(stock.getBasePrice());
+        p.fixBasePrice(stock.getBasePrice(), BASE_DATE); // ANT-PRED-09 가 basedOn 을 더했다
         p.settle(new BigDecimal("91800.00"), SETTLE_DATE, hit, errorRate == null ? new BigDecimal("9.999") : new BigDecimal(errorRate));
         em.persist(p);
         PredictionEventBet b = PredictionEventBet.place(p, event, stock, BigInteger.valueOf(stake), "0x" + "48".repeat(32), "op_" + p.getId());
