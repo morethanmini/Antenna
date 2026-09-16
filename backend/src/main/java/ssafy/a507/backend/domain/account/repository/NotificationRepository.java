@@ -27,4 +27,9 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("update Notification n set n.readAt = :now where n.user.id = :userId and n.readAt is null")
     int markAllRead(@Param("userId") Long userId, @Param("now") Instant now);
+
+    /** 내 알림 전부 삭제("모두 삭제"). 한 문장으로 — 행마다 지우면 알림 수만큼 DELETE 다. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("delete from Notification n where n.user.id = :userId")
+    int deleteAllByUserId(@Param("userId") Long userId);
 }

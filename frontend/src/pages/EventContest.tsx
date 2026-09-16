@@ -25,7 +25,6 @@ import {
   HERO,
   RULES,
   cardHref,
-  dayStamp,
   phaseAt,
   stamp,
 } from '../event/contest'
@@ -82,7 +81,7 @@ function Hero({ phase }: { phase: ReturnType<typeof phaseAt> }) {
   const next =
     phase === 'before' ? { label: '등록 시작', at: stamp(CONTEST.opensAt) }
     : phase === 'open' ? { label: '등록 마감', at: stamp(CONTEST.closesAt) }
-    : phase === 'judging' ? { label: '결과 공개', at: dayStamp(CONTEST.revealDate) }
+    : phase === 'judging' ? { label: '결과 공개', at: stamp(CONTEST.revealAt) }
     : null
 
   return (
@@ -105,12 +104,14 @@ function Hero({ phase }: { phase: ReturnType<typeof phaseAt> }) {
         </h1>
         <img className="ev-hero-lede" src={HERO.lede} alt={CONTEST.lede} />
 
-        {/* 그림에 날짜가 구워져 있어 시작 전에만 쓴다. 그 뒤로는 글자로 그린다 —
-            등록이 닫힌 뒤에 "등록 시작" 이 떠 있으면 거짓말이 된다 */}
-        {phase === 'before' ? (
-          <img className="ev-hero-next" src={HERO.opensAt}
-               alt={`${next?.label} ${next?.at}`} />
-        ) : next ? (
+        {/* **시작 전에도 글자로 그린다.** 원래는 그림(HERO.opensAt)을 썼는데 거기
+            "13:10" 이 구워져 있고, 담당자 확정값이 13:30 으로 바뀌었다(2026-09-16).
+            날짜가 박힌 그림은 일정이 흔들릴 때마다 조용히 거짓말을 한다 — 여기만
+            글자로 돌리면 contest.ts 한 곳을 고치는 것으로 끝난다.
+            새 그림을 받으면 아래 한 줄을 되살리면 된다:
+              {phase === 'before' ? <img className="ev-hero-next" src={HERO.opensAt}
+                 alt={`${next?.label} ${next?.at}`} /> : …} */}
+        {next ? (
           <p className="ev-next">
             <b>{next.label}</b>
             <span className="num">{next.at}</span>
@@ -122,11 +123,23 @@ function Hero({ phase }: { phase: ReturnType<typeof phaseAt> }) {
 
       <div className="ev-hero-rules">
         <img className="ev-hero-rules-title" src={HERO.rulesTitle} alt="대회 규칙" />
-        <img className="ev-hero-rules-panel" src={HERO.rules} alt="" aria-hidden="true" />
-        {/* 위 그림에 구워진 것과 같은 내용. 읽어 주는 기기는 이쪽만 읽는다 */}
-        <dl className="sr-only">
+        {/* **임시로 글자다.** 원래는 그림 한 장(HERO.rules)이었는데 네 줄이 통째로
+            구워져 있어 13:10 · 9월 28일이 박혀 있다. 담당자 확정값이 13:30 · 9월 22일로
+            바뀌어(2026-09-16) 그림이 거짓말을 한다 — 사람들이 금요일 13:30 에 보는 것이
+            바로 이 패널이라, 모양이 덜 예쁜 것보다 시각이 틀린 것이 위험하다(이상민님 합의).
+
+            덤으로 읽어 주는 기기용 글을 따로 둘 필요가 없어졌다. 전에는 같은 내용을
+            그림과 sr-only 로 두 벌 갖고 있었고, 그래서 날짜가 어긋날 수 있었다.
+
+            **새 그림을 받으면** 이 dl 을 지우고 아래 두 줄을 되살린다:
+              <img className="ev-hero-rules-panel" src={HERO.rules} alt="" aria-hidden="true" />
+              <dl className="sr-only">…같은 map…</dl> */}
+        <dl className="ev-rules">
           {RULES.map((r) => (
-            <div key={r.k}><dt>{r.k}</dt><dd>{r.v}</dd></div>
+            <div className="ev-rule" key={r.k}>
+              <dt>{r.k}</dt>
+              <dd>{r.v}</dd>
+            </div>
           ))}
         </dl>
       </div>

@@ -199,3 +199,31 @@
 .auth .nickname-hint.is-available{color:#15803d}
 .auth .nickname-hint.is-taken,.auth .nickname-hint.is-invalid{color:#dc2626}
 .auth .sso-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ── 온보딩 2단계 — 구독료 (A-02, OnboardingFee) ──────────
+   닉네임 칸(.nickname-input)을 그대로 쓰되 단위를 칸 안 오른쪽에 붙인다.
+   단위를 칸 밖에 두면 숫자와 ANT 사이가 벌어져 무엇의 단위인지 한 박자 늦게 읽힌다. */
+.auth .fee-field{ position:relative; }
+.auth .fee-input{ padding-right:58px; }
+.auth .fee-unit{
+  position:absolute; right:16px; top:50%; transform:translateY(-50%);
+  color:var(--muted); font-size:var(--fs-lg); font-weight:var(--fw-bold);
+  pointer-events:none;   /* 칸을 누르려다 글자를 눌러 초점이 안 가는 일이 없게 */
+}
+
+/* 나중에 어디서 바꾸는지. 저장을 누르기 전에 읽어야 "되돌릴 수 있다" 를 알고
+   고르게 되므로 버튼 바로 아래다 */
+.auth .fee-note{
+  margin:18px 0 0; text-align:center;
+  font-size:var(--fs-md); line-height:1.65; color:var(--muted);
+}
+/* 경로는 또렷하게 — 본문이 muted 라 굵게만으로는 눈에 안 걸린다 */
+.auth .fee-note b{ color:var(--body); font-weight:var(--fw-bold) }
+
+/* 이 화면의 버튼만 작게. .sso-btn 기본값(62px · 17px)은 로그인 화면에서 화면을
+   채우는 두 SSO 버튼용이라 여기서는 과하다 — 여기는 숫자 한 칸을 정하는 자리이고,
+   입력 칸(56px)보다 버튼이 더 커 보이면 무게가 뒤집힌다.
+   전역 규칙을 줄이지 않고 .fee-step 안에서만 덮는다(로그인 화면은 그대로). */
+.auth .fee-step .sso-btn{ height:46px; border-radius:11px; font-size:var(--fs-xl); }
+/* 버튼이 작아진 만큼 그림자도 줄인다 — 원래 값은 62px 기준이라 뜬 것처럼 보인다 */
+.auth .fee-step .sso-btn.ssafy{ box-shadow:0 6px 14px rgba(70,66,229,.18) }

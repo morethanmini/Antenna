@@ -29,6 +29,13 @@
   color:var(--brand);font-family:inherit;font-size:var(--fs-md);font-weight:var(--fw-bold);
 }
 .nt-readall:hover{color:var(--brand-ink);text-decoration:underline}
+.nt-head-actions{display:flex;align-items:center;gap:12px}
+/* 모두 삭제는 읽음과 같은 줄에 두되 색을 낮춘다 — 되돌릴 수 없는 쪽이 더 눈에 띄면 안 된다 */
+.nt-clear{
+  border:0;background:none;padding:0;cursor:pointer;
+  color:var(--muted);font-family:inherit;font-size:var(--fs-md);font-weight:var(--fw-bold);
+}
+.nt-clear:hover{color:var(--down);text-decoration:underline}
 
 /* 목록이 길어지면 팝업 안에서 구른다. 팝업 자체가 길어지면 화면 밖으로 나간다 */
 .nt-list{

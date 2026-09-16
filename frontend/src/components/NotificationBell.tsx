@@ -17,9 +17,10 @@
    아직 소켓으로 보내지 않아 지금은 자리만 적어 둔다 — REST 는 붙어 있다. */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  deleteNotification, getNotifications, markAllRead, markRead,
+  deleteAllNotifications, deleteNotification, getNotifications, markAllRead, markRead,
 } from '../api/notifications'
 import type { Notification } from '../api/notifications'
+import ConfirmDialog from './ConfirmDialog'
 import NotificationPopover from './NotificationPopover'
 import '../styles/notification.css'
 
@@ -39,6 +40,9 @@ export default function NotificationBell() {
      loading 을 세우는 것은 사용자 조작에서만 한다. */
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  /* "모두 삭제" 확인 창. 팝업 안이 아니라 여기서 띄운다 — 팝업은 바깥을 누르면 닫히므로
+     그 안에 그린 창은 누르는 순간 팝업과 함께 사라진다(NotificationPopover.onDeleteAll). */
+  const [confirmingClear, setConfirmingClear] = useState(false)
 
   const load = useCallback(() => getNotifications()
     .then((res) => { setItems(res.items); setUnread(res.unread); setError(false) })
@@ -90,6 +94,15 @@ export default function NotificationBell() {
     void deleteNotification(id).catch(() => {})
   }, [])
 
+  /* 모두 삭제는 되돌릴 수 없어 확인을 받는다. 팝업은 닫고 창만 남긴다 */
+  const askClear = useCallback(() => { setOpen(false); setConfirmingClear(true) }, [])
+  const clear = useCallback(() => {
+    setConfirmingClear(false)
+    setItems([])
+    setUnread(0)
+    void deleteAllNotifications().catch(() => {})
+  }, [])
+
   return (
     <div className="nt-wrap">
       <button
@@ -124,7 +137,19 @@ export default function NotificationBell() {
           onRead={read}
           onReadAll={readAll}
           onDelete={remove}
+          onDeleteAll={askClear}
           onRetry={reload}
+        />
+      )}
+
+      {confirmingClear && (
+        <ConfirmDialog
+          title="알림을 모두 지울까요?"
+          description="지운 알림은 되돌릴 수 없습니다. 새로 오는 알림은 그대로 쌓입니다."
+          confirmLabel="모두 삭제"
+          tone="danger"
+          onCancel={() => setConfirmingClear(false)}
+          onConfirm={clear}
         />
       )}
     </div>
