@@ -20,6 +20,7 @@ import ssafy.a507.backend.domain.account.entity.Notification;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.account.repository.NotificationRepository;
 import ssafy.a507.backend.domain.account.repository.UserRepository;
+import ssafy.a507.backend.domain.account.service.NotificationGate;
 import ssafy.a507.backend.domain.monetize.entity.Subscription;
 import ssafy.a507.backend.domain.monetize.repository.SubscriptionRepository;
 import ssafy.a507.backend.domain.chain.config.TokenAmountProperties;
@@ -88,6 +89,7 @@ public class PredictionRegisterService {
     private final SubscriptionRepository subscriptions;
     private final NotificationRepository notifications;
     private final UserRepository users;
+    private final NotificationGate notificationGate;
 
     public PredictionRegisterService(
             EntityManager em,
@@ -104,7 +106,8 @@ public class PredictionRegisterService {
             TokenAmountProperties amounts,
             SubscriptionRepository subscriptions,
             NotificationRepository notifications,
-            UserRepository users) {
+            UserRepository users,
+            NotificationGate notificationGate) {
         this.em = em;
         this.predictions = predictions;
         this.notes = notes;
@@ -120,6 +123,7 @@ public class PredictionRegisterService {
         this.subscriptions = subscriptions;
         this.notifications = notifications;
         this.users = users;
+        this.notificationGate = notificationGate;
     }
 
     /** 등록. 성공하면 예측 id — 멱등 저장소에 이 값만 남기고 응답은 {@link #created} 가 다시 만든다. */
@@ -184,8 +188,9 @@ public class PredictionRegisterService {
      * 판정 전 예측은 구독자만 볼 수 있으므로 받는 사람은 전부 열 수 있다.
      */
     private void notifySubscribers(User author, Prediction prediction, Stock stock) {
-        List<Long> subscriberIds = subscriptions.findSubscriberIds(
-                author.getId(), Subscription.Status.ACTIVE, Instant.now());
+        List<Long> subscriberIds = notificationGate.filter(
+                subscriptions.findSubscriberIds(author.getId(), Subscription.Status.ACTIVE, Instant.now()),
+                "PREDICTION_REGISTERED");
         if (subscriberIds.isEmpty()) {
             return;
         }

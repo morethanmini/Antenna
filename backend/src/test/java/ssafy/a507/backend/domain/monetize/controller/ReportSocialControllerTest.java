@@ -117,6 +117,20 @@ class ReportSocialControllerTest {
         }
 
         @Test
+        @DisplayName("내 채널 반응 알림을 끈 작성자에게는 좋아요 알림이 가지 않는다(ANT-NOTIFY-02)")
+        void 좋아요_알림_설정_끔() throws Exception {
+            Long reportId = insertReport(authorId, "공개 리포트", true);
+            insertSetting(authorId, true, true, false, true);
+            flush();
+
+            mockMvc.perform(post(likeUrl(reportId)).with(user(str(readerId))).with(csrf()))
+                    .andExpect(status().isCreated());
+            flush();
+
+            assertThat(countNotifications(authorId, "REPORT_LIKE")).isZero();
+        }
+
+        @Test
         @DisplayName("내 리포트에 내가 누른 좋아요는 알리지 않는다")
         void 좋아요_본인_알림_없음() throws Exception {
             Long reportId = insertReport(authorId, "공개 리포트", true);
@@ -525,6 +539,20 @@ class ReportSocialControllerTest {
     /** 커뮤니티의 {@code /comments/{id}/like} 와 경로를 나눈 이유는 컨트롤러 주석에 적어 두었다. */
     private static String commentLikeUrl(Long commentId) {
         return "/api/v1/report-comments/" + commentId + "/like";
+    }
+
+    /** 알림 설정 행. 없으면 전부 on 이라, 끈 경우만 심는다. */
+    private void insertSetting(Long userId, boolean verdict, boolean season, boolean social, boolean channel) {
+        em.createNativeQuery("""
+                        INSERT INTO user_settings (user_id, notify_verdict, notify_season, notify_social, notify_channel, chart_view, updated_at)
+                        VALUES (?, ?, ?, ?, ?, 'BEGINNER', CURRENT_TIMESTAMP)
+                        """)
+                .setParameter(1, userId)
+                .setParameter(2, verdict)
+                .setParameter(3, season)
+                .setParameter(4, social)
+                .setParameter(5, channel)
+                .executeUpdate();
     }
 
     private long countNotifications(Long userId, String type) {

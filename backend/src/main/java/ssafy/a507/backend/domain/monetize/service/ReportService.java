@@ -21,6 +21,7 @@ import ssafy.a507.backend.domain.account.entity.Notification;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.account.repository.NotificationRepository;
 import ssafy.a507.backend.domain.account.repository.UserRepository;
+import ssafy.a507.backend.domain.account.service.NotificationGate;
 import ssafy.a507.backend.domain.monetize.dto.ChannelReportItemResponse;
 import ssafy.a507.backend.domain.monetize.dto.ChannelReportListResponse;
 import ssafy.a507.backend.domain.monetize.dto.ReportCreateRequest;
@@ -70,6 +71,7 @@ public class ReportService {
     private final SignatureGuard signatureGuard;
     private final CurrentUserProvider currentUserProvider;
     private final StringRedisTemplate redis;
+    private final NotificationGate notificationGate;
 
     /** 통합 피드 탭. */
     public enum Scope {
@@ -236,8 +238,9 @@ public class ReportService {
 
     /** 발행 알림. 구독자가 없으면 아무것도 하지 않는다. */
     private void notifySubscribers(User author, Report report) {
-        List<Long> subscriberIds = subscriptionRepository.findSubscriberIds(
-                author.getId(), Subscription.Status.ACTIVE, Instant.now());
+        List<Long> subscriberIds = notificationGate.filter(
+                subscriptionRepository.findSubscriberIds(author.getId(), Subscription.Status.ACTIVE, Instant.now()),
+                NOTIFICATION_TYPE);
         if (subscriberIds.isEmpty()) {
             return;
         }
