@@ -72,6 +72,12 @@ function Rows({ d }: { d: PredictionDistribution }) {
 
       <p className="pd-total num">
         판정 대기 <b>{won(d.total)}</b>건
+        {/* 한 건도 없으면 표가 점으로만 채워진다. 그게 고장이 아니라 "아직 아무도
+            안 걸었다" 라는 뜻임을 여기서 말해 준다 — 빈 표만 두면 불러오다 만
+            화면처럼 보인다. */}
+        {d.total === 0 && (
+          <span className="pd-first">아직 아무도 걸지 않았습니다. 첫 예측을 등록해 보세요.</span>
+        )}
       </p>
 
       {/* 가운데 등락률을 축으로 상승은 왼쪽, 하락은 오른쪽으로 뻗는다.
@@ -156,10 +162,16 @@ export default function PredictionDepth({ code, span = 6 }: Props) {
     <Panel title="이 종목의 예측 분포" span={span}>
       {q.error && <ErrorState error={q.error} onRetry={q.retry} inline />}
       {!q.error && q.loading && <p className="pf-none">불러오는 중입니다…</p>}
-      {/* 아직 아무도 안 걸었으면 빈 호가창을 그리지 않는다 — 0 만 스무 줄 나온다 */}
+      {/* 한 건도 없어도 **표는 그린다**(2026-09-16). 전에는 문단 한 줄로 갈음했는데,
+          그러면 이 카드가 옆 칸 높이만큼 늘어난 채 속이 비어 무엇을 보는 자리인지
+          알 수 없었다. 구간은 예측이 없어도 정해져 있다 — 서버가 기준가만 있으면
+          count 0 인 칸들을 그대로 내려 준다. 막대만 없는 같은 표다.
+
+          buckets 가 빈 것은 다른 사정이다. 서버가 기준가를 못 구했을 때(거래정지 등)
+          "구간을 지어내지 않는다" 며 빈 배열을 준다. 그때는 그릴 눈금이 없다. */}
       {!q.error && !q.loading && q.data && (
-        q.data.total === 0
-          ? <p className="pf-none">아직 이 종목에 걸린 예측이 없습니다. 첫 예측을 등록해 보세요.</p>
+        q.data.buckets.length === 0
+          ? <p className="pf-none">전일 종가가 없어 예측 구간을 나눌 수 없습니다.</p>
           : <Rows d={q.data} />
       )}
     </Panel>

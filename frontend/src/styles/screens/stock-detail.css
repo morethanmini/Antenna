@@ -144,6 +144,18 @@
   display:grid;grid-template-columns:repeat(12,minmax(0,1fr));
   gap:14px;align-items:stretch;
 }
+/* 한 칸에 카드를 둘 이상 세로로 세우는 기둥(예측 탭의 오른쪽 열).
+   격자 칸 하나를 받아 그 안에서 다시 쌓는다 — 카드마다 span 을 주면 둘이
+   좌·우로 갈라 앉는다. 자식 카드는 grid-column 을 쓰지 않으므로 flex 로 둔다. */
+.stock-detail-page .sd-col{
+  min-width:0;grid-column:span 12;
+  display:flex;flex-direction:column;gap:14px;
+}
+/* 기둥 안의 카드는 **제 높이만 쓴다.** 마지막 카드에 flex:1 을 주면 옆 칸과
+   바닥은 맞지만, 속이 짧은 카드가 빈 채로 천장까지 늘어난다 — 예측이 없는 종목의
+   분포 카드가 천 픽셀 가까이 비었다. 바닥이 조금 어긋나는 편이 낫다. */
+.stock-detail-page .sd-col{align-content:start}
+
 .stock-detail-page .sd-block{
   min-width:0;grid-column:span 12;
   display:flex;flex-direction:column;
@@ -158,6 +170,7 @@
   .stock-detail-page .sd-block[data-span="6"]{grid-column:span 6}
   .stock-detail-page .sd-block[data-span="7"]{grid-column:span 7}
   .stock-detail-page .sd-block[data-span="8"]{grid-column:span 8}
+  .stock-detail-page .sd-col[data-span="6"]{grid-column:span 6}
 }
 
 /* 카드 높이를 고정하지 않는다. 묶어 두고 카드 안에서 스크롤하게 하면 막대가
@@ -461,9 +474,9 @@
 /* ── 예측 등록 폼(C-01) — 번호가 붙은 단계 ────────────────
    무엇을 몇 개나 정해야 하는지 한눈에 보이도록 단계에 번호를 붙였다.
    되돌릴 수 없는 등록이라, 어디까지 왔는지 모르는 채로 서명 버튼에 닿으면 안 된다. */
-.stock-detail-page .pf-steps{list-style:none;margin:0;padding:0;display:grid;gap:28px}
+.stock-detail-page .pf-steps{list-style:none;margin:0;padding:0;display:grid;gap:19px}
 .stock-detail-page .pf-step > h3{
-  display:flex;align-items:center;gap:8px;margin:0 0 10px;
+  display:flex;align-items:center;gap:8px;margin:0 0 8px;
   font-size:13.5px;font-weight:750;color:var(--ink);
 }
 .stock-detail-page .pf-no{
@@ -603,7 +616,7 @@
 .stock-detail-page .pf-tick.is-on b{color:var(--brand-ink,var(--brand))}
 
 
-.stock-detail-page .pf-sign{margin-top:16px;padding-top:14px;border-top:1px solid var(--rule)}
+.stock-detail-page .pf-sign{margin-top:13px;padding-top:12px;border-top:1px solid var(--rule)}
 
 /* ── 이 종목의 예측(§5 게이팅) ─────────────────────────────
    판정 대기 · 판정 완료 거르개. 탭 모양이지만 안쪽 페이지 전환(.sd-tabs)과
@@ -776,10 +789,20 @@
   border:1px solid var(--rule);border-radius:12px;background:var(--surface);
   color:var(--ink);font-family:inherit;font-size:13.5px;line-height:1.6;resize:vertical;
 }
+/* 남은 글자 배지가 앉을 자리. 칸 크기가 바뀌어도(resize:vertical) 따라간다 */
+.stock-detail-page .sd-note-wrap{position:relative}
+/* 칸 **안쪽** 오른쪽 아래. 오른쪽 여백을 크게 둬 크기 조절 손잡이를 가리지 않는다.
+   글을 가리지 않도록 반투명 바탕을 깔고, 클릭은 아래 칸으로 통과시킨다 */
+.stock-detail-page .sd-note-left{
+  position:absolute;right:26px;bottom:9px;pointer-events:none;
+  padding:1px 8px;border-radius:999px;
+  background:rgba(255,255,255,.92);color:var(--faint);
+  font-size:11px;font-weight:700;
+}
+
 .stock-detail-page .sd-note:focus{
   outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(88,80,244,.14);
 }
-.stock-detail-page .sd-note-count{text-align:right;color:var(--faint)}
 
 /* 서명 대상 payload 를 접지 않고 펼쳐 보여준다(SignConfirm, §7) */
 .stock-detail-page .sd-payload{
@@ -943,6 +966,11 @@
   margin:0 0 6px;color:var(--muted);font-size:12.5px;font-weight:600;
 }
 .stock-detail-page .pd-total b{color:var(--ink);font-weight:800}
+/* 한 건도 없을 때만 나오는 덧말. 같은 줄에 이으면 "판정 대기 0건아직..." 으로
+   붙어 읽히므로 줄을 바꾸고 한 단 낮춘다 */
+.stock-detail-page .pd-first{
+  display:block;margin-top:3px;color:var(--faint);font-size:11.5px;font-weight:600;
+}
 
 /* 기준가 안내 — 개미가 말해 주는 모양. 표 위에 놓아 0% 가 무엇인지 먼저 읽힌다 */
 .stock-detail-page .pd-say{
@@ -988,3 +1016,159 @@
   .stock-detail-page .sd-price > b{font-size:25px}
   .stock-detail-page .sd-watch{margin-left:0;order:9}
 }
+
+/* ── 이벤트 (ANT-FE-EVENT-BET) ─────────────────────────────
+   홈 이벤트 배너로 들어왔을 때(`?event=1`)만 붙는 것들이다. 평소 예측 화면에는
+   이 구역의 규칙이 하나도 닿지 않는다 — 선택자가 전부 .ev- 로 시작하고, 그 요소는
+   이벤트가 아니면 아예 그려지지 않는다.
+
+   색을 브랜드 보라로 몰아 둔 이유 — 상승·하락(빨강·파랑)과 섞이면 "이벤트라서
+   특별한 것" 과 "오늘 이 종목이 오른다" 가 같은 색으로 읽힌다. */
+
+/* 배너. 격자 맨 위를 가로지른다 — 이벤트는 이 화면 전체의 사정이지
+   오른쪽 등록 카드만의 사정이 아니다(왼쪽 분포도 이벤트 회차의 것이다). */
+/* 등록 카드 **위에 얹히는 머리말**이다. 격자를 가로지르지 않는다 —
+   가로지르면 왼쪽 분포 카드가 아래로 밀리고 오른쪽 기둥이 카드 하나만 남는다. */
+.stock-detail-page .ev-banner{
+  min-width:0;flex:none;
+  display:flex;align-items:center;gap:14px;
+  padding:16px 18px;border-radius:16px;
+  border:1px solid #d9d5fb;
+  background:linear-gradient(104deg,#efecfe 0%,#f5f2ff 46%,#eae6fd 100%);
+  overflow:hidden;
+}
+.stock-detail-page .ev-banner-text{min-width:0;flex:1}
+.stock-detail-page .ev-badge{
+  display:inline-block;margin-bottom:8px;padding:3px 10px;border-radius:999px;
+  background:var(--brand);color:#fff;
+  font-size:10.5px;font-weight:800;letter-spacing:.09em;
+}
+.stock-detail-page .ev-banner h2{
+  margin:0;font-size:21px;font-weight:800;line-height:1.3;color:var(--ink);
+}
+.stock-detail-page .ev-banner h2 b{color:var(--brand-ink);font-weight:800}
+.stock-detail-page .ev-banner-sub{
+  margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.6;
+}
+/* 규칙 한 줄. 상을 약속하는 문장이라 배너 안에 함께 두되 한 단 낮춘다 */
+.stock-detail-page .ev-banner-fine{
+  margin:3px 0 0;color:var(--faint);font-size:12px;line-height:1.6;
+}
+/* 캐릭터. 배너 오른쪽 **끝**이 아니라 안쪽에 선다 — 끝에 붙이면 글과 그림 사이가
+   벌어져 둘이 한 배너에 있다는 느낌이 없다. 글 상자가 남는 폭을 다 먹지 않게 해
+   그림이 가운데 쪽으로 당겨진다. */
+.stock-detail-page .ev-banner-art{
+  width:132px;height:132px;flex:none;object-fit:contain;margin-right:6%;
+  /* 원본이 흰 판 위 그림이라 배너 바탕과 경계가 생긴다. 둥글게 오려
+     배너 안의 그림 조각으로 보이게 한다 */
+  border-radius:16px;
+  mix-blend-mode:multiply;
+}
+/* 아주 좁을 때만 그림을 뺀다. 줄여서 남기면 글 옆에 정체 모를 얼룩만 남는다 */
+@media (max-width:520px){
+  .stock-detail-page .ev-banner h2{font-size:18px}
+  .stock-detail-page .ev-banner-art{display:none}
+}
+
+/* 배팅 카드. 네 단계 뒤, 서명 발판 바로 위에 얹힌다.
+   테두리를 세워 "이건 폼의 다섯 번째 단계가 아니라 얹힌 것" 을 보이게 한다. */
+.stock-detail-page .ev-bet{
+  margin-top:17px;padding:12px 14px 13px;
+  border:1.5px solid #cfc9fa;border-radius:14px;background:var(--brand-softer);
+}
+.stock-detail-page .ev-bet-head{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:7px;
+}
+.stock-detail-page .ev-bet h3{
+  display:flex;align-items:center;gap:7px;margin:0;
+  font-size:13.5px;font-weight:750;color:var(--ink);
+}
+.stock-detail-page .ev-bet-mark{
+  display:grid;place-items:center;width:20px;height:20px;flex:none;
+  border-radius:6px;background:var(--brand);color:#fff;
+}
+.stock-detail-page .ev-bet-only{color:var(--brand-ink);font-size:12px;font-weight:700}
+/* 대회 안내로 돌아가는 길. 규칙 전문은 J-01 에 있고 이 카드는 요약만 진다 */
+.stock-detail-page .ev-bet-rules{
+  margin-left:auto;color:var(--brand-ink);font-size:12px;font-weight:700;
+  text-decoration:none;white-space:nowrap;
+}
+.stock-detail-page .ev-bet-rules:hover{text-decoration:underline}
+
+/* 어느 쪽에 걸리는지. 금액 칸 **위**다 — 아래에 두면 금액을 다 고르고 나서야
+   방향이 이미 정해져 있었다는 것을 알게 된다 */
+.stock-detail-page .ev-bet-side{
+  margin:0 0 9px;color:var(--muted);font-size:12.5px;line-height:1.6;
+}
+.stock-detail-page .ev-bet-side b.is-up{color:var(--up)}
+.stock-detail-page .ev-bet-side b.is-down{color:var(--down)}
+
+/* 금액 고르개. 미리 고른 셋과 직접 입력 칸이 한 줄에 선다 —
+   "얼마를 걸 수 있나" 와 "얼마를 걸겠다" 를 한 번에 본다 */
+.stock-detail-page .ev-bet-picks{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) 1.35fr;gap:8px;
+}
+@media (max-width:860px){
+  .stock-detail-page .ev-bet-picks{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+.stock-detail-page .ev-bet-pick{
+  height:46px;padding:0 10px;
+  border:1.5px solid var(--rule);border-radius:11px;background:var(--surface);
+  color:var(--ink);font-family:inherit;font-size:14px;font-weight:750;
+  font-variant-numeric:tabular-nums;cursor:pointer;
+  transition:border-color .14s,color .14s,background .14s;
+}
+.stock-detail-page .ev-bet-pick:hover{border-color:#c8c9f5}
+/* 고른 상태. 테두리와 글자색이 함께 바뀐다 — 진하기만으로 전하지 않는다 */
+.stock-detail-page .ev-bet-pick.is-on{
+  border-color:var(--brand);color:var(--brand-ink);background:#fff;
+}
+.stock-detail-page .ev-bet-pick:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+.stock-detail-page .ev-bet-custom{
+  display:flex;align-items:center;gap:6px;min-width:0;height:46px;padding:0 11px;
+  border:1.5px solid var(--rule);border-radius:11px;background:var(--surface);
+  cursor:text;transition:border-color .14s;
+}
+.stock-detail-page .ev-bet-custom.is-on{border-color:var(--brand)}
+.stock-detail-page .ev-bet-custom:focus-within{border-color:var(--brand)}
+.stock-detail-page .ev-bet-custom-label{
+  flex:none;color:var(--faint);font-size:11.5px;font-weight:700;
+}
+.stock-detail-page .ev-bet-custom input{
+  min-width:0;flex:1;border:0;background:none;outline:none;
+  color:var(--ink);font-family:inherit;font-size:14px;font-weight:750;text-align:right;
+}
+.stock-detail-page .ev-bet-unit{flex:none;color:var(--muted);font-size:12px;font-weight:700}
+
+/* 건 돈과 받을 돈. 배팅은 이 둘을 견주는 결정이라 나란히 둔다 */
+.stock-detail-page .ev-bet-sum{
+  display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;
+  margin:9px 0 0;padding:10px 12px;
+  border-radius:11px;background:var(--surface);
+}
+@media (max-width:860px){
+  .stock-detail-page .ev-bet-sum{grid-template-columns:1fr}
+}
+.stock-detail-page .ev-bet-sum > div{min-width:0}
+.stock-detail-page .ev-bet-sum dt{
+  margin:0 0 3px;color:var(--muted);font-size:11.5px;font-weight:700;
+}
+.stock-detail-page .ev-bet-sum dt span{color:var(--faint);font-weight:600}
+.stock-detail-page .ev-bet-sum dd{
+  margin:0;color:var(--ink);font-size:15px;font-weight:800;
+}
+/* 받는 방식은 금액이 아니라 규칙 문장이다. 배팅 금액과 같은 크기로 키우면
+   숫자처럼 읽히므로 본문 크기로 되돌린다 */
+.stock-detail-page .ev-bet-payout dd{
+  color:var(--muted);font-size:12.5px;font-weight:600;line-height:1.65;
+}
+.stock-detail-page .ev-bet-payout dd b{color:var(--ink);font-weight:750}
+/* 보상률은 금액 아래 한 단 낮춰 붙인다. "최대" 가 무엇에서 나온 값인지
+   같은 자리에 없으면 약속한 금액처럼 읽힌다 */
+.stock-detail-page .ev-bet-rate{
+  display:block;margin-top:4px;color:var(--faint);font-size:11px;font-weight:600;line-height:1.6;
+}
+.stock-detail-page .ev-bet .sd-help,
+.stock-detail-page .ev-bet .sd-warn,
+.stock-detail-page .ev-bet .sd-irreversible{margin-top:9px}
