@@ -2,6 +2,8 @@ package ssafy.a507.backend.domain.monetize.service;
 
 import java.math.BigInteger;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
@@ -14,6 +16,7 @@ import ssafy.a507.backend.common.security.SignatureScope;
 import ssafy.a507.backend.common.security.WalletSigned;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.account.repository.UserRepository;
+import ssafy.a507.backend.domain.account.service.AvatarUrls;
 import ssafy.a507.backend.domain.chain.entity.Operation;
 import ssafy.a507.backend.domain.chain.repository.OperationRepository;
 import ssafy.a507.backend.domain.chain.repository.TokenLedgerRepository;
@@ -57,6 +60,7 @@ public class SubscriptionService {
     private final OperationService operationService;
     private final TokenOperationService tokenOperationService;
     private final TransactionTemplate tx;
+    private final AvatarUrls avatarUrls;
 
     public SubscribeResponse subscribe(Long subscriberId, Long publisherId, SubscribeRequest request) {
         tokenOperationService.requireEnabled();
@@ -159,10 +163,14 @@ public class SubscriptionService {
      */
     @Transactional(readOnly = true)
     public MySubscriptionListResponse mine(Long subscriberId) {
-        return new MySubscriptionListResponse(
-                subscriptions.findMine(subscriberId).stream()
-                        .map(MySubscriptionListResponse.Item::of)
-                        .toList());
+        List<Subscription> mine = subscriptions.findMine(subscriberId);
+        /* 예측가 사진은 한 번에 읽는다(S15P21A507-273). 구독마다 upload_files 를 찾으면 N+1 이고,
+           랭킹(RankingQueryService)이 같은 이유로 같은 헬퍼를 쓴다. 사진 없는 사람은 표에 없어 null 이 된다. */
+        Map<Long, String> avatars =
+                avatarUrls.byUserId(mine.stream().map(Subscription::getPublisher).toList());
+        return new MySubscriptionListResponse(mine.stream()
+                .map(s -> MySubscriptionListResponse.Item.of(s, avatars.get(s.getPublisher().getId())))
+                .toList());
     }
 
     /**

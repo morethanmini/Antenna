@@ -36,11 +36,12 @@ public record MySubscriptionListResponse(List<Item> items) {
              */
             String txHash) {
 
-        public static Item of(Subscription s) {
+        /** {@code avatarUrl} 은 호출부가 AvatarUrls 로 한 번에 구해 넘긴다 — 줄마다 찾으면 N+1 이다 */
+        public static Item of(Subscription s, String avatarUrl) {
             User p = s.getPublisher();
             return new Item(
                     s.getId(),
-                    new Publisher(p.getId(), p.getNickname()),
+                    new Publisher(p.getId(), p.getNickname(), avatarUrl),
                     s.getFee() == null ? null : s.getFee().toString(),
                     s.getStatus(),
                     s.getExpiresAt(),
@@ -49,6 +50,12 @@ public record MySubscriptionListResponse(List<Item> items) {
         }
     }
 
-    /** 구독 대상 채널. 목록에서 채널로 나가는 링크에 쓴다 */
-    public record Publisher(Long userId, String nickname) {}
+    /**
+     * 구독 대상 채널. 목록에서 채널로 나가는 링크에 쓴다.
+     *
+     * <p>{@code avatarUrl} 은 예측가의 프로필 사진이다(S15P21A507-273). 안 올렸거나 파일이 사라졌으면
+     * null 이고 화면이 기본 아바타를 그린다. 이름을 {@code MeResponse}·{@code ChannelProfileResponse} 와
+     * 같게 둔다 — 같은 값에 화면마다 다른 이름이 붙으면 그게 더 헷갈린다.
+     */
+    public record Publisher(Long userId, String nickname, String avatarUrl) {}
 }
