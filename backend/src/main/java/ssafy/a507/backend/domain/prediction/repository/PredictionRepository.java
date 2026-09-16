@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import ssafy.a507.backend.domain.common.Track;
 import ssafy.a507.backend.domain.monetize.entity.Subscription;
+import ssafy.a507.backend.domain.chain.entity.Operation;
 import ssafy.a507.backend.domain.prediction.entity.Prediction;
 
 public interface PredictionRepository extends JpaRepository<Prediction, Long> {
@@ -86,8 +87,23 @@ public interface PredictionRepository extends JpaRepository<Prediction, Long> {
              where p.user.id = :userId
                and p.createdAt >= :from and p.createdAt < :to
                and not exists (select 1 from PredictionEventBet b where b.prediction = p)
+               and not exists (select 1 from Operation o
+                                where o.kind = :burn and o.resourceType = :resource and o.resourceId = p.id)
             """)
-    long countFreeToday(@Param("userId") Long userId, @Param("from") Instant from, @Param("to") Instant to);
+    long countFreeToday(
+            @Param("userId") Long userId,
+            @Param("from") Instant from,
+            @Param("to") Instant to,
+            @Param("burn") Operation.Kind burn,
+            @Param("resource") Operation.ResourceType resource);
+
+    /**
+     * 오늘 쓴 무료 슬롯. <b>소각으로 등록한 건(PREDICTION_BURN 작업이 붙은 예측)도 뺀다</b>(ANT-PRED-10) — 안 빼면
+     * 화면이 "오늘 4/3회" 가 된다. 무료 3건을 다 쓴 뒤의 등록은 어차피 전부 소각이라 판단은 같다.
+     */
+    default long countFreeToday(Long userId, Instant from, Instant to) {
+        return countFreeToday(userId, from, to, Operation.Kind.PREDICTION_BURN, Operation.ResourceType.PREDICTION);
+    }
 
     /**
      * 판정 배치(ANT-PRED-03·04)가 훑을 대상의 <b>id 만</b> 가져온다. 한 건이 트랜잭션 하나라 엔티티는 그 트랜잭션 안에서 다시 읽는다 —

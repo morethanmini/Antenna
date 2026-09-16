@@ -1,7 +1,7 @@
 /* C-01 예측 등록 도메인. 설계서 §3 C · §4 C-01 · §5 · §9.2.
 
-     GET  /predictions/slots         이번 주 슬롯 잔여
-     POST /predictions               등록 — 201 슬롯 내 / 202 슬롯 초과(소각)
+     GET  /predictions/slots         오늘 슬롯 잔여 · overCost(소각액)
+     POST /predictions               등록 — 201 슬롯 내 / 202 슬롯 초과(소각, ANT-PRED-10)
      GET  /predictions/me            내 예측 (C-02)
      GET  /predictions/{id}          예측 상세 (C-03)
 
@@ -95,13 +95,12 @@ export type PredictionCreated = {
 }
 
 /**
- * 슬롯을 넘겨 소각으로 넘어간 경우. M-02 가 operationId 를 폴링한다.
+ * 슬롯을 넘겨 소각으로 접수된 경우(202, ANT-PRED-10). M-02 가 operationId 를 폴링한다.
  *
- * **서버가 아직 이 응답을 내지 않는다.** 소각할 토큰(ANT-CHAIN-03)이 없어 슬롯 초과는
- * 409 PREDICTION_SLOT_EXCEEDED 로 끝난다(명세 v0.41). 규격에는 남아 있어 타입도 남기되,
- * 지금 이 갈래로 오는 응답은 없다.
+ * 예측은 접수 시점에 이미 저장돼 있어 predictionId 가 같이 온다 — 확정을 기다리는 동안에도
+ * 상세로 갈 수 있다. 소각이 체인에서 확정되면 작업이 SUCCEEDED 가 된다.
  */
-export type PredictionQueued = OperationRef
+export type PredictionQueued = OperationRef & { predictionId: number }
 
 export type CreateResult =
   | { kind: 'created'; data: PredictionCreated }
@@ -469,9 +468,7 @@ export const createScope = (d: PredictionDraft) =>
 
 /* 201 과 202 를 응답 본문 모양으로 가른다. api.post 는 상태 코드를 돌려주지 않는데,
    그것 하나 때문에 공용 client 를 고치면 다른 화면까지 영향이 간다. 두 응답은
-   키가 겹치지 않아(operationId ↔ id) 모양만으로 확실히 갈린다.
-
-   지금 서버는 202 를 내지 않는다 — 슬롯 초과는 409 다(위 PredictionQueued 주석). */
+   키가 겹치지 않아(operationId ↔ id) 모양만으로 확실히 갈린다. */
 export function createPrediction(draft: PredictionDraft, signature: string) {
   const scope = createScope(draft)
   return api.post<PredictionCreated | PredictionQueued>(
