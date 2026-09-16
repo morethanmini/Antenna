@@ -30,7 +30,7 @@ pre code{background:none;padding:0;color:inherit}.callout{background:var(--soft)
 footer{margin-top:50px;padding-top:14px;border-top:1px solid var(--line);color:var(--sub);font-size:12px}.small{font-size:12.3px;color:var(--sub)}
 @media(max-width:880px){.layout{grid-template-columns:1fr}nav{display:none}}
 </style></head>
-<body><div class=layout><nav><div class=brand>엔테나 API 명세서</div><div class=ver>v0.70 · 2026-09-16</div>
+<body><div class=layout><nav><div class=brand>엔테나 API 명세서</div><div class=ver>v0.71 · 2026-09-16</div>
 <a href="#map">0. 큰그림(인터페이스 맵)</a><a href="#common">1. 공통 규약</a>
 <div class=grp>2. REST API</div>
 <a href="#tag-async">비동기 작업</a><a href="#tag-auth">인증</a><a href="#tag-users">회원</a><a href="#tag-wallet">지갑·토큰</a>
@@ -67,6 +67,7 @@ footer{margin-top:50px;padding-top:14px;border-top:1px solid var(--line);color:v
 <tr><td><b>시스템</b></td><td>—</td><td>—</td><td>이벤트 인덱싱</td><td>—</td><td>B1~B6</td></tr>
 </table>
 <div class="changelog" style="margin:0 0 20px;padding:12px 16px;border-left:5px solid #e8a13c;background:#fff8e6;border-radius:0 8px 8px 0;font-size:12.5px;line-height:1.7;font-family:system-ui,-apple-system,"Malgun Gothic",sans-serif;color:#3a3730;"><b style="display:block;margin-bottom:6px;font-size:13px;">변경 로그 (최신이 위)</b>
+<div><b>v0.71</b> · 2026-09-16 · 김경민(KM) · <code>KM_ANT-FE-SUBSCRIPTION-LIST</code> — <b>§채널·구독 <code>GET /subscriptions/me</code> 의 <code>publisher</code> 에 <code>avatarUrl</code> 추가</b>(S15P21A507-273). 내 구독 화면(E-03)이 예측가 카드에 프로필 사진을 그리려는데 응답에 사진 주소가 없었다 — <code>Publisher</code> 가 <code>{ userId, nickname }</code> 뿐이었다. <b>리포트 본문 그림과는 무관하다</b>: 이건 <code>users.avatar_file_id</code> 가 가리키는 사람 얼굴(purpose=PROFILE)이고, 그쪽은 글 안의 여러 장(purpose=REPORT)이다. 주소 모양만 같다. 값은 <code>MeResponse</code>·채널 프로필의 <code>avatarUrl</code> 과 같은 규칙 — 안 올렸거나 파일이 사라졌으면 <code>null</code>. <b>이름도 같게 둔다</b>: 한 값에 화면마다 다른 이름이 붙으면 그게 더 헷갈린다. 서버는 <code>AvatarUrls.byUserId</code> 로 목록을 한 번에 읽는다(랭킹과 같은 헬퍼, N+1 아님). 응답 예시에 <code>txHash</code> 도 적었다 — v0.6x 에서 이미 내려가고 있었는데 예시 줄에만 빠져 있었다. <b>DB·ERD 변경 없음.</b></div>
 <div><b>v0.70</b> · 2026-09-16 · 이상민(SM) · <code>SM_ANT-EVENT-04~06</code> — <b>§대회·배팅 신설(엔드포인트 10 + 재전송 1).</b> 업앤다운 회차의 REST 층이 전부 붙었다 — 목록·홈·묶음 등록·내 배팅·순위 다섯(user)과 생성·기준가·봉인·정산·상태 다섯(admin), 그리고 <code>openEvent</code> 재전송 하나. 컨트랙트·릴레이어·인덱서·정산 러너는 ANT-EVENT-01~03(김성령) 이 먼저 깔았고 이 버전은 그 위의 REST 다.<br>
 <b>§지갑·토큰</b> — 서명 스코프에 <code>EVENT_ENTRY</code>(<code>event-entry</code>) 추가. 한 서명에 5~10 종목이 함께 들어간다: 종목마다 받으면 지갑 팝업이 다섯 번 뜨고, 그 사이 하나만 거절해도 "5종목 이상" 규칙이 깨진 채 절반만 등록된다. 원장 사유 셋 추가 — <code>EVENT_STAKE</code>(배팅금이 풀로) · <code>EVENT_PAYOUT</code>(정산 배당) · <code>EVENT_REFUND</code>(무승부·미리빌 환불). 목록의 스코프 표기가 실제 enum 과 어긋나 있어 <code>PREDICTION</code>·<code>REPORT_PUBLISH</code> 도 함께 채웠다.<br>
 <b>결정 둘을 명세에 박았다.</b> ① <b>정산 전에는 순위를 내리지 않는다</b> — 봉인 뒤 "예상 순위" 를 주기로 했던 초안을 09-16 에 뒤집었다. 승패를 모르는데 화면에 순위로 뜨면 사용자는 현재 등수로 읽고, 서버가 현재가로 임시 판정하는 것은 더 나쁘다. <code>items</code> 를 비우고 <code>notice</code> 로 공개 시각을 말한다. ② <b>이벤트 참가는 무료 예측 슬롯을 쓰지 않는다</b> — 이벤트는 ANT 를 내고 참가하는 별개 규칙인데, 참가 예측도 <code>predictions</code> 행을 만들어 하루 3건이 그대로 닳고 있었다(<code>prediction_event_bets</code> 행이 붙은 예측을 빼고 센다).<br>
@@ -752,7 +753,7 @@ nonce=&lt;POST /wallet/nonce 로 발급받은 값&gt;</pre>
 <details class=ep><summary><span class="m g">GET</span><span class=path>/subscriptions/me</span><span class=sm>내 구독 목록 · 🔐</span></summary>
 <div class=body><div class=desc>채널·상태(PENDING/ACTIVE/EXPIRED)·만료일·자동 갱신 여부. 설정 "구독 정보 변경" 진입점.</div>
 <h4>응답</h4>
-<div class=resp><span class="rc ok"><b>200</b> <code>{ items: [{ id, publisher, fee, status, expiresAt, renewEnabled }] }</code></span></div></div>
+<div class=resp><span class="rc ok"><b>200</b> <code>{ items: [{ id, publisher, fee, status, expiresAt, renewEnabled, txHash }] }</code></span></div><div class=desc style="margin-top:8px"><b><code>publisher</code> = <code>{ userId, nickname, avatarUrl }</code></b> (v0.70) — <code>avatarUrl</code> 은 예측가의 <b>프로필 사진</b> 주소다. <code>users.avatar_file_id</code> → <code>upload_files.url</code> 로 바꾼 값이고, 안 올렸거나 파일이 사라졌으면 <code>null</code> — 화면(E-03)이 기본 아바타를 그린다. <code>MeResponse</code>·채널 프로필과 같은 이름을 쓴다. 서버는 <code>AvatarUrls.byUserId</code> 로 목록 한 번에 읽는다(N+1 아님).</div></div>
 </details>
 <details class=ep><summary><span class="m g">GET</span><span class=path>/me/channel/fee</span><span class=sm>내 구독료 조회 · 🔐</span></summary>
 <div class=body><div class=desc>현재값(최신 행) + 변경 이력(<code>publisher_fees</code>).</div>
