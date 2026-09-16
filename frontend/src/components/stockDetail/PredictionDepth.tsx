@@ -1,4 +1,5 @@
-/* 이 종목의 예측 분포 — B-03 예측 탭 왼쪽. 설계 변경 2026-09-10.
+/* 이 종목의 예측 분포 — B-03 예측 탭 왼쪽, 그리고 정보 탭의 "예측 현황" 카드.
+   설계 변경 2026-09-10.
 
    전에는 개별 예측을 목록으로 보여줬다. 이제는 **누가 걸었는지를 보여주지 않고**
    목표가 구간별 인원만 낸다. 개인은 작성자 채널(E-02)에서만 본다.
@@ -151,15 +152,23 @@ function Rows({ d }: { d: PredictionDistribution }) {
 type Props = {
   code: string
   span?: 4 | 5 | 6 | 7 | 8 | 12
+  /** 카드 제목. 정보 탭에서는 "예측 현황" 이라는 이름으로 같은 표를 쓴다 */
+  title?: string
+  /* 접기 — 부모가 상태를 들고 있다(Block.tsx 의 규칙). 둘 다 주지 않으면
+     접히지 않는 카드다. 접혀 있는 동안에는 부르지도 않는다. */
+  open?: boolean
+  onToggle?: () => void
 }
 
-export default function PredictionDepth({ code, span = 6 }: Props) {
+export default function PredictionDepth({
+  code, span = 6, title = '이 종목의 예측 분포', open, onToggle,
+}: Props) {
   /* 기준가는 응답의 basePrice 다. 목업 때는 화면 머리의 전일 종가를 인자로 건네고
      그 값이 들어올 때 다시 불렀는데, 서버가 기준가를 정하므로 종목만 보면 된다. */
-  const q = useBlock(() => getPredictionDistribution(code), [code])
+  const q = useBlock(() => getPredictionDistribution(code), [code], open ?? true)
 
   return (
-    <Panel title="이 종목의 예측 분포" span={span}>
+    <Panel title={title} span={span} open={open} onToggle={onToggle}>
       {q.error && <ErrorState error={q.error} onRetry={q.retry} inline />}
       {!q.error && q.loading && <p className="pf-none">불러오는 중입니다…</p>}
       {/* 한 건도 없어도 **표는 그린다**(2026-09-16). 전에는 문단 한 줄로 갈음했는데,

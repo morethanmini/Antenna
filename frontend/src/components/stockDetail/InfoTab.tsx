@@ -4,17 +4,22 @@
    전폭 카드를 세로로 쌓으면 스크롤을 내려야 내용이 나온다. 그래서 12칸 격자에
    카드를 나란히 놓고, 관련 있는 원천을 한 카드로 묶어 줄 수를 줄였다.
 
-     차트(5)          │ 예측 현황 · AI 브리핑(7)
-     종목 정보(5)      │ 투자 포인트(7)             ← 개요 + 밸류에이션
+     차트(5)          │ 투자 포인트(7)
+     종목 정보(5)      │ 예측 현황(7)               ← 개요 + 밸류에이션 / 예측 분포
      재무(6)          │ 같은 업종(6)
      공시 · 뉴스(12)
+
+   투자 포인트가 첫 줄로 올라온 것은 2026-09-16 이다. 그 자리에 있던 예측 현황은
+   서비스 초기에 걸린 예측이 거의 없어, 화면에서 가장 먼저 눈에 들어오는 칸이
+   빈 채로 남았다. 둘 다 span 7 이라 자리만 맞바꿨다.
 
    카드 안에서 스크롤하지 않는다. 펼친 카드는 내용을 다 보여준다 — 높이를 묶어
    두면 펼쳤는데도 잘려 보이고 막대가 카드마다 생긴다. 한 줄의 바닥은 CSS 의
    stretch 가 맞춰 주고, 짧은 카드는 아래가 빈다.
 
-   카드는 모두 접힌다. 처음부터 다 펼쳐 두면 필요 없는 정보까지 읽어야 하므로
-   먼저 보는 넷만 펼치고 나머지는 접어 둔다(DEFAULT_OPEN). 어느 것을 접었는지는
+   카드는 모두 접힌다. 다만 **처음에는 전부 펼쳐 둔다**(DEFAULT_OPEN). 접어 두면
+   아래 절반이 제목 줄만 남아 "아직 아무것도 없는 화면" 으로 읽혔다 — 접기는
+   읽고 나서 치우는 수단이지 처음 만나는 상태가 아니다. 어느 것을 접었는지는
    이 브라우저에 남아, 다른 종목으로 옮겨도 접어 둔 대로 열린다.
 
    카드를 합쳤어도 원천마다 BlockState 를 따로 쓴다. /valuation 이 죽어도 같은
@@ -26,13 +31,15 @@ import { useCallback, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import CloseChart from '../CloseChart'
 import Block, { BlockState, Panel } from './Block'
+import PredictionDepth from './PredictionDepth'
 import { useBlock } from '../../api/useBlock'
+import { useCursorList } from '../../api/useCursorList'
 import {
   POINT_KINDS, POINT_LABEL, SOURCE_LABEL,
-  getDocuments, getFinancials, getPeers, getPoints,
+  getFinancials, getPeers, getPoints,
   getPrices, getProfile, getValuation,
 } from '../../api/stockDetail'
-import type { StockSummary } from '../../api/stockDetail'
+import type { StockDocument, StockSummary } from '../../api/stockDetail'
 
 /* 차트 기간. 서버는 from·to 를 받으므로 여기서 from 을 만들어 넘긴다. */
 const RANGES = [
@@ -43,29 +50,37 @@ const RANGES = [
 ] as const
 type RangeKey = (typeof RANGES)[number]['key']
 
+/* 같은 업종 한 쪽에 담는 줄 수. 서버가 같은 업종 전 종목을 한 번에 주는데
+   (Pageable 이 없다) 업종에 따라 백 줄이 넘어 카드가 세로로 한없이 길어진다.
+   옆에 선 재무 카드가 3행 고정이라 그 높이에 맞춘 값이다. */
+const PEERS_PER_PAGE = 8
+
 /* 이 수보다 예측이 적으면 비율을 흐리게 그린다. 5건은 한 명이 몇 번만 더 걸어도
    비율이 통째로 뒤집히는 구간이라, 또렷하게 보이면 없는 신호를 읽게 된다. */
 
-/* 접었다 펼치는 칸들.
+/* 접었다 펼치는 칸들. 전부 펼친 채로 시작한다(2026-09-16).
 
-   열 개 블록을 한꺼번에 펼쳐 두면 필요 없는 정보까지 읽어야 한다. 그래서 처음에는
-   종목을 파악하는 데 먼저 보는 넷만 펼치고, 더 파고들 때 보는 셋은 접어 둔다.
-   접힌 칸은 useBlock 의 enabled 가 꺼져 요청도 나가지 않는다. */
+   재무·같은 업종·공시 셋을 접어 두고 있었는데, 그 셋이 화면 아래 절반이라
+   처음 들어온 사람에게는 제목 줄만 세 개 놓인 빈 화면으로 보였다. 접힌 칸은
+   useBlock 의 enabled 가 꺼져 요청도 나가지 않으므로, 펼침이 기본이 되면
+   첫 진입에 그만큼 요청이 더 나간다 — 의도한 값이다. */
 const DEFAULT_OPEN = {
   chart: true,
   sentiment: true,
   profile: true,
   points: true,
-  financials: false,
-  peers: false,
-  documents: false,
+  financials: true,
+  peers: true,
+  documents: true,
 }
 type SectionKey = keyof typeof DEFAULT_OPEN
 
 /* 접힘 상태는 이 브라우저에만 남긴다. 종목을 옮겨도 "내가 접어 둔 대로" 가
    유지돼야 접는 의미가 있다. 저장이 막힌 환경(사생활 보호 모드 등)에서는
    조용히 기본값으로 돌아간다 — 화면이 멈추지 않는 게 우선이다. */
-const OPEN_STORE_KEY = 'antena.b03.sections'
+/* 기본값을 바꿀 때 키도 함께 올린다. 안 올리면 한 번이라도 들른 사람의
+   브라우저에 옛 false 가 남아 새 기본값이 영영 안 먹는다. */
+const OPEN_STORE_KEY = 'antena.b03.sections.v2'
 
 function readOpen(): Record<SectionKey, boolean> {
   try {
@@ -128,11 +143,22 @@ export default function InfoTab({ code, summary, picked, onPick, onGoPredict }: 
   /* 접힌 칸은 부르지 않는다 — 펼치는 순간 그때 부른다 */
   const prices = useBlock(() => getPrices(code, from), [code, from], open.chart)
   const points = useBlock(() => getPoints(code), [code], open.points)
-  const documents = useBlock(() => getDocuments(code), [code], open.documents)
   const profile = useBlock(() => getProfile(code), [code], open.profile)
   const financials = useBlock(() => getFinancials(code), [code], open.financials)
   const valuation = useBlock(() => getValuation(code), [code], open.profile)
   const peers = useBlock(() => getPeers(code), [code], open.peers)
+
+  /* 같은 업종 쪽 번호. 종목을 옮기면 1쪽으로 돌린다 — 3쪽을 보던 채로 다른
+     종목에 들어가면 아무것도 없는 쪽이 열린다(SeasonPlay 의 barsDay 와 같은 방식). */
+  const [peerPage, setPeerPage] = useState(0)
+  const [peerCode, setPeerCode] = useState(code)
+  if (peerCode !== code) {
+    setPeerCode(code)
+    setPeerPage(0)
+  }
+  const peerItems = peers.data?.items ?? []
+  const peerPages = Math.max(1, Math.ceil(peerItems.length / PEERS_PER_PAGE))
+  const peerShown = peerItems.slice(peerPage * PEERS_PER_PAGE, (peerPage + 1) * PEERS_PER_PAGE)
 
   /* 서버가 열마다 배열을 따로 내려주므로 화면이 kind 로 다시 나누지 않는다.
      한 열이 비어도 나머지 두 열은 그대로 그린다. */
@@ -172,23 +198,63 @@ export default function InfoTab({ code, summary, picked, onPick, onGoPredict }: 
         <CloseChart series={prices.data?.items ?? []} label={summary?.name ?? ''} height={286} />
       </Block>
 
-      {/* ── 예측 현황 ─────────────────────────────────────
-          종목 AI 브리핑 목록이 있던 자리. 생성 배치를 2026-09-09 에 없앴다 — 같은 탭에
-          숫자로 있는 등락률·재무를 문장으로 다시 쓴 것에 종목당 매일 1콜을 썼다.
-          뉴스·공시 쪽은 아래 투자 포인트가 담는다 */}
-      <Panel
-        title="예측 현황"
+      {/* ── 투자 포인트 ───────────────────────────────────── */}
+      <Block
+        title="투자 포인트"
+        note="고른 항목이 예측의 근거로 넘어갑니다"
         span={7}
-        open={open.sentiment}
-        onToggle={() => toggle('sentiment')}
+        open={open.points}
+        onToggle={() => toggle('points')}
+        skeleton={230}
+        loading={points.loading}
+        error={points.error}
+        onRetry={points.retry}
+        isEmpty={points.data !== null && pointCount === 0}
+        empty="투자 포인트가 아직 없습니다. 공시·뉴스를 요약하는 기능이 준비되면 이 자리에 채워집니다."
       >
-        {/* 예측 심리는 서버가 아직 없다(GET /stocks/{code}/sentiment).
-            목업으로 그리지 않는다 — 옆의 재무가 실제 값이라 같은 화면에서 지어낸 비율이
-            참으로 읽힌다. 자리를 비우지도 않는다. 왜 없는지 말한다. */}
-        <p className="sd-block-empty">
-          예측 심리 집계는 아직 제공되지 않습니다. 준비되면 이 자리에 상승·하락 비율이 표시됩니다.
+        <div className="sd-points">
+          {POINT_KINDS.map((kind) => {
+            const list = points.data?.[kind] ?? []
+            return (
+              <div key={kind} className={`sd-point-col is-${kind}`}>
+                <h3>{POINT_LABEL[kind]}</h3>
+                {list.length === 0 ? (
+                  <p className="sd-point-none">없음</p>
+                ) : (
+                  <ul>
+                    {list.map((p) => {
+                      const on = picked.includes(p.id)
+                      return (
+                        <li key={p.id}>
+                          {/* 체크박스로 두는 이유 — 여러 개를 고르는 조작이고,
+                              키보드·보조기술이 선택 상태를 그대로 읽는다 */}
+                          <label className={on ? 'sd-point is-on' : 'sd-point'}>
+                            <input type="checkbox" checked={on} onChange={() => onPick(p.id)} />
+                            {/* 제목이 따로 없다. 본문 한 덩어리가 포인트 전체다 */}
+                            <span className="sd-point-body">{p.body}</span>
+                          </label>
+                          {/* 근거 문서가 있으면 원문으로 갈 길을 준다.
+                              없는 포인트는 시세·재무 수치에서 나온 종합이라 링크가 없다 */}
+                          {p.source && (
+                            <span className="sd-point-src">{SOURCE_LABEL[p.source]}</span>
+                          )}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        <p className="sd-point-foot">
+          <span className="num">{`${picked.length}개 선택됨`}</span>
+          <button type="button" className="sd-cta" onClick={onGoPredict}>
+            이 근거로 예측하기
+          </button>
         </p>
-      </Panel>
+      </Block>
 
       {/* ── 종목 정보(개요 · 밸류 · 재무) ────────────────────
           원천이 셋이다. 하나가 죽어도 나머지 둘은 그대로 보인다 */}
@@ -261,63 +327,18 @@ export default function InfoTab({ code, summary, picked, onPick, onGoPredict }: 
 
       </Panel>
 
-      {/* ── 투자 포인트 ───────────────────────────────────── */}
-      <Block
-        title="투자 포인트"
-        note="고른 항목이 예측의 근거로 넘어갑니다"
+      {/* ── 예측 현황 ─────────────────────────────────────
+          예측 탭 왼쪽의 호가창과 같은 표다(PredictionDepth). 서버에 없는
+          GET /stocks/{code}/sentiment 를 기다리는 대신, 이미 있는 예측 분포
+          (GET /stocks/{code}/predictions/distribution)를 그대로 쓴다.
+          빈 상태(예측 0건 · 기준가 없음)를 어떻게 그릴지는 PredictionDepth 가 정한다. */}
+      <PredictionDepth
+        code={code}
         span={7}
-        open={open.points}
-        onToggle={() => toggle('points')}
-        skeleton={230}
-        loading={points.loading}
-        error={points.error}
-        onRetry={points.retry}
-        isEmpty={points.data !== null && pointCount === 0}
-        empty="투자 포인트가 아직 없습니다. 공시·뉴스를 요약하는 기능이 준비되면 이 자리에 채워집니다."
-      >
-        <div className="sd-points">
-          {POINT_KINDS.map((kind) => {
-            const list = points.data?.[kind] ?? []
-            return (
-              <div key={kind} className={`sd-point-col is-${kind}`}>
-                <h3>{POINT_LABEL[kind]}</h3>
-                {list.length === 0 ? (
-                  <p className="sd-point-none">없음</p>
-                ) : (
-                  <ul>
-                    {list.map((p) => {
-                      const on = picked.includes(p.id)
-                      return (
-                        <li key={p.id}>
-                          {/* 체크박스로 두는 이유 — 여러 개를 고르는 조작이고,
-                              키보드·보조기술이 선택 상태를 그대로 읽는다 */}
-                          <label className={on ? 'sd-point is-on' : 'sd-point'}>
-                            <input type="checkbox" checked={on} onChange={() => onPick(p.id)} />
-                            {/* 제목이 따로 없다. 본문 한 덩어리가 포인트 전체다 */}
-                            <span className="sd-point-body">{p.body}</span>
-                          </label>
-                          {/* 근거 문서가 있으면 원문으로 갈 길을 준다.
-                              없는 포인트는 시세·재무 수치에서 나온 종합이라 링크가 없다 */}
-                          {p.source && (
-                            <span className="sd-point-src">{SOURCE_LABEL[p.source]}</span>
-                          )}
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
-              </div>
-            )
-          })}
-        </div>
-
-        <p className="sd-point-foot">
-          <span className="num">{`${picked.length}개 선택됨`}</span>
-          <button type="button" className="sd-cta" onClick={onGoPredict}>
-            이 근거로 예측하기
-          </button>
-        </p>
-      </Block>
+        title="예측 현황"
+        open={open.sentiment}
+        onToggle={() => toggle('sentiment')}
+      />
 
       {/* ── 재무 · 경쟁사 ──────────────────────────────────
           표 둘은 줄 수가 적어 높이를 고정하지 않는다. 고정하면 두 종목뿐인
@@ -387,7 +408,7 @@ export default function InfoTab({ code, summary, picked, onPick, onGoPredict }: 
               </tr>
             </thead>
             <tbody>
-              {peers.data?.items.map((p) => (
+              {peerShown.map((p) => (
                 <tr key={p.code}>
                   <th scope="row">
                     <Link to={`/stocks/${p.code}`}>{p.name}</Link>
@@ -400,45 +421,95 @@ export default function InfoTab({ code, summary, picked, onPick, onGoPredict }: 
             </tbody>
           </table>
         </div>
+
+        {/* 쪽이 하나뿐이면 조작부를 그리지 않는다 — 누를 데 없는 화살표만 남는다 */}
+        {peerPages > 1 && (
+          <div className="sd-pager">
+            <button
+              type="button" aria-label="이전 쪽"
+              disabled={peerPage === 0}
+              onClick={() => setPeerPage((n) => Math.max(0, n - 1))}
+            >
+              ‹
+            </button>
+            <span className="num">{`${peerPage + 1} / ${peerPages}`}</span>
+            <button
+              type="button" aria-label="다음 쪽"
+              disabled={peerPage >= peerPages - 1}
+              onClick={() => setPeerPage((n) => Math.min(peerPages - 1, n + 1))}
+            >
+              ›
+            </button>
+          </div>
+        )}
       </Block>
 
-      {/* ── 공시·뉴스 ─────────────────────────────────────── */}
-      <Block
+      {/* ── 공시·뉴스 ───────────────────────────────────────
+          목록을 딴 컴포넌트로 뺀 이유는 커서 페이징 훅(useCursorList)에는 접힘
+          스위치가 없어서다. Panel 은 접혀 있으면 children 을 그리지 않으므로,
+          훅을 그 안쪽에 두면 펼칠 때 비로소 처음 부른다. */}
+      <Panel
         title="공시 · 뉴스"
         note="요약과 원문 링크만 제공합니다"
         span={12}
         open={open.documents}
         onToggle={() => toggle('documents')}
-        skeleton={200}
-        loading={documents.loading}
-        error={documents.error}
-        onRetry={documents.retry}
-        isEmpty={documents.data?.items.length === 0}
       >
-        {/* 원문 본문을 저장하지 않으므로 전문을 그리지 않는다(§4 B-03).
-            제목을 눌러 원문으로 나간다 — 새 탭이라 이 화면의 작성 중 내용이 날아가지 않는다 */}
-        <ul className="sd-docs">
-          {documents.data?.items.map((d) => (
-            <li key={d.id}>
-              <span className={`sd-doc-kind is-${d.source.toLowerCase()}`}>
-                {SOURCE_LABEL[d.source]}
-              </span>
-              <div className="sd-doc-body">
-                <a href={d.originUrl} target="_blank" rel="noreferrer noopener">
-                  {d.title}
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M13 5h6v6M19 5l-8 8M18 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4" />
-                  </svg>
-                </a>
-                {/* 공시는 발췌가 없어 제목만 보여준다 */}
-                {d.snippet && <p>{d.snippet}</p>}
-                <span className="sd-doc-meta num">{day(d.publishedAt)}</span>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </Block>
+        <DocumentList code={code} />
+      </Panel>
     </div>
+  )
+}
+
+/**
+ * 공시·뉴스 목록. 첫 쪽만 보여주던 것을 이어 받게 바꿨다(2026-09-16).
+ *
+ * 서버는 처음부터 커서 페이징이었는데(cursor·size) 화면이 인자를 안 보내 최신
+ * 20건에서 멈춰 있었다. 카드가 화면 맨 아래라 세로로 길어져도 괜찮다 — 다른 목록
+ * 화면과 같은 "더 보기" 로 잇는다.
+ */
+function DocumentList({ code }: { code: string }) {
+  /* 경로를 그대로 넘긴다 — 다른 목록 화면(커밋 원장 · 리포트 피드 · 지갑 원장)과
+     같은 방식이고, cursor·size 를 훅이 알아서 실어 보낸다. */
+  const list = useCursorList<StockDocument>(`/stocks/${code}/documents`)
+
+  return (
+    <BlockState
+      loading={list.loading && list.items.length === 0}
+      error={list.error}
+      onRetry={list.reload}
+      skeleton={200}
+      isEmpty={!list.loading && list.items.length === 0}
+    >
+      {/* 원문 본문을 저장하지 않으므로 전문을 그리지 않는다(§4 B-03).
+          제목을 눌러 원문으로 나간다 — 새 탭이라 이 화면의 작성 중 내용이 날아가지 않는다 */}
+      <ul className="sd-docs">
+        {list.items.map((d) => (
+          <li key={d.id}>
+            <span className={`sd-doc-kind is-${d.source.toLowerCase()}`}>
+              {SOURCE_LABEL[d.source]}
+            </span>
+            <div className="sd-doc-body">
+              <a href={d.originUrl} target="_blank" rel="noreferrer noopener">
+                {d.title}
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M13 5h6v6M19 5l-8 8M18 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4" />
+                </svg>
+              </a>
+              {/* 공시는 발췌가 없어 제목만 보여준다 */}
+              {d.snippet && <p>{d.snippet}</p>}
+              <span className="sd-doc-meta num">{day(d.publishedAt)}</span>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {list.hasNext && (
+        <button type="button" className="sd-more" onClick={list.loadMore} disabled={list.loading}>
+          {list.loading ? '불러오는 중…' : '더 보기'}
+        </button>
+      )}
+    </BlockState>
   )
 }
