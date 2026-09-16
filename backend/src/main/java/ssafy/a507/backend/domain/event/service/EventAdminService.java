@@ -121,6 +121,7 @@ public class EventAdminService {
 
         PredictionEvent event =
                 events.save(PredictionEvent.create(
+                        request.slug(),
                         request.title(),
                         request.opensAt(),
                         request.sealsAt(),

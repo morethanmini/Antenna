@@ -4,6 +4,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -100,6 +101,39 @@ class EventAdminControllerTest {
                 .andExpect(jsonPath("$.stocks[1].stockCode").value("000660"))
                 // 기준가가 없는 종목은 null 이다 — 0 으로 채우면 승패가 거짓으로 갈린다
                 .andExpect(jsonPath("$.stocks[1].basePrice").value(nullValue()));
+    }
+
+    @Test
+    @DisplayName("slug 를 주면 목록·홈 응답에 그대로 나온다 — 프론트가 어느 회차인지 아는 유일한 길")
+    void slug() throws Exception {
+        mockMvc.perform(create(admin, body(2))).andExpect(status().isAccepted());
+        long eventId = count("SELECT max(id) FROM prediction_events");
+
+        mockMvc.perform(get("/api/v1/events").with(user(String.valueOf(member))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].slug").value("scalping"));
+        mockMvc.perform(get("/api/v1/events/{id}", eventId).with(user(String.valueOf(member))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.slug").value("scalping"));
+    }
+
+    @Test
+    @DisplayName("slug 는 없어도 된다 — 운영 점검용 회차는 화면 주소가 필요 없다")
+    void slug_없어도_된다() throws Exception {
+        String noSlug = body(2).replaceFirst("\\s*\"slug\":\"scalping\",", "");
+        mockMvc.perform(create(admin, noSlug)).andExpect(status().isAccepted());
+
+        assertThat(scalar("SELECT slug FROM prediction_events ORDER BY id DESC LIMIT 1")).isNull();
+    }
+
+    @Test
+    @DisplayName("같은 slug 가 둘이면 막는다 — 화면이 어느 회차를 열지 갈린다")
+    void slug_중복은_거부() throws Exception {
+        mockMvc.perform(create(admin, body(2))).andExpect(status().isAccepted());
+
+        mockMvc.perform(create(admin, body(2))).andExpect(status().is5xxServerError());
+
+        assertThat(count("SELECT count(*) FROM prediction_events")).isEqualTo(1);
     }
 
     @Test
@@ -314,7 +348,8 @@ class EventAdminControllerTest {
 
     private String body(int minStocks) {
         return """
-                {"title":"9월 3주 업앤다운",
+                {"slug":"scalping",
+                 "title":"9월 3주 업앤다운",
                  "opensAt":"2026-09-18T13:30:00+09:00","sealsAt":"2026-09-19T11:59:00+09:00",
                  "baseDate":"2026-09-17","settleDate":"2026-09-21",
                  "minStake":500,"maxStake":2000,"minStocks":%d,
