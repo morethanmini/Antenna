@@ -24,6 +24,15 @@ export type PredictForm = {
    * 서명한 값과 보낸 값이 어긋날 수도 있다. 등록이 끝나면 폼과 함께 버린다.
    */
   noteSalt: string
+  /**
+   * 이벤트 배팅 금액(정수 ANT 문자열). 이벤트로 들어왔을 때만 화면에 나온다.
+   *
+   * **커밋에도 서명에도 들어가지 않는다.** 원장에 봉인되는 것은 예측 다섯 값뿐이고,
+   * 금액은 그 밖의 부수 정보다 — 섞으면 서버가 계산한 해시와 갈린다(EventBet.tsx).
+   * 그래도 폼과 함께 사는 이유는 note·target 과 같다: 근거를 고르러 종목 정보 탭에
+   * 다녀오는 사이에 걸어 둔 금액이 사라지면 안 된다.
+   */
+  bet: string
 }
 
 /**
@@ -32,5 +41,5 @@ export type PredictForm = {
  */
 export const emptyPredictForm = (): PredictForm => ({
   direction: null, target: '', horizon: null, note: '', directionTouched: false,
-  noteSalt: newNoteSalt(),
+  noteSalt: newNoteSalt(), bet: '',
 })

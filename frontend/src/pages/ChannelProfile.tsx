@@ -223,6 +223,7 @@ export default function ChannelProfile() {
                 <Link className="ch-sub-link" to="/settings">
                   {channel.fee === null ? '구독료 정하기' : '설정으로'}
                 </Link>
+                <span className="ch-sub-count num">{`구독자 ${channel.subscriberCount.toLocaleString('ko-KR')}명`}</span>
               </section>
             ) : (
               <section className="ch-sub">
@@ -238,6 +239,8 @@ export default function ChannelProfile() {
                       <em>/ 30일</em>
                     </p>
                   )}
+                  {/* 집계만이다. 누가 구독하는지는 어디에도 안 내린다(예측 분포가 인원만 내는 것과 같은 규칙) */}
+                  <span className="ch-sub-count num">{`구독자 ${channel.subscriberCount.toLocaleString('ko-KR')}명`}</span>
                 </div>
 
                 {sub?.status === 'ACTIVE' && sub.expiresAt ? (

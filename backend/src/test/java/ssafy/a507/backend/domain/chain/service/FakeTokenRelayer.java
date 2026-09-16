@@ -35,12 +35,15 @@ public class FakeTokenRelayer implements TokenRelayer {
     public record Call(String kind, String from, String to, BigInteger amount, TokenReason reason) {}
 
     private boolean enabled = true;
+    /** {@code balanceOf} 가 돌려줄 값. 이벤트 묶음 등록(ANT-EVENT-05)의 잔액 검사가 체인 잔액을 본다. */
+    private BigInteger balance = BigInteger.ZERO;
     private final Deque<Supplier<String>> script = new ArrayDeque<>();
     private final List<Call> calls = new ArrayList<>();
     private int txSeq = 0;
 
     public void reset() {
         enabled = true;
+        balance = BigInteger.ZERO;
         script.clear();
         calls.clear();
         txSeq = 0;
@@ -48,6 +51,12 @@ public class FakeTokenRelayer implements TokenRelayer {
 
     public void disable() {
         enabled = false;
+    }
+
+    /** 체인 잔액을 심는다. 원장(token_ledger)과 달리 인덱서 지연이 없는 값이다. */
+    public FakeTokenRelayer withBalance(BigInteger amount) {
+        this.balance = amount;
+        return this;
     }
 
     public FakeTokenRelayer thenSent() {
@@ -105,7 +114,7 @@ public class FakeTokenRelayer implements TokenRelayer {
 
     @Override
     public BigInteger balanceOf(String address) {
-        return BigInteger.ZERO;
+        return balance;
     }
 
     private String next() {

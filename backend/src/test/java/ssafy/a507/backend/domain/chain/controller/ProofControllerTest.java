@@ -166,6 +166,36 @@ class ProofControllerTest {
         }
 
         @Test
+        @DisplayName("만기가 휴장이면 settleDate 도 실제 판정 거래일(settled_on) — 화면의 판정일과 대조 링크 날짜가 같아야 한다")
+        void 판정일은_settled_on() throws Exception {
+            // 만기 2026-10-05 · 실제 판정 거래일 2026-10-07. 화면 ④단계가 "판정일" 로 적는 값과 원본 링크의 basDt 가 같아야
+            // 사용자가 그 날짜로 포털을 열었을 때 종가가 나온다 — 만기일로 열면 휴장이라 빈 응답이다.
+            long pid = insertPrediction(authorId, "HIT", LocalDate.of(2026, 10, 7));
+            insertCommit(pid, "seed", null);
+
+            mockMvc.perform(get("/api/v1/predictions/{id}/proof", pid).with(user(str(otherId))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.settle.settleDate").value("2026-10-07"))
+                    .andExpect(jsonPath("$.settle.sourceUrl").value(org.hamcrest.Matchers.containsString("basDt=20261007")));
+        }
+
+        @Test
+        @DisplayName("기준가를 딴 거래일도 내린다 — basedOn. 기준일이 휴장이면 그 뒤 첫 거래일이고, 옛 행(based_on 없음)은 기준일로 물러선다(ANT-PRED-09)")
+        void 기준가_거래일_basedOn() throws Exception {
+            long fresh = insertPrediction(authorId, "HIT", LocalDate.of(2026, 10, 7), LocalDate.of(2026, 9, 7));
+            insertCommit(fresh, "fresh", null);
+            long legacy = insertPrediction(authorId, "HIT", null, null);
+            insertCommit(legacy, "legacy", null);
+
+            mockMvc.perform(get("/api/v1/predictions/{id}/proof", fresh).with(user(str(otherId))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.settle.basedOn").value("2026-09-07"));
+            mockMvc.perform(get("/api/v1/predictions/{id}/proof", legacy).with(user(str(otherId))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.settle.basedOn").value("2026-09-05"));
+        }
+
+        @Test
         @DisplayName("리빌 전에도 작성자·구독자는 salt 를 받는다 — 받을 자격은 구독이지 시간이 아니다(2026-09-15)")
         void 리빌_전에도_구독자는_salt() throws Exception {
             long pid = insertPrediction(authorId, "HIT");
@@ -431,16 +461,27 @@ class ProofControllerTest {
         return user.getId();
     }
 
-    /** HIT 이면 판정 컬럼(기준가·만기·종가·오차)까지 채운다 — PRED-03 이 채울 값의 모양이다. */
+    /** HIT 이면 판정 컬럼(기준가·만기·종가·오차)까지 채운다 — PRED-03 이 채울 값의 모양이다. settled_on 은 비운다(옛 행). */
     private long insertPrediction(long userId, String status) {
+        return insertPrediction(userId, status, null);
+    }
+
+    /** @param settledOn 실제로 종가를 딴 거래일(settled_on). 만기(settle_date=2026-10-05)와 다를 수 있다 — ANT-PRED-04 */
+    private long insertPrediction(long userId, String status, LocalDate settledOn) {
+        return insertPrediction(userId, status, settledOn, null);
+    }
+
+    /** @param basedOn 기준가를 딴 거래일(based_on). 기준일(base_date=2026-09-05)이 휴장이면 다를 수 있다 — ANT-PRED-09 */
+    private long insertPrediction(long userId, String status, LocalDate settledOn, LocalDate basedOn) {
         boolean settled = status.equals("HIT") || status.equals("MISS");
         em.createNativeQuery(
                         """
                         INSERT INTO predictions
                           (user_id, track, stock_code, direction, target_price, ref_close, horizon, status,
-                           base_date, base_price, settle_date, settle_price, error_rate, created_at, updated_at)
+                           base_date, base_price, settle_date, settle_price, error_rate, settled_on, based_on,
+                           created_at, updated_at)
                         VALUES (?, 'REAL', '005930', 'UP', 80000.00, 79500.00, 30, ?,
-                                ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                                ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                         """)
                 .setParameter(1, userId)
                 .setParameter(2, status)
@@ -449,6 +490,8 @@ class ProofControllerTest {
                 .setParameter(5, settled ? LocalDate.of(2026, 10, 5) : null)
                 .setParameter(6, settled ? 82000.00 : null)
                 .setParameter(7, settled ? 2.5 : null)
+                .setParameter(8, settledOn)
+                .setParameter(9, basedOn)
                 .executeUpdate();
         return ((Number) em.createNativeQuery("SELECT MAX(id) FROM predictions").getSingleResult()).longValue();
     }

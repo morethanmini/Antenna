@@ -26,6 +26,7 @@ import { useCallback, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/context'
 import { openOnboardingTour } from '../auth/onboarding'
+import ConfirmDialog from '../components/ConfirmDialog'
 import LockedCard from '../components/state/LockedCard'
 import ChannelFeeSection from '../components/settings/ChannelFeeSection'
 import WalletLinkModal from '../components/wallet/WalletLinkModal'
@@ -56,6 +57,7 @@ export default function Settings() {
 
   // M-09 를 건너뛴 사용자를 위한 보완 진입로(설계 제약)
   const [linking, setLinking] = useState(false)
+  const [confirmingSignOut, setConfirmingSignOut] = useState(false)
 
   /* 탭은 쿼리스트링에 둔다 — 옛 /me/channel 링크가 기본 탭에 그대로 닿고,
      새로고침해도 보던 자리가 유지된다. 모르는 값이면 구독료로 떨어뜨린다. */
@@ -201,7 +203,7 @@ export default function Settings() {
           </p>
           <button
             type="button" className="st-btn danger"
-            onClick={() => { signOut(); navigate('/login', { replace: true }) }}
+            onClick={() => setConfirmingSignOut(true)}
           >
             로그아웃
           </button>
@@ -213,6 +215,17 @@ export default function Settings() {
             /* 연동되면 셸의 walletLinked 가 서고 위 보완 안내가 사라진다 —
                이 화면은 더 이상 /users/me 를 읽지 않아 따로 할 일이 없다 */
             onLinked={() => setLinking(false)}
+          />
+        )}
+
+        {confirmingSignOut && (
+          <ConfirmDialog
+            title="정말 로그아웃할까요?"
+            description="이 브라우저의 세션이 끝납니다. 다시 이용하려면 로그인 화면에서 한 번 더 로그인해야 합니다."
+            confirmLabel="로그아웃"
+            tone="danger"
+            onCancel={() => setConfirmingSignOut(false)}
+            onConfirm={() => { signOut(); navigate('/login', { replace: true }) }}
           />
         )}
       </div>

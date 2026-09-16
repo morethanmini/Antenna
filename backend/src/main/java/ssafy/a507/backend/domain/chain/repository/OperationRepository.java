@@ -1,6 +1,7 @@
 package ssafy.a507.backend.domain.chain.repository;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.PageRequest;
@@ -35,6 +36,16 @@ public interface OperationRepository extends JpaRepository<Operation, String> {
 
     /** tx 는 보냈는데 이벤트가 아직 없는 PENDING. 인덱서 ② 가 receipt 로 revert·유실을 가른다. */
     List<Operation> findByStatusAndTxHashIsNotNullAndCreatedAtBefore(Operation.Status status, Instant before);
+
+    /**
+     * 위 둘의 kind 한정판 (ANT-EVENT-02). 풀 인덱서 ③ 이 자기 작업(EVENT_BET · EVENT_ADMIN)만 닫으려고 쓴다 —
+     * 토큰 인덱서 ② 의 두 쿼리는 kind 를 안 가려 풀 작업도 보지만, 풀 쪽이 자기 것을 스스로 닫아야 이벤트 흐름이 토큰 인덱서에 기대지 않는다.
+     */
+    List<Operation> findByKindInAndStatusAndTxHashIsNullAndCreatedAtBefore(
+            Collection<Operation.Kind> kinds, Operation.Status status, Instant before);
+
+    List<Operation> findByKindInAndStatusAndTxHashIsNotNullAndCreatedAtBefore(
+            Collection<Operation.Kind> kinds, Operation.Status status, Instant before);
 
     @Query("select u.id from User u where" + SIGNUP_BONUS_ELIGIBLE + " order by u.id")
     List<Long> findSignupBonusCandidateIds(

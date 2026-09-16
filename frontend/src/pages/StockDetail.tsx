@@ -24,6 +24,7 @@ import { useBlock } from '../api/useBlock'
 import ErrorState from '../components/state/ErrorState'
 import { addWatch, removeWatch, MARKET_LABEL } from '../api/stocks'
 import { getSummary } from '../api/stockDetail'
+import { CONTEST, CONTEST_CODES, phaseAt } from '../event/contest'
 import StockLogo from '../components/stocks/StockLogo'
 import '../styles/screens/stock-detail.css'
 
@@ -38,6 +39,26 @@ export default function StockDetail() {
   const [params, setParams] = useSearchParams()
 
   const tab: TabKey = params.get('tab') === 'predict' ? 'predict' : 'info'
+
+  /* 대회(J-01)로 들어왔는가. 대회 종목 카드가 `?tab=predict&event=scalping` 으로
+     데려온다(event/contest.ts 의 cardHref). 탭과 같이 **주소에** 둔다 — 상태로만
+     들고 있으면 새로고침에 평소 화면으로 돌아가고, 걸어 둔 배팅이 말없이 사라진다.
+
+     세 가지를 모두 확인한다. 주소는 누구나 손으로 칠 수 있어서다.
+       · 값이 이 회차의 id 인가      — 아무 문자열이나 배팅 칸을 열지 않는다
+       · 등록 창이 열려 있는가        — cardHref 도 open 일 때만 예측 탭으로 보낸다.
+                                       마감 뒤 링크를 다시 열면 걸 수 없는 칸만 남는다
+       · 이 종목이 대회 종목인가      — 열 개 밖의 종목에 배팅 칸이 뜨면 접수는
+                                       되는데 판정할 자리가 없다(컨트랙트가 stockIdx 로 센다)
+
+     **기간만 개발 빌드에서 푼다.** 등록 창이 9/18 13:10 에야 열리는데 그때까지
+     화면을 못 보면 만들면서 확인할 방법이 없다. 회차 id 와 대회 종목은 개발에서도
+     그대로 본다 — 그 둘까지 풀면 아무 종목에서나 열려 무엇을 보고 있는지 흐려진다.
+     `import.meta.env.DEV` 는 빌드 때 상수로 접히므로 운영 번들에는 이 가지가 없다. */
+  const eventMode =
+    params.get('event') === CONTEST.id &&
+    (phaseAt() === 'open' || import.meta.env.DEV) &&
+    CONTEST_CODES.includes(code)
   const goTab = useCallback((next: TabKey) => {
     const p = new URLSearchParams(params)
     if (next === 'info') p.delete('tab')
@@ -121,8 +142,10 @@ export default function StockDetail() {
                         오른쪽으로 민다 — 둘에 각각 margin-left:auto 를 주면 남는
                         폭을 반씩 나눠 가져 카드가 가운데로 떠 버린다. */}
                     <div className="sd-ident-right">
-                      {/* 오늘 판정된 예측. 없으면 스스로 아무것도 그리지 않는다 */}
-                      <SettledToday code={code} />
+                      {/* 오늘 판정된 예측. 없으면 스스로 아무것도 그리지 않는다.
+                          **대회로 들어왔으면 접는다** — 이 문으로 온 사람은 대회 종목에
+                          예측을 걸러 온 것이라, 오늘 끝난 남의 예측이 할 말이 없다. */}
+                      {!eventMode && <SettledToday code={code} />}
 
                       <button
                         type="button"
@@ -204,6 +227,7 @@ export default function StockDetail() {
                   onGoInfo={() => goTab('info')}
                   form={form}
                   onForm={setForm}
+                  eventMode={eventMode}
                 />
               )}
             </div>

@@ -41,6 +41,24 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
             @Param("now") Instant now);
 
     /**
+     * 이 발행자를 지금 유효하게 구독 중인 사람 수 — 채널 프로필의 "구독자 N명"(ANT-TOKEN-10).
+     *
+     * <p>기간 조건은 {@link #findSubscribedPublisherIds} 와 같다("ACTIVE + 기간 유효"). 정의를 둘로 만들지
+     * 않는다 — 열람 권한이 있는 사람 수가 곧 구독자 수다. 개인은 내리지 않고 수만 낸다.
+     */
+    @Query("""
+            select count(s)
+              from Subscription s
+             where s.publisher.id = :publisherId
+               and s.status = :status
+               and (s.expiresAt is null or s.expiresAt > :now)
+            """)
+    long countSubscribers(
+            @Param("publisherId") Long publisherId,
+            @Param("status") Subscription.Status status,
+            @Param("now") Instant now);
+
+    /**
      * 이 발행자를 지금 유효하게 구독 중인 사람들. 리포트 발행 알림 대상이다.
      *
      * <p>User 엔티티가 아니라 id 만 받는다 — 알림 행의 FK 에 필요한 것은 id 뿐이고, 구독자

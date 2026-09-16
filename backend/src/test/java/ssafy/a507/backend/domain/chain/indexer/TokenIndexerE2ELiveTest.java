@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import ssafy.a507.backend.domain.chain.config.ChainProperties;
 import ssafy.a507.backend.domain.chain.config.CommitAnchorProperties;
+import ssafy.a507.backend.domain.chain.config.EventPoolProperties;
 import ssafy.a507.backend.domain.chain.config.PredictTokenProperties;
 import ssafy.a507.backend.domain.chain.relay.ChainConnection;
 import ssafy.a507.backend.domain.chain.relay.TokenReason;
@@ -39,7 +40,8 @@ class TokenIndexerE2ELiveTest {
         return new Web3jChainLogSource(
                 new ChainConnection(props),
                 new CommitAnchorProperties(null),
-                new PredictTokenProperties(System.getenv("CONTRACT_PREDICT_TOKEN")));
+                new PredictTokenProperties(System.getenv("CONTRACT_PREDICT_TOKEN")),
+                new EventPoolProperties(null, null));
     }
 
     @Test

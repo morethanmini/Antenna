@@ -33,11 +33,14 @@ public class FakeChainLogSource implements ChainLogSource {
     private final List<AnchoredLog> logs = new ArrayList<>();
     /** 토큰 인덱서 ②(ANT-CHAIN-11) 용. 앵커 로그와 별도 목록 — 컨트랙트가 다르다. */
     private final List<TokenLog> tokenLogs = new ArrayList<>();
+    /** 풀 인덱서 ③(ANT-EVENT-02) 용. 역시 별도 목록 — 컨트랙트가 다르다. */
+    private final List<PoolLog> poolLogs = new ArrayList<>();
     /** tx 해시 → receipt status. 없으면 "아직 채굴 안 됨". */
     private final Map<String, Boolean> receipts = new HashMap<>();
     private final Map<Long, String> blockHashOverrides = new HashMap<>();
     private final List<Range> ranges = new ArrayList<>();
     private final List<Range> tokenRanges = new ArrayList<>();
+    private final List<Range> poolRanges = new ArrayList<>();
     private long head = 0;
     private boolean unavailable = false;
     private int latestBlockCalls = 0;
@@ -46,10 +49,12 @@ public class FakeChainLogSource implements ChainLogSource {
     public void reset() {
         logs.clear();
         tokenLogs.clear();
+        poolLogs.clear();
         receipts.clear();
         blockHashOverrides.clear();
         ranges.clear();
         tokenRanges.clear();
+        poolRanges.clear();
         head = 0;
         unavailable = false;
         latestBlockCalls = 0;
@@ -72,6 +77,32 @@ public class FakeChainLogSource implements ChainLogSource {
 
     public List<Range> tokenRanges() {
         return tokenRanges;
+    }
+
+    public FakeChainLogSource add(PoolLog log) {
+        poolLogs.add(log);
+        if (log.blockNumber() > head) {
+            head = log.blockNumber();
+        }
+        return this;
+    }
+
+    public List<Range> poolRanges() {
+        return poolRanges;
+    }
+
+    @Override
+    public List<PoolLog> poolLogs(long fromBlock, long toBlock) {
+        failIfUnavailable();
+        poolRanges.add(new Range(fromBlock, toBlock));
+        List<PoolLog> out = new ArrayList<>();
+        for (PoolLog l : poolLogs) {
+            if (l.blockNumber() >= fromBlock && l.blockNumber() <= toBlock) {
+                out.add(l);
+            }
+        }
+        out.sort(java.util.Comparator.comparingLong(PoolLog::blockNumber).thenComparingInt(PoolLog::logIndex));
+        return out;
     }
 
     public int receiptCalls() {
@@ -164,6 +195,11 @@ public class FakeChainLogSource implements ChainLogSource {
             }
         }
         for (TokenLog l : tokenLogs) {
+            if (l.blockNumber() == blockNumber) {
+                return Optional.of(l.blockHash());
+            }
+        }
+        for (PoolLog l : poolLogs) {
             if (l.blockNumber() == blockNumber) {
                 return Optional.of(l.blockHash());
             }

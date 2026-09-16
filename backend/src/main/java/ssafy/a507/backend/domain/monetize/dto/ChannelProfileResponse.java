@@ -37,6 +37,8 @@ public record ChannelProfileResponse(
          */
         String fee,
         ChannelStats stats,
+        /** 지금 유효한(ACTIVE + 기간 남음) 구독자 수. 개인은 내리지 않는다 — 수만(ANT-TOKEN-10) */
+        long subscriberCount,
         MySubscription mySubscription,
         /** 내 채널이면 화면이 구독 카드 대신 설정 안내를 그린다 */
         boolean isMe) {

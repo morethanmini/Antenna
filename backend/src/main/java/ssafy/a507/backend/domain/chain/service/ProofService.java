@@ -137,6 +137,10 @@ public class ProofService {
      * 만기일이 휴장이면 판정 배치가 그 이후 첫 거래일 종가를 쓰는데(ANT-PRED-04), 만기일로 포털을 열면 빈 응답이 와서
      * 사용자가 우리 종가를 대조할 방법이 없어진다. horizon 30 은 기준일이 목·금이면 만기가 주말이라 드문 일이 아니다.
      * 판정 전 데이터(settled_on 이 비어 있는 옛 행)는 만기일로 물러선다.
+     *
+     * <p>응답의 {@code settleDate} 도 <b>같은 날짜</b>다(ANT-CHAIN-19). 전에는 만기일을 실었는데, 화면(D-03 ④단계)이 그 값을
+     * "판정일" 로 적고 바로 아래 링크는 다른 날짜로 열려서 사용자가 화면에 적힌 날짜로 포털을 찾으면 데이터가 없었다 —
+     * "우리를 믿지 말고 직접 대조하라" 는 화면에서 그 대조가 실패했다. 만기일 자체는 GET /predictions/{id} 가 준다.
      */
     private static ProofResponse.Settle settleOf(Prediction p) {
         String sourceUrl = null;
@@ -144,7 +148,9 @@ public class ProofService {
         if (pricedOn != null && p.getStock() != null) {
             sourceUrl = PUBLIC_DATA_PRICE_URL.formatted(BAS_DT.format(pricedOn), p.getStock().getCode());
         }
+        // 기준가 쪽도 같은 규칙 — 실제로 딴 거래일, 옛 행은 기준일 (ANT-PRED-09)
+        LocalDate basedOn = p.getBasedOn() != null ? p.getBasedOn() : p.getBaseDate();
         return new ProofResponse.Settle(
-                p.getStatus(), p.getSettleDate(), p.getSettlePrice(), p.getBasePrice(), p.getErrorRate(), sourceUrl);
+                p.getStatus(), pricedOn, p.getSettlePrice(), p.getBasePrice(), basedOn, p.getErrorRate(), sourceUrl);
     }
 }

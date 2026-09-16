@@ -21,7 +21,7 @@ import LedgerList from './pages/LedgerList'
 import Anchor from './pages/Anchor'
 import Verify from './pages/Verify'
 import VerifyReport from './pages/VerifyReport'
-import Ranking, { SimRanking } from './pages/Ranking'
+import Ranking from './pages/Ranking'
 import ChannelProfile from './pages/ChannelProfile'
 import SubscriptionList from './pages/SubscriptionList'
 import ChannelFee from './pages/ChannelFee'
@@ -106,10 +106,9 @@ export const ROUTES: PageMeta[] = [
 
   // ── E. 채널 · 구독 ───────────────────────────────────
   { screen: 'E-01', element: Ranking, path: '/rankings', title: '주가 예측 랭킹', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'predictor-market-page', story: 'ANT-FE-RANKING' },
-  /* 같은 랭킹 화면이지만 트랙과 셸 모드가 다르다. 한 라우트를 두 모드가 나눠 쓸 수
-     없어(mode 가 라우트마다 붙는다) 화면을 갈랐다 — 전에는 모의 투자 바에서 눌러도
-     인사이트 모드로 넘어갔다. */
-  { screen: 'E-01', element: SimRanking, path: '/sim/rankings', title: '모의투자 랭킹', access: 'user', mode: 'sim', nav: 'ranking', bodyClass: 'predictor-market-page', story: 'ANT-FE-RANKING' },
+  /* 모의투자 랭킹(/sim/rankings)은 뺐다(2026-09-16). REPLAY 트랙 누적 순위인데,
+     한 시즌 안의 순위는 G-07 시즌 리더보드가 이미 보여 주고 둘을 같이 두면
+     "내 등수" 가 두 곳에서 다른 값으로 나온다. 실전 랭킹(/rankings)은 그대로다. */
   { screen: 'E-02', element: ChannelProfile, path: '/channels/:userId', title: '채널 프로필', access: 'user', mode: 'insight', nav: 'market', story: 'ANT-FE-CHANNEL-PROFILE' },
   { screen: 'E-03', element: SubscriptionList, path: '/me/subscriptions', title: '내 구독', access: 'user', mode: 'insight', nav: 'portfolio', story: 'ANT-FE-SUBSCRIPTION-LIST' },
   { screen: 'E-04', element: ChannelFee, path: '/me/channel', title: '내 채널 설정', access: 'user', mode: 'insight', nav: 'portfolio', story: 'ANT-FE-CHANNEL-FEE' },
@@ -140,7 +139,9 @@ export const ROUTES: PageMeta[] = [
   // G-05 는 프로토타입에서 제거됐지만 설계서 §3 G 와 스토리가 아직 살아 있다 — 결론 나면 정리한다
   { screen: 'G-05', element: SeasonResearch, path: '/sim/:id/research', title: '시즌 리서치', access: 'user', mode: 'sim', nav: 'play', story: 'ANT-FE-SEASON-RESEARCH' },
   { screen: 'G-06', element: SeasonTrades, path: '/sim/:id/trades', title: '매매일지', access: 'user', mode: 'sim', nav: 'portfolio', story: 'ANT-FE-SEASON-TRADES' },
-  { screen: 'G-07', element: Leaderboard, path: '/sim/:id/leaderboard', title: '시즌 리더보드', access: 'user', mode: 'sim', nav: 'ranking', bodyClass: 'sim-rank-page', story: 'ANT-FE-LEADERBOARD' },
+  /* nav 가 'ranking' 이었는데 그 사이드바 항목이 없어졌다(모의투자 랭킹 제거).
+     시즌 결과 계열(G-06 매매일지 · G-08 결과)과 같은 'portfolio' 로 옮긴다. */
+  { screen: 'G-07', element: Leaderboard, path: '/sim/:id/leaderboard', title: '시즌 리더보드', access: 'user', mode: 'sim', nav: 'portfolio', bodyClass: 'sim-rank-page', story: 'ANT-FE-LEADERBOARD' },
   { screen: 'G-08', element: SeasonResult, path: '/sim/:id/result', title: '결과 · AI 복기', access: 'user', mode: 'sim', nav: 'portfolio', story: 'ANT-FE-SEASON-RESULT' },
   { screen: 'G-09', element: SeasonHistory, path: '/sim/history', title: '기록 · 배지', access: 'user', mode: 'sim', nav: 'portfolio', bodyClass: 'sim-record-page', story: 'ANT-FE-SEASON-HISTORY' },
 

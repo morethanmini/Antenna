@@ -20,6 +20,7 @@ import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
 import ssafy.a507.backend.domain.chain.config.CommitAnchorProperties;
+import ssafy.a507.backend.domain.chain.config.EventPoolProperties;
 import ssafy.a507.backend.domain.chain.config.PredictTokenProperties;
 import ssafy.a507.backend.domain.chain.relay.ChainConnection;
 
@@ -38,12 +39,15 @@ public class Web3jChainLogSource implements ChainLogSource {
     private final CommitAnchorProperties contract;
     /** 토큰 인덱서 ②(ANT-CHAIN-11)가 읽는 PredictToken. 비어 있으면 {@link #tokenLogs} 는 빈 목록이다. */
     private final PredictTokenProperties token;
+    /** 풀 인덱서 ③(ANT-EVENT-02)이 읽는 PredictionEventPool. 비어 있으면 {@link #poolLogs} 는 빈 목록이다. */
+    private final EventPoolProperties pool;
 
     public Web3jChainLogSource(
-            ChainConnection connection, CommitAnchorProperties contract, PredictTokenProperties token) {
+            ChainConnection connection, CommitAnchorProperties contract, PredictTokenProperties token, EventPoolProperties pool) {
         this.connection = connection;
         this.contract = contract;
         this.token = token;
+        this.pool = pool;
     }
 
     @Override
@@ -135,6 +139,36 @@ public class Web3jChainLogSource implements ChainLogSource {
                         }
                     }
                     out.sort(Comparator.comparingLong(TokenLog::blockNumber).thenComparingInt(TokenLog::logIndex));
+                    return out;
+                });
+    }
+
+    @Override
+    public List<PoolLog> poolLogs(long fromBlock, long toBlock) {
+        if (!pool.isDeployed()) {
+            return List.of();
+        }
+        return withReconnect(
+                () -> {
+                    EthFilter filter =
+                            new EthFilter(
+                                    DefaultBlockParameter.valueOf(BigInteger.valueOf(fromBlock)),
+                                    DefaultBlockParameter.valueOf(BigInteger.valueOf(toBlock)),
+                                    pool.normalizedAddress());
+                    // topic0 ∈ 풀 이벤트 열. RoleGranted 는 노드가 걸러 준다. 같은 tx 의 ERC-20 Transfer 는 토큰 주소라 애초에 안 온다.
+                    filter.addOptionalTopics(PoolLogDecoder.TOPICS.toArray(new String[0]));
+                    EthLog res = connection.web3j().ethGetLogs(filter).send();
+                    if (res.hasError()) {
+                        log.warn("eth_getLogs(pool) [{}, {}] 실패: {}", fromBlock, toBlock, res.getError().getMessage());
+                        throw new BusinessException(ErrorCode.CHAIN_UNAVAILABLE);
+                    }
+                    List<PoolLog> out = new ArrayList<>();
+                    for (EthLog.LogResult<?> r : res.getLogs()) {
+                        if (r.get() instanceof Log l) {
+                            PoolLogDecoder.decode(l).ifPresent(out::add);
+                        }
+                    }
+                    out.sort(Comparator.comparingLong(PoolLog::blockNumber).thenComparingInt(PoolLog::logIndex));
                     return out;
                 });
     }
