@@ -1,0 +1,53 @@
+package ssafy.a507.backend.domain.event.controller;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import ssafy.a507.backend.common.security.CurrentUserProvider;
+import ssafy.a507.backend.domain.event.dto.BasePriceUpdateRequest;
+import ssafy.a507.backend.domain.event.dto.EventCreateRequest;
+import ssafy.a507.backend.domain.event.dto.EventCreateResponse;
+import ssafy.a507.backend.domain.event.service.EventAdminService;
+
+/**
+ * 배팅 이벤트 관리자 — ANT-EVENT-04, 작업명세 v1.2 §3-6·7.
+ *
+ * <p>권한은 {@link EventAdminService} 안에서 본다(§0.2 ④) — {@code SecurityConfig} 는 건드리지 않는다.
+ * 여기 매처를 걸면 JWT {@code role} 클레임을 Spring 권한으로 바꾸는 컨버터가 함께 필요하다.
+ */
+@RestController
+@RequestMapping("/api/v1/admin/events")
+@RequiredArgsConstructor
+public class EventAdminController {
+
+    private final EventAdminService eventAdminService;
+    private final CurrentUserProvider currentUserProvider;
+
+    /**
+     * 이벤트 생성. 202 인 이유는 온체인 {@code openEvent} 전송이 뒤따라서다 —
+     * <b>R1 단계에서는 DB 행까지만</b> 만들고 전송은 릴레이어가 붙은 뒤에 잇는다(§0.2 ②).
+     */
+    @PostMapping
+    public ResponseEntity<EventCreateResponse> create(@Valid @RequestBody EventCreateRequest request) {
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .body(eventAdminService.create(currentUserProvider.currentUserId(), request));
+    }
+
+    /** 기준가 수동 입력. 13:00 배치가 늦거나 실패했을 때 접수(13:30)를 지키는 길이다. */
+    @PutMapping("/{eventId}/stocks/{idx}/base-price")
+    public ResponseEntity<Void> fixBasePrice(
+            @PathVariable Long eventId,
+            @PathVariable short idx,
+            @Valid @RequestBody BasePriceUpdateRequest request) {
+        eventAdminService.fixBasePrice(
+                currentUserProvider.currentUserId(), eventId, idx, request.basePrice());
+        return ResponseEntity.noContent().build();
+    }
+}

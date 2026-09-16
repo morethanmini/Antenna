@@ -112,4 +112,22 @@ public interface DailyQuoteRepository extends JpaRepository<DailyQuote, Long> {
             @Param("from") LocalDate from,
             @Param("to") LocalDate to,
             @Param("days") long days);
+
+    /**
+     * 여러 종목의 <b>최신 종가</b>를 한 번에 (ANT-EVENT-04 이벤트 홈).
+     *
+     * <p>돌려주는 행은 {@code [stockCode, close]} 다. 종목마다
+     * {@code findTopByStock_CodeOrderByTradeDateDesc} 를 부르면 카드 10장에 쿼리가 10번이라
+     * 이벤트 단위로 묶어 읽는다.
+     *
+     * <p>상관 서브쿼리로 "그 종목의 최대 거래일" 을 짚는다 — 종목마다 마지막 거래일이 다르다
+     * (거래정지·신규상장). 전역 최신 거래일로 자르면 그날 시세가 없는 종목이 통째로 빠진다.
+     */
+    @Query("""
+            select q.stock.code, q.close from DailyQuote q
+             where q.stock.code in :codes
+               and q.tradeDate = (
+                     select max(x.tradeDate) from DailyQuote x where x.stock.code = q.stock.code)
+            """)
+    List<Object[]> findLatestCloseByCodes(@Param("codes") Collection<String> codes);
 }
