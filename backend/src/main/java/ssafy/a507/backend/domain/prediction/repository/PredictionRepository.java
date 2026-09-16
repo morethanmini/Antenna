@@ -228,4 +228,24 @@ public interface PredictionRepository extends JpaRepository<Prediction, Long> {
                and p.settledOn >= :from
             """)
     List<Object[]> settledSpan(@Param("userId") Long userId, @Param("from") LocalDate from);
+
+    /**
+     * 사람별 가장 최근 예측 시각. 목록 화면(E-03 내 구독)이 "이 예측가가 요즘 활동하는가" 를
+     * 보여 주는 값이다 — 구독은 앞으로 올 예측을 사는 것이라 마지막 활동이 언제인지가
+     * 갱신 여부를 정하는 근거가 된다.
+     *
+     * <p>사람마다 따로 물으면 구독 수만큼 쿼리가 나가므로 한 번에 묶는다. 돌려주는 줄은
+     * {@code [userId, createdAt]} 이고 <b>예측이 없는 사람은 줄 자체가 없다</b> —
+     * 부르는 쪽에서 표에 키가 없으면 null 로 다룬다.
+     *
+     * <p>REAL 만 센다. 모의투자(SIM) 예측은 구독으로 볼 수 있는 것이 아니라
+     * 활동의 근거가 되지 않는다.
+     */
+    @Query("""
+            select p.user.id, max(p.createdAt) from Prediction p
+             where p.user.id in :userIds
+               and p.track = ssafy.a507.backend.domain.common.Track.REAL
+             group by p.user.id
+            """)
+    List<Object[]> latestPredictionAt(@Param("userIds") Collection<Long> userIds);
 }

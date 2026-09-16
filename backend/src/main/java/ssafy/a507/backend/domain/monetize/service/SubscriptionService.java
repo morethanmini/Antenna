@@ -4,6 +4,8 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,8 @@ import ssafy.a507.backend.common.security.WalletSigned;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.account.repository.UserRepository;
 import ssafy.a507.backend.domain.account.service.AvatarUrls;
+import ssafy.a507.backend.domain.account.entity.UserInterest;
+import ssafy.a507.backend.domain.account.repository.UserInterestRepository;
 import ssafy.a507.backend.domain.chain.entity.Operation;
 import ssafy.a507.backend.domain.chain.repository.OperationRepository;
 import ssafy.a507.backend.domain.chain.repository.TokenLedgerRepository;
@@ -29,6 +33,7 @@ import ssafy.a507.backend.domain.monetize.entity.PublisherFee;
 import ssafy.a507.backend.domain.monetize.entity.Subscription;
 import ssafy.a507.backend.domain.monetize.repository.PublisherFeeRepository;
 import ssafy.a507.backend.domain.monetize.repository.SubscriptionRepository;
+import ssafy.a507.backend.domain.prediction.repository.PredictionRepository;
 
 /**
  * 유료 구독 결제 — ANT-TOKEN-01, 화면 E-02.
@@ -61,6 +66,8 @@ public class SubscriptionService {
     private final TokenOperationService tokenOperationService;
     private final TransactionTemplate tx;
     private final AvatarUrls avatarUrls;
+    private final UserInterestRepository userInterests;
+    private final PredictionRepository predictions;
 
     public SubscribeResponse subscribe(Long subscriberId, Long publisherId, SubscribeRequest request) {
         tokenOperationService.requireEnabled();
@@ -164,12 +171,40 @@ public class SubscriptionService {
     @Transactional(readOnly = true)
     public MySubscriptionListResponse mine(Long subscriberId) {
         List<Subscription> mine = subscriptions.findMine(subscriberId);
-        /* 예측가 사진은 한 번에 읽는다(S15P21A507-273). 구독마다 upload_files 를 찾으면 N+1 이고,
-           랭킹(RankingQueryService)이 같은 이유로 같은 헬퍼를 쓴다. 사진 없는 사람은 표에 없어 null 이 된다. */
-        Map<Long, String> avatars =
-                avatarUrls.byUserId(mine.stream().map(Subscription::getPublisher).toList());
+        if (mine.isEmpty()) {
+            return new MySubscriptionListResponse(List.of());
+        }
+
+        /* 예측가에 딸린 값 셋을 각각 한 번에 읽는다(S15P21A507-273). 줄마다 찾으면 구독 수만큼
+           쿼리가 나간다 — 같은 사람을 두 번 구독할 수는 없지만 목록은 얼마든지 길어질 수 있다. */
+        List<User> publishers = mine.stream().map(Subscription::getPublisher).toList();
+        List<Long> publisherIds = publishers.stream().map(User::getId).toList();
+
+        Map<Long, String> avatars = avatarUrls.byUserId(publishers);
+        Map<Long, List<String>> interests =
+                userInterests.findByUserIdInOrderByUserIdAscIdAsc(publisherIds).stream()
+                        .collect(Collectors.groupingBy(
+                                row -> row.getUser().getId(),
+                                Collectors.mapping(UserInterest::getSector, Collectors.toList())));
+        Map<Long, Instant> latest =
+                predictions.latestPredictionAt(publisherIds).stream()
+                        .collect(Collectors.toMap(
+                                row -> (Long) row[0], row -> (Instant) row[1]));
+
         return new MySubscriptionListResponse(mine.stream()
-                .map(s -> MySubscriptionListResponse.Item.of(s, avatars.get(s.getPublisher().getId())))
+                .map(s -> {
+                    Long id = s.getPublisher().getId();
+                    return MySubscriptionListResponse.Item.of(
+                            s,
+                            new MySubscriptionListResponse.Publisher(
+                                    id,
+                                    s.getPublisher().getNickname(),
+                                    avatars.get(id),
+                                    /* 안 고른 사람은 표에 키가 없다. null 대신 빈 배열을 내려
+                                       화면이 가드를 따로 쓰지 않게 한다(구독 목록의 items 와 같은 판단) */
+                                    interests.getOrDefault(id, List.of()),
+                                    latest.get(id)));
+                })
                 .toList());
     }
 

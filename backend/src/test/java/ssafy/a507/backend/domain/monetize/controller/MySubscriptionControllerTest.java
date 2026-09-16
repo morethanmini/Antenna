@@ -213,6 +213,52 @@ class MySubscriptionControllerTest {
                 .andExpect(jsonPath("$.items[0].publisher.avatarUrl").value(nullValue()));
     }
 
+    // ── 카드에 담는 값 (S15P21A507-273) ──────────────────
+
+    @Test
+    @DisplayName("구독 시점(startedAt)을 내린다 — 카드가 언제부터 구독했는지 보여 준다")
+    void 목록_구독_시점() throws Exception {
+        insertSubscription(subscriberId, publisherId, "7000", "ACTIVE", days(10), true);
+
+        mockMvc.perform(get(MINE).with(user(String.valueOf(subscriberId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].startedAt").exists());
+    }
+
+    @Test
+    @DisplayName("예측가의 관심 섹터를 담은 순서대로 내린다")
+    void 목록_관심_섹터() throws Exception {
+        insertInterest(publisherId, "전기·전자");
+        insertInterest(publisherId, "화학");
+        insertSubscription(subscriberId, publisherId, "7000", "ACTIVE", days(10), true);
+
+        mockMvc.perform(get(MINE).with(user(String.valueOf(subscriberId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].publisher.interests[0]").value("전기·전자"))
+                .andExpect(jsonPath("$.items[0].publisher.interests[1]").value("화학"));
+    }
+
+    @Test
+    @DisplayName("섹터를 안 고른 예측가는 빈 배열이다 — null 이면 화면이 가드를 따로 써야 한다")
+    void 목록_관심_섹터_없으면_빈_배열() throws Exception {
+        insertSubscription(subscriberId, publisherId, "7000", "ACTIVE", days(10), true);
+
+        mockMvc.perform(get(MINE).with(user(String.valueOf(subscriberId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].publisher.interests").isArray())
+                .andExpect(jsonPath("$.items[0].publisher.interests").isEmpty());
+    }
+
+    @Test
+    @DisplayName("예측이 한 건도 없으면 latestPredictionAt 이 null 이다")
+    void 목록_최근_예측_없으면_null() throws Exception {
+        insertSubscription(subscriberId, publisherId, "7000", "ACTIVE", days(10), true);
+
+        mockMvc.perform(get(MINE).with(user(String.valueOf(subscriberId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].publisher.latestPredictionAt").value(nullValue()));
+    }
+
     // ── fixtures ─────────────────────────────────────────
 
     private static Instant days(int n) {
@@ -299,5 +345,17 @@ class MySubscriptionControllerTest {
                 .executeUpdate();
         em.flush();
         em.clear();
+    }
+
+    /** 관심 섹터 한 줄. 부르는 순서가 곧 id 순서라 화면이 담은 순서를 검증할 수 있다 */
+    private void insertInterest(Long userId, String sector) {
+        em.createNativeQuery("""
+                        INSERT INTO user_interests (user_id, sector, created_at)
+                        VALUES (?, ?, CURRENT_TIMESTAMP)
+                        """)
+                .setParameter(1, userId)
+                .setParameter(2, sector)
+                .executeUpdate();
+        em.flush();
     }
 }
