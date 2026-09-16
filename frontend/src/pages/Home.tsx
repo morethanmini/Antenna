@@ -281,7 +281,7 @@ function MarketOverview() {
                   {signedAmt(delta, 2)}
                   <em>({signed(it.changeRate)})</em>
                 </span>
-                <Sparkline series={it.series} up={risingOf(it.changeRate, it.series)} width={78} height={52} area />
+                <Sparkline series={it.series} up={risingOf(it.changeRate, it.series)} width={78} height={52} area grow />
               </li>
             )
           })}

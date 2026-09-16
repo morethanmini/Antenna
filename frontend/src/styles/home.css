@@ -90,6 +90,31 @@
 .up{color:var(--up)}
 .down{color:var(--down)}
 .spark{display:block; flex:none}
+
+/* ── 그래프가 왼쪽에서 자라난다 ─────────────────────────
+   Sparkline 의 grow 를 켠 자리에만 붙는다(지금은 시장 카드 셋).
+
+   **덮개 하나를 늘린다.** 선·면·끝점을 따로 움직이면 셋의 속도가 어긋나
+   점이 선보다 먼저 도착한다. 덮개를 걷으면 셋이 같은 속도로 드러난다.
+
+   폭 자체가 아니라 **scaleX** 를 쓴다 — 폭은 매 프레임 도형을 다시 그리게
+   하지만 변형은 합성만 한다. transform-box 를 view-box 로 박아 두는 것은
+   클립 안 도형의 기준 상자가 브라우저마다 갈렸던 자리라서다.
+
+   both 로 시작 상태를 미리 건다. 없으면 기다리는 동안 그래프가 다 보이다가
+   사라진 뒤 다시 자란다 — 순서가 지연을 준 카드마다 눈에 띈다. */
+.spark-wipe{
+  transform-box:view-box; transform-origin:0 0;
+  animation:spark-grow .85s cubic-bezier(.22,.61,.36,1) both;
+}
+@keyframes spark-grow{from{transform:scaleX(0)} to{transform:scaleX(1)}}
+/* 왼쪽부터 차례로. 셋이 동시에 자라면 화면이 한 번 출렁이는 것으로 보인다 */
+.hm-indices li:nth-child(2) .spark-wipe{animation-delay:.1s}
+.hm-indices li:nth-child(3) .spark-wipe{animation-delay:.2s}
+/* 움직임을 줄인 설정에서는 덮개를 아예 안 움직인다 — 그림은 그대로 다 보인다 */
+@media (prefers-reduced-motion:reduce){
+  .spark-wipe{animation:none}
+}
 .spark-empty{display:inline-block; width:88px; height:30px}
 
 /* ── 히어로 ──────────────────────────────────────────────── */
