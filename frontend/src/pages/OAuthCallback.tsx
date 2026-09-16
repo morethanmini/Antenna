@@ -54,12 +54,20 @@ export default function OAuthCallback() {
     completeLogin(known, code, params.get('state'))
       .then(({ user, isNew }) => {
         signIn(user)
+
+        /* M-09 튜토리얼은 **홈 위 오버레이** 라 여기서 띄울 수 없다(§4 M-09:
+           라우트를 주면 히스토리에 남는다). 그런데 이 사이에 A-02 닉네임
+           화면이 끼어 라우터 state 로도 못 넘긴다 — 그래서 한 칸 건너
+           전달할 플래그를 세우고, 셸이 꺼내 띄운다.
+
+           **신규·기존을 가리지 않는다(2026-09-16).** 전에는 isNew 가 참일 때만
+           세워서, 건너뛴 사람과 이 기능이 생기기 전에 가입한 사람은 영영 볼 수
+           없었다. 이제 로그인할 때마다 세우고, 그만 보고 싶은 사람은 튜토리얼의
+           '다시 보지 않기' 로 끈다 — 꺼 둔 사람에게는 takeOnboardingPending() 이
+           false 를 준다. */
+        markOnboardingPending()
+
         if (isNew) {
-          /* M-09 튜토리얼은 **홈 위 오버레이** 라 여기서 띄울 수 없다(§4 M-09:
-             라우트를 주면 히스토리에 남는다). 그런데 이 사이에 A-02 닉네임
-             화면이 끼어 라우터 state 로도 못 넘긴다 — 그래서 한 칸 건너
-             전달할 플래그를 세우고, 홈이 꺼내 띄운다. */
-          markOnboardingPending()
           // 닉네임이 없는 회원은 온보딩부터. returnTo 는 온보딩이 끝난 뒤에 꺼낸다.
           navigate('/onboarding/nickname', { replace: true })
           return
