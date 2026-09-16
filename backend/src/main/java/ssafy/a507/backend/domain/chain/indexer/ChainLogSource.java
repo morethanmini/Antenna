@@ -32,6 +32,12 @@ public interface ChainLogSource {
     List<TokenLog> tokenLogs(long fromBlock, long toBlock);
 
     /**
+     * {@code [fromBlock, toBlock]} 구간의 PredictionEventPool 로그 열 종류 (ANT-EVENT-02).
+     * 블록 번호·로그 순번 오름차순. 풀 주소가 설정돼 있지 않으면 빈 목록.
+     */
+    List<PoolLog> poolLogs(long fromBlock, long toBlock);
+
+    /**
      * tx 의 receipt 상태 (ANT-CHAIN-11). {@code true} = 성공, {@code false} = revert, empty = 아직 채굴되지 않았거나 노드가 모른다.
      * 이벤트가 안 오는 실패(revert)를 닫는 유일한 재료다 — Besu 의 receipt 에는 revert 이유가 없으니 status 만 본다.
      */

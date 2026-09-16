@@ -26,6 +26,10 @@ ALTER TABLE predictions DROP CONSTRAINT IF EXISTS ck_predictions_horizon;
 ALTER TABLE predictions ADD CONSTRAINT ck_predictions_horizon
     CHECK ((track = 'REAL' AND horizon BETWEEN 3 AND 90) OR (track = 'REPLAY' AND horizon > 0));
 
+-- ① Operation.ResourceType 에 EVENT 추가(ANT-EVENT-02). kind 의 EVENT_BET·EVENT_ADMIN 은 위 operations_kind_check 삭제로 이미 열려 있다.
+--    이게 없으면 관리자의 이벤트 열기(openEvent 작업 INSERT)가 500 으로 깨진다.
+ALTER TABLE operations DROP CONSTRAINT IF EXISTS operations_resource_type_check;
+
 -- ① UploadFile.Purpose 에 PROFILE 추가(ANT-AUTH-05).
 --    이게 없으면 프로필 사진 업로드가 INSERT 에서 500 으로 깨진다 — AD·REPORT·POST 만 든
 --    옛 목록이 남아 있기 때문이다. 어휘는 JPA enum 이 막으므로 다시 걸지 않는다.
