@@ -28,7 +28,16 @@ public enum TokenReason {
     /** 시즌 참가비 소각 (SEASON-03). */
     SEASON_ENTRY(true),
     /** 시즌 상금 mint (SEASON-04). */
-    SEASON_REWARD(true);
+    SEASON_REWARD(true),
+    /**
+     * 배팅 이벤트 배팅금 — 사용자 → 풀 컨트랙트 (ANT-EVENT-02). ledger 전용: 이체는 풀이 {@code operatorTransfer} 로
+     * 하고 {@code BetPlaced} 에는 reason 인자가 없다. 셋 다 mint/burn 이 아니라 <b>이동</b>이라 체인에 사유를 실을 자리가 없다.
+     */
+    EVENT_STAKE(false),
+    /** 배팅 이벤트 배당 — 풀 → 사용자. {@code BetSettled(payout > 0)}. 진 쪽(payout 0)은 원장에 안 쓴다. */
+    EVENT_PAYOUT(false),
+    /** 배팅 이벤트 환불(미리빌 · 보합 · 이긴 풀 0) — 풀 → 사용자 원금. {@code BetRefunded}. */
+    EVENT_REFUND(false);
 
     private final boolean onChain;
 

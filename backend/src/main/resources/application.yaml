@@ -146,6 +146,9 @@ app:
     predict-token:
       # ANT 토큰(ANT-CHAIN-03). 비워 두면 토큰 기능만 꺼지고 서버는 정상 부팅한다.
       address: ${CONTRACT_PREDICT_TOKEN:}
+    event-pool:
+      # 업앤다운 배팅 이벤트 풀(ANT-EVENT-01·02). 비워 두면 풀 릴레이어·인덱서 ③ 만 꺼진다. 인덱서 시작 블록은 아래 indexer.from-block 을 같이 쓴다.
+      address: ${CONTRACT_EVENT_POOL:}
     # 앵커 배치(ANT-CHAIN-02). 10분마다, 주말·휴장 포함 — 앵커는 시세가 필요 없다.
     # 실행 시각에 anchor_batch_id 가 NULL 인 커밋 전부가 한 배치다.
     # 하루 한 번(00:05)에서 줄였다(2026-09-15): 아침 등록분이 다음 날 새벽까지 체인 밖에 있었고,

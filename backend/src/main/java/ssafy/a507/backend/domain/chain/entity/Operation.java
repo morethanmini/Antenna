@@ -55,7 +55,18 @@ public class Operation {
          * 들어오면 "보너스를 받았나" 를 kind 로 가를 수 없다. 값을 더하면 기존 DB 의 옛 CHECK 제약이 INSERT 를 막는다
          * → {@code db/enum-checks.sql}.
          */
-        SIGNUP_BONUS
+        SIGNUP_BONUS,
+        /**
+         * 배팅 이벤트의 {@code placeBet} 한 건 (ANT-EVENT-02). 리소스는 {@code PREDICTION} + prediction_id —
+         * 배팅 행({@code prediction_event_bets})이 예측과 1:1 이라 같은 키다. 인덱서 ③ 이 {@code BetPlaced} 로 닫는다.
+         */
+        EVENT_BET,
+        /**
+         * 배팅 이벤트의 운영 tx({@code openEvent · seal}) (ANT-EVENT-02). 리소스는 {@code EVENT} + prediction_events.id.
+         * 사용자 칸에는 트리거한 관리자가 들어간다. 정산 러너의 reveal·resolve·settle·sweep 은 receipt 를 직접 기다리므로
+         * 작업 행을 두지 않는다.
+         */
+        EVENT_ADMIN
     }
 
     /** 전이는 체인 인덱서가 {@code chain_events} 기입과 함께 수행한다 — 서버에 폴링 배치가 없는 이유다. */
@@ -70,7 +81,9 @@ public class Operation {
         SUBSCRIPTION,
         AD,
         PREDICTION,
-        SEASON_PARTICIPANT
+        SEASON_PARTICIPANT,
+        /** 배팅 이벤트 자체(ANT-EVENT-02). {@code EVENT_ADMIN} 작업이 가리킨다. 값을 더하면 옛 CHECK 가 막는다 → {@code db/enum-checks.sql}. */
+        EVENT
     }
 
     /**
