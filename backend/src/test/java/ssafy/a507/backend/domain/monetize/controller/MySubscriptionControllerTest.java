@@ -1,6 +1,7 @@
 package ssafy.a507.backend.domain.monetize.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -19,6 +20,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import ssafy.a507.backend.domain.account.entity.User;
+import ssafy.a507.backend.domain.upload.entity.UploadFile;
 
 /**
  * ANT-TOKEN-05 — 내 구독 목록 · 자동 갱신 해지(E-03).
@@ -172,6 +175,90 @@ class MySubscriptionControllerTest {
                 .andExpect(jsonPath("$.code").value("SUBSCRIPTION_NOT_FOUND"));
     }
 
+    // ── 예측가 프로필 사진 (S15P21A507-273) ──────────────
+
+    @Test
+    @DisplayName("예측가 프로필 사진 주소가 publisher.avatarUrl 로 내려간다 — E-03 카드가 얼굴을 그린다")
+    void 목록_예측가_프로필_사진() throws Exception {
+        String fileId = insertUpload(publisherId, UploadFile.Purpose.PROFILE);
+        setAvatar(publisherId, fileId);
+        insertSubscription(subscriberId, publisherId, "7000", "ACTIVE", days(10), true);
+
+        mockMvc.perform(get(MINE).with(user(String.valueOf(subscriberId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].publisher.userId").value(publisherId))
+                .andExpect(jsonPath("$.items[0].publisher.avatarUrl").value("/api/v1/uploads/" + fileId));
+    }
+
+    @Test
+    @DisplayName("사진을 안 올린 예측가는 avatarUrl 이 null 이다 — 화면이 기본 아바타를 그린다")
+    void 목록_사진_없으면_null() throws Exception {
+        insertSubscription(subscriberId, publisherId, "7000", "ACTIVE", days(10), true);
+
+        mockMvc.perform(get(MINE).with(user(String.valueOf(subscriberId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].publisher.nickname").value("채널주인"))
+                .andExpect(jsonPath("$.items[0].publisher.avatarUrl").value(nullValue()));
+    }
+
+    @Test
+    @DisplayName("사진 파일이 사라졌으면 null 이다 — 목록이 깨지는 것보다 기본 그림이 낫다(AvatarUrls 규칙)")
+    void 목록_사진_파일이_사라지면_null() throws Exception {
+        // avatar_file_id 는 FK 가 아니라 없는 id 를 가리킬 수 있다(User.avatarFileId 주석)
+        setAvatar(publisherId, "00000000-0000-0000-0000-000000000000");
+        insertSubscription(subscriberId, publisherId, "7000", "ACTIVE", days(10), true);
+
+        mockMvc.perform(get(MINE).with(user(String.valueOf(subscriberId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].publisher.avatarUrl").value(nullValue()));
+    }
+
+    // ── 카드에 담는 값 (S15P21A507-273) ──────────────────
+
+    @Test
+    @DisplayName("구독 시점(startedAt)을 내린다 — 카드가 언제부터 구독했는지 보여 준다")
+    void 목록_구독_시점() throws Exception {
+        insertSubscription(subscriberId, publisherId, "7000", "ACTIVE", days(10), true);
+
+        mockMvc.perform(get(MINE).with(user(String.valueOf(subscriberId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].startedAt").exists());
+    }
+
+    @Test
+    @DisplayName("예측가의 관심 섹터를 담은 순서대로 내린다")
+    void 목록_관심_섹터() throws Exception {
+        insertInterest(publisherId, "전기·전자");
+        insertInterest(publisherId, "화학");
+        insertSubscription(subscriberId, publisherId, "7000", "ACTIVE", days(10), true);
+
+        mockMvc.perform(get(MINE).with(user(String.valueOf(subscriberId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].publisher.interests[0]").value("전기·전자"))
+                .andExpect(jsonPath("$.items[0].publisher.interests[1]").value("화학"));
+    }
+
+    @Test
+    @DisplayName("섹터를 안 고른 예측가는 빈 배열이다 — null 이면 화면이 가드를 따로 써야 한다")
+    void 목록_관심_섹터_없으면_빈_배열() throws Exception {
+        insertSubscription(subscriberId, publisherId, "7000", "ACTIVE", days(10), true);
+
+        mockMvc.perform(get(MINE).with(user(String.valueOf(subscriberId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].publisher.interests").isArray())
+                .andExpect(jsonPath("$.items[0].publisher.interests").isEmpty());
+    }
+
+    @Test
+    @DisplayName("예측이 한 건도 없으면 latestPredictionAt 이 null 이다")
+    void 목록_최근_예측_없으면_null() throws Exception {
+        insertSubscription(subscriberId, publisherId, "7000", "ACTIVE", days(10), true);
+
+        mockMvc.perform(get(MINE).with(user(String.valueOf(subscriberId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].publisher.latestPredictionAt").value(nullValue()));
+    }
+
     // ── fixtures ─────────────────────────────────────────
 
     private static Instant days(int n) {
@@ -235,5 +322,40 @@ class MySubscriptionControllerTest {
                         .setParameter(1, nickname)
                         .getSingleResult())
                 .longValue();
+    }
+
+    /** 업로드 한 건. 실제 POST /uploads 를 거치지 않고 행만 넣는다(ProfileUpdateTest 와 같은 방식) */
+    private String insertUpload(Long ownerId, UploadFile.Purpose purpose) {
+        User owner = em.find(User.class, ownerId);
+        UploadFile file = UploadFile.create(owner, purpose, "image/png", 400, 400, 1024);
+        file.locateAt("/api/v1/uploads/" + file.getId());
+        em.persist(file);
+        em.flush();
+        return file.getId();
+    }
+
+    /**
+     * users.avatar_file_id 를 채운다. 네이티브 UPDATE 뒤 clear 하는 이유 — insertUpload 의 em.find 가
+     * User 를 영속성 컨텍스트에 올려 두어, 비우지 않으면 서비스가 옛 엔티티(avatarFileId=null)를 읽는다.
+     */
+    private void setAvatar(Long userId, String fileId) {
+        em.createNativeQuery("UPDATE users SET avatar_file_id = ? WHERE id = ?")
+                .setParameter(1, fileId)
+                .setParameter(2, userId)
+                .executeUpdate();
+        em.flush();
+        em.clear();
+    }
+
+    /** 관심 섹터 한 줄. 부르는 순서가 곧 id 순서라 화면이 담은 순서를 검증할 수 있다 */
+    private void insertInterest(Long userId, String sector) {
+        em.createNativeQuery("""
+                        INSERT INTO user_interests (user_id, sector, created_at)
+                        VALUES (?, ?, CURRENT_TIMESTAMP)
+                        """)
+                .setParameter(1, userId)
+                .setParameter(2, sector)
+                .executeUpdate();
+        em.flush();
     }
 }

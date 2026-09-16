@@ -5,13 +5,14 @@
    다른 화면으로 못 가게 RequireAccess 가 여기로 돌려보낸다.
 
    지갑 연동도 필수 온보딩 단계지만(유저플로우 §3) 서버 API 가 아직 없어
-   이 화면은 닉네임까지만 책임진다. */
+   이 화면은 닉네임까지만 책임진다.
+
+   닉네임 뒤에 구독료 단계가 하나 더 있다(OnboardingFee) — 건너뛸 수 있다. */
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import { NICKNAME_MAX, useNicknameCheck, validateNickname } from '../api/useNicknameCheck'
 import { useAuth } from '../auth/context'
-import { takeReturnTo } from '../auth/returnTo'
 import '../styles/auth.css'
 
 export default function OnboardingNickname() {
@@ -39,8 +40,10 @@ export default function OnboardingNickname() {
     try {
       await api.patch<{ nickname: string }>('/users/me', { nickname: value })
       setNickname(value)
-      // 로그인 전에 막혔던 경로가 있으면 그리로, 없으면 홈으로.
-      navigate(takeReturnTo(), { replace: true })
+      /* 다음은 구독료다(OnboardingFee). 건너뛸 수 있는 단계라 여기서 막지 않는다.
+         takeReturnTo() 를 여기서 부르지 않는 이유 — 값을 꺼내며 지우므로 구독료 화면에
+         닿기 전에 사라져, 로그인 전에 막혔던 경로로 못 돌아간다. 그 호출은 그쪽에 있다. */
+      navigate('/onboarding/fee', { replace: true })
     } catch (e) {
       // 중복 검사와 확정 사이에 누가 먼저 가져갔을 수 있다. 최종 판정은 서버다.
       if (e instanceof ApiError && e.code === 'DUPLICATE_NICKNAME') {

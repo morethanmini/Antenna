@@ -124,15 +124,36 @@
   font-size:var(--fs-sm); line-height:1.6; color:var(--muted);
 }
 
-/* ── 준비 중 목록 (잠긴 카드 안) ──────────────── */
-.st-pending{
-  margin:10px 0 0; padding:0; list-style:none;
-  display:flex; flex-direction:column; gap:8px;
-  text-align:left;
+/* ── 준비 중 안내 (잠긴 카드 안) ──────────────── */
+/* ── 알림 토글 ──────────────────────────────── */
+.st-switches{
+  margin:14px 0 0; padding:0; list-style:none;
+  display:flex; flex-direction:column;
 }
-.st-pending li{ display:flex; flex-direction:column; gap:2px; }
-.st-pending li b{ font-size:var(--fs-md); font-weight:var(--fw-normal); color:var(--body); }
-.st-pending li span{ font-size:var(--fs-xs); color:var(--muted); }
+.st-switches li{
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  padding:14px 0; border-top:1px solid var(--rule);
+}
+.st-switches li:first-child{ border-top:0; padding-top:4px; }
+.st-switch-text{ display:flex; flex-direction:column; gap:3px; min-width:0; }
+.st-switch-text b{ font-size:var(--fs-md); font-weight:var(--fw-bold); color:var(--ink); }
+.st-switch-text span{ font-size:var(--fs-xs); color:var(--muted); line-height:1.5; }
+/* 스위치 — 켜지면 손잡이가 오른쪽으로. 색만이 아니라 자리로도 갈린다 */
+.st-switch{
+  flex:0 0 auto; position:relative; width:44px; height:26px;
+  border:0; border-radius:999px; padding:0; cursor:pointer;
+  background:var(--rule); transition:background .15s;
+}
+.st-switch i{
+  position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%;
+  background:var(--surface); box-shadow:0 1px 3px rgba(20,20,27,.25);
+  transition:transform .15s;
+}
+.st-switch.is-on{ background:var(--brand); }
+.st-switch.is-on i{ transform:translateX(18px); }
+.st-switch:focus-visible{ outline:2px solid var(--brand); outline-offset:2px; }
+@media (prefers-reduced-motion:reduce){ .st-switch, .st-switch i{ transition:none; } }
+.st-note.is-error{ color:var(--down); }
 
 .st-pending-note{
   margin:8px 0 0;

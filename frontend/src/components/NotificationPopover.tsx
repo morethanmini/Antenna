@@ -35,6 +35,11 @@ type Props = {
   onReadAll: () => void
   /** 한 건 지운다. 되돌릴 수 없지만 확인창은 두지 않는다 — 알림 하나는 그만큼 가볍다 */
   onDelete: (id: number) => void
+  /**
+   * 모두 지운다. 확인 창은 **부르는 쪽(NotificationBell)** 이 띄운다 — 이 팝업은 바깥을
+   * 누르면 닫히는데, 확인 창을 여기 안에 그리면 그 창을 누르는 순간 팝업째 사라진다.
+   */
+  onDeleteAll: () => void
   onRetry: () => void
 }
 
@@ -56,7 +61,7 @@ function ago(iso: string) {
 }
 
 export default function NotificationPopover({
-  items, loading, error, onClose, onRead, onReadAll, onDelete, onRetry,
+  items, loading, error, onClose, onRead, onReadAll, onDelete, onDeleteAll, onRetry,
 }: Props) {
   const navigate = useNavigate()
   const boxRef = useRef<HTMLDivElement>(null)
@@ -102,12 +107,19 @@ export default function NotificationPopover({
     >
       <header className="nt-head">
         <h2>알림</h2>
-        {/* 읽을 것이 없으면 "전체 읽음" 은 누를 데가 없는 버튼이다 */}
-        {unread > 0 && (
-          <button type="button" className="nt-readall" onClick={onReadAll}>
-            전체 읽음
-          </button>
-        )}
+        <div className="nt-head-actions">
+          {/* 읽을 것이 없으면 "전체 읽음" 은 누를 데가 없는 버튼이다. 지울 것이 없을 때의 "모두 삭제" 도 같다 */}
+          {unread > 0 && (
+            <button type="button" className="nt-readall" onClick={onReadAll}>
+              전체 읽음
+            </button>
+          )}
+          {items.length > 0 && (
+            <button type="button" className="nt-clear" onClick={onDeleteAll}>
+              모두 삭제
+            </button>
+          )}
+        </div>
       </header>
 
       {loading && (

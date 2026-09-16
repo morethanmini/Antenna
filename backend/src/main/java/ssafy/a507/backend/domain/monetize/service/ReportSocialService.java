@@ -18,6 +18,7 @@ import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.account.entity.Notification;
 import ssafy.a507.backend.domain.account.repository.NotificationRepository;
 import ssafy.a507.backend.domain.account.repository.UserRepository;
+import ssafy.a507.backend.domain.account.service.NotificationGate;
 import ssafy.a507.backend.domain.community.dto.AuthorResponse;
 import ssafy.a507.backend.domain.monetize.dto.ReportCommentCreateRequest;
 import ssafy.a507.backend.domain.monetize.dto.ReportCommentItemResponse;
@@ -64,6 +65,7 @@ public class ReportSocialService {
     private final ReportCommentLikeRepository reportCommentLikeRepository;
     private final UserRepository userRepository;
     private final NotificationRepository notificationRepository;
+    private final NotificationGate notificationGate;
     private final ReportAccess reportAccess;
     private final CurrentUserProvider currentUserProvider;
 
@@ -89,7 +91,7 @@ public class ReportSocialService {
      */
     private void notifyLike(Report report, User liker) {
         User author = report.getUser();
-        if (author.getId().equals(liker.getId())) {
+        if (author.getId().equals(liker.getId()) || !notificationGate.allows(author.getId(), LIKE_NOTIFICATION)) {
             return;
         }
         String linkPath = "/reports/" + report.getId();
@@ -109,7 +111,7 @@ public class ReportSocialService {
     /** 작성자에게 댓글 알림. 내가 단 댓글은 알리지 않는다. 댓글은 매번 알린다 — 매번 새 말이다. */
     private void notifyComment(Report report, User commenter, String body) {
         User author = report.getUser();
-        if (author.getId().equals(commenter.getId())) {
+        if (author.getId().equals(commenter.getId()) || !notificationGate.allows(author.getId(), COMMENT_NOTIFICATION)) {
             return;
         }
         notificationRepository.save(Notification.create(

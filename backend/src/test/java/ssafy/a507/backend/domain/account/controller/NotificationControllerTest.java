@@ -132,6 +132,25 @@ class NotificationControllerTest {
         assertThat(count(theirs)).isEqualTo(1);
     }
 
+    @Test
+    @DisplayName("모두 삭제 — 내 것만 전부 사라지고, 없어도 204")
+    void 모두_삭제() throws Exception {
+        Long a = insert(me, "VERDICT", "판정", "/predictions/1", false);
+        Long b = insert(me, "SUBSCRIBE", "구독", "/channels/1", true);
+        Long theirs = insert(other, "VERDICT", "남의 것", "/predictions/3", false);
+        flush();
+
+        mockMvc.perform(delete(URL).with(user(String.valueOf(me))).with(csrf()))
+                .andExpect(status().isNoContent());
+        flush();
+
+        assertThat(count(a)).isZero();
+        assertThat(count(b)).isZero();
+        assertThat(count(theirs)).isEqualTo(1);
+        mockMvc.perform(delete(URL).with(user(String.valueOf(me))).with(csrf()))
+                .andExpect(status().isNoContent());
+    }
+
     // ── 재료 ──────────────────────────────────────────────
 
     private Long insert(Long userId, String type, String title, String linkPath, boolean read) {

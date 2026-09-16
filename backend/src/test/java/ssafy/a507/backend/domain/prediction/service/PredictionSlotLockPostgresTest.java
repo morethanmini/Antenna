@@ -75,7 +75,7 @@ class PredictionSlotLockPostgresTest {
     }
 
     @Test
-    @DisplayName("같은 사용자가 동시에 5건을 보내면 정확히 3건만 201 이고 2건은 PREDICTION_SLOT_EXCEEDED 다")
+    @DisplayName("같은 사용자가 동시에 5건을 보내면 정확히 3건만 201 이고 2건은 소각 경로로 넘어간다(체인이 꺼진 여기서는 CHAIN_UNAVAILABLE)")
     void 동시_5건_중_3건만() throws Exception {
         int attempts = 5;
         ExecutorService pool = Executors.newFixedThreadPool(attempts);
@@ -86,7 +86,7 @@ class PredictionSlotLockPostgresTest {
             Callable<String> call = () -> {
                 start.await();
                 try {
-                    service.register(userId, request(price));
+                    service.create(userId, request(price));
                     return "OK";
                 } catch (BusinessException e) {
                     return e.getErrorCode().name();
@@ -102,7 +102,9 @@ class PredictionSlotLockPostgresTest {
         pool.shutdown();
 
         assertThat(outcomes).filteredOn("OK"::equals).hasSize(3);
-        assertThat(outcomes).filteredOn(ErrorCode.PREDICTION_SLOT_EXCEEDED.name()::equals).hasSize(2);
+        // 4·5번째는 슬롯 초과 → 소각 경로(ANT-PRED-10). 이 컨텍스트엔 릴레이어가 없어 접수 전에 503 으로 끊긴다 —
+        // 잠금이 정확히 3건까지만 무료로 들여보냈다는 것이 여기서 보려는 것이다.
+        assertThat(outcomes).filteredOn(ErrorCode.CHAIN_UNAVAILABLE.name()::equals).hasSize(2);
         Integer saved = jdbc.queryForObject("select count(*) from predictions where user_id = ?", Integer.class, userId);
         assertThat(saved).isEqualTo(3);
         Integer commits = jdbc.queryForObject(

@@ -13,6 +13,7 @@ import ssafy.a507.backend.domain.account.entity.Notification;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.account.repository.NotificationRepository;
 import ssafy.a507.backend.domain.account.repository.UserRepository;
+import ssafy.a507.backend.domain.account.service.NotificationGate;
 import ssafy.a507.backend.domain.monetize.dto.ChannelFeeAppliedResponse;
 import ssafy.a507.backend.domain.monetize.dto.ChannelFeeResponse;
 import ssafy.a507.backend.domain.monetize.dto.ChannelFeeResponse.FeeChange;
@@ -49,6 +50,7 @@ public class ChannelFeeService {
     private final PublisherFeeRepository fees;
     private final SubscriptionRepository subscriptions;
     private final NotificationRepository notifications;
+    private final NotificationGate notificationGate;
 
     /**
      * 현재값 + 변경 이력.
@@ -99,11 +101,12 @@ public class ChannelFeeService {
 
     /** 가격이 바뀌었음을 알린다. 구독자가 없으면 아무것도 하지 않는다. */
     private void notifySubscribers(User publisher, BigInteger fee, Instant now) {
-        List<Long> targets =
+        List<Long> targets = notificationGate.filter(
                 subscriptions.findFeeNoticeTargets(
                         publisher.getId(),
                         List.of(Subscription.Status.PENDING, Subscription.Status.ACTIVE),
-                        now);
+                        now),
+                        NOTIFICATION_TYPE);
         if (targets.isEmpty()) {
             return;
         }

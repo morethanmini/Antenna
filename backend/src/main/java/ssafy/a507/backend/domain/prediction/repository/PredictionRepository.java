@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import ssafy.a507.backend.domain.common.Track;
 import ssafy.a507.backend.domain.monetize.entity.Subscription;
+import ssafy.a507.backend.domain.chain.entity.Operation;
 import ssafy.a507.backend.domain.prediction.entity.Prediction;
 
 public interface PredictionRepository extends JpaRepository<Prediction, Long> {
@@ -86,8 +87,23 @@ public interface PredictionRepository extends JpaRepository<Prediction, Long> {
              where p.user.id = :userId
                and p.createdAt >= :from and p.createdAt < :to
                and not exists (select 1 from PredictionEventBet b where b.prediction = p)
+               and not exists (select 1 from Operation o
+                                where o.kind = :burn and o.resourceType = :resource and o.resourceId = p.id)
             """)
-    long countFreeToday(@Param("userId") Long userId, @Param("from") Instant from, @Param("to") Instant to);
+    long countFreeToday(
+            @Param("userId") Long userId,
+            @Param("from") Instant from,
+            @Param("to") Instant to,
+            @Param("burn") Operation.Kind burn,
+            @Param("resource") Operation.ResourceType resource);
+
+    /**
+     * 오늘 쓴 무료 슬롯. <b>소각으로 등록한 건(PREDICTION_BURN 작업이 붙은 예측)도 뺀다</b>(ANT-PRED-10) — 안 빼면
+     * 화면이 "오늘 4/3회" 가 된다. 무료 3건을 다 쓴 뒤의 등록은 어차피 전부 소각이라 판단은 같다.
+     */
+    default long countFreeToday(Long userId, Instant from, Instant to) {
+        return countFreeToday(userId, from, to, Operation.Kind.PREDICTION_BURN, Operation.ResourceType.PREDICTION);
+    }
 
     /**
      * 판정 배치(ANT-PRED-03·04)가 훑을 대상의 <b>id 만</b> 가져온다. 한 건이 트랜잭션 하나라 엔티티는 그 트랜잭션 안에서 다시 읽는다 —
@@ -228,4 +244,24 @@ public interface PredictionRepository extends JpaRepository<Prediction, Long> {
                and p.settledOn >= :from
             """)
     List<Object[]> settledSpan(@Param("userId") Long userId, @Param("from") LocalDate from);
+
+    /**
+     * 사람별 가장 최근 예측 시각. 목록 화면(E-03 내 구독)이 "이 예측가가 요즘 활동하는가" 를
+     * 보여 주는 값이다 — 구독은 앞으로 올 예측을 사는 것이라 마지막 활동이 언제인지가
+     * 갱신 여부를 정하는 근거가 된다.
+     *
+     * <p>사람마다 따로 물으면 구독 수만큼 쿼리가 나가므로 한 번에 묶는다. 돌려주는 줄은
+     * {@code [userId, createdAt]} 이고 <b>예측이 없는 사람은 줄 자체가 없다</b> —
+     * 부르는 쪽에서 표에 키가 없으면 null 로 다룬다.
+     *
+     * <p>REAL 만 센다. 모의투자(SIM) 예측은 구독으로 볼 수 있는 것이 아니라
+     * 활동의 근거가 되지 않는다.
+     */
+    @Query("""
+            select p.user.id, max(p.createdAt) from Prediction p
+             where p.user.id in :userIds
+               and p.track = ssafy.a507.backend.domain.common.Track.REAL
+             group by p.user.id
+            """)
+    List<Object[]> latestPredictionAt(@Param("userIds") Collection<Long> userIds);
 }

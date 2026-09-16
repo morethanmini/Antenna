@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ssafy.a507.backend.domain.account.entity.Notification;
 import ssafy.a507.backend.domain.account.repository.NotificationRepository;
+import ssafy.a507.backend.domain.account.service.NotificationGate;
 import ssafy.a507.backend.domain.market.entity.DailyQuote;
 import ssafy.a507.backend.domain.market.repository.DailyQuoteRepository;
 import ssafy.a507.backend.domain.prediction.entity.Prediction;
@@ -46,6 +47,7 @@ public class PredictionSettlementService {
     private final DailyQuoteRepository quotes;
     private final BatchRunRepository batchRuns;
     private final NotificationRepository notifications;
+    private final NotificationGate notificationGate;
 
     /**
      * 기준가 확정 BASE → OPEN (ANT-PRED-03).
@@ -93,6 +95,9 @@ public class PredictionSettlementService {
 
     /** 예측 주인에게 판정 결과. 같은 트랜잭션이라 판정이 되돌려지면 알림도 함께 사라진다. */
     private void notifyVerdict(Prediction p, SettlementRules.Verdict verdict) {
+        if (!notificationGate.allows(p.getUser().getId(), "VERDICT")) {
+            return;
+        }
         String direction = p.getDirection() == Prediction.Direction.UP ? "상승" : "하락";
         notifications.save(Notification.create(
                 p.getUser(),

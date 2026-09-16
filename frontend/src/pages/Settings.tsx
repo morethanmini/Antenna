@@ -20,8 +20,9 @@
    - 로그아웃: 설정 패널이 아니라 행동이다. 탭 하나를 버튼 한 개로 채우게 된다.
 
    백엔드 준비 상태
-   GET·PUT /users/me/settings 는 아직 없다. 알림 3종과 차트 뷰는 잠긴 카드로 둔다 —
-   토글을 그려 두고 동작만 막으면 고장 난 화면으로 읽힌다. */
+   GET·PUT /users/me/settings 가 열렸다(ANT-NOTIFY-02, 2026-09-16). 알림 토글은
+   NotifySettingsSection 이 그린다. 차트 뷰는 아직 잠긴 카드다 — 값을 읽는 화면이 없어
+   토글만 두면 아무 데도 안 닿는 설정이 된다. */
 import { useCallback, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/context'
@@ -29,6 +30,7 @@ import { openOnboardingTour } from '../auth/onboarding'
 import ConfirmDialog from '../components/ConfirmDialog'
 import LockedCard from '../components/state/LockedCard'
 import ChannelFeeSection from '../components/settings/ChannelFeeSection'
+import NotifySettingsSection from '../components/settings/NotifySettingsSection'
 import WalletLinkModal from '../components/wallet/WalletLinkModal'
 import '../styles/screens/settings.css'
 
@@ -42,14 +44,6 @@ const TABS = [
 type TabKey = (typeof TABS)[number]['key']
 
 const isTab = (v: string | null): v is TabKey => TABS.some((t) => t.key === v)
-
-/* 명세 §회원 의 설정 4개. 서버가 열리면 이 표가 토글 목록이 된다.
-   지금은 무엇이 준비 중인지 알려 주는 데만 쓴다. */
-const SETTING_ITEMS = [
-  { key: 'notifyVerdict', label: '판정 결과 알림', desc: '내 예측이 판정되면 알려 줍니다' },
-  { key: 'notifySeason', label: '시즌 진행 · 보상 알림', desc: '시즌 전환과 보상 지급을 알려 줍니다' },
-  { key: 'notifySocial', label: '구독 · 구독료 변경 알림', desc: '구독 갱신과 구독료 변경을 알려 줍니다' },
-] as const
 
 export default function Settings() {
   const navigate = useNavigate()
@@ -161,28 +155,14 @@ export default function Settings() {
             **아직 목업이다.** GET·PUT /me/channel/fee 가 없다(api/channelFee.ts). */}
         {tab === 'fee' && <ChannelFeeSection />}
 
-        {/* ── 알림 ─────────────────────────────────── */}
-        {tab === 'notify' && (
-        <section className="st-block">
-          <h2>알림</h2>
-          {/* 기본 문구는 구독 잠금용이라 title 로 갈아끼운다 — 구독으로 풀리는 잠금이 아니다 */}
-          <LockedCard label="알림 설정" title="알림 설정은 준비 중입니다">
-            <ul className="st-pending">
-              {SETTING_ITEMS.map((s) => (
-                <li key={s.key}>
-                  <b>{s.label}</b>
-                  <span>{s.desc}</span>
-                </li>
-              ))}
-            </ul>
-          </LockedCard>
-        </section>
-        )}
+        {/* ── 알림 — 토글 넷, 바꾸면 바로 저장 ─────────── */}
+        {tab === 'notify' && <NotifySettingsSection />}
 
         {/* ── 트레이딩 기본 뷰 ──────────────────────── */}
         {tab === 'chart' && (
         <section className="st-block">
           <h2>트레이딩 기본 뷰</h2>
+          {/* 기본 문구는 구독 잠금용이라 title 로 갈아끼운다 — 구독으로 풀리는 잠금이 아니다 */}
           <LockedCard label="차트 뷰 설정" title="차트 뷰 설정은 준비 중입니다">
             <p className="st-pending-note">
               모의투자 차트를 초급(BEGINNER) 또는 고급(ADVANCED) 중 어느 쪽으로 열지 정합니다.

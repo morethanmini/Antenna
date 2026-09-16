@@ -47,6 +47,12 @@ public class NotificationService {
         notifications.delete(mine(userId, id));
     }
 
+    /** 내 알림 전부. 없어도 204 — 두 번 눌러도 결과가 같다. */
+    @Transactional
+    public void deleteAll(Long userId) {
+        notifications.deleteAllByUserId(userId);
+    }
+
     private Notification mine(Long userId, Long id) {
         return notifications
                 .findByIdAndUser_Id(id, userId)

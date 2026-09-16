@@ -230,6 +230,25 @@ class ReportControllerTest {
     }
 
     @Test
+    @DisplayName("구독 채널 소식 알림을 끈 구독자에게는 발행 알림이 가지 않는다(ANT-NOTIFY-02)")
+    void 발행_알림_설정_끔() throws Exception {
+        insertSubscription(viewerId, authorId, "ACTIVE");
+        insertSetting(viewerId, true, true, true, false);
+        flush();
+
+        mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(authorId)))
+                        .with(csrf())
+                        .header("Idempotency-Key", "key-noti-off")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signedBody("알림 끈 리포트", "본문", false)))
+                .andExpect(status().isCreated());
+        flush();
+
+        assertThat(countNotifications(viewerId, "REPORT_PUBLISHED")).isZero();
+    }
+
+    @Test
     @DisplayName("공개 리포트 발행 알림은 본문에 '공개' 가 적힌다")
     void 발행_알림_공개() throws Exception {
         insertSubscription(viewerId, authorId, "ACTIVE");
@@ -1025,6 +1044,20 @@ class ReportControllerTest {
                         .setParameter(1, title)
                         .getSingleResult())
                 .longValue();
+    }
+
+    /** 알림 설정 행. 없으면 전부 on 이라, 끈 경우만 심는다. */
+    private void insertSetting(Long userId, boolean verdict, boolean season, boolean social, boolean channel) {
+        em.createNativeQuery("""
+                        INSERT INTO user_settings (user_id, notify_verdict, notify_season, notify_social, notify_channel, chart_view, updated_at)
+                        VALUES (?, ?, ?, ?, ?, 'BEGINNER', CURRENT_TIMESTAMP)
+                        """)
+                .setParameter(1, userId)
+                .setParameter(2, verdict)
+                .setParameter(3, season)
+                .setParameter(4, social)
+                .setParameter(5, channel)
+                .executeUpdate();
     }
 
     private String notificationBody(Long userId, String type) {

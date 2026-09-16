@@ -20,8 +20,10 @@ SSAFY 체인(chainId 31221, `wss://ws.ssafy-blockchain.com`, 가스 0)에는 **�
 |---|---|---|
 | CommitAnchor **v3** | `0x7c661F80EA46Ff7d63ab7F5Bb59d8d66E256DF99` (블록 11244276, 2026-09-11) | 장부 칸의 키 = 머클루트(ANT-CHAIN-13). 옛 v2 `0x8fDb…1C7e` 는 한 번도 안 쓴 채 교체 — 기록은 `prod/archive/CommitAnchor.v2.json` |
 | PredictToken (ANT) | `0xEee56721cd2c0383139756c88B6DB06024a412Cb` (블록 11241835) | **서비스 ANT. 재배포 금지 — 잔액이 여기 산다** |
-| 관리자 (`DEFAULT_ADMIN_ROLE`, 두 컨트랙트 공통) | `0xed9A22D3c39e5ddf161638b82a18a96134707491` | 비밀번호 관리자. 서버·저장소에 없다 |
-| 릴레이어 = 오퍼레이터 (`ANCHOR_ROLE` · `OPERATOR_ROLE`) | `0x55085F3F5568ED3936A734DbaEF179F8045322E3` | GitLab CI/CD 변수 `RELAYER_PRIVATE_KEY` (Masked · Protected) |
+| PredictionEventPool | `0xc0cD9D8a7A29B0D6358CbB6acE6BD59b6E9F12aa` (블록 11288437, 2026-09-16) | 배팅 이벤트 돈통(ANT-EVENT-01). **진행 중인 회차의 배팅금이 여기 산다 — 재배포 금지.** 회차가 늘어도 `eventId` 만 는다 |
+| ↳ 토큰 `MOVER_ROLE` 부여 | tx `0x7363acad7f1f0cc0bd56a83e5b09308549061a841b03cb47d4b855f7b0fcc111` (블록 11288438) | 풀이 사용자 ANT 를 옮기려면 필요하다. 이게 없으면 `placeBet` 이 전부 revert. `prod/PredictionEventPool.json` 의 `moverGranted` 는 **배포 시점 값(false)** 이라 여기가 진실이다 |
+| 관리자 (`DEFAULT_ADMIN_ROLE`, 세 컨트랙트 공통) | `0xed9A22D3c39e5ddf161638b82a18a96134707491` | 비밀번호 관리자. 서버·저장소에 없다 |
+| 릴레이어 = 오퍼레이터 (`ANCHOR_ROLE` · 토큰 `OPERATOR_ROLE` · 풀 `OPERATOR_ROLE`) | `0x55085F3F5568ED3936A734DbaEF179F8045322E3` | GitLab CI/CD 변수 `RELAYER_PRIVATE_KEY` (Masked · Protected) |
 | 수납 (플랫폼 30%) | `0x1E189420b1Abb9F1ff3A556bd068C5B03b6B17bB` | 비밀번호 관리자 |
 | 인덱서 시작 블록 | 11241835 (두 배포 블록 중 작은 값 = PredictToken) | — |
 | 주소를 넣는 곳 | `.gitlab-ci.yml` 의 `.env` 블록 | — |
@@ -96,7 +98,7 @@ chain 컨테이너가 8545 를 쥐고 있으면 손으로 띄운 노드는 못 �
 
 ```
 deployments/
-├── prod/    CommitAnchor.json(v3) · PredictToken.json   ← 운영
+├── prod/    CommitAnchor.json(v3) · PredictToken.json · PredictionEventPool.json   ← 운영
 │   └── archive/  CommitAnchor.v2.json                 ← 교체된 옛 기록(안 씀)
 ├── local/   CommitAnchor.json · PredictToken.json   ← Hardhat (npm run deploy:local) — 추적 안 함(deployments/.gitignore). 주소는 위 표
 └── dev/     CommitAnchor.json · PredictToken.json   ← 폐기(역사)
