@@ -184,7 +184,7 @@ public class PredictionRegisterService {
     private long usedToday(Long userId, LocalDate today) {
         Instant from = today.atStartOfDay(KST).toInstant();
         Instant to = today.plusDays(1).atStartOfDay(KST).toInstant();
-        return predictions.countByUser_IdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(userId, from, to);
+        return predictions.countFreeToday(userId, from, to);
     }
 
     /**
