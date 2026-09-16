@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ssafy.a507.backend.domain.account.entity.Notification;
+import ssafy.a507.backend.domain.account.repository.NotificationRepository;
 import ssafy.a507.backend.domain.market.entity.DailyQuote;
 import ssafy.a507.backend.domain.market.repository.DailyQuoteRepository;
 import ssafy.a507.backend.domain.prediction.entity.Prediction;
@@ -43,6 +45,7 @@ public class PredictionSettlementService {
     private final PredictionRepository predictions;
     private final DailyQuoteRepository quotes;
     private final BatchRunRepository batchRuns;
+    private final NotificationRepository notifications;
 
     /**
      * 기준가 확정 BASE → OPEN (ANT-PRED-03).
@@ -84,7 +87,20 @@ public class PredictionSettlementService {
         SettlementRules.Verdict verdict = SettlementRules.judge(
                 p.getDirection(), p.getTargetPrice(), p.getBasePrice(), settled.getClose());
         p.settle(settled.getClose(), settled.getTradeDate(), verdict.hit(), verdict.errorRate());
+        notifyVerdict(p, verdict);
         return verdict.hit() ? Outcome.HIT : Outcome.MISS;
+    }
+
+    /** 예측 주인에게 판정 결과. 같은 트랜잭션이라 판정이 되돌려지면 알림도 함께 사라진다. */
+    private void notifyVerdict(Prediction p, SettlementRules.Verdict verdict) {
+        String direction = p.getDirection() == Prediction.Direction.UP ? "상승" : "하락";
+        notifications.save(Notification.create(
+                p.getUser(),
+                "VERDICT",
+                "예측이 판정되었습니다",
+                p.getStock().getName() + " " + direction + " 예측 · " + (verdict.hit() ? "적중" : "미적중")
+                        + " · 오차 " + verdict.errorRate().toPlainString() + "%",
+                "/predictions/" + p.getId()));
     }
 
     /**

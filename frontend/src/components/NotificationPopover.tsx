@@ -33,6 +33,8 @@ type Props = {
   onClose: (returnFocus?: boolean) => void
   onRead: (id: number) => void
   onReadAll: () => void
+  /** 한 건 지운다. 되돌릴 수 없지만 확인창은 두지 않는다 — 알림 하나는 그만큼 가볍다 */
+  onDelete: (id: number) => void
   onRetry: () => void
 }
 
@@ -54,7 +56,7 @@ function ago(iso: string) {
 }
 
 export default function NotificationPopover({
-  items, loading, error, onClose, onRead, onReadAll, onRetry,
+  items, loading, error, onClose, onRead, onReadAll, onDelete, onRetry,
 }: Props) {
   const navigate = useNavigate()
   const boxRef = useRef<HTMLDivElement>(null)
@@ -128,7 +130,7 @@ export default function NotificationPopover({
       {!loading && !error && items.length > 0 && (
         <ul className="nt-list">
           {items.map((n) => (
-            <li key={n.id}>
+            <li key={n.id} className="nt-row">
               <button
                 type="button"
                 className={`nt-item${n.read ? '' : ' is-unread'}${n.linkPath ? '' : ' is-flat'}`}
@@ -136,13 +138,28 @@ export default function NotificationPopover({
                 /* 갈 곳이 없으면 읽음 처리만 한다. 눌러도 아무 데도 안 가는 것이
                    기본값이라, 커서까지 손가락으로 바꾸지는 않는다(.is-flat) */
               >
-                <span className="nt-type">{TYPE_LABEL[n.type]}</span>
+                {/* 서버가 새 종류를 보내면 표에 없다. 빈 칸보다 종류 이름이 낫다 */}
+                <span className="nt-type">{TYPE_LABEL[n.type] ?? n.type}</span>
                 <b className="nt-title">{n.title}</b>
                 <span className="nt-body">{n.body}</span>
                 <span className="nt-when num">{ago(n.createdAt)}</span>
                 {/* 안 읽은 표시는 점 하나다. 목록에서 색만으로 나누면
                     색을 못 보는 사람에게는 같은 줄이 된다 */}
                 {!n.read && <i className="nt-dot" aria-label="읽지 않음" />}
+              </button>
+              {/* 항목 버튼 **바깥**에 둔다. 버튼 안에 버튼을 넣으면 마크업이 깨지고,
+                  지우기를 눌렀는데 그 알림으로 이동해 버린다 */}
+              <button
+                type="button"
+                className="nt-del"
+                aria-label={`알림 삭제: ${n.title}`}
+                title="삭제"
+                onClick={() => onDelete(n.id)}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
               </button>
             </li>
           ))}
