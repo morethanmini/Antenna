@@ -61,10 +61,9 @@ const MODES = {
       { key: 'home', icon: 'home', text: '홈', href: '/sim' },
       { key: 'play', icon: 'play', text: '투자하기', href: '/sim/modes' },
       { key: 'portfolio', icon: 'portfolio', text: '투자 포트폴리오', href: '/sim/history' },
-      /* 시즌 리더보드(/sim/:id/leaderboard)와 다른 화면이다. 저쪽은 한 시즌 안의
-         순위이고, 이건 리플레이 트랙 누적 랭킹이다.
-         전에는 /rankings 를 가리켜 누르면 인사이트 모드로 넘어갔다. */
-      { key: 'ranking', icon: 'trophy', text: '모의투자 랭킹', href: '/sim/rankings' },
+      /* '모의투자 랭킹' 을 내렸다(2026-09-16). 리플레이 트랙 누적 순위였는데, 한 시즌
+         안의 순위는 시즌 리더보드(G-07)가 이미 보여 준다. 둘을 같이 두면 "내 등수" 가
+         두 곳에서 다른 값으로 나온다. 실전 랭킹은 인사이트 바에 그대로 있다. */
     ],
   },
 } as const
