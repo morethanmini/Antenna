@@ -110,6 +110,36 @@ public class SeasonCreateService {
     }
 
     /**
+     * 워밍업이 {@value #WARMUP_DAYS}봉보다 짧은 시즌에 앞쪽 봉을 더 붙인다.
+     *
+     * <p>워밍업을 30에서 120으로 늘렸을 때 이미 참가자가 있던 시즌은 시더가 지우지 못해 30봉
+     * 그대로 남았다 — 그 시즌에서는 차트를 끌어도 갈 데가 없다. 시즌을 다시 만들면 참가 기록이
+     * 날아가므로, 있는 시즌에 빠진 앞쪽 봉만 채운다. 이미 있는 봉은 건드리지 않는다.
+     *
+     * <p>지금 워밍업 수는 가장 이른 game_day 로 안다(-29 면 30봉). 기준일 앞 영업일을 최근순으로
+     * 받아 그만큼 건너뛰면 나머지가 빠진 날들이다. 그 구간을 {@link SeasonPriceRepository#copyFromDailyQuotes}
+     * 로 옮기되 번호를 이어 붙인다 — 받아 온 날짜 수 전체를 빼면 마지막 날이 {@code -(지금 워밍업)} 이 된다.
+     *
+     * @return 더한 행 수. 이미 다 있거나 수집 시작 앞이라 더 받을 날이 없으면 0
+     */
+    @Transactional
+    public int extendWarmup(Season season) {
+        Integer earliest = seasonPriceRepository.findMinGameDayBySeasonId(season.getId());
+        if (earliest == null || season.getBaseDate() == null) {
+            return 0;
+        }
+        int have = 1 - earliest;
+        List<LocalDate> dates = dailyQuoteRepository.findTradeDatesBefore(
+                season.getBaseDate(), PageRequest.of(0, WARMUP_DAYS));
+        if (dates.size() <= have) {
+            return 0;
+        }
+        // 최근 날짜부터 온다 — 앞의 have 개는 이미 있고, 그다음부터 마지막까지가 빠진 구간이다.
+        return seasonPriceRepository.copyFromDailyQuotes(
+                season.getId(), dates.get(dates.size() - 1), dates.get(have), dates.size());
+    }
+
+    /**
      * 시즌과 그 종목·가격·뉴스를 지운다. 참가자가 있는 시즌은 부르지 않는다 — 호출부가 먼저 확인한다.
      * 만든 곳이 지우는 이유는 트랜잭션 경계를 한 곳에 두려는 것이다. 뉴스는 시즌·종목을 가리키므로
      * 가장 먼저 지운다(FK).

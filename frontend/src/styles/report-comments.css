@@ -6,18 +6,18 @@
 .rc-heading{
   display:flex; align-items:center; gap:7px;
   margin:0 0 14px;
-  font-size:15px; font-weight:800; color:var(--ink);
+  font-size:var(--fs-xl); font-weight:var(--fw-heavy); color:var(--ink);
 }
-.rc-count{ color:var(--brand-ink); font-weight:700; }
+.rc-count{ color:var(--brand-ink); font-weight:var(--fw-bold); }
 
 /* 미구독자에게 보이는 안내. 입력란 자리를 대신한다 */
 .rc-gate{
   margin:0 0 16px; padding:13px 15px;
   border:1px solid var(--rule); border-radius:10px;
   background:var(--brand-softer);
-  font-size:13px; color:var(--body);
+  font-size:var(--fs-base); color:var(--body);
 }
-.rc-gate a{ color:var(--brand-ink); font-weight:700; }
+.rc-gate a{ color:var(--brand-ink); font-weight:var(--fw-bold); }
 
 /* ── 작성 ────────────────────────────────────── */
 .rc-form{ margin-bottom:18px; }
@@ -27,7 +27,7 @@
   padding:11px 13px;
   border:1px solid var(--rule); border-radius:10px;
   background:var(--surface); color:var(--ink);
-  font-family:inherit; font-size:13.5px; line-height:1.6;
+  font-family:inherit; font-size:var(--fs-lg); line-height:1.6;
   resize:vertical;
 }
 .rc-input:focus{ outline:2px solid var(--brand); outline-offset:-1px; }
@@ -38,13 +38,13 @@
   display:flex; align-items:center; justify-content:space-between; gap:10px;
   margin-top:8px;
 }
-.rc-form-count{ font-size:12px; color:var(--faint); }
+.rc-form-count{ font-size:var(--fs-sm); color:var(--faint); }
 
 .rc-submit{
   padding:8px 16px;
   border:0; border-radius:8px;
   background:var(--brand); color:#fff;
-  font-family:inherit; font-size:13px; font-weight:700;
+  font-family:inherit; font-size:var(--fs-base); font-weight:var(--fw-bold);
   cursor:pointer;
 }
 .rc-submit:hover:not(:disabled){ background:var(--brand-ink); }
@@ -53,12 +53,12 @@
 .rc-form-error{
   display:flex; flex-wrap:wrap; gap:6px;
   margin:8px 0 0;
-  font-size:12.5px; font-weight:600; color:var(--danger);
+  font-size:var(--fs-md); font-weight:var(--fw-normal); color:var(--danger);
 }
-.rc-form-hint{ color:var(--muted); font-weight:500; }
+.rc-form-hint{ color:var(--muted); font-weight:var(--fw-normal); }
 
 /* ── 목록 ────────────────────────────────────── */
-.rc-empty{ margin:0; padding:16px 0; color:var(--muted); font-size:13px; }
+.rc-empty{ margin:0; padding:16px 0; color:var(--muted); font-size:var(--fs-base); }
 
 .rc-list{ list-style:none; margin:0; padding:0; }
 
@@ -70,9 +70,9 @@
 .rc-item-head{
   display:flex; align-items:center; flex-wrap:wrap; gap:6px;
   margin-bottom:6px;
-  font-size:12.5px; color:var(--muted);
+  font-size:var(--fs-md); color:var(--muted);
 }
-.rc-author{ color:var(--body); font-weight:700; text-decoration:none; }
+.rc-author{ color:var(--body); font-weight:var(--fw-bold); text-decoration:none; }
 .rc-author:hover{ color:var(--brand-ink); text-decoration:underline; }
 .rc-dot{ color:var(--faint); }
 
@@ -80,17 +80,17 @@
 .rc-body{
   margin:0 0 8px;
   white-space:pre-wrap; overflow-wrap:anywhere;
-  font-size:13.5px; line-height:1.7; color:var(--body);
+  font-size:var(--fs-lg); line-height:1.7; color:var(--body);
 }
 
-.rc-more-hint{ margin:12px 0 0; color:var(--muted); font-size:12.5px; }
+.rc-more-hint{ margin:12px 0 0; color:var(--muted); font-size:var(--fs-md); }
 
 .rc-more{
   display:block; width:100%;
   margin-top:12px; padding:10px;
   border:1px solid var(--rule); border-radius:10px;
   background:var(--surface); color:var(--body);
-  font-family:inherit; font-size:13px; font-weight:600;
+  font-family:inherit; font-size:var(--fs-base); font-weight:var(--fw-normal);
   cursor:pointer;
 }
 .rc-more:hover{ border-color:var(--brand); color:var(--brand-ink); }

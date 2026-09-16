@@ -4,21 +4,20 @@
 .ac-back{
   display:inline-flex; align-items:center; gap:5px;
   margin-bottom:14px;
-  color:var(--muted); font-size:13px; font-weight:600;
+  color:var(--muted); font-size:var(--fs-base); font-weight:var(--fw-normal);
   text-decoration:none;
 }
 .ac-back:hover{ color:var(--brand-ink); }
 
-.ac-loading{ margin:0; color:var(--muted); font-size:13px; }
+.ac-loading{ margin:0; color:var(--muted); font-size:var(--fs-base); }
 
 /* ── 머리 ────────────────────────────────────── */
 .ac-head{ margin-bottom:14px; }
 .ac-title{ display:flex; align-items:center; gap:10px; }
 .ac-title h1{
-  margin:0;
-  font-size:22px; font-weight:800; letter-spacing:-.02em; color:var(--ink);
+  margin:0; color:var(--ink);
 }
-.ac-sub{ margin:6px 0 0; font-size:13px; color:var(--muted); }
+.ac-sub{ margin:6px 0 0; font-size:var(--fs-base); color:var(--muted); }
 
 /* ── 배치 정보 ───────────────────────────────── */
 .ac-card{
@@ -36,14 +35,14 @@
 .ac-field{ display:flex; align-items:baseline; gap:8px; min-width:0; }
 .ac-field dt{
   flex:0 0 auto; width:60px;
-  font-size:11.5px; font-weight:600; color:var(--faint);
+  font-size:var(--fs-xs); font-weight:var(--fw-normal); color:var(--faint);
 }
 .ac-field dd{
   margin:0; min-width:0;
   display:flex; align-items:baseline; flex-wrap:wrap; gap:6px;
-  font-size:12.5px; color:var(--body);
+  font-size:var(--fs-md); color:var(--body);
 }
-.ac-chain{ font-size:11.5px; color:var(--faint); }
+.ac-chain{ font-size:var(--fs-xs); color:var(--faint); }
 
 /* 실패 사유는 체인이 준 이름 그대로 — 옮기면 검색이 안 된다 */
 .ac-error{
@@ -52,9 +51,9 @@
   border:1px solid #f6d5d5; border-radius:9px;
   background:#fdeeee;
 }
-.ac-error b{ font-size:12px; font-weight:700; color:var(--danger); }
+.ac-error b{ font-size:var(--fs-sm); font-weight:var(--fw-bold); color:var(--danger); }
 .ac-error code{
-  font-family:var(--mono); font-size:12px; color:var(--body);
+  font-family:var(--mono); font-size:var(--fs-sm); color:var(--body);
   overflow-wrap:anywhere;
 }
 
@@ -69,14 +68,14 @@
   display:flex; align-items:center; justify-content:space-between;
   gap:10px;
 }
-.ac-commits-head h2{ margin:0; font-size:14px; font-weight:700; color:var(--ink); }
+.ac-commits-head h2{ margin:0; font-size:var(--fs-lg); font-weight:var(--fw-bold); color:var(--ink); }
 
 .ac-copyall{
   flex:0 0 auto;
   padding:5px 11px;
   border:1px solid var(--rule); border-radius:7px;
   background:var(--surface); color:var(--body);
-  font-family:inherit; font-size:11.5px; font-weight:600;
+  font-family:inherit; font-size:var(--fs-xs); font-weight:var(--fw-normal);
   cursor:pointer;
 }
 .ac-copyall:hover{ background:var(--surface-2); }
@@ -85,10 +84,10 @@
 /* 순서가 검증 재료라는 것을 알리는 줄. 정렬 기능이 없는 이유이기도 하다 */
 .ac-order-note{
   margin:8px 0 12px;
-  font-size:11.5px; color:var(--faint);
+  font-size:var(--fs-xs); color:var(--faint);
 }
 
-.ac-empty{ margin:0; font-size:12.5px; color:var(--muted); }
+.ac-empty{ margin:0; font-size:var(--fs-md); color:var(--muted); }
 
 .ac-commit-list{
   margin:0; padding:0; list-style:none;
@@ -104,7 +103,7 @@
 .ac-commit-no{
   flex:0 0 auto; width:34px;
   text-align:right;
-  font-size:11.5px; color:var(--faint);
+  font-size:var(--fs-xs); color:var(--faint);
 }
 
 /* 무엇이 봉인됐나 — 해시 앞에 온다. 폭을 고정해 해시들이 세로로 줄을 맞춘다 */
@@ -113,21 +112,21 @@
   display:flex; align-items:baseline; gap:6px;
   overflow:hidden; white-space:nowrap;
 }
-.ac-commit-code{ font-style:normal; font-size:11.5px; color:var(--faint); }
+.ac-commit-code{ font-style:normal; font-size:var(--fs-xs); color:var(--faint); }
 /* 리포트 리프 표시(ANT-CHAIN-14). 같은 자리에 종목코드 대신 종류가 온다 —
    해시 목록에서 두 종류를 구분할 수 있어야 원장이 읽힌다 */
 .ac-commit-kind{
-  font-style:normal; font-size:11px; font-weight:700; letter-spacing:.02em;
+  font-style:normal; font-size:var(--fs-2xs); font-weight:var(--fw-bold); letter-spacing:.02em;
   color:var(--brand); background:var(--brand-weak, #eef0ff);
   padding:1px 5px; border-radius:4px;
 }
 .ac-commit-stock{
-  font-size:12.5px; font-weight:700; color:var(--ink);
+  font-size:var(--fs-md); font-weight:var(--fw-bold); color:var(--ink);
   overflow:hidden; text-overflow:ellipsis;
 }
 /* 종목이 지워진 건. 빈칸으로 두면 데이터가 깨진 것처럼 읽힌다 */
-.ac-commit-nostock{ font-size:12px; color:var(--faint); }
-.ac-commit-horizon{ margin-left:auto; font-size:11.5px; color:var(--muted); }
+.ac-commit-nostock{ font-size:var(--fs-sm); color:var(--faint); }
+.ac-commit-horizon{ margin-left:auto; font-size:var(--fs-xs); color:var(--muted); }
 
 @media (max-width:760px){
   /* 좁으면 해시 한 줄에 다 못 넣는다. 종목·기간을 위로 올린다 */
@@ -141,7 +140,7 @@
   margin-top:12px; padding:10px;
   border:1px solid var(--rule); border-radius:9px;
   background:var(--surface); color:var(--body);
-  font-family:inherit; font-size:12.5px; font-weight:600;
+  font-family:inherit; font-size:var(--fs-md); font-weight:var(--fw-normal);
   cursor:pointer;
 }
 .ac-more:hover{ background:var(--surface-2); }
@@ -154,7 +153,7 @@
 .ac-verify{
   flex:0 0 auto; margin-left:auto;
   display:inline-flex; align-items:center; gap:2px;
-  font-size:11.5px; font-weight:600; color:var(--brand-ink);
+  font-size:var(--fs-xs); font-weight:var(--fw-normal); color:var(--brand-ink);
   text-decoration:none;
 }
 .ac-verify:hover{ text-decoration:underline; }

@@ -23,22 +23,22 @@
   display:inline-flex; align-items:center; gap:5px; flex:none;
   height:28px; padding:0 11px 0 8px;
   border:1px solid var(--rule); border-radius:999px; background:var(--surface);
-  color:var(--body); font-size:12px; font-weight:700;
+  color:var(--body); font-size:var(--fs-sm); font-weight:var(--fw-bold);
   transition:border-color .12s, background .12s, color .12s;
 }
 .mm-back:hover{border-color:#c8c9f5; background:var(--brand-softer); color:var(--brand-ink)}
 .mm-back:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
 
 .mm-where{margin:0; display:flex; align-items:baseline; gap:9px; min-width:0}
-.mm-where b{color:var(--ink); font-size:14.5px; font-weight:800; letter-spacing:-.02em}
-.mm-where em{color:var(--faint); font-style:normal; font-size:12px; font-weight:650}
-.mm-where span{font-size:13px; font-weight:750}
+.mm-where b{color:var(--ink); font-size:var(--fs-lg); font-weight:var(--fw-heavy); letter-spacing:-.02em}
+.mm-where em{color:var(--faint); font-style:normal; font-size:var(--fs-sm); font-weight:var(--fw-bold)}
+.mm-where span{font-size:var(--fs-base); font-weight:var(--fw-bold)}
 
 /* 범례 — 색이 무슨 뜻인지 판 옆에 늘 있어야 한다.
    단계마다 숫자를 박은 칸이다(그라데이션 띠에서 바꿨다 · 2026-09-11).
    칸 색은 컴포넌트가 heatOf 로 넣는다 — 여기에 색값을 적지 않는다. */
 .mm-legend{margin-left:auto; display:flex; align-items:center; gap:9px; flex:none}
-.mm-legend-label{color:var(--muted); font-size:11.5px; font-weight:750; white-space:nowrap}
+.mm-legend-label{color:var(--muted); font-size:var(--fs-xs); font-weight:var(--fw-bold); white-space:nowrap}
 
 .mm-scale{
   display:flex; margin:0; padding:0; list-style:none;
@@ -47,7 +47,7 @@
 .mm-scale li{
   width:46px; height:21px;
   display:flex; align-items:center; justify-content:center;
-  color:#fff; font-size:10.5px; font-weight:750;
+  color:#fff; font-size:var(--fs-3xs); font-weight:var(--fw-bold);
   font-variant-numeric:tabular-nums;
 }
 
@@ -67,7 +67,7 @@
 .mm-loading{
   position:absolute; inset:0; margin:0;
   display:flex; align-items:center; justify-content:center;
-  color:#9aa1b2; font-size:12.5px; font-weight:650;
+  color:#9aa1b2; font-size:var(--fs-md); font-weight:var(--fw-bold);
 }
 
 /* ── 섹터 덩어리(첫 화면) ───────────────────────────────── */
@@ -91,11 +91,11 @@
 .mm-head:focus-visible{outline:2px solid #fff; outline-offset:-2px; z-index:3}
 .mm-head-name{
   min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  color:#d7dae4; font-size:11.5px; font-weight:750; letter-spacing:-.02em;
+  color:#d7dae4; font-size:var(--fs-xs); font-weight:var(--fw-bold); letter-spacing:-.02em;
 }
 .mm-head-rate{
   margin-left:auto; flex:none; color:#9aa1b2; font-style:normal;
-  font-size:11px; font-weight:700; font-variant-numeric:tabular-nums;
+  font-size:var(--fs-2xs); font-weight:var(--fw-bold); font-variant-numeric:tabular-nums;
 }
 /* 어두운 판 위에서는 앱의 --up/--down 이 너무 어둡다. 여기서만 밝은 짝을 쓴다 */
 .mm-head-rate.up{color:#ff6a6a}
@@ -117,10 +117,10 @@
 
 .mm-tile-name{
   max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  font-weight:750; letter-spacing:-.02em;
+  font-weight:var(--fw-bold); letter-spacing:-.02em;
 }
 .mm-tile-rate{
-  font-size:.84em; font-weight:650; opacity:.92;
+  font-size:.84em; font-weight:var(--fw-bold); opacity:.92;
   font-variant-numeric:tabular-nums;
 }
 
@@ -140,17 +140,17 @@
 
 .mm-tip-name{
   margin:0 0 9px; padding-bottom:9px; border-bottom:1px solid #4d5672;
-  color:#fff; font-size:14.5px; font-weight:800; letter-spacing:-.02em;
+  color:#fff; font-size:var(--fs-lg); font-weight:var(--fw-heavy); letter-spacing:-.02em;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 
 .mm-tip-rows{margin:0; display:grid; gap:5px}
 .mm-tip-rows > div{display:flex; align-items:baseline; gap:5px; min-width:0}
-.mm-tip-rows dt{flex:none; color:#98a0b4; font-size:11.5px; font-weight:650}
+.mm-tip-rows dt{flex:none; color:#98a0b4; font-size:var(--fs-xs); font-weight:var(--fw-bold)}
 .mm-tip-rows dt::after{content:':'}
 .mm-tip-rows dd{
   margin:0; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  color:#e9ebf2; font-size:12.5px; font-weight:750;
+  color:#e9ebf2; font-size:var(--fs-md); font-weight:var(--fw-bold);
   font-variant-numeric:tabular-nums;
 }
 /* 어두운 판 위에서는 앱의 --up/--down 이 너무 어둡다 — 이름줄과 같은 밝은 짝 */
@@ -158,7 +158,7 @@
 .mm-tip-rows dd.down{color:#6ea6ff}
 
 /* ── 판 아래 각주 ───────────────────────────────────────── */
-.mm-foot{margin:0; color:var(--faint); font-size:11.5px; line-height:1.55}
+.mm-foot{margin:0; color:var(--faint); font-size:var(--fs-xs); line-height:1.55}
 
 
 /* 세로가 짧은 화면(대표적으로 1366x768)에서는 사이 여백을 줄여 판에 자리를

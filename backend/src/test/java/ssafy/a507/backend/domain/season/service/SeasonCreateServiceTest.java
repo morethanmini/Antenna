@@ -119,6 +119,34 @@ class SeasonCreateServiceTest {
     }
 
     @Test
+    @DisplayName("워밍업이 짧은 옛 시즌에 앞쪽 봉을 더 붙인다 — 값은 원천 그대로, 번호는 이어진다")
+    void 짧은_워밍업을_늘린다() {
+        // 1/8 하루짜리. 워밍업 나흘(1/2~1/5 = -3..0)이 붙는데, 앞의 이틀을 지워 옛 시즌처럼 만든다.
+        // 종목 둘(A0040·A0030). A0040 은 1/4 봉이 없어 열이 온전한 A0030 으로 확인한다.
+        Season season = createService.create(spec(LocalDate.of(2024, 1, 8), 2, 1, 42L));
+        em.createNativeQuery("DELETE FROM season_prices WHERE game_day < -1").executeUpdate();
+        em.flush();
+        em.clear();
+        assertThat(gameDays(season.getId(), "A0030")).containsExactly(-1, 0, 1);
+
+        int rows = createService.extendWarmup(season);
+
+        // 종목 둘 × 이틀(1/2·1/3)
+        assertThat(rows).isEqualTo(4);
+        assertThat(gameDays(season.getId(), "A0030")).containsExactly(-3, -2, -1, 0, 1);
+        assertThat(closes(season.getId(), "A0030")).containsExactly(sourceCloses("A0030"));
+    }
+
+    @Test
+    @DisplayName("워밍업이 이미 있는 만큼이면 아무것도 더하지 않는다 — 두 번 돌아도 안전하다")
+    void 워밍업이_다_있으면_더하지_않는다() {
+        Season season = createService.create(spec(LocalDate.of(2024, 1, 8), 2, 1, 42L));
+
+        assertThat(createService.extendWarmup(season)).isZero();
+        assertThat(gameDays(season.getId(), "A0030")).containsExactly(-3, -2, -1, 0, 1);
+    }
+
+    @Test
     @DisplayName("요청한 기준일이 영업일이 아니면 그다음 영업일부터 시작한다")
     void 휴일은_다음_영업일로_밀린다() {
         // 2024-01-06·07 은 주말이라 일봉이 없다. 1/6 을 넣으면 1/8 이 첫 게임일이다.

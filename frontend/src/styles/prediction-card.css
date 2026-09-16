@@ -14,10 +14,10 @@
 
 .pc-head{ display:flex; align-items:center; flex-wrap:wrap; gap:7px; }
 .pc-stock{ display:flex; align-items:baseline; gap:6px; min-width:0; }
-.pc-stock b{ font-size:14.5px; font-weight:800; color:var(--ink); letter-spacing:-.01em; }
-.pc-stock em{ font-style:normal; font-size:11.5px; color:var(--faint); }
+.pc-stock b{ font-size:var(--fs-lg); font-weight:var(--fw-heavy); color:var(--ink); letter-spacing:-.01em; }
+.pc-stock em{ font-style:normal; font-size:var(--fs-xs); color:var(--faint); }
 
-.pc-dir{ flex:0 0 auto; padding:2px 8px; border-radius:999px; font-size:11.5px; font-weight:800; }
+.pc-dir{ flex:0 0 auto; padding:2px 8px; border-radius:999px; font-size:var(--fs-xs); font-weight:var(--fw-heavy); }
 .pc-dir.is-up{ background:#fdeceb; color:var(--up); }
 .pc-dir.is-down{ background:#e9f0ff; color:var(--down); }
 /* 잠김은 오류가 아니다 — 빨강을 쓰지 않는다(.ch-badge.is-locked 와 같은 규칙) */
@@ -25,17 +25,17 @@
 
 .pc-author{
   display:flex; align-items:center; gap:8px;
-  margin:7px 0 0; font-size:12.5px; color:var(--body);
+  margin:7px 0 0; font-size:var(--fs-md); color:var(--body);
 }
-.pc-accuracy{ font-size:11.5px; color:var(--muted); }
+.pc-accuracy{ font-size:var(--fs-xs); color:var(--muted); }
 
 .pc-figures{
   display:flex; flex-wrap:wrap; gap:4px 18px;
   margin:10px 0 0;
 }
 .pc-figures > div{ display:flex; flex-direction:column; gap:1px; }
-.pc-figures dt{ font-size:11px; color:var(--muted); }
-.pc-figures dd{ margin:0; font-size:13.5px; font-weight:700; color:var(--ink); }
+.pc-figures dt{ font-size:var(--fs-2xs); color:var(--muted); }
+.pc-figures dd{ margin:0; font-size:var(--fs-lg); font-weight:var(--fw-bold); color:var(--ink); }
 
 /* 잠긴 카드는 위쪽(종목·방향·작성자)을 남기고 아래만 가린다 — 존재를 감추면
    구독 유인이 사라진다(§5). 카드 자체를 흐리지 않는 이유다. */

@@ -48,6 +48,10 @@ public interface SeasonPriceRepository extends JpaRepository<SeasonPrice, Long> 
             @Param("to") LocalDate to,
             @Param("warmup") int warmup);
 
+    /** 시즌에서 가장 이른 game_day. 워밍업이 몇 봉인지가 여기서 나온다(-29 면 30봉). 봉이 없으면 null */
+    @Query("select min(p.gameDay) from SeasonPrice p where p.ticker.season.id = :seasonId")
+    Integer findMinGameDayBySeasonId(@Param("seasonId") Long seasonId);
+
     /** 시즌의 가격 전부. 시즌을 지울 때 종목보다 먼저 지운다(FK). */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("delete from SeasonPrice p where p.ticker in"

@@ -202,7 +202,7 @@ class EventSettlementRunnerE2ELiveTest {
         Prediction p =
                 Prediction.register(
                         user, stock.getStock(), dir, new BigDecimal("93000.00"), new BigDecimal("91000.00"), (short) 4, BASE_DATE, SETTLE_DATE);
-        p.fixBasePrice(stock.getBasePrice());
+        p.fixBasePrice(stock.getBasePrice(), BASE_DATE); // ANT-PRED-09 가 basedOn 을 더했다
         p.settle(new BigDecimal("91800.00"), SETTLE_DATE, hit, new BigDecimal("1.000"));
         em.persist(p);
         em.flush();

@@ -4,19 +4,19 @@
    않게 여기에 둔다. 접두어는 ch- 그대로다 — 클래스 이름을 바꾸면 두 화면의
    기존 선언과 갈라진다.
    색·간격은 app.css 토큰만 쓴다. */
-.ch-bio{ margin:6px 0 0; font-size:13px; line-height:1.65; color:var(--body); }
+.ch-bio{ margin:6px 0 0; font-size:var(--fs-base); line-height:1.65; color:var(--body); }
 
 .ch-interests{ display:flex; flex-wrap:wrap; gap:5px; margin:9px 0 0; padding:0; list-style:none; }
 .ch-interests li{
   padding:2px 9px; border-radius:999px;
   background:var(--brand-softer); color:var(--brand-ink);
-  font-size:11.5px; font-weight:700;
+  font-size:var(--fs-xs); font-weight:var(--fw-bold);
 }
 
 .ch-links{ display:flex; flex-wrap:wrap; gap:12px; margin:9px 0 0; padding:0; list-style:none; }
 .ch-links a{
   display:inline-flex; align-items:center; gap:4px;
-  font-size:12.5px; font-weight:600; color:var(--muted); text-decoration:none;
+  font-size:var(--fs-md); font-weight:var(--fw-normal); color:var(--muted); text-decoration:none;
 }
 .ch-links a:hover{ color:var(--brand-ink); }
 
@@ -26,13 +26,13 @@
   width:min(260px, 100%); height:38px; padding:0 11px;
   border:1px solid var(--rule); border-radius:9px;
   background:var(--surface); color:var(--ink);
-  font:inherit; font-size:17px; font-weight:750; letter-spacing:-.02em;
+  font:inherit; font-size:var(--fs-2xl); font-weight:var(--fw-bold); letter-spacing:-.02em;
 }
 .ch-name-input:focus{ outline:2px solid var(--brand-soft); outline-offset:1px; border-color:var(--brand); }
 .ch-name-input[aria-invalid="true"]{ border-color:var(--danger); }
 .ch-name-save, .ch-name-cancel{
   height:38px; padding:0 14px;
-  border-radius:9px; font:inherit; font-size:13px; font-weight:700; cursor:pointer;
+  border-radius:9px; font:inherit; font-size:var(--fs-base); font-weight:var(--fw-bold); cursor:pointer;
 }
 .ch-name-save{ border:0; background:var(--brand); color:#fff; }
 .ch-name-save:hover:not(:disabled){ background:var(--brand-ink); }
@@ -40,7 +40,7 @@
 .ch-name-cancel{ border:1px solid var(--rule); background:var(--surface); color:var(--body); }
 .ch-name-cancel:hover:not(:disabled){ background:var(--surface-2); }
 
-.ch-name-hint{ margin:0; font-size:12px; line-height:1.55; color:var(--muted); }
+.ch-name-hint{ margin:0; font-size:var(--fs-sm); line-height:1.55; color:var(--muted); }
 .ch-name-hint.is-available{ color:#15803d; }
 .ch-name-hint.is-taken, .ch-name-hint.is-invalid{ color:var(--danger); }
 
@@ -52,7 +52,7 @@
 .ch-field{ display:flex; align-items:baseline; gap:10px; margin:7px 0 0; min-width:0; }
 .ch-field-label{
   flex:0 0 52px;
-  font-size:11.5px; font-weight:700; color:var(--faint); white-space:nowrap;
+  font-size:var(--fs-xs); font-weight:var(--fw-bold); color:var(--faint); white-space:nowrap;
 }
 .ch-field-value{ min-width:0; flex:1 1 auto; }
 /* 값 안쪽의 위 여백은 이름표 줄이 대신 준다 — 둘이 겹치면 줄 간격이 벌어진다 */
@@ -87,7 +87,7 @@
 .ch-line-edit{
   flex:0 0 auto; padding:1px 7px;
   border:1px solid var(--rule); border-radius:999px; background:var(--surface);
-  font:inherit; font-size:11px; font-weight:700; color:var(--faint);
+  font:inherit; font-size:var(--fs-2xs); font-weight:var(--fw-bold); color:var(--faint);
   line-height:1.7; cursor:pointer;
 }
 .ch-line-edit:hover{ border-color:var(--brand-soft); color:var(--brand-ink); background:var(--brand-softer); }
@@ -102,16 +102,16 @@
   border:1px solid var(--brand-soft); border-radius:11px; background:var(--brand-softer);
 }
 /* 폼 안의 제목. 읽기용 이름 자리를 대신하지만 값이 아니라 상태 표시라 작게 둔다 */
-.ch-edit-title{ margin:0; font-size:12.5px; font-weight:800; color:var(--brand-ink); }
+.ch-edit-title{ margin:0; font-size:var(--fs-md); font-weight:var(--fw-heavy); color:var(--brand-ink); }
 
 .ch-edit-row{ display:flex; flex-direction:column; gap:5px; margin:0; padding:0; border:0; }
-.ch-edit-label{ padding:0; font-size:11.5px; font-weight:700; color:var(--body); }
+.ch-edit-label{ padding:0; font-size:var(--fs-xs); font-weight:var(--fw-bold); color:var(--body); }
 
 .ch-edit-area{
   width:min(440px, 100%); padding:9px 11px;
   border:1px solid var(--rule); border-radius:9px;
   background:var(--surface); color:var(--ink);
-  font:inherit; font-size:13px; line-height:1.65; resize:vertical;
+  font:inherit; font-size:var(--fs-base); line-height:1.65; resize:vertical;
 }
 .ch-edit-area:focus{ outline:2px solid var(--brand-soft); outline-offset:1px; border-color:var(--brand); }
 
@@ -120,10 +120,10 @@
 .ch-edit-chips button{
   padding:4px 11px; border:1px solid var(--rule); border-radius:999px;
   background:var(--surface); color:var(--body);
-  font:inherit; font-size:12px; font-weight:600; cursor:pointer;
+  font:inherit; font-size:var(--fs-sm); font-weight:var(--fw-normal); cursor:pointer;
 }
 .ch-edit-chips button:hover{ border-color:var(--brand-soft); }
-.ch-edit-chips button.is-on{ border-color:var(--brand); background:var(--surface); color:var(--brand-ink); font-weight:700; }
+.ch-edit-chips button.is-on{ border-color:var(--brand); background:var(--surface); color:var(--brand-ink); font-weight:var(--fw-bold); }
 .ch-edit-chips button:focus-visible{ outline:2px solid var(--brand); outline-offset:2px; }
 
 .ch-edit-links{ display:flex; flex-direction:column; gap:6px; margin:2px 0 0; padding:0; list-style:none; }
@@ -131,7 +131,7 @@
 .ch-edit-links select, .ch-edit-links input{
   height:34px; padding:0 9px;
   border:1px solid var(--rule); border-radius:8px;
-  background:var(--surface); color:var(--ink); font:inherit; font-size:12.5px;
+  background:var(--surface); color:var(--ink); font:inherit; font-size:var(--fs-md);
 }
 /* 한 채널은 한 줄이다 — 플랫폼·이름·주소·삭제. 기본 폭을 크게 잡으면 이름 칸이 생기는
    순간 줄이 접혀 한 채널이 두 줄처럼 보인다(카드 폭이 좁다). 주소가 남는 폭을 먹고,
@@ -143,7 +143,7 @@
 /* 지우기·더하기는 값이 아니라 행 조작이라 한 단계 낮춘다 */
 .ch-edit-drop, .ch-edit-add{
   padding:0; border:0; background:none;
-  font:inherit; font-size:12px; font-weight:600; color:var(--muted);
+  font:inherit; font-size:var(--fs-sm); font-weight:var(--fw-normal); color:var(--muted);
   text-decoration:underline; cursor:pointer;
 }
 .ch-edit-add{ align-self:flex-start; margin-top:4px; color:var(--brand-ink); }
