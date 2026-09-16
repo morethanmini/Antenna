@@ -188,6 +188,32 @@ public class Prediction {
     }
 
     /**
+     * 배팅 이벤트 예측 등록 (ANT-EVENT-05). {@link #register} 와 <b>같은 행을 만든다</b> — 컬럼 추가 없음.
+     *
+     * <p>다른 점은 날짜를 <b>이벤트가 준다</b>는 것뿐이다. 일반 등록은 {@code baseDate} 를 다음 영업일로
+     * 잡고 {@code settleDate = baseDate + horizon} 을 계산하는데, 이벤트는 회차가 목·월로 못박혀 있어
+     * 그 값을 그대로 복사한다. 그래야 기존 판정 배치가 코드 한 줄 안 바꾸고 이벤트 예측을 판정한다 —
+     * 배치는 "base_date 도래분" 을 찾을 뿐 그 예측이 이벤트인지 모른다.
+     *
+     * <p>{@code horizon} 도 인자로 받는다(이번 회차는 4 = 목→월 캘린더 일). 현재 CHECK 제약이
+     * REAL 3~90 연속이라 그대로 통과한다.
+     *
+     * <p>배팅 정보(금액·커밋·온체인 상태)는 여기 담지 않는다 — {@code prediction_event_bets} 가 1:1 로
+     * 들고 있다. {@code predictions} 는 팀 전체가 쓰는 표라 이벤트 전용 NULL 컬럼을 얹지 않는다.
+     */
+    public static Prediction registerForEvent(
+            User user,
+            Stock stock,
+            Direction direction,
+            BigDecimal targetPrice,
+            BigDecimal refClose,
+            short horizon,
+            LocalDate baseDate,
+            LocalDate settleDate) {
+        return register(user, stock, direction, targetPrice, refClose, horizon, baseDate, settleDate);
+    }
+
+    /**
      * 기준가 확정 BASE → OPEN (ANT-PRED-03). 대상 선별은 호출 쪽이 한다.
      *
      * <p>{@code baseDate} 는 건드리지 않는다. 휴장이라 다음 거래일 종가를 썼더라도 등록 때 약속한 날짜는 그대로 둔다 —
