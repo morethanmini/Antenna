@@ -19,6 +19,7 @@ import ssafy.a507.backend.domain.chain.repository.OperationRepository;
 import ssafy.a507.backend.domain.chain.repository.TokenLedgerRepository;
 import ssafy.a507.backend.domain.chain.service.OperationService;
 import ssafy.a507.backend.domain.chain.service.TokenOperationService;
+import ssafy.a507.backend.domain.monetize.dto.MySubscriptionListResponse;
 import ssafy.a507.backend.domain.monetize.dto.SubscribeRequest;
 import ssafy.a507.backend.domain.monetize.dto.SubscribeResponse;
 import ssafy.a507.backend.domain.monetize.entity.PublisherFee;
@@ -148,6 +149,38 @@ public class SubscriptionService {
                         .filter(o -> o.getResourceType() == Operation.ResourceType.SUBSCRIPTION)
                         .orElseThrow(() -> new BusinessException(ErrorCode.OPERATION_NOT_FOUND, "operationId"));
         return new SubscribeResponse(operation.getId(), operation.getResourceId(), operation.getStatus());
+    }
+
+    /**
+     * 내 구독 목록 — ANT-TOKEN-05, 화면 E-03. 만료분까지 최신순으로 전부 내린다.
+     *
+     * <p>결제(위)와 달리 체인을 타지 않는다. 그래도 같은 서비스에 둔 이유는 구독 행의 수명
+     * (접수 → 확정 → 만료 → 갱신 해지)을 한 자리에서 읽게 하려는 것이다.
+     */
+    @Transactional(readOnly = true)
+    public MySubscriptionListResponse mine(Long subscriberId) {
+        return new MySubscriptionListResponse(
+                subscriptions.findMine(subscriberId).stream()
+                        .map(MySubscriptionListResponse.Item::of)
+                        .toList());
+    }
+
+    /**
+     * 자동 갱신 해지 — ANT-TOKEN-05, 화면 E-03.
+     *
+     * <p><b>구독을 끊지 않는다.</b> 만료일까지는 ACTIVE 그대로고 다음 주기 결제만 멈춘다
+     * (설계서 §4 E-03). 명세에 되살리는 경로가 없어 화면이 확인 단계를 둔다.
+     *
+     * <p>남의 구독과 없는 구독을 같은 404 로 묶는다 — 403 을 주면 "그 id 의 구독은 있다" 가
+     * 새 나간다.
+     */
+    @Transactional
+    public void cancelRenewal(Long subscriberId, Long subscriptionId) {
+        subscriptions
+                .findById(subscriptionId)
+                .filter(s -> s.getSubscriber().getId().equals(subscriberId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.SUBSCRIPTION_NOT_FOUND, "id"))
+                .cancelRenewal(Instant.now());
     }
 
     private record Accepted(String operationId, Long subscriptionId, BigInteger fee) {}

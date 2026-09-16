@@ -62,6 +62,26 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
             @Param("now") Instant now);
 
     /**
+     * 이 발행자를 구독 중인 사람들 — <b>확정 대기(PENDING)까지 포함</b>한다. 구독료 변경 알림
+     * 대상이다 (ANT-TOKEN-05).
+     *
+     * <p>{@link #findSubscriberIds} 와 나눠 둔 이유는 대상이 다르기 때문이다. 리포트 발행 알림은
+     * 지금 읽을 수 있는 사람에게만 가면 되지만, 가격 변경은 <b>결제가 확정되는 중인 사람</b>도
+     * 알아야 한다 — 그 사람의 다음 갱신부터 새 가격이 매겨진다.
+     */
+    @Query("""
+            select s.subscriber.id
+              from Subscription s
+             where s.publisher.id = :publisherId
+               and s.status in :statuses
+               and (s.expiresAt is null or s.expiresAt > :now)
+            """)
+    List<Long> findFeeNoticeTargets(
+            @Param("publisherId") Long publisherId,
+            @Param("statuses") Collection<Subscription.Status> statuses,
+            @Param("now") Instant now);
+
+    /**
      * 이 사람이 저 채널에 건 구독 중 <b>가장 최근 한 줄</b>. 없으면 빈 값이다.
      *
      * <p>한 쌍에 행이 여럿 쌓인다 — 만료된 뒤 다시 구독하면 EXPIRED 가 남은 채로 새 행이 생긴다.
@@ -79,4 +99,18 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
             @Param("subscriberId") Long subscriberId,
             @Param("publisherId") Long publisherId,
             Limit limit);
+
+    /**
+     * 내가 건 구독 전부. 최신순이다 (ANT-TOKEN-05, 화면 E-03).
+     *
+     * <p>만료분도 담는다 — 화면이 "만료됨" 줄에 재구독 안내를 그린다. {@code publisher} 를 함께
+     * 가져오는 이유는 목록이 채널 닉네임을 그리기 때문이다. 안 걸면 행 수만큼 SELECT 가 더 나간다.
+     */
+    @Query("""
+            select s from Subscription s
+              join fetch s.publisher
+             where s.subscriber.id = :subscriberId
+             order by s.id desc
+            """)
+    List<Subscription> findMine(@Param("subscriberId") Long subscriberId);
 }

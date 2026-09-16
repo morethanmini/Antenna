@@ -201,7 +201,13 @@ public enum ErrorCode {
      * 채널이 구독료를 아직 정하지 않았다 (ANT-TOKEN-01). 0 원으로 열어 주지 않는다 — 구독료는 정해야
      * 생기는 값이고(publisher_fees 에 행이 없다), 0 으로 보면 무료 구독이 만들어진다.
      */
-    FEE_NOT_SET(HttpStatus.CONFLICT, "이 채널은 아직 구독료를 정하지 않았습니다.");
+    FEE_NOT_SET(HttpStatus.CONFLICT, "이 채널은 아직 구독료를 정하지 않았습니다."),
+
+    /**
+     * 내 구독이 아니거나 없는 구독이다 (ANT-TOKEN-05). 남의 구독에 403 을 주면 "그 id 의 구독은
+     * 있다" 가 새 나가므로 둘을 같은 404 로 묶는다 — {@code OPERATION_NOT_FOUND} 와 같은 판단이다.
+     */
+    SUBSCRIPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "구독을 찾을 수 없습니다.");
 
     private final HttpStatus status;
     private final String message;

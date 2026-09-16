@@ -3,25 +3,16 @@
    GET    /subscriptions/me            내 구독 목록
    DELETE /subscriptions/{id}/renewal  자동 갱신 해지 (204)
 
-   ── 백엔드 현황 (2026-09-09 확인) ────────────────────────
-   /subscriptions 를 여는 컨트롤러가 없다. monetize 도메인에 있는 것은
-   AdController · ChannelReportController · ReportController 셋뿐이다.
-   Subscription 엔티티는 있으니 서비스·컨트롤러만 남은 것으로 보인다.
-
-   그래서 MOCK 을 켜 둔다. 타입은 명세서가 준 스키마 그대로다 —
+   타입은 명세서가 준 스키마 그대로다 —
      GET  200 { items: [{ id, publisher, fee, status, expiresAt, renewEnabled }] }
      DELETE 204
-   MOCK 을 false 로 바꾸고 mock/subscriptions.ts 와 각 함수의 `if (MOCK)` 한 줄씩만
-   지우면 흔적이 없다(api/insight.ts 와 같은 방식).
+   서버는 ANT-TOKEN-05 에서 열었다(MySubscriptionController).
 
    ── 이 화면이 다루는 것이 "구독" 이 아니라 "갱신 예약" 이다 ──
    DELETE .../renewal 은 구독을 끊지 않는다. renew_enabled 를 false 로 만들 뿐이고
    만료일까지는 ACTIVE 그대로다. 라벨을 "구독 취소" 로 쓰면 사용자는 지금 접근이
    끊긴다고 읽는다 — 설계서 §4 E-03 이 못 박은 제약이다. */
 import { api } from './client'
-import * as mock from './mock/subscriptions'
-
-const MOCK = true
 
 /**
  * 구독 상태. 서버 Subscription.Status 와 짝이다.
@@ -60,7 +51,6 @@ export type Subscription = {
 }
 
 export function fetchMySubscriptions(): Promise<{ items: Subscription[] }> {
-  if (MOCK) return mock.list()
   return api.get<{ items: Subscription[] }>('/subscriptions/me')
 }
 
@@ -72,7 +62,6 @@ export function fetchMySubscriptions(): Promise<{ items: Subscription[] }> {
  * 되돌릴 수 있는 토글처럼 보이게 만들지 않는다.
  */
 export function cancelRenewal(subscriptionId: number): Promise<void> {
-  if (MOCK) return mock.cancelRenewal(subscriptionId)
   return api.delete<void>(`/subscriptions/${subscriptionId}/renewal`)
 }
 

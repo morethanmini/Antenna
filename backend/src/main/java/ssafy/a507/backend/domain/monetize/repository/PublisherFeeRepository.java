@@ -1,6 +1,7 @@
 package ssafy.a507.backend.domain.monetize.repository;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -24,4 +25,15 @@ public interface PublisherFeeRepository extends JpaRepository<PublisherFee, Long
             """)
     Optional<PublisherFee> findCurrent(
             @Param("publisherId") Long publisherId, @Param("now") Instant now, Limit limit);
+
+    /**
+     * 변경 이력 전체. 최신순이다 (ANT-TOKEN-05, 화면 E-04).
+     *
+     * <p>{@link #findCurrent} 와 달리 <b>미래 발효분도 담는다</b> — 화면이 "예정" 표시를 그리려면
+     * 아직 시작하지 않은 행을 받아야 한다.
+     *
+     * <p>페이징을 두지 않는다. 한 사람이 제 채널 구독료를 바꾸는 횟수는 이력 자체가 억제 장치라
+     * 많아야 몇 줄이고, 화면도 전부를 한 번에 그린다.
+     */
+    List<PublisherFee> findByPublisher_IdOrderByEffectiveFromDescIdDesc(Long publisherId);
 }

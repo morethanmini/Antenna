@@ -43,19 +43,19 @@ export default function ChannelFeeSection() {
   const [applied, setApplied] = useState<FeeApplied | null>(null)
 
   /* ── "현재" 와 "예정" 을 가른다 ─────────────────────────
-     publisher_fees.effective_from 은 미래일 수 있다(차기 주기 적용). 명세는 현재값을
-     "최신 행" 이라고 적었지만, 최신 행이 아직 시작하지 않았는데 그 값을 "현재 구독료" 로
-     쓰면 **화면이 거짓을 말한다** — 방금 20 으로 바꾸고 10월 1일부터라고 적어 놓고
-     동시에 지금 구독료가 20 이라고 하게 된다.
-     그래서 지금 받는 값은 이미 시작한 행에서 찾고, 시작 전 행은 따로 알린다. */
+     publisher_fees.effective_from 은 미래일 수 있다(예약 변경). 그래서 이력의 첫 줄이
+     곧 현재가는 아니다 — 아직 시작하지 않은 값을 "현재 구독료" 로 쓰면 **화면이 거짓을
+     말한다**. 다만 그 판정은 화면이 아니라 서버가 한다: GET 의 fee 는 이미 발효된 행에서
+     온 값이고(ChannelFeeService.fee), 안 정했으면 null 이다. 여기서 다시 계산하면 서버와
+     화면이 서로 다른 시계로 같은 질문에 답하게 된다. */
   const history = fee.data?.history ?? []
-  /* 기준 시각을 마운트 때 한 번만 잡는다. 렌더마다 Date.now() 를 부르면 같은 데이터로
-     결과가 달라질 수 있고(oxlint react/purity), 날짜 단위 비교라 고정해도 틀리지 않는다. */
-  const [now] = useState(() => Date.now())
+  const current = fee.data?.fee ?? null
+  /* 시작 전 행만 따로 알린다. 기준 시각을 마운트 때 굳히면 **방금 저장한 값이 미래로
+     읽힌다** — 저장 시각은 늘 마운트 시각보다 뒤다. 그래서 목록을 다시 읽을 때 함께
+     갱신한다(렌더 중에는 부르지 않는다 — oxlint react/purity). */
+  const [now, setNow] = useState(() => Date.now())
   const isFuture = (iso: string) => new Date(iso).getTime() > now
   const pending = history.find((h) => isFuture(h.effectiveFrom)) ?? null
-  const current = history.find((h) => !isFuture(h.effectiveFrom))?.fee
-    ?? (history.length === 0 ? fee.data?.fee ?? null : null)
   /** 다음 변경이 덮어쓸 값. 예정이 있으면 그것과 비교해야 한다 */
   const latest = history[0]?.fee ?? fee.data?.fee ?? null
 
@@ -78,7 +78,9 @@ export default function ChannelFeeSection() {
     try {
       setApplied(await updateChannelFee(draft))
       setStep('done')
-      // 이력에 행이 하나 늘었다. 목록을 다시 읽어 방금 넣은 값이 맨 위에 서게 한다
+      // 이력에 행이 하나 늘었다. 목록을 다시 읽어 방금 넣은 값이 맨 위에 서게 한다.
+      // 기준 시각도 함께 당긴다 — 안 그러면 방금 저장한 행이 "예정" 으로 남는다.
+      setNow(Date.now())
       fee.reload()
     } catch (e) {
       setError(e as ApiError)
