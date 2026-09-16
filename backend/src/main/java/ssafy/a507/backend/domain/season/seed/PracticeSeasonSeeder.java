@@ -64,7 +64,7 @@ public class PracticeSeasonSeeder implements ApplicationRunner {
      * ({@code SeasonCreateService.WARMUP_DAYS}) 이 시더는 (모드, 대표 업종, seed) 가 같은 시즌이
      * 있으면 건너뛰므로, seed 를 그대로 두면 이미 만들어진 시즌이 옛 봉 수로 남는다. 값을 바꾸면
      * {@link #removeStale()} 이 옛 시즌을 지우고 새로 만든다 — 다만 <b>참가자가 있는 시즌은
-     * 남으므로</b> 이미 누가 들어간 시즌은 옛 봉 수 그대로 목록에 함께 남는다.
+     * 남으므로</b> 그쪽은 {@link #extendWarmup()} 이 빠진 앞쪽 봉만 채운다.
      *
      * <p><b>제목이 사건을 드러낸다.</b> 예전에는 연도·사건 이름을 카드에 쓰지 않았다 — 결과를 아는
      * 채로 시작하면 예측이 아니라 복기가 되기 때문이다. 대회 모드를 접고 연습만 남기면서 뒤집었다:
@@ -145,6 +145,20 @@ public class PracticeSeasonSeeder implements ApplicationRunner {
             } catch (IllegalStateException e) {
                 // 재료 부족은 오류가 아니다. 백필이 끝난 뒤 다음 기동이 다시 시도한다.
                 log.info("연습 시즌 \"{}\" 을 건너뛴다 — {}", spec.title(), e.getMessage());
+            }
+        }
+        extendWarmup();
+    }
+
+    /**
+     * 워밍업이 짧은 채 남은 시즌(참가자가 있어 못 지운 옛 시즌)에 앞쪽 봉을 채운다.
+     * 이미 {@code WARMUP_DAYS} 봉이면 아무것도 안 한다 — 매 기동마다 돌아도 된다.
+     */
+    private void extendWarmup() {
+        for (Season season : seasonRepository.findByMode(Season.Mode.PRACTICE)) {
+            int rows = createService.extendWarmup(season);
+            if (rows > 0) {
+                log.info("연습 시즌 \"{}\"(id={}) 워밍업을 늘렸다 — 가격 {}행 추가", season.getTitle(), season.getId(), rows);
             }
         }
     }
