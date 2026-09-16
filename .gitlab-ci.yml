@@ -137,7 +137,9 @@ deploy-backend:
       CHAIN_RPC_URL=wss://ws.ssafy-blockchain.com
       CONTRACT_COMMIT_ANCHOR=0x7c661F80EA46Ff7d63ab7F5Bb59d8d66E256DF99
       CONTRACT_PREDICT_TOKEN=0xEee56721cd2c0383139756c88B6DB06024a412Cb
-      # CONTRACT_EVENT_POOL=  ← 배팅 이벤트 풀(ANT-EVENT-01·02). SSAFY 에 deploy:pool:ssafy → grant:mover:ssafy 를 돌린 뒤 주소를 채우고 앞의 # 을 뗀다. 비어 있으면 풀 릴레이어·인덱서만 꺼진다
+      # 배팅 이벤트 풀(ANT-EVENT-01·02). 2026-09-16 SSAFY 배포(블록 11288437) · MOVER_ROLE 부여(블록 11288438).
+      # 비우면 풀 릴레이어·인덱서 ③ 만 꺼진다 — 배팅 tx 가 CHAIN_UNAVAILABLE 로 PENDING 에 쌓이고 오류는 안 난다.
+      CONTRACT_EVENT_POOL=0xc0cD9D8a7A29B0D6358CbB6acE6BD59b6E9F12aa
       INDEXER_FROM_BLOCK=11241835
       RELAYER_PRIVATE_KEY=$RELAYER_PRIVATE_KEY
       PUBLIC_DATA_SERVICE_KEY=$PUBLIC_DATA_SERVICE_KEY
