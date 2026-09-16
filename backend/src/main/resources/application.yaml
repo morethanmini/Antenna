@@ -130,6 +130,14 @@ app:
     # 없으면 신청만 해 두고 소각 tx 를 보내지 않는 계정이 공짜로 자리를 막는다.
     pending-grace-minutes: 10
 
+  # 배팅 이벤트 (ANT-EVENT). 최소·최대 배팅은 여기 두지 않는다 — 회차마다 다를 수 있어
+  # prediction_events 행의 값이 단일 진실이다(작업명세 v1.2 §7).
+  event:
+    # SCHEDULED → OPEN 전이를 매분 본다. 여는 조건 셋(opensAt 도달 · 기준가 완비 · open tx)은
+    # 쿼리가 건다(PredictionEventRepository.findOpenable).
+    # 로컬은 .env 에서 "-" 로 끈다 — 운영 릴레이어 키를 공유해 nonce 가 엉킨다.
+    clock-cron: ${EVENT_CLOCK_CRON:0 * * * * *}
+
   # 온체인 (ANT-CHAIN-01~). 컨트랙트 주소는 재배포마다 바뀌므로 환경변수로만 받는다.
   chain:
     # 서명 payload(SignatureGuard)와 tx 서명(릴레이어)에 박힌다. 원천은 env CHAIN_ID 하나 — 31221 = SSAFY.
