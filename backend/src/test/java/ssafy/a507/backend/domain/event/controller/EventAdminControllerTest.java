@@ -25,7 +25,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.support.TransactionTemplate;
-import ssafy.a507.backend.domain.event.relay.FakePoolRelayer;
+import ssafy.a507.backend.domain.event.relay.ScriptedPoolRelayer;
 
 /**
  * POST /api/v1/admin/events · PUT …/base-price · POST …/open — ANT-EVENT-04 (작업명세 v1.2 §3-6·7).
@@ -39,7 +39,7 @@ import ssafy.a507.backend.domain.event.relay.FakePoolRelayer;
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import(FakePoolRelayer.Config.class)
+@Import(ScriptedPoolRelayer.Config.class)
 @DisplayName("배팅 이벤트 관리자 API")
 class EventAdminControllerTest {
 
@@ -52,7 +52,7 @@ class EventAdminControllerTest {
     @Autowired MockMvc mockMvc;
     @Autowired EntityManager em;
     @Autowired TransactionTemplate tx;
-    @Autowired FakePoolRelayer poolRelayer;
+    @Autowired ScriptedPoolRelayer poolRelayer;
 
     private final List<Long> userIds = new ArrayList<>();
     private Long admin;
@@ -115,7 +115,7 @@ class EventAdminControllerTest {
     void 생성이_openEvent_를_보낸다() throws Exception {
         mockMvc.perform(create(admin, body(2))).andExpect(status().isAccepted());
 
-        List<FakePoolRelayer.Call> sent = poolRelayer.callsOf("openEvent");
+        List<ScriptedPoolRelayer.Call> sent = poolRelayer.callsOf("openEvent");
         assertThat(sent).hasSize(1);
         // 종목 수와 배팅 범위가 컨트랙트에도 같이 간다 — 이벤트 행의 값이 단일 진실이다
         assertThat(sent.get(0).stockIdx()).isEqualTo(2);

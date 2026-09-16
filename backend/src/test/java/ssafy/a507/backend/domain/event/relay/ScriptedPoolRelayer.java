@@ -17,22 +17,27 @@ import ssafy.a507.backend.domain.chain.relay.PoolRevertException;
 import ssafy.a507.backend.domain.prediction.entity.Prediction;
 
 /**
- * 체인 없이 묶음 등록·봉인·재전송의 상태 전이를 검증하기 위한 가짜 풀 릴레이어 — {@code FakeTokenRelayer} 와 같은 꼴.
+ * 묶음 등록·봉인·재전송의 <b>전송 실패 처리</b>를 검증하기 위한 대본식 가짜 릴레이어 — {@code FakeTokenRelayer} 와 같은 꼴.
  *
  * <p>전송마다 미리 심어 둔 대본을 하나씩 꺼낸다(tx 해시 / 잔액 부족 / RPC 장애 / 컨트랙트 거부). 대본이 비면 tx 해시를
- * 돌려준다. 인자는 전부 기록한다 — "어느 종목에 얼마를, 어떤 커밋으로" 가 맞는지 보는 것이 이 fake 의 존재 이유다.
+ * 돌려준다. 인자는 전부 기록한다 — "어느 종목에 얼마를, 어떤 커밋으로" 가 맞는지 보는 것이 이 가짜의 존재 이유다.
+ *
+ * <p><b>{@code chain/service/FakePoolRelayer}(ANT-EVENT-03)와 다른 도구다.</b> 그쪽은 컨트랙트 상태 머신을 메모리에 옮겨
+ * "러너가 끝난 단계를 건너뛰는가" 를 판정한다. 이쪽은 상태 머신이 없는 대신 <b>실패를 마음대로 주입</b>해 "작업 행이
+ * 어떻게 닫히는가" 를 본다 — 잔액 부족 주입은 그쪽에 없다. 이름을 나눠 둔 이유는 둘의 {@code @TestConfiguration} 이
+ * 같은 이름의 {@code @Primary} 빈을 내면 한 테스트가 둘을 {@code @Import} 하는 순간 컨텍스트가 뜨지 않기 때문이다.
  *
  * <p>조회 메서드는 정산 러너(ANT-EVENT-03) 몫이라 여기서는 쓰지 않는다. 불러도 되는 값을 지어내면 그걸 믿는 테스트가
  * 생기므로 {@link UnsupportedOperationException} 으로 막는다.
  */
-public class FakePoolRelayer implements PoolRelayer {
+public class ScriptedPoolRelayer implements PoolRelayer {
 
     @TestConfiguration
     public static class Config {
         @Bean
         @Primary
-        FakePoolRelayer fakePoolRelayer() {
-            return new FakePoolRelayer();
+        ScriptedPoolRelayer scriptedPoolRelayer() {
+            return new ScriptedPoolRelayer();
         }
     }
 
@@ -55,22 +60,22 @@ public class FakePoolRelayer implements PoolRelayer {
         enabled = false;
     }
 
-    public FakePoolRelayer thenSent() {
+    public ScriptedPoolRelayer thenSent() {
         script.add(this::nextTxHash);
         return this;
     }
 
-    public FakePoolRelayer thenInsufficientBalance() {
+    public ScriptedPoolRelayer thenInsufficientBalance() {
         script.add(() -> { throw new BusinessException(ErrorCode.INSUFFICIENT_BALANCE); });
         return this;
     }
 
-    public FakePoolRelayer thenUnavailable() {
+    public ScriptedPoolRelayer thenUnavailable() {
         script.add(() -> { throw new BusinessException(ErrorCode.CHAIN_UNAVAILABLE); });
         return this;
     }
 
-    public FakePoolRelayer thenRevert(String errorName) {
+    public ScriptedPoolRelayer thenRevert(String errorName) {
         script.add(() -> { throw new PoolRevertException(errorName); });
         return this;
     }

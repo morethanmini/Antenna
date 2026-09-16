@@ -21,7 +21,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.transaction.support.TransactionTemplate;
 import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.domain.account.entity.User;
-import ssafy.a507.backend.domain.event.relay.FakePoolRelayer;
+import ssafy.a507.backend.domain.event.relay.ScriptedPoolRelayer;
 import ssafy.a507.backend.domain.event.service.EventAdminService;
 import ssafy.a507.backend.domain.event.service.EventEntryService;
 
@@ -41,7 +41,7 @@ import ssafy.a507.backend.domain.event.service.EventEntryService;
  * <p>{@code @Transactional} 롤백을 쓰지 않는다 — 전송이 "활성 트랜잭션 안에서는 거부" 가 계약이다.
  */
 @SpringBootTest
-@Import(FakePoolRelayer.Config.class)
+@Import(ScriptedPoolRelayer.Config.class)
 @DisplayName("이벤트 봉인 · 재전송 크론")
 class EventSealAndRetryTest {
 
@@ -50,7 +50,7 @@ class EventSealAndRetryTest {
     @Autowired EventClockScheduler scheduler;
     @Autowired EventAdminService eventAdminService;
     @Autowired EventEntryService eventEntryService;
-    @Autowired FakePoolRelayer poolRelayer;
+    @Autowired ScriptedPoolRelayer poolRelayer;
     @Autowired EntityManager em;
     @Autowired TransactionTemplate tx;
 
