@@ -123,11 +123,23 @@ function Hero({ phase }: { phase: ReturnType<typeof phaseAt> }) {
 
       <div className="ev-hero-rules">
         <img className="ev-hero-rules-title" src={HERO.rulesTitle} alt="대회 규칙" />
-        <img className="ev-hero-rules-panel" src={HERO.rules} alt="" aria-hidden="true" />
-        {/* 위 그림에 구워진 것과 같은 내용. 읽어 주는 기기는 이쪽만 읽는다 */}
-        <dl className="sr-only">
+        {/* **임시로 글자다.** 원래는 그림 한 장(HERO.rules)이었는데 네 줄이 통째로
+            구워져 있어 13:10 · 9월 28일이 박혀 있다. 담당자 확정값이 13:30 · 9월 22일로
+            바뀌어(2026-09-16) 그림이 거짓말을 한다 — 사람들이 금요일 13:30 에 보는 것이
+            바로 이 패널이라, 모양이 덜 예쁜 것보다 시각이 틀린 것이 위험하다(이상민님 합의).
+
+            덤으로 읽어 주는 기기용 글을 따로 둘 필요가 없어졌다. 전에는 같은 내용을
+            그림과 sr-only 로 두 벌 갖고 있었고, 그래서 날짜가 어긋날 수 있었다.
+
+            **새 그림을 받으면** 이 dl 을 지우고 아래 두 줄을 되살린다:
+              <img className="ev-hero-rules-panel" src={HERO.rules} alt="" aria-hidden="true" />
+              <dl className="sr-only">…같은 map…</dl> */}
+        <dl className="ev-rules">
           {RULES.map((r) => (
-            <div key={r.k}><dt>{r.k}</dt><dd>{r.v}</dd></div>
+            <div className="ev-rule" key={r.k}>
+              <dt>{r.k}</dt>
+              <dd>{r.v}</dd>
+            </div>
           ))}
         </dl>
       </div>
