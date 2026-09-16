@@ -1,5 +1,7 @@
 package ssafy.a507.backend.domain.event.repository;
 
+import java.math.BigInteger;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -70,6 +72,39 @@ public interface PredictionEventBetRepository extends JpaRepository<PredictionEv
     default List<Object[]> sumStakeByStockAndDirection(Long eventId) {
         return sumStakeByStockAndDirection(eventId, LIVE_FOR_POOL);
     }
+
+    /**
+     * 아직 전송이 끝나지 않은 내 배팅의 합계 — 묶음 등록의 잔액 검사에서 뺀다 (ANT-EVENT-05).
+     *
+     * <p><b>왜 빼나</b> — PENDING 은 체인에 나갔거나 나가는 중이라 곧 잔액에서 사라질 돈이다. 그걸 안
+     * 빼면 잔액 1,000 인 사용자가 500 짜리 배팅을 연달아 세 번 넣어도 매번 통과한다. 이벤트를 가리지
+     * 않고 센다 — 지갑 하나가 모든 이벤트의 돈을 낸다.
+     */
+    @Query("select coalesce(sum(b.stake), 0) from PredictionEventBet b"
+            + " where b.user.id = :userId and b.betStatus = ssafy.a507.backend.domain.event.entity.PredictionEventBet$Status.PENDING")
+    BigInteger sumPendingStake(@Param("userId") Long userId);
+
+    /**
+     * 재전송 대상 — FAILED 인데 아직 접수가 안 끝난 이벤트의 배팅 (ANT-EVENT-05, §0.3).
+     *
+     * <p>봉인 시각을 넘긴 것은 고르지 않는다. 컨트랙트가 SEALED 뒤의 {@code placeBet} 을 revert 하므로
+     * 보내 봐야 서버 버그로 기록될 뿐이다. 상한 횟수는 두지 않는다 — 잔액이 모자라 실패한 사용자가
+     * 충전하면 다음 회차에 그대로 나가야 하고, 창은 어차피 {@code sealsAt} 이 닫는다.
+     *
+     * <p>{@code prediction} 과 {@code user} 를 페치한다. 전송에 지갑 주소와 방향이 필요한데
+     * {@code open-in-view: false} 라 스케줄러 트랜잭션 밖에서 지연 로딩이 터진다.
+     */
+    @Query("""
+            select b from PredictionEventBet b
+              join fetch b.prediction
+              join fetch b.user
+              join fetch b.eventStock
+              join fetch b.event e
+             where b.betStatus = ssafy.a507.backend.domain.event.entity.PredictionEventBet$Status.FAILED
+               and e.status = ssafy.a507.backend.domain.event.entity.PredictionEvent$Status.OPEN
+               and e.sealsAt > :now
+            """)
+    List<PredictionEventBet> findRetryable(@Param("now") Instant now);
 
     /**
      * 내 배팅 전부 — 홈 화면의 {@code mine} 과 {@code me} 요약 재료.

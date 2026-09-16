@@ -1,0 +1,60 @@
+{
+  "spec": {
+    "scope": "event-entry",
+    "payload": "antenna:event-entry:v1 + eventId= 줄 + 항목마다 한 줄 + chainId= 줄 + nonce= 줄, \\n 구분, 끝 개행 없음",
+    "itemLine": "stockCode/DIRECTION/targetPrice/noteHash/stake — 순서는 요청의 items 순서",
+    "targetPrice": "항상 소수 둘째 자리 (CommitPayload.formatPrice)",
+    "noteHash": "keccak256(utf8(note) ‖ utf8(noteSaltHex)) — 기존 예측 커밋과 같은 함수(CommitHashes.noteHash)",
+    "stake": "정수 ANT(decimals 0). 천 단위 구분 없음",
+    "onchainCommit": "서명에 들어가지 않는다 — 서버가 eventId·idx·direction·noteHash 로 따로 만든다",
+    "noteSalt": "클라이언트가 만든 32바이트 CSPRNG, 소문자 64 hex, 0x 없음. 서명 문자열에는 안 들어간다(noteHash 가 대신한다)"
+  },
+  "note": "프론트(박효정)가 지갑에 넘길 문자열을 이 모양으로 만들어야 한다. 한 글자라도 다르면 복원 주소가 달라져 401 SIGNER_MISMATCH 다.",
+  "cases": [
+    {
+      "name": "두 종목 — 명세 §6 예시",
+      "eventId": 1,
+      "chainId": 31221,
+      "nonce": "3f1c8a9b7e2d4056",
+      "items": [
+        {
+          "stockCode": "005930",
+          "direction": "UP",
+          "targetPrice": "93000.00",
+          "stake": 1000,
+          "noteHash": "0x3e92638c8709ed9b829a1b03eae865452a06c14b240ef57ccc022d6a60d410fe",
+          "note": "3분기 실적 컨센서스 상회 전망",
+          "noteSalt": "dc7591f85642df187ccd193f6ba8c3f5bfac5de83375d6fb88d712ab489fa491"
+        },
+        {
+          "stockCode": "000660",
+          "direction": "DOWN",
+          "targetPrice": "210000.00",
+          "stake": 500,
+          "noteHash": "0x0ee69406eca8c8a2a1fe3bc2d0e25c4ad962b22a07a88fbe1c5e81bde9105c94",
+          "note": "",
+          "noteSalt": "71c45f8f5cb0941192f694d55f243f38db4cf7e99aa5113b5c7469a8664ce575"
+        }
+      ],
+      "payload": "antenna:event-entry:v1\neventId=1\n005930/UP/93000.00/0x3e92638c8709ed9b829a1b03eae865452a06c14b240ef57ccc022d6a60d410fe/1000\n000660/DOWN/210000.00/0x0ee69406eca8c8a2a1fe3bc2d0e25c4ad962b22a07a88fbe1c5e81bde9105c94/500\nchainId=31221\nnonce=3f1c8a9b7e2d4056"
+    },
+    {
+      "name": "한 종목 — 두 번째 제출(최소 종목 수는 첫 제출에만 건다)",
+      "eventId": 7,
+      "chainId": 31337,
+      "nonce": "0011223344556677",
+      "items": [
+        {
+          "stockCode": "035720",
+          "direction": "UP",
+          "targetPrice": "50000.00",
+          "stake": 2000,
+          "noteHash": "0x3e92638c8709ed9b829a1b03eae865452a06c14b240ef57ccc022d6a60d410fe",
+          "note": "3분기 실적 컨센서스 상회 전망",
+          "noteSalt": "dc7591f85642df187ccd193f6ba8c3f5bfac5de83375d6fb88d712ab489fa491"
+        }
+      ],
+      "payload": "antenna:event-entry:v1\neventId=7\n035720/UP/50000.00/0x3e92638c8709ed9b829a1b03eae865452a06c14b240ef57ccc022d6a60d410fe/2000\nchainId=31337\nnonce=0011223344556677"
+    }
+  ]
+}

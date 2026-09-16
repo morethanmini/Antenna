@@ -6,8 +6,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
 import ssafy.a507.backend.domain.account.entity.User;
@@ -37,6 +39,7 @@ import ssafy.a507.backend.domain.market.repository.StockRepository;
  * 만들고, {@code PoolRelayer.openEvent} 가 붙으면 커밋 뒤 트랜잭션 밖에서 잇는다. 그래서 지금은
  * {@code @Transactional} 을 붙여도 된다 — 전송이 생기는 순간 {@code AdService} 처럼 손으로 나눠야 한다.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EventAdminService {
@@ -47,6 +50,9 @@ public class EventAdminService {
     private final PredictionEventRepository events;
     private final PredictionEventStockRepository eventStocks;
     private final OperationService operationService;
+    private final EventBetDispatcher dispatcher;
+    /** 봉인은 접수(작업 행)와 전송을 손으로 나눈다 — 생성과 달리 tx 가 실제로 나간다. */
+    private final TransactionTemplate tx;
 
     /**
      * 이벤트 생성 — 이벤트 행 + 종목 10개 + 기준가 복사 + {@code EVENT_ADMIN} 작업(PENDING).
@@ -109,6 +115,62 @@ public class EventAdminService {
                         .orElseThrow(
                                 () -> new BusinessException(ErrorCode.EVENT_STOCK_NOT_INCLUDED, "idx"));
         stock.fixBasePrice(basePrice);
+    }
+
+    /**
+     * 봉인 — 수동 길 (작업명세 v1.2 §3-8). 평소에는 {@code EventClockScheduler} 가 {@code seals_at} 을
+     * 보고 부르고, 크론이 못 돌았거나 일찍 닫아야 할 때 관리자가 이 API 로 부른다.
+     */
+    public void seal(Long adminUserId, Long eventId) {
+        tx.executeWithoutResult(s -> requireAdmin(adminUserId));
+        sealNow(eventId, adminUserId);
+    }
+
+    /**
+     * 봉인 — 크론 길. 권한 검사가 없는 대신 호출자가 {@code EventClockScheduler} 하나뿐이다.
+     *
+     * <p>작업 행의 사용자 칸에는 관리자 계정을 넣는다. 크론에는 로그인 주체가 없는데
+     * {@code operations.user_id} 는 NOT NULL 이라 누군가는 있어야 하고, 이 작업은 사용자의 돈이 아니라
+     * 운영 행위라 누가 들어가든 뜻이 같다. 관리자가 한 명도 없으면 보내지 않고 로그만 남긴다 —
+     * 데이터가 덜 갖춰진 환경(로컬·테스트)에서 크론이 매분 터지게 두지 않는다.
+     */
+    public void sealSystem(Long eventId) {
+        Long actorId =
+                users.findFirstByRoleOrderByIdAsc(User.Role.ADMIN).map(User::getId).orElse(null);
+        if (actorId == null) {
+            log.warn("[EVENT] {} 봉인 건너뜀 — 관리자 계정이 없다", eventId);
+            return;
+        }
+        sealNow(eventId, actorId);
+    }
+
+    /**
+     * 봉인 tx 전송. <b>상태는 바꾸지 않는다</b> — SEALED 전이는 인덱서가 {@code EventSealed} 를 보고
+     * 한다(§0.3). 여기서 미리 SEALED 로 적으면 전송이 실패했을 때 체인은 열려 있는데 서비스만 닫힌다.
+     *
+     * <p>{@code @Transactional} 이 없는 이유는 {@link EventBetDispatcher} 의 호출자 계약이다 — 작업 행을
+     * 먼저 커밋하고 그 뒤에 보낸다.
+     *
+     * @param triggeredBy 작업 행의 사용자 칸. 크론이 부를 때는 이벤트를 만든 관리자가 아니라 지정된
+     *     운영 계정이 없으므로 호출자가 정한다
+     */
+    public void sealNow(Long eventId, Long triggeredBy) {
+        String operationId =
+                tx.execute(s -> {
+                    PredictionEvent event =
+                            events.findById(eventId)
+                                    .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "eventId"));
+                    if (event.getStatus() != PredictionEvent.Status.OPEN) {
+                        throw new BusinessException(ErrorCode.EVENT_NOT_OPEN, "eventId");
+                    }
+                    User actor =
+                            users.findById(triggeredBy)
+                                    .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHENTICATED));
+                    return operationService
+                            .accept(actor, Operation.Kind.EVENT_ADMIN, Operation.ResourceType.EVENT, eventId)
+                            .getId();
+                });
+        dispatcher.dispatchSeal(operationId, eventId);
     }
 
     private User requireAdmin(Long userId) {

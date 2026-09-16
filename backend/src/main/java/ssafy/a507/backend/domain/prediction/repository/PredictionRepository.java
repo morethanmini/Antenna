@@ -73,8 +73,21 @@ public interface PredictionRepository extends JpaRepository<Prediction, Long> {
             @Param("cursorId") Long cursorId,
             Limit limit);
 
-    /** 슬롯 계산(ANT-PRED-01) — KST 하루 구간 [from, to) 에 이 사용자가 등록한 수. 트랙 구분 없이 센다(예측은 REAL 전용). */
-    long countByUser_IdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(Long userId, Instant from, Instant to);
+    /**
+     * 슬롯 계산(ANT-PRED-01) — KST 하루 구간 [from, to) 에 이 사용자가 등록한 수. 트랙 구분 없이 센다(예측은 REAL 전용).
+     *
+     * <p><b>이벤트 참가는 빼고 센다</b>(ANT-EVENT-05). 배팅 이벤트는 ANT 를 내고 참가하는 별개 규칙이라 무료 슬롯 3건과
+     * 무관한데, 안 빼면 5종목을 걸자마자 그날 예측을 하나도 못 쓴다. 이벤트 예측인지는 컬럼이 아니라
+     * {@code prediction_event_bets} 행의 유무로 가른다 — 배팅 행이 1:1 로 붙어 있고, 그래서 {@code predictions} 에
+     * 이벤트 전용 컬럼을 더하지 않아도 된다.
+     */
+    @Query("""
+            select count(p) from Prediction p
+             where p.user.id = :userId
+               and p.createdAt >= :from and p.createdAt < :to
+               and not exists (select 1 from PredictionEventBet b where b.prediction = p)
+            """)
+    long countFreeToday(@Param("userId") Long userId, @Param("from") Instant from, @Param("to") Instant to);
 
     /**
      * 판정 배치(ANT-PRED-03·04)가 훑을 대상의 <b>id 만</b> 가져온다. 한 건이 트랜잭션 하나라 엔티티는 그 트랜잭션 안에서 다시 읽는다 —

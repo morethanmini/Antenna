@@ -184,11 +184,16 @@ public class PredictionRegisterService {
     private long usedToday(Long userId, LocalDate today) {
         Instant from = today.atStartOfDay(KST).toInstant();
         Instant to = today.plusDays(1).atStartOfDay(KST).toInstant();
-        return predictions.countByUser_IdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(userId, from, to);
+        return predictions.countFreeToday(userId, from, to);
     }
 
-    /** 직전 종가(ref_close). 최근 30일 안에 시세가 한 건도 없으면 방향 판정을 할 수 없으니 400. */
-    private BigDecimal latestClose(Stock stock, LocalDate today) {
+    /**
+     * 직전 종가(ref_close). 최근 30일 안에 시세가 한 건도 없으면 방향 판정을 할 수 없으니 400.
+     *
+     * <p>{@code public} 인 이유는 이벤트 묶음 등록(ANT-EVENT-05)이 항목마다 같은 검사를 하기 때문이다 —
+     * 규칙을 복사하면 두 등록 경로가 조용히 갈린다. 등록 본체는 건드리지 않는다(작업명세 v1.2 §5).
+     */
+    public BigDecimal latestClose(Stock stock, LocalDate today) {
         List<DailyQuote> recent = quotes.findByStock_CodeAndTradeDateBetweenOrderByTradeDate(
                 stock.getCode(), today.minusDays(QUOTE_LOOKBACK_DAYS), today);
         if (recent.isEmpty()) {
@@ -197,8 +202,8 @@ public class PredictionRegisterService {
         return recent.get(recent.size() - 1).getClose();
     }
 
-    /** UP 인데 직전 종가 이하, DOWN 인데 직전 종가 이상이면 모순. 같으면 둘 다 모순이다. */
-    private static void requireDirectionMatches(
+    /** UP 인데 직전 종가 이하, DOWN 인데 직전 종가 이상이면 모순. 같으면 둘 다 모순이다. 묶음 등록도 이걸 쓴다. */
+    public static void requireDirectionMatches(
             Prediction.Direction direction, BigDecimal targetPrice, BigDecimal refClose) {
         int cmp = targetPrice.compareTo(refClose);
         boolean ok = direction == Prediction.Direction.UP ? cmp > 0 : cmp < 0;
@@ -207,8 +212,8 @@ public class PredictionRegisterService {
         }
     }
 
-    /** 근거 포인트: 중복 제거, 상한, 전부 존재, 전부 같은 종목. 순서는 보존하지 않는다(집합). */
-    private List<ResearchPoint> loadEvidences(List<Long> ids, Stock stock) {
+    /** 근거 포인트: 중복 제거, 상한, 전부 존재, 전부 같은 종목. 순서는 보존하지 않는다(집합). 묶음 등록도 이걸 쓴다. */
+    public List<ResearchPoint> loadEvidences(List<Long> ids, Stock stock) {
         Set<Long> unique = new LinkedHashSet<>(ids);
         if (unique.isEmpty()) {
             return List.of();
