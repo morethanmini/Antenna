@@ -36,7 +36,8 @@ type Row = {
   noteSalt: string
 }
 
-const初 = (e: EventHome): Row[] =>
+/** 빈 입력 열 줄. 종목·기준가만 서버에서 받아 두고 나머지는 사용자가 채운다 */
+const initialRows = (e: EventHome): Row[] =>
   e.stocks.map((s) => ({
     stockCode: s.stockCode,
     name: s.name,
