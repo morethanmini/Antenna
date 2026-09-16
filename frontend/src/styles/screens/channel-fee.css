@@ -4,9 +4,9 @@
 
 .cf{ display:flex; flex-direction:column; gap:16px; }
 
-.cf-loading{ margin:0; font-size:13px; color:var(--muted); }
+.cf-loading{ margin:0; font-size:var(--fs-base); color:var(--muted); }
 
-.cf-label{ font-size:12px; color:var(--muted); }
+.cf-label{ font-size:var(--fs-sm); color:var(--muted); }
 
 /* ── 현재 구독료 ─────────────────────────────────────── */
 .cf-now{
@@ -18,11 +18,11 @@
 /* 이 섹션에서 가장 먼저 읽혀야 하는 값이다 */
 .cf-amount{
   display:flex; align-items:baseline; gap:6px;
-  font-size:22px; font-weight:800; color:var(--ink); letter-spacing:-.02em;
+  font-size:var(--fs-4xl); font-weight:var(--fw-heavy); color:var(--ink); letter-spacing:-.02em;
 }
-.cf-amount span{ font-size:12.5px; font-weight:600; color:var(--muted); letter-spacing:0; }
+.cf-amount span{ font-size:var(--fs-md); font-weight:var(--fw-normal); color:var(--muted); letter-spacing:0; }
 /* 미설정은 금액이 아니므로 숫자처럼 굵게 쓰지 않는다 */
-.cf-none{ font-size:14px; font-weight:600; color:var(--muted); }
+.cf-none{ font-size:var(--fs-lg); font-weight:var(--fw-normal); color:var(--muted); }
 
 /* ── 변경 ────────────────────────────────────────────── */
 .cf-edit{ display:flex; flex-direction:column; gap:8px; }
@@ -35,7 +35,7 @@
   width:150px; height:40px; padding:0 12px;
   border:1px solid var(--rule); border-radius:9px;
   background:var(--surface); color:var(--ink);
-  font-size:15px; font-weight:700; text-align:right;
+  font-size:var(--fs-xl); font-weight:var(--fw-bold); text-align:right;
 }
 .cf-input:focus{ outline:2px solid var(--brand-soft); outline-offset:1px; border-color:var(--brand); }
 .cf-input[aria-invalid="true"]{ border-color:var(--danger); }
@@ -44,9 +44,9 @@
 .cf-input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
 .cf-input[type=number]{ -moz-appearance:textfield; appearance:textfield; }
 
-.cf-unit{ font-size:13px; color:var(--muted); }
+.cf-unit{ font-size:var(--fs-base); color:var(--muted); }
 
-.cf-hint{ margin:0; font-size:12px; line-height:1.55; color:var(--muted); }
+.cf-hint{ margin:0; font-size:var(--fs-sm); line-height:1.55; color:var(--muted); }
 .cf-hint.is-bad{ color:var(--danger); }
 
 /* ── 확인 단계 ───────────────────────────────────────
@@ -59,20 +59,20 @@
 }
 .cf-confirm-title{
   margin:0 0 8px;
-  font-size:13.5px; font-weight:800; color:var(--ink);
+  font-size:var(--fs-lg); font-weight:var(--fw-heavy); color:var(--ink);
 }
 .cf-confirm-list{
   margin:0; padding-left:16px;
   display:flex; flex-direction:column; gap:5px;
-  font-size:12.5px; line-height:1.6; color:var(--body);
+  font-size:var(--fs-md); line-height:1.6; color:var(--body);
 }
-.cf-confirm-list b{ font-weight:700; color:var(--ink); }
+.cf-confirm-list b{ font-weight:var(--fw-bold); color:var(--ink); }
 
 .cf-error{
   display:flex; flex-direction:column; gap:4px;
   margin:0; padding:10px 12px;
   border:1px solid #f3c9c9; border-radius:9px; background:#fdf4f4;
-  font-size:12.5px; line-height:1.6; color:var(--danger);
+  font-size:var(--fs-md); line-height:1.6; color:var(--danger);
 }
 
 .cf-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:2px; }
@@ -83,13 +83,13 @@
   padding:14px 16px;
   border:1px solid #cfe9d8; border-radius:11px; background:#f2faf5;
 }
-.cf-done-title{ margin:0; font-size:14.5px; font-weight:800; color:#15803d; }
-.cf-sub{ margin:0; font-size:12.5px; line-height:1.6; color:var(--body); }
+.cf-done-title{ margin:0; font-size:var(--fs-lg); font-weight:var(--fw-heavy); color:#15803d; }
+.cf-sub{ margin:0; font-size:var(--fs-md); line-height:1.6; color:var(--body); }
 
 /* ── 변경 이력 ───────────────────────────────────────── */
 .cf-history h3{
   margin:0 0 8px;
-  font-size:13px; font-weight:700; color:var(--ink);
+  font-size:var(--fs-base); font-weight:var(--fw-bold); color:var(--ink);
 }
 
 .cf-list{
@@ -100,14 +100,14 @@
 .cf-list li{
   display:grid; grid-template-columns:132px 1fr auto; align-items:center; gap:10px;
   padding:9px 13px;
-  font-size:13px; color:var(--ink);
+  font-size:var(--fs-base); color:var(--ink);
 }
 .cf-list li + li{ border-top:1px solid var(--rule); }
 /* 예정 배지까지 한 줄에 들어가야 한다 — 접히면 날짜가 두 줄로 깨진다 */
-.cf-list-day{ font-size:12px; color:var(--muted); white-space:nowrap; }
+.cf-list-day{ font-size:var(--fs-sm); color:var(--muted); white-space:nowrap; }
 
 /* 인상·인하를 색으로만 가르지 않는다 — 화살표와 문장이 함께 있어야 읽힌다 */
-.cf-dir{ font-size:11.5px; }
+.cf-dir{ font-size:var(--fs-xs); }
 .cf-dir.is-up{ color:var(--danger); }
 .cf-dir.is-down{ color:#1d6fd0; }
 .cf-dir.is-first{ color:var(--muted); }
@@ -123,12 +123,12 @@
 
 /* 예정 안내 — 현재 구독료 카드 아래 한 줄. 아직 시작하지 않은 값이라는 뜻이다 */
 .cf-pending{
-  font-size:12px; font-weight:600; color:var(--brand);
+  font-size:var(--fs-sm); font-weight:var(--fw-normal); color:var(--brand);
 }
 
 /* 이력에서 아직 시작 전인 행 */
 .cf-soon{
   margin-left:5px; padding:1px 5px;
   border-radius:5px; background:var(--brand-soft); color:var(--brand);
-  font-size:10.5px; font-style:normal; font-weight:700;
+  font-size:var(--fs-3xs); font-style:normal; font-weight:var(--fw-bold);
 }

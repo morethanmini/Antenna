@@ -4,7 +4,7 @@
 
 .forecast-page .main-inner{display:flex;flex-direction:column;gap:14px}
 
-.fc-state{padding:26px 0;color:var(--muted);font-size:14px;font-weight:700;text-align:center}
+.fc-state{padding:26px 0;color:var(--muted);font-size:var(--fs-lg);font-weight:var(--fw-bold);text-align:center}
 
 /* ── 빈 상태 ────────────────────────────────────────── */
 .fc-none{
@@ -12,8 +12,8 @@
   padding:44px 20px;border:1px solid var(--rule);border-radius:16px;
   background:var(--surface);box-shadow:var(--shadow);text-align:center;
 }
-.fc-none p{margin:0;color:#0e1330;font-size:15px;font-weight:800}
-.fc-none-hint{color:var(--muted);font-size:13.5px;font-weight:700}
+.fc-none p{margin:0;color:#0e1330;font-size:var(--fs-xl);font-weight:var(--fw-heavy)}
+.fc-none-hint{color:var(--muted);font-size:var(--fs-lg);font-weight:var(--fw-bold)}
 .fc-none .state-cta{margin-top:9px}
 
 /* ── 카드 ──────────────────────────────────────────── */
@@ -21,13 +21,13 @@
   padding:18px 20px;border:1px solid var(--rule);border-radius:16px;
   background:var(--surface);box-shadow:var(--shadow);
 }
-.fc-card h2{margin:0 0 14px;color:#0e1330;font-size:15.5px;font-weight:850;letter-spacing:-.02em}
+.fc-card h2{margin:0 0 14px;color:#0e1330;font-size:var(--fs-xl);font-weight:var(--fw-black);letter-spacing:-.02em}
 
-.fc-note{margin:12px 0 0;color:var(--muted);font-size:12.5px;font-weight:700}
+.fc-note{margin:12px 0 0;color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold)}
 
 .fc-more{
   display:inline-block;margin-top:12px;
-  color:var(--brand);font-size:13.5px;font-weight:800;
+  color:var(--brand);font-size:var(--fs-lg);font-weight:var(--fw-heavy);
 }
 .fc-more:hover{color:var(--brand-ink)}
 
@@ -37,9 +37,9 @@
   display:flex;flex-direction:column;gap:4px;
   padding:15px 17px;border:1px solid var(--rule);border-radius:14px;background:var(--surface-2);
 }
-.fc-metrics dt{color:var(--muted);font-size:12.5px;font-weight:700}
-.fc-metrics dd{margin:0;color:#0e1330;font-size:26px;font-weight:850;letter-spacing:-.03em}
-.fc-metrics small{color:var(--muted);font-size:12.5px;font-weight:700}
+.fc-metrics dt{color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold)}
+.fc-metrics dd{margin:0;color:#0e1330;font-size:var(--fs-6xl);font-weight:var(--fw-black);letter-spacing:-.03em}
+.fc-metrics small{color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold)}
 
 /* ── 분포 줄 ───────────────────────────────────────── */
 .fc-dist{
@@ -50,8 +50,8 @@
   display:flex;flex-direction:column;gap:3px;
   padding:14px 16px;border:1px solid var(--rule);border-radius:14px;background:var(--surface-2);
 }
-.fc-dist b{color:#0e1330;font-size:22px;font-weight:850;letter-spacing:-.03em}
-.fc-dist span{color:var(--muted);font-size:12.5px;font-weight:700}
+.fc-dist b{color:#0e1330;font-size:var(--fs-4xl);font-weight:var(--fw-black);letter-spacing:-.03em}
+.fc-dist span{color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold)}
 .fc-dist .up{color:var(--up)}
 .fc-dist .down{color:var(--down)}
 

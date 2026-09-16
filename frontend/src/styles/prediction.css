@@ -16,7 +16,7 @@
 .pred-status{
   display:inline-flex;align-items:center;flex:none;
   padding:2px 8px;border-radius:999px;
-  font-size:11px;font-weight:700;white-space:nowrap;
+  font-size:var(--fs-2xs);font-weight:var(--fw-bold);white-space:nowrap;
   background:var(--surface-2);color:var(--muted);
 }
 .pred-status.is-hit{background:#0a7f3d;color:#fff}

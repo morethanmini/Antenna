@@ -11,21 +11,21 @@
 .st-dim{color:var(--muted)}
 
 /* ── 머리 ───────────────────────────────────────────── */
-.st-crumb{display:flex;align-items:center;gap:9px;color:#8a93ad;font-size:13.5px;font-weight:700}
+.st-crumb{display:flex;align-items:center;gap:9px;color:#8a93ad;font-size:var(--fs-lg);font-weight:var(--fw-bold)}
 .st-crumb a:hover{color:var(--brand)}
 .st-crumb i{font-style:normal;color:#c2c8da}
 
 .st-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
 .st-head h1{
-  margin:0;color:#0e1330;font-size:26px;font-weight:850;letter-spacing:-.03em;
+  margin:0;color:var(--ink);
   text-wrap:balance;
 }
-.st-head p{margin:3px 0 0;color:var(--muted);font-size:13.5px;font-weight:700}
+.st-head p{margin:3px 0 0;color:var(--muted);font-size:var(--fs-lg);font-weight:var(--fw-bold)}
 
 .st-acts{display:flex;align-items:center;gap:8px}
 .st-go,.st-back{
   display:inline-flex;align-items:center;height:38px;padding:0 16px;
-  border-radius:11px;font-size:14px;font-weight:800;
+  border-radius:11px;font-size:var(--fs-lg);font-weight:var(--fw-heavy);
   transition:background .14s,border-color .14s;
 }
 .st-go{background:var(--brand);color:#fff}
@@ -41,12 +41,12 @@
   background:var(--surface);box-shadow:var(--shadow);
 }
 .st-stat-txt{display:flex;flex-direction:column;gap:3px;min-width:0}
-.st-stat-label{color:var(--muted);font-size:12.5px;font-weight:700}
+.st-stat-label{color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold)}
 .st-stat-val{
-  color:#0e1330;font-size:21px;font-weight:850;letter-spacing:-.025em;
+  color:#0e1330;font-size:var(--fs-4xl);font-weight:var(--fw-black);letter-spacing:-.025em;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.st-stat-sub{font-size:12px;font-weight:750;color:var(--muted)}
+.st-stat-sub{font-size:var(--fs-sm);font-weight:var(--fw-bold);color:var(--muted)}
 .st-stat-ico{
   flex:none;display:grid;place-items:center;width:38px;height:38px;
   border-radius:11px;background:var(--tint);color:var(--tone);
@@ -71,7 +71,7 @@
 .st-sides{display:flex;gap:6px}
 .st-sides button{
   height:34px;padding:0 15px;border:1px solid var(--rule);border-radius:9px;
-  color:var(--muted);font-size:13px;font-weight:750;
+  color:var(--muted);font-size:var(--fs-base);font-weight:var(--fw-bold);
   transition:border-color .12s,background .12s,color .12s;
 }
 .st-sides button:hover{border-color:var(--brand)}
@@ -89,18 +89,18 @@
 .st-pick select{
   appearance:none;border:0;background:transparent;outline:none;
   height:100%;padding:0 30px 0 13px;
-  max-width:200px;color:var(--ink);font-size:13px;font-weight:750;
+  max-width:200px;color:var(--ink);font-size:var(--fs-base);font-weight:var(--fw-bold);
   font-family:inherit;cursor:pointer;
 }
 /* 화살표는 겹쳐 둔다. 흐름에 넣으면 select 폭이 글자 길이에 따라 흔들린다 */
 .st-pick i{
   position:absolute;right:11px;pointer-events:none;
-  color:var(--muted);font-size:13px;line-height:1;font-style:normal;
+  color:var(--muted);font-size:var(--fs-base);line-height:1;font-style:normal;
 }
 
 .st-count{
   margin:0 0 0 auto;padding:5px 11px;border-radius:999px;
-  background:var(--surface-2);color:var(--muted);font-size:12.5px;font-weight:750;
+  background:var(--surface-2);color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold);
 }
 /* 걸러졌을 때만 전체 건수를 함께 적는다 — 몇 건이 숨었는지 알아야 한다 */
 .st-count span{color:var(--faint)}
@@ -120,33 +120,33 @@
 .st-row-head{
   padding:0 13px 2px;background:none;
 }
-.st-row-head span{color:var(--faint);font-size:11.5px;font-weight:750}
+.st-row-head span{color:var(--faint);font-size:var(--fs-xs);font-weight:var(--fw-bold)}
 
-.st-day{color:var(--brand-ink);font-size:12.5px;font-weight:800}
+.st-day{color:var(--brand-ink);font-size:var(--fs-md);font-weight:var(--fw-heavy)}
 .st-side{
   justify-self:start;padding:3px 9px;border-radius:6px;
-  background:var(--surface);font-size:11.5px;font-weight:800;
+  background:var(--surface);font-size:var(--fs-xs);font-weight:var(--fw-heavy);
 }
 .st-side.buy{color:var(--up-vivid)}
 .st-side.sell{color:var(--down-vivid)}
 
 .st-list b{
-  color:var(--ink);font-size:13.5px;font-weight:800;
+  color:var(--ink);font-size:var(--fs-lg);font-weight:var(--fw-heavy);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.st-list span{color:var(--muted);font-size:12.5px;font-weight:750}
-.st-amt{color:var(--body);font-weight:800}
-.st-pnl{font-weight:850}
+.st-list span{color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold)}
+.st-amt{color:var(--body);font-weight:var(--fw-heavy)}
+.st-pnl{font-weight:var(--fw-black)}
 
 .st-empty{
   margin:0;padding:40px 20px;text-align:center;
-  color:var(--muted);font-size:13.5px;font-weight:700;
+  color:var(--muted);font-size:var(--fs-lg);font-weight:var(--fw-bold);
 }
-.st-empty small{display:block;margin-top:6px;color:var(--faint);font-size:12px;font-weight:650}
+.st-empty small{display:block;margin-top:6px;color:var(--faint);font-size:var(--fs-sm);font-weight:var(--fw-bold)}
 
 .st-note{
   margin:12px 0 0;padding-top:12px;border-top:1px solid #eef0f6;
-  color:var(--muted);font-size:12px;font-weight:650;line-height:1.6;
+  color:var(--muted);font-size:var(--fs-sm);font-weight:var(--fw-bold);line-height:1.6;
 }
 
 /* ── 좁은 화면 ──────────────────────────────────────── */
@@ -161,7 +161,7 @@
 }
 @media(max-width:560px){
   .st-stats{grid-template-columns:minmax(0,1fr)}
-  .st-head h1{font-size:22px}
+  .st-head h1{font-size:var(--fs-title)}
   .st-count{margin-left:0}
 }
 @media(prefers-reduced-motion:reduce){

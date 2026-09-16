@@ -9,12 +9,12 @@
   display:inline-flex; align-items:center; gap:4px;
   margin-bottom:12px; padding:0;
   border:0; background:none; cursor:pointer;
-  font:inherit; font-size:13px; font-weight:600; color:var(--muted);
+  font:inherit; font-size:var(--fs-base); font-weight:var(--fw-normal); color:var(--muted);
   text-decoration:none;
 }
 .vf-back:hover{ color:var(--brand-ink); }
 
-.vf-loading{ margin:24px 0; font-size:13.5px; color:var(--muted); }
+.vf-loading{ margin:24px 0; font-size:var(--fs-lg); color:var(--muted); }
 
 /* ── 무엇을 검산하는가 ─────────────────────────────── */
 .vf-subject{
@@ -22,13 +22,13 @@
   background:var(--surface); border:1px solid var(--rule); border-radius:12px;
 }
 .vf-subject-main{ display:flex; align-items:baseline; flex-wrap:wrap; gap:9px; }
-.vf-subject-code{ font-size:16px; font-weight:800; color:var(--ink); }
-.vf-dir{ font-size:12px; font-weight:800; padding:2px 8px; border-radius:999px; }
+.vf-subject-code{ font-size:var(--fs-2xl); font-weight:var(--fw-heavy); color:var(--ink); }
+.vf-dir{ font-size:var(--fs-sm); font-weight:var(--fw-heavy); padding:2px 8px; border-radius:999px; }
 .vf-dir.is-up{ background:#fdeceb; color:var(--up); }
 .vf-dir.is-down{ background:#e9f0ff; color:var(--down); }
-.vf-subject-target{ font-size:14.5px; font-weight:700; color:var(--body); }
-.vf-subject-h{ font-size:12.5px; color:var(--muted); }
-.vf-subject-sub{ margin:6px 0 0; font-size:12px; color:var(--faint); }
+.vf-subject-target{ font-size:var(--fs-lg); font-weight:var(--fw-bold); color:var(--body); }
+.vf-subject-h{ font-size:var(--fs-md); color:var(--muted); }
+.vf-subject-sub{ margin:6px 0 0; font-size:var(--fs-sm); color:var(--faint); }
 
 /* ── 단계 카드 ───────────────────────────────────── */
 .vf-step{
@@ -47,22 +47,22 @@
   display:grid; place-items:center;
   border-radius:999px;
   background:var(--brand-soft); color:var(--brand-ink);
-  font-size:12.5px; font-weight:800;
+  font-size:var(--fs-md); font-weight:var(--fw-heavy);
 }
-.vf-step-title h2{ margin:0; font-size:15px; font-weight:800; color:var(--ink); letter-spacing:-.01em; }
+.vf-step-title h2{ margin:0; font-size:var(--fs-xl); font-weight:var(--fw-heavy); color:var(--ink); letter-spacing:-.01em; }
 .vf-formula{
   display:inline-block; margin-top:4px;
-  font-family:var(--mono); font-size:11.5px; color:var(--muted);
+  font-family:var(--mono); font-size:var(--fs-xs); color:var(--muted);
   background:var(--surface-2); padding:2px 7px; border-radius:5px;
 }
 .vf-step-body{ margin-top:12px; }
 
-.vf-lead{ margin:0 0 12px; font-size:13px; line-height:1.65; color:var(--body); }
+.vf-lead{ margin:0 0 12px; font-size:var(--fs-base); line-height:1.65; color:var(--body); }
 
 /* ── 검산 결과 줄 ──────────────────────────────────── */
 .vf-checks{ margin:0 0 13px; padding:0; list-style:none; display:flex; flex-direction:column; gap:8px; }
 
-.vf-check{ display:flex; align-items:flex-start; gap:9px; font-size:13px; }
+.vf-check{ display:flex; align-items:flex-start; gap:9px; font-size:var(--fs-base); }
 .vf-check-mark{
   flex:0 0 auto;
   width:20px; height:20px; margin-top:1px;
@@ -76,11 +76,11 @@
 .vf-check.is-locked .vf-check-mark{ background:var(--surface-2); color:var(--muted); }
 
 .vf-check-body{ min-width:0; }
-.vf-check-body b{ display:block; font-weight:700; color:var(--ink); line-height:1.5; }
+.vf-check-body b{ display:block; font-weight:var(--fw-bold); color:var(--ink); line-height:1.5; }
 .vf-check.is-fail .vf-check-body b{ color:var(--danger); }
 .vf-check-detail{
   display:flex; align-items:center; flex-wrap:wrap; gap:5px;
-  margin-top:3px; font-size:12px; line-height:1.6; color:var(--muted);
+  margin-top:3px; font-size:var(--fs-sm); line-height:1.6; color:var(--muted);
 }
 
 .vf-check-error{ list-style:none; }
@@ -88,7 +88,7 @@
 .vf-warn{
   margin:0 0 13px; padding:10px 12px;
   border:1px solid #f3c9c9; border-radius:9px; background:#fdf4f4;
-  font-size:12.5px; line-height:1.6; color:var(--danger);
+  font-size:var(--fs-md); line-height:1.6; color:var(--danger);
 }
 
 /* ── ① 다시 만든 커밋 문자열 ─────────────────────────
@@ -98,7 +98,7 @@
 .vf-preimage{
   margin:0 0 13px; padding:12px 14px; overflow-x:auto;
   border:1px solid var(--rule); border-radius:10px; background:var(--surface-2);
-  font-family:var(--mono); font-size:11.5px; line-height:1.75; color:var(--body);
+  font-family:var(--mono); font-size:var(--fs-xs); line-height:1.75; color:var(--body);
 }
 
 /* ── 재료 표 ─────────────────────────────────────── */
@@ -108,36 +108,36 @@
   display:flex; flex-direction:column; gap:8px;
 }
 .vf-fields > div{ display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
-.vf-fields dt{ flex:0 0 74px; font-size:12px; color:var(--muted); }
-.vf-fields dd{ margin:0; display:flex; align-items:center; flex-wrap:wrap; gap:7px; font-size:13px; color:var(--body); }
-.vf-none{ font-size:12.5px; color:var(--faint); }
-.vf-chain{ font-size:11.5px; color:var(--faint); }
-.vf-link{ font-weight:700; color:var(--brand-ink); text-decoration:none; }
+.vf-fields dt{ flex:0 0 74px; font-size:var(--fs-sm); color:var(--muted); }
+.vf-fields dd{ margin:0; display:flex; align-items:center; flex-wrap:wrap; gap:7px; font-size:var(--fs-base); color:var(--body); }
+.vf-none{ font-size:var(--fs-md); color:var(--faint); }
+.vf-chain{ font-size:var(--fs-xs); color:var(--faint); }
+.vf-link{ font-weight:var(--fw-bold); color:var(--brand-ink); text-decoration:none; }
 .vf-link:hover{ text-decoration:underline; }
 
 /* ── ③ 판정 ─────────────────────────────────────── */
 .vf-settle{ display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:13px; }
 .vf-settle-badge{
   flex:0 0 auto; padding:3px 10px; border-radius:999px;
-  font-size:11.5px; font-weight:800;
+  font-size:var(--fs-xs); font-weight:var(--fw-heavy);
 }
 .vf-settle-badge.is-hit{ background:#e7f5ec; color:#15803d; }
 .vf-settle-badge.is-miss{ background:var(--surface-2); color:var(--muted); }
 .vf-settle-nums{ margin:0; display:flex; flex-wrap:wrap; gap:6px 20px; }
 .vf-settle-nums > div{ display:flex; flex-direction:column; gap:2px; }
-.vf-settle-nums dt{ font-size:11.5px; color:var(--muted); }
-.vf-settle-nums dd{ margin:0; font-size:13.5px; font-weight:700; color:var(--ink); }
+.vf-settle-nums dt{ font-size:var(--fs-xs); color:var(--muted); }
+.vf-settle-nums dd{ margin:0; font-size:var(--fs-lg); font-weight:var(--fw-bold); color:var(--ink); }
 
 .vf-source{
   display:inline-flex; align-items:center; gap:6px;
   padding:8px 14px; border:1px solid var(--rule); border-radius:9px;
   background:var(--surface-2);
-  font-size:13px; font-weight:700; color:var(--brand-ink); text-decoration:none;
+  font-size:var(--fs-base); font-weight:var(--fw-bold); color:var(--brand-ink); text-decoration:none;
 }
 .vf-source:hover{ border-color:var(--brand-soft); background:var(--brand-softer); }
 
-.vf-hint{ margin:9px 0 0; font-size:12px; line-height:1.6; color:var(--muted); }
-.vf-hint code{ font-family:var(--mono); font-size:11.5px; background:var(--surface-2); padding:1px 5px; border-radius:4px; }
+.vf-hint{ margin:9px 0 0; font-size:var(--fs-sm); line-height:1.6; color:var(--muted); }
+.vf-hint code{ font-family:var(--mono); font-size:var(--fs-xs); background:var(--surface-2); padding:1px 5px; border-radius:4px; }
 
 @media (max-width:640px){
   .vf-step{ padding:14px 14px 16px; }
@@ -158,21 +158,21 @@
   display:flex; flex-direction:column; gap:5px;
   margin:0 0 14px; padding:13px 15px;
   border:1px solid var(--rule); border-radius:10px; background:var(--brand-softer);
-  font-size:12.5px; line-height:1.65; color:var(--body);
+  font-size:var(--fs-md); line-height:1.65; color:var(--body);
 }
 .vf-note b{ color:var(--ink); }
 
 .vf-subject-badges{ display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
 
 .vf-seal-raw{ margin:0 0 13px; }
-.vf-seal-raw summary{ cursor:pointer; font-size:12.5px; font-weight:600; color:var(--muted); }
+.vf-seal-raw summary{ cursor:pointer; font-size:var(--fs-md); font-weight:var(--fw-normal); color:var(--muted); }
 .vf-seal-raw summary:hover{ color:var(--brand-ink); }
 .vf-seal-raw .vf-preimage{ margin-top:9px; }
 
 .vf-seal-retry{
   margin-top:10px; padding:8px 14px;
   border:1px solid var(--rule); border-radius:8px; background:var(--surface);
-  font-family:inherit; font-size:12.5px; font-weight:600; color:var(--body);
+  font-family:inherit; font-size:var(--fs-md); font-weight:var(--fw-normal); color:var(--body);
   cursor:pointer;
 }
 .vf-seal-retry:hover{ border-color:var(--brand); color:var(--brand-ink); }

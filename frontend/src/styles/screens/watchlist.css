@@ -23,11 +23,10 @@
   margin:0 0 18px;
 }
 .watchlist-page .wl-head h1{
-  margin:0 0 5px;font-size:24px;line-height:1.2;
-  font-weight:750;letter-spacing:-.03em;color:var(--ink);
+  margin:0 0 5px;line-height:1.2;color:var(--ink);
 }
 .watchlist-page .wl-head p{
-  margin:0;color:var(--muted);font-size:13px;line-height:1.6;word-break:keep-all;
+  margin:0;color:var(--muted);font-size:var(--fs-base);line-height:1.6;word-break:keep-all;
 }
 
 /* 담은 개수. 서버가 전량을 내리므로 이 숫자는 페이지가 아니라 전체다 */
@@ -36,9 +35,9 @@
   margin:0;padding:0 0 0 20px;border-left:1px solid var(--rule);
 }
 .watchlist-page .wl-count b{
-  font-size:26px;line-height:1.15;font-weight:800;letter-spacing:-.03em;color:var(--ink);
+  font-size:var(--fs-6xl);line-height:1.15;font-weight:var(--fw-heavy);letter-spacing:-.03em;color:var(--ink);
 }
-.watchlist-page .wl-count span{color:var(--faint);font-size:11.5px}
+.watchlist-page .wl-count span{color:var(--faint);font-size:var(--fs-xs)}
 
 /* ── 목록 ────────────────────────────────────────────────
    한 줄에 종목 · 미니차트 · 전일 종가 · 등락률 · 예측 · 관심 해제.
@@ -64,10 +63,10 @@
   display:flex;flex-direction:column;gap:1px;min-width:0;border-radius:7px;
 }
 .watchlist-page .wl-stock b{
-  font-size:13.5px;font-weight:750;color:var(--ink);
+  font-size:var(--fs-lg);font-weight:var(--fw-bold);color:var(--ink);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.watchlist-page .wl-stock span{color:var(--faint);font-size:11px}
+.watchlist-page .wl-stock span{color:var(--faint);font-size:var(--fs-2xs)}
 .watchlist-page .wl-stock:hover b{color:var(--brand);text-decoration:underline}
 .watchlist-page .wl-stock:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 
@@ -76,10 +75,10 @@
 .watchlist-page .wl-spark{display:flex;align-items:center;height:30px}
 
 .watchlist-page .wl-close{
-  text-align:right;font-size:13.5px;font-weight:700;color:var(--ink);
+  text-align:right;font-size:var(--fs-lg);font-weight:var(--fw-bold);color:var(--ink);
 }
 .watchlist-page .wl-rate{
-  text-align:right;font-size:13px;font-weight:750;color:var(--faint);
+  text-align:right;font-size:var(--fs-base);font-weight:var(--fw-bold);color:var(--faint);
 }
 .watchlist-page .wl-rate.up{color:var(--up)}
 .watchlist-page .wl-rate.down{color:var(--down)}
@@ -90,7 +89,7 @@
   display:inline-flex;align-items:center;justify-content:center;
   height:28px;border-radius:8px;
   background:var(--brand-softer);color:var(--brand-ink);
-  font-size:12px;font-weight:750;
+  font-size:var(--fs-sm);font-weight:var(--fw-bold);
   transition:background .14s;
 }
 .watchlist-page .wl-predict:hover{background:var(--brand-soft)}

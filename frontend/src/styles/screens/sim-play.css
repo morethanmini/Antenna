@@ -5,16 +5,16 @@
 .sim-play{display:flex;flex-direction:column;gap:14px;word-break:keep-all}
 
 /* ── 머리 ───────────────────────────────────────────── */
-.sp-crumb{display:flex;align-items:center;gap:9px;color:#8a93ad;font-size:13.5px;font-weight:700}
+.sp-crumb{display:flex;align-items:center;gap:9px;color:#8a93ad;font-size:var(--fs-lg);font-weight:var(--fw-bold)}
 .sp-crumb a:hover{color:var(--brand)}
 .sp-crumb i{font-style:normal;color:#c2c8da}
 
 .sp-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
 .sp-title h1{
-  margin:0;color:#0e1330;font-size:26px;font-weight:850;letter-spacing:-.03em;
+  margin:0;color:var(--ink);
   text-wrap:balance;
 }
-.sp-title p{margin:3px 0 0;color:var(--muted);font-size:13px;font-weight:700}
+.sp-title p{margin:3px 0 0;color:var(--muted);font-size:var(--fs-base);font-weight:var(--fw-bold)}
 
 /* 날짜를 쓰지 않는다 — 시즌 가격에 실제 날짜가 없다(ERD). DAY n 만 센다.
    프로토타입의 날짜 배지 자리를 그대로 쓰되 안의 내용만 바꾼 것이다. */
@@ -23,14 +23,14 @@
   display:inline-flex;align-items:center;gap:7px;
   height:34px;padding:0 14px;border-radius:10px;
   border:1px solid var(--brand-soft);background:var(--brand-softer);
-  color:var(--brand-ink);font-size:14px;font-weight:850;
+  color:var(--brand-ink);font-size:var(--fs-lg);font-weight:var(--fw-black);
 }
 .sp-bar{
   position:relative;display:block;width:120px;height:6px;
   border-radius:999px;background:var(--surface-2);overflow:hidden;
 }
 .sp-bar i{position:absolute;inset:0 auto 0 0;background:var(--brand);border-radius:999px}
-.sp-dayof{color:var(--muted);font-size:13px;font-weight:750}
+.sp-dayof{color:var(--muted);font-size:var(--fs-base);font-weight:var(--fw-bold)}
 
 /* ── 지표 4칸 ───────────────────────────────────────── */
 /* 프로토타입 상단 4칸. 값이 크고 라벨이 작아야 눈이 값부터 잡는다 —
@@ -42,12 +42,12 @@
   background:var(--surface);box-shadow:var(--shadow);
 }
 .sp-stat-txt{display:flex;flex-direction:column;gap:3px;min-width:0}
-.sp-stat-label{color:var(--muted);font-size:12.5px;font-weight:700}
+.sp-stat-label{color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold)}
 .sp-stat-val{
-  color:#0e1330;font-size:21px;font-weight:850;letter-spacing:-.025em;
+  color:#0e1330;font-size:var(--fs-4xl);font-weight:var(--fw-black);letter-spacing:-.025em;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.sp-stat-sub{font-size:12px;font-weight:750;color:var(--muted)}
+.sp-stat-sub{font-size:var(--fs-sm);font-weight:var(--fw-bold);color:var(--muted)}
 
 /* 아이콘 배지. 칸마다 색이 달라야 네 칸이 한 덩어리로 뭉개지지 않는다 */
 .sp-stat-ico{
@@ -83,7 +83,7 @@
 }
 .sp-card h2{
   display:flex;align-items:center;gap:8px;margin:0 0 12px;
-  color:var(--ink);font-size:15px;font-weight:800;letter-spacing:-.02em;
+  color:var(--ink);font-size:var(--fs-xl);font-weight:var(--fw-heavy);letter-spacing:-.02em;
 }
 .sp-h-ico{
   flex:none;display:grid;place-items:center;width:26px;height:26px;
@@ -93,7 +93,7 @@
 
 /* 카드 제목 오른쪽 끝에 붙는 작은 길 */
 .sp-h-link{
-  margin-left:auto;color:var(--brand-ink);font-size:12.5px;font-weight:750;
+  margin-left:auto;color:var(--brand-ink);font-size:var(--fs-md);font-weight:var(--fw-bold);
 }
 .sp-h-link:hover{text-decoration:underline}
 .sp-h-ico.t-ai{--tone:#5457e8;--tint:#ece9fd}
@@ -122,16 +122,16 @@
   transition:background .12s;
 }
 .sp-tpick:hover{background:var(--surface-2)}
-.sp-tpick i{flex:none;color:var(--muted);font-size:14px;line-height:1;font-style:normal}
+.sp-tpick i{flex:none;color:var(--muted);font-size:var(--fs-lg);line-height:1;font-style:normal}
 .sp-tname b{
-  color:#0e1330;font-size:21px;font-weight:850;letter-spacing:-.02em;
+  color:#0e1330;font-size:var(--fs-4xl);font-weight:var(--fw-black);letter-spacing:-.02em;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.sp-tname strong{color:#0e1330;font-size:24px;font-weight:850;letter-spacing:-.025em}
-.sp-diff{font-size:14.5px;font-weight:800}
+.sp-tname strong{color:#0e1330;font-size:var(--fs-5xl);font-weight:var(--fw-black);letter-spacing:-.025em}
+.sp-diff{font-size:var(--fs-lg);font-weight:var(--fw-heavy)}
 .sp-sector{
   flex:none;align-self:center;padding:3px 9px;border-radius:999px;
-  background:var(--surface-2);color:var(--muted);font-size:11.5px;font-weight:700;
+  background:var(--surface-2);color:var(--muted);font-size:var(--fs-xs);font-weight:var(--fw-bold);
 }
 
 .sp-tools{flex:none;display:flex;align-items:center;gap:7px}
@@ -139,16 +139,16 @@
 .sp-indbtn{
   flex:none;display:inline-flex;align-items:center;gap:7px;
   height:34px;padding:0 13px;border:1px solid var(--rule);border-radius:10px;
-  color:var(--brand-ink);font-size:13px;font-weight:750;
+  color:var(--brand-ink);font-size:var(--fs-base);font-weight:var(--fw-bold);
   transition:border-color .12s,background .12s;
 }
 .sp-indbtn:hover{border-color:var(--brand);background:var(--brand-softer)}
 .sp-indbtn span{
   padding:1px 7px;border-radius:999px;
-  background:var(--surface-2);color:var(--muted);font-size:11.5px;
+  background:var(--surface-2);color:var(--muted);font-size:var(--fs-xs);
 }
 .sp-indbtn.on{border-color:var(--brand);background:var(--brand-softer)}
-.sp-indbtn i{font-style:normal;font-size:13px;line-height:1}
+.sp-indbtn i{font-style:normal;font-size:var(--fs-base);line-height:1}
 
 /* 지표 목록. 접어 두는 이유는 차트 위 두 줄을 아끼려는 것이다 —
    지표를 바꾸는 일은 종목을 바꾸는 것보다도 드물다.
@@ -164,7 +164,7 @@
 .sp-indpop button{
   display:flex;align-items:center;gap:9px;
   padding:8px 10px;border-radius:8px;
-  color:var(--body);font-size:13px;font-weight:750;text-align:left;
+  color:var(--body);font-size:var(--fs-base);font-weight:var(--fw-bold);text-align:left;
   transition:background .12s,color .12s;
 }
 .sp-indpop button:hover{background:var(--surface-2)}
@@ -191,10 +191,10 @@
    구분선을 두지 않는다. 라벨이 이미 회색이라 경계 노릇을 한다. */
 .sp-ohlc{display:flex;flex-wrap:wrap;gap:4px 20px;margin:0 0 7px}
 .sp-ohlc > div{display:flex;align-items:baseline;gap:7px}
-.sp-ohlc dt{color:var(--muted);font-size:12.5px;font-weight:700}
-.sp-ohlc dd{margin:0;color:var(--body);font-size:13.5px;font-weight:750}
+.sp-ohlc dt{color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold)}
+.sp-ohlc dd{margin:0;color:var(--body);font-size:var(--fs-lg);font-weight:var(--fw-bold)}
 
-.sp-state,.sp-hint{margin:8px 0 0;color:var(--muted);font-size:12.5px;font-weight:650}
+.sp-state,.sp-hint{margin:8px 0 0;color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold)}
 .sp-hint{color:#8a7a3c}
 
 /* ── 캔들 차트 (CandleChart) ────────────────────────── */
@@ -209,12 +209,12 @@
 .ck-legend i{
   display:block;width:14px;height:2.5px;border-radius:2px;flex:none;
 }
-.ck-legend span{color:var(--muted);font-size:11.5px;font-weight:750}
-.ck-legend b{color:var(--body);font-size:12px;font-weight:750}
+.ck-legend span{color:var(--muted);font-size:var(--fs-xs);font-weight:var(--fw-bold)}
+.ck-legend b{color:var(--body);font-size:var(--fs-sm);font-weight:var(--fw-bold)}
 .ck-svg{display:block;width:100%;outline:none}
 .ck-svg:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:8px}
 .ck-empty{
-  padding:40px 0;text-align:center;color:var(--muted);font-size:13px;font-weight:650;
+  padding:40px 0;text-align:center;color:var(--muted);font-size:var(--fs-base);font-weight:var(--fw-bold);
 }
 
 /* 플레이 구간에만 밝은 바닥을 깐다. 왼쪽이 워밍업이라는 걸 이 경계가 말해 준다 */
@@ -233,17 +233,17 @@
 .ck-band path{fill:none;stroke:#9aa1b8;stroke-width:1;stroke-dasharray:4 3;opacity:.7}
 
 .ck-cursor{stroke:#6b7291;stroke-width:1;stroke-dasharray:3 3}
-.ck-axis text{fill:#8a93ad;font-size:11px;font-weight:700}
+.ck-axis text{fill:#8a93ad;font-size:var(--fs-2xs);font-weight:var(--fw-bold)}
 
 /* 값은 차트 아래 줄에 둔다 — 숫자가 봉을 가리지 않게. 비어 있어도 자리를 지켜
    화면이 튀지 않는다. CloseChart 와 같은 규칙이다. */
 .ck-readout{
   display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;
   min-height:17px;margin:4px 0 0;
-  color:var(--muted);font-size:12.5px;font-weight:650;
+  color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold);
 }
-.ck-ro-day{color:var(--brand-ink);font-weight:800}
-.ck-readout b{color:var(--ink);font-weight:800}
+.ck-ro-day{color:var(--brand-ink);font-weight:var(--fw-heavy)}
+.ck-readout b{color:var(--ink);font-weight:var(--fw-heavy)}
 .ck-ro-idle{color:#a8afc2}
 
 /* ── RSI 패널 (IndicatorPane) ──────────────────────── */
@@ -254,22 +254,22 @@
 
 .ip-head{
   display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin:0 0 2px;
-  color:var(--muted);font-size:11.5px;font-weight:700;
+  color:var(--muted);font-size:var(--fs-xs);font-weight:var(--fw-bold);
 }
-.ip-head b{color:var(--body);font-size:12px;font-weight:800}
+.ip-head b{color:var(--body);font-size:var(--fs-sm);font-weight:var(--fw-heavy)}
 .ip-state{color:#a8afc2}
 
 /* 기준선. RSI 는 70·30 을 넘나드는 걸 보는 지표라 이 선들이 없으면
    곡선만 남아 읽을 수 없다. */
 .ip-guide{stroke:#e3e6ef;stroke-width:1;stroke-dasharray:3 3}
 .ip-mid{stroke:#c8cddc;stroke-width:1}
-.ip-axis{fill:#a8afc2;font-size:10px;font-weight:700}
+.ip-axis{fill:#a8afc2;font-size:var(--fs-3xs);font-weight:var(--fw-bold)}
 
 .ip-rsi{fill:none;stroke:#7b61ff;stroke-width:1.4}
 
 .ip-empty{
   margin:0;padding:14px 0;text-align:center;
-  color:var(--muted);font-size:12px;font-weight:650;
+  color:var(--muted);font-size:var(--fs-sm);font-weight:var(--fw-bold);
 }
 .ip-empty span{color:#a8afc2}
 
@@ -282,7 +282,7 @@
 .sp-sides{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:13px}
 .sp-sides button{
   height:38px;border:1px solid var(--rule);border-radius:10px;
-  color:var(--muted);font-size:14px;font-weight:800;
+  color:var(--muted);font-size:var(--fs-lg);font-weight:var(--fw-heavy);
   transition:border-color .12s,background .12s,color .12s;
 }
 .sp-sides .buy.on{border-color:var(--up-vivid);background:#fdf0ef;color:var(--up-vivid)}
@@ -293,12 +293,12 @@
   display:flex;align-items:baseline;justify-content:space-between;gap:10px;
   margin-bottom:11px;
 }
-.sp-fixed span{color:var(--muted);font-size:12.5px;font-weight:700}
-.sp-fixed b{color:var(--body);font-size:13px;font-weight:800}
+.sp-fixed span{color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold)}
+.sp-fixed b{color:var(--body);font-size:var(--fs-base);font-weight:var(--fw-heavy)}
 
 /* 수량 줄. 라벨은 왼쪽, 스테퍼는 오른쪽 — 프로토타입과 같은 배치다 */
 .sp-qty-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.sp-qty-row > span{flex:none;color:var(--muted);font-size:12.5px;font-weight:700}
+.sp-qty-row > span{flex:none;color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold)}
 
 .sp-stepper{
   display:flex;align-items:center;height:42px;
@@ -308,26 +308,26 @@
 .sp-stepper:focus-within{border-color:var(--brand)}
 .sp-stepper > button{
   flex:none;width:36px;height:100%;
-  color:var(--body);font-size:17px;font-weight:800;line-height:1;
+  color:var(--body);font-size:var(--fs-2xl);font-weight:var(--fw-heavy);line-height:1;
   transition:background .12s,color .12s;
 }
 .sp-stepper > button:hover:not(:disabled){background:var(--surface-2);color:var(--brand-ink)}
 .sp-stepper > button:disabled{color:#cfd4e2;cursor:default}
 .sp-stepper input{
   width:76px;min-width:0;border:0;background:transparent;outline:none;
-  color:var(--ink);font-size:16px;font-weight:800;text-align:right;
+  color:var(--ink);font-size:var(--fs-2xl);font-weight:var(--fw-heavy);text-align:right;
   font-variant-numeric:tabular-nums;
 }
 /* 숫자 입력의 위아래 화살표를 없앤다 — 양옆 −·+ 가 그 일을 한다 */
 .sp-stepper input::-webkit-outer-spin-button,
 .sp-stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .sp-stepper input[type=number]{-moz-appearance:textfield;appearance:textfield}
-.sp-stepper i{flex:none;padding:0 7px 0 4px;font-style:normal;color:var(--muted);font-size:12.5px;font-weight:700}
+.sp-stepper i{flex:none;padding:0 7px 0 4px;font-style:normal;color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold)}
 
 .sp-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:9px 0 13px}
 .sp-steps button{
   height:32px;border:1px solid var(--rule);border-radius:8px;
-  color:var(--muted);font-size:12px;font-weight:750;
+  color:var(--muted);font-size:var(--fs-sm);font-weight:var(--fw-bold);
   transition:border-color .12s,color .12s;
 }
 .sp-steps button:hover:not(:disabled){border-color:var(--brand);color:var(--brand-ink)}
@@ -335,22 +335,22 @@
 
 .sp-amount{display:flex;flex-direction:column;gap:9px;margin:0 0 12px;padding-top:12px;border-top:1px solid var(--rule)}
 .sp-amount > div{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
-.sp-amount dt{color:var(--muted);font-size:12.5px;font-weight:700}
-.sp-amount dd{margin:0;color:var(--body);font-size:14px;font-weight:800;text-align:right}
-.sp-amount dd small{display:block;margin-top:2px;color:var(--muted);font-size:11.5px;font-weight:700}
+.sp-amount dt{color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold)}
+.sp-amount dd{margin:0;color:var(--body);font-size:var(--fs-lg);font-weight:var(--fw-heavy);text-align:right}
+.sp-amount dd small{display:block;margin-top:2px;color:var(--muted);font-size:var(--fs-xs);font-weight:var(--fw-bold)}
 /* 마지막 줄이 실제로 나갈 돈이다 — 위 줄들보다 크고 진하게 */
 .sp-amount .sp-total{padding-top:9px;border-top:1px dashed var(--rule)}
-.sp-amount .sp-total dt{color:var(--body);font-size:13px;font-weight:750}
-.sp-amount .sp-total dd{color:#0e1330;font-size:18px;font-weight:850;letter-spacing:-.02em}
+.sp-amount .sp-total dt{color:var(--body);font-size:var(--fs-base);font-weight:var(--fw-bold)}
+.sp-amount .sp-total dd{color:#0e1330;font-size:var(--fs-3xl);font-weight:var(--fw-black);letter-spacing:-.02em}
 
-.sp-reject{margin:0 0 10px;color:var(--down-vivid);font-size:12.5px;font-weight:750}
-.sp-filled{margin:0 0 10px;color:var(--up-vivid);font-size:12.5px;font-weight:750}
+.sp-reject{margin:0 0 10px;color:var(--down-vivid);font-size:var(--fs-md);font-weight:var(--fw-bold)}
+.sp-filled{margin:0 0 10px;color:var(--up-vivid);font-size:var(--fs-md);font-weight:var(--fw-bold)}
 
 /* 남는 높이를 여기서 먹는다. 주문 버튼 묶음이 카드 바닥에 붙고 빈 자리는
    금액 요약과 버튼 사이로 간다 — 버튼이 허공에 뜬 것처럼 보이지 않는다. */
 .sp-submit{
   width:100%;height:48px;margin-top:auto;border-radius:12px;flex:none;
-  color:#fff;font-size:15.5px;font-weight:800;letter-spacing:-.02em;
+  color:#fff;font-size:var(--fs-xl);font-weight:var(--fw-heavy);letter-spacing:-.02em;
   transition:background .14s,opacity .14s;
 }
 .sp-submit.buy{background:var(--up-vivid)}
@@ -361,7 +361,7 @@
   display:flex;align-items:center;justify-content:center;gap:8px;
   width:100%;height:44px;margin-top:8px;
   border:1px solid var(--brand);border-radius:12px;
-  color:var(--brand-ink);font-size:14.5px;font-weight:800;
+  color:var(--brand-ink);font-size:var(--fs-lg);font-weight:var(--fw-heavy);
   transition:background .14s,opacity .14s;
 }
 .sp-advance:hover:not(:disabled){background:var(--brand-softer)}
@@ -369,9 +369,9 @@
 /* 마지막 날. 진행이 끝났으니 여기가 다음 걸음이라 채운 버튼으로 둔다 */
 .sp-advance.is-done{background:var(--brand);border-color:var(--brand);color:#fff}
 .sp-advance.is-done:hover{background:var(--brand-ink)}
-.sp-advance em{font-style:normal;font-size:11px}
+.sp-advance em{font-style:normal;font-size:var(--fs-2xs)}
 
-.sp-note{margin:8px 0 0;color:var(--muted);font-size:11.5px;font-weight:650;text-align:center}
+.sp-note{margin:8px 0 0;color:var(--muted);font-size:var(--fs-xs);font-weight:var(--fw-bold);text-align:center}
 
 /* ── 왼쪽 · 포트폴리오 ──────────────────────────────── */
 /* 접지 않는다. 주문을 정하는 동안 늘 옆에 있어야 하는 그림이라 접이식일 이유가 없다.
@@ -403,13 +403,13 @@
 .sp-none{
   display:flex;flex-direction:column;align-items:center;gap:8px;
   margin:0;padding:44px 20px;text-align:center;
-  color:var(--body);font-size:14.5px;font-weight:700;
+  color:var(--body);font-size:var(--fs-lg);font-weight:var(--fw-bold);
 }
-.sp-none b{color:#0e1330;font-size:20px;font-weight:850;letter-spacing:-.02em}
-.sp-none small{color:var(--muted);font-size:12.5px;font-weight:650;line-height:1.55}
+.sp-none b{color:#0e1330;font-size:var(--fs-3xl);font-weight:var(--fw-black);letter-spacing:-.02em}
+.sp-none small{color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold);line-height:1.55}
 .sp-join{
   height:44px;margin-top:6px;padding:0 22px;border-radius:12px;
-  background:var(--brand);color:#fff;font-size:15px;font-weight:800;
+  background:var(--brand);color:#fff;font-size:var(--fs-xl);font-weight:var(--fw-heavy);
   transition:background .14s,opacity .14s;
 }
 .sp-join:hover:not(:disabled){background:var(--brand-ink)}
@@ -419,9 +419,9 @@
    빈 것인지 모른다. */
 .sp-empty{
   margin:12px 0 0;padding-top:12px;border-top:1px solid #eef0f6;
-  color:var(--muted);font-size:12.5px;font-weight:700;text-align:center;
+  color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold);text-align:center;
 }
-.sp-empty small{display:block;margin-top:4px;color:var(--faint);font-size:11.5px;font-weight:650}
+.sp-empty small{display:block;margin-top:4px;color:var(--faint);font-size:var(--fs-xs);font-weight:var(--fw-bold)}
 
 /* ── 아래 두 칸 (접이식) ────────────────────────────── */
 /* 빈 상자 둘이 펴져 있으면 화면을 차지하기만 한다. 접힌 줄에 무엇이 올 자리인지
@@ -435,7 +435,7 @@
 .sp-fold > summary{
   display:flex;align-items:center;gap:8px;
   min-height:54px;padding:0 18px;list-style:none;cursor:pointer;border-radius:16px;
-  color:var(--ink);font-size:15px;font-weight:800;letter-spacing:-.02em;
+  color:var(--ink);font-size:var(--fs-xl);font-weight:var(--fw-heavy);letter-spacing:-.02em;
 }
 .sp-fold > summary::-webkit-details-marker{display:none}
 .sp-fold > summary::marker{content:''}
@@ -444,11 +444,11 @@
 /* 접힌 줄의 한 마디. 제목보다 약하게 두어 제목이 먼저 읽히게 한다 */
 .sp-fold > summary em{
   flex:1;min-width:0;font-style:normal;
-  color:var(--faint);font-size:12.5px;font-weight:650;
+  color:var(--faint);font-size:var(--fs-md);font-weight:var(--fw-bold);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .sp-fold > summary i{
-  flex:none;color:var(--muted);font-size:15px;line-height:1;font-style:normal;
+  flex:none;color:var(--muted);font-size:var(--fs-xl);line-height:1;font-style:normal;
   transition:transform .15s;
 }
 .sp-fold[open] > summary i{transform:rotate(180deg)}
@@ -459,9 +459,9 @@
    규칙과도 엉킨다. 무엇이 올 자리인지와 어느 티켓인지만 적는다. */
 .sp-soon{
   margin:0;padding:20px;border:1px dashed var(--rule);border-radius:12px;
-  background:var(--surface-2);color:var(--muted);font-size:13px;line-height:1.6;font-weight:650;
+  background:var(--surface-2);color:var(--muted);font-size:var(--fs-base);line-height:1.6;font-weight:var(--fw-bold);
 }
-.sp-soon small{display:block;margin-top:6px;color:#a8afc2;font-family:var(--mono);font-size:11px}
+.sp-soon small{display:block;margin-top:6px;color:#a8afc2;font-family:var(--mono);font-size:var(--fs-2xs)}
 
 /* ── 종목 고르기 모달 ───────────────────────────────── */
 /* 규칙은 M-01 지갑 연동 모달과 같다 — z-index 60, 사이드바(40)·상단바(30) 위 */
@@ -484,10 +484,10 @@
   display:flex;align-items:center;justify-content:space-between;gap:12px;
   padding:16px 18px;border-bottom:1px solid var(--rule);
 }
-.tp-head h2{margin:0;color:var(--ink);font-size:16px;font-weight:850}
+.tp-head h2{margin:0;color:var(--ink);font-size:var(--fs-2xl);font-weight:var(--fw-black)}
 .tp-x{
   width:30px;height:30px;border-radius:8px;
-  color:var(--muted);font-size:20px;line-height:1;
+  color:var(--muted);font-size:var(--fs-3xl);line-height:1;
 }
 .tp-x:hover{background:var(--surface-2)}
 
@@ -500,7 +500,7 @@
 .tp-search svg{flex:none}
 .tp-search input{
   flex:1;min-width:0;border:0;background:transparent;outline:none;
-  color:var(--ink);font-size:14px;font-weight:650;
+  color:var(--ink);font-size:var(--fs-lg);font-weight:var(--fw-bold);
 }
 
 /* 업종. 칩으로 늘어놓으면 스무 개가 넘어 가로 스크롤이 생기고, 스크롤바가 검색칸
@@ -513,15 +513,15 @@
   color:var(--body);
 }
 .tp-pick:focus-within{border-color:var(--brand)}
-.tp-pick > span{flex:none;color:var(--muted);font-size:12px;font-weight:700}
+.tp-pick > span{flex:none;color:var(--muted);font-size:var(--fs-sm);font-weight:var(--fw-bold)}
 .tp-pick select{
   appearance:none;border:0;background:transparent;outline:none;padding-right:2px;
-  max-width:190px;color:var(--ink);font-size:13px;font-weight:750;
+  max-width:190px;color:var(--ink);font-size:var(--fs-base);font-weight:var(--fw-bold);
   font-family:inherit;cursor:pointer;
 }
-.tp-pick i{flex:none;color:var(--muted);font-size:13px;line-height:1;font-style:normal}
+.tp-pick i{flex:none;color:var(--muted);font-size:var(--fs-base);line-height:1;font-style:normal}
 
-.tp-count{margin:0;color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap}
+.tp-count{margin:0;color:var(--muted);font-size:var(--fs-sm);font-weight:var(--fw-bold);white-space:nowrap}
 
 .tp-list{
   flex:1;min-height:0;overflow-y:auto;
@@ -536,17 +536,17 @@
 .tp-row:hover{background:var(--surface-2)}
 .tp-row.on{background:var(--brand-softer)}
 .tp-row b{
-  color:var(--ink);font-size:14px;font-weight:800;
+  color:var(--ink);font-size:var(--fs-lg);font-weight:var(--fw-heavy);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.tp-sector{flex:none;color:var(--muted);font-size:11.5px;font-weight:700}
+.tp-sector{flex:none;color:var(--muted);font-size:var(--fs-xs);font-weight:var(--fw-bold)}
 .tp-held{
   flex:none;padding:2px 8px;border-radius:999px;
-  background:#e7f6ef;color:#17805a;font-size:11.5px;font-weight:800;
+  background:#e7f6ef;color:#17805a;font-size:var(--fs-xs);font-weight:var(--fw-heavy);
 }
-.tp-price{flex:none;min-width:78px;color:var(--body);font-size:13px;font-weight:750;text-align:right}
+.tp-price{flex:none;min-width:78px;color:var(--body);font-size:var(--fs-base);font-weight:var(--fw-bold);text-align:right}
 /* 목록 안에 둔다 — 바깥에 두면 목록 칸이 0 으로 줄면서 상자가 뛴다 */
-.tp-empty{padding:40px 18px;text-align:center;color:var(--muted);font-size:13px;font-weight:650}
+.tp-empty{padding:40px 18px;text-align:center;color:var(--muted);font-size:var(--fs-base);font-weight:var(--fw-bold)}
 
 /* ── 좁은 화면 ──────────────────────────────────────── */
 /* 좁아지면 포트폴리오를 차트 아래로 내린다 — 차트가 먼저 좁아지면 안 된다 */
@@ -573,7 +573,7 @@
   .sp-later{grid-template-columns:minmax(0,1fr)}
 }
 @media(max-width:760px){
-  .sp-head h1{font-size:22px}
+  .sp-head h1{font-size:var(--fs-title)}
   .sp-pie .pd{flex-direction:column;align-items:stretch;gap:12px}
   .sp-pie .pd-ring{margin:0 auto}
 }
@@ -589,13 +589,13 @@
   background:var(--surface);color:var(--body);box-shadow:var(--shadow);
 }
 .sp-dialog::backdrop{background:rgba(20,20,27,.38)}
-.sp-dialog h2{margin:0 0 10px;color:var(--ink);font-size:18px;font-weight:800;letter-spacing:-.02em}
-.sp-dialog p{margin:0 0 8px;font-size:14.5px;line-height:1.65}
-.sp-dialog small{display:block;color:var(--muted);font-size:12.5px;line-height:1.6}
+.sp-dialog h2{margin:0 0 10px;color:var(--ink);font-size:var(--fs-3xl);font-weight:var(--fw-heavy);letter-spacing:-.02em}
+.sp-dialog p{margin:0 0 8px;font-size:var(--fs-lg);line-height:1.65}
+.sp-dialog small{display:block;color:var(--muted);font-size:var(--fs-md);line-height:1.6}
 .sp-dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
 .sp-dialog-btn{
   padding:10px 16px;border:1px solid var(--rule);border-radius:10px;
-  background:var(--surface);color:var(--ink);font-size:14px;font-weight:750;
+  background:var(--surface);color:var(--ink);font-size:var(--fs-lg);font-weight:var(--fw-bold);
 }
 .sp-dialog-btn:hover{background:var(--surface-2)}
 .sp-dialog-btn.solid{border-color:var(--brand);background:var(--brand);color:#fff}
@@ -609,7 +609,7 @@
 
 /* ── 그날의 요약·소식 (ANT-SEASON-07) ───────────────── */
 /* 접힌 줄에 한 줄 요약과 건수를 띄우므로 펴 보지 않아도 뜻이 전해진다. */
-.sp-hint{margin:0;padding:0 0 0 18px;color:var(--ink);font-size:13.5px;line-height:1.7}
+.sp-hint{margin:0;padding:0 0 0 18px;color:var(--ink);font-size:var(--fs-lg);line-height:1.7}
 .sp-hint li{margin:0 0 6px}
 .sp-hint li:last-child{margin-bottom:0}
 
@@ -617,18 +617,18 @@
 .sp-news li{padding:0 0 12px;border-bottom:1px solid var(--rule)}
 .sp-news li:last-child{padding-bottom:0;border-bottom:none}
 .sp-news-head{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px}
-.sp-news-head a,.sp-news-head b{color:var(--ink);font-size:13.5px;font-weight:750;line-height:1.5}
+.sp-news-head a,.sp-news-head b{color:var(--ink);font-size:var(--fs-lg);font-weight:var(--fw-bold);line-height:1.5}
 .sp-news-head a:hover{text-decoration:underline}
 /* 실제 날짜 대신 게임일만 적는다 — 시즌 전체가 따르는 규칙이다 */
 .sp-news-day{
   flex:none;padding:2px 7px;border-radius:999px;background:var(--surface-2);
-  color:var(--muted);font-family:var(--mono);font-size:10.5px;font-weight:700;
+  color:var(--muted);font-family:var(--mono);font-size:var(--fs-3xs);font-weight:var(--fw-bold);
 }
 .sp-news-kind{
   flex:none;padding:2px 7px;border-radius:999px;background:#eef1ff;
-  color:var(--brand);font-size:10.5px;font-weight:800;
+  color:var(--brand);font-size:var(--fs-3xs);font-weight:var(--fw-heavy);
 }
-.sp-news li p{margin:4px 0 0;color:var(--muted);font-size:12.5px;line-height:1.65}
+.sp-news li p{margin:4px 0 0;color:var(--muted);font-size:var(--fs-md);line-height:1.65}
 
 /* ── 보조지표 안내 ─────────────────────────────────────
    화면 머리줄(.sp-head) 안, 제목과 DAY 진행 사이에 얹힌다. 그 줄은
@@ -657,7 +657,7 @@
 .sp-help .ms-face{width:28px;height:28px}
 .sp-help .ms-text{
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  font-size:11.5px;
+  font-size:var(--fs-xs);
 }
 
 /* 오른쪽 끝의 토글. 눌러야 하는 것이 아니라 원하면 누르는 것이라 글보다 약하다 */
@@ -665,7 +665,7 @@
   flex:none;
   padding:3px 9px;border-radius:7px;
   background:var(--surface-2);
-  color:var(--muted);font-size:11px;font-weight:750;white-space:nowrap;
+  color:var(--muted);font-size:var(--fs-2xs);font-weight:var(--fw-bold);white-space:nowrap;
   transition:background .12s,color .12s;
 }
 .sp-help-more:hover{background:var(--brand-softer);color:var(--brand)}
@@ -682,14 +682,14 @@
 .sp-help-pop > div + div{margin-top:9px}
 .sp-help-pop dt{
   margin:0 0 2px;
-  color:var(--brand);font-size:11.5px;font-weight:850;letter-spacing:-.01em;
+  color:var(--brand);font-size:var(--fs-xs);font-weight:var(--fw-black);letter-spacing:-.01em;
 }
-.sp-help-pop dd{margin:0;color:var(--muted);font-size:11.5px;line-height:1.6}
+.sp-help-pop dd{margin:0;color:var(--muted);font-size:var(--fs-xs);line-height:1.6}
 
 /* 마지막 한 줄. 위 설명들과 같은 무게로 두면 규칙처럼 읽혀서 한 단 낮춘다 */
 .sp-help-note{
   margin:11px 0 0;padding-top:9px;border-top:1px dashed var(--rule);
-  color:var(--faint);font-size:11px;line-height:1.55;
+  color:var(--faint);font-size:var(--fs-2xs);line-height:1.55;
 }
 
 /* 머리줄이 좁으면 뺀다. 제목과 진행 표시가 먼저고 안내는 있으면 좋은 것이다.

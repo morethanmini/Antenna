@@ -17,7 +17,7 @@
   background:var(--surface);
   /* 카드 안의 카드다. 테두리로 가르면 상자가 겹쳐 보이므로 옅은 그림자로만 띄운다 */
   box-shadow:0 1px 1px rgba(20,20,27,.05),0 3px 10px -4px rgba(20,20,27,.14);
-  color:var(--body);font-size:12px;line-height:1.65;word-break:keep-all;
+  color:var(--body);font-size:var(--fs-sm);line-height:1.65;word-break:keep-all;
 }
 .ms-face{
   flex:none;width:30px;height:30px;object-fit:contain;

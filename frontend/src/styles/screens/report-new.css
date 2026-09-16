@@ -14,9 +14,9 @@
 .rn-label{
   display:flex; align-items:baseline; justify-content:space-between; gap:8px;
   padding:0;
-  font-size:12px; font-weight:700; color:var(--body);
+  font-size:var(--fs-sm); font-weight:var(--fw-bold); color:var(--body);
 }
-.rn-count{ font-size:11.5px; font-weight:500; color:var(--faint); }
+.rn-count{ font-size:var(--fs-xs); font-weight:var(--fw-normal); color:var(--faint); }
 
 .rn-input, .rn-textarea{
   width:100%; box-sizing:border-box;
@@ -24,9 +24,9 @@
   background:var(--surface); color:var(--ink);
   font-family:inherit;
 }
-.rn-input{ height:42px; padding:0 12px; font-size:15px; font-weight:600; }
+.rn-input{ height:42px; padding:0 12px; font-size:var(--fs-xl); font-weight:var(--fw-normal); }
 .rn-textarea{
-  padding:12px; font-size:14.5px; line-height:1.8; font-weight:400;
+  padding:12px; font-size:var(--fs-lg); line-height:1.8; font-weight:var(--fw-base);
   resize:vertical; min-height:220px;
 }
 .rn-input:focus, .rn-textarea:focus{
@@ -50,8 +50,8 @@
 .rn-option input{ margin:2px 0 0; accent-color:var(--brand); flex:0 0 auto; }
 
 .rn-option-text{ display:flex; flex-direction:column; gap:2px; }
-.rn-option-text b{ font-size:13.5px; font-weight:700; color:var(--ink); }
-.rn-option-text small{ font-size:12px; line-height:1.5; color:var(--muted); }
+.rn-option-text b{ font-size:var(--fs-lg); font-weight:var(--fw-bold); color:var(--ink); }
+.rn-option-text small{ font-size:var(--fs-sm); line-height:1.5; color:var(--muted); }
 
 .rn-visibility:disabled .rn-option{ opacity:.6; cursor:not-allowed; }
 
@@ -62,8 +62,8 @@
   border:1px solid #f6d5d5; border-radius:9px;
   background:#fdeeee;
 }
-.rn-error b{ font-size:12.5px; font-weight:700; color:var(--danger); }
-.rn-error span{ font-size:11.5px; line-height:1.6; color:var(--body); }
+.rn-error b{ font-size:var(--fs-md); font-weight:var(--fw-bold); color:var(--danger); }
+.rn-error span{ font-size:var(--fs-xs); line-height:1.6; color:var(--body); }
 
 .rn-actions{
   display:flex; justify-content:flex-end; gap:8px;
@@ -73,7 +73,7 @@
 .rn-btn{
   height:40px; padding:0 18px;
   border-radius:9px;
-  font-family:inherit; font-size:13.5px; font-weight:600;
+  font-family:inherit; font-size:var(--fs-lg); font-weight:var(--fw-normal);
   cursor:pointer;
 }
 .rn-btn.solid{ border:1px solid var(--brand); background:var(--brand); color:#fff; }
@@ -84,7 +84,7 @@
 
 .rn-hint{
   margin:8px 0 0; text-align:right;
-  font-size:12px; color:var(--muted);
+  font-size:var(--fs-sm); color:var(--muted);
 }
 
 @media (max-width: 560px){
@@ -107,7 +107,7 @@
 .rn-tabs button{
   padding:5px 14px;
   border:0; background:none; cursor:pointer;
-  font-size:12.5px; font-weight:600; color:var(--muted);
+  font-size:var(--fs-md); font-weight:var(--fw-normal); color:var(--muted);
 }
 .rn-tabs button + button{ border-left:1px solid var(--rule); }
 .rn-tabs button.on{ background:var(--brand-softer); color:var(--brand-ink); }
@@ -121,7 +121,7 @@
   padding:5px 12px;
   border:1px solid var(--rule); border-radius:999px;
   background:var(--surface); color:var(--body);
-  font-size:12.5px; font-weight:600; cursor:pointer;
+  font-size:var(--fs-md); font-weight:var(--fw-normal); cursor:pointer;
 }
 .rn-img-btn:hover:not(:disabled){ background:var(--surface-2); }
 .rn-img-btn:disabled{ opacity:.55; cursor:not-allowed; }
@@ -133,17 +133,17 @@
   padding:12px 14px;
   border:1px solid var(--rule); border-radius:10px;
   background:var(--surface);
-  font-size:15px; line-height:1.85; color:var(--body);
+  font-size:var(--fs-xl); line-height:1.85; color:var(--body);
 }
-.rn-preview-empty{ margin:0; color:var(--faint); font-size:13px; }
+.rn-preview-empty{ margin:0; color:var(--faint); font-size:var(--fs-base); }
 
 /* 문법 안내 한 줄. 글자 수 표시와 같은 무게로 둔다 — 읽지 않아도 되는 정보다 */
 .rn-hint{
   margin:6px 0 0;
-  font-size:11.5px; line-height:1.7; color:var(--muted);
+  font-size:var(--fs-xs); line-height:1.7; color:var(--muted);
 }
 .rn-hint code{
-  font-family:var(--mono); font-size:11px;
+  font-family:var(--mono); font-size:var(--fs-2xs);
   background:var(--surface-2); border:1px solid var(--rule);
   border-radius:4px; padding:1px 4px; margin:0 1px;
 }

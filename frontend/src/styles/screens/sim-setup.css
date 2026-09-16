@@ -14,7 +14,7 @@
 }
 
 /* ── 헤더 ───────────────────────────────────────────── */
-.ss-crumb{display:flex;align-items:center;gap:9px;color:#8a93ad;font-size:13.5px;font-weight:700}
+.ss-crumb{display:flex;align-items:center;gap:9px;color:#8a93ad;font-size:var(--fs-lg);font-weight:var(--fw-bold)}
 .ss-crumb a:hover{color:var(--brand)}
 .ss-crumb i{font-style:normal;color:#c2c8da}
 
@@ -22,10 +22,10 @@
    경로(.ss-crumb)는 왼쪽에 둔다 — 빵부스러기는 왼쪽이 관례다. */
 .ss-head{text-align:center}
 .ss-head h1{
-  margin:4px 0 6px;color:#0e1330;font-size:31px;font-weight:850;letter-spacing:-.035em;
+  margin:4px 0 6px;color:var(--ink);
   text-wrap:balance;
 }
-.ss-head p{margin:0;color:#6b7291;font-size:16px;font-weight:650;text-wrap:pretty}
+.ss-head p{margin:0;color:#6b7291;font-size:var(--fs-2xl);font-weight:var(--fw-bold);text-wrap:pretty}
 
 /* 검정 개미 — 헤더 오른쪽에 걸쳐 놓는다.
 
@@ -74,7 +74,7 @@
 .ss-badge{
   position:absolute;left:22px;top:22px;display:inline-flex;align-items:center;gap:6px;
   padding:7px 14px;border-radius:10px;background:var(--tone);color:#fff;
-  font-size:13px;font-weight:750;
+  font-size:var(--fs-base);font-weight:var(--fw-bold);
 }
 
 /* 대회만 붙는다. 참가 조건이라 배지와 반대쪽에 둔다 */
@@ -82,7 +82,7 @@
   position:absolute;right:22px;top:24px;
   padding:5px 11px;border-radius:999px;
   background:var(--brand-softer);color:var(--brand-ink);
-  font-size:11.5px;font-weight:750;
+  font-size:var(--fs-xs);font-weight:var(--fw-bold);
 }
 
 .ss-mode-icon{
@@ -90,10 +90,10 @@
   border-radius:50%;background:var(--tone-soft);color:var(--tone);
 }
 .ss-mode-icon svg{width:26px;height:26px}
-.ss-mode h3{margin:0 0 7px;color:var(--tone);font-size:23px;font-weight:850;letter-spacing:-.03em}
+.ss-mode h3{margin:0 0 7px;color:var(--tone);font-size:var(--fs-4xl);font-weight:var(--fw-black);letter-spacing:-.03em}
 .ss-mode > p{
   max-width:380px;margin:0 auto 14px;
-  color:#6b7291;font-size:14.5px;line-height:1.55;font-weight:650;
+  color:#6b7291;font-size:var(--fs-lg);line-height:1.55;font-weight:var(--fw-bold);
 }
 
 .ss-facts{
@@ -107,7 +107,7 @@
 }
 .ss-fact:first-child{border-left:0}
 .ss-fact svg{color:#5b6280}
-.ss-fact span{color:#5b6280;font-size:13.5px;line-height:1.45;font-weight:700;word-break:keep-all}
+.ss-fact span{color:#5b6280;font-size:var(--fs-lg);line-height:1.45;font-weight:var(--fw-bold);word-break:keep-all}
 
 /* ── 진입 버튼 ──────────────────────────────────────── */
 /* 글자와 화살표를 한 덩어리로 두고 그 덩어리를 가운데 놓는다.
@@ -118,10 +118,10 @@
   display:flex;align-items:center;justify-content:center;
   width:100%;max-width:var(--inner);
   height:50px;padding:0 18px;margin-inline:auto;
-  border-radius:13px;font-size:16px;font-weight:800;letter-spacing:-.02em;
+  border-radius:13px;font-size:var(--fs-2xl);font-weight:var(--fw-heavy);letter-spacing:-.02em;
   transition:background .15s,border-color .15s;
 }
-.ss-cta b{font-weight:800}
+.ss-cta b{font-weight:var(--fw-heavy)}
 
 /* 열린 시즌이 없을 때. 링크가 아니라 span 이라 커서·포커스가 생기지 않는다 */
 .ss-cta.is-off{
@@ -132,7 +132,7 @@
 
 .ss-cta-meta{
   max-width:var(--inner);margin:6px auto 0;min-height:14px;text-align:center;
-  color:var(--muted);font-size:12.5px;font-weight:650;
+  color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold);
   font-variant-numeric:tabular-nums;
 }
 
@@ -166,10 +166,9 @@
 }
 @media(max-width:1020px){
   .ss-modes.n-2,.ss-modes.n-3{grid-template-columns:minmax(0,520px)}
-  .ss-head h1{font-size:27px}
 }
 @media(max-width:680px){
-  .ss-head h1{font-size:24px}
+  .ss-head h1{font-size:var(--fs-title)}
   .ss-mode{padding:22px 18px 18px}
 }
 @media(prefers-reduced-motion:reduce){

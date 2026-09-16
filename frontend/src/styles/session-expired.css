@@ -27,21 +27,21 @@
 
 .se-body h2{
   margin:0 0 8px;
-  font-size:16px; font-weight:800; color:var(--ink);
+  font-size:var(--fs-2xl); font-weight:var(--fw-heavy); color:var(--ink);
 }
 
 .se-sub{
   margin:0;
-  font-size:13px; line-height:1.65; color:var(--body);
+  font-size:var(--fs-base); line-height:1.65; color:var(--body);
 }
 
 /* 경고가 아니라 주의다 — 사용자가 잘못한 것이 없으므로 빨강을 쓰지 않는다 */
 .se-note{
   margin:12px 0 0; padding:10px 12px;
   border-radius:9px; background:var(--surface-2);
-  font-size:12.5px; line-height:1.6; color:var(--body);
+  font-size:var(--fs-md); line-height:1.6; color:var(--body);
 }
-.se-note b{ font-weight:700; color:var(--ink); }
+.se-note b{ font-weight:var(--fw-bold); color:var(--ink); }
 
 .se-actions{
   display:flex; justify-content:flex-end; gap:8px;
@@ -53,7 +53,7 @@
   height:36px; padding:0 15px;
   border:1px solid var(--rule); border-radius:9px;
   background:var(--surface); color:var(--ink);
-  font-size:13px; font-weight:700; text-decoration:none;
+  font-size:var(--fs-base); font-weight:var(--fw-bold); text-decoration:none;
   cursor:pointer;
 }
 .se-btn:hover{ background:var(--surface-2); }

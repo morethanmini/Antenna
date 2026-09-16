@@ -73,7 +73,7 @@
 .sot-dots li.is-done{background:var(--brand-softer);box-shadow:inset 0 0 0 1px #ddd8fb}
 /* 현재 걸음만 알약으로 늘인다 — 색만 다르면 지난 걸음과 구분이 어렵다 */
 .sot-dots li.is-on{width:26px;background:var(--brand)}
-.sot-count{color:var(--faint);font-size:12px;font-weight:800;letter-spacing:.02em}
+.sot-count{color:var(--faint);font-size:var(--fs-sm);font-weight:var(--fw-heavy);letter-spacing:.02em}
 
 /* ── 본문 ─────────────────────────────────────────── */
 /* 걸음이 바뀌면 key 로 리마운트되어 이 등장이 다시 돈다. 위치를 조금만 움직인다 —
@@ -91,7 +91,7 @@
    흰 바탕 위에 회색 상자만 늘어난다 — 점 하나로 "여기부터 이 걸음" 을 표시한다. */
 .sot-eyebrow{
   display:inline-flex;align-items:center;gap:7px;margin-bottom:9px;
-  color:var(--brand);font-size:12.5px;font-weight:800;letter-spacing:-.01em;
+  color:var(--brand);font-size:var(--fs-md);font-weight:var(--fw-heavy);letter-spacing:-.01em;
 }
 .sot-eyebrow::before{
   content:"";width:5px;height:5px;border-radius:50%;background:currentColor;
@@ -99,13 +99,13 @@
 
 .sot-title{
   margin:0 0 9px;
-  color:#141a3c;font-size:25px;font-weight:850;letter-spacing:-.035em;line-height:1.3;
+  color:#141a3c;font-size:var(--fs-5xl);font-weight:var(--fw-black);letter-spacing:-.035em;line-height:1.3;
   text-wrap:balance;
 }
 .sot-title em{color:var(--brand);font-style:normal}
 .sot-lead{
   margin:0 0 16px;max-width:34ch;
-  color:var(--muted);font-size:13.5px;font-weight:600;line-height:1.7;
+  color:var(--muted);font-size:var(--fs-lg);font-weight:var(--fw-normal);line-height:1.7;
 }
 
 /* ── 조건 칩 ──────────────────────────────────────── */
@@ -119,8 +119,8 @@
   background:var(--brand-softer);
 }
 .sot-chip svg{flex:none;color:var(--brand)}
-.sot-chip dt{margin:0 0 2px;color:#8b90ad;font-size:11px;font-weight:750;line-height:1.2}
-.sot-chip dd{margin:0;color:#1c2245;font-size:14.5px;font-weight:850;line-height:1.2;white-space:nowrap}
+.sot-chip dt{margin:0 0 2px;color:#8b90ad;font-size:var(--fs-2xs);font-weight:var(--fw-bold);line-height:1.2}
+.sot-chip dd{margin:0;color:#1c2245;font-size:var(--fs-lg);font-weight:var(--fw-black);line-height:1.2;white-space:nowrap}
 
 /* ── 할 일 세 줄 ──────────────────────────────────── */
 /* 카드로 감싸지 않는다. 이미 카드 안이라 한 겹 더 두르면 상자 속 상자가 되고,
@@ -129,7 +129,7 @@
 .sot-points li{
   display:flex;align-items:center;gap:10px;
   padding:7px 0;
-  color:#3a4160;font-size:13.5px;font-weight:700;
+  color:#3a4160;font-size:var(--fs-lg);font-weight:var(--fw-bold);
 }
 .sot-point-ico{
   flex:none;display:grid;place-items:center;width:30px;height:30px;
@@ -139,7 +139,7 @@
 /* ── 버튼 줄 ──────────────────────────────────────── */
 .sot-actions{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .sot-skip{
-  padding:8px 2px;color:var(--faint);font-size:13px;font-weight:700;
+  padding:8px 2px;color:var(--faint);font-size:var(--fs-base);font-weight:var(--fw-bold);
   transition:color .14s;
 }
 .sot-skip:hover{color:var(--body)}
@@ -148,7 +148,7 @@
 .sot-btn{
   display:inline-flex;align-items:center;justify-content:center;gap:7px;
   height:42px;padding:0 18px;border-radius:12px;
-  font-size:14px;font-weight:800;letter-spacing:-.02em;
+  font-size:var(--fs-lg);font-weight:var(--fw-heavy);letter-spacing:-.02em;
   transition:filter .15s,background .15s,transform .06s;
 }
 .sot-btn:active{transform:translateY(1px)}
@@ -332,7 +332,7 @@
   }
 
   .sot-copy{grid-row:2;padding:18px 22px 20px;gap:16px}
-  .sot-title{font-size:21px}
+  .sot-title{font-size:var(--fs-4xl)}
   .sot-lead{margin-bottom:13px}
   /* 좁으면 장식이 마스코트와 겹친다. 양옆 하나씩만 남긴다 */
   .sot-stage .d2{display:none}
@@ -340,7 +340,7 @@
 @media(max-width:430px){
   .sot-backdrop{padding:12px}
   .sot{--art:148px;grid-template-rows:168px auto}
-  .sot-title{font-size:19px}
+  .sot-title{font-size:var(--fs-3xl)}
   .sot-chips{gap:6px}
   .sot-actions{flex-direction:column-reverse;align-items:stretch;gap:8px}
   .sot-nav{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px}
@@ -353,7 +353,7 @@
 @media (min-width:781px) and (max-height:620px){
   .sot{--card-h:calc(100vh - 40px);--art:200px}
   .sot-copy{padding:18px 26px 18px}
-  .sot-title{font-size:22px}
+  .sot-title{font-size:var(--fs-4xl)}
   .sot-lead{margin-bottom:12px}
   .sot-points li{padding:5px 0}
 }
