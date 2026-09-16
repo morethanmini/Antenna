@@ -164,6 +164,15 @@ app:
     event-pool:
       # 업앤다운 배팅 이벤트 풀(ANT-EVENT-01·02). 비워 두면 풀 릴레이어·인덱서 ③ 만 꺼진다. 인덱서 시작 블록은 아래 indexer.from-block 을 같이 쓴다.
       address: ${CONTRACT_EVENT_POOL:}
+      # 정산 러너(ANT-EVENT-03) — 관리자가 정산 버튼을 누르면 reveal → resolve → settle → sweep 을 순서대로 보낸다.
+      settlement:
+        # reveal/settle 한 tx 에 넣는 배팅 수. Hardhat 실측 settle 100건 ≈ 4.3M 가스(가스비 0 이라 비용은 없고 크기만 본다).
+        chunk-size: 100
+        # tx 하나의 채굴을 기다리는 상한. 넘기면 러너가 멈추고, 다시 누르면 온체인 상태를 읽어 이어 간다.
+        receipt-timeout-seconds: 60
+        # RPC 장애일 때만 같은 명령을 다시 보낸다. revert 는 재시도하지 않는다(앵커 배치와 같은 규칙).
+        retry-count: 3
+        retry-delay-seconds: 10
     # 앵커 배치(ANT-CHAIN-02). 10분마다, 주말·휴장 포함 — 앵커는 시세가 필요 없다.
     # 실행 시각에 anchor_batch_id 가 NULL 인 커밋 전부가 한 배치다.
     # 하루 한 번(00:05)에서 줄였다(2026-09-15): 아침 등록분이 다음 날 새벽까지 체인 밖에 있었고,

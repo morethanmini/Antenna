@@ -34,9 +34,9 @@ class EventPoolConfigTest {
     @Test
     @DisplayName("잘린_주소는_배포_안_됨으로_본다")
     void 잘린_주소는_배포_안_됨으로_본다() {
-        assertThat(new EventPoolProperties("0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e").isDeployed()).isFalse();
-        assertThat(new EventPoolProperties("0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0").isDeployed()).isTrue();
-        assertThat(new EventPoolProperties("0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0").normalizedAddress())
+        assertThat(new EventPoolProperties("0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e", null).isDeployed()).isFalse();
+        assertThat(new EventPoolProperties("0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0", null).isDeployed()).isTrue();
+        assertThat(new EventPoolProperties("0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0", null).normalizedAddress())
                 .isEqualTo("0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0");
     }
 
