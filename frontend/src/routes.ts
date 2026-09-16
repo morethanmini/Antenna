@@ -7,6 +7,7 @@ import type { ComponentType } from 'react'
 import type { Mode } from './Layout'
 import Login from './pages/Login'
 import OAuthCallback from './pages/OAuthCallback'
+import OnboardingFee from './pages/OnboardingFee'
 import OnboardingNickname from './pages/OnboardingNickname'
 import Search from './pages/Search'
 import Home from './pages/Home'
@@ -81,6 +82,8 @@ export const ROUTES: PageMeta[] = [
      access 가 'public' 이어야 한다 — 가드가 막으면 코드를 교환하기도 전에 /login 으로 튕긴다. */
   { screen: 'A-01', element: OAuthCallback, path: '/oauth/callback/:provider', title: '로그인 중', access: 'public', story: 'ANT-AUTH-01' },
   { screen: 'A-02', element: OnboardingNickname, path: '/onboarding/nickname', title: '닉네임 설정', access: 'user', story: 'ANT-AUTH-03' },
+  /* 닉네임 다음 단계. **건너뛸 수 있다** — RequireAccess 는 닉네임만 보므로 가드가 따로 없다 */
+  { screen: 'A-02', element: OnboardingFee, path: '/onboarding/fee', title: '구독료 설정', access: 'user', story: 'ANT-AUTH-03' },
   { screen: 'A-03', element: Search, path: '/search', title: '통합 검색', access: 'user', mode: 'insight', nav: 'stocks', story: 'ANT-FE-SEARCH' },
 
   // ── B. 인사이트 ──────────────────────────────────────
