@@ -1,7 +1,10 @@
-/* E-01 예측가 랭킹 — 트랙마다 화면이 하나씩이다
-     /rankings      주가 예측 랭킹 (REAL) · 인사이트 모드
-     /sim/rankings  모의투자 랭킹 (REPLAY) · 모의 투자 모드
+/* E-01 예측가 랭킹 — /rankings 주가 예측 랭킹 (REAL) · 인사이트 모드
    담당 스토리 [ANT-FE-RANKING]
+
+   **모의투자 랭킹(/sim/rankings · REPLAY)은 화면에서 내렸다(2026-09-16).**
+   한 시즌 안의 순위는 G-07 시즌 리더보드가 보여 주고, 둘을 같이 두면 "내 등수" 가
+   두 곳에서 다른 값으로 나온다. RankingBoard 의 track 갈래(tier 표시 등)는 남겨
+   둔다 — REPLAY 를 되살릴 때 화면을 다시 쓰면 되고, 지우면 그때 다시 짜야 한다.
    설계서 docs/화면설계서.md §3 E · §4 E-01 · §7 · §9.2 · §10
 
    **설계서와 다르다.** §4 E-01 은 한 화면에 트랙 탭(REAL/REPLAY)을 두는 것으로
@@ -286,11 +289,10 @@ function RankingBoard({ track }: { track: Track }) {
 }
 
 /* 라우트가 트랙을 정한다. routes.ts 의 element 는 props 를 받지 않으므로
-   화면마다 얇은 컴포넌트를 하나씩 둔다. */
+   화면마다 얇은 컴포넌트를 하나씩 둔다.
+
+   지금은 REAL 하나뿐이다. REPLAY 를 쓰던 SimRanking 은 모의투자 랭킹과 함께
+   내렸다 — 되살릴 때는 여기에 한 줄을 다시 두고 routes.ts 에 라우트를 더하면 된다. */
 export default function Ranking() {
   return <RankingBoard track="REAL" />
-}
-
-export function SimRanking() {
-  return <RankingBoard track="REPLAY" />
 }
