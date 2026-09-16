@@ -331,7 +331,7 @@ export default function InfoTab({ code, summary, picked, onPick, onGoPredict }: 
           예측 탭 왼쪽의 호가창과 같은 표다(PredictionDepth). 서버에 없는
           GET /stocks/{code}/sentiment 를 기다리는 대신, 이미 있는 예측 분포
           (GET /stocks/{code}/predictions/distribution)를 그대로 쓴다.
-          아직 아무도 안 걸었으면 빈 호가창 대신 한 줄로 알린다. */}
+          빈 상태(예측 0건 · 기준가 없음)를 어떻게 그릴지는 PredictionDepth 가 정한다. */}
       <PredictionDepth
         code={code}
         span={7}
