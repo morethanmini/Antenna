@@ -1,6 +1,7 @@
 package ssafy.a507.backend.domain.event.service;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -35,9 +36,9 @@ import ssafy.a507.backend.domain.market.repository.StockRepository;
  * 컨버터가 없어 그 둘은 {@code SecurityConfig}(공용) 수정이 함께 필요하고, 기존 관례도 서비스 안
  * 비교다({@code SeasonJoinService} 의 DEMO 시즌).
  *
- * <p><b>R1 단계에서는 온체인 전송을 하지 않는다</b>(§0.2 ②). 이벤트·종목·기준가·작업(PENDING)까지
- * 만들고, {@code PoolRelayer.openEvent} 가 붙으면 커밋 뒤 트랜잭션 밖에서 잇는다. 그래서 지금은
- * {@code @Transactional} 을 붙여도 된다 — 전송이 생기는 순간 {@code AdService} 처럼 손으로 나눠야 한다.
+ * <p><b>온체인 전송이 있는 메서드에는 {@code @Transactional} 이 없다</b>({@link EventBetDispatcher} 의
+ * 호출자 계약). 생성과 봉인이 그렇다 — 행을 먼저 커밋하고 tx 를 보낸다. 붙이면 디스패처가
+ * {@code IllegalStateException} 으로 바로 터뜨린다. 기준가 입력만 전송이 없어 그대로 둔다.
  */
 @Slf4j
 @Service
@@ -55,14 +56,32 @@ public class EventAdminService {
     private final TransactionTemplate tx;
 
     /**
-     * 이벤트 생성 — 이벤트 행 + 종목 10개 + 기준가 복사 + {@code EVENT_ADMIN} 작업(PENDING).
+     * 이벤트 생성 — 이벤트 행 + 종목 10개 + 기준가 복사 + {@code EVENT_ADMIN} 작업, 그리고 온체인 {@code openEvent}.
      *
      * <p>기준가는 {@code daily_quotes(종목, baseDate).close} 를 복사한다. <b>없으면 null 로 두고
      * 응답에 그대로 보여준다</b> — 접수 시작이 배치 30분 뒤라 기다릴 수 없고, 관리자가
      * {@code PUT …/base-price} 로 채운다. 하나라도 비면 크론이 OPEN 으로 올리지 않는다.
+     *
+     * <p><b>{@code openEvent} 를 여기서 보낸다.</b> 안 보내면 인덱서가 {@code EventOpened} 를 볼 일이
+     * 없어 {@code open_tx_hash} 가 영영 null 이고, 크론의 세 조건 중 하나가 안 차 이벤트가 열리지
+     * 않는다 — 대회에 아무도 들어올 수 없다. ANT-EVENT-04 는 릴레이어가 없어 이 전송을 미뤘는데
+     * (§0.2 ②), ANT-EVENT-02 가 머지되면서 {@code PoolRelayer} 가 생겼다.
      */
-    @Transactional
     public EventCreateResponse create(Long adminUserId, EventCreateRequest request) {
+        Accepted accepted = tx.execute(s -> accept(adminUserId, request));
+        dispatcher.dispatchOpen(
+                accepted.operationId(),
+                accepted.response().eventId(),
+                accepted.response().stocks().size(),
+                request.minStake(),
+                request.maxStake());
+        return accepted.response();
+    }
+
+    /** 접수 결과 — 응답과 전송할 작업. 트랜잭션 밖으로 나가는 값이라 엔티티를 담지 않는다. */
+    private record Accepted(EventCreateResponse response, String operationId) {}
+
+    private Accepted accept(Long adminUserId, EventCreateRequest request) {
         User admin = requireAdmin(adminUserId);
         validate(request);
 
@@ -94,12 +113,12 @@ public class EventAdminService {
             idx++;
         }
 
-        // 온체인 openEvent 를 가리킬 작업. R1 은 PENDING 까지만 만들고 전송은 릴레이어가 붙은 뒤다.
         Operation operation =
                 operationService.accept(
                         admin, Operation.Kind.EVENT_ADMIN, Operation.ResourceType.EVENT, event.getId());
 
-        return new EventCreateResponse(event.getId(), operation.getId(), saved);
+        return new Accepted(
+                new EventCreateResponse(event.getId(), operation.getId(), saved), operation.getId());
     }
 
     /** 기준가 수동 입력. 배치가 늦거나 실패했을 때 쓰는 길이다(§1 "없으면 관리자가 넣는다"). */

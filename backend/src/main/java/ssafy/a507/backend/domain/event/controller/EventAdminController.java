@@ -32,7 +32,7 @@ public class EventAdminController {
 
     /**
      * 이벤트 생성. 202 인 이유는 온체인 {@code openEvent} 전송이 뒤따라서다 —
-     * <b>R1 단계에서는 DB 행까지만</b> 만들고 전송은 릴레이어가 붙은 뒤에 잇는다(§0.2 ②).
+     * 행을 먼저 커밋하고 {@code openEvent} 를 그 뒤에 보낸다 — 전송이 실패해도 이벤트 행은 남는다.
      */
     @PostMapping
     public ResponseEntity<EventCreateResponse> create(@Valid @RequestBody EventCreateRequest request) {
