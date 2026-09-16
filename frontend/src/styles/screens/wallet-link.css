@@ -24,7 +24,7 @@
   gap:12px; padding:16px 18px;
   border-bottom:1px solid var(--rule);
 }
-.wl-head h2{ margin:0; font-size:15px; font-weight:700; color:var(--ink); }
+.wl-head h2{ margin:0; font-size:var(--fs-xl); font-weight:var(--fw-bold); color:var(--ink); }
 
 .wl-x{
   display:grid; place-items:center;
@@ -41,14 +41,14 @@
   display:flex; flex-direction:column; gap:14px;
 }
 
-.wl-lead{ margin:0; font-size:13.5px; line-height:1.6; color:var(--body); }
-.wl-note{ margin:0; font-size:12px; line-height:1.6; color:var(--muted); }
+.wl-lead{ margin:0; font-size:var(--fs-lg); line-height:1.6; color:var(--body); }
+.wl-note{ margin:0; font-size:var(--fs-sm); line-height:1.6; color:var(--muted); }
 
 .wl-field{ display:flex; flex-direction:column; gap:6px; }
-.wl-label{ font-size:11.5px; font-weight:600; color:var(--faint); }
+.wl-label{ font-size:var(--fs-xs); font-weight:var(--fw-normal); color:var(--faint); }
 
 .wl-address{
-  font-family:var(--mono); font-size:12.5px; color:var(--ink);
+  font-family:var(--mono); font-size:var(--fs-md); color:var(--ink);
   background:var(--surface-2);
   border-radius:8px; padding:9px 11px;
   /* 42자 주소가 좁은 화면에서 창을 밀어내지 않게 한다 */
@@ -58,7 +58,7 @@
 /* 서명 원문. 줄바꿈이 의미를 갖는 값이라 white-space 를 건드리지 않는다 */
 .wl-payload{
   margin:0;
-  font-family:var(--mono); font-size:11.5px; line-height:1.75; color:var(--body);
+  font-family:var(--mono); font-size:var(--fs-xs); line-height:1.75; color:var(--body);
   background:var(--brand-softer);
   border:1px solid var(--brand-soft);
   border-radius:8px; padding:11px 12px;
@@ -72,8 +72,8 @@
   background:#fdeeee;
   border:1px solid #f6d5d5;
 }
-.wl-error b{ font-size:12.5px; font-weight:700; color:var(--danger); }
-.wl-error span{ font-size:11.5px; line-height:1.6; color:var(--body); }
+.wl-error b{ font-size:var(--fs-md); font-weight:var(--fw-bold); color:var(--danger); }
+.wl-error span{ font-size:var(--fs-xs); line-height:1.6; color:var(--body); }
 
 .wl-actions{
   display:flex; gap:8px; justify-content:flex-end;
@@ -83,7 +83,7 @@
 .wl-btn{
   padding:9px 15px;
   border-radius:9px;
-  font-size:13px; font-weight:600;
+  font-size:var(--fs-base); font-weight:var(--fw-normal);
   cursor:pointer;
 }
 .wl-btn.solid{ border:1px solid var(--brand); background:var(--brand); color:#fff; }
@@ -108,7 +108,7 @@
 .wl-done-mark{ margin:4px auto 0; color:var(--brand); line-height:0; }
 .wl-done-title{
   margin:0; text-align:center;
-  font-size:14.5px; font-weight:700; color:var(--ink);
+  font-size:var(--fs-lg); font-weight:var(--fw-bold); color:var(--ink);
 }
 .wl-done-title + .wl-address{ text-align:center; }
 
@@ -117,7 +117,7 @@
    그래도 완료 제목보다 약하다 — 연동이 끝났다는 사실이 이 화면의 주어다. */
 .wl-done-bonus{
   margin:0; text-align:center;
-  font-size:12.5px; line-height:1.6; font-weight:600;
+  font-size:var(--fs-md); line-height:1.6; font-weight:var(--fw-normal);
   color:var(--brand-ink);
   background:var(--brand-softer);
   border-radius:8px; padding:9px 11px;
@@ -133,7 +133,7 @@
   border-radius:10px;
   background:var(--surface-2);
 }
-.wl-token-lead{ margin:0; font-size:12.5px; line-height:1.65; color:var(--body); }
+.wl-token-lead{ margin:0; font-size:var(--fs-md); line-height:1.65; color:var(--body); }
 .wl-token-lead b{ color:var(--ink); }
 
 /* 체인이 어긋났을 때. wl-error 만큼 붉지 않다 — 실패가 아니라 순서 문제다 */
@@ -141,33 +141,33 @@
   margin:0; padding:9px 11px;
   border:1px solid #f0dcb4; border-radius:8px;
   background:#fdf6e9;
-  font-size:11.5px; line-height:1.6; color:#8a5a12;
+  font-size:var(--fs-xs); line-height:1.6; color:#8a5a12;
 }
-.wl-token-warn b{ font-weight:700; }
+.wl-token-warn b{ font-weight:var(--fw-bold); }
 
 .wl-token-add{ width:100%; }
 .wl-token-done{
   margin:0; padding:9px 11px; border-radius:8px;
   text-align:center;
-  font-size:12.5px; font-weight:600;
+  font-size:var(--fs-md); font-weight:var(--fw-normal);
   color:var(--brand-ink); background:var(--brand-softer);
 }
-.wl-token-hint{ margin:0; font-size:11.5px; line-height:1.6; color:var(--muted); }
+.wl-token-hint{ margin:0; font-size:var(--fs-xs); line-height:1.6; color:var(--muted); }
 
 /* 자동 추가가 안 됐을 때만 나온다. 접지 않으므로 이 판 안에서 한 단 들여 둔다 */
 .wl-token-manual{ display:flex; flex-direction:column; gap:8px; padding-top:2px; }
-.wl-token-manual-head{ margin:0; font-size:11.5px; font-weight:700; color:var(--faint); }
+.wl-token-manual-head{ margin:0; font-size:var(--fs-xs); font-weight:var(--fw-bold); color:var(--faint); }
 .wl-token-manual ol{
   margin:0; padding-left:18px;
   display:flex; flex-direction:column; gap:4px;
-  font-size:12px; line-height:1.65; color:var(--body);
+  font-size:var(--fs-sm); line-height:1.65; color:var(--body);
 }
-.wl-token-manual ol b{ font-weight:700; color:var(--ink); }
+.wl-token-manual ol b{ font-weight:var(--fw-bold); color:var(--ink); }
 
 /* 주소는 한 줄을 통째로 쓰고 복사 버튼은 그 아래다 — 나란히 두면 42자가
    버튼을 화면 밖으로 밀어낸다 */
 .wl-token-copy{ display:flex; flex-direction:column; gap:6px; }
-.wl-token-copy .wl-btn{ align-self:flex-start; padding:6px 11px; font-size:12px; }
+.wl-token-copy .wl-btn{ align-self:flex-start; padding:6px 11px; font-size:var(--fs-sm); }
 
 /* 이 판(wl-token)이 이미 surface-2 라 주소 칸이 같은 색으로 묻힌다 —
    붙여 넣을 값이니 한 덩어리로 집히게 흰 바탕에 테두리를 준다 */
@@ -178,19 +178,19 @@
 .wl-net-table{ margin:0; display:flex; flex-direction:column; gap:6px; }
 .wl-net-table > div{
   display:flex; gap:10px; align-items:baseline;
-  font-size:12px; line-height:1.6;
+  font-size:var(--fs-sm); line-height:1.6;
 }
 .wl-net-table dt{
   flex:0 0 78px;               /* 값들의 왼쪽 끝을 한 줄로 세운다 */
-  font-weight:600; color:var(--faint);
+  font-weight:var(--fw-normal); color:var(--faint);
 }
 .wl-net-table dd{ margin:0; flex:1; color:var(--body); overflow-wrap:anywhere; }
 .wl-net-table dd code{
-  font-family:var(--mono); font-size:11.5px; color:var(--ink);
+  font-family:var(--mono); font-size:var(--fs-xs); color:var(--ink);
   background:var(--surface); border:1px solid var(--rule);
   border-radius:6px; padding:2px 6px;
 }
-.wl-net-table dd em{ font-style:normal; color:var(--muted); font-size:11px; }
+.wl-net-table dd em{ font-style:normal; color:var(--muted); font-size:var(--fs-2xs); }
 
 /* 좁은 화면에서는 이름표가 위로 올라가 두 줄이 된다 — 78px 을 떼면 RPC 주소가 깨진다 */
 @media (max-width:420px){

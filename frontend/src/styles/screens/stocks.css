@@ -51,7 +51,7 @@
   margin-bottom:14px;
 }
 .stocks-page .st-hero h1{
-  margin:0; color:var(--ink); font-size:29px; font-weight:800; letter-spacing:-.03em;
+  margin:0; color:var(--ink);
 }
 
 /* ── 마켓맵 조건 줄 ─────────────────────────────────────── */
@@ -74,7 +74,7 @@
 .stocks-page .st-viewtab{
   display:flex; align-items:center; justify-content:center;
   height:30px; padding:0 15px; border:0; border-radius:8px; background:none;
-  color:var(--muted); font-size:12.5px; font-weight:750; line-height:1; cursor:pointer;
+  color:var(--muted); font-size:var(--fs-md); font-weight:var(--fw-bold); line-height:1; cursor:pointer;
   transition:background .12s, color .12s;
 }
 .stocks-page .st-viewtab:hover{color:var(--body)}
@@ -88,7 +88,7 @@
    (짝이 되는 판 높이는 market-map.css 의 같은 미디어 쿼리). */
 @media (max-height:820px){
   .stocks-page .st-hero{margin-bottom:10px}
-  .stocks-page .st-hero h1{font-size:25px}
+  .stocks-page .st-hero h1{font-size:var(--fs-title)}
   .stocks-page .st-views{margin-bottom:10px}
 }
 
@@ -180,12 +180,12 @@
    줄이 울퉁불퉁해지므로 말줄임으로 끊는다 — 전체 이름은 목록 머리글이 말한다 */
 .stocks-page .st-sector-name{
   max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  color:var(--ink); font-size:14px; font-weight:750; letter-spacing:-.02em;
+  color:var(--ink); font-size:var(--fs-lg); font-weight:var(--fw-bold); letter-spacing:-.02em;
 }
 .stocks-page .st-sector-chip.on .st-sector-name{color:var(--brand-ink)}
 .stocks-page .st-sector-meta{display:flex; align-items:baseline; gap:8px; width:100%}
-.stocks-page .st-sector-meta em{color:var(--faint); font-style:normal; font-size:12px; font-weight:650}
-.stocks-page .st-sector-meta b{margin-left:auto; font-size:12.5px; font-weight:750}
+.stocks-page .st-sector-meta em{color:var(--faint); font-style:normal; font-size:var(--fs-sm); font-weight:var(--fw-bold)}
+.stocks-page .st-sector-meta b{margin-left:auto; font-size:var(--fs-md); font-weight:var(--fw-bold)}
 
 /* ── 값이 오기 전의 자리 ─────────────────────────────────
    칩과 **높이가 같아야** 값이 들어올 때 아래가 안 밀린다. 진짜 칩의 78px 은
@@ -252,7 +252,7 @@
    벌어지면 어느 라벨이 어느 내용의 것인지 흐려진다. */
 .stocks-page .st-field legend{
   padding:0; margin-bottom:7px;
-  color:var(--ink); font-size:12.5px; font-weight:750;
+  color:var(--ink); font-size:var(--fs-md); font-weight:var(--fw-bold);
 }
 /* 눈에 안 보이는 legend(재무 지표 범위)는 자리를 차지하면 안 된다 */
 .stocks-page .st-field legend.st-sr{margin-bottom:0}
@@ -274,9 +274,9 @@
 .stocks-page .st-slider + .st-slider{margin-top:6px}
 
 .stocks-page .st-slider-head{display:flex; align-items:baseline; gap:8px}
-.stocks-page .st-slider-label{color:var(--ink); font-size:12.5px; font-weight:750}
+.stocks-page .st-slider-label{color:var(--ink); font-size:var(--fs-md); font-weight:var(--fw-bold)}
 .stocks-page .st-slider-head b{
-  margin-left:auto; color:var(--brand-ink); font-size:12.5px; font-weight:750;
+  margin-left:auto; color:var(--brand-ink); font-size:var(--fs-md); font-weight:var(--fw-bold);
   font-variant-numeric:tabular-nums;
 }
 
@@ -325,7 +325,7 @@
    손잡이가 맞닿지 않게 3px 을 남긴다(2026-09-15). */
 .stocks-page .st-slider-ends{
   display:flex; justify-content:space-between; margin:-7px 8px 0;
-  color:var(--faint); font-size:11px; font-variant-numeric:tabular-nums;
+  color:var(--faint); font-size:var(--fs-2xs); font-variant-numeric:tabular-nums;
 }
 /* 종목명 검색칸. 상단바 검색과 생김새를 맞추지 않는다 — 저쪽은 종목 하나로
    건너뛰는 길이고 이건 목록을 좁히는 조건이라, 옆의 PER 칸·칩과 같은 결이어야
@@ -333,7 +333,7 @@
 .stocks-page .st-search{
   width:100%; min-width:0; height:36px; padding:0 11px;
   border:1px solid var(--rule); border-radius:9px; background:var(--surface);
-  color:var(--ink); font-size:13px;
+  color:var(--ink); font-size:var(--fs-base);
 }
 .stocks-page .st-search::placeholder{color:var(--faint)}
 .stocks-page .st-search:focus{border-color:var(--brand); outline:none}
@@ -345,7 +345,7 @@
 
 .stocks-page .st-check{
   display:flex; align-items:center; gap:9px;
-  color:var(--body); font-size:12.5px; font-weight:650; cursor:pointer;
+  color:var(--body); font-size:var(--fs-md); font-weight:var(--fw-bold); cursor:pointer;
 }
 .stocks-page .st-check input{width:15px; height:15px; flex:none; accent-color:var(--brand)}
 
@@ -356,7 +356,7 @@
 
 .stocks-page .st-reset{
   padding:10px 0; border:1px solid var(--rule); border-radius:10px;
-  background:var(--surface); color:var(--muted); font-size:13px; font-weight:700;
+  background:var(--surface); color:var(--muted); font-size:var(--fs-base); font-weight:var(--fw-bold);
 }
 .stocks-page .st-reset:hover{color:var(--ink); border-color:#c8c9f5}
 
@@ -364,7 +364,7 @@
 .stocks-page .st-panel{display:flex; flex-direction:column; gap:14px; min-width:0}
 .stocks-page .st-panel-head{display:flex; align-items:center; gap:10px}
 .stocks-page .st-panel-head h2{
-  margin:0; color:var(--ink); font-size:17px; font-weight:750; letter-spacing:-.02em;
+  margin:0; color:var(--ink); font-size:var(--fs-2xl); font-weight:var(--fw-bold); letter-spacing:-.02em;
 }
 /* margin:0 은 장식이 아니다 — F-06 체결내역(sim-trades.css)의 같은 이름이
    margin:0 0 0 auto 로 배지를 오른쪽 끝까지 밀어붙인다. 스코프를 씌워도 **내가
@@ -373,19 +373,19 @@
   margin:0;
   padding:3px 9px; border-radius:99px;
   background:var(--brand-softer); color:var(--brand-ink);
-  font-size:11.5px; font-weight:750;
+  font-size:var(--fs-xs); font-weight:var(--fw-bold);
 }
 /* 기준 영업일 — 머리글에서 목록 패널로 내려왔다(2026-09-11). 마켓맵 탭에서는
    목록을 부르지 않아 baseDate 가 없고, 머리글에 두면 탭마다 있다 없다 한다 */
 .stocks-page .st-panel-asof{
-  color:var(--muted); font-size:12px; font-weight:650; white-space:nowrap;
+  color:var(--muted); font-size:var(--fs-sm); font-weight:var(--fw-bold); white-space:nowrap;
 }
-.stocks-page .st-panel-asof b{color:var(--ink); font-weight:750}
+.stocks-page .st-panel-asof b{color:var(--ink); font-weight:var(--fw-bold)}
 
 .stocks-page .st-sort{margin-left:auto; flex:none}
 .stocks-page .st-sort select{
   height:34px; padding:0 30px 0 12px; border:1px solid var(--rule); border-radius:9px;
-  background:var(--surface); color:var(--body); font-size:12.5px; font-weight:700;
+  background:var(--surface); color:var(--body); font-size:var(--fs-md); font-weight:var(--fw-bold);
   appearance:none; cursor:pointer;
   /* 화살표는 배경으로 그린다 — 아이콘 하나 때문에 요소를 더하지 않는다 */
   background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),
@@ -406,7 +406,7 @@
    여섯 칸 모두에 그대로 밀려 머리글과 값이 따로 논다. .st-item 의 44px 과 한 쌍이다. */
 .stocks-page .st-cols{
   margin:0 -20px; padding:0 44px 10px 20px; border-bottom:1px solid var(--rule);
-  color:var(--muted); font-size:11.5px; font-weight:650; letter-spacing:.02em;
+  color:var(--muted); font-size:var(--fs-xs); font-weight:var(--fw-bold); letter-spacing:.02em;
 }
 .stocks-page .st-cols .r{text-align:right}
 
@@ -438,34 +438,34 @@
 .stocks-page .st-id{display:flex; align-items:center; gap:11px; min-width:0}
 .stocks-page .st-logo{
   display:grid; place-items:center; flex:none; width:36px; height:36px;
-  border-radius:10px; font-size:14px; font-weight:750;
+  border-radius:10px; font-size:var(--fs-lg); font-weight:var(--fw-bold);
 }
 .stocks-page .st-id-text{display:flex; flex-direction:column; gap:2px; min-width:0}
 .stocks-page .st-name{
-  font-size:14.5px; font-weight:750; letter-spacing:-.01em; line-height:1.35;
+  font-size:var(--fs-lg); font-weight:var(--fw-bold); letter-spacing:-.01em; line-height:1.35;
 }
 .stocks-page .st-sub{
-  color:var(--faint); font-size:11.5px; font-weight:500; line-height:1.4;
+  color:var(--faint); font-size:var(--fs-xs); font-weight:var(--fw-normal); line-height:1.4;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 
 .stocks-page .st-close,.stocks-page .st-rate,.stocks-page .st-per{
   text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap;
 }
-.stocks-page .st-close{color:var(--ink); font-size:14px; font-weight:750}
-.stocks-page .st-rate{font-size:13px; font-weight:750}
-.stocks-page .st-per{color:var(--body); font-size:12.5px; font-weight:650}
+.stocks-page .st-close{color:var(--ink); font-size:var(--fs-lg); font-weight:var(--fw-bold)}
+.stocks-page .st-rate{font-size:var(--fs-base); font-weight:var(--fw-bold)}
+.stocks-page .st-per{color:var(--body); font-size:var(--fs-md); font-weight:var(--fw-bold)}
 
 /* ── 예측 심리 막대 ─────────────────────────────────────── */
 .stocks-page .st-senti{display:flex; flex-direction:column; gap:5px; min-width:0}
 .stocks-page .st-senti-head{display:flex; align-items:baseline; gap:8px}
-.stocks-page .st-senti-head b{font-size:11.5px; font-weight:800; letter-spacing:.02em}
-.stocks-page .st-senti-head em{margin-left:auto; color:var(--faint); font-style:normal; font-size:11px}
+.stocks-page .st-senti-head b{font-size:var(--fs-xs); font-weight:var(--fw-heavy); letter-spacing:.02em}
+.stocks-page .st-senti-head em{margin-left:auto; color:var(--faint); font-style:normal; font-size:var(--fs-2xs)}
 .stocks-page .st-senti-track{display:flex; height:5px; border-radius:99px; overflow:hidden}
 /* 막대는 글자가 아니라 그래픽이라 밝은 쪽을 쓴다 */
 .stocks-page .st-senti-up{background:var(--up-vivid)}
 .stocks-page .st-senti-down{background:var(--down-vivid)}
-.stocks-page .st-senti-none{color:var(--faint); font-size:11.5px}
+.stocks-page .st-senti-none{color:var(--faint); font-size:var(--fs-xs)}
 
 /* ── 관심 별 ────────────────────────────────────────────── */
 .stocks-page .st-star{
@@ -478,11 +478,11 @@
 /* ── 더 보기·꼬리말 ─────────────────────────────────────── */
 .stocks-page .st-more{
   align-self:center; padding:10px 22px; border:1px solid var(--rule); border-radius:10px;
-  background:var(--surface); color:var(--body); font-size:13px; font-weight:700;
+  background:var(--surface); color:var(--body); font-size:var(--fs-base); font-weight:var(--fw-bold);
 }
 .stocks-page .st-more:hover{border-color:var(--brand); color:var(--brand-ink)}
 .stocks-page .st-panel .st-more-hint,.stocks-page .st-panel .st-foot{
-  margin:0; align-self:center; color:var(--faint); font-size:12px;
+  margin:0; align-self:center; color:var(--faint); font-size:var(--fs-sm);
 }
 
 /* ── 반응형 ─────────────────────────────────────────────── */
@@ -508,7 +508,7 @@
 }
 @media (max-width:900px){
   .stocks-page .st-hero{flex-direction:column; align-items:flex-start; gap:12px}
-  .stocks-page .st-hero h1{font-size:24px}
+  .stocks-page .st-hero h1{font-size:var(--fs-title)}
 }
 @media (max-width:680px){
   /* 심리 막대까지 접고 종목·종가·등락률만 남긴다 */

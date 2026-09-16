@@ -17,12 +17,12 @@
    E-02 채널 머리와 같은 컴포넌트이고, 스타일도 styles/profile-edit.css 가 들고 간다.
    여기서는 제목 크기만 이 화면 몫으로 맞춘다(채널은 h1, 여기는 h2). */
 .mp-who{min-width:0}
-.mp-who h2{margin:0;color:var(--ink);font-size:20px;font-weight:850;letter-spacing:-.02em}
+.mp-who h2{margin:0;color:var(--ink);font-size:var(--fs-3xl);font-weight:var(--fw-black);letter-spacing:-.02em}
 
 .mp-actions{display:grid;gap:8px}
 .mp-btn{
   display:grid;place-items:center;height:36px;padding:0 16px;
-  border-radius:10px;font-size:13px;font-weight:750;white-space:nowrap;
+  border-radius:10px;font-size:var(--fs-base);font-weight:var(--fw-bold);white-space:nowrap;
 }
 .mp-btn.solid{background:var(--brand);color:#fff}
 .mp-btn.solid:hover{background:var(--brand-ink)}
@@ -31,7 +31,7 @@
 
 /* ── 블록 공통 ───────────────────────────────────────── */
 .mp-block{margin-top:32px}
-.mp-block h3{margin:0 0 12px;color:var(--ink);font-size:16px;font-weight:800}
+.mp-block h3{margin:0 0 12px;color:var(--ink);font-size:var(--fs-2xl);font-weight:var(--fw-heavy)}
 
 /* ── 활동 진입점 ─────────────────────────────────────── */
 .mp-links{
@@ -49,9 +49,9 @@
   border-radius:11px;background:var(--brand-soft);color:var(--brand);
 }
 .mp-link-text{flex:1;min-width:0}
-.mp-link-text b{display:block;color:var(--ink);font-size:14px;font-weight:750}
-.mp-link-text small{display:block;margin-top:2px;color:var(--muted);font-size:12px}
-.mp-link-go{flex:none;font-style:normal;color:#b3b9c9;font-size:17px}
+.mp-link-text b{display:block;color:var(--ink);font-size:var(--fs-lg);font-weight:var(--fw-bold)}
+.mp-link-text small{display:block;margin-top:2px;color:var(--muted);font-size:var(--fs-sm)}
+.mp-link-go{flex:none;font-style:normal;color:#b3b9c9;font-size:var(--fs-2xl)}
 .mp-links a:hover .mp-link-go{color:var(--brand)}
 
 /* ── 배지 (G-09 와 공유) ─────────────────────────────── */
@@ -59,16 +59,16 @@
 .badge-chip{
   display:inline-flex;align-items:center;gap:7px;
   padding:8px 14px;border:1px solid var(--rule);border-radius:999px;
-  background:var(--surface);color:var(--body);font-size:13px;font-weight:750;
+  background:var(--surface);color:var(--body);font-size:var(--fs-base);font-weight:var(--fw-bold);
 }
 /* 전시 pin 은 브랜드색으로 앞에 세운다 */
 .badge-chip.pinned{border-color:#cdc9f7;background:var(--brand-softer);color:var(--brand-ink)}
 .badge-mark{display:grid;place-items:center;color:var(--gold)}
 .badge-pin{
   padding:1px 6px;border-radius:999px;background:var(--brand-soft);
-  color:var(--brand-ink);font-style:normal;font-size:10.5px;font-weight:800;
+  color:var(--brand-ink);font-style:normal;font-size:var(--fs-3xs);font-weight:var(--fw-heavy);
 }
-.badges-empty{margin:0;color:var(--faint);font-size:13px}
+.badges-empty{margin:0;color:var(--faint);font-size:var(--fs-base)}
 
 @media(max-width:760px){
   .mp-profile{grid-template-columns:auto minmax(0,1fr);gap:16px}

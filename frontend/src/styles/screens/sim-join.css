@@ -14,7 +14,7 @@
 .sim-join.demo{--tone:#2f7bf6;--tone-ink:#2a6ad8;--tone-soft:#e8f1fe}
 
 /* ── 머리 ─────────────────────────────────────────────── */
-.sj-crumb{display:flex;align-items:center;gap:9px;color:#8a93ad;font-size:13.5px;font-weight:700}
+.sj-crumb{display:flex;align-items:center;gap:9px;color:#8a93ad;font-size:var(--fs-lg);font-weight:var(--fw-bold)}
 .sj-crumb a:hover{color:var(--brand)}
 .sj-crumb i{font-style:normal;color:#c2c8da}
 
@@ -23,14 +23,14 @@
 .sj-mode{
   padding:4px 12px;border-radius:999px;
   background:var(--tone-soft);color:var(--tone-ink);
-  font-size:12.5px;font-weight:750;
+  font-size:var(--fs-md);font-weight:var(--fw-bold);
 }
 
 .sj-head h1{
-  margin:0;color:#0e1330;font-size:34px;font-weight:850;letter-spacing:-.035em;
+  margin:0;color:var(--ink);
   text-wrap:balance;
 }
-.sj-head p{margin:0;color:#6b7291;font-size:15.5px;font-weight:650;text-wrap:pretty}
+.sj-head p{margin:0;color:#6b7291;font-size:var(--fs-xl);font-weight:var(--fw-bold);text-wrap:pretty}
 
 /* ── 시즌 카드 ────────────────────────────────────────── */
 .sj-card{
@@ -63,16 +63,16 @@
 .sj-stats > div:first-child{padding-left:0;border-left:0}
 .sj-stats svg{flex:none;color:var(--tone)}
 
-.sj-stats dt{margin:0 0 3px;color:#8a90ab;font-size:12.5px;font-weight:650}
-.sj-stats dd{margin:0;color:var(--ink);font-size:15px;font-weight:700}
-.sj-stats dd b{font-size:19px;font-weight:850;letter-spacing:-.02em}
+.sj-stats dt{margin:0 0 3px;color:#8a90ab;font-size:var(--fs-md);font-weight:var(--fw-bold)}
+.sj-stats dd{margin:0;color:var(--ink);font-size:var(--fs-xl);font-weight:var(--fw-bold)}
+.sj-stats dd b{font-size:var(--fs-3xl);font-weight:var(--fw-black);letter-spacing:-.02em}
 .sj-stats dd .num{margin-right:2px}
 
 /* 대회만 나온다 */
 .sj-schedule{
   display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:0;
   padding-top:16px;border-top:1px dashed var(--rule);
-  color:#6b7291;font-size:13.5px;font-weight:650;
+  color:#6b7291;font-size:var(--fs-lg);font-weight:var(--fw-bold);
 }
 .sj-schedule svg{flex:none;color:#8a90ab}
 
@@ -83,11 +83,11 @@
   display:flex;align-items:center;justify-content:center;gap:10px;
   width:100%;height:56px;padding:0 20px;border-radius:13px;
   background:var(--tone);color:#fff;
-  font-size:16.5px;font-weight:800;letter-spacing:-.02em;
+  font-size:var(--fs-2xl);font-weight:var(--fw-heavy);letter-spacing:-.02em;
   transition:background .15s;
 }
 .sj-cta:hover{background:var(--tone-ink)}
-.sj-cta em{font-style:normal;font-size:19px}
+.sj-cta em{font-style:normal;font-size:var(--fs-3xl)}
 .sj-cta:disabled{opacity:.6;cursor:default}
 
 .sj-cta.is-off{
@@ -98,7 +98,7 @@
 
 .sj-cta-note{
   margin:0;text-align:center;
-  color:var(--muted);font-size:12.5px;font-weight:650;
+  color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold);
   font-variant-numeric:tabular-nums;
 }
 
@@ -109,24 +109,24 @@
 }
 
 .sj-rules h2{
-  margin:0 0 14px;color:var(--ink);font-size:16px;font-weight:800;letter-spacing:-.02em;
+  margin:0 0 14px;color:var(--ink);font-size:var(--fs-2xl);font-weight:var(--fw-heavy);letter-spacing:-.02em;
 }
 
 .sj-rules ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:11px}
 
 .sj-rules li{
   position:relative;padding-left:20px;
-  color:var(--body);font-size:14px;line-height:1.65;
+  color:var(--body);font-size:var(--fs-lg);line-height:1.65;
 }
 .sj-rules li::before{
   content:"";position:absolute;left:5px;top:9px;
   width:5px;height:5px;border-radius:50%;background:var(--tone);
 }
-.sj-rules b{color:var(--ink);font-weight:750}
+.sj-rules b{color:var(--ink);font-weight:var(--fw-bold)}
 .sj-rules code{
   padding:1px 6px;border-radius:5px;
   background:var(--surface-2);color:var(--ink);
-  font-family:var(--mono);font-size:12.5px;
+  font-family:var(--mono);font-size:var(--fs-md);
 }
 
 /* ── 초기화 확인 ──────────────────────────────────────── */
@@ -137,16 +137,16 @@
   background:var(--surface);color:var(--body);box-shadow:var(--shadow);
 }
 .sj-dialog::backdrop{background:rgba(20,20,27,.38)}
-.sj-dialog h2{margin:0 0 10px;color:var(--ink);font-size:18px;font-weight:800;letter-spacing:-.02em}
-.sj-dialog p{margin:0 0 8px;font-size:14.5px;line-height:1.65}
+.sj-dialog h2{margin:0 0 10px;color:var(--ink);font-size:var(--fs-3xl);font-weight:var(--fw-heavy);letter-spacing:-.02em}
+.sj-dialog p{margin:0 0 8px;font-size:var(--fs-lg);line-height:1.65}
 .sj-dialog small{
-  display:block;color:var(--muted);font-size:12.5px;line-height:1.6;
+  display:block;color:var(--muted);font-size:var(--fs-md);line-height:1.6;
   font-variant-numeric:tabular-nums;
 }
 .sj-dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
 .sj-dialog-btn{
   padding:10px 16px;border:1px solid var(--rule);border-radius:10px;
-  background:var(--surface);color:var(--ink);font-size:14px;font-weight:750;
+  background:var(--surface);color:var(--ink);font-size:var(--fs-lg);font-weight:var(--fw-bold);
 }
 .sj-dialog-btn:hover{background:var(--surface-2)}
 .sj-dialog-btn.solid{border-color:var(--tone);background:var(--tone);color:#fff}
@@ -156,10 +156,10 @@
 /* ── 좁은 화면 ────────────────────────────────────────── */
 @media(max-width:900px){
   .sj-card{grid-template-columns:minmax(0,1fr);gap:20px}
-  .sj-head h1{font-size:27px}
+  .sj-head h1{font-size:var(--fs-title-lg)}
 }
 @media(max-width:600px){
-  .sj-head h1{font-size:23px}
+  .sj-head h1{font-size:var(--fs-title)}
   .sj-card{padding:22px 20px}
   .sj-stats > div{padding:0;border-left:0;flex:1 1 45%}
   .sj-rules{padding:20px}

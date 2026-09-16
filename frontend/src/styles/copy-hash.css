@@ -8,7 +8,7 @@
 }
 .copy-hash:hover{ background:var(--surface-2); }
 .copy-hash code{
-  font-family:var(--mono); font-size:12px; color:var(--body);
+  font-family:var(--mono); font-size:var(--fs-sm); color:var(--body);
 }
 .copy-hash-icon{ display:inline-flex; color:var(--faint); }
 .copy-hash:hover .copy-hash-icon{ color:var(--body); }

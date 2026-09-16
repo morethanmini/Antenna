@@ -33,7 +33,7 @@
 .hm-quick a{
   display:flex; align-items:center; justify-content:center; gap:7px;
   padding:8px; border-left:1px solid var(--rule);
-  color:var(--body); font-size:12.5px; font-weight:700; white-space:nowrap;
+  color:var(--body); font-size:var(--fs-md); font-weight:var(--fw-bold); white-space:nowrap;
 }
 .hm-quick a:first-child{border-left:0}
 .hm-quick a:hover{background:var(--surface-2); color:var(--brand-ink)}
@@ -62,28 +62,28 @@
 .hm-head{display:flex; align-items:center; gap:10px}
 .hm-head h2{
   display:flex; align-items:center; gap:7px;
-  margin:0; color:var(--ink); font-size:17px; font-weight:750; letter-spacing:-.02em;
+  margin:0; color:var(--ink); font-size:var(--fs-2xl); font-weight:var(--fw-bold); letter-spacing:-.02em;
 }
 .hm-head h2 .hm-ico{color:var(--brand)}
-.hm-head a,.hm-head .hm-date,.hm-head .hm-badge{margin-left:auto; font-size:12.5px; color:var(--muted)}
-.hm-head a{font-weight:650}
+.hm-head a,.hm-head .hm-date,.hm-head .hm-badge{margin-left:auto; font-size:var(--fs-md); color:var(--muted)}
+.hm-head a{font-weight:var(--fw-bold)}
 .hm-head a:hover{color:var(--brand)}
 .hm-badge{
   padding:2px 8px; border:1px solid var(--rule); border-radius:99px;
-  background:var(--surface-2); font-size:11px; font-weight:650;
+  background:var(--surface-2); font-size:var(--fs-2xs); font-weight:var(--fw-bold);
 }
 .hm-ico{flex:none}
 
 /* 섹션 상태 */
-.hm-state{margin:0; padding:16px 0; color:var(--faint); font-size:13px}
+.hm-state{margin:0; padding:16px 0; color:var(--faint); font-size:var(--fs-base)}
 .hm-state.err{color:var(--danger)}
 .hm-retry{
   margin-left:8px; padding:2px 9px; border:1px solid var(--rule); border-radius:8px;
-  background:var(--surface); color:var(--muted); font-family:inherit; font-size:12px; cursor:pointer;
+  background:var(--surface); color:var(--muted); font-family:inherit; font-size:var(--fs-sm); cursor:pointer;
 }
 .hm-retry:hover{color:var(--ink)}
-.hm-foot{margin:0; color:var(--faint); font-size:11.5px; line-height:1.5}
-.hm-foot a{color:var(--muted); font-weight:650; font-size:12.5px}
+.hm-foot{margin:0; color:var(--faint); font-size:var(--fs-xs); line-height:1.5}
+.hm-foot a{color:var(--muted); font-weight:var(--fw-bold); font-size:var(--fs-md)}
 .hm-foot a:hover{color:var(--brand)}
 
 /* 상승·하락 — 국내 관례대로 상승이 빨강이다. 숫자에 부호가 함께 있어 색만으로 전달하지 않는다. */
@@ -96,22 +96,25 @@
 .hm-hero{
   position:relative; overflow:hidden;
   display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:16px;
-  padding:28px 30px; border:1px solid var(--rule); border-radius:16px;
+  padding:28px 30px; border:1px solid var(--wash-line); border-radius:16px;
+  /* 판은 모의투자 홈 히어로(G-01)와 같은 --wash 다 — 두 모드의 첫 화면이
+     같은 결로 보여야 한다. 위에 얹은 빛 얼룩도 그쪽과 같은 구성이되,
+     이 히어로가 더 납작해서 위치만 이 비율에 맞춰 옮겼다. */
   background:
-    radial-gradient(120% 140% at 88% 18%,var(--brand-soft) 0%,transparent 58%),
-    linear-gradient(135deg,#fbfaff 0%,var(--brand-softer) 100%);
+    radial-gradient(64% 86% at 78% 22%,rgba(255,255,255,.85),transparent 62%),
+    radial-gradient(48% 70% at 96% 96%,rgba(196,186,255,.45),transparent 70%),
+    var(--wash);
   box-shadow:var(--shadow);
 }
-.hm-hello{margin:0 0 10px; color:var(--brand-ink); font-size:13.5px; font-weight:700}
+.hm-hello{margin:0 0 10px; color:var(--brand-ink); font-size:var(--fs-lg); font-weight:var(--fw-bold)}
 .hm-hero h1{
-  margin:0; color:var(--ink); font-size:27px; font-weight:800;
-  line-height:1.34; letter-spacing:-.03em;
+  margin:0; color:var(--ink); line-height:1.34;
 }
-.hm-hero-sub{margin:12px 0 0; color:var(--muted); font-size:13.5px; line-height:1.62}
+.hm-hero-sub{margin:12px 0 0; color:var(--body); font-size:var(--fs-lg); line-height:1.62}
 .hm-cta{
   display:inline-flex; align-items:center; gap:8px; margin-top:20px;
   padding:11px 20px; border-radius:11px;
-  background:var(--brand); color:#fff; font-size:14px; font-weight:700;
+  background:var(--brand); color:#fff; font-size:var(--fs-lg); font-weight:var(--fw-bold);
 }
 .hm-cta:hover{background:var(--brand-ink)}
 /* 마스코트는 카드보다 크게 잡고 아래로 살짝 흘려보낸다. .hm-hero 가 overflow:hidden
@@ -141,17 +144,17 @@
 .hm-indices li:first-child{padding-left:0; border-left:0}
 .hm-ix-name{
   grid-column:1; grid-row:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-  color:var(--muted); font-size:12.5px; font-weight:650;
+  color:var(--muted); font-size:var(--fs-md); font-weight:var(--fw-bold);
 }
 .hm-ix-val{
   grid-column:1; grid-row:2; white-space:nowrap;
-  color:var(--ink); font-size:22px; font-weight:750; letter-spacing:-.025em;
+  color:var(--ink); font-size:var(--fs-4xl); font-weight:var(--fw-bold); letter-spacing:-.025em;
 }
 .hm-ix-delta{
   grid-column:1; grid-row:3; white-space:nowrap;
-  font-size:12.5px; font-weight:700; line-height:1.35;
+  font-size:var(--fs-md); font-weight:var(--fw-bold); line-height:1.35;
 }
-.hm-ix-delta em{margin-left:3px; font-style:normal; font-size:11.5px; font-weight:650; opacity:.85}
+.hm-ix-delta em{margin-left:3px; font-style:normal; font-size:var(--fs-xs); font-weight:var(--fw-bold); opacity:.85}
 .hm-indices .spark{grid-column:2; grid-row:1 / span 3}
 
 /* ── 내 자산 ─────────────────────────────────────────────── */
@@ -162,26 +165,26 @@
 }
 .hm-ant-label{
   display:flex; align-items:center; gap:6px; margin:0 0 4px;
-  color:var(--muted); font-size:12px; font-weight:650;
+  color:var(--muted); font-size:var(--fs-sm); font-weight:var(--fw-bold);
 }
 .hm-ant-label .hm-ico{color:var(--brand)}
 .hm-ant{margin:0; color:var(--ink)}
 /* app.css 의 .card p 가 (0,1,1) 로 더 세서, 색을 b 에 직접 걸지 않으면
    잔액이 회색(--muted)을 물려받는다. */
-.hm-ant b{color:var(--ink); font-size:28px; font-weight:750; letter-spacing:-.03em}
-.hm-ant em{font-style:normal; color:var(--muted); font-size:14px; font-weight:650}
+.hm-ant b{color:var(--ink); font-size:var(--fs-7xl); font-weight:var(--fw-bold); letter-spacing:-.03em}
+.hm-ant em{font-style:normal; color:var(--muted); font-size:var(--fs-lg); font-weight:var(--fw-bold)}
 .hm-ant-btn{
   margin-left:auto; flex:none; padding:9px 15px; border-radius:10px;
-  background:var(--brand); color:#fff; font-size:13px; font-weight:700;
+  background:var(--brand); color:#fff; font-size:var(--fs-base); font-weight:var(--fw-bold);
 }
 .hm-ant-btn:hover{background:var(--brand-ink)}
 .hm-ant-grid{
   display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:0;
 }
-.hm-ant-grid dt{color:var(--muted); font-size:11.5px}
+.hm-ant-grid dt{color:var(--muted); font-size:var(--fs-xs)}
 .hm-ant-grid dd{
   display:flex; align-items:center; gap:5px;
-  margin:5px 0 0; color:var(--ink); font-size:13.5px; font-weight:700;
+  margin:5px 0 0; color:var(--ink); font-size:var(--fs-lg); font-weight:var(--fw-bold);
 }
 
 /* ── AI 브리핑 띠 — 시장 Overview 안에 한 줄로 얹는다 ──────
@@ -193,7 +196,7 @@
 }
 .hm-ticker-tag{
   display:inline-flex; align-items:center; gap:5px; flex:none;
-  color:var(--brand-ink); font-size:11.5px; font-weight:700;
+  color:var(--brand-ink); font-size:var(--fs-xs); font-weight:var(--fw-bold);
 }
 /* <p> 였다가 버튼이 됐다(M-10 을 연다). 버튼 기본 모양을 지우고
    문장으로 남긴다 — 띠 안에서 버튼처럼 보이면 오히려 시선을 뺏는다. */
@@ -201,7 +204,7 @@
   flex:1; min-width:0; margin:0; padding:0;
   border:0; background:none; text-align:left; font:inherit;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  color:var(--body); font-size:13px; line-height:1.5;
+  color:var(--body); font-size:var(--fs-base); line-height:1.5;
   cursor:pointer;
   animation:hm-fade .45s ease both;
 }
@@ -209,7 +212,7 @@
 /* 아직 없다고 알리는 줄. 누를 것이 없으므로 밑줄도 손모양도 주지 않는다 */
 .hm-ticker-line.is-muted{ color:var(--muted); cursor:default }
 .hm-ticker-line.is-muted:hover{ text-decoration:none }
-.hm-ticker-no{flex:none; color:var(--faint); font-size:11px; font-weight:650}
+.hm-ticker-no{flex:none; color:var(--faint); font-size:var(--fs-2xs); font-weight:var(--fw-bold)}
 
 @keyframes hm-fade{
   from{opacity:0; transform:translateY(4px)}
@@ -229,7 +232,7 @@
 
 /* ── 관심 종목 표 ────────────────────────────────────────── */
 .hm-table-wrap{overflow-x:auto}
-.hm-table{border-collapse:collapse; width:100%; min-width:520px; font-size:13.5px}
+.hm-table{border-collapse:collapse; width:100%; min-width:520px; font-size:var(--fs-lg)}
 /* 좁은 화면에서는 셀을 접지 않고 표째로 가로 스크롤한다(.hm-table-wrap).
    종목명이 두 줄로 접히면 행 높이가 들쭉날쭉해져 읽기 더 어렵다. */
 .hm-table th,.hm-table td{
@@ -237,22 +240,22 @@
   text-align:left; white-space:nowrap;
 }
 .hm-table thead th{
-  padding-top:0; color:var(--muted); font-size:11.5px; font-weight:650; letter-spacing:.02em;
+  padding-top:0; color:var(--muted); font-size:var(--fs-xs); font-weight:var(--fw-bold); letter-spacing:.02em;
 }
 .hm-table tbody tr:last-child th,.hm-table tbody tr:last-child td{border-bottom:0}
-.hm-table tbody th{font-weight:650; padding-left:0}
+.hm-table tbody th{font-weight:var(--fw-bold); padding-left:0}
 .hm-table tbody th a{display:flex; align-items:center; gap:9px; color:var(--ink)}
 .hm-table tbody th a:hover{color:var(--brand)}
-.hm-table tbody th small{color:var(--faint); font-size:11.5px; font-weight:500}
+.hm-table tbody th small{color:var(--faint); font-size:var(--fs-xs); font-weight:var(--fw-normal)}
 .hm-table .r{text-align:right}
 .hm-table .c{text-align:center; width:104px}
 .hm-table .c .spark{margin:0 auto}
 .hm-table .s{width:34px; padding-right:0; text-align:right}
 .hm-table td.num{font-variant-numeric:tabular-nums}
-.hm-table td em{font-style:normal; font-size:12px; opacity:.85}
+.hm-table td em{font-style:normal; font-size:var(--fs-sm); opacity:.85}
 .hm-logo{
   display:grid; place-items:center; flex:none; width:26px; height:26px;
-  border-radius:50%; font-size:12px; font-weight:750;
+  border-radius:50%; font-size:var(--fs-sm); font-weight:var(--fw-bold);
 }
 .hm-star{display:inline-flex; color:var(--gold)}
 
@@ -278,7 +281,7 @@
   background:var(--brand-soft);
 }
 .hm-lead-id{display:flex; flex-direction:column; gap:3px; min-width:0}
-.hm-lead-name{color:var(--ink); font-size:15px; font-weight:750; letter-spacing:-.02em}
+.hm-lead-name{color:var(--ink); font-size:var(--fs-xl); font-weight:var(--fw-bold); letter-spacing:-.02em}
 .hm-lead-name:hover{color:var(--brand)}
 /* 금속은 **한 방향으로 흐르는 밝기 차이**에서 온다 — 단색 금색에 그림자만 얹으면
    노란 알약이지 금이 아니다. 밝은 띠와 어두운 띠를 번갈아 넣어, 빛이 굽은 면을
@@ -295,7 +298,7 @@
      끊으니 금속의 굴곡은 남고 글자는 어디서든 뜬다. */
   background:linear-gradient(145deg,
     #fffaea 0%, #f9e9b4 22%, #eacd7c 45%, #fdf3ce 60%, #f0d68e 80%, #e0bc63 100%);
-  color:#4a3a06; font-size:13px; font-weight:800; letter-spacing:-.01em;
+  color:#4a3a06; font-size:var(--fs-base); font-weight:var(--fw-heavy); letter-spacing:-.01em;
   /* 글자 밑의 흰 줄 — 금속 위의 각인처럼 한 픽셀 띄워 윤곽을 살린다 */
   text-shadow:0 1px 0 rgba(255,255,255,.5);
   box-shadow:
@@ -331,11 +334,11 @@
      한 상자 안에서 선이 두 종류가 된다 */
   border-top:1px solid var(--rule);
 }
-.hm-lead-stats dt{color:var(--muted); font-size:11.5px}
-.hm-lead-stats dd{margin:4px 0 0; color:var(--ink); font-size:14px; font-weight:750}
+.hm-lead-stats dt{color:var(--muted); font-size:var(--fs-xs)}
+.hm-lead-stats dd{margin:4px 0 0; color:var(--ink); font-size:var(--fs-lg); font-weight:var(--fw-bold)}
 .hm-lead-btn{
   grid-column:1 / -1; padding:9px 0; border-radius:10px;
-  background:var(--brand); color:#fff; font-size:13px; font-weight:700; text-align:center;
+  background:var(--brand); color:#fff; font-size:var(--fs-base); font-weight:var(--fw-bold); text-align:center;
 }
 .hm-lead-btn:hover{background:var(--brand-ink)}
 
@@ -343,8 +346,8 @@
    J-01 로 가는 유일한 화면 안 통로다. 좌우 두 칸을 통째로 가로질러 한 줄을
    차지한다 — 카드 하나로 넣으면 옆 카드와 같은 무게로 읽혀, 이 줄이 이벤트라는
    것이 안 보인다.
-   색은 히어로(보라)와 같은 계열로 두되 한 단계 어둡게 간다. 같은 값이면 바로
-   위 히어로와 한 덩어리로 붙어 보인다. */
+   색은 히어로(연보라 --wash)와 같은 계열로 두되 진하게 간다. 옅으면 바로 위
+   히어로와 한 덩어리로 붙어 보인다. */
 .hm-event{
   grid-column:1 / -1;
   display:flex; align-items:center; gap:14px;
@@ -358,25 +361,25 @@
 
 .hm-event-badge{
   flex:none; padding:4px 10px; border-radius:999px;
-  background:var(--gold); color:#4a3a06; font-size:11.5px; font-weight:800;
+  background:var(--gold); color:#4a3a06; font-size:var(--fs-xs); font-weight:var(--fw-heavy);
 }
 /* margin-right:auto 가 여기 붙는다 — 마감 줄이 없는 단계에서도 버튼이 오른쪽
    끝에 서야 한다. 미는 것은 하나만 해야 하므로 마감 줄에는 걸지 않는다 */
 .hm-event-text{display:flex; flex-direction:column; gap:2px; min-width:0; margin-right:auto}
-.hm-event-text b{color:#fff; font-size:15px; font-weight:800; letter-spacing:-.02em}
+.hm-event-text b{color:#fff; font-size:var(--fs-xl); font-weight:var(--fw-heavy); letter-spacing:-.02em}
 .hm-event-text em{
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  color:rgba(255,255,255,.78); font-style:normal; font-size:12.5px;
+  color:rgba(255,255,255,.78); font-style:normal; font-size:var(--fs-md);
 }
 .hm-event-when{
   flex:none;
-  color:rgba(255,255,255,.82); font-size:12px; font-weight:700;
+  color:rgba(255,255,255,.82); font-size:var(--fs-sm); font-weight:var(--fw-bold);
   font-variant-numeric:tabular-nums;
 }
 .hm-event-cta{
   flex:none; padding:8px 14px; border-radius:999px;
   background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3);
-  color:#fff; font-size:12.5px; font-weight:750; white-space:nowrap;
+  color:#fff; font-size:var(--fs-md); font-weight:var(--fw-bold); white-space:nowrap;
 }
 @media (max-width:760px){
   .hm-event{flex-wrap:wrap; gap:10px}
@@ -388,11 +391,11 @@
   padding:9px 0; border-bottom:1px solid var(--rule);
 }
 .hm-top li:last-child{border-bottom:0}
-.hm-rank{color:var(--faint); font-size:12.5px; font-weight:700; text-align:center}
-.hm-top-name{color:var(--ink); font-size:13.5px; font-weight:700}
+.hm-rank{color:var(--faint); font-size:var(--fs-md); font-weight:var(--fw-bold); text-align:center}
+.hm-top-name{color:var(--ink); font-size:var(--fs-lg); font-weight:var(--fw-bold)}
 .hm-top-name:hover{color:var(--brand)}
-.hm-top-stat{color:var(--ink); font-size:12.5px; font-weight:700}
-.hm-top-sub{grid-column:2 / -1; color:var(--faint); font-size:11.5px}
+.hm-top-stat{color:var(--ink); font-size:var(--fs-md); font-weight:var(--fw-bold)}
+.hm-top-sub{grid-column:2 / -1; color:var(--faint); font-size:var(--fs-xs)}
 
 /* ── 스폰서드 — 어두운 면으로 흰 카드 흐름과 끊는다 ───────── */
 .hm-showcase{
@@ -445,12 +448,12 @@
   .hm-showcase-track{transition:none}
 }
 
-.hm-showcase-title{margin:0; font-size:16.5px; font-weight:800; letter-spacing:-.02em}
-.hm-showcase-sub{margin:7px 0 0; color:rgba(255,255,255,.76); font-size:13px; line-height:1.55}
+.hm-showcase-title{margin:0; font-size:var(--fs-2xl); font-weight:var(--fw-heavy); letter-spacing:-.02em}
+.hm-showcase-sub{margin:7px 0 0; color:rgba(255,255,255,.76); font-size:var(--fs-base); line-height:1.55}
 .hm-showcase-btn{
   display:inline-flex; align-items:center; gap:7px; margin-top:18px;
   padding:10px 17px; border:1px solid rgba(255,255,255,.3); border-radius:10px;
-  color:#fff; font-size:13px; font-weight:700;
+  color:#fff; font-size:var(--fs-base); font-weight:var(--fw-bold);
 }
 .hm-showcase-btn:hover{background:rgba(255,255,255,.12)}
 /* 캐릭터는 배경 장식이라 글자 뒤로 깔고 클릭을 가로채지 않는다 */
@@ -478,7 +481,6 @@
 /* ── 반응형 ─────────────────────────────────────────────── */
 @media (max-width:1180px){
   .hm-hero-art{width:132px}
-  .hm-hero h1{font-size:23px}
 }
 @media (max-width:1080px){
   .hm-grid{grid-template-columns:minmax(0,1fr)}
@@ -491,8 +493,8 @@
 @media (max-width:560px){
   .hm-hero{grid-template-columns:minmax(0,1fr); padding:22px}
   .hm-hero-art{display:none}
-  .hm-hero h1{font-size:21px}
+  .hm-hero h1{font-size:var(--fs-title)}
   .hm-ant-grid{grid-template-columns:minmax(0,1fr); gap:8px}
-  .hm-ant b{font-size:24px}
+  .hm-ant b{font-size:var(--fs-5xl)}
   .hm-ant-box{flex-wrap:wrap}
 }

@@ -26,8 +26,8 @@
 /* ── 헤더 ───────────────────────────────────────────── */
 /* 시작 버튼이 헤더 오른쪽 끝에 붙는다 — 아래 요약 스트립의 셋째 칸 위 자리다 */
 .pr-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
-.pr-head h1{margin:0 0 8px;color:#0e1330;font-size:34px;font-weight:850;letter-spacing:-.04em}
-.pr-head p{margin:0;color:#79809c;font-size:15px;font-weight:650}
+.pr-head h1{margin:0 0 8px;color:var(--ink)}
+.pr-head p{margin:0;color:#79809c;font-size:var(--fs-xl);font-weight:var(--fw-bold)}
 
 /* ── 요약 스트립 ────────────────────────────────────── */
 .pr-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:0;margin:0}
@@ -35,16 +35,16 @@
 .pr-stat:first-child{border-left:0}
 .pr-ring{position:relative;width:78px;height:78px;flex:none}
 .pr-ring svg{transform:rotate(-90deg)}
-.pr-ring > span{position:absolute;inset:0;display:grid;place-content:center;color:#16a06a;font:850 15px var(--mono)}
+.pr-ring > span{position:absolute;inset:0;display:grid;place-content:center;color:#16a06a;font:var(--fw-black) var(--fs-xl) var(--mono)}
 .pr-stat > i{display:grid;place-items:center;width:70px;height:70px;flex:none;border-radius:50%}
 .pr-tone-v{background:#eeecfd;color:#6355e8}
 .pr-tone-o{background:#fdf1e6;color:#ef7f1a}
 .pr-stat div{min-width:0}
-.pr-stat dt{margin:0 0 8px;color:#5b6280;font-size:15px;font-weight:800}
-.pr-stat dd{margin:0;color:#0e1330;font:850 27px var(--mono);letter-spacing:-.03em}
+.pr-stat dt{margin:0 0 8px;color:#5b6280;font-size:var(--fs-xl);font-weight:var(--fw-heavy)}
+.pr-stat dd{margin:0;color:#0e1330;font:var(--fw-black) var(--fs-6xl) var(--mono);letter-spacing:-.03em}
 .pr-stat dd.brand{color:var(--brand)}
 .pr-stat dd.hot{color:#ef7f1a}
-.pr-stat small{display:block;margin-top:7px;color:#8a90ab;font-size:13.5px;line-height:1.55;font-weight:650}
+.pr-stat small{display:block;margin-top:7px;color:#8a90ab;font-size:var(--fs-lg);line-height:1.55;font-weight:var(--fw-bold)}
 
 /* ── 본문 2열 ───────────────────────────────────────── */
 .pr-body{display:grid;grid-template-columns:minmax(0,1.06fr) minmax(0,1fr);gap:20px;align-items:start}
@@ -52,29 +52,29 @@
 
 .pr-panel{padding:22px 24px}
 .pr-panel-head{display:flex;align-items:center;gap:11px;margin:0 0 18px}
-.pr-panel-head h2{margin:0;color:var(--ink);font-size:19px;font-weight:850;letter-spacing:-.025em}
-.pr-num{display:grid;place-items:center;width:26px;height:26px;flex:none;border-radius:50%;background:var(--brand);color:#fff;font:800 13px var(--mono)}
-.pr-more{margin-left:auto;color:#8a93ad;font-size:13.5px;font-weight:700;white-space:nowrap}
+.pr-panel-head h2{margin:0;color:var(--ink);font-size:var(--fs-3xl);font-weight:var(--fw-black);letter-spacing:-.025em}
+.pr-num{display:grid;place-items:center;width:26px;height:26px;flex:none;border-radius:50%;background:var(--brand);color:#fff;font:var(--fw-heavy) var(--fs-base) var(--mono)}
+.pr-more{margin-left:auto;color:#8a93ad;font-size:var(--fs-lg);font-weight:var(--fw-bold);white-space:nowrap}
 .pr-more:hover{color:var(--brand)}
 
 /* 로딩·빈 상태. 오류는 공용 ErrorState(state.css)가 그린다. */
-.pr-state,.pr-empty{margin:0;padding:22px 0;color:var(--faint);font-size:14px;font-weight:650;text-align:center}
-.pr-empty a{display:block;margin-top:10px;color:var(--brand);font-weight:750}
+.pr-state,.pr-empty{margin:0;padding:22px 0;color:var(--faint);font-size:var(--fs-lg);font-weight:var(--fw-bold);text-align:center}
+.pr-empty a{display:block;margin-top:10px;color:var(--brand);font-weight:var(--fw-bold)}
 .pr-empty a:hover{color:var(--brand-ink)}
-.pr-note{margin:14px 0 0;color:var(--faint);font-size:12.5px;font-weight:650;line-height:1.6}
+.pr-note{margin:14px 0 0;color:var(--faint);font-size:var(--fs-md);font-weight:var(--fw-bold);line-height:1.6}
 
 /* ── ① 이어서 할 연습 ───────────────────────────────── */
 .pr-courses{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 .pr-course{display:flex;flex-direction:column;padding:20px;border:1px solid var(--rule);border-radius:16px}
 .pr-course > i{display:grid;place-items:center;width:52px;height:52px;margin-bottom:16px;border-radius:15px}
-.pr-course b{display:block;margin-bottom:8px;color:#161c37;font-size:17px;font-weight:850;letter-spacing:-.02em}
-.pr-course p{margin:0 0 12px;color:#79809c;font-size:13.5px;font-weight:700}
+.pr-course b{display:block;margin-bottom:8px;color:#161c37;font-size:var(--fs-2xl);font-weight:var(--fw-black);letter-spacing:-.02em}
+.pr-course p{margin:0 0 12px;color:#79809c;font-size:var(--fs-lg);font-weight:var(--fw-bold)}
 /* 카드마다 진행률이 다르므로 숫자만이 아니라 막대로도 보여 준다 */
 .pr-bar{display:block;height:8px;margin-bottom:20px;border-radius:999px;background:#e9e9f4;overflow:hidden}
 .pr-bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#6f66ec,var(--brand))}
-.pr-start{display:flex;align-items:center;justify-content:center;gap:10px;height:48px;margin-top:auto;border:1px solid #cdc9f7;border-radius:12px;color:var(--brand);font-size:14.5px;font-weight:800}
+.pr-start{display:flex;align-items:center;justify-content:center;gap:10px;height:48px;margin-top:auto;border:1px solid #cdc9f7;border-radius:12px;color:var(--brand);font-size:var(--fs-lg);font-weight:var(--fw-heavy)}
 .pr-start:hover{background:var(--brand-softer);border-color:var(--brand)}
-.pr-start em{font-style:normal;font-size:17px}
+.pr-start em{font-style:normal;font-size:var(--fs-2xl)}
 
 /* ── ② 연습 주제 ────────────────────────────────────── */
 /* 접이식 주제 상자. summary 가 패널 머리 역할을 그대로 하고, 접혔을 때는 머리만 남는다 */
@@ -82,7 +82,7 @@
 .pr-fold summary::-webkit-details-marker{display:none}
 .pr-fold summary:focus-visible{outline:2px solid var(--brand);outline-offset:4px;border-radius:8px}
 .pr-fold[open] summary{margin-bottom:18px}
-.pr-count{margin-left:auto;color:#8a93ad;font-size:13.5px;font-weight:700;white-space:nowrap}
+.pr-count{margin-left:auto;color:#8a93ad;font-size:var(--fs-lg);font-weight:var(--fw-bold);white-space:nowrap}
 .pr-chev{display:grid;place-items:center;color:#8a93ad;transition:transform .15s}
 .pr-fold[open] .pr-chev{transform:rotate(180deg)}
 .pr-fold summary:hover .pr-count,.pr-fold summary:hover .pr-chev{color:var(--brand)}
@@ -92,9 +92,9 @@
 .pr-scenario:hover{border-color:#cdc9f7;background:#fbfbff}
 .pr-scenario > i{display:grid;place-items:center;width:52px;height:52px;flex:none;border-radius:15px}
 .pr-scenario div{flex:1;min-width:0}
-.pr-scenario b{display:block;margin-bottom:6px;color:#161c37;font-size:16.5px;font-weight:850;letter-spacing:-.02em}
-.pr-scenario small{color:#79809c;font-size:13.5px;font-weight:650}
-.pr-scenario em{flex:none;font-style:normal;color:#b3b9c9;font-size:19px}
+.pr-scenario b{display:block;margin-bottom:6px;color:#161c37;font-size:var(--fs-2xl);font-weight:var(--fw-black);letter-spacing:-.02em}
+.pr-scenario small{color:#79809c;font-size:var(--fs-lg);font-weight:var(--fw-bold)}
+.pr-scenario em{flex:none;font-style:normal;color:#b3b9c9;font-size:var(--fs-3xl)}
 .pr-scenario:hover em{color:var(--brand)}
 
 /* ── ③ 최근 완료한 연습 ─────────────────────────────── */
@@ -103,28 +103,28 @@
 .pr-done{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--rule);border-radius:14px}
 .pr-done > i{display:grid;place-items:center;width:40px;height:40px;flex:none;border-radius:12px;background:var(--surface-2);color:#7b8298}
 .pr-done div{flex:1;min-width:0}
-.pr-done b{display:block;color:#1b2245;font-size:14.5px;font-weight:750}
-.pr-done small{display:block;margin-top:4px;color:#98a0b6;font:650 12.5px var(--mono)}
-.pr-done-go{flex:none;padding:9px 15px;border:1px solid #cdc9f7;border-radius:10px;color:var(--brand);font-size:13.5px;font-weight:750;white-space:nowrap}
+.pr-done b{display:block;color:#1b2245;font-size:var(--fs-lg);font-weight:var(--fw-bold)}
+.pr-done small{display:block;margin-top:4px;color:#98a0b6;font:var(--fw-bold) var(--fs-md) var(--mono)}
+.pr-done-go{flex:none;padding:9px 15px;border:1px solid #cdc9f7;border-radius:10px;color:var(--brand);font-size:var(--fs-lg);font-weight:var(--fw-bold);white-space:nowrap}
 .pr-done-go:hover{background:var(--brand-softer);border-color:var(--brand)}
 
 /* ── ④ AI 가이드 ────────────────────────────────────── */
 /* 온디맨드 생성 버튼이 없다(§9.1) — 링크는 이미 만들어진 복기를 보러 간다. */
 .pr-ai{position:relative;overflow:hidden;padding:22px 24px;border:1px solid #dedbf8;border-radius:18px;background:linear-gradient(135deg,#f4f3fe 0%,#f8f8ff 58%,#f0effd 100%)}
 .pr-ai-inner{position:relative;z-index:1;max-width:64%;padding:22px 24px;background:rgba(255,255,255,.86);border:1px solid #e6e4f7;border-radius:16px}
-.pr-ai-inner b{display:block;margin-bottom:12px;color:var(--brand-ink);font-size:19px;font-weight:850;letter-spacing:-.025em}
-.pr-ai-inner p{margin:0 0 20px;color:#5b6280;font-size:14px;line-height:1.7;font-weight:650}
-.pr-hint{display:inline-flex;align-items:center;justify-content:center;gap:9px;width:100%;height:50px;border:1px solid #cdc9f7;border-radius:12px;background:var(--surface);color:var(--brand);font-size:14.5px;font-weight:800}
+.pr-ai-inner b{display:block;margin-bottom:12px;color:var(--brand-ink);font-size:var(--fs-3xl);font-weight:var(--fw-black);letter-spacing:-.025em}
+.pr-ai-inner p{margin:0 0 20px;color:#5b6280;font-size:var(--fs-lg);line-height:1.7;font-weight:var(--fw-bold)}
+.pr-hint{display:inline-flex;align-items:center;justify-content:center;gap:9px;width:100%;height:50px;border:1px solid #cdc9f7;border-radius:12px;background:var(--surface);color:var(--brand);font-size:var(--fs-lg);font-weight:var(--fw-heavy)}
 .pr-hint:hover{background:var(--brand-softer);border-color:var(--brand)}
 .pr-ai-art{position:absolute;right:6px;bottom:0;width:190px;margin:0;pointer-events:none}
 .pr-ai-art img{display:block;width:100%;height:auto;filter:drop-shadow(0 18px 26px rgba(70,66,229,.22))}
 
 /* ── 시작 버튼 ──────────────────────────────────────── */
 .pr-cta{display:flex;justify-content:flex-end}
-.pr-cta a{display:inline-flex;align-items:center;justify-content:center;gap:14px;min-width:340px;height:66px;padding:0 34px;border-radius:14px;background:var(--brand);color:#fff;font-size:19px;font-weight:850;letter-spacing:-.02em;box-shadow:0 14px 30px -16px rgba(70,66,229,.7)}
+.pr-cta a{display:inline-flex;align-items:center;justify-content:center;gap:14px;min-width:340px;height:66px;padding:0 34px;border-radius:14px;background:var(--brand);color:#fff;font-size:var(--fs-3xl);font-weight:var(--fw-black);letter-spacing:-.02em;box-shadow:0 14px 30px -16px rgba(70,66,229,.7)}
 .pr-cta a:hover{background:var(--brand-ink)}
 .pr-cta a:active{transform:translateY(1px)}
-.pr-cta em{font-style:normal;font-size:22px}
+.pr-cta em{font-style:normal;font-size:var(--fs-4xl)}
 
 /* ── 좁은 화면 ──────────────────────────────────────── */
 @media(max-width:1180px){
@@ -139,7 +139,7 @@
   .pr-courses{grid-template-columns:minmax(0,1fr)}
 }
 @media(max-width:640px){
-  .pr-head h1{font-size:26px}
+  .pr-head h1{font-size:var(--fs-title)}
   .pr-cta{width:100%}
   .pr-cta a{width:100%;min-width:0}
 }
