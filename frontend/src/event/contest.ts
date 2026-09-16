@@ -152,19 +152,19 @@ export const BANNER: Record<Phase, BannerArt> = {
     pill: ART('pill-before'),
     title: ART('title-main'),
     copy: ART('copy-before'),
-    alt: '천하제일 단타대회 — 시작 전. 오늘의 급등주를 맞혀라! 수익률 예측 최강자는 누구?',
+    alt: '천하제일 단타대회 — 시작 전. 롱이냐 숏이냐! 예측 최강자는 누구?',
   },
   open: {
     pill: ART('pill-open'),
     title: ART('title-main'),
     copy: ART('copy-before'),
-    alt: '천하제일 단타대회 — 대회 진행 중. 오늘의 급등주를 맞혀라! 수익률 예측 최강자는 누구?',
+    alt: '천하제일 단타대회 — 대회 진행 중. 롱이냐 숏이냐! 예측 최강자는 누구?',
   },
   judging: {
     pill: ART('pill-judging'),
     title: ART('title-main'),
     copy: ART('copy-before'),
-    alt: '천하제일 단타대회 — 결과 집계 중. 오늘의 급등주를 맞혀라! 수익률 예측 최강자는 누구?',
+    alt: '천하제일 단타대회 — 결과 집계 중. 롱이냐 숏이냐! 예측 최강자는 누구?',
   },
   done: {
     pill: ART('pill-done'),
