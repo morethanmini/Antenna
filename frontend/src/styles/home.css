@@ -122,12 +122,19 @@
   position:relative; overflow:hidden;
   display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:16px;
   padding:28px 30px; border:1px solid var(--wash-line); border-radius:16px;
-  /* 판은 모의투자 홈 히어로(G-01)와 같은 --wash 다 — 두 모드의 첫 화면이
-     같은 결로 보여야 한다. 위에 얹은 빛 얼룩도 그쪽과 같은 구성이되,
-     이 히어로가 더 납작해서 위치만 이 비율에 맞춰 옮겼다. */
+  /* 바탕은 그림 한 장이다(2026-09-16). 전에는 --wash 위에 빛 얼룩 두 겹을
+     CSS 로 얹었는데, 캔들과 빛줄기가 들어간 그림을 받아 그 자리를 넘겼다.
+
+     **--wash 를 그림 뒤에 남겨 둔다.** 그림이 늦게 뜨는 사이 흰 판이 번쩍이면
+     첫 화면에서 제일 큰 카드가 깜빡이는 것으로 보인다. 색이 먼저 깔려 있으면
+     그림은 그 위에 조용히 얹힌다.
+
+     **그림의 둥근 모서리는 구워진 채로 오지 않는다.** 원본에 테두리와 모서리가
+     그려져 있었지만 카드가 제 모서리를 따로 깎으므로, 구울 때 안쪽으로 2.5%
+     잘라 내 그 테두리를 아예 없앴다(2100x749 -> 1600x571). 안 그러면 모서리마다
+     흰 조각이 남는다. */
   background:
-    radial-gradient(64% 86% at 78% 22%,rgba(255,255,255,.85),transparent 62%),
-    radial-gradient(48% 70% at 96% 96%,rgba(196,186,255,.45),transparent 70%),
+    url(/assets/character/hero-bg.webp) center/cover no-repeat,
     var(--wash);
   box-shadow:var(--shadow);
 }
