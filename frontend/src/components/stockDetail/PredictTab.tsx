@@ -37,7 +37,7 @@ import WalletLinkModal from '../wallet/WalletLinkModal'
 import CommitProgressModal, { type CommitPhase } from '../prediction/CommitProgressModal'
 import SlideToSign from '../prediction/SlideToSign'
 import EventBet, { EventBanner, betAmount, BET_MIN, BET_MAX } from './EventBet'
-import { CONTEST, CONTEST_PATH, stamp } from '../../event/contest'
+import { CONTEST, CONTEST_HORIZON, CONTEST_PATH, dayStamp, stamp } from '../../event/contest'
 import ErrorState from '../state/ErrorState'
 import { ApiError } from '../../api/errors'
 import { POINT_KINDS, POINT_LABEL, getPoints } from '../../api/stockDetail'
@@ -118,6 +118,15 @@ export default function PredictTab({
   const { direction, target, horizon, note } = form
   const setTarget = (v: string) => onForm((f) => ({ ...f, target: v }))
   const setHorizon = (v: Horizon) => onForm((f) => ({ ...f, horizon: v }))
+
+  /* 대회에서는 기간을 고를 수 없다. **화면만 고정으로 그리면 보낼 값이 빈 채로
+     남아** 등록 버튼이 영영 잠긴다 — 상태도 같이 못 박는다.
+     대회로 들어왔다가 평소 경로로 나가면 사람이 고른 값이 없으므로 그대로 둔다.
+     사람이 고른 값을 지우는 쪽이 더 놀랍다. */
+  useEffect(() => {
+    if (eventMode && horizon !== CONTEST_HORIZON) setHorizon(CONTEST_HORIZON)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventMode, horizon])
   const setNote = (v: string) => onForm((f) => ({ ...f, note: v }))
   const setBet = (v: string) => onForm((f) => ({ ...f, bet: v }))
   /* 사람이 직접 고른 방향. 이때부터 목표가가 방향을 바꾸지 않는다 */
@@ -371,13 +380,12 @@ export default function PredictTab({
      먼저 확인하고 내 판단을 적는 흐름이라 둘을 나란히 둔다. */
   return (
     <div className="sd-grid">
-      {/* 왼쪽 기둥 — 대회 배너와 예측 분포가 **한 열 안에** 선다.
-          배너를 격자 전체로 빼면 두 카드가 통째로 아래로 밀리고, 오른쪽 등록
-          카드에 붙이면 폼이 배너만큼 길어져 옆 칸이 그만큼 빈다. 남들이 어떻게
-          걸었는지 보는 쪽에 얹어 두면 어느 카드도 길어지지 않는다. */}
-      <div className="sd-col" data-span="6">
-        {eventMode && <EventBanner name={CONTEST.name} closesAt={stamp(CONTEST.closesAt)} />}
+      {/* 대회 배너는 **격자를 가로질러 맨 위**에 선다. 한 열 안에 두면 폭이
+          절반이라 글이 두 줄로 접히고, 오른쪽 등록 카드만 길어 보인다.
+          대회로 들어오면 머리의 "오늘 판정" 자리를 접어(StockDetail) 위가 빈다. */}
+      {eventMode && <EventBanner name={CONTEST.name} closesAt={stamp(CONTEST.closesAt)} />}
 
+      <div className="sd-col" data-span="6">
         <PredictionDepth code={code} />
       </div>
 
@@ -496,7 +504,26 @@ export default function PredictTab({
               native range 를 쓰는 이유는 접근성이다. 직접 만든 끌개는 키보드·스크린리더가
               못 쓰는데, range 는 화살표키·Home/End 가 그냥 된다. */}
           <li className="pf-step">
-            <h3><i className="pf-no">2</i>예측 기간 <span className="pf-req">필수</span></h3>
+            <h3>
+              <i className="pf-no">2</i>예측 기간{' '}
+              {eventMode
+                ? <span className="pf-fixed">고정</span>
+                : <span className="pf-req">필수</span>}
+            </h3>
+
+            {/* 대회는 모두가 같은 날 판정된다. 기간이 사람마다 다르면 줄을 세울 수
+                없으므로 고르는 자리를 아예 없앤다 — 끌개를 두고 못 움직이게만 하면
+                왜 안 되는지 알 수 없어 몇 번 더 당겨 보게 된다.
+
+                **만기는 계산하지 않는다.** dueLabel 은 "오늘의 다음 평일 + 기간" 으로
+                잡는데 대회 만기는 정해진 날짜다. 계산에 맡기면 등록한 날에 따라
+                사람마다 다른 날이 찍힌다 — 9/21 이어야 할 것이 9/20 으로 나왔었다. */}
+            {eventMode ? (
+              <p className="pf-fixed-line">
+                <b className="num">{horizonLabel(CONTEST_HORIZON)}</b>
+                <span>만기 <b>{dayStamp(CONTEST.targetDate)}</b> 종가</span>
+              </p>
+            ) : (
             <div className={`pf-line${horizon === null ? ' is-unset' : ''}`}>
               <input
                 type="range"
@@ -522,17 +549,25 @@ export default function PredictTab({
                 ))}
               </div>
             </div>
-            <p className="sd-help">
-              {horizon === null
-                ? '손잡이를 옮겨 3일에서 90일 사이로 고르세요.'
-                : <><b className="num">{horizonLabel(horizon)}</b> · 만기 <b className="num">{dueLabel(horizon)}</b> · 기준일(다음 평일)부터 캘린더일로 셉니다. 기준가는 기준일 종가로 확정됩니다.</>}
-            </p>
+            )}
+
+            {/* 대회에서는 안내를 두지 않는다 — 바로 위 고정 줄이 기간과 만기를
+                이미 말하고 있어, 같은 말을 한 번 더 길게 적는 셈이다 */}
+            {!eventMode && (
+              <p className="sd-help">
+                {horizon === null
+                  ? '손잡이를 옮겨 3일에서 90일 사이로 고르세요.'
+                  : <><b className="num">{horizonLabel(horizon)}</b> · 만기 <b className="num">{dueLabel(horizon)}</b> · 기준일(다음 평일)부터 캘린더일로 셉니다. 기준가는 기준일 종가로 확정됩니다.</>}
+              </p>
+            )}
           </li>
 
           {/* ③ 근거 포인트 — B-03 종목 정보에서 인계받는다. 근거 본문과 같이
               구독자 전용이다(§5 개정 2026-09-10). */}
           <li className="pf-step">
-            <h3><i className="pf-no">3</i>근거 포인트 <span className="pf-opt">선택 · 구독자 전용</span></h3>
+            {/* "구독자 전용" 은 대회에서 뗀다. 처음 온 사람에게 이 말은 "나는 못
+                쓰는 칸인가" 로 읽히는데, 대회에서는 그 구분을 설명할 자리가 없다 */}
+            <h3><i className="pf-no">3</i>근거 포인트 <span className="pf-opt">{eventMode ? '선택' : '선택 · 구독자 전용'}</span></h3>
             {points.error ? (
               <ErrorState error={points.error} onRetry={points.retry} inline />
             ) : picked.length === 0 ? (
@@ -570,7 +605,7 @@ export default function PredictTab({
               받고(명세도 note *), 비우고 부르면 400 "근거를 입력해주세요." 가 온다 —
               실제로 눌러 확인했다. 서버가 풀어 주면 그때 pf-opt 로 바꾼다. */}
           <li className="pf-step">
-            <h3><i className="pf-no">4</i>내 판단 <span className="pf-req">필수 · 구독자 전용</span></h3>
+            <h3><i className="pf-no">4</i>내 판단 <span className="pf-req">{eventMode ? '필수' : '필수 · 구독자 전용'}</span></h3>
             {/* 남은 글자는 **칸 안쪽**에 겹쳐 띄운다. 칸 아래 한 줄로 두면 4,500 자를
                 넘는 순간 그 줄이 생기며 아래가 통째로 밀린다 — 글을 쓰는 중에 발판이
                 움직이는 것이라, 자리를 차지하지 않는 곳에 놓는다. */}
