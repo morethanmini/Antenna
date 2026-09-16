@@ -163,6 +163,14 @@
 }
 .stocks-page .st-sector-track::-webkit-scrollbar{display:none}
 
+/* 끌어서 넘기기. 끄는 동안에는 부드러운 스크롤과 스냅을 끈다 — 켜 두면 손을
+   따라오지 않고 한 박자 늦게 미끄러져 "잡고 있다" 는 느낌이 깨진다.
+   글자 선택도 막는다. 안 막으면 칩 이름이 파랗게 드래그된 채로 끌린다. */
+.stocks-page .st-sector-track{cursor:grab}
+.stocks-page .st-sector-track.is-dragging{
+  cursor:grabbing; scroll-behavior:auto; scroll-snap-type:none; user-select:none;
+}
+
 /* 폭을 고정한다(1 1 → 0 0). 늘어나게 두면 칩 수에 따라 폭이 들쭉날쭉해져
    한 쪽 넘길 거리를 셀 수 없다 — SectorChips 의 CHIP_W 와 같은 값이어야 한다 */
 .stocks-page .st-sector-chip{

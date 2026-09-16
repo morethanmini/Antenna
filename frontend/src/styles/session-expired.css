@@ -1,4 +1,6 @@
-/* M-08 세션 만료 — [ANT-FE-SESSION]
+/* 확인·알림 창 공용 스타일. M-08 세션 만료에서 시작했고 [ANT-FE-SESSION]
+   ConfirmDialog(로그아웃 확인 등)가 같은 se-* 를 쓴다. 같은 자리에 같은 크기로
+   뜨는 같은 종류의 창이라 스타일시트를 나누면 둘이 조금씩 어긋난다.
    설계서 §3 M · §6 */
 
 .se-backdrop{
@@ -57,6 +59,8 @@
 .se-btn:hover{ background:var(--surface-2); }
 .se-btn.solid{ border-color:transparent; background:var(--brand); color:#fff; }
 .se-btn.solid:hover{ filter:brightness(.96); }
+/* 되돌릴 수 없는 행동. 브랜드색 확인 버튼과 같은 자리에 서므로 색으로만 가른다 */
+.se-btn.solid.danger{ background:var(--danger); }
 
 @media (max-width:560px){
   .se-actions{ flex-direction:column-reverse; }

@@ -42,7 +42,7 @@ class AnchorIndexerE2ELiveTest {
                         new ChainProperties.Anchor("-", 60, new ChainProperties.Anchor.Retry(3, 10)),
                         new ChainProperties.Indexer("-", fromBlock, 10_000));
         CommitAnchorProperties contract = new CommitAnchorProperties(System.getenv("CONTRACT_COMMIT_ANCHOR"));
-        return new Web3jChainLogSource(new ChainConnection(props), contract, new PredictTokenProperties(null), new EventPoolProperties(null));
+        return new Web3jChainLogSource(new ChainConnection(props), contract, new PredictTokenProperties(null), new EventPoolProperties(null, null));
     }
 
     @Test

@@ -18,6 +18,7 @@ import ssafy.a507.backend.domain.account.service.AvatarUrls;
 import ssafy.a507.backend.domain.monetize.dto.ChannelProfileResponse;
 import ssafy.a507.backend.domain.monetize.dto.ChannelProfileResponse.ChannelStats;
 import ssafy.a507.backend.domain.monetize.dto.ChannelProfileResponse.MySubscription;
+import ssafy.a507.backend.domain.monetize.entity.Subscription;
 import ssafy.a507.backend.domain.monetize.repository.PublisherFeeRepository;
 import ssafy.a507.backend.domain.common.Track;
 import ssafy.a507.backend.domain.monetize.repository.SubscriptionRepository;
@@ -74,6 +75,7 @@ public class ChannelQueryService {
                         portfolio.hitRate(),
                         portfolio.hit() + portfolio.miss(),
                         portfolio.avgError()),
+                subscriptions.countSubscribers(userId, Subscription.Status.ACTIVE, Instant.now()),
                 mySubscription(viewerId, userId),
                 userId.equals(viewerId));
     }

@@ -48,6 +48,7 @@ import PortfolioDonut, { type DonutSlice } from '../components/sim/PortfolioDonu
 import TickerPickerModal from '../components/sim/TickerPickerModal'
 import ErrorState from '../components/state/ErrorState'
 import { useSeasonSim } from '../sim/useSeasonSim'
+import type { BarView } from '../sim/barView'
 import type { IndicatorKind } from '../sim/indicators'
 import '../styles/screens/sim-play.css'
 
@@ -227,6 +228,8 @@ export default function SeasonPlay() {
 
   const [tickers, setTickers] = useState<Ticker[]>([])
   const [tickerError, setTickerError] = useState<ApiError | null>(null)
+  /** 종목 목록이 한 번이라도 돌아왔나. 비어 있는 것과 "아직 안 온" 것을 가른다 */
+  const [tickersLoaded, setTickersLoaded] = useState(false)
   const [selected, setSelected] = useState<number | null>(null)
   const [picking, setPicking] = useState(false)
 
@@ -234,6 +237,12 @@ export default function SeasonPlay() {
      200종목을 한 번에 받으면 요청이 200번이다. 보유 종목의 평가금액도 여기서 나온다. */
   const [candles, setCandles] = useState<Record<number, Candle[]>>({})
   const [priceError, setPriceError] = useState<ApiError | null>(null)
+  const [viewTicker, setViewTicker] = useState<number | null>(null)
+
+  /* 캔들 차트가 보는 구간. **여기서 들고 있어야** 아래 지표 패널이 같은 구간을 그린다 —
+     봉 하나가 위아래에서 다른 x 에 서면 두 그림을 나란히 읽을 수 없다.
+     종목을 바꾸면 되돌린다. 봉 수가 종목마다 달라 남겨 두면 엉뚱한 구간이 열린다. */
+  const [view, setView] = useState<BarView>(null)
 
   const [side, setSide] = useState<Side>('BUY')
   const [qty, setQty] = useState(0)
@@ -250,6 +259,7 @@ export default function SeasonPlay() {
         setSelected((cur) => cur ?? r.items[0]?.tickerId ?? null)
       })
       .catch((e) => setTickerError(e instanceof ApiError ? e : null))
+      .finally(() => setTickersLoaded(true))
   }, [seasonId])
 
   /* 고른 종목의 봉을 받는다. 이미 있으면 다시 부르지 않는다 —
@@ -301,6 +311,17 @@ export default function SeasonPlay() {
   if (barsDay !== sim.day) {
     setBarsDay(sim.day)
     setCandles({})
+    /* 보는 구간도 끝으로 되돌린다. 과거를 보던 채로 하루를 넘기면 새로 생긴 봉이
+       화면 밖에 그려져 아무 일도 안 일어난 것처럼 보인다. 차트 안에서 비교하지
+       않는 이유는 바로 위에서 봉을 버려 그 컴포넌트가 잠깐 사라지기 때문이다. */
+    setView(null)
+  }
+
+  /* 종목을 바꾸면 보는 구간을 끝으로 되돌린다. 봉 수가 종목마다 다르므로 남겨 두면
+     같은 번호가 다른 자리를 가리킨다(진행일이 바뀔 때는 바로 위 barsDay 블록이 되돌린다). */
+  if (viewTicker !== selected) {
+    setViewTicker(selected)
+    setView(null)
   }
 
   /* 그날의 시장 요약(AI_HINT)과 고른 종목의 기사·공시. 훅이라 이른 return 보다 위에 둔다.
@@ -340,11 +361,28 @@ export default function SeasonPlay() {
     [sim],
   )
 
-  if (season.loading) {
+  /* 들어오자마자 다섯을 부른다 — 시즌 · 종목 · 내 상태 · 봉 · 뉴스. 그중 봉이 가장
+     크다(워밍업 120 + 진행분). 시즌만 왔을 때 화면을 열면 지표 네 칸과 차트 자리가
+     빈 채로 서서 "고장 났나" 로 읽히므로, 그릴 것이 다 올 때까지 한 장으로 붙잡는다.
+
+     **첫 진입에만 붙잡는다.** 하루를 넘기면 봉을 통째로 버리고 다시 받는데(barsDay),
+     그때도 이 게이트가 서면 넘길 때마다 화면이 통째로 사라졌다 돌아온다. 한 번 그린
+     뒤에는 차트 자리의 "봉을 불러오는 중…" 한 줄로 충분하다. */
+  const bars = selected === null ? undefined : candles[selected]
+  const pending =
+    season.loading
+    || !tickersLoaded
+    || (selected !== null && bars === undefined && priceError === null)
+  const [booted, setBooted] = useState(false)
+  if (!booted && !pending) {
+    setBooted(true)
+  }
+
+  if (!booted && pending) {
     return (
       <main className="main">
         <div className="main-inner sim-play">
-          <div className="placeholder tall">{'시즌을 불러오는 중…'}</div>
+          <div className="placeholder tall">{'시즌 정보를 가져오는 중이에요…'}</div>
         </div>
       </main>
     )
@@ -396,7 +434,6 @@ export default function SeasonPlay() {
 
 
   const ticker = tickers.find((t) => t.tickerId === selected) ?? null
-  const bars = selected === null ? undefined : candles[selected]
   const price = selected === null ? null : sim.priceOf(selected)
   const prev = selected === null ? null : sim.priceOf(selected, sim.day - 1)
   /** 오늘 봉. 진행일과 같은 game_day 를 찾는다 */
@@ -644,14 +681,17 @@ export default function SeasonPlay() {
             {priceError && <ErrorState error={priceError} onRetry={() => setPriceError(null)} inline />}
             {!priceError && bars === undefined && <p className="sp-state">봉을 불러오는 중…</p>}
             {bars !== undefined && (
-              <CandleChart candles={bars} currentDay={sim.day} indicators={on} height={chartH} />
+              <CandleChart
+                candles={bars} currentDay={sim.day} indicators={on} height={chartH}
+                view={view} onViewChange={setView}
+              />
             )}
 
             {/* RSI 는 축이 0~100 이라 캔들 위에 얹지 못한다 — 아래에 칸을 따로 낸다.
                 가로 좌표를 캔들과 공유하므로 같은 봉이 같은 x 에 선다. */}
             {bars !== undefined &&
               PANES.filter((k) => on.includes(k)).map((k) => (
-                <IndicatorPane key={k} candles={bars} currentDay={sim.day} kind={k} />
+                <IndicatorPane key={k} candles={bars} currentDay={sim.day} kind={k} view={view} />
               ))}
           </section>
 

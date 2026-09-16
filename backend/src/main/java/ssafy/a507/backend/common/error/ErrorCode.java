@@ -207,7 +207,33 @@ public enum ErrorCode {
      * 내 구독이 아니거나 없는 구독이다 (ANT-TOKEN-05). 남의 구독에 403 을 주면 "그 id 의 구독은
      * 있다" 가 새 나가므로 둘을 같은 404 로 묶는다 — {@code OPERATION_NOT_FOUND} 와 같은 판단이다.
      */
-    SUBSCRIPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "구독을 찾을 수 없습니다.");
+    SUBSCRIPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "구독을 찾을 수 없습니다."),
+
+    // ── 배팅 이벤트 (ANT-EVENT) — REST 작업명세 v1.2 §7 ──────────────────────────
+    EVENT_NOT_FOUND(HttpStatus.NOT_FOUND, "이벤트를 찾을 수 없습니다."),
+    EVENT_NOT_OPEN(HttpStatus.CONFLICT, "접수 중인 이벤트가 아닙니다."),
+    EVENT_SEALED(HttpStatus.CONFLICT, "접수가 마감된 이벤트입니다."),
+    EVENT_MIN_STOCKS(HttpStatus.BAD_REQUEST, "처음 참가할 때는 5종목 이상 선택해야 합니다."),
+    EVENT_STOCK_NOT_INCLUDED(HttpStatus.BAD_REQUEST, "이벤트 종목이 아닙니다."),
+    EVENT_STOCK_ALREADY_BET(HttpStatus.CONFLICT, "이미 배팅한 종목입니다."),
+    EVENT_STAKE_OUT_OF_RANGE(HttpStatus.BAD_REQUEST, "배팅 금액은 500 ~ 2,000 ANT 사이여야 합니다."),
+    EVENT_INSUFFICIENT_BALANCE(HttpStatus.CONFLICT, "ANT 잔액이 부족합니다."),
+    EVENT_BASE_PRICE_MISSING(HttpStatus.CONFLICT, "기준가가 없는 종목이 있습니다."),
+    EVENT_NOT_READY(HttpStatus.CONFLICT, "정산 조건이 아직 갖춰지지 않았습니다."),
+    // 정산 러너 (ANT-EVENT-03). 셋 다 "다시 누르면 온체인 상태를 읽어 이어 간다" 가 대응이다.
+    EVENT_SETTLING(HttpStatus.CONFLICT, "정산이 이미 진행 중입니다."),
+    EVENT_SETTLE_TX_REVERTED(HttpStatus.CONFLICT, "블록체인이 정산 트랜잭션을 거절했습니다. 상태를 확인하고 다시 실행하세요."),
+    EVENT_SETTLE_TIMEOUT(HttpStatus.SERVICE_UNAVAILABLE, "정산 트랜잭션 확정을 기다리다 시간이 초과됐습니다. 다시 실행하세요."),
+
+    /**
+     * 관리자 전용 엔드포인트를 일반 회원이 불렀다 (작업명세 v1.2 §0.2 ④).
+     *
+     * <p>매처나 {@code @PreAuthorize} 가 아니라 <b>서비스 안에서 {@code role} 을 비교</b>해 던진다 —
+     * JWT 의 {@code role} 클레임을 Spring 권한({@code ROLE_ADMIN})으로 바꾸는 컨버터가 없어, 그 둘은
+     * {@code SecurityConfig}(공용) 수정과 {@code @EnableMethodSecurity} 가 함께 필요하다. 기존 관례도
+     * 서비스 안 비교다({@code SeasonJoinService} 의 DEMO 시즌). 매처 도입은 전 관리자 API 공통 후속 이슈.
+     */
+    EVENT_ADMIN_ONLY(HttpStatus.FORBIDDEN, "관리자만 할 수 있습니다.");
 
     private final HttpStatus status;
     private final String message;

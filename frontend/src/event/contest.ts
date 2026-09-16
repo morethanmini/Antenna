@@ -20,6 +20,8 @@ export const CONTEST = {
   /** 한 줄 소개. 홈 배너와 대회 머리가 같은 문장을 쓴다 */
   lede: '정해진 10개 종목, 같은 날 판정. 방향과 정확도를 한 줄로 세웁니다.',
 
+  /** 대회가 시작하는 날(YYYY-MM-DD) */
+  startDate: '2026-09-18',
   /** 등록 창이 열리는 순간 */
   opensAt: '2026-09-18T13:10:00+09:00',
   /** 등록 창이 닫히는 순간 */
@@ -74,6 +76,119 @@ export const PHASE_LABEL: Record<Phase, string> = {
   judging: '결과 집계 중',
   done: '결과 공개',
 }
+
+/* ── 배너 그림 ────────────────────────────────────────────
+   배너는 **한 장이 아니라 여러 겹**이다. 처음엔 완성본 한 장을 받아 썼는데,
+   그 그림이 4.69:1 이고 홈의 배너 자리는 그보다 한참 길고 낮아서 — 세로로
+   자르면 제목도 캐릭터도 안 남고, 비율대로 넣으면 홈이 통째로 밀렸다.
+
+   조각으로 받으면 우리 비율에 맞춰 **다시 배치**할 수 있다. 배경·차트·색종이는
+   추상 무늬라 늘리거나 잘라도 티가 안 나고, 제목·캡슐·캐릭터만 비율을 지키면
+   된다. 자리 값은 home.css 가 띠 높이(cqh) 하나로 잰다.
+
+   단계가 바뀌면 **캡슐·제목·문구 세 장만** 갈아끼운다. 나머지는 공통이다. */
+
+const ART = (name: string) => `/assets/event/${name}.webp`
+
+/**
+ * 대회 페이지(J-01) 머리에 쓰는 조각.
+ *
+ * **opensAt 만 날짜가 그림에 구워져 있다.** "등록 시작 · 9월 18일 (금) 13:10" 이라
+ * 시작 전에만 맞는 말이다. 다른 단계에서는 이 그림을 쓰지 않고 글자로 그린다 —
+ * 등록이 닫힌 뒤에 "등록 시작" 이 떠 있으면 거짓말이 된다.
+ */
+export const HERO = {
+  event: ART('hero-pill-event'),
+  title: ART('hero-title'),
+  lede: ART('hero-lede'),
+  opensAt: ART('hero-opens-at'),
+  rulesTitle: ART('hero-rules-title'),
+  rules: ART('hero-rules'),
+}
+
+/**
+ * 대회 규칙 네 줄. 순서가 곧 시간 순서다.
+ *
+ * 화면에는 그림(HERO.rules)으로 나가지만, **그림에 구워진 글자는 읽어 주는
+ * 기기가 못 읽는다.** 그래서 같은 내용을 여기 글로도 두고 화면 밖에 함께 깐다.
+ * 날짜가 바뀌면 이 글과 그림이 어긋나므로 그림도 같이 다시 받아야 한다.
+ */
+export const RULES: { k: string; v: string }[] = [
+  { k: '시작', v: `${dayStamp(CONTEST.startDate)} 시작합니다.` },
+  { k: '등록', v: `${stamp(CONTEST.opensAt)} ~ ${stamp(CONTEST.closesAt)} 사이에만 예측을 등록할 수 있습니다.` },
+  { k: '판정', v: `${dayStamp(CONTEST.targetDate)} 종가를 맞히는 대회입니다.` },
+  { k: '공개', v: `결과는 ${dayStamp(CONTEST.revealDate)}에 공개합니다.` },
+]
+
+/** 단계와 무관하게 늘 깔리는 겹 */
+export const BANNER_BASE = {
+  bg: ART('bg'),
+  chart: ART('chart'),
+  confetti: ART('confetti'),
+  crown: ART('crown'),
+  mascot: ART('mascot'),
+  sticker: ART('sticker'),
+}
+
+export type BannerArt = {
+  pill: string
+  title: string
+  copy: string
+  /** 그림에 구워진 글자를 그대로 옮긴 것. 스크린리더는 이것만 읽는다 */
+  alt: string
+}
+
+/**
+ * 단계별로 갈아끼우는 세 장. 나머지 여섯 겹은 네 단계가 함께 쓴다.
+ *
+ * **네 단계가 모두 그림을 갖는다**(2026-09-16). 한동안 judging 만 비어 있었는데
+ * — 등록은 닫혔고 결과는 아직인 구간이라 "대회 종료" 도 "진행 중" 도 거짓말이
+ * 된다 — "결과 집계 중" 캡슐을 받아 채웠다. Partial 이 아니라 Record 인 이유가
+ * 이것이다. 단계를 새로 만들면 그림도 같이 만들어야 한다는 뜻이고, 안 만들면
+ * 컴파일이 막는다.
+ */
+export const BANNER: Record<Phase, BannerArt> = {
+  before: {
+    pill: ART('pill-before'),
+    title: ART('title-main'),
+    copy: ART('copy-before'),
+    alt: '천하제일 단타대회 — 시작 전. 오늘의 급등주를 맞혀라! 수익률 예측 최강자는 누구?',
+  },
+  open: {
+    pill: ART('pill-open'),
+    title: ART('title-main'),
+    copy: ART('copy-before'),
+    alt: '천하제일 단타대회 — 대회 진행 중. 오늘의 급등주를 맞혀라! 수익률 예측 최강자는 누구?',
+  },
+  judging: {
+    pill: ART('pill-judging'),
+    title: ART('title-main'),
+    copy: ART('copy-before'),
+    alt: '천하제일 단타대회 — 결과 집계 중. 오늘의 급등주를 맞혀라! 수익률 예측 최강자는 누구?',
+  },
+  done: {
+    pill: ART('pill-done'),
+    title: ART('title-done'),
+    copy: ART('copy-done'),
+    alt: '천하제일 단타대회 — 대회 종료. 최종 랭킹 공개. 단타왕은 누구? 지금 최종 순위를 확인하세요!',
+  },
+}
+
+/**
+ * 대회 예측의 **고정 기간**(캘린더일).
+ *
+ * 대회는 시작일 종가를 기준으로 판정일 종가를 맞히는 것이라, 기간이 사람마다
+ * 다를 수 없다. 숫자를 박지 않고 두 날짜에서 뽑는 이유는 일정이 하루 밀렸을 때
+ * 여기만 옛 값으로 남는 일을 막기 위해서다.
+ *
+ * 서버가 이벤트 예측에 한해 기준일을 등록 당일로 잡아 주어야 이 값이 맞는다
+ * (docs/기획_랭킹_이벤트탭.md §5.3). 평소 규칙대로면 기준일이 다음 평일이라
+ * 만기가 하루 밀린다.
+ */
+export const CONTEST_HORIZON = Math.round(
+  (Date.parse(`${CONTEST.targetDate}T00:00:00+09:00`)
+    - Date.parse(`${CONTEST.startDate}T00:00:00+09:00`)) / 86_400_000,
+)
 
 /** 대회 페이지 주소. 링크로 퍼뜨리는 주소라 한 곳에서만 만든다 */
 export const CONTEST_PATH = `/events/${CONTEST.id}`

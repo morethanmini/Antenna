@@ -350,40 +350,125 @@
    히어로와 한 덩어리로 붙어 보인다. */
 .hm-event{
   grid-column:1 / -1;
-  display:flex; align-items:center; gap:14px;
-  padding:16px 20px; border-radius:14px; text-decoration:none;
-  background:linear-gradient(135deg,var(--brand-ink) 0%,#3a3da8 100%);
-  color:#fff;
-  transition:transform .14s, box-shadow .14s;
+  text-decoration:none;
+  transition:transform .14s;
 }
-.hm-event:hover{transform:translateY(-1px); box-shadow:0 12px 26px -18px rgba(20,20,60,.7)}
-.hm-event:focus-visible{outline:2px solid var(--brand); outline-offset:3px}
+.hm-event:hover{transform:translateY(-2px)}
+.hm-event:focus-visible{outline:2px solid var(--brand); outline-offset:6px; border-radius:18px}
 
-.hm-event-badge{
-  flex:none; padding:4px 10px; border-radius:999px;
-  background:var(--gold); color:#4a3a06; font-size:var(--fs-xs); font-weight:var(--fw-heavy);
+/* ── 그림 배너 ───────────────────────────────────────────
+   완성본 한 장이 아니라 **겹을 쌓는다**. 받은 완성본은 4.69:1 인데 이 자리는
+   9:1 이라, 한 장으로 쓰면 세로로 잘라 제목·캐릭터를 버리거나 비율대로 넣어
+   홈을 통째로 밀어내는 수밖에 없었다. 조각으로 받으면 다시 배치하면 된다.
+
+   **자를 하나로 쓴다 — 띠 높이(cqh).** 크기는 높이 기준, 가로 간격은 폭 기준으로
+   섞었더니 배너가 높아질 때 캡슐이 제목을 파고들었다. 가로까지 cqh 로 재면
+   조각 사이가 조각 크기와 같은 비율로 움직여 어느 폭에서도 겹치지 않는다.
+   늘어난 폭은 그냥 여백이 된다 — 배너가 원래 그렇게 동작한다.
+
+   cqh 가 이 상자의 높이를 가리키려면 container-type:size 가 있어야 한다.
+
+   is-art 는 한동안 글자로 된 배너와 갈라 쓰던 이름이다. 캡슐이 네 단계에 다
+   생기면서 글자 배너가 없어졌지만, 마크업과 짝이 맞아 그대로 둔다. */
+.hm-event.is-art{
+  position:relative; display:block; padding:0; background:none;
+  aspect-ratio:9 / 1;
+  container-type:size;
+  /* **띠 밖으로는 아무것도 내보내지 않는다.** 캐릭터를 위로 넘치게 두었더니
+     위 카드와 겹쳐 지저분했다. 조각들은 아래에서 안으로 들여놓았고, 이 줄은
+     "값을 잘못 만져도 다시는 새어 나가지 않는다" 는 보증이다.
+     모서리를 여기서 깎으므로 안쪽 .hm-ev-clip 과 같은 값이어야 한다 */
+  overflow:hidden; border-radius:16px;
 }
-/* margin-right:auto 가 여기 붙는다 — 마감 줄이 없는 단계에서도 버튼이 오른쪽
-   끝에 서야 한다. 미는 것은 하나만 해야 하므로 마감 줄에는 걸지 않는다 */
-.hm-event-text{display:flex; flex-direction:column; gap:2px; min-width:0; margin-right:auto}
-.hm-event-text b{color:#fff; font-size:var(--fs-xl); font-weight:var(--fw-heavy); letter-spacing:-.02em}
-.hm-event-text em{
-  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  color:rgba(255,255,255,.78); font-style:normal; font-size:var(--fs-md);
+
+/* **겹은 전부 클릭을 받지 않는다.** 캐릭터가 띠 밖으로 넘치는데, 넘친 그림도
+   제 몫의 클릭을 받아서 위 카드의 바로가기 링크를 통째로 먹은 적이 있다.
+   링크는 .hm-event 상자(= 띠)가 받는다 */
+.hm-event.is-art img{display:block; pointer-events:none}
+
+/* 띠 안쪽 — 배경·차트·색종이는 여기서 잘린다 */
+.hm-ev-clip{
+  position:absolute; inset:0; border-radius:16px; overflow:hidden;
+  /* 그림이 늦게 뜰 때 흰 네모가 번쩍이지 않게 바탕을 미리 깐다 */
+  background:#0f0a46;
 }
-.hm-event-when{
-  flex:none;
-  color:rgba(255,255,255,.82); font-size:var(--fs-sm); font-weight:var(--fw-bold);
-  font-variant-numeric:tabular-nums;
+.hm-ev-bg{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+/* 차트는 캐릭터 왼쪽에서 올라오는 그림이라 캐릭터와 같은 쪽 끝에서 잰다 */
+.hm-ev-chart{position:absolute; right:60cqh; top:-6cqh; height:118cqh; width:auto; opacity:.92}
+/* 색종이는 원본이 3:1 캔버스에 흩뿌린 것이라 통째로 얹으면 리본 한 장이
+   제목만 해진다. 줄여서 오른쪽에만 둔다 — 왼쪽은 글자 자리다 */
+.hm-ev-confetti{position:absolute; height:64cqh; width:auto; opacity:.85}
+.hm-ev-confetti.is-a{right:150cqh; top:-12cqh}
+.hm-ev-confetti.is-b{right:34cqh; top:26cqh; transform:scaleX(-1); opacity:.6}
+
+/* 왼쪽 글 묶음.
+
+   가운데에서 **6cqh 내려** 세운다 — 제목 위에 왕관이 얹히므로 글자만 기준으로
+   가운데를 맞추면 왕관이 띠 위로 더 새어 나간다.
+
+   왼쪽 끝에 딱 붙어 있던 것을 안쪽으로 들였다. 배너가 원본보다 길어 가운데가
+   비는데, 글이 끝에 몰려 있으면 그 여백이 더 커 보인다.
+
+   **사이를 좁히면 캡슐이 아니라 제목이 왼쪽으로 온다.** 묶음이 왼쪽에 붙어
+   있어서다 — 캡슐 자리는 left 가 잡고, 사이는 그 뒤를 밀 뿐이다.
+
+   **왕관 때문에 그냥 가운데가 가운데가 아니다.** 왕관은 절대 배치라 이 flex
+   상자의 높이에 안 들어가는데, 눈에는 그것까지가 묶음이다. 상자만 가운데에
+   맞추면 왕관이 위로 삐져나온 만큼 묶음이 위로 쏠려 보인다 — 실제로 위 여백이
+   아래의 1/10 이었다. 왕관이 올라간 만큼(16cqh)의 절반을 내려 준다. */
+.hm-ev-lead{
+  position:absolute; left:78cqh; top:50%; transform:translateY(calc(-50% + 8cqh));
+  display:flex; align-items:center; gap:5cqh;
 }
-.hm-event-cta{
-  flex:none; padding:8px 14px; border-radius:999px;
-  background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3);
-  color:#fff; font-size:var(--fs-md); font-weight:var(--fw-bold); white-space:nowrap;
+/* 캡슐은 **제목 한가운데**에 맞춘다. flex 의 align-items:center 는 제목과 문구를
+   합친 덩어리의 가운데라, 그대로 두면 캡슐이 제목보다 한 뼘 아래에 앉는다.
+   (50 - 30) / 2 = 10cqh 만큼 내리면 두 중심이 정확히 겹친다 */
+.hm-ev-pill{height:30cqh; width:auto; align-self:flex-start; margin-top:10cqh}
+.hm-ev-words{display:flex; flex-direction:column; align-items:flex-start; gap:2cqh}
+.hm-ev-titlebox{position:relative; display:block}
+/* 40 -> 50cqh. 배너에서 제일 먼저 읽혀야 하는 글자다 */
+.hm-ev-title{height:50cqh; width:auto}
+/* 왕관 자리는 **제목 폭의 %** 다. 그래야 제목이 커지든 작아지든 같은 글자
+   위에 얹힌다 — cqh 로 잡으면 제목과 어긋난다.
+   **왕관 크기는 제목이 정한다.** 제목이 50cqh 라 띠 위쪽에 남는 자리가
+   17.5cqh 뿐이고, 왕관은 그 자리에 제목과 조금 겹치는 만큼까지만 들어간다.
+   22cqh 가 그 한계다 — 더 키우면 띠 위로 잘려 나간다. */
+.hm-ev-crown{position:absolute; left:34%; top:-32%; height:22cqh; width:auto}
+.hm-ev-copy{height:13cqh; width:auto}
+
+/* 캐릭터는 띠 위로 넘친다. 스티커는 캐릭터 옆에서 캔들과 겹쳐 안 읽혀,
+   비어 있는 가운데로 옮겼다 — 여백도 함께 메운다 */
+/* 캐릭터는 **위아래가 다 잘리게** 크게 넣는다. 얼굴이 크게 박히고 안테나와
+   발끝이 띠 밖으로 나가, 화면 뒤에서 몸을 내민 것처럼 읽힌다.
+
+   **bottom 을 더 음수로 주면 위가 아니라 아래로 내려간다.** 음수 bottom 은
+   아랫변을 띠 바닥 **밑으로** 내리는 값이라, 올리려면 그 값을 줄이고 키를
+   키워야 한다.
+
+   키를 줄일 때는 **bottom 도 같이 옮긴다.** 키만 줄이면 아랫변이 그 자리에
+   남아 캐릭터가 통째로 내려앉는다 — 가운데(45cqh)를 붙들어야 같은 자리에서
+   작아진 것으로 보인다. 150 -> 135 -> 121cqh 로 두 번 줄이는 동안 bottom 을
+   -20 -> -12 -> -6cqh 로 함께 따라 올렸다.
+   내릴 때는 bottom 을 **더 음수로** 준다(-6 -> -14cqh). 아랫변을 띠 바닥
+   밑으로 더 내리는 값이라, 음수가 커질수록 캐릭터가 내려간다.
+   윗변 = 100 + 14 - 121 = -7cqh 로 위 7cqh · 아래 14cqh 가 잘린다
+   (상자에 overflow:hidden 이 걸려 있다). */
+.hm-ev-mascot{position:absolute; right:3cqh; bottom:-14cqh; height:121cqh; width:auto}
+/* 제목이 커져 오른쪽 끝이 밀렸다. 스티커도 그만큼 비켜 준다(56 -> 61%) */
+.hm-ev-sticker{position:absolute; left:61%; top:24cqh; height:34cqh; width:auto}
+
+/* 띠가 낮아지면 장식부터 접는다. 작아진 스티커는 읽히지도 않으면서 지저분하다.
+   창 폭이 아니라 **띠 높이**가 기준이라 컨테이너 질의를 쓴다.
+
+   **선택자를 .hm-event 아래로 한 번 더 묶는다.** 위의
+   .hm-event.is-art img{display:block} 이 (0,3,0) 이라 그냥 .hm-ev-sticker(0,1,0)
+   로 적으면 display:none 이 져서 규칙이 있어도 안 먹는다 —
+   @container 는 특정도를 올려 주지 않는다. */
+@container (height <= 124px){
+  .hm-event.is-art .hm-ev-sticker{display:none}
+  .hm-event.is-art .hm-ev-confetti.is-b{display:none}
 }
-@media (max-width:760px){
-  .hm-event{flex-wrap:wrap; gap:10px}
-}
+
 
 .hm-top{list-style:none; margin:0; padding:0; display:grid; gap:2px}
 .hm-top li{

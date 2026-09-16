@@ -75,8 +75,11 @@ public record CommitPayload(
     /**
      * 항상 소수 둘째 자리, 지수 표기 없음 — DB {@code numeric(14,2)} 와 같은 모양. 셋째 자리 이하가 있으면 <b>반올림하지 않고 거절</b>한다.
      * 조용히 반올림하면 프론트가 서명한 값과 서버가 해시한 값이 달라진다.
+     *
+     * <p>{@code public} 인 이유 — 이벤트 묶음 등록의 서명 문자열도 같은 표기를 쓴다(작업명세 v1.2 §6).
+     * 포맷 규칙이 두 군데면 {@code 93000} 과 {@code 93000.00} 이 갈려 서명만 어긋난다.
      */
-    static String formatPrice(BigDecimal price) {
+    public static String formatPrice(BigDecimal price) {
         try {
             return price.setScale(2, RoundingMode.UNNECESSARY).toPlainString();
         } catch (ArithmeticException e) {

@@ -34,6 +34,8 @@ public record PredictionDetailResponse(
         BigDecimal refClose,
         BigDecimal basePrice,
         LocalDate baseDate,
+        /** 기준가를 실제로 딴 거래일. 기준일이 휴장이면 그 뒤 첫 거래일. 확정 전이거나 옛 행이면 null (ANT-PRED-09) */
+        LocalDate basedOn,
         LocalDate settleDate,
         BigDecimal settlePrice,
         short horizon,
@@ -95,6 +97,7 @@ public record PredictionDetailResponse(
                 p.getRefClose(),
                 p.getBasePrice(),
                 p.getBaseDate(),
+                p.getBasedOn(),
                 p.getSettleDate(),
                 p.getSettlePrice(),
                 p.getHorizon(),

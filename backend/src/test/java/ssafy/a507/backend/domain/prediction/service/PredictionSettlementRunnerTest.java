@@ -82,6 +82,7 @@ class PredictionSettlementRunnerTest {
         Prediction p = predictions.findById(id).orElseThrow();
         assertThat(p.getStatus()).isEqualTo(Prediction.Status.OPEN);
         assertThat(p.getBasePrice()).isEqualByComparingTo("80000");
+        assertThat(p.getBasedOn()).isEqualTo(MON);
         assertThat(batchRun().getOpenedCount()).isEqualTo(1);
     }
 
@@ -111,6 +112,8 @@ class PredictionSettlementRunnerTest {
         // 등록 때 약속한 날짜는 움직이지 않는다 — 옮기면 사용자가 본 D-day 와 만기일이 바뀐다
         assertThat(p.getBaseDate()).isEqualTo(SAT);
         assertThat(p.getSettleDate()).isEqualTo(FAR_FUTURE);
+        // 대신 실제로 종가를 딴 거래일은 따로 남긴다 — settled_on 의 짝(ANT-PRED-09)
+        assertThat(p.getBasedOn()).isEqualTo(NEXT_MON);
     }
 
     // ── ② 만기 판정 ─────────────────────────────────────────────────

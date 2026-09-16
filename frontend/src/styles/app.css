@@ -353,9 +353,10 @@ body.rail-open .rail-backdrop{opacity:1;pointer-events:auto}
 
    ⚠ 화면 CSS 가 이 파일보다 **뒤에** 실려야 반응형 단계가 먹는다(main.tsx 참고). */
 
-/* 1 단계 · 히어로 34px */
+/* 1 단계 · 히어로 34px
+   단타대회(J-01)는 여기 없다 — 제목이 글자가 아니라 그림(.ev-hero-title)이라
+   글자 크기를 줄 자리가 없다. 나중에 글자로 돌아오면 여기 넣으면 된다. */
 .sh-title,
-.event-contest-page .ev-hero h1,
 .pr-head h1,
 .sj-head h1{
   font-size:var(--fs-title-hero);font-weight:var(--fw-black);letter-spacing:-.035em;

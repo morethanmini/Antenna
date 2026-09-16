@@ -119,6 +119,22 @@ class ChannelControllerTest {
     // ── 내 구독 상태 · isMe ──────────────────────────────
 
     @Test
+    @DisplayName("구독자 수는 ACTIVE 이고 기간이 남은 구독만 센다 — PENDING·EXPIRED·기간 지난 ACTIVE 는 빼고, 남이 봐도 주인이 봐도 같다(ANT-TOKEN-10)")
+    void 구독자_수는_유효한_ACTIVE_만() throws Exception {
+        insertSubscription(subscriberId, ownerId, "1000", "ACTIVE", Instant.now().plusSeconds(864_000));
+        insertSubscription(viewerId, ownerId, "1000", "ACTIVE", Instant.now().minusSeconds(60));
+        insertSubscription(insertUser("확정대기"), ownerId, "1000", "PENDING", null);
+        insertSubscription(insertUser("만료됨"), ownerId, "1000", "EXPIRED", Instant.now().minusSeconds(864_000));
+
+        mockMvc.perform(get(PROFILE, ownerId).with(user(String.valueOf(viewerId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.subscriberCount").value(1));
+        mockMvc.perform(get(PROFILE, ownerId).with(user(String.valueOf(ownerId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.subscriberCount").value(1));
+    }
+
+    @Test
     @DisplayName("구독한 적이 없으면 status 가 null 이다 — mySubscription 객체 자체는 늘 내려간다")
     void 미구독자는_status_가_null() throws Exception {
         mockMvc.perform(get(PROFILE, ownerId).with(user(String.valueOf(viewerId))))

@@ -16,11 +16,14 @@ import { Link } from 'react-router-dom'
 import { fetchStocks } from '../api/stocks'
 import type { StockListItem } from '../api/stocks'
 import { useAsync } from '../api/useAsync'
+import { DEFAULT_AVATAR } from '../auth/context'
 import StockLogo from '../components/stocks/StockLogo'
 import {
+  BANNER_BASE,
   CONTEST,
   CONTEST_CODES,
-  PHASE_LABEL,
+  HERO,
+  RULES,
   cardHref,
   dayStamp,
   phaseAt,
@@ -64,7 +67,15 @@ const pct = (n: number | null) =>
 
 const won = (n: number | null) => (n === null ? '—' : `${n.toLocaleString('ko-KR')}원`)
 
-/** 머리 — 지금 어느 대목인지와 다음 마감 하나만 크게 */
+/* 머리 — 대회 이름 · 한 줄 소개 · 다음 마감 · 규칙을 한 카드에 담는다.
+
+   **규칙을 따로 카드로 두지 않는다**(2026-09-16). 머리가 왼쪽에 글만 두고
+   오른쪽을 통째로 비워 두는 모양이었는데, 그 빈자리에 규칙이 들어가면 머리
+   하나로 "무슨 대회인지 · 언제 뭘 해야 하는지" 가 끝난다. 카드 하나가 줄고
+   종목 카드가 그만큼 위로 올라온다.
+
+   글자는 대부분 그림이다. 읽어 주는 기기가 그림 속 글자를 못 읽으므로,
+   제목·소개는 alt 로, 규칙 네 줄은 화면 밖 목록으로 함께 깐다. */
 function Hero({ phase }: { phase: ReturnType<typeof phaseAt> }) {
   /* 단계마다 "다음에 올 일" 이 다르다. 셋 다 보여 주면 무엇을 봐야 할지
      고르게 만드는 셈이라, 지금 기다리는 것 하나만 적는다. */
@@ -76,26 +87,49 @@ function Hero({ phase }: { phase: ReturnType<typeof phaseAt> }) {
 
   return (
     <header className="ev-hero">
-      <div className="ev-hero-text">
-        <p className="ev-kicker">
-          <span className={`ev-phase is-${phase}`}>{PHASE_LABEL[phase]}</span>
-          이벤트
-        </p>
-        <h1 id="ev-h">{CONTEST.name}</h1>
-        <p className="ev-lede">{CONTEST.lede}</p>
+      {/* 바탕 — 배너와 같은 조각을 쓴다. 두 화면이 같은 이벤트라는 게 보인다 */}
+      <span className="ev-hero-bg" aria-hidden="true">
+        <img className="ev-hero-bgimg" src={BANNER_BASE.bg} alt="" />
+        <img className="ev-hero-chart" src={BANNER_BASE.chart} alt="" />
+        <img className="ev-hero-confetti" src={BANNER_BASE.confetti} alt="" />
+      </span>
 
-        {next && (
+      {/* **상자 폭이 곧 제목 폭이다.** 그래야 소개 줄과 알약이 제목에 가로
+          가운데로 맞는다 — 폭이 다른 것을 옆에 끼우면 아래 줄들이 제목이 아니라
+          칸 왼쪽 끝을 기준으로 서 버린다. */}
+      <div className="ev-hero-lead">
+        <img className="ev-hero-event" src={HERO.event} alt="이벤트" />
+
+        <h1 id="ev-h" className="ev-hero-h1">
+          <img className="ev-hero-title" src={HERO.title} alt={CONTEST.name} />
+        </h1>
+        <img className="ev-hero-lede" src={HERO.lede} alt={CONTEST.lede} />
+
+        {/* 그림에 날짜가 구워져 있어 시작 전에만 쓴다. 그 뒤로는 글자로 그린다 —
+            등록이 닫힌 뒤에 "등록 시작" 이 떠 있으면 거짓말이 된다 */}
+        {phase === 'before' ? (
+          <img className="ev-hero-next" src={HERO.opensAt}
+               alt={`${next?.label} ${next?.at}`} />
+        ) : next ? (
           <p className="ev-next">
             <b>{next.label}</b>
             <span className="num">{next.at}</span>
           </p>
-        )}
+        ) : null}
       </div>
-      <img
-        className="ev-hero-art"
-        src="/assets/character/antenna-characters-welcome.png"
-        alt="" aria-hidden="true"
-      />
+
+      <img className="ev-hero-mascot" src={BANNER_BASE.mascot} alt="" aria-hidden="true" />
+
+      <div className="ev-hero-rules">
+        <img className="ev-hero-rules-title" src={HERO.rulesTitle} alt="대회 규칙" />
+        <img className="ev-hero-rules-panel" src={HERO.rules} alt="" aria-hidden="true" />
+        {/* 위 그림에 구워진 것과 같은 내용. 읽어 주는 기기는 이쪽만 읽는다 */}
+        <dl className="sr-only">
+          {RULES.map((r) => (
+            <div key={r.k}><dt>{r.k}</dt><dd>{r.v}</dd></div>
+          ))}
+        </dl>
+      </div>
     </header>
   )
 }
@@ -130,11 +164,10 @@ function Stocks({ phase }: { phase: ReturnType<typeof phaseAt> }) {
     <section className="card ev-block" aria-labelledby="ev-stocks-h">
       <header className="ev-block-head">
         <h2 id="ev-stocks-h">대회 종목 {CONTEST_CODES.length}</h2>
-        <p>
-          {phase === 'open'
-            ? '카드를 누르면 그 종목의 예측 등록으로 바로 갑니다.'
-            : '등록 창이 열리면 카드에서 바로 예측할 수 있습니다.'}
-        </p>
+        {/* 등록 창이 닫혀 있을 때는 아무 말도 하지 않는다. "열리면 예측할 수
+            있습니다" 는 지금 할 수 있는 일이 없다는 말을 길게 적은 것이라,
+            규칙에 이미 적힌 날짜를 한 번 더 읽게 만들 뿐이다. */}
+        {phase === 'open' && <p>카드를 누르면 그 종목의 예측 등록으로 바로 갑니다.</p>}
       </header>
 
       {loading && (
@@ -163,35 +196,6 @@ function Stocks({ phase }: { phase: ReturnType<typeof phaseAt> }) {
   )
 }
 
-/** 규칙 — 네 줄. 순서가 곧 시간 순서다 */
-function Rules() {
-  const rows = [
-    { k: '시작', v: `${dayStamp('2026-09-18')} 시작합니다.` },
-    {
-      k: '등록',
-      v: `${stamp(CONTEST.opensAt)} ~ ${stamp(CONTEST.closesAt)} 사이에만 예측을 등록할 수 있습니다.`,
-    },
-    { k: '판정', v: `${dayStamp(CONTEST.targetDate)} 종가를 맞히는 대회입니다.` },
-    { k: '공개', v: `결과는 ${dayStamp(CONTEST.revealDate)}에 공개합니다.` },
-  ]
-
-  return (
-    <section className="card ev-block" aria-labelledby="ev-rules-h">
-      <header className="ev-block-head">
-        <h2 id="ev-rules-h">대회 규칙</h2>
-        <p>열 종목이 같은 날 판정되므로, 방향과 정확도를 한 줄로 견줄 수 있습니다.</p>
-      </header>
-      <dl className="ev-rules">
-        {rows.map((r) => (
-          <div key={r.k}>
-            <dt>{r.k}</dt>
-            <dd>{r.v}</dd>
-          </div>
-        ))}
-      </dl>
-    </section>
-  )
-}
 
 /** 참가자 타일 */
 function People() {
@@ -205,7 +209,9 @@ function People() {
     <section className="card ev-block" aria-labelledby="ev-people-h">
       <header className="ev-block-head">
         <h2 id="ev-people-h">참가자 {people.length > 0 && <span className="num">{people.length}</span>}</h2>
-        <p>대회 종목에 예측을 등록하면 여기에 이름이 올라갑니다.</p>
+        {/* 아무도 없을 때만 안내한다. 이미 이름이 올라와 있으면 그 줄이
+            무엇을 하라는 말인지 설명하고 있어, 같은 말을 한 번 더 할 이유가 없다 */}
+        {people.length === 0 && <p>대회 종목에 예측을 등록하면 여기에 이름이 올라갑니다.</p>}
       </header>
 
       {people.length === 0 ? (
@@ -216,8 +222,13 @@ function People() {
         <ul className="ev-tiles">
           {people.map((p) => (
             <li key={p.userId}>
-              <Link className="ev-tile" to={`/channels/${p.userId}`}>
-                <img className="ev-tile-face" src={p.avatarUrl ?? ''} alt="" aria-hidden="true" />
+              {/* 칸이 좁아 닉네임이 잘린다. 손을 얹으면 전체가 뜨도록 title 을 단다 —
+                  잘리지 않은 이름에도 붙지만, 잘렸는지 아닌지는 CSS 만으로 알 수 없다 */}
+              <Link className="ev-tile" to={`/channels/${p.userId}`} title={p.nickname}>
+                {/* 사진을 안 올린 사람은 서버가 null 을 준다. 빈 문자열을 넣으면
+                    브라우저가 **지금 주소를 다시 부른다** — 기본 개미로 떨어뜨린다 */}
+                <img className="ev-tile-face" src={p.avatarUrl ?? DEFAULT_AVATAR}
+                     alt="" aria-hidden="true" />
                 <span className="ev-tile-name">{p.nickname}</span>
               </Link>
             </li>
@@ -239,7 +250,6 @@ export default function EventContest() {
       <div className="main-inner ev" aria-labelledby="ev-h">
         <Hero phase={phase} />
         <Stocks phase={phase} />
-        <Rules />
         <People />
       </div>
     </main>

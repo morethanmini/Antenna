@@ -7,7 +7,8 @@
 
    ── 가로 좌표는 캔들과 같아야 한다 ──────────────────────
    같은 봉이 위아래에서 다른 x 에 서면 두 그림을 나란히 읽을 수 없다. 그래서
-   CandleChart 의 VW·PAD_L·PAD_R 를 그대로 쓴다.
+   CandleChart 의 VW·PAD_L·PAD_R 와 **보는 구간(resolveView)** 까지 그대로 쓴다.
+   구간 상태는 호출부(G-04)가 들고 두 그림에 같은 값을 내려준다.
 
    ── 기준선이 없으면 값이 뜻을 잃는다 ────────────────────
    RSI 는 70·30 을 넘나드는 걸 보는 지표다. 그 두 선 없이 곡선만 그리면 읽을 수가 없다.
@@ -19,6 +20,7 @@
 import { useMemo } from 'react'
 import type { Candle } from '../../api/seasonPlay'
 import { canShow, rsi as rsiOf, warmupOf } from '../../sim/indicators'
+import { resolveView, type BarView } from '../../sim/barView'
 import { PAD_L, PAD_R, VW } from './CandleChart'
 
 export type PaneKind = 'RSI'
@@ -29,13 +31,15 @@ type Props = {
   currentDay: number
   kind: PaneKind
   height?: number
+  /** 캔들 차트와 같은 보는 구간 */
+  view?: BarView
 }
 
 const LABEL: Record<PaneKind, string> = { RSI: 'RSI 14' }
 /** 70 위는 과열, 30 아래는 침체. 50 은 가운데 참고선이다 */
 const GUIDES = [70, 50, 30]
 
-export default function IndicatorPane({ candles, currentDay, kind, height = 96 }: Props) {
+export default function IndicatorPane({ candles, currentDay, kind, height = 96, view = null }: Props) {
   const padT = 10
   const padB = 12
 
@@ -44,16 +48,21 @@ export default function IndicatorPane({ candles, currentDay, kind, height = 96 }
     [candles, currentDay],
   )
 
+  const { from, count } = resolveView(view, shown.length)
+
   const geom = useMemo(() => {
     if (shown.length < 2 || !canShow(kind, shown.length)) return null
+    if (count < 2) return null
 
+    /* RSI 도 **전체 봉으로** 계산하고 보는 구간만 잘라 쓴다(CandleChart 와 같은 규칙).
+       자른 뒤 계산하면 구간을 옮길 때마다 왼쪽 14봉이 비어 선이 끊긴다. */
     const closes = shown.map((c) => c.close)
-    const step = (VW - PAD_L - PAD_R) / shown.length
+    const step = (VW - PAD_L - PAD_R) / count
     const cx = (i: number) => PAD_L + step * (i + 0.5)
     const h = height - padT - padB
     const y = (v: number) => padT + (1 - v / 100) * h
 
-    const values = rsiOf(closes)
+    const values = rsiOf(closes).slice(from, from + count)
 
     /* null 자리에서 선을 끊는다. 이어 버리면 값이 없는 구간에 가짜 직선이 그려진다 */
     let d = ''
@@ -68,7 +77,7 @@ export default function IndicatorPane({ candles, currentDay, kind, height = 96 }
     })
 
     return { y, line: d, last: values[values.length - 1] }
-  }, [shown, kind, height])
+  }, [shown, from, count, kind, height])
 
   if (!geom) {
     return (

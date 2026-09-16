@@ -60,7 +60,7 @@ public class PredictionSettlementService {
         if (quote.isEmpty()) {
             return false;
         }
-        p.fixBasePrice(quote.get().getClose());
+        p.fixBasePrice(quote.get().getClose(), quote.get().getTradeDate());
         return true;
     }
 

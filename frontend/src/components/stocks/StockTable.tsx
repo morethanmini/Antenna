@@ -72,6 +72,10 @@ const CHIP_W = 148
 /** 스크롤 끝 판정 여유(px). 소수점 오차로 끝에 닿고도 1px 이 남는 일이 있다 */
 const EDGE_SLACK = 1
 
+/** 이만큼 넘게 움직였으면 "끌었다" 로 본다(px). 누를 때 손이 조금 떨리는 것까지
+ *  끌기로 치면, 칩을 고르려던 클릭이 삼켜져 아무 일도 안 일어난 것처럼 보인다 */
+const DRAG_SLOP = 4
+
 /** 슬라이더에서 손을 멈췄다고 볼 시간(ms). 짧으면 끄는 도중에 요청이 나가고,
  *  길면 놓고 나서도 목록이 안 바뀌어 고장 난 줄 안다 */
 const SETTLE_MS = 250
@@ -94,6 +98,11 @@ const SKELETON_CHIPS = 8
  * 넘기는 것은 브라우저 스크롤에 맡긴다(scrollBy + scroll-behavior:smooth) —
  * 직접 transform 으로 옮기면 트랙패드 가로 스크롤과 키보드 포커스 이동이 제
  * 자리를 잃는다. 버튼은 그 스크롤을 대신 눌러 주는 것뿐이다.
+ *
+ * **끌어서도 넘긴다**(2026-09-16). 트랙패드는 두 손가락으로 밀면 되지만 마우스만
+ * 쓰는 사람은 화살표를 여러 번 눌러야 했다. 여기서도 옮기는 것은 scrollLeft 뿐이라
+ * 스크롤 위치·끝 판정·키보드 이동이 전부 그대로다. 손가락 입력은 건드리지 않는다 —
+ * 브라우저가 이미 그 방향으로 스크롤해 준다.
  */
 function SectorChips({ current, onPick }: {
   current: string | undefined
@@ -105,6 +114,15 @@ function SectorChips({ current, onPick }: {
   const trackRef = useRef<HTMLDivElement>(null)
   /** 양쪽에 더 갈 데가 있는지. 없으면 그 버튼을 끈다 */
   const [more, setMore] = useState({ left: false, right: false })
+  /* 끌기 상태. **state 가 아니라 ref 로 판정한다** — state 만 쓰면 누른 직후 첫
+     pointermove 가 다시 그려지기 전에 들어와 "아직 안 끄는 중" 으로 읽히고, 그 한
+     번을 놓치면 짧은 끌기가 통째로 씹힌다. state 는 커서·스냅을 바꾸는 클래스에만
+     쓴다(그건 한 박자 늦어도 티가 안 난다). */
+  const drag = useRef({ active: false, captured: false, x: 0, scroll: 0 })
+  const [grabbing, setGrabbing] = useState(false)
+  /** 방금 끌었나. 끌기 끝에 따라오는 click 하나를 삼켜 섹터가 바뀌는 사고를 막는다
+      (SlideToSign 의 afterDrag 와 같은 장치) */
+  const afterDrag = useRef(false)
 
   const measure = useCallback(() => {
     const el = trackRef.current
@@ -126,6 +144,46 @@ function SectorChips({ current, onPick }: {
     ro.observe(el)
     return () => ro.disconnect()
   }, [measure, data])
+
+  /* 마우스만 받는다. 손가락은 브라우저가 이미 스크롤해 주는데 여기서 한 번 더
+     scrollLeft 를 쓰면 관성 스크롤과 싸워 끊긴다. 왼쪽 버튼이 아니면(가운데·오른쪽)
+     붙잡지 않는다 — 가운데 버튼은 브라우저의 자동 스크롤 자리다. */
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return
+    const el = trackRef.current
+    if (!el) return
+    drag.current = { active: true, captured: false, x: e.clientX, scroll: el.scrollLeft }
+    afterDrag.current = false
+  }
+
+  /* 포인터를 붙잡는 것은 **슬롭을 넘긴 뒤**다. 누르자마자 붙잡으면 그 뒤의
+     pointerup·click 이 전부 트랙으로 배달돼, 칩을 그냥 누른 것도 칩에 닿지 않는다
+     (섹터 선택이 통째로 죽는다). 넘긴 뒤에 붙잡으면 커서가 트랙 밖으로 나가도
+     끌기가 이어지는 이득만 남는다. */
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const el = trackRef.current
+    const d = drag.current
+    if (!d.active || !el) return
+    const dx = e.clientX - d.x
+    if (!d.captured) {
+      if (Math.abs(dx) <= DRAG_SLOP) return
+      d.captured = true
+      afterDrag.current = true
+      el.setPointerCapture(e.pointerId)
+      setGrabbing(true)
+    }
+    el.scrollLeft = d.scroll - dx
+  }
+
+  const endDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = drag.current
+    if (!d.active) return
+    d.active = false
+    if (d.captured) {
+      try { trackRef.current?.releasePointerCapture(e.pointerId) } catch { /* 이미 놓였다 */ }
+    }
+    setGrabbing(false)
+  }
 
   const page = useCallback((dir: -1 | 1) => {
     const el = trackRef.current
@@ -152,8 +210,21 @@ function SectorChips({ current, onPick }: {
           탭으로 닿고, 브라우저가 포커스 간 칩을 알아서 끌어온다. 탭 정거장을
           하나 더 만들면 키보드로 지나가기만 번거로워진다. */}
       <div
-        className="st-sector-track" ref={trackRef} onScroll={measure}
+        className={`st-sector-track${grabbing ? ' is-dragging' : ''}`}
+        ref={trackRef} onScroll={measure}
         role="group" aria-label="섹터별 보기"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        /* 끌기 끝의 click 은 칩까지 내려가기 전에 여기서 잡는다. 칩마다 가드를
+           두면 나중에 칩을 하나 더 만들 때 그 하나만 빠진다. */
+        onClickCapture={(e) => {
+          if (!afterDrag.current) return
+          afterDrag.current = false
+          e.preventDefault()
+          e.stopPropagation()
+        }}
       >
         {data.items.map((s: SectorSummary) => {
           const on = (s.sector ?? undefined) === current
