@@ -77,6 +77,21 @@ class MySubscriptionControllerTest {
     }
 
     @Test
+    @DisplayName("체인에 오른 구독은 txHash 를 내리고 확정 전(PENDING)은 null 이다 — 내 결제가 체인에 있음을 해시로 보여 준다(ANT-TOKEN-10)")
+    void txHash_는_확정된_구독에만() throws Exception {
+        String tx = "0x" + "ab".repeat(32);
+        insertSubscription(subscriberId, publisherId, "7000", "ACTIVE", days(10), true, tx);
+        insertSubscription(subscriberId, strangerId, "2000", "PENDING", null, true, null);
+
+        mockMvc.perform(get(MINE).with(user(String.valueOf(subscriberId))))
+                .andExpect(status().isOk())
+                // 최신순 — PENDING 이 먼저 온다
+                .andExpect(jsonPath("$.items[0].status").value("PENDING"))
+                .andExpect(jsonPath("$.items[0].txHash").value((Object) null))
+                .andExpect(jsonPath("$.items[1].txHash").value(tx));
+    }
+
+    @Test
     @DisplayName("만료분도 내린다 — 화면이 만료됨 줄에 재구독 안내를 그린다")
     void 만료분도_내린다() throws Exception {
         insertSubscription(subscriberId, publisherId, "1000", "EXPIRED", days(-40), true);
@@ -184,11 +199,18 @@ class MySubscriptionControllerTest {
 
     private Long insertSubscription(
             Long subscriber, Long publisher, String fee, String status, Instant expiresAt, boolean autoRenew) {
+        return insertSubscription(subscriber, publisher, fee, status, expiresAt, autoRenew, null);
+    }
+
+    /** @param txHash 인덱서가 ACTIVE 로 올리며 붙이는 결제 tx. 확정 전(PENDING)이면 null */
+    private Long insertSubscription(
+            Long subscriber, Long publisher, String fee, String status, Instant expiresAt, boolean autoRenew,
+            String txHash) {
         em.createNativeQuery("""
                         INSERT INTO subscriptions
-                          (subscriber_id, publisher_id, fee, status, started_at, expires_at, auto_renew,
+                          (subscriber_id, publisher_id, fee, status, started_at, expires_at, auto_renew, tx_hash,
                            created_at, updated_at)
-                        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                         """)
                 .setParameter(1, subscriber)
                 .setParameter(2, publisher)
@@ -196,6 +218,7 @@ class MySubscriptionControllerTest {
                 .setParameter(4, status)
                 .setParameter(5, expiresAt)
                 .setParameter(6, autoRenew)
+                .setParameter(7, txHash)
                 .executeUpdate();
         return ((Number) em.createNativeQuery("SELECT max(id) FROM subscriptions").getSingleResult())
                 .longValue();

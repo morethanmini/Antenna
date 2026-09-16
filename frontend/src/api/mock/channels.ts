@@ -50,6 +50,7 @@ function base(userId: string, nickname: string): Omit<Channel, 'mySubscription' 
     ],
     fee: FEE,
     stats: { hitRate: 62.5, doneCount: 48, avgError: 3.1 },
+    subscriberCount: 12,
   }
 }
 

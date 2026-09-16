@@ -31,6 +31,7 @@ import {
 import { useAsync } from '../api/useAsync'
 import { formatToken } from '../api/wallet'
 import AnchorBadge from '../components/AnchorBadge'
+import CopyHash from '../components/CopyHash'
 import EmptyState from '../components/state/EmptyState'
 import ErrorState from '../components/state/ErrorState'
 import '../styles/screens/subscriptions.css'
@@ -115,7 +116,7 @@ type RowProps = {
 }
 
 function Row({ sub, confirming, busy, error, onAsk, onCancelAsk, onConfirm }: RowProps) {
-  const { publisher, fee, status, expiresAt, renewEnabled } = sub
+  const { publisher, fee, status, expiresAt, renewEnabled, txHash } = sub
 
   return (
     <article className={`sb-item is-${status.toLowerCase()}`}>
@@ -157,6 +158,15 @@ function Row({ sub, confirming, busy, error, onAsk, onCancelAsk, onConfirm }: Ro
           <dt>자동 갱신</dt>
           <dd>{renewEnabled ? '켜짐' : '꺼짐'}</dd>
         </div>
+
+        {/* 결제 tx. 구독은 커밋 원장(D-01)에 오르지 않아 온체인 흔적이 이 해시뿐이다.
+            SSAFY 체인엔 탐색기가 없어 D-02 처럼 복사만 둔다. PENDING 은 아직 없어 자리째 뺀다 */}
+        {txHash && (
+          <div>
+            <dt>체인 기록</dt>
+            <dd><CopyHash value={txHash} /></dd>
+          </div>
+        )}
       </dl>
 
       {/* ── 갱신 상태와 조작 ─────────────────────────── */}

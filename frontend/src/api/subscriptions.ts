@@ -48,6 +48,8 @@ export type Subscription = {
   expiresAt: string | null
   /** 만료일에 배치 B4 가 재결제할지. 해지하면 false */
   renewEnabled: boolean
+  /** 결제 tx 해시. 확정 전(PENDING)은 null. 구독은 커밋 원장에 안 오르므로 온체인 흔적은 이것뿐이다 */
+  txHash: string | null
 }
 
 export function fetchMySubscriptions(): Promise<{ items: Subscription[] }> {
