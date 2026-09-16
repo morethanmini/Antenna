@@ -137,6 +137,13 @@ app:
     # 쿼리가 건다(PredictionEventRepository.findOpenable).
     # 로컬은 .env 에서 "-" 로 끈다 — 운영 릴레이어 키를 공유해 nonce 가 엉킨다.
     clock-cron: ${EVENT_CLOCK_CRON:0 * * * * *}
+    # seals_at 이 지난 OPEN 이벤트에 seal tx 를 보낸다. 상태는 안 바꾼다 — SEALED 전이는 인덱서 몫.
+    # 재전송은 seal_tx_hash 조건이 막는다.
+    seal-cron: ${EVENT_SEAL_CRON:30 * * * * *}
+    # FAILED 배팅 재전송. 사용자가 다시 누를 길이 없어(같은 종목 2회 금지) 이 크론만이 되살린다.
+    # 10분인 이유: 인덱서가 tx_hash 없는 작업을 SEND_LOST 로 닫는 유예가 10분이라 그보다 촘촘하면
+    # 아직 나가는 중인 전송을 다시 보낸다.
+    retry-cron: ${EVENT_BET_RETRY_CRON:0 */10 * * * *}
 
   # 온체인 (ANT-CHAIN-01~). 컨트랙트 주소는 재배포마다 바뀌므로 환경변수로만 받는다.
   chain:

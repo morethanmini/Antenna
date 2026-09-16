@@ -40,6 +40,16 @@ public class EventAdminController {
                 .body(eventAdminService.create(currentUserProvider.currentUserId(), request));
     }
 
+    /**
+     * 봉인 — 접수를 닫고 온체인 {@code seal} 을 보낸다. 평소에는 매분 크론이 하고, 이 길은 크론이 못
+     * 돌았거나 일찍 닫아야 할 때 쓴다. SEALED 전이는 인덱서 몫이라 응답은 202 다.
+     */
+    @PostMapping("/{eventId}/seal")
+    public ResponseEntity<Void> seal(@PathVariable Long eventId) {
+        eventAdminService.seal(currentUserProvider.currentUserId(), eventId);
+        return ResponseEntity.accepted().build();
+    }
+
     /** 기준가 수동 입력. 13:00 배치가 늦거나 실패했을 때 접수(13:30)를 지키는 길이다. */
     @PutMapping("/{eventId}/stocks/{idx}/base-price")
     public ResponseEntity<Void> fixBasePrice(

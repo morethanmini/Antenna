@@ -33,4 +33,19 @@ public interface PredictionEventRepository extends JpaRepository<PredictionEvent
                       where s.event = e and s.basePrice is null)
             """)
     List<PredictionEvent> findOpenable(@Param("now") Instant now);
+
+    /**
+     * 봉인 크론의 대상 (ANT-EVENT-05).
+     *
+     * <p>{@code seal_tx_hash is null} 이 재전송을 막는다. SEALED 전이는 인덱서가 하므로(§0.3) 전송
+     * 직후 최대 5초 동안은 상태가 아직 OPEN 인데, 크론이 매분이라 그 창에 두 번 보낼 일은 없다.
+     * 인덱서가 {@code EventSealed} 를 보면 tx 와 상태를 함께 쓴다.
+     */
+    @Query("""
+            select e from PredictionEvent e
+             where e.status = ssafy.a507.backend.domain.event.entity.PredictionEvent$Status.OPEN
+               and e.sealsAt <= :now
+               and e.sealTxHash is null
+            """)
+    List<PredictionEvent> findSealable(@Param("now") Instant now);
 }
