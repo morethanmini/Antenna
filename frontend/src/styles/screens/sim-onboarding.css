@@ -313,6 +313,24 @@
       rgba(255,255,255,.05) 93%,
       rgba(255,255,255,0) 100%)}
   .sot-art{bottom:-8%}
+
+  /* ── 띠 안에 통째로 들어오게 ───────────────────────
+     넓을 때는 마스코트를 **폭**으로 맞춘다. 무대가 세로로 길어 아래를 조금
+     넘겨도(bottom:-2%) 발끝이 카드 모서리에 걸친 그림으로 읽힌다.
+
+     좁아지면 무대가 낮고 넓은 띠가 되는데, 폭 기준을 그대로 두면 세로로 긴
+     그림이 띠 높이를 훌쩍 넘어 머리나 발이 잘린다 — 무엇이 잘릴지가 걸음마다
+     달라서 어떤 걸음은 얼굴이 반만 남았다.
+
+     그래서 여기서는 **높이**로 맞춘다. 폭은 auto 라 비율이 유지되고, 그림이
+     길든 넓든 띠 안에 통째로 들어온다. 걸음별 폭·bottom 규칙보다 뒤에 있고
+     명시도가 같아 이쪽이 이긴다 — 넷을 다 적는 이유다. */
+  .sot-stage.s1 .sot-art,
+  .sot-stage.s2 .sot-art,
+  .sot-stage.s3 .sot-art{
+    width:auto;height:84%;bottom:8%;
+  }
+
   .sot-copy{grid-row:2;padding:18px 22px 20px;gap:16px}
   .sot-title{font-size:21px}
   .sot-lead{margin-bottom:13px}
@@ -322,12 +340,6 @@
 @media(max-width:430px){
   .sot-backdrop{padding:12px}
   .sot{--art:148px;grid-template-rows:168px auto}
-  /* 띠가 낮아지면 그림이 위아래로 잘린다. 잘리는 쪽을 발밑으로 몰아 둔다 —
-     더듬이와 얼굴이 잘리면 캐릭터를 알아볼 수 없다.
-     걸음별 규칙(.sot-stage.s2 .sot-art …)보다 약하면 안 먹으므로 셋을 다 적는다. */
-  .sot-stage.s1 .sot-art,
-  .sot-stage.s2 .sot-art,
-  .sot-stage.s3 .sot-art{bottom:-14%}
   .sot-title{font-size:19px}
   .sot-chips{gap:6px}
   .sot-actions{flex-direction:column-reverse;align-items:stretch;gap:8px}

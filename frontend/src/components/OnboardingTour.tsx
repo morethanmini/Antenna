@@ -27,6 +27,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/context'
+import { isOnboardingOff, setOnboardingOff } from '../auth/onboarding'
 import BlockchainScene from './prediction/BlockchainScene'
 import { ALL as SCENE_FRAMES } from './prediction/animationFrames'
 import '../styles/screens/onboarding-tour.css'
@@ -125,6 +126,15 @@ export default function OnboardingTour({ onClose, onLinkWallet }: Props) {
   const nickname = user?.nickname ?? ''
   const walletLinked = user?.walletLinked ?? false
   const [at, setAt] = useState(0)
+
+  /* '다시 보지 않기'. 이미 꺼 둔 사람이 '안내 다시 보기' 로 열었을 수도 있어
+     지금 값을 그대로 읽어 온다 — 체크가 풀린 채로 보이면 끄기를 두 번 하게 된다. */
+  const [off, setOff] = useState(isOnboardingOff)
+
+  /* 닫는 모든 길이 여기를 지난다(건너뛰기 · X · 종목 둘러보기 · 지갑 연동).
+     체크 상태를 닫는 순간에 저장한다 — 체크할 때마다 쓰면 마음을 바꿔 다시 풀고
+     그냥 넘긴 사람에게도 꺼진 채로 남는다. */
+  const close = useCallback(() => { setOnboardingOff(off); onClose() }, [off, onClose])
   const dialogRef = useRef<HTMLDivElement>(null)
 
   const step = STEPS[at]
@@ -134,10 +144,10 @@ export default function OnboardingTour({ onClose, onLinkWallet }: Props) {
      스쳐 닫으면 다시 볼 길이 없다(라우트가 없으므로 되돌아올 수도 없다).
      닫기는 X 와 "건너뛰기" 로만 — 둘 다 닫는다는 뜻이 분명한 자리다. */
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close() }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [close])
 
   /* 2걸음 봉인 장면의 스프라이트를 **열리자마자** 받아 둔다.
      BlockchainScene 도 자기 몫을 마운트 때 받지만, 그 시점은 이미 2걸음에
@@ -216,9 +226,20 @@ export default function OnboardingTour({ onClose, onLinkWallet }: Props) {
 
           <div className="ob-actions">
             {/* 건너뛰기는 늘 남겨 둔다. 로그인 직후에 붙잡아 두지 않는다 */}
-            <button type="button" className="ob-skip" onClick={onClose}>
-              {last ? '나중에 하기' : '건너뛰기'}
-            </button>
+            {/* 왼쪽에 끄기 스위치와 건너뛰기를 같이 둔다. 둘 다 "그만 볼래" 쪽
+                행동이라 한 덩어리로 묶이는 것이 읽기 쉽다. */}
+            <div className="ob-left">
+              <label className="ob-mute">
+                <input
+                  type="checkbox" checked={off}
+                  onChange={(e) => setOff(e.currentTarget.checked)}
+                />
+                다시 보지 않기
+              </label>
+              <button type="button" className="ob-skip" onClick={close}>
+                {last ? '나중에 하기' : '건너뛰기'}
+              </button>
+            </div>
 
             <div className="ob-nav">
               {/* 첫 걸음에서도 자리를 지킨다 — 버튼이 생겼다 사라지면 다음 버튼이
@@ -234,13 +255,16 @@ export default function OnboardingTour({ onClose, onLinkWallet }: Props) {
               {last ? (
                 walletLinked ? (
                   /* 연동까지 끝난 회원은 바로 할 일로 보낸다 */
-                  <Link className="ob-btn solid" to="/stocks" onClick={onClose}>
+                  <Link className="ob-btn solid" to="/stocks" onClick={close}>
                     종목 둘러보기
                     <ArrowIcon />
                   </Link>
                 ) : (
                   /* M-01 을 여기서 열지 않는다 — 호출부가 이걸 닫고 띄운다 */
-                  <button type="button" className="ob-btn solid" onClick={onLinkWallet}>
+                  <button
+                    type="button" className="ob-btn solid"
+                    onClick={() => { setOnboardingOff(off); onLinkWallet() }}
+                  >
                     지갑 연동하기
                     <ArrowIcon />
                   </button>
@@ -276,7 +300,7 @@ export default function OnboardingTour({ onClose, onLinkWallet }: Props) {
         </div>
 
         {/* 닫기는 무대 위에 얹는다 — 오른쪽 위가 닫기를 찾는 자리다 */}
-        <button type="button" className="ob-x" aria-label="건너뛰기" onClick={onClose}>
+        <button type="button" className="ob-x" aria-label="건너뛰기" onClick={close}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                strokeWidth="2" strokeLinecap="round" aria-hidden="true">
             <path d="M6 6l12 12M18 6L6 18" />
