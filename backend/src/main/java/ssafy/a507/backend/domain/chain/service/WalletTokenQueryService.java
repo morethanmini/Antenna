@@ -1,5 +1,8 @@
 package ssafy.a507.backend.domain.chain.service;
 
+import java.math.BigInteger;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Limit;
@@ -28,16 +31,34 @@ public class WalletTokenQueryService {
 
     /** PredictToken 이 정한 이름. 컨트랙트 값이라 설정으로 받지 않는다. */
     static final String SYMBOL = "ANT";
+
     private static final int DEFAULT_PAGE_SIZE = 20;
     private static final int MAX_PAGE_SIZE = 100;
+
+    /**
+     * 집계 구간. 화면 문구("30일간")와 같은 숫자라 여기 한 곳에만 둔다.
+     *
+     * <p>거래일이 아니라 <b>달력일</b>이다 — 토큰은 장이 열린 날에만 오가는 것이 아니다(구독 갱신·광고·보너스).
+     */
+    private static final int FLOW_WINDOW_DAYS = 30;
 
     private final TokenLedgerRepository ledger;
     private final TokenIndexer indexer;
 
     @Transactional(readOnly = true)
     public WalletBalanceResponse balance(Long userId) {
+        /* 두 합의 기준 시각을 한 번만 읽는다. 각자 now() 를 부르면 두 쿼리의 구간이 미세하게 달라져,
+           그 틈에 들어온 행 하나가 한쪽에만 잡힌다. */
+        Instant from = Instant.now().minus(FLOW_WINDOW_DAYS, ChronoUnit.DAYS);
+        BigInteger earned = ledger.sumEarnedSince(userId, from).orElse(BigInteger.ZERO);
+        /* 나간 합은 음수로 돌아온다. 화면이 부호를 정하도록 여기서 양수로 뒤집는다 */
+        BigInteger spent = ledger.sumSpentSince(userId, from).orElse(BigInteger.ZERO).negate();
         return new WalletBalanceResponse(
-                ledger.balanceOf(userId).toString(), SYMBOL, indexer.lastSyncedAt().orElse(null));
+                ledger.balanceOf(userId).toString(),
+                SYMBOL,
+                indexer.lastSyncedAt().orElse(null),
+                earned.toString(),
+                spent.toString());
     }
 
     /**

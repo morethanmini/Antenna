@@ -205,6 +205,26 @@
 }
 .hm-ant-label .hm-ico{color:var(--brand)}
 .hm-ant{margin:0; color:var(--ink)}
+
+/* ── 30일 흐름 (번 ANT · 쓴 ANT) ────────────────────────
+   잔액 상자 아래 두 칸. 잔액이 "지금" 이라면 이쪽은 "그동안" 이다.
+
+   **주가 색(.up/.down)을 쓰지 않는다.** 이 앱에서 빨강·파랑은 종목이 오르고 내린
+   것을 뜻한다. 토큰 수입·지출에 그 색을 쓰면 "번 ANT 가 올랐다" 로 읽히고, 같은
+   화면 위쪽 지수 카드의 등락과 뜻이 섞인다. 부호(+/−)가 이미 방향을 말하므로 색은
+   한 단계 힘만 준다 — 들어온 쪽만 진하게, 나간 쪽은 본문색 그대로. */
+.hm-flow{
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;
+  margin:10px 0 0;
+}
+.hm-flow > div{
+  padding:10px 12px; border:1px solid var(--rule); border-radius:10px;
+  background:var(--surface-2);
+}
+.hm-flow dt{margin:0 0 3px; color:var(--muted); font-size:var(--fs-xs); font-weight:var(--fw-bold)}
+.hm-flow dd{margin:0; font-size:var(--fs-xl); font-weight:var(--fw-heavy)}
+.hm-flow .is-in{color:var(--brand-ink)}
+.hm-flow .is-out{color:var(--body)}
 /* app.css 의 .card p 가 (0,1,1) 로 더 세서, 색을 b 에 직접 걸지 않으면
    잔액이 회색(--muted)을 물려받는다. */
 .hm-ant b{color:var(--ink); font-size:var(--fs-7xl); font-weight:var(--fw-bold); letter-spacing:-.03em}

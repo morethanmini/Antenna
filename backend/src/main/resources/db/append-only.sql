@@ -65,3 +65,13 @@ CREATE OR REPLACE TRIGGER trg_predictions_guard
 -- users.nickname: 08-31 에 NULL 허용(온보딩 전엔 닉네임이 없다)으로 바뀌었는데 그 전에 만들어진
 -- 배포 DB 에 NOT NULL 이 남아 신규 가입 INSERT 가 500 이었다(2026-09-03 장애).
 ALTER TABLE users ALTER COLUMN nickname DROP NOT NULL;
+
+-- token_ledger: 이 테이블에는 인덱스가 하나도 없었다. Postgres 는 외래키에 인덱스를 자동으로 만들지
+-- 않으므로 user_id 로 거르는 조회가 전부 순차 스캔이다 — 행이 적어 안 드러났을 뿐이다.
+-- 여기를 거치는 것: 잔액 SUM(delta) · 원장 목록 · 30일 유입/유출 합. 잔액은 구독·광고가 결제 판단에
+-- 쓰는 숫자라 느려지면 결제 경로까지 같이 느려진다.
+-- created_at 을 뒤에 둔 것은 셋 다 user_id 로 먼저 좁히고, 그중 기간 집계만 범위를 더 자르기 때문이다.
+-- 인덱스는 엔티티에 @Index 로 걸어 ddl-auto 에 맡길 수도 있지만, 이 프로젝트의 관례대로 스키마에
+-- 손대는 것은 이 파일에 모은다. IF NOT EXISTS 라 매 부팅 멱등이다.
+CREATE INDEX IF NOT EXISTS idx_token_ledger_user_created
+    ON token_ledger (user_id, created_at);
