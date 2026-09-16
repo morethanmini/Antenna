@@ -48,4 +48,11 @@ public class NotificationController {
     public void delete(@PathVariable Long id) {
         notificationService.delete(currentUserProvider.currentUserId(), id);
     }
+
+    /** 모두 삭제. 명세에는 없던 것 — 팝업의 "모두 삭제" 버튼이 쓴다(2026-09-16). */
+    @DeleteMapping
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteAll() {
+        notificationService.deleteAll(currentUserProvider.currentUserId());
+    }
 }
