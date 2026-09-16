@@ -138,6 +138,51 @@
 
 /* ── 버튼 줄 ────────────────────────────────────────── */
 .ob-actions{display:flex;align-items:center;justify-content:space-between;gap:12px}
+
+/* 끄기 스위치와 건너뛰기를 한 덩어리로. 둘 다 "그만 볼래" 쪽 행동이다.
+   알약에 좌우 여백이 있어 그만큼 왼쪽으로 당겨야 건너뛰기와 시작점이 맞는다. */
+.ob-left{display:flex;align-items:center;gap:6px;min-width:0;margin-left:-9px}
+
+/* ── 다시 보지 않기 ─────────────────────────────────
+   앞으로 가는 버튼과 무게를 확실히 다르게 둔다 — 눌러야 하는 것이 아니라
+   원하는 사람만 켜는 스위치다. 그래서 테두리 없는 알약으로 두고, 올리거나
+   켤 때만 바탕이 생긴다.
+
+   네모는 브라우저 기본 체크박스를 쓰지 않고 직접 그린다. 기본 모양은 OS 마다
+   크기·모서리·색이 달라 이 카드(모서리 12px · 브랜드 보라)와 따로 논다.
+   accent-color 로는 네모의 둥글기와 크기를 못 맞춘다. */
+.ob-mute{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:7px 12px 7px 9px;border-radius:999px;
+  color:var(--faint);font-size:12.5px;font-weight:750;
+  cursor:pointer;user-select:none;white-space:nowrap;
+  transition:background .14s,color .14s;
+}
+.ob-mute:hover{background:var(--surface-2);color:var(--body)}
+
+.ob-mute input{
+  appearance:none;-webkit-appearance:none;
+  flex:none;display:grid;place-items:center;
+  width:17px;height:17px;margin:0;
+  border:1.5px solid var(--rule);border-radius:6px;
+  background:var(--surface);cursor:pointer;
+  transition:background .14s,border-color .14s;
+}
+/* 체크 표시 — 획 두 개짜리 꺾쇠를 테두리로 그린다. 글리프(✓)를 쓰면 서체마다
+   굵기와 위치가 달라 가운데가 맞지 않는다. */
+.ob-mute input::after{
+  content:"";
+  width:4px;height:8px;margin-top:-2px;
+  border:solid #fff;border-width:0 2px 2px 0;
+  transform:rotate(45deg) scale(0);
+  transition:transform .16s cubic-bezier(.2,.9,.3,1.5);
+}
+.ob-mute input:checked{background:var(--brand);border-color:var(--brand)}
+.ob-mute input:checked::after{transform:rotate(45deg) scale(1)}
+.ob-mute input:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+/* 켜 두면 알약째 브랜드 색으로 바뀐다 — "지금 꺼 뒀다" 가 글씨만으로는 약하다 */
+.ob-mute:has(input:checked){background:var(--brand-softer);color:var(--brand)}
 .ob-skip{
   padding:8px 2px;color:var(--faint);font-size:13px;font-weight:700;
   transition:color .14s;
@@ -324,6 +369,30 @@
       rgba(255,255,255,.17) 82%,
       rgba(255,255,255,.05) 93%,
       rgba(255,255,255,0) 100%)}
+
+  /* ── 띠 안에 통째로 들어오게 ───────────────────────
+     넓을 때는 마스코트를 **폭**으로 맞춘다. 무대가 세로로 길어 아래를 조금
+     넘겨도(bottom:-2%) 발끝이 카드 모서리에 걸친 그림으로 읽힌다.
+
+     좁아지면 무대가 낮고 넓은 띠가 되는데, 폭 기준을 그대로 두면 세로로 긴
+     그림이 띠 높이를 훌쩍 넘어 머리나 발이 잘린다 — 무엇이 잘릴지가 걸음마다
+     달라서 어떤 걸음은 얼굴이 반만 남았다.
+
+     그래서 여기서는 **높이**로 맞춘다. 폭은 auto 라 비율이 유지되고, 그림이
+     길든 넓든 띠 안에 통째로 들어온다. 걸음별 폭·bottom 규칙보다 뒤에 있고
+     명시도가 같아 이쪽이 이긴다 — 넷을 다 적는 이유다. */
+  .ob-stage.s1 .ob-art,
+  .ob-stage.s2 .ob-art,
+  .ob-stage.s3 .ob-art,
+  .ob-stage.s4 .ob-art{
+    width:auto;height:84%;bottom:8%;
+  }
+
+  /* 봉인 장면도 띠 안에 맞춘다. 넓을 때는 무대가 높아 1.22배로 키웠는데(원래 띠가
+     214px 다) 좁아지면 무대가 170px 라 그대로 두면 위아래가 46px 씩 잘린다.
+     씬 안쪽 배치(--s·--gate)는 건드리지 않고 통째로 줄인다. */
+  .ob-scene{transform:translateY(-50%) scale(.74)}
+
   .ob-copy{grid-row:2;padding:18px 22px 20px;gap:16px}
   .ob-body h2{font-size:21px}
   /* 좁으면 장식이 마스코트와 겹친다. 오른쪽 하나만 뺀다 */
@@ -333,12 +402,10 @@
 @media(max-width:430px){
   .ob-backdrop{padding:12px}
   .ob-modal{--art:148px;grid-template-rows:168px auto}
-  /* 띠가 낮아지면 잘리는 쪽을 발밑으로 몰아 둔다 — 더듬이와 얼굴이 잘리면
-     캐릭터를 알아볼 수 없다. 걸음별 규칙보다 약하면 안 먹으므로 넷을 다 적는다. */
-  .ob-stage.s1 .ob-art,.ob-stage.s2 .ob-art,
-  .ob-stage.s3 .ob-art,.ob-stage.s4 .ob-art{bottom:-10%}
   .ob-body h2{font-size:19px}
   .ob-actions{flex-direction:column-reverse;align-items:stretch;gap:8px}
+  /* 좁으면 끄기 스위치와 건너뛰기를 양끝으로 벌린다. 세로로 쌓으면 줄만 늘어난다 */
+  .ob-left{justify-content:space-between;gap:10px}
   .ob-nav{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px}
   .ob-skip{text-align:center}
 }

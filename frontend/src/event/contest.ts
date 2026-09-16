@@ -86,7 +86,12 @@ export const CONTEST_PATH = `/events/${CONTEST.id}`
  * `event` 가 붙은 채로 들어온 것을 B-03 이 알아보고 대회 전용 요소를 띄운다.
  */
 export function cardHref(code: string, phase: Phase) {
-  return phase === 'open'
+  /* 개발 빌드에서는 창이 닫혀 있어도 예측 탭으로 보낸다(ANT-FE-EVENT-BET).
+     등록 창이 9/18 13:10 에야 열리는데, 그때까지 이 카드가 종목 정보로만 보내면
+     대회 전용 요소(배너·배팅)를 만들면서 확인할 길이 없다 — 주소를 손으로 쳐야 한다.
+     B-03 도 같은 자리에 같은 예외를 두고 있어 두 쪽이 함께 열리고 함께 닫힌다.
+     `import.meta.env.DEV` 는 빌드 때 상수로 접히므로 운영 번들에는 이 가지가 없다. */
+  return phase === 'open' || import.meta.env.DEV
     ? `/stocks/${code}?tab=predict&event=${CONTEST.id}`
     : `/stocks/${code}`
 }

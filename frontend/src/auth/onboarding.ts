@@ -18,32 +18,66 @@
    왜 sessionStorage 인가
    returnTo 와 같은 이유이고 같은 자리다. 로그인 직후의 한 흐름 안에서만 쓰이며
    탭을 닫으면 정리된다. localStorage 에 두면 며칠 뒤 다른 날 들어왔을 때
-   "로그인 직후" 도 아닌 시점에 튜토리얼이 떠오른다 — 진입 조건이 "A-01 로그인
-   직후 isNew=true" 이므로 그 흐름보다 오래 살아서는 안 된다.
+   "로그인 직후" 도 아닌 시점에 튜토리얼이 떠오른다.
 
-   **한 번 꺼내면 다시 세우지 않는다.** isNew 는 최초 1회뿐이라 건너뛰면 다시
-   뜨지 않는 것이 설계다. 남은 단계는 H-03 환경 설정이 보완 안내로 받는다. */
+   **매 로그인마다 세운다(2026-09-16).** 전에는 isNew 가 참인 가입 직후 한 번뿐이라,
+   건너뛴 사람과 그 기능이 생기기 전에 가입한 사람은 영영 볼 수 없었다. 이제는
+   로그인할 때마다 뜨고, 그만 보고 싶은 사람이 **직접 꺼야** 멈춘다 — 끄는 스위치가
+   아래 '다시 보지 않기'다. */
 const KEY = 'antena.onboarding'
 
-/** A-01 응답의 isNew 가 참일 때 OAuthCallback 이 세운다. */
+/** 로그인에 성공하면 OAuthCallback 이 세운다. 신규·기존을 가리지 않는다. */
 export function markOnboardingPending() {
   try { sessionStorage.setItem(KEY, '1') } catch { /* 무시 */ }
 }
 
-/** 셸(Layout)이 부른다. 꺼내면서 지우므로 두 번 뜨지 않는다. */
+/**
+ * 셸(Layout)이 부른다. 꺼내면서 지우므로 한 흐름에 두 번 뜨지 않는다.
+ *
+ * **꺼 둔 사람에게는 false 다.** 플래그는 그래도 꺼내 버린다 — 남겨 두면 나중에
+ * 설정에서 다시 켰을 때 그때 뜬금없이 떠오른다.
+ */
 export function takeOnboardingPending(): boolean {
   try {
     const pending = sessionStorage.getItem(KEY) === '1'
     sessionStorage.removeItem(KEY)
-    return pending
+    return pending && !isOnboardingOff()
   } catch {
     return false
   }
 }
 
+/* ── 다시 보지 않기 ───────────────────────────────────────
+   매 로그인마다 뜨게 바꾸면서 끄는 스위치가 필요해졌다. 안내를 이미 아는 사람에게
+   로그인할 때마다 덮개를 씌우면 그건 안내가 아니라 통행료다.
+
+   **localStorage 다.** pending 과 반대로 오래 살아야 하는 값이다 — 탭을 닫아도,
+   다음 날에도 꺼져 있어야 "다시 보지 않기" 라는 말이 지켜진다.
+
+   **사용자별로 나누지 않는다.** 한 브라우저를 여럿이 쓰면 뒤에 온 사람이 안내를
+   못 보지만, 그 사람도 H-03 환경 설정의 '안내 다시 보기' 로 언제든 열 수 있다.
+   회원 id 를 키에 섞으면 로그인 전에는 읽을 수 없어(이 값을 보는 시점에 user 가
+   아직 안 올 수 있다) 더 자주 어긋난다 — G-00 의 sim/onboardingSeen.ts 와 같은 판단이다.
+
+   서버에 두지 않는 이유는 /users/me 에 담을 필드가 없어서다. 자리가 생기면 이
+   두 함수만 그쪽으로 갈아끼우면 된다. */
+const OFF_KEY = 'antena.onboarding.off'
+
+/** 자동으로 뜨는 것을 껐는가. 껐어도 '안내 다시 보기' 로는 열린다. */
+export function isOnboardingOff(): boolean {
+  try { return localStorage.getItem(OFF_KEY) === '1' } catch { return false }
+}
+
+/** 튜토리얼의 '다시 보지 않기' 가 부른다. 끄고 켜기 둘 다 여기로 온다. */
+export function setOnboardingOff(off: boolean) {
+  try {
+    if (off) localStorage.setItem(OFF_KEY, '1')
+    else localStorage.removeItem(OFF_KEY)
+  } catch { /* 저장이 막혀 있으면 이번 판만 적용된다 */ }
+}
+
 /* ── 다시 열기 ─────────────────────────────────────────────
-   M-09 는 가입 직후 isNew 가 참인 그 한 번만 뜬다. 건너뛰면 다시 볼 길이
-   없었다 — 이미 가입한 회원은 영영 못 본다는 뜻이기도 하다.
+   자동으로 뜨는 것을 꺼 둔 사람도 언제든 열어 볼 수 있어야 한다.
 
    G-00 모의투자 온보딩이 같은 문제를 window 이벤트로 풀었으므로(sim/onboardingSeen.ts)
    여기도 같은 방식을 쓴다. 안내를 띄우는 곳은 셸이고 화면은 신호만 올린다.
