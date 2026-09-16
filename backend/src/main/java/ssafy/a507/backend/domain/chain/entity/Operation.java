@@ -173,6 +173,16 @@ public class Operation {
     }
 
     /** 전송 주체가 tx 를 띄운 뒤 부른다. 인덱서가 tx_hash 로 이 행을 찾으므로 확정 전에 채워야 한다. */
+    /**
+     * 접수 때 몰랐던 리소스를 나중에 붙인다 — 슬롯 초과 예측(ANT-PRED-10)은 소각 tx 를 <b>보낸 뒤에</b> 예측 행을
+     * 만들기 때문이다(predictions 가 append-only 라 전송 실패 시 되돌릴 수 없어, 만들지 않는 쪽을 택했다).
+     * 종류와 id 를 같이 받는 이유는 CHECK 제약이 둘을 함께 비우거나 함께 채우게 하기 때문이다.
+     */
+    public void attachResource(ResourceType resourceType, Long resourceId) {
+        this.resourceType = resourceType;
+        this.resourceId = resourceId;
+    }
+
     public void markSent(String txHash) {
         this.txHash = txHash;
     }

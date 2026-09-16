@@ -34,6 +34,9 @@ import { Panel } from './Block'
 import PredictionDepth from './PredictionDepth'
 import { useBlock } from '../../api/useBlock'
 import WalletLinkModal from '../wallet/WalletLinkModal'
+import ConfirmDialog from '../ConfirmDialog'
+import OperationModal from '../operation/OperationModal'
+import { formatToken } from '../../api/wallet'
 import CommitProgressModal, { type CommitPhase } from '../prediction/CommitProgressModal'
 import SlideToSign from '../prediction/SlideToSign'
 import EventBet, { EventBanner, betAmount, BET_MIN, BET_MAX } from './EventBet'
@@ -135,6 +138,11 @@ export default function PredictTab({
 
   const [linking, setLinking] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  /* 슬롯을 넘긴 등록은 서명 전에 한 번 묻는다 — 서명 문자열에는 금액이 없어(명세 "무료·소각 공통")
+     이 확인 창이 곧 소각 동의다. 확인하면 sign() 으로 이어진다. */
+  const [confirmingBurn, setConfirmingBurn] = useState(false)
+  /* 202 로 접수된 소각 작업. M-02 가 폴링하고 확정되면 예측 상세로 보낸다 */
+  const [burnOp, setBurnOp] = useState<string | null>(null)
   const [failure, setFailure] = useState<ApiError | null>(null)
   const [result, setResult] = useState<CreateResult | null>(null)
   /* 지갑 승인 뒤 서버 응답까지 빈 시간이 있다. 그 사이 화면이 그대로면 승인이
@@ -251,6 +259,8 @@ export default function PredictTab({
 
   const remaining = slots.data?.remaining ?? 0
   const overSlot = slots.data ? remaining <= 0 : false
+  /** 슬롯을 넘겼을 때 1건에 태우는 ANT. 서버 금액표에서 온다(slots.overCost) */
+  const overCost = slots.data ? formatToken(slots.data.overCost) : null
 
   /* 이벤트 배팅. 이벤트가 아니면 폼에 값이 있어도 없는 셈 친다 — 배너로 들어왔다가
      주소에서 event 를 지우고 새로고침하면 화면에 보이지도 않는 금액이 걸린 채
@@ -279,6 +289,13 @@ export default function PredictTab({
       return
     }
 
+    /* 슬롯을 넘겼으면 소각 동의를 먼저 받는다. 서명 창까지 간 뒤에 금액을 알게 하지 않는다 */
+    if (overSlot && !confirmingBurn) {
+      setConfirmingBurn(true)
+      return
+    }
+    setConfirmingBurn(false)
+
     setSubmitting(true)
     setPhase('signing')
     try {
@@ -299,8 +316,16 @@ export default function PredictTab({
       /* 배팅 금액은 아직 싣지 않는다. POST /predictions 에 betAmount 가 없어
          지금 얹으면 400 이고, 커밋·서명 문자열에는 애초에 들어가지 않는다
          (EventBet.tsx 머리말). 서버가 칸을 열면 draft 옆에 나란히 넘긴다. */
-      setResult(await createPrediction(draft, signature))
-      setPhase('settled')
+      const created = await createPrediction(draft, signature)
+      setResult(created)
+      if (created.kind === 'queued') {
+        /* 소각으로 접수됐다(202). 커밋 진행 창 대신 M-02 로 넘긴다 — 여기서 기다리는 것은
+           앵커가 아니라 소각 tx 확정이고, 그 폴링·문구·실패 처리는 M-02 가 이미 갖고 있다 */
+        setPhase(null)
+        setBurnOp(created.data.operationId)
+      } else {
+        setPhase('settled')
+      }
       /* 다음 예측은 새 난수로 봉인한다. 같은 noteSalt 를 두 번 쓰면 같은 근거가 같은
          noteHash 로 남아, 원장만 보고도 "같은 말을 두 번 했다" 를 알 수 있다. */
       onForm((f) => ({ ...f, noteSalt: newNoteSalt() }))
@@ -357,16 +382,16 @@ export default function PredictTab({
             </>
           ) : (
             <>
-              {/* 슬롯을 넘겨 소각으로 넘어갔다. 온체인 확정 전이라 예측 id 가 아직 없다 */}
-              <h2>블록 확정을 기다리는 중입니다</h2>
+              {/* 슬롯을 넘겨 소각으로 접수했다(202). 예측은 이미 저장됐고 소각 tx 확정만 남았다 */}
+              <h2>예측을 등록했습니다</h2>
               <p className="sd-done-sub">
-                이번 주 슬롯을 넘겨 토큰 소각으로 등록됩니다. 블록이 확정되면 예측 목록에 나타납니다.
+                무료 슬롯을 넘겨 {overCost ?? ''} ANT 소각으로 등록됩니다. 소각이 체인에서 확정되면 지갑 내역에 남습니다.
               </p>
               <dl className="sd-commit">
                 <div><dt>작업 번호</dt><dd className="num">{result.data.operationId}</dd></div>
               </dl>
               <p className="sd-done-cta">
-                <Link className="sd-cta" to="/ledger">커밋 원장에서 확인</Link>
+                <Link className="sd-cta" to={`/predictions/${result.data.predictionId}`}>예측 상세 보기</Link>
               </p>
             </>
           )}
@@ -395,11 +420,11 @@ export default function PredictTab({
         span={6}
       >
         {overSlot && (
-          /* 소각 경로(202)는 아직 서버에 없다 — 슬롯을 다 쓰면 409 로 끝난다(명세 v0.41).
-             "지금 등록하면 소각된다" 고 적으면 누를 수 있는 것처럼 보이는데, 실제로는
-             막힌다. 소각이 붙으면 그때 문구를 되돌린다. */
+          /* 무료 슬롯을 넘기면 등록마다 ANT 를 태운다(ANT-PRED-10). 발판 라벨에도 같은 금액을
+             적고, 밀면 서명 전에 확인 창이 한 번 더 묻는다 */
           <p className="sd-slot-warn">
-            오늘 무료 슬롯을 모두 썼습니다. <b>내일 다시 채워집니다.</b>
+            오늘 무료 슬롯을 모두 썼습니다. 지금부터는 <b>1건당 {overCost} ANT</b> 를 소각하고 등록합니다.
+            무료 슬롯은 내일 다시 채워집니다.
           </p>
         )}
 
@@ -686,7 +711,7 @@ export default function PredictTab({
             disabled={!draft || betOutOfRange}
             busy={submitting}
             label={
-              overSlot ? '슬롯을 다 썼습니다'
+              overSlot ? `${overCost} ANT 소각하고 등록하기`
                 : bet > 0 ? '예측하고 배팅하기'
                   : '밀어서 등록하기'
             }
@@ -707,6 +732,23 @@ export default function PredictTab({
       </Panel>
 
       {progress}
+
+      {/* 소각 동의. 확인하면 submit 이 confirmingBurn 을 보고 서명으로 넘어간다 */}
+      {confirmingBurn && (
+        <ConfirmDialog
+          title={`${overCost} ANT 를 사용해 추가로 등록할까요?`}
+          description={`오늘 무료 슬롯 ${slots.data?.freeLimit ?? 3}건을 모두 썼습니다. 이 예측은 ${overCost} ANT 를 소각하고 등록되며, 소각은 되돌릴 수 없습니다.`}
+          confirmLabel={`${overCost} ANT 소각하고 등록`}
+          tone="danger"
+          onCancel={() => setConfirmingBurn(false)}
+          onConfirm={() => { void submit() }}
+        />
+      )}
+
+      {/* 소각 접수(202) 폴링 — 확정되면 예측 상세로 */}
+      {burnOp && (
+        <OperationModal operationId={burnOp} kind="PREDICTION_BURN" onClose={() => setBurnOp(null)} />
+      )}
 
       {/* 지갑이 없으면 먼저 연동하고, 끝나면 하던 등록을 이어 간다 */}
       {linking && (

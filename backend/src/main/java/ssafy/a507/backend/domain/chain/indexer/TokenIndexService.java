@@ -200,6 +200,12 @@ public class TokenIndexService {
         if (op.getResourceType() == Operation.ResourceType.AD && op.getResourceId() != null) {
             banners.findById(op.getResourceId()).ifPresent(b -> b.reject());
         }
+        if (op.getResourceType() == Operation.ResourceType.PREDICTION) {
+            // 슬롯 초과 소각(ANT-PRED-10)이 체인에서 실패했다. 예측은 지우지 않는다 — 이미 봉인·앵커 대상이라 지우면
+            // 증명이 깨진다. 잔액은 접수 때 확인했으므로 드물고, 사람이 확인한다(구독 실패와 같은 태도).
+            log.error("작업 {} — 소각 실패 {} ({}). 예측 {} 은 소각 없이 남았다 — 사람이 확인하라",
+                    op.getId(), code, message, op.getResourceId());
+        }
         log.warn("작업 {} — {} ({}), kind {}", op.getId(), code, message, op.getKind());
     }
 

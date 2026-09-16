@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
 import ssafy.a507.backend.common.security.SignatureGuard;
@@ -24,6 +25,13 @@ import ssafy.a507.backend.domain.account.service.NotificationGate;
 import ssafy.a507.backend.domain.monetize.entity.Subscription;
 import ssafy.a507.backend.domain.monetize.repository.SubscriptionRepository;
 import ssafy.a507.backend.domain.chain.config.TokenAmountProperties;
+import ssafy.a507.backend.domain.chain.entity.Operation;
+import ssafy.a507.backend.domain.chain.relay.TokenReason;
+import ssafy.a507.backend.domain.chain.repository.OperationRepository;
+import ssafy.a507.backend.domain.chain.repository.TokenLedgerRepository;
+import ssafy.a507.backend.domain.chain.service.OperationService;
+import ssafy.a507.backend.domain.chain.service.TokenOperationService;
+import ssafy.a507.backend.domain.prediction.dto.PredictionQueuedResponse;
 import ssafy.a507.backend.domain.market.entity.DailyQuote;
 import ssafy.a507.backend.domain.market.entity.Stock;
 import ssafy.a507.backend.domain.market.repository.DailyQuoteRepository;
@@ -90,6 +98,11 @@ public class PredictionRegisterService {
     private final NotificationRepository notifications;
     private final UserRepository users;
     private final NotificationGate notificationGate;
+    private final TokenOperationService tokenOperationService;
+    private final OperationService operationService;
+    private final OperationRepository operations;
+    private final TokenLedgerRepository ledger;
+    private final TransactionTemplate tx;
 
     public PredictionRegisterService(
             EntityManager em,
@@ -107,7 +120,12 @@ public class PredictionRegisterService {
             SubscriptionRepository subscriptions,
             NotificationRepository notifications,
             UserRepository users,
-            NotificationGate notificationGate) {
+            NotificationGate notificationGate,
+            TokenOperationService tokenOperationService,
+            OperationService operationService,
+            OperationRepository operations,
+            TokenLedgerRepository ledger,
+            TransactionTemplate tx) {
         this.em = em;
         this.predictions = predictions;
         this.notes = notes;
@@ -124,11 +142,71 @@ public class PredictionRegisterService {
         this.notifications = notifications;
         this.users = users;
         this.notificationGate = notificationGate;
+        this.tokenOperationService = tokenOperationService;
+        this.operationService = operationService;
+        this.operations = operations;
+        this.ledger = ledger;
+        this.tx = tx;
     }
 
-    /** 등록. 성공하면 예측 id — 멱등 저장소에 이 값만 남기고 응답은 {@link #created} 가 다시 만든다. */
-    @Transactional
-    public long register(Long userId, PredictionCreateRequest req) {
+    /** 등록 결과. {@code operationId} 가 있으면 슬롯을 넘겨 소각으로 접수한 것(202), 없으면 무료(201). */
+    public record Registration(long predictionId, String operationId) {}
+
+    /**
+     * 접수 트랜잭션의 결과. 무료면 예측이 이미 저장돼 {@code predictionId} 가 있고, 소각이면 작업만 있다 —
+     * 예측은 tx 를 보낸 뒤 {@link #create} 가 만든다. {@code verified}(서명자·nonce)와 {@code refClose} 는 그때 커밋 재료다.
+     */
+    private record Accepted(Long predictionId, String operationId, BigDecimal refClose, SignatureGuard.Verified verified) {}
+
+    /**
+     * 등록 진입점. 무료 슬롯 안이면 접수 트랜잭션 하나로 끝난다. 넘겼으면(ANT-PRED-10) 세 걸음이다:
+     * ① 접수 — 검사 · 서명(nonce 소비) · 소각 작업 PENDING 커밋 ② <b>트랜잭션 밖에서</b> 소각 tx 전송
+     * ③ 예측 · 근거 · 커밋 저장 + 작업에 예측 id 붙이기.
+     *
+     * <p><b>예측을 tx 전송 뒤에 만드는 이유</b> — {@code predictions} 는 append-only(db/append-only.sql, DELETE 금지)라
+     * 전송이 못 나갔을 때 되돌릴 수 없다. 광고는 배너를 먼저 만들고 실패 시 REJECTED 로 닫지만 예측에는 그런 상태가 없고,
+     * 남겨 두면 슬롯을 넘긴 예측이 공짜로 남는다. 반대 창(전송 뒤 ③ 이 실패해 "소각은 됐는데 예측은 없다")은 DB 가
+     * 같은 요청 안에서 ms 뒤에 죽어야 생긴다 — 앵커 배치가 감수하는 SEND_LOST 창과 같은 크기라 받아들인다.
+     * 전송 실패(체인 잔액 부족 409 · RPC 503)면 작업은 {@link TokenOperationService} 가 FAILED 로 닫고 예외가 그대로 간다.
+     * nonce 는 ① 에서 태워졌으므로 사용자는 다시 서명한다 — 구독·광고와 같다.
+     */
+    public Registration create(Long userId, PredictionCreateRequest req) {
+        Accepted accepted = tx.execute(status -> accept(userId, req));
+        if (accepted.operationId() == null) {
+            return new Registration(accepted.predictionId(), null);
+        }
+        tokenOperationService.dispatchBurn(accepted.operationId(), amounts.slotOver(), TokenReason.SLOT_OVER);
+        long predictionId = tx.execute(status -> persistPaid(userId, req, accepted));
+        return new Registration(predictionId, accepted.operationId());
+    }
+
+    /** ③ 소각 tx 가 나간 뒤 예측을 만든다. 재료(종목·근거 포인트)는 ① 과 같은 검사를 거쳐 다시 읽는다 — 다른 트랜잭션이다. */
+    private long persistPaid(Long userId, PredictionCreateRequest req, Accepted accepted) {
+        User user = users.getReferenceById(userId);
+        Stock stock = stocks.findById(req.stockCode())
+                .orElseThrow(() -> new BusinessException(ErrorCode.STOCK_NOT_FOUND, "stockCode"));
+        List<ResearchPoint> points = loadEvidences(req.evidencePointIdsOrEmpty(), stock);
+        Prediction prediction = persist(user, stock, points, req, accepted.refClose(), accepted.verified(), LocalDate.now(KST));
+        operations.findById(accepted.operationId()).orElseThrow()
+                .attachResource(Operation.ResourceType.PREDICTION, prediction.getId());
+        return prediction.getId();
+    }
+
+    /** 202 응답 재료. 멱등 재시도도 이 경로로 — 상태는 그사이 인덱서가 바꿨을 수 있어 작업에서 다시 읽는다. */
+    @Transactional(readOnly = true)
+    public PredictionQueuedResponse accepted(Long userId, String operationId) {
+        Operation operation = operations.findById(operationId)
+                .filter(o -> o.getUser().getId().equals(userId))
+                .filter(o -> o.getKind() == Operation.Kind.PREDICTION_BURN)
+                .orElseThrow(() -> new BusinessException(ErrorCode.OPERATION_NOT_FOUND, "operationId"));
+        return new PredictionQueuedResponse(operation.getId(), operation.getResourceId(), operation.getStatus());
+    }
+
+    /**
+     * ① 접수 — 검사 · 서명 · (무료면) 저장 · (소각이면) 작업 PENDING 을 한 트랜잭션으로. 호출자는 {@link #create} 뿐이다.
+     * 응답은 {@link #created}·{@link #accepted} 가 다시 만든다 — 멱등 저장소에는 두 id 만 남는다.
+     */
+    private Accepted accept(Long userId, PredictionCreateRequest req) {
         // ① 사용자 행 잠금 — 이 사용자의 등록을 직렬화한다. 지갑 미연동은 SignatureGuard 가 nonce 전에 거른다.
         User user = em.find(User.class, userId, LockModeType.PESSIMISTIC_WRITE);
         if (user == null) {
@@ -148,9 +226,15 @@ public class PredictionRegisterService {
         List<ResearchPoint> points = loadEvidences(req.evidencePointIdsOrEmpty(), stock);
         CommitHashes.requireNoteSalt(req.noteSalt());
 
-        // ③ 슬롯 — 잠금 안에서 센다.
-        if (usedToday(userId, today) >= freePerDay) {
-            throw new BusinessException(ErrorCode.PREDICTION_SLOT_EXCEEDED);
+        /* ③ 슬롯 — 잠금 안에서 센다. 넘겼으면 소각 경로(ANT-PRED-10): 체인이 켜져 있고 원장 잔액이 소각액 이상이어야
+           한다. 둘 다 서명(nonce 소비) 앞이다 — 어차피 못 보낼 요청이 지갑 팝업을 한 번 더 겪게 하지 않는다.
+           원장은 1차 거름이고 체인 잔액은 전송 시뮬레이션이 한 번 더 본다(SubscriptionService·AdService 와 같다). */
+        boolean overSlot = usedToday(userId, today) >= freePerDay;
+        if (overSlot) {
+            tokenOperationService.requireEnabled();
+            if (ledger.balanceOf(userId).compareTo(amounts.slotOver()) < 0) {
+                throw new BusinessException(ErrorCode.INSUFFICIENT_BALANCE);
+            }
         }
 
         /* ④ 서명 — 여기서 nonce 가 소비된다. 이 뒤로 실패하면 사용자는 다시 서명해야 한다.
@@ -158,7 +242,27 @@ public class PredictionRegisterService {
            이미 태운 값이라 공개해도 재사용되지 않는다. */
         SignatureGuard.Verified verified = signatureGuard.verifyWithNonce(userId, req);
 
+        if (overSlot) {
+            // ⑤' 소각 작업만 PENDING 으로. 예측은 tx 가 나간 뒤 create() 가 만든다(predictions 는 append-only).
+            // 리소스는 비워 둔다(CHECK: 종류와 id 는 함께 비거나 함께 찬다). ③ 이 예측을 만든 뒤 붙인다.
+            Operation operation = operationService.accept(user, Operation.Kind.PREDICTION_BURN, null, null);
+            return new Accepted(null, operation.getId(), refClose, verified);
+        }
+
         // ⑤ 저장. 예측 → 근거 → 리서치 포인트 → 커밋. 전부 같은 트랜잭션 — 커밋 없는 예측은 영영 앵커되지 않는다.
+        Prediction prediction = persist(user, stock, points, req, refClose, verified, today);
+        return new Accepted(prediction.getId(), null, refClose, verified);
+    }
+
+    /** 예측 → 근거 → 리서치 포인트 → 커밋 → 구독자 알림. 무료(①)와 소각(③) 두 경로가 같은 것을 저장한다. */
+    private Prediction persist(
+            User user,
+            Stock stock,
+            List<ResearchPoint> points,
+            PredictionCreateRequest req,
+            BigDecimal refClose,
+            SignatureGuard.Verified verified,
+            LocalDate today) {
         LocalDate baseDate = BusinessDays.nextWeekday(today);
         Prediction prediction = predictions.save(Prediction.register(
                 user,
@@ -179,7 +283,7 @@ public class PredictionRegisterService {
                 verified.signerAddress(),
                 verified.nonce()));
         notifySubscribers(user, prediction, stock);
-        return prediction.getId();
+        return prediction;
     }
 
     /**
