@@ -57,6 +57,7 @@ public enum ErrorCode {
     // 피드 글 (ANT-COMMUNITY-02)
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "글을 찾을 수 없습니다."),
     REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "리포트를 찾을 수 없습니다."),
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "알림을 찾을 수 없습니다."),
     PREDICTION_NOT_FOUND(HttpStatus.NOT_FOUND, "예측을 찾을 수 없습니다."),
 
     // 댓글 · 좋아요 (ANT-COMMUNITY-03)

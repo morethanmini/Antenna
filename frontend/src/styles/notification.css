@@ -79,6 +79,22 @@
   width:5px;height:5px;border-radius:50%;background:var(--brand);
 }
 
+/* ── 항목 한 줄 = 알림 버튼 + 지우기 ────────────────────
+   지우기는 오른쪽 아래 구석에 작게. 늘 보이되 옅게 두고, 줄 위에 올리거나 초점이
+   들어오면 진해진다 — 숨겨 두면 손가락(hover 없음)으로는 영영 못 찾는다. */
+.nt-row{position:relative}
+.nt-row .nt-item{padding-right:34px}
+.nt-del{
+  position:absolute;right:10px;bottom:9px;
+  width:22px;height:22px;border:0;border-radius:6px;padding:0;
+  display:grid;place-items:center;
+  background:none;color:var(--faint);cursor:pointer;
+  transition:color .12s,background .12s;
+}
+.nt-row:hover .nt-del,.nt-row:focus-within .nt-del{color:var(--muted)}
+.nt-del:hover{background:var(--surface-2);color:var(--ink)}
+.nt-del:focus-visible{outline:2px solid var(--brand);outline-offset:-2px;color:var(--ink)}
+
 .nt-state{
   margin:0;padding:34px 16px;text-align:center;
   color:var(--muted);font-size:var(--fs-base);

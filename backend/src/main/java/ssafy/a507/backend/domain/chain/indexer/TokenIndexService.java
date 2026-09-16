@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ssafy.a507.backend.domain.account.entity.User;
+import ssafy.a507.backend.domain.account.entity.Notification;
+import ssafy.a507.backend.domain.account.repository.NotificationRepository;
 import ssafy.a507.backend.domain.account.repository.UserRepository;
 import ssafy.a507.backend.domain.chain.entity.ChainEvent;
 import ssafy.a507.backend.domain.chain.entity.Operation;
@@ -19,6 +21,7 @@ import ssafy.a507.backend.domain.chain.repository.ChainEventRepository;
 import ssafy.a507.backend.domain.chain.repository.OperationRepository;
 import ssafy.a507.backend.domain.chain.repository.TokenLedgerRepository;
 import ssafy.a507.backend.domain.monetize.repository.AdBannerRepository;
+import ssafy.a507.backend.domain.monetize.entity.Subscription;
 import ssafy.a507.backend.domain.monetize.repository.SubscriptionRepository;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -52,6 +55,7 @@ public class TokenIndexService {
     private final UserRepository users;
     private final SubscriptionRepository subscriptions;
     private final AdBannerRepository banners;
+    private final NotificationRepository notifications;
     /** Boot 4 = Jackson 3. 웹 계층 매퍼 빈에 기대지 않고 여기서 만든다({@code AnchorIndexService} 와 같은 이유). */
     private final JsonMapper json = JsonMapper.builder().build();
 
@@ -61,13 +65,15 @@ public class TokenIndexService {
             TokenLedgerRepository ledger,
             UserRepository users,
             SubscriptionRepository subscriptions,
-            AdBannerRepository banners) {
+            AdBannerRepository banners,
+            NotificationRepository notifications) {
         this.events = events;
         this.operations = operations;
         this.ledger = ledger;
         this.users = users;
         this.subscriptions = subscriptions;
         this.banners = banners;
+        this.notifications = notifications;
     }
 
     /**
@@ -212,6 +218,21 @@ public class TokenIndexService {
     }
 
     /** 회원 지갑이면 원장 한 행. 아니면 WARN 한 줄 — 테스트 mint·데모·수납 주소가 여기 걸린다. 이벤트는 이미 남아 있다. */
+    /**
+     * 발행자에게 "누군가 나를 구독했다". 202 접수 때가 아니라 <b>체인에서 확정된 여기</b>가 구독이 생긴
+     * 순간이다 — 접수 때 알리면 결제가 되돌려진 구독까지 알린 셈이 된다.
+     */
+    private void notifySubscribed(Subscription s) {
+        String nickname = s.getSubscriber().getNickname();
+        notifications.save(Notification.create(
+                s.getPublisher(),
+                s.getSubscriber(),
+                "SUBSCRIBE",
+                "새 구독자가 생겼습니다",
+                (nickname == null ? "누군가" : nickname) + " 님이 내 채널을 구독했습니다",
+                "/channels/" + s.getPublisher().getId()));
+    }
+
     private void credit(String wallet, BigInteger delta, String reason, ChainEvent event) {
         Optional<User> user = users.findByWalletAddress(wallet);
         if (user.isEmpty()) {
@@ -260,7 +281,10 @@ public class TokenIndexService {
         op.markSucceeded(event.getTxHash());
         if (op.getResourceType() != null && op.getResourceId() != null) {
             switch (op.getResourceType()) {
-                case SUBSCRIPTION -> subscriptions.findById(op.getResourceId()).ifPresent(s -> s.activate(event.getTxHash(), now));
+                case SUBSCRIPTION -> subscriptions.findById(op.getResourceId()).ifPresent(s -> {
+                    s.activate(event.getTxHash(), now);
+                    notifySubscribed(s);
+                });
                 case AD -> banners.findById(op.getResourceId()).ifPresent(b -> b.activate(event.getTxHash()));
                 // PREDICTION: PRED-01 202 경로가 붙을 때 여기 분기 하나. SEASON_PARTICIPANT: join 이 곧 ONGOING 이라 전이할 게 없다.
                 case PREDICTION, SEASON_PARTICIPANT -> {}

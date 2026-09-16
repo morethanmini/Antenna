@@ -13,11 +13,11 @@
 
    ── STOMP 는 아직 없다 ─────────────────────────────────
    설계 제약의 `/user/queue/notifications` 가 붙을 자리가 여기다. 소켓이 오면
-   **뱃지만 +1** 하고 목록은 다시 읽는다(api/notifications.ts 머리말). 서버에
-   notification 도메인이 아직 없어 지금은 자리만 적어 둔다. */
+   **뱃지만 +1** 하고 목록은 다시 읽는다(api/notifications.ts 머리말). 서버가
+   아직 소켓으로 보내지 않아 지금은 자리만 적어 둔다 — REST 는 붙어 있다. */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  getNotifications, markAllRead, markRead,
+  deleteNotification, getNotifications, markAllRead, markRead,
 } from '../api/notifications'
 import type { Notification } from '../api/notifications'
 import NotificationPopover from './NotificationPopover'
@@ -79,6 +79,17 @@ export default function NotificationBell() {
     void markAllRead().catch(() => {})
   }, [])
 
+  /* 삭제도 화면을 먼저 바꾼다. 안 읽은 것을 지우면 뱃지도 하나 준다 — 서버의 unreadCount 가
+     read_at IS NULL 개수라 지운 행은 세지 않는다. 실패하면 다음에 열 때 돌아온다. */
+  const remove = useCallback((id: number) => {
+    setItems((list) => {
+      const target = list.find((n) => n.id === id)
+      if (target && !target.read) setUnread((n) => Math.max(0, n - 1))
+      return list.filter((n) => n.id !== id)
+    })
+    void deleteNotification(id).catch(() => {})
+  }, [])
+
   return (
     <div className="nt-wrap">
       <button
@@ -112,6 +123,7 @@ export default function NotificationBell() {
           onClose={close}
           onRead={read}
           onReadAll={readAll}
+          onDelete={remove}
           onRetry={reload}
         />
       )}

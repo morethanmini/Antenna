@@ -225,6 +225,26 @@ class ReportControllerTest {
         flush();
 
         assertThat(countNotifications(viewerId, "REPORT_PUBLISHED")).isEqualTo(1);
+        // 구독자 전용인지 공개인지 본문에서 갈린다 — 구독자는 어느 쪽이든 받지만 무엇을 여는지는 알아야 한다
+        assertThat(notificationBody(viewerId, "REPORT_PUBLISHED")).contains("구독자 전용").contains("알림 리포트");
+    }
+
+    @Test
+    @DisplayName("공개 리포트 발행 알림은 본문에 '공개' 가 적힌다")
+    void 발행_알림_공개() throws Exception {
+        insertSubscription(viewerId, authorId, "ACTIVE");
+        flush();
+
+        mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(authorId)))
+                        .with(csrf())
+                        .header("Idempotency-Key", "key-noti-pub")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signedBody("공개 리포트", "본문", true)))
+                .andExpect(status().isCreated());
+        flush();
+
+        assertThat(notificationBody(viewerId, "REPORT_PUBLISHED")).contains("공개").doesNotContain("구독자 전용");
     }
 
     @Test
@@ -831,7 +851,7 @@ class ReportControllerTest {
                 .andExpect(status().isCreated());
         flush();
 
-        assertThat(notificationBody(viewerId)).isEqualTo("닉없음 리포트");
+        assertThat(notificationBody(viewerId)).startsWith("닉없음 리포트").doesNotContain("null");
     }
 
     @Test
@@ -1005,6 +1025,13 @@ class ReportControllerTest {
                         .setParameter(1, title)
                         .getSingleResult())
                 .longValue();
+    }
+
+    private String notificationBody(Long userId, String type) {
+        return (String) em.createNativeQuery("SELECT body FROM notifications WHERE user_id = ? AND type = ?")
+                .setParameter(1, userId)
+                .setParameter(2, type)
+                .getSingleResult();
     }
 
     private long countNotifications(Long userId, String type) {

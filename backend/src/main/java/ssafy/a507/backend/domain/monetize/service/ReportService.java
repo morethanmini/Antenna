@@ -245,7 +245,9 @@ public class ReportService {
         // 닉네임은 nullable 이다 — NULL 이면 온보딩 미완료다(User.nickname). 그대로 이어붙이면
         // 알림 한 줄이 "null · 제목" 으로 나간다. 발행을 막을 근거는 명세에 없으므로 제목만 남긴다.
         String nickname = author.getNickname();
-        String body = nickname == null ? report.getTitle() : nickname + " · " + report.getTitle();
+        // 구독자는 어느 쪽이든 받지만, 여는 것이 구독자만 볼 수 있는 글인지는 알아야 한다.
+        String body = (nickname == null ? report.getTitle() : nickname + " · " + report.getTitle())
+                + (report.isPublic() ? " · 공개" : " · 구독자 전용");
         String linkPath = "/reports/" + report.getId();
         List<Notification> notifications = subscriberIds.stream()
                 // getReferenceById 는 프록시라 SELECT 를 내지 않는다. 알림 행에 필요한 것은

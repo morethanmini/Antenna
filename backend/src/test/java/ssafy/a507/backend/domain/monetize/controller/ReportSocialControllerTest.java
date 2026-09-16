@@ -1,5 +1,6 @@
 package ssafy.a507.backend.domain.monetize.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -98,6 +99,37 @@ class ReportSocialControllerTest {
         }
 
         @Test
+        @DisplayName("좋아요를 누르면 작성자에게 REPORT_LIKE 알림 — 취소했다 다시 눌러도 (리포트, 사람)당 한 번")
+        void 좋아요_알림() throws Exception {
+            Long reportId = insertReport(authorId, "공개 리포트", true);
+            flush();
+
+            mockMvc.perform(post(likeUrl(reportId)).with(user(str(readerId))).with(csrf()))
+                    .andExpect(status().isCreated());
+            mockMvc.perform(delete(likeUrl(reportId)).with(user(str(readerId))).with(csrf()))
+                    .andExpect(status().isNoContent());
+            mockMvc.perform(post(likeUrl(reportId)).with(user(str(readerId))).with(csrf()))
+                    .andExpect(status().isCreated());
+            flush();
+
+            assertThat(countNotifications(authorId, "REPORT_LIKE")).isEqualTo(1);
+            assertThat(notificationLink(authorId, "REPORT_LIKE")).isEqualTo("/reports/" + reportId);
+        }
+
+        @Test
+        @DisplayName("내 리포트에 내가 누른 좋아요는 알리지 않는다")
+        void 좋아요_본인_알림_없음() throws Exception {
+            Long reportId = insertReport(authorId, "공개 리포트", true);
+            flush();
+
+            mockMvc.perform(post(likeUrl(reportId)).with(user(str(authorId))).with(csrf()))
+                    .andExpect(status().isCreated());
+            flush();
+
+            assertThat(countNotifications(authorId, "REPORT_LIKE")).isZero();
+        }
+
+        @Test
         @DisplayName("취소는 멱등 — 누른 적 없어도 204")
         void 좋아요_취소_멱등() throws Exception {
             Long reportId = insertReport(authorId, "공개 리포트", true);
@@ -128,6 +160,34 @@ class ReportSocialControllerTest {
     @Nested
     @DisplayName("댓글")
     class Comments {
+
+        @Test
+        @DisplayName("댓글이 달리면 작성자에게 REPORT_COMMENT 알림 — 내가 단 댓글은 알리지 않는다")
+        void 댓글_알림() throws Exception {
+            Long reportId = insertReport(authorId, "공개 리포트", true);
+            flush();
+
+            mockMvc.perform(post(commentsUrl(reportId))
+                            .with(user(str(readerId)))
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"body":"잘 읽었습니다"}
+                                    """))
+                    .andExpect(status().isCreated());
+            mockMvc.perform(post(commentsUrl(reportId))
+                            .with(user(str(authorId)))
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"body":"감사합니다"}
+                                    """))
+                    .andExpect(status().isCreated());
+            flush();
+
+            assertThat(countNotifications(authorId, "REPORT_COMMENT")).isEqualTo(1);
+            assertThat(notificationLink(authorId, "REPORT_COMMENT")).isEqualTo("/reports/" + reportId);
+        }
 
         @Test
         @DisplayName("작성하면 201 과 id, 목록에 실린다")
@@ -465,6 +525,23 @@ class ReportSocialControllerTest {
     /** 커뮤니티의 {@code /comments/{id}/like} 와 경로를 나눈 이유는 컨트롤러 주석에 적어 두었다. */
     private static String commentLikeUrl(Long commentId) {
         return "/api/v1/report-comments/" + commentId + "/like";
+    }
+
+    private long countNotifications(Long userId, String type) {
+        return ((Number) em.createNativeQuery(
+                                "SELECT count(*) FROM notifications WHERE user_id = ? AND type = ?")
+                        .setParameter(1, userId)
+                        .setParameter(2, type)
+                        .getSingleResult())
+                .longValue();
+    }
+
+    private String notificationLink(Long userId, String type) {
+        return (String) em.createNativeQuery(
+                        "SELECT link_path FROM notifications WHERE user_id = ? AND type = ?")
+                .setParameter(1, userId)
+                .setParameter(2, type)
+                .getSingleResult();
     }
 
     private static String str(Long userId) {

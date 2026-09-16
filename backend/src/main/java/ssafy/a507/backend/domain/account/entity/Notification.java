@@ -44,6 +44,15 @@ public class Notification {
     @Column(name = "link_path", length = 200)
     private String linkPath;
 
+    /**
+     * 이 알림을 일으킨 사람. 좋아요·댓글·구독처럼 <b>남의 행동</b>이 원인일 때만 있고, 판정·발행처럼
+     * 행동의 주체가 곧 내용인 알림은 null 이다. (리포트, 사람)당 한 번만 보내는 좋아요 알림의 중복
+     * 검사 열쇠다 — 본문에서 닉네임을 되짚는 것은 닉네임이 바뀌면 틀린다.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "actor_id")
+    private User actor;
+
     /** 확인 시각. NULL 개수가 곧 미확인 뱃지 숫자다. */
     @Column(name = "read_at")
     private Instant readAt;
@@ -61,13 +70,27 @@ public class Notification {
      */
     public static Notification create(
             User user, String type, String title, String body, String linkPath) {
+        return create(user, null, type, title, body, linkPath);
+    }
+
+    /** {@code actor} 가 있는 알림 — 남의 행동이 원인일 때. */
+    public static Notification create(
+            User user, User actor, String type, String title, String body, String linkPath) {
         Notification notification = new Notification();
         notification.user = user;
+        notification.actor = actor;
         notification.type = type;
         notification.title = truncate(title, 100);
         notification.body = truncate(body, 300);
         notification.linkPath = truncate(linkPath, 200);
         return notification;
+    }
+
+    /** 읽음. 이미 읽었으면 처음 읽은 시각을 지킨다 — 두 번 눌러도 결과가 같다. */
+    public void read(Instant now) {
+        if (readAt == null) {
+            readAt = now;
+        }
     }
 
     /**
