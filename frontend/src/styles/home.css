@@ -368,11 +368,14 @@
 
    cqh 가 이 상자의 높이를 가리키려면 container-type:size 가 있어야 한다. */
 .hm-event.is-art{
-  position:relative; display:block; padding:0; border-radius:0; background:none;
+  position:relative; display:block; padding:0; background:none;
   aspect-ratio:9 / 1;
   container-type:size;
-  /* 캐릭터가 위 카드 위로 넘쳐 나와야 한다 */
-  z-index:1;
+  /* **띠 밖으로는 아무것도 내보내지 않는다.** 캐릭터를 위로 넘치게 두었더니
+     위 카드와 겹쳐 지저분했다. 조각들은 아래에서 안으로 들여놓았고, 이 줄은
+     "값을 잘못 만져도 다시는 새어 나가지 않는다" 는 보증이다.
+     모서리를 여기서 깎으므로 안쪽 .hm-ev-clip 과 같은 값이어야 한다 */
+  overflow:hidden; border-radius:16px;
 }
 .hm-event.is-art:hover{transform:translateY(-2px); box-shadow:none}
 .hm-event.is-art:focus-visible{outline-offset:6px; border-radius:18px}
@@ -397,8 +400,10 @@
 .hm-ev-confetti.is-b{right:34cqh; top:26cqh; transform:scaleX(-1); opacity:.6}
 
 /* 왼쪽 글 묶음. 세로 가운데 정렬이라 위아래 여백이 저절로 같아진다 */
+/* 왼쪽 글 묶음. 가운데에서 **6cqh 내려** 세운다 — 제목 위에 왕관이 얹히므로
+   글자만 기준으로 가운데를 맞추면 왕관이 띠 위로 새어 나간다 */
 .hm-ev-lead{
-  position:absolute; left:4cqh; top:50%; transform:translateY(-50%);
+  position:absolute; left:4cqh; top:50%; transform:translateY(calc(-50% + 6cqh));
   display:flex; align-items:center; gap:3cqh;
 }
 .hm-ev-pill{height:30cqh; width:auto}
@@ -406,13 +411,18 @@
 .hm-ev-titlebox{position:relative; display:block}
 .hm-ev-title{height:40cqh; width:auto}
 /* 왕관 자리는 **제목 폭의 %** 다. 그래야 제목이 커지든 작아지든 같은 글자
-   위에 얹힌다 — cqh 로 잡으면 제목과 어긋난다 */
-.hm-ev-crown{position:absolute; left:34%; top:-76%; height:34cqh; width:auto}
+   위에 얹힌다 — cqh 로 잡으면 제목과 어긋난다.
+   높이를 34 -> 28cqh 로 줄이고 덜 띄웠다. 전에는 띠 위로 12px 나갔는데,
+   자르면 왕관 머리가 날아간다 */
+.hm-ev-crown{position:absolute; left:34%; top:-64%; height:28cqh; width:auto}
 .hm-ev-copy{height:13cqh; width:auto}
 
 /* 캐릭터는 띠 위로 넘친다. 스티커는 캐릭터 옆에서 캔들과 겹쳐 안 읽혀,
    비어 있는 가운데로 옮겼다 — 여백도 함께 메운다 */
-.hm-ev-mascot{position:absolute; right:3cqh; bottom:-4cqh; height:130cqh; width:auto}
+/* 캐릭터는 띠 안에 들어온다. 전에는 130cqh 로 위로 38px 넘쳤는데, 넘친 부분이
+   위 카드를 덮고 클릭까지 가로채서 손이 많이 갔다. 98cqh 면 발끝이 바닥에
+   닿으면서 머리가 천장에 닿지 않는다 */
+.hm-ev-mascot{position:absolute; right:3cqh; bottom:0; height:98cqh; width:auto}
 .hm-ev-sticker{position:absolute; left:56%; top:24cqh; height:34cqh; width:auto}
 
 /* 띠가 낮아지면 장식부터 접는다. 작아진 스티커는 읽히지도 않으면서 지저분하다.
