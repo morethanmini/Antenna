@@ -40,8 +40,22 @@
 .hm-quick .hm-ico{color:var(--brand)}
 .hm-card{display:flex; flex-direction:column; gap:14px; min-width:0}
 
+/* 눈에는 안 보이고 읽어 주는 기기에만 읽히는 1px 상자.
+
+   **left·top 을 0 으로 못 박는다.** 안 박으면 "원래 있었을 자리"에 뜨는데, 자리를 가진
+   조상이 없으면 그 기준이 **화면 전체**가 되어 어디로든 샌다. 실제로 관심 종목 표의
+   `<span class="hm-sr">관심 여부</span>` 가 420px 에서 오른쪽으로 164px 나가 문서
+   가로 스크롤을 만들었다(스크롤폭 584 = 그 요소의 오른끝). 표를 감싼
+   `.hm-table-wrap` 이 overflow-x:auto 인데도 못 자른 것은, 자르기는 **기준이 되는
+   조상만** 할 수 있어서다 — 그 래퍼는 자리를 안 가지고 있었다.
+
+   조상마다 position:relative 를 달아 고치지 않는 이유: 이 클래스를 쓰는 곳이 세
+   군데인데 셋 다 기준 조상이 없고(2026-09-17 측정), 종목 상세의 `<caption>` 은 우연히
+   안 새고 있을 뿐이라 같은 함정을 그대로 안고 간다. 여기서 한 번 막는 편이 낫다.
+
+   0,0 으로 보내도 읽어 주는 기기는 자리가 아니라 **DOM 순서**로 읽으므로 영향이 없다. */
 .hm-sr{
-  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  position:absolute; left:0; top:0; width:1px; height:1px; padding:0; margin:-1px;
   overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
 }
 

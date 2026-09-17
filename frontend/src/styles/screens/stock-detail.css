@@ -623,13 +623,6 @@
 .stock-detail-page .pf-line-input:focus-visible::-webkit-slider-thumb{
   outline:2px solid var(--brand);outline-offset:2px;
 }
-/* 아직 안 고른 상태 — 손잡이가 왼쪽 끝에 있지만 값은 null 이다. 흐리게 두어
-   "이미 3일이 골라졌다" 로 읽히지 않게 한다 */
-.stock-detail-page .pf-line.is-unset .pf-line-input::-webkit-slider-thumb{
-  background:var(--faint);
-}
-.stock-detail-page .pf-line.is-unset .pf-line-input::-moz-range-thumb{background:var(--faint)}
-
 /* 선과 눈금. 손잡이 뒤에 깔린다 */
 /* 손잡이 반지름(10px)만큼 양쪽을 좁혀 두면, 눈금을 그냥 0~100% 에 놓아도
    손잡이 중심과 정확히 맞는다 */
@@ -1251,3 +1244,30 @@
 .stock-detail-page .ev-bet .sd-help,
 .stock-detail-page .ev-bet .sd-warn,
 .stock-detail-page .ev-bet .sd-irreversible{margin-top:9px}
+
+/* ── ③ 근거 포인트 안의 투자 포인트 격자 (2026-09-17) ─────
+   종목 정보(B-03)의 것을 그대로 가져왔다. 다만 이 자리는 폼 한 칸 안쪽이라
+   위쪽 "고른 근거" 목록과 섞이지 않게 선 하나로 가른다. */
+.stock-detail-page .pf-points{margin-top:12px}
+/* 펼치개. 폼 안의 보조 동작이라 발판처럼 진하게 두지 않는다 */
+.stock-detail-page .pf-points-toggle{
+  display:flex;align-items:center;gap:8px;width:100%;padding:9px 12px;
+  border:1px solid var(--rule);border-radius:10px;background:var(--surface);
+  color:var(--body);font-family:inherit;font-size:var(--fs-md);font-weight:var(--fw-bold);cursor:pointer;
+}
+.stock-detail-page .pf-points-toggle:hover{border-color:var(--brand-soft);background:var(--brand-softer)}
+.stock-detail-page .pf-points-toggle .num{margin-left:auto;font-weight:var(--fw-normal);color:var(--muted)}
+.stock-detail-page .pf-points-toggle .pf-points-caret{color:var(--faint)}
+.stock-detail-page .pf-points > div{margin-top:12px;padding-top:12px;border-top:1px solid var(--rule)}
+/* 예측 폼은 12칸 중 6칸이라 3열 격자가 좁다. 한 열로 세우고 종류를 세로로 쌓는다 —
+   좁은 칸에 3열을 밀어 넣으면 포인트 본문이 두세 글자마다 줄바꿈된다. */
+.stock-detail-page .pf-points .sd-points{grid-template-columns:1fr;gap:15px}
+.stock-detail-page .pf-points-foot{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin:13px 0 0;font-size:var(--fs-md);color:var(--muted);
+}
+
+/* 넓은 화면에서는 폼 칸도 넉넉해져 두 열까지 들어간다 */
+@media (min-width:1500px){
+  .stock-detail-page .pf-points .sd-points{grid-template-columns:repeat(2,minmax(0,1fr))}
+}

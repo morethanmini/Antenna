@@ -8,13 +8,19 @@
    이 값을 PredictTab 이 아니라 부모(StockDetail)가 든다. 근거를 고르러 종목 정보
    탭으로 가면 PredictTab 이 언마운트되므로, 안에 두면 돌아왔을 때 적어 둔 것이
    전부 사라진다 — picked 를 부모가 들고 있는 것과 같은 이유다. */
-import { newNoteSalt } from '../../api/predictions'
+import { HORIZON_MIN, newNoteSalt } from '../../api/predictions'
 import type { Direction, Horizon } from '../../api/predictions'
 
 export type PredictForm = {
   direction: Direction | null
   target: string
-  horizon: Horizon | null
+  /**
+   * 예측 기간. **null 을 두지 않는다** — range 는 값이 없어도 손잡이를 어딘가에
+   * 세워야 해서 예전에는 null 일 때 왼쪽 끝(3일)에 두었는데, 그러면 DOM 값이 이미
+   * "3" 이라 3일로 끌어도 change 가 안 나서 3일만 고를 수 없었다. 처음부터 3일을
+   * 고른 것으로 둔다.
+   */
+  horizon: Horizon
   note: string
   /** 방향을 사람이 직접 골랐는가. 참이면 목표가로 다시 정하지 않는다 */
   directionTouched: boolean
@@ -40,6 +46,6 @@ export type PredictForm = {
  * 모든 예측이 같은 난수를 쓰게 되고, 그건 난수가 없는 것과 같다.
  */
 export const emptyPredictForm = (): PredictForm => ({
-  direction: null, target: '', horizon: null, note: '', directionTouched: false,
+  direction: null, target: '', horizon: HORIZON_MIN, note: '', directionTouched: false,
   noteSalt: newNoteSalt(), bet: '',
 })

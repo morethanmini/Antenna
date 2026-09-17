@@ -5,14 +5,28 @@
   --brand-ink:#4144c9;
   --brand-soft:#ece9fd;
   --brand-softer:#f4f3fe;
-  --ground:#f5f6fa;
+  /* 바탕이 흰색이다(2026-09-17). 전에는 회색(#f5f6fa) 위에 흰 카드를 얹어 카드
+     모양이 저절로 드러났는데, 네비바를 페이지에 녹이려고 바탕을 흰색으로 올렸다.
+     **그러면 카드가 바탕과 같은 색이 되어 테두리 하나로만 버틴다** — 그래서 카드
+     전용 선(--card-line)을 따로 둔다. 아래 --rule 주석 참고. */
+  --ground:#ffffff;
   --surface:#ffffff;
   --surface-2:#f0f2f7;
   --ink:#14141b;
   --body:#3b3f4a;
   --muted:#6b7280;
   --faint:#9ca3af;
+  /* 안쪽 선 — 표 구분선 · 입력칸 · 점선 자리 · 토글 트랙 · 차트 기준선.
+     304 곳이 이 값을 쓴다. 카드 테두리를 진하게 하자고 여기를 건드리면 앱 전체의
+     가는 선이 같이 어두워지므로 이 값은 그대로 둔다. */
   --rule:#e5e7ef;
+  /* 카드 바깥 테두리 전용. 바탕이 흰색이라 카드는 이 선 하나로 자기 영역을
+     주장해야 해서 --rule 보다 한 단계 진하다. 카드 **안쪽**의 상자들은 --rule 을
+     그대로 쓴다 — 바깥은 또렷하고 안쪽은 부드러워야 층이 읽힌다. */
+  --card-line:#dfe2ed;
+  /* 네비바 아래 선. 바탕과 거의 같아 경계가 "있는 듯 없는" 정도만 남는다 —
+     레퍼런스(신한카드)처럼 바가 페이지에 녹아 보이게 하려는 것이다. */
+  --nav-line:#f1f2f6;
   --gold:#f4c23d;
   --danger:#e04343;
   /* 초록 둘. 뜻이 다르므로 이름을 나눠 둔다 — 값이 비슷하다고 섞어 쓰면
@@ -51,9 +65,9 @@
      담당자와 정한 뒤 옮긴다(stock-detail 은 테두리 색까지 따로 있다). */
   --up-soft:#fdeceb;
   --down-soft:#e9f0ff;
-  --topbar-h:52px;
-  --rail-w:172px;      /* 펼친 사이드바 */
-  --rail-mini-w:56px;  /* 접힌 사이드바 — 아이콘만 */
+  /* 네비바 높이. 화면들이 sticky 를 이 값에 맞춰 붙이므로(종목 상세·탐색·예측 목록,
+     알림 팝업) 여기만 고치면 따라온다. 사이드바를 걷어내며 52 -> 58px */
+  --topbar-h:72px;
   --sans:"Pretendard Variable","Pretendard","IBM Plex Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
   --shadow:0 1px 2px rgba(20,20,27,.04),0 10px 28px -22px rgba(20,20,27,.28);
@@ -136,214 +150,177 @@ button{border:0;background:none;cursor:pointer}
 .num{font-variant-numeric:tabular-nums}
 :focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 
-/* ── 상단바 ───────────────────────────────────────────── */
-.topbar{
-  position:fixed;inset:0 0 auto 0;height:var(--topbar-h);z-index:30;
-  display:flex;align-items:center;gap:14px;
-  /* 접힌 사이드바가 덮는 만큼 비워 둔다 */
-  padding:0 16px 0 calc(var(--rail-mini-w) + 16px);
-  transition:padding-left .18s ease;
-  background:var(--surface);border-bottom:1px solid var(--rule);
-}
-.search{position:relative;flex:1;max-width:660px}
-.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--faint)}
-.search input{
-  width:100%;height:34px;padding:0 14px 0 38px;
-  border:1px solid var(--rule);border-radius:999px;background:var(--surface);
-  color:var(--ink);
-}
-.search input::placeholder{color:var(--faint)}
-.search input:focus{border-color:var(--brand);outline:none}
+/* ── 네비게이션 바 ────────────────────────────────────
+   한 줄짜리 상단 바다. 왼쪽부터 로고(=홈) · 모드 전환 · 메뉴, 오른쪽에 잔액과
+   아이콘 넷(검색 · 알림 · 설정 · 프로필)이 붙는다.
 
-/* 모드 토글 */
+   **사이드바를 걷어냈다(2026-09-17).** 레일이 본문을 56px 밀고 있었고 펼침/접힘
+   때문에 상단바·본문·가운데 정렬이 서로를 따라다녀야 했다. 메뉴가 넷뿐이라 한 줄에
+   들어가므로 그 장치가 전부 필요 없어졌다 — .main 의 왼쪽 패딩과 1712px·1944px
+   보정, :has() 규칙 셋, 서랍과 배경막이 같이 사라졌다. */
+.navbar{
+  position:fixed;inset:0 0 auto 0;height:var(--topbar-h);z-index:30;
+  display:flex;align-items:center;gap:18px;padding:0 20px;
+  background:var(--surface);border-bottom:1px solid var(--nav-line);
+}
+
+/* 로고 = 홈. 워드마크를 통째로 보인다(접힘 상태가 없어져 잘라 쓸 이유가 사라졌다) */
+.brand{display:flex;align-items:center;flex:none}
+/* 전역 img{max-width:100%} 가 폭을 갉지 않게 풀어 둔다 */
+.brand-logo{width:150px;height:auto;max-width:none;display:block}
+
+/* 모드 토글 — 인사이트 · 모의 투자 */
 .modeswitch{
-  display:flex;flex:none;padding:3px;gap:3px;
-  background:var(--surface-2);border-radius:10px;
+  display:flex;flex:none;padding:4px;gap:4px;
+  background:var(--surface-2);border-radius:12px;
 }
 .modeswitch a{
-  flex:1;padding:6px 4px;border-radius:7px;font-size:var(--fs-md);font-weight:var(--fw-bold);
+  padding:8px 16px;border-radius:9px;font-size:var(--fs-lg);font-weight:var(--fw-bold);
   color:var(--muted);white-space:nowrap;text-align:center;
   transition:background .15s,color .15s;
 }
 .modeswitch a:hover{color:var(--ink)}
 .modeswitch a.on{background:var(--brand);color:#fff}
 
-.topbar-right{display:flex;align-items:center;gap:8px;margin-left:auto;flex:none}
-.topbar-auth{display:flex;align-items:center;gap:7px}
-.topbar-auth a{
+/* 메뉴 — 글자만. 아이콘을 뺐다: 한 줄에 늘어놓으면 아이콘이 글자 사이를 벌려
+   덩어리로 읽히지 않는다(세로로 쌓던 사이드바와 다른 점이다).
+
+   **좁아지면 이 줄만 가로로 구른다.** 메뉴를 햄버거로 감추지 않는 것은 넷뿐이라
+   감출 값이 없어서고, 구르게 두면 로고·아이콘은 제자리에 남는다.
+   scrollbar-width:none 은 줄 아래에 스크롤바가 생겨 바 높이가 흔들리는 것을 막는다. */
+.navmenu{
+  /* **남는 자리를 다 먹고 그 안에서 가운데로 모은다.** 로고·모드 전환이 왼쪽,
+     아이콘 묶음이 오른쪽에 고정돼 있어, 그 사이를 이 줄이 채우면 메뉴가 바 가운데에
+     선다. 절대 배치로 화면 정가운데에 박지 않는 이유는 좁아질 때 양옆과 겹치기
+     때문이다 — 이 방식은 자리가 줄면 저절로 밀린다. */
+  flex:1;justify-content:center;
+  display:flex;align-items:center;gap:28px;min-width:0;
+  overflow-x:auto;scrollbar-width:none;
+}
+.navmenu::-webkit-scrollbar{display:none}
+/* 12.5 -> 15px. 사이드바에서는 아이콘이 옆에 붙어 작아도 읽혔는데, 글자만 한 줄로
+   서니 그 크기로는 바가 비어 보였다.
+   **색은 검정이다.** 보라로 뒀더니 메뉴 넷이 통째로 한 덩어리 색면이 되어, 지금 있는
+   자리를 알려 주는 음각 칸이 그 안에 묻혔다. 색은 로고·모드 전환·잔액에만 두고,
+   메뉴는 글자 자체로 읽히게 한다. */
+.navmenu a{
+  padding:7px 12px;border-radius:9px;white-space:nowrap;
+  font-size:var(--fs-2xl);font-weight:var(--fw-bold);color:var(--ink);
+  transition:background .15s,color .15s;
+}
+.navmenu a:hover{background:var(--surface-2);color:var(--ink)}
+/* 지금 있는 자리. **보라 알약이 아니라 눌린 자국처럼 보이게 한다** — 메뉴가 전부
+   보라라 같은 색 알약을 깔면 글자와 바탕이 한 덩어리로 뭉친다. 옅은 회색 바닥에
+   안쪽 그림자를 얹으면 그 칸만 살짝 파인 것으로 읽혀, 색을 더 쓰지 않고도 자리가
+   보인다. 글자는 한 단계 진한 보라로 둔다. */
+.navmenu a.on{
+  background:var(--surface-2);color:var(--ink);
+  box-shadow:inset 0 1px 2px rgba(20,20,27,.09),inset 0 0 0 1px rgba(20,20,27,.04);
+}
+.navmenu a.on:hover{background:var(--surface-2);color:var(--ink)}
+
+/* 오른쪽 묶음. margin-left:auto 로 밀어 두면 메뉴가 길어져도 끝에 붙어 있는다.
+   **바 높이만큼 편다(align-self:stretch).** 안쪽의 알림·계정 곁창이 top:100% 로
+   매달리는데, 이 묶음이 내용 높이(34px)면 그 100% 가 바 한가운데를 가리켜 곁창이
+   바닥 선을 덮는다. 펴 두면 100% 가 곧 바 아래다. */
+.navbar-right{display:flex;align-items:center;align-self:stretch;gap:8px;margin-left:auto;flex:none}
+.navbar-auth{display:flex;align-items:center;gap:7px}
+.navbar-auth a{
   display:grid;place-items:center;height:34px;padding:0 14px;
   border:1px solid var(--rule);border-radius:9px;
   font-size:var(--fs-sm);font-weight:var(--fw-bold);white-space:nowrap;
 }
-.topbar-login{background:#fff;color:var(--body)}
-.topbar-signup{background:var(--brand);color:#fff;border-color:var(--brand)!important}
-.topbar-auth a:hover{border-color:#c8c9f5;color:var(--brand-ink)}
-.topbar-signup:hover{background:var(--brand-ink);color:#fff!important}
+.navbar-login{background:#fff;color:var(--body)}
+.navbar-signup{background:var(--brand);color:#fff;border-color:var(--brand)!important}
+.navbar-auth a:hover{border-color:#c8c9f5;color:var(--brand-ink)}
+.navbar-signup:hover{background:var(--brand-ink);color:#fff!important}
+
 /* 지갑(H-01)으로 가는 링크다. 누를 수 있다는 것이 보여야 해서 호버를 준다 —
    옆의 아이콘 버튼(.iconbtn)과 같은 결로 맞춘다 */
 .wallet{
-  display:flex;align-items:center;gap:7px;height:34px;padding:0 13px;
+  display:flex;align-items:center;gap:7px;height:40px;padding:0 15px;
   border:1px solid var(--rule);border-radius:999px;font-weight:var(--fw-bold);color:var(--ink);
   text-decoration:none;transition:border-color .15s ease,background .15s ease;
 }
 .wallet:hover{border-color:var(--brand-soft);background:var(--brand-softer)}
 .wallet:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
-.wallet i{width:12px;height:18px;border-radius:2px;background:var(--gold);display:block}
+
+/* 바가 72px 이라 32px 아이콘은 왼쪽(로고 51 · 모드 전환 46)에 비해 작아 보였다 */
 .iconbtn{
-  position:relative;width:32px;height:32px;border-radius:9px;color:var(--muted);
+  position:relative;width:38px;height:38px;border-radius:11px;color:var(--muted);
   display:grid;place-items:center;
 }
 .iconbtn:hover{background:var(--surface-2);color:var(--ink)}
+.iconbtn[aria-expanded="true"]{background:var(--brand-soft);color:var(--brand-ink)}
 .badge{
   position:absolute;top:-2px;right:-2px;min-width:16px;height:16px;padding:0 4px;
   border-radius:999px;background:var(--danger);color:#fff;
   font-size:var(--fs-3xs);font-weight:var(--fw-bold);line-height:16px;text-align:center;
 }
 
-/* ── 사이드바 ─────────────────────────────────────────── */
-/* 상단바를 덮는 전체 높이. 기본은 아이콘만 보이고, 호버하면 펼쳐진다. */
-.rail{
-  position:fixed;top:0;bottom:0;left:0;width:var(--rail-mini-w);z-index:40;
-  transition:width .18s ease;overflow:hidden;
-  display:flex;flex-direction:column;gap:14px;padding:12px 8px;
-  background:var(--surface);border-right:1px solid var(--rule);
+/* ── 계정 메뉴 (프로필 사진) ──────────────────────────
+   마이페이지 · 내 지갑 · 로그아웃 셋이 여기 모인다. 전에는 사이드바 바닥
+   (마이페이지)과 상단바 아이콘(로그아웃)으로 갈려 있었다. */
+/* 알림 팝업(.nt-wrap)과 같은 이유로 **바 높이만큼 늘린다** — 메뉴가 `top:100%` 로
+   매달리므로 이 상자가 버튼(32px)만 하면 바 안쪽에서 시작해 바닥 선을 덮는다.
+   늘려 두면 100% 가 곧 바 아래라 바 높이가 바뀌어도 따라온다. */
+.accountmenu{position:relative;flex:none;align-self:stretch;display:flex;align-items:center}
+.avatarbtn{
+  display:block;width:38px;height:38px;padding:0;border-radius:50%;
+  border:1px solid var(--rule);overflow:hidden;background:var(--brand-soft);
+  transition:border-color .15s ease;
 }
-/* 키보드 사용자를 위해 포커스가 들어와도 펼친다 */
-.rail:hover,.rail:focus-within{width:var(--rail-w)}
+.avatarbtn:hover{border-color:var(--brand)}
+.avatarbtn:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+/* 원본이 정사각이 아니어도 잘라서 채운다 */
+.avatarbtn img{width:100%;height:100%;object-fit:cover;display:block}
 
-/* 접혀도 내부는 펼친 폭 그대로 두고 잘라낸다 — 아이콘 위치가 흔들리지 않는다 */
-.rail>*{width:calc(var(--rail-w) - 16px);flex:none}
-
-/* 글자 요소는 접힘 상태에서 감춘다 (잘린 글자가 비치지 않게).
-   하단 프로필은 아바타를 남겨야 하므로 여기서 다루지 않는다 — .rail-me 참고. */
-.modeswitch,.nav a span{opacity:0;transition:opacity .14s ease}
-.rail:hover .modeswitch,.rail:hover .nav a span,
-.rail:focus-within .modeswitch,
-.rail:focus-within .nav a span{opacity:1}
-/* 로고 — 메뉴 아이콘과 왼쪽 끝을 맞춘다.
-   워드마크 한 장을 접힘/펼침에서 나눠 쓴다. 접히면 폭을 좁혀 왼쪽 끝(개미 마크)만
-   남기고, 펼치면 글자까지 드러난다. .rail>* 의 폭 지정보다 뒤에 와야 이긴다. */
-.brand{
-  /* 워드마크 폭 — 펼친 레일을 채운다 */
-  --brand-w:calc(var(--rail-w) - 28px);
-  /* 왼쪽 여백은 **접힌 레일 기준**으로 정한다 — 기본 상태가 접힘이고, 거기서
-     마크가 레일 한가운데 있어야 아래 메뉴 아이콘들과 한 줄로 읽힌다.
-     레일 반폭에서 레일 자체의 padding(8px)과 마크 중심 위치를 뺀다.
-     마크 중심 = 워드마크 폭의 12.13% (원본 2366px 중 52~522 의 가운데 287).
-     펼쳤을 때도 같은 여백을 쓴다. 로고가 3.5px 왼쪽으로 붙지만 접힘이 기본이다. */
-  --brand-pad:calc(var(--rail-mini-w) / 2 - 8px - var(--brand-w) * .1213);
-  /* 접힘 폭 = 왼쪽 여백 + 마크까지. overflow 는 패딩 상자에서 자르므로 오른쪽 패딩은
-     잘라 주지 않는다 — 이 값이 곧 보이는 폭이다.
-     0.2255 는 마크와 글자 사이 빈 구간의 가운데다(마크 522 까지, 글자 544 부터).
-     더 넓히면 "A" 의 왼쪽 획이 비치고, 좁히면 마크가 잘린다. */
-  width:calc(var(--brand-pad) + var(--brand-w) * .2255);
-  display:flex;align-items:center;flex:none;
-  padding:0 0 0 var(--brand-pad);overflow:hidden;transition:width .18s ease;
+.accountmenu-pop{
+  position:absolute;top:calc(100% + 8px);right:0;z-index:40;
+  min-width:150px;padding:6px;
+  background:var(--surface);border:1px solid var(--rule);border-radius:12px;
+  box-shadow:0 18px 44px -20px rgba(20,20,27,.42),0 2px 8px rgba(20,20,27,.06);
+  display:flex;flex-direction:column;gap:2px;
 }
-.rail:hover .brand,.rail:focus-within .brand{width:calc(var(--rail-w) - 16px)}
-/* max-width 를 풀어 둔다 — 전역 img{max-width:100%} 가 있으면 접힐 때 같이 찌그러진다 */
-.brand-logo{width:var(--brand-w);height:auto;max-width:none;flex:none;display:block}
-
-.nav{display:flex;flex-direction:column;gap:3px}
-.nav a{
-  display:flex;align-items:center;gap:9px;height:35px;padding:0 9px;
-  border-radius:8px;font-size:var(--fs-md);font-weight:var(--fw-normal);color:var(--muted);
-  white-space:nowrap;
+.accountmenu-pop a,.accountmenu-pop button{
+  display:block;width:100%;padding:9px 10px;border-radius:8px;
+  text-align:left;font-size:var(--fs-md);font-weight:var(--fw-bold);color:var(--body);
 }
-.nav a:hover{background:var(--surface-2);color:var(--ink)}
-.nav a.on{background:var(--brand-soft);color:var(--brand-ink)}
-.nav a.on svg{color:var(--brand)}
-.nav svg{flex:none;color:var(--faint)}
-.nav a:hover svg{color:var(--body)}
+.accountmenu-pop a:hover,.accountmenu-pop button:hover{background:var(--surface-2);color:var(--ink)}
+/* 로그아웃만 색으로 구분한다 — 되돌리려면 OAuth 를 다시 타야 하는 동작이다 */
+.accountmenu-pop .is-danger{color:var(--danger)}
+.accountmenu-pop .is-danger:hover{background:#fdf1f1;color:var(--danger)}
 
-.rail-foot{margin-top:auto}
-.btn-login{
-  display:block;width:100%;height:38px;border-radius:9px;
-  background:var(--brand);color:#fff;font-size:var(--fs-md);font-weight:var(--fw-bold);
-  line-height:38px;text-align:center;
+/* ── 검색줄 ───────────────────────────────────────────
+   아이콘을 누르면 네비바 바로 아래로 내려온다. 화면을 덮지 않는다 —
+   덮으면 "잠깐 찾아보고 닫는다" 는 성격이 사라진다. */
+.navsearch{
+  position:fixed;top:var(--topbar-h);left:0;right:0;z-index:29;
+  padding:12px 20px;
+  background:var(--surface);border-bottom:1px solid var(--rule);
+  box-shadow:0 12px 24px -18px rgba(20,20,27,.35);
 }
-.btn-login:hover{background:var(--brand-ink)}
-
-/* ── 사이드바 토글 ────────────────────────────────────── */
-.rail-toggle{
-  width:32px;height:32px;flex:none;border-radius:9px;color:var(--muted);
-  display:grid;place-items:center;
+.navsearch-form{position:relative;max-width:640px;margin-inline:auto}
+.navsearch-form svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--faint)}
+.navsearch-form input{
+  width:100%;height:38px;padding:0 14px 0 40px;
+  border:1px solid var(--rule);border-radius:999px;background:var(--surface);
+  color:var(--ink);
 }
-.rail-toggle:hover{background:var(--surface-2);color:var(--ink)}
-.rail-toggle svg{pointer-events:none}
-
-/* 넓은 화면에서는 접힌 레일이 늘 떠 있으므로 토글이 필요 없다 */
-@media(min-width:901px){
-  .rail-toggle{display:none}
-  .rail-backdrop{display:none}
-  /* 레일이 펼쳐지면 상단바와 **본문이 함께** 펼쳐진 폭만큼 밀린다. 전에는 상단바만
-     밀어서, 펼친 레일이 본문 왼쪽을 덮었다 — 카드 모서리와 본문 첫 글자가 가려졌다.
-     상단바가 레일보다 먼저 오는 형제라 ~ 결합자를 못 쓴다 → :has() */
-  body:has(.rail:hover) .topbar,
-  body:has(.rail:focus-within) .topbar{
-    padding-left:calc(var(--rail-w) + 16px);
-  }
-  body:has(.rail:hover) .main,
-  body:has(.rail:focus-within) .main{
-    padding-left:var(--rail-w);
-  }
-  /* 가운데 정렬 보정도 펼친 폭으로 바꾼다(아래 1712px 규칙과 같은 계산, 레일 폭만 다르다).
-     **기준 폭이 다르다** — 1600 + 레일 양쪽이므로 펼친 레일에서는 1600+172*2 = 1944px 이다.
-     1712px 값을 그대로 쓰면 1900px 화면에서 margin-left 가 음수가 되어 본문이 펼친 레일
-     **밑으로 끌려 들어간다**(실제로 그랬다 — 본문 왼쪽 150px, 레일 오른쪽 172px).
-     1944px 아래에서는 보정하지 않는다 — margin-inline:auto 가 레일 오른쪽 영역의 가운데에
-     두고, 그 편이 겹치는 것보다 낫다. */
-  @media (min-width:1944px){
-    body:has(.rail:hover) .main-inner,
-    body:has(.rail:focus-within) .main-inner{
-      margin-left:calc(50vw - 800px - var(--rail-w));
-    }
-  }
-}
-
-/* 좁은 화면에서는 호버가 없다 — 예전처럼 토글로 여는 서랍으로 되돌린다 */
-@media(max-width:900px){
-  .rail{
-    width:var(--rail-w);
-    transform:translateX(-100%);transition:transform .22s ease;
-  }
-  .rail:hover,.rail:focus-within{width:var(--rail-w)}
-  body.rail-open .rail{transform:none}
-  /* 서랍은 항상 펼친 모습 — 로고도 워드마크 전체를 보인다 */
-  .modeswitch,.nav a span{opacity:1}
-  .brand{width:calc(var(--rail-w) - 16px)}
-  .topbar{padding:0 16px}
-  /* .main 의 padding 은 아래 '메인' 섹션 뒤에서 되돌린다 (shorthand 가 나중에 나온다) */
-}
-
-/* 서랍이 열릴 때 덮는 배경막 — 레일이 상단바까지 덮으므로 화면 전체 */
-.rail-backdrop{
-  position:fixed;inset:0;z-index:35;
-  background:rgba(20,20,27,.38);
-  opacity:0;pointer-events:none;transition:opacity .22s ease;
-}
-body.rail-open .rail-backdrop{opacity:1;pointer-events:auto}
+.navsearch-form input::placeholder{color:var(--faint)}
+.navsearch-form input:focus{border-color:var(--brand);outline:none}
 
 @media(prefers-reduced-motion:reduce){
-  .rail,.main,.topbar,.rail-backdrop,.brand,.modeswitch,.nav a span,.rail-me,.rail-me span,.rail-me em{transition:none}
+  .navbar a,.navmenu a,.modeswitch a,.wallet,.avatarbtn{transition:none}
 }
-
 /* ── 메인 ─────────────────────────────────────────────── */
-.main{
-  min-height:100vh;padding:var(--topbar-h) 0 0 var(--rail-mini-w);
-  /* 상단바와 같은 값이어야 둘이 한 몸처럼 움직인다(.topbar 의 transition) */
-  transition:padding-left .18s ease;
-}
-/* 본문은 화면 가운데에 놓는다. 좁을 때는 폭을 다 쓰고, 넓어지면 여기서
-   멈춰 양옆이 고르게 남는다. 배율을 낮춰도 카드가 한쪽으로 쏠리지 않는다.
-   새로 만드는 화면도 .main-inner 안에 담으면 같은 규칙을 그대로 받는다. */
+.main{min-height:100vh;padding-top:var(--topbar-h)}
+/* 본문은 화면 가운데에 놓는다. 좁을 때는 폭을 다 쓰고, 넓어지면 여기서 멈춰
+   양옆이 고르게 남는다. 새로 만드는 화면도 .main-inner 안에 담으면 같은 규칙을
+   그대로 받는다.
+   **레일 보정이 사라졌다** — 왼쪽에 비켜 줄 것이 없어져 margin-inline:auto 하나로
+   화면 정가운데에 선다(전에는 1712px·1944px 에서 레일 폭만큼 되돌려야 했다). */
 .main-inner{padding:28px 32px 64px;max-width:1600px;margin-inline:auto}
-/* .main 이 레일 폭만큼 오른쪽으로 밀려 있어, 위의 auto 만으로는 본문이
-   화면이 아니라 "레일 오른쪽 영역"의 가운데에 선다. 레일을 피하고도 화면
-   정가운데에 설 여유가 생기는 폭(1600 + 레일 양쪽)부터 그만큼 되돌린다. */
-@media (min-width:1712px){
-  .main-inner{margin-left:calc(50vw - 800px - var(--rail-mini-w))}
-}
 .page-head{margin-bottom:24px}
 
 /* ── 페이지 제목 ───────────────────────────────────────
@@ -396,8 +373,11 @@ body.rail-open .rail-backdrop{opacity:1;pointer-events:auto}
 .grid{display:grid;gap:16px}
 .grid.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .grid.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
+/* 바탕이 흰색이라 카드는 **테두리 하나로 자기 영역을 주장한다.** 그래서 안쪽 선
+   (--rule)이 아니라 한 단계 진한 --card-line 을 쓴다 — 카드 안쪽 상자들은 --rule 을
+   그대로 써서 바깥은 또렷하고 안쪽은 부드럽다. */
 .card{
-  background:var(--surface);border:1px solid var(--rule);border-radius:16px;
+  background:var(--surface);border:1px solid var(--card-line);border-radius:16px;
   padding:20px;box-shadow:var(--shadow);
 }
 .card h2{margin:0 0 4px;font-size:var(--fs-xl);font-weight:var(--fw-bold);color:var(--ink)}
@@ -425,46 +405,35 @@ body.rail-open .rail-backdrop{opacity:1;pointer-events:auto}
 }
 
 @media(max-width:900px){
-  .search{display:none}
   .main-inner{padding:20px 16px 48px}
-  /* 서랍은 본문을 밀지 않는다 — 접힌 레일 자리를 비워둘 필요가 없다 */
-  .main{padding-left:0}
+  .navbar{gap:12px;padding:0 12px}
+  .brand-logo{width:112px}
 }
 
+/* 600px 아래 — 여기서부터 한 줄에 다 못 담는다.
 
-/* 로그인 후 사이드바 하단 — 마이페이지 진입 */
-.rail-me{
-  display:flex;align-items:center;gap:9px;padding:9px 10px;
-  border:1px solid var(--rule);border-radius:11px;background:var(--surface);
-}
-.rail-me:hover{border-color:#cdc9f7;background:var(--brand-softer)}
-.rail-me-avatar{
-  width:32px;height:32px;flex:none;border-radius:50%;
-  /* 원본이 정사각이 아니어도 잘라서 채운다. 로딩 전 빈 원을 브랜드색으로 둔다 */
-  object-fit:cover;background:var(--brand-soft);
-}
-.rail-me span{flex:1;min-width:0}
-.rail-me b{display:block;overflow:hidden;color:var(--ink);font-size:var(--fs-md);font-weight:var(--fw-heavy);text-overflow:ellipsis;white-space:nowrap}
-.rail-me small{display:block;margin-top:2px;color:var(--brand);font-size:var(--fs-xs);font-weight:var(--fw-bold)}
-.rail-me em{flex:none;font-style:normal;color:#b3b9c9;font-size:var(--fs-xl)}
-.rail-me:hover em{color:var(--brand)}
+   실측(420px): 로고 96 + 모드전환 146 + 오른쪽 묶음 293 에 여백을 더해 583px 이라
+   **오른쪽 아이콘 넷이 163px 밖으로 나가 누를 수 없었다.** 600px 에서는 12px 남아
+   들어가므로 그 아래에서만 접는다.
 
-/* 접힘 상태 — 아바타만 남기고 카드 테두리를 지운다.
-   .rail-me 기본 규칙보다 뒤에 와야 이긴다(같은 특이도). */
-.rail-me{
-  padding:9px 4px;border-color:transparent;background:transparent;
-  transition:padding .18s ease,border-color .18s ease,background .18s ease;
-}
-.rail-me span,.rail-me em{opacity:0;transition:opacity .14s ease}
-.rail:hover .rail-me,.rail:focus-within .rail-me{
-  padding:9px 10px;border-color:var(--rule);background:var(--surface);
-}
-.rail:hover .rail-me span,.rail:hover .rail-me em,
-.rail:focus-within .rail-me span,.rail:focus-within .rail-me em{opacity:1}
-
-/* 좁은 화면 서랍은 늘 펼친 모습 */
-@media(max-width:900px){
-  .rail-me{padding:9px 10px;border-color:var(--rule);background:var(--surface)}
-  .rail-me span,.rail-me em{opacity:1}
+   접는 것은 둘이다.
+   - **로고를 마크만 남긴다.** 워드마크 한 장을 잘라 쓴다 — 왼쪽 22% 가 개미 마크다.
+   - **잔액 칩을 뺀다.** 오른쪽에서 제일 넓고(133px), 없어도 잃는 길이 없다.
+     프로필 메뉴의 내 지갑이 같은 곳으로 간다.
+   메뉴 줄은 그대로 가로로 구른다 — 넷뿐이라 감출 값이 없다. */
+@media(max-width:600px){
+  .brand{width:34px;overflow:hidden}
+  .wallet{display:none}
+  /* 여백도 함께 좁힌다. 이것까지 해야 360px(아이폰 SE)이 들어간다 — 16px 모자랐다 */
+  .navbar{gap:8px;padding:0 8px}
 }
 
+/* 440px 아래 — 바를 키우면서(로고 150 · 모드 전환 176 · 아이콘 38) 여기가 다시
+   모자라졌다. 실측 360px 에서 58px 넘쳤다. 키운 것을 이 폭에서만 되돌린다:
+   모드 전환 글자·여백을 줄이고(176 -> 146) 아이콘을 32 로 내리면(-24) 들어간다.
+   메뉴 줄은 그대로 가로로 구른다. */
+@media(max-width:440px){
+  .navbar{gap:6px}
+  .modeswitch a{padding:6px 11px;font-size:var(--fs-md)}
+  .iconbtn,.avatarbtn{width:32px;height:32px}
+}

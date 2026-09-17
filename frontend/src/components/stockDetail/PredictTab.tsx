@@ -32,6 +32,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Panel } from './Block'
 import PredictionDepth from './PredictionDepth'
+import PointPicker from './PointPicker'
 import { useBlock } from '../../api/useBlock'
 import WalletLinkModal from '../wallet/WalletLinkModal'
 import ConfirmDialog from '../ConfirmDialog'
@@ -135,6 +136,12 @@ export default function PredictTab({
   /* 사람이 직접 고른 방향. 이때부터 목표가가 방향을 바꾸지 않는다 */
   const setDirection = (v: Direction) =>
     onForm((f) => ({ ...f, direction: v, directionTouched: true }))
+
+  /* ③의 투자 포인트 격자를 펼쳤는가. **기본은 접힘** — 포인트가 많은 종목이면 격자가
+     폼을 반으로 갈라 ④ 내 판단이 화면 밖으로 밀린다.
+     한 번 펼치면 종목을 옮겨도 펼친 채로 둔다. 근거를 고르며 종목을 견주는 사람에게
+     매번 다시 누르게 할 이유가 없다 — 탭 이동으로 언마운트되지도 않는다. */
+  const [pickerOpen, setPickerOpen] = useState(false)
 
   const [linking, setLinking] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -526,6 +533,9 @@ export default function PredictTab({
           {/* ② 기간 — 3~90 일 연속 구간이다(2026-09-14). 눈금 네 개 고정이던 때는 range 를
               **눈금 번호**로 썼는데, 이제 값 자체를 싣는다. 눈금은 3·30·60·90 참조선으로만
               남긴다 — 화살표키 한 칸이 1일이라 손잡이가 눈금에 붙지 않는다.
+              처음 값은 3일이다(2026-09-17). "안 고름" 상태를 두면 손잡이는 3일 자리에
+              서 있는데 값은 null 이라, 3일로 끌어도 DOM 값이 그대로여서 change 가 나지
+              않았다 — 3일만 고를 수 없는 칸이었다.
               native range 를 쓰는 이유는 접근성이다. 직접 만든 끌개는 키보드·스크린리더가
               못 쓰는데, range 는 화살표키·Home/End 가 그냥 된다. */}
           <li className="pf-step">
@@ -549,16 +559,16 @@ export default function PredictTab({
                 <span>만기 <b>{dayStamp(CONTEST.targetDate)}</b> 종가</span>
               </p>
             ) : (
-            <div className={`pf-line${horizon === null ? ' is-unset' : ''}`}>
+            <div className="pf-line">
               <input
                 type="range"
                 className="pf-line-input"
                 min={HORIZON_MIN}
                 max={HORIZON_MAX}
                 step={1}
-                value={horizon ?? HORIZON_MIN}
+                value={horizon}
                 aria-label="예측 기간"
-                aria-valuetext={horizon === null ? '고르지 않음' : `${horizonLabel(horizon)} · ${dueLabel(horizon)} 만기`}
+                aria-valuetext={`${horizonLabel(horizon)} · ${dueLabel(horizon)} 만기`}
                 onChange={(e) => setHorizon(Number(e.target.value))}
               />
               <div className="pf-line-ticks" aria-hidden="true">
@@ -580,9 +590,7 @@ export default function PredictTab({
                 이미 말하고 있어, 같은 말을 한 번 더 길게 적는 셈이다 */}
             {!eventMode && (
               <p className="sd-help">
-                {horizon === null
-                  ? '손잡이를 옮겨 3일에서 90일 사이로 고르세요.'
-                  : <><b className="num">{horizonLabel(horizon)}</b> · 만기 <b className="num">{dueLabel(horizon)}</b> · 기준일(다음 평일)부터 캘린더일로 셉니다. 기준가는 기준일 종가로 확정됩니다.</>}
+                <b className="num">{horizonLabel(horizon)}</b> · 만기 <b className="num">{dueLabel(horizon)}</b> · 기준일(다음 평일)부터 캘린더일로 셉니다. 기준가는 기준일 종가로 확정됩니다.
               </p>
             )}
           </li>
@@ -596,10 +604,8 @@ export default function PredictTab({
             {points.error ? (
               <ErrorState error={points.error} onRetry={points.retry} inline />
             ) : picked.length === 0 ? (
-              <p className="pf-none">
-                고른 근거가 없습니다.{' '}
-                <button type="button" className="sd-link" onClick={onGoInfo}>종목 정보에서 고르기</button>
-              </p>
+              /* 탭을 옮기라고 하지 않는다 — 아래 버튼이 같은 격자를 펼친다 */
+              <p className="pf-none">아래 <b>근거 포인트 선택하기</b>에서 고르면 여기에 모입니다.</p>
             ) : (
               <ul className="sd-picked">
                 {picked.map((id) => {
@@ -621,6 +627,48 @@ export default function PredictTab({
                   )
                 })}
               </ul>
+            )}
+
+            {/* 투자 포인트를 **여기에 그대로 둔다**(2026-09-17). 전에는 고른 것만 요약하고
+                못 고르면 종목 정보 탭으로 보냈는데, 예측을 쓰다 근거를 하나 더 붙이려면
+                탭을 옮겼다 돌아와야 했다 — 그 사이 화면이 갈리고 돌아오면 어디까지
+                적었는지 다시 찾는다. 같은 격자를 InfoTab 과 **한 컴포넌트로** 쓴다
+                (PointPicker) — 복사하면 라벨·출처·선택 규칙이 두 벌이 된다.
+
+                로딩·오류는 위 분기가 이미 맡는다. 목록이 안 왔으면 종류마다 "없음" 이
+                서고, 오류면 이 자리까지 오지 않는다. */}
+            {!points.error && (
+              <div className="pf-points">
+                {/* 접어 둔다. 포인트가 열 개 넘게 오는 종목이면 격자가 폼을 반으로
+                    가르고 ④ 내 판단이 화면 밖으로 밀린다 — 근거는 **더할 수도 있는**
+                    것이고 목표가·기간·판단이 이 폼의 본줄기다. 눌러야 나오게 두면
+                    필요한 사람만 펼친다. */}
+                <button
+                  type="button"
+                  className="pf-points-toggle"
+                  onClick={() => setPickerOpen((v) => !v)}
+                  aria-expanded={pickerOpen}
+                  aria-controls="pf-point-picker"
+                >
+                  근거 포인트 선택하기
+                  <span className="num">{picked.length > 0 && `${picked.length}개 선택됨`}</span>
+                  <span className="pf-points-caret" aria-hidden="true">{pickerOpen ? '▴' : '▾'}</span>
+                </button>
+
+                {/* hidden 으로 감추지 않고 아예 안 그린다 — 포인트가 많으면 접힌 채로도
+                    체크박스 수십 개가 초점 순서에 남는다 */}
+                {pickerOpen && (
+                  <div id="pf-point-picker">
+                    <PointPicker points={points.data} picked={picked} onPick={onPick} />
+                    <p className="pf-points-foot">
+                      {/* 전문을 보려면 여전히 종목 정보가 낫다 — 여기는 고르는 자리다 */}
+                      <button type="button" className="sd-link" onClick={onGoInfo}>
+                        종목 정보에서 자세히 보기
+                      </button>
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
           </li>
 
