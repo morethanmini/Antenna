@@ -24,7 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>예측 집계(판정 대기 건수·UP 비율)는 predictions 를 종목·방향별로 세어 채우고, 예측 없는 종목은
  * 키를 빼지 않고 null · 0 으로 내린다 — 화면이 {@code s.per === null} 로 분기하므로 키가 없으면
- * undefined.toFixed 로 죽는다. 재료 없는 필터(sentiment · hasOpenPrediction)는 400 이 아니라 무시다.
+ * undefined.toFixed 로 죽는다. 재료 없는 필터(sentiment)는 400 이 아니라 무시다. hasOpenPrediction 은
+ * 내가 건 판정 대기 예측이 있는 종목만 남긴다.
  * PER 범위 필터와 PER · CHANGE_RATE · 예측 정렬 3종은 동작하고, 정렬 안에서 커서가 이어진다.
  *
  * <p>기준 데이터 — 삼성전자(PER 12.39)·SK하이닉스(반도체·KOSPI) · 카카오(PER 25 · 인터넷·KOSDAQ) ·
@@ -151,20 +152,22 @@ class StockControllerFilterTest {
                 .andExpect(jsonPath("$.items.length()").value(1))
                 .andExpect(jsonPath("$.items[0].code").value("000660"))
                 .andExpect(jsonPath("$.hasNext").value(true))
-                .andExpect(jsonPath("$.nextCursor").value("000660"));
+                .andExpect(jsonPath("$.nextCursor").value("000660"))
+                .andExpect(jsonPath("$.total").value(2));
 
         mockMvc.perform(get(URL).param("sector", "반도체").param("size", "1")
                         .param("cursor", "000660").with(user(me)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].code").value("005930"))
-                .andExpect(jsonPath("$.hasNext").value(false));
+                .andExpect(jsonPath("$.hasNext").value(false))
+                .andExpect(jsonPath("$.total").value(2));
     }
 
     @Test
-    @DisplayName("재료가 없는 필터(sentiment · hasOpenPrediction)는 400 이 아니라 무시다 — 예측이 없으면 예측순도 코드순")
+    @DisplayName("재료가 없는 필터(sentiment)는 400 이 아니라 무시다 — 예측이 없으면 예측순도 코드순")
     void 재료_없는_필터는_무시한다() throws Exception {
         mockMvc.perform(get(URL)
-                        .param("sentiment", "UP").param("hasOpenPrediction", "true")
+                        .param("sentiment", "UP")
                         .param("sort", "PREDICTION_COUNT")
                         .with(user(me)))
                 .andExpect(status().isOk())
@@ -376,6 +379,19 @@ class StockControllerFilterTest {
                 .andExpect(jsonPath("$.items[0].code").value("035720"))
                 .andExpect(jsonPath("$.items[1].code").value("005930"))
                 .andExpect(jsonPath("$.items[2].code").value("000660"));
+    }
+
+    @Test
+    @DisplayName("hasOpenPrediction=true 는 내가 건 판정 대기(BASE·OPEN) 예측이 있는 종목만 — 남의 예측·끝난 내 예측은 안 친다")
+    void 내_진행_중_예측_종목만_거른다() throws Exception {
+        insertPrediction(me, "005930", "UP", "OPEN");
+        insertPrediction(other, "035720", "DOWN", "OPEN");
+        insertPrediction(me, "000660", "UP", "HIT");
+
+        mockMvc.perform(get(URL).param("hasOpenPrediction", "true").with(user(me)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].code").value("005930"));
     }
 
     @Test

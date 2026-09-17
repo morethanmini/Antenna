@@ -38,14 +38,15 @@ import { Link } from 'react-router-dom'
 import CloseChart from '../CloseChart'
 import Block, { BlockState, Panel } from './Block'
 import PredictionDepth from './PredictionDepth'
+import PointPicker from './PointPicker'
 import { useBlock } from '../../api/useBlock'
 import { useCursorList } from '../../api/useCursorList'
 import {
-  POINT_KINDS, POINT_LABEL, SOURCE_LABEL,
+  POINT_KINDS, SOURCE_LABEL,
   getFinancials, getPeers, getPoints,
   getPrices, getProfile, getValuation,
 } from '../../api/stockDetail'
-import type { PointKind, StockDocument, StockSummary } from '../../api/stockDetail'
+import type { StockDocument, StockSummary } from '../../api/stockDetail'
 
 /* 차트 기간. 서버는 from·to 를 받으므로 여기서 from 을 만들어 넘긴다. */
 const RANGES = [
@@ -113,32 +114,6 @@ const money = (n: number | null) => {
 }
 
 const day = (iso: string) => iso.slice(0, 10).replace(/-/g, '.').slice(2)
-
-/* 열 제목 앞에 서는 개미 얼굴. 글자만 세 줄 늘어놓으면 세 열이 한 덩어리로
-   읽혀 어디가 긍정이고 어디가 위험인지 훑어서는 안 잡힌다(2026-09-17).
-
-   표정으로 고른다 — 긍정은 활짝 웃고, 위험은 걱정하고, 확인할 점은 갸웃한다.
-   화난 얼굴을 위험에 쓰지 않은 이유는, 위험 요인이 "이 회사가 밉다" 가 아니라
-   "이건 걱정된다" 이기 때문이다.
-
-   **열 색은 우리 관례를 따른다** — 긍정은 빨강(--up), 위험은 파랑(--down)이다.
-   시안은 초록/빨강이었지만 같은 화면의 등락률·예측 분포가 이미 "오르면 빨강"
-   이라, 긍정에 초록을 쓰면 한 화면에서 빨강이 좋은 뜻과 나쁜 뜻을 같이 갖는다. */
-const POINT_FACE: Record<PointKind, string> = {
-  positive: 'happy',
-  risk: 'worried',
-  check: 'curious',
-}
-
-function PointFace({ kind }: { kind: PointKind }) {
-  return (
-    <img
-      className="sd-point-face"
-      src={`/assets/character/face_ant/face-${POINT_FACE[kind]}.webp`}
-      alt="" aria-hidden="true" width="38" height="38" loading="lazy"
-    />
-  )
-}
 
 /* 종목 정보 카드의 용어 설명.
 
@@ -327,44 +302,8 @@ export default function InfoTab({ code, summary, picked, onPick, onGoPredict }: 
         isEmpty={points.data !== null && pointCount === 0}
         empty="투자 포인트가 아직 없습니다. 공시·뉴스를 요약하는 기능이 준비되면 이 자리에 채워집니다."
       >
-        <div className="sd-points">
-          {POINT_KINDS.map((kind) => {
-            const list = points.data?.[kind] ?? []
-            return (
-              <div key={kind} className={`sd-point-col is-${kind}`}>
-                <h3><PointFace kind={kind} />{POINT_LABEL[kind]}</h3>
-                {list.length === 0 ? (
-                  <p className="sd-point-none">없음</p>
-                ) : (
-                  <ul>
-                    {list.map((p) => {
-                      const on = picked.includes(p.id)
-                      return (
-                        <li key={p.id}>
-                          {/* 체크박스로 두는 이유 — 여러 개를 고르는 조작이고,
-                              키보드·보조기술이 선택 상태를 그대로 읽는다 */}
-                          <label className={on ? 'sd-point is-on' : 'sd-point'}>
-                            <input type="checkbox" checked={on} onChange={() => onPick(p.id)} />
-                            <span className="sd-point-text">
-                              {/* 제목이 따로 없다. 본문 한 덩어리가 포인트 전체다 */}
-                              <span className="sd-point-body">{p.body}</span>
-                              {/* 출처 배지. 칸 **안쪽** 글 밑에 붙인다 — 칸 밖에 두면
-                                  어느 포인트의 출처인지 한 칸씩 밀려 보인다.
-                                  없는 포인트는 시세·재무 수치에서 나온 종합이라 배지도 없다 */}
-                              {p.source && (
-                                <span className="sd-point-src">{SOURCE_LABEL[p.source]}</span>
-                              )}
-                            </span>
-                          </label>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
-              </div>
-            )
-          })}
-        </div>
+        {/* 격자는 PointPicker 가 그린다 — 예측 등록(C-01) ③이 같은 것을 쓴다 */}
+        <PointPicker points={points.data} picked={picked} onPick={onPick} />
 
         <p className="sd-point-foot">
           <span className="num">{`${picked.length}개 선택됨`}</span>
