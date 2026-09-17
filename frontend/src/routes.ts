@@ -35,17 +35,12 @@ import SeasonMode from './pages/SeasonMode'
 import SeasonPractice from './pages/SeasonPractice'
 import SeasonJoin from './pages/SeasonJoin'
 import SeasonPlay from './pages/SeasonPlay'
-import SeasonResearch from './pages/SeasonResearch'
 import SeasonTrades from './pages/SeasonTrades'
-import Leaderboard from './pages/Leaderboard'
 import SeasonResult from './pages/SeasonResult'
 import SeasonHistory from './pages/SeasonHistory'
 import Wallet from './pages/Wallet'
 import Settings from './pages/Settings'
 import Ad from './pages/Ad'
-import AdminAbuse from './pages/AdminAbuse'
-import AdminUser from './pages/AdminUser'
-import AdminSeason from './pages/AdminSeason'
 import EventContest from './pages/EventContest'
 
 export type Access =
@@ -109,8 +104,11 @@ export const ROUTES: PageMeta[] = [
   // ── E. 채널 · 구독 ───────────────────────────────────
   { screen: 'E-01', element: Ranking, path: '/rankings', title: '주가 예측 랭킹', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'predictor-market-page', story: 'ANT-FE-RANKING' },
   /* 모의투자 랭킹(/sim/rankings)은 뺐다(2026-09-16). REPLAY 트랙 누적 순위인데,
-     한 시즌 안의 순위는 G-07 시즌 리더보드가 이미 보여 주고 둘을 같이 두면
-     "내 등수" 가 두 곳에서 다른 값으로 나온다. 실전 랭킹(/rankings)은 그대로다. */
+     "한 시즌 안의 순위는 G-07 시즌 리더보드가 이미 보여 준다" 가 그때의 근거였다.
+
+     ⚠ **그 G-07 이 빈 자리표시자였고 2026-09-17 에 지웠다.** 그래서 지금은 모의투자
+     순위를 볼 화면이 하나도 없다. 순위를 되살려야 한다면 여기가 아니라 그 결정부터
+     다시 봐야 한다. 실전 랭킹(/rankings)은 그대로다. */
   { screen: 'E-02', element: ChannelProfile, path: '/channels/:userId', title: '채널 프로필', access: 'user', mode: 'insight', nav: 'market', story: 'ANT-FE-CHANNEL-PROFILE' },
   { screen: 'E-03', element: SubscriptionList, path: '/me/subscriptions', title: '내 구독', access: 'user', mode: 'insight', nav: 'portfolio', story: 'ANT-FE-SUBSCRIPTION-LIST' },
   { screen: 'E-04', element: ChannelFee, path: '/me/channel', title: '내 채널 설정', access: 'user', mode: 'insight', nav: 'portfolio', story: 'ANT-FE-CHANNEL-FEE' },
@@ -138,12 +136,15 @@ export const ROUTES: PageMeta[] = [
   { screen: 'G-02', element: SeasonPractice, path: '/sim/practice', title: '연습하기', access: 'user', mode: 'sim', nav: 'play', bodyClass: 'sim-practice-page', story: 'ANT-FE-SEASON-PRACTICE' },
   { screen: 'G-03', element: SeasonJoin, path: '/sim/seasons/:id', title: '시즌 상세 · 참가', access: 'user', mode: 'sim', nav: 'play', story: 'ANT-FE-SEASON-JOIN' },
   { screen: 'G-04', element: SeasonPlay, path: '/sim/:id/play', title: '시즌 진행', access: 'user', mode: 'sim', nav: 'play', bodyClass: 'sim-play-page', story: 'ANT-FE-SEASON-PLAY' },
-  // G-05 는 프로토타입에서 제거됐지만 설계서 §3 G 와 스토리가 아직 살아 있다 — 결론 나면 정리한다
-  { screen: 'G-05', element: SeasonResearch, path: '/sim/:id/research', title: '시즌 리서치', access: 'user', mode: 'sim', nav: 'play', story: 'ANT-FE-SEASON-RESEARCH' },
+  /* **G-05 시즌 리서치를 지웠다(2026-09-17).** 프로토타입에서 빠진 뒤로 "결론 나면
+     정리한다" 는 주석과 함께 자리표시자만 남아 있었는데, 안 만들기로 정해졌다. */
   { screen: 'G-06', element: SeasonTrades, path: '/sim/:id/trades', title: '매매일지', access: 'user', mode: 'sim', nav: 'portfolio', story: 'ANT-FE-SEASON-TRADES' },
-  /* nav 가 'ranking' 이었는데 그 사이드바 항목이 없어졌다(모의투자 랭킹 제거).
-     시즌 결과 계열(G-06 매매일지 · G-08 결과)과 같은 'portfolio' 로 옮긴다. */
-  { screen: 'G-07', element: Leaderboard, path: '/sim/:id/leaderboard', title: '시즌 리더보드', access: 'user', mode: 'sim', nav: 'portfolio', bodyClass: 'sim-rank-page', story: 'ANT-FE-LEADERBOARD' },
+  /* **G-07 시즌 리더보드도 지웠다(2026-09-17).** 지라에서 폐기된 스토리다.
+
+     ⚠ 그래서 **한 시즌 안의 순위를 볼 화면이 지금 하나도 없다.** 사이드바에서
+     '모의투자 랭킹' 을 내릴 때(2026-09-16) "그건 시즌 리더보드(G-07)가 이미 보여
+     준다" 를 근거로 삼았는데, 그 G-07 이 빈 페이지였다. 순위를 다시 보여줘야 한다면
+     이 자리가 아니라 그 결정부터 되짚어야 한다. */
   { screen: 'G-08', element: SeasonResult, path: '/sim/:id/result', title: '결과 · AI 복기', access: 'user', mode: 'sim', nav: 'portfolio', story: 'ANT-FE-SEASON-RESULT' },
   { screen: 'G-09', element: SeasonHistory, path: '/sim/history', title: '기록 · 배지', access: 'user', mode: 'sim', nav: 'portfolio', bodyClass: 'sim-record-page', story: 'ANT-FE-SEASON-HISTORY' },
 
@@ -157,10 +158,18 @@ export const ROUTES: PageMeta[] = [
   { screen: 'H-03', element: Settings, path: '/settings', title: '환경 설정', access: 'user', mode: 'insight', nav: 'home', story: 'ANT-FE-SETTINGS' },
   { screen: 'H-04', element: Ad, path: '/ads/new', title: '광고 등록', access: 'user', mode: 'insight', nav: 'home', story: 'ANT-FE-AD' },
 
-  // ── I. 관리자 ────────────────────────────────────────
-  { screen: 'I-01', element: AdminAbuse, path: '/admin/abuse-reports', title: '신고 처리', access: 'admin', mode: 'insight', nav: 'home', story: 'ANT-FE-ADMIN-ABUSE' },
-  { screen: 'I-02', element: AdminUser, path: '/admin/users', title: '회원 제재', access: 'admin', mode: 'insight', nav: 'home', story: 'ANT-FE-ADMIN-USER' },
-  { screen: 'I-03', element: AdminSeason, path: '/admin/seasons', title: '시즌 운영', access: 'admin', mode: 'sim', nav: 'home', story: 'ANT-FE-ADMIN-SEASON' },
+  /* ── I. 관리자 ────────────────────────────────────────
+     **세 화면(I-01 신고 처리 · I-02 회원 제재 · I-03 시즌 운영)을 지웠다(2026-09-17).**
+     지라에서 셋 다 폐기된 스토리인데 "[ANT-FE-ADMIN-…] 에서 구현합니다" 한 줄짜리
+     자리표시자만 라우트에 남아 있었다. 화면 어디에도 링크가 없어 주소를 직접 쳐야만
+     닿았지만, QA 가 주소로 훑으면 그 빈 페이지를 버그로 적게 된다.
+
+     설계서 §3 I 에는 그대로 있다 — 문서는 팀 공용이라 손대지 않았고, 이 주석이 그
+     차이를 적어 두는 자리다(H-02 알림함과 같은 방식).
+
+     access:'admin' 을 쓰는 라우트가 이제 없다. 그래도 Access 타입과 RequireAccess 의
+     ADMIN 가지는 남겨 둔다 — 그건 화면이 아니라 문지기라, 관리자 화면이 생기는 날
+     다시 만들 것이 아니라 그대로 쓰면 된다. */
 
   /* ── J. 이벤트 ───────────────────────────────────────
      설계서 §3 에 없는 화면이다. 이벤트용으로 뒤에 붙은 것이라 A~I 를 밀지 않으려고
