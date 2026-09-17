@@ -162,6 +162,36 @@ export async function fetchEventBySlug(slug: string) {
   return items.find((e) => e.slug === slug) ?? null
 }
 
+/**
+ * 대회 화면(J-01)이 띄울 회차를 고른다. **slug 가 먼저다.**
+ *
+ * ── 왜 대체 경로가 필요한가 ──────────────────────────────
+ * 본 대회 전에 등록·배팅을 실제로 해 보려면 리허설 회차가 먼저 서 있어야 하는데, 운영
+ * 점검용으로 만든 회차는 slug 가 비어 있다(`EventListItem.slug` 주석). slug 로만 찾으면
+ * DB 에 회차가 멀쩡히 있는데도 화면이 "준비 중" 으로 남는다.
+ *
+ * ── 그래서 어떤 순서로 고르는가 ──────────────────────────
+ *   ① slug 가 맞는 회차          — 본 대회가 생기는 순간 무조건 이쪽이 이긴다
+ *   ② 지금 등록을 받는 회차(ENTRY) — 리허설 중이면 이것이다
+ *   ③ 가장 최근 회차             — 끝난 리허설의 결과를 보러 왔을 때
+ *
+ * ①이 맨 앞인 것이 중요하다. 서버가 slug 를 둔 이유가 "리허설 회차가 사용자 화면에 뜨는
+ * 것" 을 막기 위해서인데(PredictionEvent.slug 주석), 본 대회에 slug 를 달아 두면 그 순간부터
+ * ②·③은 쓰이지 않는다. 즉 이 대체 경로는 **본 대회가 생기기 전까지만** 산다.
+ */
+export async function fetchContestEvent(slug: string) {
+  const { items } = await fetchEvents()
+  if (items.length === 0) return null
+
+  const picked =
+    items.find((e) => e.slug === slug)
+    ?? items.find((e) => e.phase === 'ENTRY')
+    /* 서버가 id 내림차순으로 준다(EventQueryService.list) — 첫 줄이 가장 최근이다 */
+    ?? items[0]
+
+  return fetchEvent(picked.eventId)
+}
+
 export type EventEntryResult = {
   closePrice: number
   winner: StockWinner

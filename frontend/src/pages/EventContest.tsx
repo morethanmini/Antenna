@@ -14,8 +14,7 @@
    날짜를 적지 않는다 — 일정이 밀릴 때 고칠 곳이 둘이 되면 하나를 빠뜨린다. */
 import { useState } from 'react'
 import {
-  fetchEvent,
-  fetchEventBySlug,
+  fetchContestEvent,
   type EventEntryAccepted,
   type EventHome,
 } from '../api/events'
@@ -36,8 +35,10 @@ import '../styles/screens/event-contest.css'
    **모듈 스코프 함수다.** useAsync 는 load 가 바뀌면 다시 읽으므로 컴포넌트 안에서
    만들면 매 렌더 새로 읽는다(useAsync 머리말). */
 async function loadContest(): Promise<EventHome | null> {
-  const found = await fetchEventBySlug(CONTEST.id)
-  return found ? fetchEvent(found.eventId) : null
+  /* slug 가 우선이고, 없으면 지금 등록받는 회차 → 가장 최근 회차 순으로 잡는다.
+     운영 점검용 리허설 회차는 slug 가 비어 있어 slug 로만 찾으면 못 띄운다
+     (api/events.ts fetchContestEvent 머리말). */
+  return fetchContestEvent(CONTEST.id)
 }
 
 /* 머리 — 대회 이름 · 한 줄 소개 · 다음 마감 · 규칙을 한 카드에 담는다.
