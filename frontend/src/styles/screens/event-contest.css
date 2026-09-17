@@ -140,7 +140,14 @@
   .event-contest-page .ev-hero-lead{width:100%; max-width:620px; margin-inline:0}
 }
 /* ── 칸 공통 ──────────────────────────────────────────── */
-.event-contest-page .ev-block-head{margin:0 0 14px}
+.event-contest-page .ev-block-head{margin:0 0 14px;position:relative}
+/* 랭킹 이벤트 탭으로 가는 문. 제목 줄 오른쪽 끝에 세운다 — 흐름에 두면 제목과
+   소개 줄 사이에 끼어 두 줄을 벌린다 */
+.event-contest-page .ev-rank-all{
+  position:absolute;right:0;top:0;
+  color:var(--brand-ink);font-size:var(--fs-md);font-weight:var(--fw-bold);text-decoration:none;
+}
+.event-contest-page .ev-rank-all:hover{text-decoration:underline}
 .event-contest-page .ev-block-head h2{
   display:flex;align-items:center;gap:7px;
   margin:0 0 4px;font-size:var(--fs-2xl);font-weight:var(--fw-heavy);letter-spacing:-.02em;color:var(--ink);
