@@ -169,18 +169,66 @@ button{border:0;background:none;cursor:pointer}
 /* 전역 img{max-width:100%} 가 폭을 갉지 않게 풀어 둔다 */
 .brand-logo{width:150px;height:auto;max-width:none;display:block}
 
-/* 모드 토글 — 인사이트 · 모의 투자 */
+/* 모드 토글 — 클레이 3D 스위치(2026-09-18, 시안 "E · 클레이 3D 스위치").
+   파인 홈(트랙) 안에서 알 하나가 미끄러진다. **켜진 칸을 칠하는 것이 아니라 알을
+   옮긴다** — 모드를 바꿀 때 색이 갈아 끼워지는 대신 자리가 실제로 움직인다.
+
+   두께감은 그림자가 짝을 이뤄 만든다. 트랙은 위가 어둡고 아래가 밝아 안으로 파여
+   보이고, 알은 그 **반대로** 위가 밝고 아래가 어두워 볼록해 보인다. 한쪽만 넣으면
+   그냥 회색 띠에 보라 알약이다.
+
+   시안은 트랙 68px(알 54px)이었다. 네비바에서는 38px 까지 줄였다(2026-09-18) —
+   클레이는 그림자가 사방으로 번지는 표현이라, 제 크기로 두면 옆의 평평한 메뉴
+   글자들 사이에서 혼자 튀어나와 거기부터 눈이 간다. 이 토글은 어느 서비스에 있는지
+   **알려 주는** 자리이지 누르라고 부르는 자리가 아니다.
+   높이를 줄일 때 그림자 거리와 글로우 농도도 같은 비율로 줄인다 — 거리만 그대로
+   옮기면 작은 알에 큰 그늘이 얹혀 지저분해진다.
+
+   폭을 grid 1fr 1fr 로 나누는 이유 — 두 칸이 똑같아야 알이 정확히 절반이고,
+   한 칸 옮기는 것이 곧 translateX(100%) 가 된다. flex 로 두면 "인사이트" 와
+   "모의 투자" 의 글자 폭이 달라 알이 칸을 덜 덮거나 넘친다. */
 .modeswitch{
-  display:flex;flex:none;padding:4px;gap:4px;
-  background:var(--surface-2);border-radius:12px;
+  position:relative;display:grid;grid-template-columns:1fr 1fr;flex:none;
+  --ms-h:30px;--ms-pad:4px;
+  /* 트랙 색. 시안은 #e3e3ec 이었는데 흰 네비바 위에서 덩어리져 보여 한 단계
+     밝혔다(2026-09-18). 대신 홈이 얕아지므로 위쪽 안쪽 그림자를 조금 더 진하게
+     준다 — 색만 밝히면 파인 자국이 사라져 그냥 밝은 띠가 된다. */
+  --ms-track:#eef0f6;
+  height:calc(var(--ms-h) + var(--ms-pad) * 2);padding:var(--ms-pad);
+  border-radius:999px;background:var(--ms-track);
+  box-shadow:
+    inset 0 2px 5px rgba(24,24,45,.17),
+    inset 0 -2px 3px rgba(255,255,255,1),
+    0 1px 0 rgba(255,255,255,.9);
 }
+/* 미끄러지는 알. 폭이 안쪽 폭의 **절반**이라 한 칸 이동이 곧 translateX(100%) 다 —
+   px 로 적으면 글자 폭이 바뀔 때마다 따라 고쳐야 한다. */
+.modeswitch-thumb{
+  position:absolute;top:var(--ms-pad);bottom:var(--ms-pad);left:var(--ms-pad);
+  width:calc((100% - var(--ms-pad) * 2) / 2);
+  border-radius:999px;background:var(--brand);
+  box-shadow:
+    0 3px 7px color-mix(in oklab, var(--brand) 30%, transparent),
+    inset 0 -2px 5px rgba(0,0,0,.22),
+    inset 0 2px 5px rgba(255,255,255,.34);
+  /* 끝에서 살짝 넘쳤다 돌아온다(1.4). 손으로 민 것 같은 무게가 여기서 나온다 */
+  transition:transform 380ms cubic-bezier(.34,1.4,.5,1);
+}
+.modeswitch[data-on="sim"] .modeswitch-thumb{transform:translateX(100%)}
+
 .modeswitch a{
-  padding:8px 16px;border-radius:9px;font-size:var(--fs-lg);font-weight:var(--fw-bold);
-  color:var(--muted);white-space:nowrap;text-align:center;
-  transition:background .15s,color .15s;
+  position:relative;z-index:1;
+  display:flex;align-items:center;justify-content:center;
+  padding:0 17px;border-radius:999px;
+  font-size:var(--fs-lg);font-weight:var(--fw-bold);letter-spacing:-.01em;
+  color:var(--muted);white-space:nowrap;
+  /* 글자도 같이 도드라진다 — 꺼진 쪽은 눌린 듯 아래에 빛이 깔리고, 켜진 쪽은
+     떠 있는 듯 아래에 그늘이 진다. 색만 바꾸면 알만 입체이고 글자는 평평하다. */
+  text-shadow:0 1px 0 rgba(255,255,255,.85);
+  transition:color 240ms ease;
 }
 .modeswitch a:hover{color:var(--ink)}
-.modeswitch a.on{background:var(--brand);color:#fff}
+.modeswitch a.on{color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.22)}
 
 /* 메뉴 — 글자만. 아이콘을 뺐다: 한 줄에 늘어놓으면 아이콘이 글자 사이를 벌려
    덩어리로 읽히지 않는다(세로로 쌓던 사이드바와 다른 점이다).
@@ -311,7 +359,7 @@ button{border:0;background:none;cursor:pointer}
 .navsearch-form input:focus{border-color:var(--brand);outline:none}
 
 @media(prefers-reduced-motion:reduce){
-  .navbar a,.navmenu a,.modeswitch a,.wallet,.avatarbtn{transition:none}
+  .navbar a,.navmenu a,.modeswitch a,.modeswitch-thumb,.wallet,.avatarbtn{transition:none}
 }
 /* ── 메인 ─────────────────────────────────────────────── */
 .main{min-height:100vh;padding-top:var(--topbar-h)}
@@ -434,6 +482,8 @@ button{border:0;background:none;cursor:pointer}
    메뉴 줄은 그대로 가로로 구른다. */
 @media(max-width:440px){
   .navbar{gap:6px}
-  .modeswitch a{padding:6px 11px;font-size:var(--fs-md)}
+  /* 높이·여백을 변수로 줄인다 — 알 크기와 모서리가 같이 따라온다 */
+  .modeswitch{--ms-h:26px;--ms-pad:3px}
+  .modeswitch a{padding:0 13px;font-size:var(--fs-md)}
   .iconbtn,.avatarbtn{width:32px;height:32px}
 }

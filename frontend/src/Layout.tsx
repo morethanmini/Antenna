@@ -218,9 +218,23 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
           <img className="brand-logo" src="/assets/logo/antenna-wordmark.png" alt="ANTENNA 홈" />
         </Link>
 
-        <nav className="modeswitch" aria-label="서비스 선택">
+        {/* data-on 이 알의 자리를 정한다. 켜진 링크에 배경을 주지 않고 알 하나를
+            옮기는 구조라, 어느 칸이 켜졌는지를 부모가 알아야 한다. */}
+        <nav className="modeswitch" aria-label="서비스 선택" data-on={mode}>
+          {/* 미끄러지는 알. 읽어 줄 것이 없는 장식이라 스크린리더에서 숨긴다 —
+              어느 쪽이 켜졌는지는 링크의 aria-current 가 이미 말한다. */}
+          <span className="modeswitch-thumb" aria-hidden="true" />
           {(['insight', 'sim'] as const).map((k) => (
-            <Link key={k} to={MODES[k].home} className={k === mode ? 'on' : ''}>{MODES[k].label}</Link>
+            /* aria-current 가 **유일한** 상태 표시다 — 켜진 칸을 칠하던 배경이
+               장식용 알로 옮겨 가 스크린리더가 읽을 것이 없어졌다 */
+            <Link
+              key={k}
+              to={MODES[k].home}
+              className={k === mode ? 'on' : ''}
+              aria-current={k === mode ? 'page' : undefined}
+            >
+              {MODES[k].label}
+            </Link>
           ))}
         </nav>
 
