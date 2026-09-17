@@ -84,6 +84,49 @@
 .event-contest-page .ev-hero-rules-title{width:56%; min-width:150px; max-width:260px; height:auto}
 .event-contest-page .ev-hero-rules-panel{width:100%; height:auto}
 
+/* ── 규칙 네 줄 (임시 글자판) ────────────────────────────
+   그림 한 장이던 자리다. 그림에 13:10 · 9월 28일이 구워져 있어 확정값과
+   어긋나서, 새 그림이 올 때까지 글자로 그린다(EventContest.tsx 의 주석 참고).
+
+   **어두운 배너 위에 얹히는 판이라 색을 토큰으로 못 쓴다.** 앱 토큰은 흰 바탕
+   기준이라 여기 올리면 글자가 안 읽힌다. 배너 그림에서 뽑은 값을 직접 적는다.
+
+   이름표 폭을 고정한다 — 2자(시작·등록·판정·공개)로 지금은 같지만, 글자 수가
+   달라지는 순간 줄마다 문장 시작점이 어긋난다(알림 팝업 .nt-type 과 같은 이유). */
+.event-contest-page .ev-rules{
+  margin:0; width:100%;
+  display:flex; flex-direction:column; gap:8px;
+  padding:14px; border-radius:16px;
+  background:rgba(12,10,64,.62);
+  border:1px solid rgba(124,140,255,.45);
+  /* 그림에 있던 파랑-보라 테두리 빛. 안쪽으로 한 겹, 바깥으로 한 겹 */
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06), 0 0 18px -6px rgba(96,110,255,.55);
+}
+.event-contest-page .ev-rule{
+  display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:10px;
+  padding:7px 10px; border-radius:11px;
+  background:rgba(30,32,110,.55);
+}
+.event-contest-page .ev-rule dt{
+  width:62px; padding:5px 0; border-radius:999px;
+  display:grid; place-items:center;
+  color:#fff; font-size:var(--fs-sm); font-weight:var(--fw-heavy); white-space:nowrap;
+  background:linear-gradient(135deg,#4aa8f0,#2f6fe0);
+}
+/* 그림이 파랑·보라를 번갈아 쓰고 있었다. 뜻이 있는 색이 아니라 줄을 세는 눈금이다 */
+.event-contest-page .ev-rule:nth-child(even) dt{background:linear-gradient(135deg,#9a7bf5,#6d4fd8)}
+.event-contest-page .ev-rule dd{
+  margin:0; min-width:0; color:#eef0ff;
+  font-size:var(--fs-md); font-weight:var(--fw-normal); line-height:1.45;
+}
+
+/* 좁아지면 이름표를 줄이고 글을 한 단 내린다 — 한 줄에 두 칸이 들어가면
+   문장이 서너 글자마다 꺾인다 */
+@media (max-width:420px){
+  .event-contest-page .ev-rule{grid-template-columns:minmax(0,1fr); gap:4px}
+  .event-contest-page .ev-rule dt{width:52px}
+}
+
 /* ── 좁아지면 ── */
 /* 세 칸이 나란히 서기에는 좁다. 규칙을 아래로 내리고 캐릭터는 지운다 —
    셋 중 정보가 없는 것이 캐릭터다 */
@@ -214,4 +257,119 @@
 }
 @media (max-width:680px){
   .event-contest-page .ev-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+/* ── 서버에 붙인 뒤 생긴 것들 (2026-09-16) ──────────────
+   종목 카드가 링크에서 판으로 바뀌었다(등록이 이 화면 안에서 끝난다).
+   카드마다 기준가·풀·배당률·내 배팅이 들어와 세로로 길어졌다. */
+/* 링크가 아니라 판이다(등록이 이 화면 안에서 끝난다). 그리드는 그대로 두고
+   누를 수 있어 보이는 것만 끈다 — display 를 덮으면 아래 칸 배치가 통째로 죽는다 */
+.event-contest-page .ev-card.is-static{cursor:default;height:100%}
+.event-contest-page .ev-card.is-static:hover{
+  border-color:var(--rule);transform:none;box-shadow:none;
+}
+/* 풀·내 배팅·결과는 카드 폭을 통째로 쓴다 */
+.event-contest-page .ev-card-pool,
+.event-contest-page .ev-card-sum,
+.event-contest-page .ev-card-mine,
+.event-contest-page .ev-card-result{grid-column:1 / -1}
+.event-contest-page .ev-card-wrap.is-mine .ev-card{
+  border-color:var(--brand);box-shadow:0 0 0 1px var(--brand) inset;
+}
+.event-contest-page .ev-card-pool{
+  margin:8px 0 0;display:grid;gap:2px;font-size:var(--fs-xs);
+}
+.event-contest-page .ev-card-pool div{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.event-contest-page .ev-card-pool dt{color:var(--faint)}
+.event-contest-page .ev-card-pool dd{margin:0;color:var(--ink);font-weight:var(--fw-bold)}
+/* 건수는 배당 옆에 작게 — 숫자 둘이 같은 무게면 무엇이 배당인지 흐려진다 */
+.event-contest-page .ev-card-pool dd i{margin-left:5px;color:var(--faint);font-weight:400;font-style:normal}
+.event-contest-page .ev-card-sum{margin:6px 0 0;color:var(--faint);font-size:var(--fs-xs)}
+.event-contest-page .ev-card-mine{
+  margin:8px 0 0;padding-top:7px;border-top:1px solid var(--rule);
+  display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline;font-size:var(--fs-xs);
+}
+.event-contest-page .ev-card-mine b{color:var(--brand)}
+.event-contest-page .ev-card-result{
+  margin:6px 0 0;display:flex;gap:8px;align-items:baseline;
+  font-size:var(--fs-xs);font-weight:var(--fw-bold);
+}
+.event-contest-page .ev-card-result.is-up{color:var(--up)}
+.event-contest-page .ev-card-result.is-down{color:var(--down)}
+.event-contest-page .ev-card-result.is-tie{color:var(--faint)}
+
+/* ── 등록 칸 ─────────────────────────────────────────── */
+.event-contest-page .ev-entry-rows{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.event-contest-page .ev-entry-rows > li{
+  border:1px solid var(--rule);border-radius:10px;padding:10px 12px;background:var(--surface);
+}
+/* 고른 줄만 눈에 띄게 — 열 줄이 다 같은 무게면 무엇을 골랐는지 세어야 한다 */
+.event-contest-page .ev-entry-rows > li.is-on{border-color:var(--brand);background:var(--brand-softer)}
+.event-contest-page .ev-entry-rows > li.is-done{opacity:.55}
+.event-contest-page .ev-entry-head{
+  display:flex;align-items:baseline;gap:8px;font-size:var(--fs-md);
+}
+.event-contest-page .ev-entry-head b{color:var(--ink);font-weight:var(--fw-bold)}
+.event-contest-page .ev-entry-head span{color:var(--faint);font-size:var(--fs-sm)}
+.event-contest-page .ev-entry-head em{
+  margin-left:auto;color:var(--brand);font-style:normal;font-size:var(--fs-xs);font-weight:var(--fw-bold);
+}
+.event-contest-page .ev-entry-dir{display:flex;gap:6px;margin-top:8px}
+.event-contest-page .ev-entry-dir button{
+  flex:0 0 auto;padding:5px 14px;border:1px solid var(--rule);border-radius:999px;
+  background:var(--surface);color:var(--faint);font-size:var(--fs-sm);cursor:pointer;
+}
+.event-contest-page .ev-entry-dir button.is-on{
+  border-color:var(--brand);background:var(--brand);color:#fff;font-weight:var(--fw-bold);
+}
+.event-contest-page .ev-entry-fields{
+  margin-top:9px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+}
+.event-contest-page .ev-entry-fields label{display:grid;gap:3px;font-size:var(--fs-xs);color:var(--faint)}
+.event-contest-page .ev-entry-fields input{
+  padding:6px 9px;border:1px solid var(--rule);border-radius:7px;
+  background:var(--surface);color:var(--ink);font-size:var(--fs-sm);
+}
+.event-contest-page .ev-entry-note{grid-column:1 / -1}
+/* 오류는 --danger 다. --down 은 한국식 하락색(파랑)이라 "틀렸다" 로 안 읽힌다 */
+.event-contest-page .ev-entry-bad{
+  grid-column:1 / -1;margin:0;color:var(--danger);font-size:var(--fs-xs);
+}
+.event-contest-page .ev-entry-foot{
+  margin-top:12px;padding-top:11px;border-top:1px solid var(--rule);
+  display:grid;gap:7px;justify-items:start;
+}
+.event-contest-page .ev-entry-foot > p:first-child{
+  margin:0;color:var(--ink);font-size:var(--fs-md);font-weight:var(--fw-bold);
+}
+.event-contest-page .ev-entry-foot button{
+  padding:9px 20px;border:0;border-radius:9px;
+  background:var(--brand);color:#fff;font-size:var(--fs-md);font-weight:var(--fw-bold);cursor:pointer;
+}
+.event-contest-page .ev-entry-foot button:disabled{background:var(--rule);color:var(--faint);cursor:default}
+.event-contest-page .ev-entry-hint{margin:0;color:var(--faint);font-size:var(--fs-xs)}
+
+/* ── 내 참가 내역 · 순위 ──────────────────────────────── */
+.event-contest-page .ev-me-rows,
+.event-contest-page .ev-rank-rows{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.event-contest-page .ev-me-rows > li,
+.event-contest-page .ev-rank-rows > li{
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;
+  padding:8px 11px;border:1px solid var(--rule);border-radius:9px;
+  background:var(--surface);font-size:var(--fs-sm);
+}
+.event-contest-page .ev-me-rows b,
+.event-contest-page .ev-rank-rows b{color:var(--ink);font-weight:var(--fw-bold)}
+.event-contest-page .ev-me-status{margin-left:auto;color:var(--faint);font-size:var(--fs-xs)}
+/* 전송 중·실패만 색을 준다 — 확정된 것까지 물들이면 무엇이 문제인지 안 보인다 */
+.event-contest-page .ev-me-status.is-pending{color:var(--brand)}
+.event-contest-page .ev-me-status.is-failed{color:var(--down)}
+.event-contest-page .ev-me-payout{color:var(--ink);font-weight:var(--fw-bold)}
+.event-contest-page .ev-rank-no{
+  min-width:26px;color:var(--brand);font-size:var(--fs-md);font-weight:var(--fw-bold);
+}
+.event-contest-page .ev-rank-rows > li.is-me{border-color:var(--brand);background:var(--brand-softer)}
+
+@media (max-width:680px){
+  .event-contest-page .ev-entry-fields{grid-template-columns:1fr}
 }

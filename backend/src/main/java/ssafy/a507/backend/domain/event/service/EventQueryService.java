@@ -94,6 +94,7 @@ public class EventQueryService {
 
         return new EventHomeResponse(
                 event.getId(),
+                event.getSlug(),
                 event.getTitle(),
                 event.getStatus(),
                 EventPhase.of(event.getStatus()),
