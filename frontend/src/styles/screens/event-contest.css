@@ -403,6 +403,20 @@
 }
 .event-contest-page .ev-me-rows b,
 .event-contest-page .ev-rank-rows b{color:var(--ink);font-weight:var(--fw-bold)}
+/* 방향·건 돈 캡슐. 줄에 낱말이 다섯이라(종목·방향·목표가·배팅·상태) 그냥 두면
+   어디까지가 무엇인지 흐려진다 — 뜻이 있는 둘만 바탕을 깔아 묶는다.
+   바탕색은 방향 배지의 공용 토큰이다(--up-soft · --down-soft). 화면마다 따로
+   적혀 네 값으로 갈렸던 것을 토큰으로 모아 둔 자리라 여기서도 그걸 쓴다. */
+.event-contest-page .ev-me-dir{
+  padding:2px 9px;border-radius:999px;font-size:var(--fs-xs);font-weight:var(--fw-bold);
+}
+.event-contest-page .ev-me-dir.is-up{background:var(--up-soft);color:var(--up)}
+.event-contest-page .ev-me-dir.is-down{background:var(--down-soft);color:var(--down)}
+.event-contest-page .ev-me-stake{
+  padding:2px 9px;border-radius:999px;
+  background:var(--brand-soft);color:var(--brand-ink);
+  font-size:var(--fs-xs);font-weight:var(--fw-bold);
+}
 .event-contest-page .ev-me-status{margin-left:auto;color:var(--faint);font-size:var(--fs-xs)}
 /* 전송 중·실패만 색을 준다 — 확정된 것까지 물들이면 무엇이 문제인지 안 보인다 */
 .event-contest-page .ev-me-status.is-pending{color:var(--brand)}
