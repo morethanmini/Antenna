@@ -8,6 +8,12 @@ import java.util.List;
  *
  * @param baseDate 목록의 종가가 기준하는 영업일. 화면이 "종가 기준 YYYY.MM.DD" 를 한 번만
  *     찍을 수 있도록 행이 아니라 응답에 싣는다. 수집된 시세가 하나도 없으면 비어 있다.
+ * @param total 필터에 맞는 종목 수 전체 — 페이지·커서와 무관하다. 화면이 "N개 종목" 을 페이지
+ *     행 수가 아니라 이 값으로 찍는다.
  */
 public record StockListResponse(
-        List<StockListItemResponse> items, LocalDate baseDate, String nextCursor, boolean hasNext) {}
+        List<StockListItemResponse> items,
+        LocalDate baseDate,
+        String nextCursor,
+        boolean hasNext,
+        long total) {}

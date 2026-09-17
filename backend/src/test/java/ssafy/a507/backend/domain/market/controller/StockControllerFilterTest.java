@@ -151,13 +151,15 @@ class StockControllerFilterTest {
                 .andExpect(jsonPath("$.items.length()").value(1))
                 .andExpect(jsonPath("$.items[0].code").value("000660"))
                 .andExpect(jsonPath("$.hasNext").value(true))
-                .andExpect(jsonPath("$.nextCursor").value("000660"));
+                .andExpect(jsonPath("$.nextCursor").value("000660"))
+                .andExpect(jsonPath("$.total").value(2));
 
         mockMvc.perform(get(URL).param("sector", "반도체").param("size", "1")
                         .param("cursor", "000660").with(user(me)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].code").value("005930"))
-                .andExpect(jsonPath("$.hasNext").value(false));
+                .andExpect(jsonPath("$.hasNext").value(false))
+                .andExpect(jsonPath("$.total").value(2));
     }
 
     @Test
