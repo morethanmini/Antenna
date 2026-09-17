@@ -67,7 +67,7 @@
   --down-soft:#e9f0ff;
   /* 네비바 높이. 화면들이 sticky 를 이 값에 맞춰 붙이므로(종목 상세·탐색·예측 목록,
      알림 팝업) 여기만 고치면 따라온다. 사이드바를 걷어내며 52 -> 58px */
-  --topbar-h:58px;
+  --topbar-h:72px;
   --sans:"Pretendard Variable","Pretendard","IBM Plex Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
   --shadow:0 1px 2px rgba(20,20,27,.04),0 10px 28px -22px rgba(20,20,27,.28);
@@ -167,15 +167,15 @@ button{border:0;background:none;cursor:pointer}
 /* 로고 = 홈. 워드마크를 통째로 보인다(접힘 상태가 없어져 잘라 쓸 이유가 사라졌다) */
 .brand{display:flex;align-items:center;flex:none}
 /* 전역 img{max-width:100%} 가 폭을 갉지 않게 풀어 둔다 */
-.brand-logo{width:124px;height:auto;max-width:none;display:block}
+.brand-logo{width:150px;height:auto;max-width:none;display:block}
 
 /* 모드 토글 — 인사이트 · 모의 투자 */
 .modeswitch{
-  display:flex;flex:none;padding:3px;gap:3px;
-  background:var(--surface-2);border-radius:10px;
+  display:flex;flex:none;padding:4px;gap:4px;
+  background:var(--surface-2);border-radius:12px;
 }
 .modeswitch a{
-  padding:5px 12px;border-radius:7px;font-size:var(--fs-md);font-weight:var(--fw-bold);
+  padding:8px 16px;border-radius:9px;font-size:var(--fs-lg);font-weight:var(--fw-bold);
   color:var(--muted);white-space:nowrap;text-align:center;
   transition:background .15s,color .15s;
 }
@@ -194,22 +194,30 @@ button{border:0;background:none;cursor:pointer}
      선다. 절대 배치로 화면 정가운데에 박지 않는 이유는 좁아질 때 양옆과 겹치기
      때문이다 — 이 방식은 자리가 줄면 저절로 밀린다. */
   flex:1;justify-content:center;
-  display:flex;align-items:center;gap:4px;min-width:0;
+  display:flex;align-items:center;gap:14px;min-width:0;
   overflow-x:auto;scrollbar-width:none;
 }
 .navmenu::-webkit-scrollbar{display:none}
 /* 12.5 -> 15px. 사이드바에서는 아이콘이 옆에 붙어 작아도 읽혔는데, 글자만 한 줄로
    서니 그 크기로는 바가 비어 보였다.
-   색은 브랜드 보라다 — 회색이면 로고·모드 전환만 색을 갖고 메뉴가 부속처럼 읽힌다. */
+   **색은 검정이다.** 보라로 뒀더니 메뉴 넷이 통째로 한 덩어리 색면이 되어, 지금 있는
+   자리를 알려 주는 음각 칸이 그 안에 묻혔다. 색은 로고·모드 전환·잔액에만 두고,
+   메뉴는 글자 자체로 읽히게 한다. */
 .navmenu a{
   padding:7px 12px;border-radius:9px;white-space:nowrap;
-  font-size:var(--fs-xl);font-weight:var(--fw-normal);color:var(--brand);
+  font-size:var(--fs-xl);font-weight:var(--fw-bold);color:var(--ink);
   transition:background .15s,color .15s;
 }
-.navmenu a:hover{background:var(--brand-softer);color:var(--brand-ink)}
-/* 지금 있는 자리. 다 보라색이 됐으므로 **색만으로는 구분이 안 된다** —
-   바탕과 굵기까지 함께 줘야 어디에 있는지 보인다 */
-.navmenu a.on{background:var(--brand-soft);color:var(--brand-ink);font-weight:var(--fw-bold)}
+.navmenu a:hover{background:var(--surface-2);color:var(--ink)}
+/* 지금 있는 자리. **보라 알약이 아니라 눌린 자국처럼 보이게 한다** — 메뉴가 전부
+   보라라 같은 색 알약을 깔면 글자와 바탕이 한 덩어리로 뭉친다. 옅은 회색 바닥에
+   안쪽 그림자를 얹으면 그 칸만 살짝 파인 것으로 읽혀, 색을 더 쓰지 않고도 자리가
+   보인다. 글자는 한 단계 진한 보라로 둔다. */
+.navmenu a.on{
+  background:var(--surface-2);color:var(--ink);
+  box-shadow:inset 0 1px 2px rgba(20,20,27,.09),inset 0 0 0 1px rgba(20,20,27,.04);
+}
+.navmenu a.on:hover{background:var(--surface-2);color:var(--ink)}
 
 /* 오른쪽 묶음. margin-left:auto 로 밀어 두면 메뉴가 길어져도 끝에 붙어 있는다.
    **바 높이만큼 편다(align-self:stretch).** 안쪽의 알림·계정 곁창이 top:100% 로
@@ -230,7 +238,7 @@ button{border:0;background:none;cursor:pointer}
 /* 지갑(H-01)으로 가는 링크다. 누를 수 있다는 것이 보여야 해서 호버를 준다 —
    옆의 아이콘 버튼(.iconbtn)과 같은 결로 맞춘다 */
 .wallet{
-  display:flex;align-items:center;gap:7px;height:34px;padding:0 13px;
+  display:flex;align-items:center;gap:7px;height:40px;padding:0 15px;
   border:1px solid var(--rule);border-radius:999px;font-weight:var(--fw-bold);color:var(--ink);
   text-decoration:none;transition:border-color .15s ease,background .15s ease;
 }
@@ -238,8 +246,9 @@ button{border:0;background:none;cursor:pointer}
 .wallet:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 .wallet i{width:12px;height:18px;border-radius:2px;background:var(--gold);display:block}
 
+/* 바가 72px 이라 32px 아이콘은 왼쪽(로고 51 · 모드 전환 46)에 비해 작아 보였다 */
 .iconbtn{
-  position:relative;width:32px;height:32px;border-radius:9px;color:var(--muted);
+  position:relative;width:38px;height:38px;border-radius:11px;color:var(--muted);
   display:grid;place-items:center;
 }
 .iconbtn:hover{background:var(--surface-2);color:var(--ink)}
@@ -258,7 +267,7 @@ button{border:0;background:none;cursor:pointer}
    늘려 두면 100% 가 곧 바 아래라 바 높이가 바뀌어도 따라온다. */
 .accountmenu{position:relative;flex:none;align-self:stretch;display:flex;align-items:center}
 .avatarbtn{
-  display:block;width:32px;height:32px;padding:0;border-radius:50%;
+  display:block;width:38px;height:38px;padding:0;border-radius:50%;
   border:1px solid var(--rule);overflow:hidden;background:var(--brand-soft);
   transition:border-color .15s ease;
 }
@@ -399,7 +408,7 @@ button{border:0;background:none;cursor:pointer}
 @media(max-width:900px){
   .main-inner{padding:20px 16px 48px}
   .navbar{gap:12px;padding:0 12px}
-  .brand-logo{width:96px}
+  .brand-logo{width:112px}
 }
 
 /* 600px 아래 — 여기서부터 한 줄에 다 못 담는다.
@@ -414,8 +423,18 @@ button{border:0;background:none;cursor:pointer}
      프로필 메뉴의 내 지갑이 같은 곳으로 간다.
    메뉴 줄은 그대로 가로로 구른다 — 넷뿐이라 감출 값이 없다. */
 @media(max-width:600px){
-  .brand{width:30px;overflow:hidden}
+  .brand{width:34px;overflow:hidden}
   .wallet{display:none}
   /* 여백도 함께 좁힌다. 이것까지 해야 360px(아이폰 SE)이 들어간다 — 16px 모자랐다 */
   .navbar{gap:8px;padding:0 8px}
+}
+
+/* 440px 아래 — 바를 키우면서(로고 150 · 모드 전환 176 · 아이콘 38) 여기가 다시
+   모자라졌다. 실측 360px 에서 58px 넘쳤다. 키운 것을 이 폭에서만 되돌린다:
+   모드 전환 글자·여백을 줄이고(176 -> 146) 아이콘을 32 로 내리면(-24) 들어간다.
+   메뉴 줄은 그대로 가로로 구른다. */
+@media(max-width:440px){
+  .navbar{gap:6px}
+  .modeswitch a{padding:6px 11px;font-size:var(--fs-md)}
+  .iconbtn,.avatarbtn{width:32px;height:32px}
 }
