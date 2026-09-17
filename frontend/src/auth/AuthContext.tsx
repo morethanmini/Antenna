@@ -1,62 +1,23 @@
 /* 셸이 쓰는 최소 인증 상태.
-   실제 토큰 발급·갱신은 [ANT-FE-LOGIN] · [ANT-FE-SESSION] 에서 붙인다.
-   여기서는 셸이 로그인/비로그인 두 모습을 그릴 수 있을 만큼만 들고 있는다. */
+   accessToken 은 메모리, refresh 는 httpOnly 쿠키라 여기에 저장하지 않는다.
+   새로고침 뒤의 복원은 auth/session.ts 의 restoreSession 이 쿠키로 한다. */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { setAccessToken, setUnauthorizedHandler } from '../api/client'
 import SessionExpiredModal from '../components/session/SessionExpiredModal'
-import { DEFAULT_AVATAR } from './context'
 import { endSession, restoreSession } from './session'
-import { AuthCtx, type AuthState, type AuthUser, type Role } from './context'
-
-/* 프로토타입이 쓰던 임시 플래그. [ANT-FE-LOGIN] 이 실제 토큰으로 갈아끼운다.
-   accessToken 은 메모리, refresh 는 httpOnly 쿠키라 여기에 저장하지 않는다.
-   값: '1' 일반 사용자 · 'admin' 관리자 (관리자 가드 확인용) */
-const STUB_KEY = 'antena.auth'
-
-function readStub(): Role | null {
-  try {
-    const v = localStorage.getItem(STUB_KEY)
-    if (v === 'admin') return 'ADMIN'
-    if (v === '1') return 'USER'
-  } catch { /* 무시 */ }
-  return null
-}
-
-function writeStub(role: Role | null) {
-  try {
-    if (role === 'ADMIN') localStorage.setItem(STUB_KEY, 'admin')
-    else if (role === 'USER') localStorage.setItem(STUB_KEY, '1')
-    else localStorage.removeItem(STUB_KEY)
-  } catch { /* 무시 */ }
-}
-
-function demoUser(role: Role): AuthUser {
-  return {
-    // 목업 채널표(api/mock/channels.ts)의 1번 자리를 쓴다 — 내 채널 링크가 실제로 열린다
-    id: 1,
-    nickname: '안테나',
-    avatarUrl: DEFAULT_AVATAR,
-    role,
-    walletLinked: false,
-  }
-}
+import { AuthCtx, type AuthState, type AuthUser } from './context'
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    const role = readStub()
-    return role ? demoUser(role) : null
-  })
+  const [user, setUser] = useState<AuthUser | null>(null)
   const [booting, setBooting] = useState(true)
   /** M-08. 재발급까지 실패한 401 하나당 한 번 선다 */
   const [expired, setExpired] = useState(false)
 
   const navigate = useNavigate()
 
-  useEffect(() => { writeStub(user?.role ?? null) }, [user])
-
   /* 새로고침하면 accessToken(메모리)은 사라지고 refresh 쿠키만 남는다.
-     쿠키로 세션을 되살린다. 실패하면 임시 로그인 스텁이 있던 상태를 그대로 둔다. */
+     쿠키로 세션을 되살린다. 실패하면 비로그인으로 시작한다. */
   useEffect(() => {
     let cancelled = false
     restoreSession()

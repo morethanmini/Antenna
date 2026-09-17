@@ -1,0 +1,227 @@
+/* 관리자 화면 공용 (I-01 신고 처리 · I-02 회원 제재 · I-04 이벤트 운영).
+
+   운영자 한 명만 보는 화면이라 화면마다 CSS 를 나누지 않고 한 파일에 둔다.
+   색·간격·글꼴은 전부 app.css 의 토큰을 쓴다 — 여기서 새 값을 만들지 않는다.
+   버튼은 session-expired.css 의 .se-btn 을 그대로 쓴다(ConfirmDialog 와 같은 모양). */
+
+/* ── 탭 ─────────────────────────────────────────────── */
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.admin-tab {
+  padding: 7px 14px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.admin-tab.on {
+  border-color: var(--brand);
+  color: var(--ink);
+  font-weight: var(--fw-bold);
+}
+
+.admin-tab.ghost { margin-left: auto; }
+
+/* ── 표 ─────────────────────────────────────────────── */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+
+.admin-table th {
+  color: var(--muted);
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+}
+
+.admin-table tr:last-child td { border-bottom: 0; }
+
+/* 요청이 나가 있는 동안. 다 누르고 나서 "눌렸나?" 하지 않게 눈에 보이게 한다 */
+.admin-table tr.busy,
+.admin-card.busy { opacity: 0.55; }
+
+/* 신고 본문. 길면 줄바꿈하되 표가 한 줄로 늘어나지 않게 폭을 준다 */
+.admin-body {
+  max-width: 420px;
+  word-break: break-word;
+}
+
+.admin-body .blocked {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.admin-dim {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+
+/* ── 칩 ─────────────────────────────────────────────── */
+.admin-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  margin-right: 4px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.admin-chip.accepted { border-color: var(--ok); color: var(--ok); }
+.admin-chip.rejected,
+.admin-chip.warn { border-color: var(--down); color: var(--down); }
+
+/* ── 버튼 줄 ─────────────────────────────────────────── */
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+/* ── 알림 줄 ─────────────────────────────────────────── */
+.admin-error,
+.admin-note {
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  border-radius: 10px;
+  font-size: var(--fs-sm);
+  border: 1px solid var(--rule);
+}
+
+.admin-error { border-color: var(--down); color: var(--down); }
+.admin-note { color: var(--muted); }
+
+/* ── 검색 줄 ─────────────────────────────────────────── */
+.admin-search {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.admin-search input {
+  flex: 0 1 320px;
+  padding: 8px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-sm);
+}
+
+/* ── 이벤트 운영 ─────────────────────────────────────── */
+.admin-h2 {
+  margin: 28px 0 12px;
+  font-size: var(--fs-xl);
+  color: var(--ink);
+}
+
+.admin-card {
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  color: var(--ink);
+}
+
+.admin-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.admin-inline input {
+  padding: 6px 10px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: var(--fs-sm);
+}
+
+/* 정산 상태 원본 JSON. 접지 않고 그대로 본다 — 무엇이 빠졌는지 보여야 한다 */
+.admin-pre {
+  margin: 0;
+  padding: 10px 12px;
+  max-height: 320px;
+  overflow: auto;
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+}
+
+/* ── 회차 생성 폼 ────────────────────────────────────── */
+.admin-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  padding: 16px;
+  margin: 12px 0 8px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.admin-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.admin-form label.wide,
+.admin-form .admin-actions { grid-column: 1 / -1; }
+
+.admin-form input,
+.admin-form textarea {
+  padding: 8px 10px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  font-family: inherit;
+}
+
+/* 좁은 화면에서 표가 넘치면 가로로 민다 — 열을 숨기면 운영자가 못 본다 */
+@media (max-width: 860px) {
+  .admin-table { display: block; overflow-x: auto; }
+  .admin-body { max-width: 240px; }
+}

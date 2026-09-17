@@ -5,15 +5,19 @@
    설계 제약
    - imageFileId 는 업로드 응답에서 온 값만 받는다. 외부 URL 입력란을 두지 않는다.
    - linkUrl 은 https 만 허용한다.
-   - 등록은 202 + operationId 다. M-02 처리 대기로 이어진다.
    - 서명 전 비용을 명확히 보여준다(SignConfirm).
-   - 관리자 사전 승인 화면은 2차 범위다. 승인 대기 상태 화면을 만들지 않는다.
    - 등록된 배너는 B-01 홈의 /ads/active 로 노출된다.
 
+   ── 승인제 (ANT-ADMIN-03, 명세 v0.78) ──────────────────────
+   예전 제약 "등록은 202 + operationId, M-02 처리 대기로 이어진다 · 승인 대기 화면은 2차" 는
+   없어졌다. 등록은 201 이고 **돈은 관리자가 승인하는 순간 나간다.** 그래서 폴링할 작업이 없고,
+   이 화면은 "심사 중" 안내로 끝난다. 신청한 게재료는 승인 전까지 가용잔액에서 묶인다 —
+   심사 중인 돈으로 배팅·구독을 할 수 없고, 취소하면 풀린다. 취소 버튼을 여기 둔 이유다.
+
    시작일을 고르는 칸이 없는 이유
-   요청 본문에 days 만 있고 시작일이 없다. 서버가 startsAt = now 로 잡는다
-   (AdService: "게재 시작을 고를 수 없다"). 그래서 화면도 날짜를 묻지 않고,
-   대신 **확정되는 즉시 시작한다**고 알린다 — 안 적으면 언제 걸리는지 모른다.
+   요청 본문에 days 만 있고 시작일이 없다. 게재 기간은 **승인되는 시점부터** 다시 잡힌다
+   (AdBanner.approve) — 심사가 늦어진 만큼 손해를 보지 않는다. 그래서 화면도 날짜를 묻지 않고
+   승인되면 시작한다고 알린다.
 
    비용은 서버가 준 단가로만 계산한다
    GET /ads/pricing 의 pricePerDay · minDays · maxDays · slotCount 를 그대로 쓴다. 가격이
@@ -27,10 +31,9 @@ import { useCallback, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   LINK_MAX,
-  createAd, adSigningPayload, fetchAdPricing, isValidLink, priceOf, type AdDraft,
+  cancelAd, createAd, adSigningPayload, fetchAdPricing, isValidLink, priceOf, type AdDraft,
 } from '../api/ads'
 import type { ApiError } from '../api/errors'
-import { useOperation } from '../api/operations'
 import { useAsync } from '../api/useAsync'
 import { formatToken, requestNonce } from '../api/wallet'
 import { useAuth } from '../auth/context'
@@ -38,16 +41,15 @@ import { connectAddress, hasWallet, personalSign } from '../wallet/provider'
 import ImageUploadModal from '../components/upload/ImageUploadModal'
 import WalletLinkModal from '../components/wallet/WalletLinkModal'
 import ErrorState from '../components/state/ErrorState'
-import OperationProgress from '../components/operation/OperationProgress'
+import ConfirmDialog from '../components/ConfirmDialog'
 import type { UploadedImage } from '../api/uploads'
 import { errorText } from '../components/state/errorText'
 import '../styles/screens/ad-new.css'
 
 /* form     내용을 채우는 중
-   signing  nonce 발급 → 지갑 서명 → 202 수신
-   waiting  M-02 — 체인 확정 대기
-   done     SUCCEEDED */
-type Step = 'form' | 'signing' | 'waiting' | 'done'
+   signing  nonce 발급 → 지갑 서명 → 201 수신
+   review   심사 중 — 관리자가 승인하면 소각되고 게재된다. 여기서 취소할 수 있다 */
+type Step = 'form' | 'signing' | 'review'
 
 export default function Ad() {
   const { user } = useAuth()
@@ -58,17 +60,15 @@ export default function Ad() {
 
   const [step, setStep] = useState<Step>('form')
   const [error, setError] = useState<ApiError | null>(null)
-  const [operationId, setOperationId] = useState<string | null>(null)
+  /* 심사 중인 신청. 취소할 때 필요하다 */
+  const [adId, setAdId] = useState<number | null>(null)
+  const [cancelling, setCancelling] = useState(false)
+  const [canceled, setCanceled] = useState(false)
 
   const [uploading, setUploading] = useState(false)
   const [linking, setLinking] = useState(false)
 
-  const op = useOperation(operationId)
-  const status = op.operation?.status
-
-  /* 성공은 폴링 결과에서 바로 읽는다 — setStep 으로 옮겨 적으면 같은 사실이 두 곳에 남고
-     effect 안 setState 가 된다(M-03 과 같은 판단). */
-  const view: Step = status === 'SUCCEEDED' ? 'done' : step
+  const view: Step = step
 
   /* 단가 · 일수 범위 · 자리 수는 서버에서만 온다. 못 받은 동안 terms 가 null 이라 등록이 잠긴다 */
   const pricing = useAsync(fetchAdPricing)
@@ -106,13 +106,27 @@ export default function Ad() {
       const signature = await personalSign(adSigningPayload(draft, nonce), address)
 
       const accepted = await createAd(draft, signature)
-      setOperationId(accepted.operationId)
-      setStep('waiting')
+      setAdId(accepted.adId)
+      setCanceled(false)
+      setStep('review')
     } catch (e) {
       setError(e as ApiError)
       /* 폼으로 돌린다. 멱등 키는 신청 내용에서 나오므로 같은 내용으로 재시도하면 같은 키가
          나가 게재료가 두 번 나가지 않는다(api/ads.ts adScope). */
       setStep('form')
+    }
+  }
+
+  async function cancel() {
+    if (adId === null) return
+    setCancelling(false)
+    setError(null)
+    try {
+      await cancelAd(adId)
+      setCanceled(true)
+      setAdId(null)
+    } catch (e) {
+      setError(e as ApiError)
     }
   }
 
@@ -189,8 +203,8 @@ export default function Ad() {
               {/* 시작일 칸이 없는 이유를 적는다. 안 적으면 언제 걸리는지 모른다 */}
               <p className="ad-hint">
                 {terms
-                  ? `${terms.minDays}~${terms.maxDays}일. 시작일은 고를 수 없고, 결제가 확정되는 즉시 시작합니다.`
-                  : '시작일은 고를 수 없고, 결제가 확정되는 즉시 시작합니다.'}
+                  ? `${terms.minDays}~${terms.maxDays}일. 시작일은 고를 수 없고, 관리자가 승인하는 시점부터 시작합니다.`
+                  : '시작일은 고를 수 없고, 관리자가 승인하는 시점부터 시작합니다.'}
               </p>
             </section>
 
@@ -207,11 +221,11 @@ export default function Ad() {
                     <span>{`${formatToken(terms.pricePerDay)} ANT × ${days}일`}</span>
                     <b className="num">{price === null ? '—' : `${formatToken(price)} ANT`}</b>
                   </div>
-                  {/* 소각이라 되돌릴 수 없다. 서명 전에 분명히 말한다 */}
+                  {/* 돈은 승인 때 나간다. 그 전까지 묶인다는 것과, 소각 뒤엔 되돌릴 수 없다는 것을 서명 전에 말한다 */}
                   <p className="ad-cost-note">
                     {price === null
                       ? '노출 기간을 정수 일수로 넣으면 금액이 계산됩니다.'
-                      : <>등록하면 <b>{`${formatToken(price)} ANT 가 소각`}</b>됩니다. 되돌릴 수 없습니다.</>}
+                      : <>관리자가 승인하면 <b>{`${formatToken(price)} ANT 가 소각`}</b>됩니다. 승인 전에는 이 금액이 묶여 다른 곳에 쓸 수 없고, 취소하면 풀립니다. 소각 뒤에는 되돌릴 수 없습니다.</>}
                     {' '}
                     {terms.slotCount === 1
                       ? '자리가 하나뿐이라 이미 게재 중인 광고가 있으면 등록되지 않습니다.'
@@ -249,26 +263,44 @@ export default function Ad() {
           </section>
         )}
 
-        {/* 대기·실패 갈래는 M-02 공유 본문이 그린다([ANT-FE-OPERATION]).
-            네 흐름이 같은 상황을 제각기 말하지 않게 하는 것이 그 티켓의 요지다 */}
-        {view === 'waiting' && (
-          <section className="ad-op">
-            <OperationProgress op={op} kind="AD" />
-          </section>
-        )}
-
-        {view === 'done' && (
+        {/* 심사 중. 폴링할 작업이 없다 — 돈은 승인 때 나간다. 취소는 여기서만 할 수 있다 */}
+        {view === 'review' && (
           <section className="ad-progress" aria-live="polite">
             <span className="ad-check" aria-hidden="true">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="m5 12.5 4.5 4.5L19 7.5" />
               </svg>
             </span>
-            <p className="ad-progress-title">{`배너가 ${days}일간 노출됩니다`}</p>
-            <p className="ad-sub">지금부터 홈 상단에서 볼 수 있습니다.</p>
-            {/* 승인 대기 화면은 2차 범위라 만들지 않는다(설계 제약). 노출을 바로 확인하게 한다 */}
-            <Link className="ad-btn solid" to="/">홈에서 보기</Link>
+            {canceled ? (
+              <>
+                <p className="ad-progress-title">신청을 취소했습니다</p>
+                <p className="ad-sub">묶여 있던 게재료가 풀렸습니다. 아무것도 소각되지 않았습니다.</p>
+                <button type="button" className="ad-btn solid" onClick={() => { setStep('form') }}>다시 신청하기</button>
+              </>
+            ) : (
+              <>
+                <p className="ad-progress-title">심사 중입니다</p>
+                <p className="ad-sub">
+                  {`관리자가 승인하면 ${price === null ? '' : `${formatToken(price)} ANT 가 `}소각되고 ${days}일간 홈 상단에 노출됩니다. 승인 전까지 이 금액은 묶여 있고, 취소하면 풀립니다.`}
+                </p>
+                <div className="ad-actions">
+                  <Link className="ad-btn solid" to="/">홈으로</Link>
+                  <button type="button" className="ad-btn" onClick={() => { setCancelling(true) }}>신청 취소</button>
+                </div>
+              </>
+            )}
           </section>
+        )}
+
+        {cancelling && (
+          <ConfirmDialog
+            title="광고 신청을 취소합니다"
+            description="심사 대기 중인 신청이 닫히고, 묶여 있던 게재료가 풀립니다. 다시 신청하려면 지갑 서명을 다시 해야 합니다."
+            confirmLabel="취소하기"
+            tone="danger"
+            onConfirm={() => { void cancel() }}
+            onCancel={() => { setCancelling(false) }}
+          />
         )}
 
         {/* M-07 · M-01 은 라우트가 없는 모달이라 이 화면이 열고 닫는다 */}

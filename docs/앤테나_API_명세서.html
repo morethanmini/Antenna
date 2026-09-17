@@ -30,7 +30,7 @@ pre code{background:none;padding:0;color:inherit}.callout{background:var(--soft)
 footer{margin-top:50px;padding-top:14px;border-top:1px solid var(--line);color:var(--sub);font-size:12px}.small{font-size:12.3px;color:var(--sub)}
 @media(max-width:880px){.layout{grid-template-columns:1fr}nav{display:none}}
 </style></head>
-<body><div class=layout><nav><div class=brand>엔테나 API 명세서</div><div class=ver>v0.75 · 2026-09-17</div>
+<body><div class=layout><nav><div class=brand>엔테나 API 명세서</div><div class=ver>v0.76 · 2026-09-17</div>
 <a href="#map">0. 큰그림(인터페이스 맵)</a><a href="#common">1. 공통 규약</a>
 <div class=grp>2. REST API</div>
 <a href="#tag-async">비동기 작업</a><a href="#tag-auth">인증</a><a href="#tag-users">회원</a><a href="#tag-wallet">지갑·토큰</a>
@@ -67,6 +67,9 @@ footer{margin-top:50px;padding-top:14px;border-top:1px solid var(--line);color:v
 <tr><td><b>시스템</b></td><td>—</td><td>—</td><td>이벤트 인덱싱</td><td>—</td><td>B1~B6</td></tr>
 </table>
 <div class="changelog" style="margin:0 0 20px;padding:12px 16px;border-left:5px solid #e8a13c;background:#fff8e6;border-radius:0 8px 8px 0;font-size:12.5px;line-height:1.7;font-family:system-ui,-apple-system,"Malgun Gothic",sans-serif;color:#3a3730;"><b style="display:block;margin-bottom:6px;font-size:13px;">변경 로그 (최신이 위)</b>
+<div><b>v0.78</b> · 2026-09-17 · 김성령(KSR) · <code>KSR_ANT-ADMIN-01</code> — <b>§광고 승인제(ANT-ADMIN-03) · §가용잔액(ANT-TOKEN-11).</b> "관리자 사전 승인은 2차" 로 미뤄 뒀던 것을 한다. ① <b><code>POST /ads</code> 는 접수만 한다 — 202 → 201, <code>operationId</code> 없음.</b> 소각 tx 는 관리자가 승인하는 순간(<code>PATCH /admin/ads/{id}</code> APPROVE) 나가고, 반려·취소되면 한 푼도 안 나간다. 선차감 후 환불은 기각 — 소각은 되돌릴 수 없어 환불이 재발행 tx 를 부르고 그 tx 가 실패하면 돈이 사라진 채 복구 경로가 없다. 승인 시 소각은 tx 한 번이고 실패해도 아무 일 없었던 것과 같다. ② <b>게재 기간은 승인 시점부터</b> 다시 잡는다 — 승인이 사흘 뒤면 신청 기준 사흘이 날아가면 안 된다. ③ <b>승인 대기는 자리를 기간 내내 잡는다.</b> <code>app.ads.pending-grace-minutes</code> 유예 창을 없앴다 — 확정이 몇 초라는 전제였는데 승인 대기는 몇 시간이라 창이 지나면 자리를 놓친 것으로 오판한다. 자리만 붙잡는 신청은 관리자가 반려하거나 신청자가 취소한다. ④ <b><code>DELETE /ads/{id}</code> 신설</b> — 본인의 심사 대기 건 취소. ⑤ <b>가용잔액(ANT-TOKEN-11).</b> 배팅·구독·광고 셋이 같은 값을 본다: <code>체인 잔액 − (PENDING 배팅 + PENDING 구독 + PENDING 광고)</code>. 배팅은 이미 자기 PENDING 을 뺐는데 구독·광고는 원장을 봤고 셋이 서로의 PENDING 을 못 봤다 — 승인제에서 이 구멍이 그대로 UX 가 된다(심사 중인 게재료로 배팅이 되고, 승인 때 잔액이 없다). 이제 심사 중인 돈은 쓰려는 순간 막힌다. <b>구독·광고의 잔액 기준이 원장 → 체인으로 바뀐다</b>(원장은 인덱서 지연). 토큰을 옮기지 않는다 — PENDING 리소스가 곧 홀드고 닫히면 저절로 풀린다. 에스크로 컨트랙트는 효과가 같은데 컨트랙트·릴레이어·인덱서·역할 부여가 한 세트로 따라와 기각. ⑥ 인덱서가 광고 소각 실패를 봐도 배너를 REJECTED 로 내리지 않는다 — 승인 전 상태로 돌아가 다시 승인할 수 있다. ⑦ 오류 3종: <code>AD_NOT_FOUND</code> 404 · <code>AD_FORBIDDEN</code> 403 · <code>AD_ALREADY_HANDLED</code> 409. 스키마 변경 없음. 근거: 지라 S15P21A507-287 · S15P21A507-276</div>
+<div><b>v0.77</b> · 2026-09-17 · 김성령(KSR) · <code>KSR_ANT-ADMIN-01</code> — <b>§관리자 신고 처리·블라인드·제재 5종 구현. 제재 상태를 <code>SUSPENDED</code> → <code>BANNED</code> 로 정정한다.</b> ① <b>이 문서가 코드와 달랐다.</b> <code>User.Status</code> 는 처음부터 <code>{ACTIVE, BANNED}</code> 였고(엔티티 주석: "영구 차단만 둔다"), <code>AuthService</code> 가 이미 <code>BANNED</code> 를 보고 로그인을 <code>ACCOUNT_BANNED</code> 로 거부하고 있었다. 명세의 <code>SUSPENDED</code> 를 그대로 구현하려면 enum 값을 늘려야 하는데 <code>ddl-auto: update</code> 라 팀 DB 에 번지고, "일시 정지" 를 제대로 하려면 해제 시각·자동 해제 배치가 따라온다 — <b>코드를 기준으로 삼고 문서를 고쳤다.</b> ② <code>reason</code> 은 <b>받되 저장하지 않는다</b>(<code>users</code> 에 사유 칼럼이 없다). 신고를 거친 제재의 근거는 <code>abuse_reports.handled_by/handled_at</code> 에 남는다. 직권 제재의 사유 보존은 후속. ③ <b>성공 응답을 200 → 204</b> 로 바꿨다 — 상태만 바꾸고 돌려줄 표현이 없다. 화면은 처리 뒤 목록을 다시 읽는다. ④ <b><code>GET /admin/users</code> 신설</b> — 제재 화면이 대상을 고를 길이 없었다. 닉네임 부분 일치(대소문자 무시)·최대 50명. ⑤ 오류 3종 신설: <code>ADMIN_ONLY</code> 403 · <code>REPORT_ALREADY_HANDLED</code> 409(같은 신고 두 번 처리) · <code>ADMIN_SELF_DEMOTE</code> 409(관리자가 자기 계정을 내리면 로그인이 막혀 되돌릴 길이 없다). ⑥ <code>§/admin/users/{id}/status</code> 의 "users.status 컬럼 ERD 추가 필요" 주석을 지웠다 — 이미 있다. <b>권한은 서비스 안에서 <code>role</code> 을 비교</b>한다(<code>EventAdminService</code> 와 같은 관례) — 매처·<code>@PreAuthorize</code> 는 JWT <code>role</code> 클레임 컨버터와 공용 <code>SecurityConfig</code> 신설을 부르므로 별도 사안이다. 스키마 변경 없음. 근거: 지라 S15P21A507-76</div>
+<div><b>v0.76</b> · 2026-09-17 · 임대연(DY) · <code>DY_ANT-REPORT-LOCK-NO-PREVIEW</code> — <b>§리포트 <code>GET /reports/{reportId}</code> 잠금 응답에서 <code>preview</code> 를 없앤다.</b> 잠긴 리포트는 이제 <b>본문이 한 글자도 나가지 않는다</b> — <code>body</code>·<code>preview</code> 둘 다 없이 <code>locked:true</code> 와 제목·작성자·통계만 간다. <b>이유</b>: 미리보기 상한이 “앞 3줄·300자” 절대값이라 세 줄이 안 되는 짧은 글은 미리보기가 곧 전문이었다. 운영 서버의 구독자 전용 리포트 두 건(2줄 10자 · 1줄 15자)이 미구독자 토큰의 GET 한 번에 전부 읽혔다 — 잠금 판정은 정상이었고(<code>body</code> 키는 안 나갔다) 새는 곳은 <code>preview</code> 였다. 비율 상한(본문의 N%)으로 막는 안도 있었지만, 짧은 글에서 “몇 글자”가 의미 있는 유인도 아니어서 통째로 없앴다. 구독 유인은 제목·작성자·통계·댓글 목록이 맡는다. <b>200 + <code>locked:true</code> 는 그대로다</b>(403 이 아니다 — 화면이 제목과 구독 CTA 를 그려야 한다). 서버의 <code>MarkdownPlain</code>(미리보기용 마크다운 벗기기)은 쓰는 곳이 없어져 지웠다 — 서버는 다시 마크다운을 해석하지 않는다. 화면은 F-02 잠금 카드가 미리보기 없이 잠금 문구 + 구독 CTA 만 그리고, F-03 공개 범위 설명이 “나머지는 제목만 봅니다” 로 바뀐다. <b>DB·ERD 변경 없음. 요청 스키마 변경 없음.</b></div>
 <div><b>v0.75</b> · 2026-09-17 · 임대연(DY) · <code>DY_ANT-DATA-03-OPEN-FILTER</code> — <b>§홈·시세 <code>GET /stocks?hasOpenPrediction=true</code> 가 동작한다.</b> 종목 탐색(B-02) 상세 필터의 "내가 진행 중인 예측 있음" 체크박스가 보내던 값인데 서버가 받지 않아 체크해도 목록이 그대로였다. 뜻은 화면 라벨을 따른다 — <b>내가 건</b> 판정 대기(BASE/OPEN) 예측이 있는 종목만. 명세에는 "진행 중 예측 있는 종목만" 으로 주어가 없었는데, "누구든 예측이 걸린 종목" 은 행별 집계와 <code>sort=PREDICTION_COUNT</code> 가 이미 위로 올려 보여 줘 필터가 더할 것이 없다. 끝난(HIT/MISS) 내 예측과 남의 예측은 안 친다. 다른 필터와 AND, DB 서브쿼리로 거른다. <code>sentiment</code> 는 여전히 무시. <b>DB·ERD 변경 없음.</b></div>
 <div><b>v0.74</b> · 2026-09-17 · 임대연(DY) · <code>DY_ANT-DATA-03-SENTIMENT</code> — <b>§홈·시세 <code>GET /stocks</code> 행별 예측 집계와 예측 정렬 3종이 실제로 돈다.</b> v0.15 부터 <code>predictionCount</code> 는 0, <code>upRatio</code> 는 null 로 고정이었다 — 그때는 <code>predictions</code> 표가 없었고, 표가 생긴 뒤에도 이 자리는 안 채워져 종목 탐색(B-02)의 예측 현황 칸이 예측이 쌓여도 "예측 없음" 이었다. 이제 종목·방향별로 <b>판정 대기(BASE/OPEN)</b> 만 센다 — 호가창(<code>/stocks/{code}/predictions/distribution</code>)과 같은 규칙, 끝난 예측은 기록이지 걸려 있는 의견이 아니다. <code>upRatio</code> 는 %(0~100 · 소수 둘째 자리), 예측이 없으면 <code>null</code>(0 이면 "전원 하락" 으로 읽힌다). <code>sort=PREDICTION_COUNT</code>(기본)·<code>UP_RATIO</code> 는 높은 순, <code>DOWN_RATIO</code> 는 UP 비율 낮은 순, 예측 없는 종목은 뒤에 코드순. <code>GET /stocks/{code}</code> 의 <code>predictionCount</code> 도 같은 집계. 집계는 목록 한 장에 쿼리 하나(종목·방향 group by) — 예측이 걸린 종목이 활성 300개보다 훨씬 적어 종목코드 IN 없이 전부 읽는다. <code>sentiment</code>·<code>hasOpenPrediction</code> 필터는 여전히 무시. <b>DB·ERD 변경 없음.</b></div>
 <div><b>v0.73</b> · 2026-09-16 · 이상민(SM) · <code>SM_ANT-EVENT-08</code> — <b>이벤트에 <code>slug</code> 추가</b>(생성 요청 · 목록·홈 응답). 프론트의 대회 화면은 <code>/events/scalping</code> 이라는 주소로 열리는데 응답에 숫자 <code>eventId</code> 와 제목뿐이라 <b>어느 회차가 그 대회인지 알 방법이 없었다.</b> 숫자 id 를 화면 상수로 박으면 회차가 만들어진 <b>뒤에야</b> 그 값을 알 수 있어 접수 직전에 재배포해야 하고, 제목으로 맞추면 한 글자만 바뀌어도 화면이 빈다. 접수 전에 운영에서 점검용 회차를 하나 만들 것이라 "목록 첫 번째" 도 못 쓴다 — 그게 사용자 화면에 뜬다.<br>
@@ -244,7 +247,7 @@ nonce=&lt;POST /wallet/nonce 로 발급받은 값&gt;</pre>
 <tr><td class=pn>PREDICTION_NOT_FOUND</td><td>404</td><td>첨부하려는 예측이 없다 · <code>field: predictionId</code></td><td>ANT-COMMUNITY-02</td></tr>
 <tr><td class=pn>COMMENT_NOT_FOUND</td><td>404</td><td>댓글이 없다 · 블라인드된 댓글도 이것으로 응답한다 · <code>field: commentId</code></td><td>ANT-COMMUNITY-03</td></tr>
 <tr><td class=pn>DUPLICATE_LIKE</td><td>409</td><td>이미 누른 좋아요를 다시 눌렀다. 취소(DELETE)는 멱등이라 이 code를 쓰지 않는다</td><td>ANT-COMMUNITY-03</td></tr>
-<tr><td class=pn>REPORT_FORBIDDEN</td><td>403</td><td>구독자 전용 리포트에 미구독자가 좋아요·댓글을 시도했다 · <code>field: reportId</code>(댓글 좋아요는 <code>commentId</code>) — <b>열람은 200 + <code>locked:true</code> 인데 반응만 403 이다</b>: 열람에는 보여 줄 것(제목·앞 3줄)이 있지만 반응에는 없다. 프론트는 이 code 로 구독 CTA 를 띄운다(<code>PREDICTION_FORBIDDEN</code> 과 같은 쓰임)</td><td>ANT-REPORT-SOCIAL</td></tr>
+<tr><td class=pn>REPORT_FORBIDDEN</td><td>403</td><td>구독자 전용 리포트에 미구독자가 좋아요·댓글을 시도했다 · <code>field: reportId</code>(댓글 좋아요는 <code>commentId</code>) — <b>열람은 200 + <code>locked:true</code> 인데 반응만 403 이다</b>: 열람에는 보여 줄 것(제목·작성자·통계)이 있지만 반응에는 없다. 프론트는 이 code 로 구독 CTA 를 띄운다(<code>PREDICTION_FORBIDDEN</code> 과 같은 쓰임)</td><td>ANT-REPORT-SOCIAL</td></tr>
 <tr><td class=pn>REPORT_NOT_SEALED</td><td>404</td><td>봉인 이전에 발행된 리포트의 검산을 요청했다(<code>body_hash</code> NULL) · <code>field: reportId</code> — <code>REPORT_NOT_FOUND</code> 와 <b>code 를 나눈 이유는 리포트는 있기 때문</b>이다. 없는 것으로 말하면 화면이 “지워진 글” 로 그린다. 소급 봉인을 하지 않는다는 결정(ANT-CHAIN-14)의 겉면이라, 프론트는 이 code 로 “봉인 이전 발행분” 이라고 적는다</td><td>ANT-CHAIN-17</td></tr>
 <tr><td class=pn>STOCK_NOT_FOUND</td><td>404</td><td>종목코드가 종목 마스터에 없다 · <code>field: code</code> — 구간에 시세가 없는 것(200 + 빈 목록)과 구분한다</td><td>ANT-DATA-03</td></tr>
 <tr><td class=pn>BRIEFING_NOT_FOUND</td><td>404</td><td>브리핑 id 가 없다 · <code>field: id</code></td><td>ANT-RESEARCH-03</td></tr>
@@ -778,7 +781,7 @@ nonce=&lt;POST /wallet/nonce 로 발급받은 값&gt;</pre>
 </details>
 <h3 class=tag id=tag-feed>리포트·글<span class=d>리포트 발행·글(피드)·댓글·좋아요·신고<code>/feed</code>는 뷰 이름이라 실제 저장 대상(<code>feed_posts</code>)으로 맞춤</span></h3>
 <details class=ep><summary><span class="m p">POST</span><span class=path>/reports</span><span class=sm>리포트 발행 · 🔐</span></summary>
-<div class=body><div class=desc>예측가의 리포트 발행. <code>visibility</code>는 <b>리포트의 속성</b>: true=전체 공개, false=본문 구독자 전용 — 미구독자에겐 <b>3줄 미리보기 + 구독 유도</b>. 제목은 항상 공개(구독 유인).
+<div class=body><div class=desc>예측가의 리포트 발행. <code>visibility</code>는 <b>리포트의 속성</b>: true=전체 공개, false=본문 구독자 전용 — 미구독자에겐 <b>본문 없이 구독 유도</b>(v0.76 — 미리보기 폐지). 제목은 항상 공개(구독 유인).
 <b>발행 즉시 봉인한다(v0.59, ANT-CHAIN-14).</b> 예측 커밋과 같은 두 겹이다 —
 <code>bodyHash = keccak256(body ‖ salt)</code>, <code>reportHash = keccak256("antenna:report:v1\n" + authorId + title + visibility + bodyHash)</code>(줄 구분 <code>\n</code>, 끝 개행 없음, UTF-8).
 바깥 해시가 머클 리프이고, 다음 앵커 회차(10분)가 <b>예측 커밋과 같은 트리에</b> 얹는다.
@@ -823,7 +826,7 @@ nonce=&lt;POST /wallet/nonce 로 발급받은 값&gt;</pre>
 <div class=resp><span class="rc ok"><b>200</b> <code>{ items: [{ id, title, visibility, locked, publishedAt, viewCount }], nextCursor, hasNext }</code></span><span class="rc er"><b>404</b> <code>USER_NOT_FOUND</code> — 없는 채널을 빈 목록으로 속이지 않는다</span></div></div>
 </details>
 <details class=ep><summary><span class="m g">GET</span><span class=path>/reports/{id}</span><span class=sm>리포트 열람 · 🔐</span></summary>
-<div class=body><div class=desc>visibility=false & 미구독 → 전문 대신 <code>{ preview: "앞 3줄", locked: true }</code> 응답. 잠금 기준은 근거 게이팅과 동일 정책(본인 + ACTIVE 구독자).<br><b>전문과 미리보기는 키가 다르다</b> — 열리면 <code>body</code>, 잠기면 <code>preview</code> 가 실리고 나머지 키는 생략된다. 같은 필드에 담으면 프론트가 잘린 본문을 전문으로 착각해 그린다.<br><b>미리보기는 마크다운 문법을 벗긴 글자다</b>(v0.63) — 구독을 권하는 자리에 <code>## 제목</code>이나 이미지 주소가 뜨면 읽히지 않는다. <b>글자가 남는 줄만 3줄로 센다</b>: 이미지만 있는 줄과 문단 사이 빈 줄은 세지 않는다(그림 한 줄이 세 줄 중 하나를 먹으면 남는 건 두 줄뿐이다). 본문이 그림뿐이면 <code>preview</code> 키가 <b>아예 빠진다</b>. 벗기는 것은 이 필드뿐이고 <code>body</code>·봉인은 원문 그대로다.<br><b>"앞 3줄"에 300자 상한을 함께 둔다</b> — 개행 없이 20000자를 쓴 본문은 1줄이라 줄 수만으로 자르면 미리보기가 전문과 같아진다(명세에 없던 값, 구현에서 정함).<br><b>읽기 전용이 아니다</b> — ERD 대로 이 엔드포인트가 <code>reports.view_count</code> 를 +1 한다. <b>작성자 본인의 열람은 세지 않는다</b>(<code>sort=POPULAR</code> 정렬 키라서 자기 글 새로고침으로 순위를 올릴 수 있는 구멍을 막는다). 잠긴 미리보기는 열람으로 센다 — 목록에서 눌러 들어온 유입이고 그것이 인기순이 나타내려는 값이다. 응답 <code>viewCount</code> 에는 이번 열람이 반영된 값이 담긴다.<br><b>확정 2026-09-01 (ANT-COMMUNITY-01 구현)</b></div>
+<div class=body><div class=desc>visibility=false & 미구독 → 전문 대신 <code>{ locked: true }</code> 응답 — <b>본문은 한 글자도 나가지 않는다</b>(<code>body</code> 키 생략). 잠금 기준은 근거 게이팅과 동일 정책(본인 + ACTIVE 구독자).<br><b>미리보기는 없다</b>(v0.76 폐지) — 전에는 <code>preview</code>(앞 3줄·300자)를 실었는데 상한이 절대값이라 짧은 글은 미리보기가 곧 전문이었다. 제목·작성자·통계는 잠겨도 그대로 간다.<br><b>읽기 전용이 아니다</b> — ERD 대로 이 엔드포인트가 <code>reports.view_count</code> 를 +1 한다. <b>작성자 본인의 열람은 세지 않는다</b>(<code>sort=POPULAR</code> 정렬 키라서 자기 글 새로고침으로 순위를 올릴 수 있는 구멍을 막는다). 잠긴 열람도 열람으로 센다 — 목록에서 눌러 들어온 유입이고 그것이 인기순이 나타내려는 값이다. 응답 <code>viewCount</code> 에는 이번 열람이 반영된 값이 담긴다.<br><b>확정 2026-09-01 (ANT-COMMUNITY-01 구현)</b></div>
 <h4>응답</h4><pre><code>// 열림 (공개 리포트 · 구독자 · 본인){ "id": 3, "title": "…", "author": { "userId": 8, "nickname": "…" },
   "visibility": true, "locked": false, "body": "전문…",
   "publishedAt": "…", "viewCount": 12, "likeCount": 4, "liked": true, "commentCount": 3,
@@ -831,9 +834,9 @@ nonce=&lt;POST /wallet/nonce 로 발급받은 값&gt;</pre>
 
 // 잠김 (visibility=false & 미구독)
 { "id": 3, "title": "…", "author": { "userId": 8, "nickname": "…" },
-  "visibility": false, "locked": true, "preview": "1줄\n2줄\n3줄",
+  "visibility": false, "locked": true,
   "publishedAt": "…", "viewCount": 12, "likeCount": 4, "liked": false, "commentCount": 3 }</code></pre>
-<div class=resp><span class="rc ok"><b>200</b> 전문 또는 미리보기</span><span class="rc er"><b>404</b> <code>REPORT_NOT_FOUND</code></span></div></div>
+<div class=resp><span class="rc ok"><b>200</b> 전문 또는 잠금</span><span class="rc er"><b>404</b> <code>REPORT_NOT_FOUND</code></span></div></div>
 </details>
 <details class=ep><summary><span class="m g">GET</span><span class=path>/reports/{reportId}/proof</span><span class=sm>리포트 검산 재료 · 🔐</span></summary>
 <div class=body><div class=desc><b>판정을 내려 주지 않는다.</b> 재료만 내리고 같은지 다른지는 <b>브라우저가 계산한다</b> — 서버가 “검증됨” 이라고 말하면 증명이 아니다(D-03 이 세운 원칙 그대로). 화면은 D-04 다.<br><b>리포트 자체는 막지 않는다.</b> 제목·작성자·통계가 미구독자에게도 공개라는 것이 이 도메인의 전제이고, 봉인 해시는 그보다 더 공개해도 되는 값이다 — 해시로는 본문을 되돌릴 수 없다. 미판정 예측을 403 으로 막는 <code>GET /predictions/{id}/proof</code> 와 갈리는 지점이다.</div>
@@ -888,7 +891,7 @@ nonce=&lt;POST /wallet/nonce 로 발급받은 값&gt;</pre>
 <div class=body><div class=desc><b>멱등</b> — 누른 적 없어도 204다.</div>
 <h4>응답</h4>
 <div class=resp><span class="rc ok"><b>204</b> 취소 · 없던 좋아요도 204</span><span class="rc er"><b>403</b> <code>REPORT_FORBIDDEN</code></span><span class="rc er"><b>404</b> <code>COMMENT_NOT_FOUND</code></span></div></div>
-</details><div class=desc><b>반응 잠금 규칙 (ANT-REPORT-SOCIAL)</b> — 구독자 전용 리포트(<code>visibility=false</code>)에 본인도 ACTIVE 구독자도 아닌 사람이 <b>좋아요·댓글 작성·댓글 좋아요</b>를 시도하면 403 <code>REPORT_FORBIDDEN</code> 이다. <b>열람(200 + <code>locked:true</code>)과 다른 이유</b> — 열람에는 보여 줄 것(제목·앞 3줄)이 있지만 반응에는 없다. 댓글은 본문에 대한 반응이고, 좋아요만 허용하면 읽지 않고 누른 인기순이 된다. 전체 공개 리포트는 누구나 반응할 수 있다.<br><b>통계(<code>likeCount</code>·<code>liked</code>·<code>commentCount</code>)는 잠긴 리포트에도 실린다</b> — “제목·작성자·통계는 항상 공개” 라는 이 화면의 규칙 그대로다. 반응이 많다는 사실 자체가 구독 유인이다.<br><b><code>sort=POPULAR</code> 는 열람 수 기준 그대로다</b> — 좋아요를 정렬 키로 쓰지 않는다. 바꾸려면 커서(<code>"&lt;viewCount&gt;:&lt;id&gt;"</code>)와 피드 쿼리를 함께 바꿔야 해서 별도 티켓이다.<br><b>댓글은 해시 앵커링하지 않는다</b> — 앵커는 “수정되지 않았다” 를 약속하는데 댓글은 신고·블라인드로 가려져야 한다. 10분 배치 트리에 댓글이 쌓이면 리포트·예측 잎이 묻히고 커밋 원장도 댓글로 채워진다.<br><b>확정 2026-09-15 (ANT-REPORT-SOCIAL 구현)</b></div>
+</details><div class=desc><b>반응 잠금 규칙 (ANT-REPORT-SOCIAL)</b> — 구독자 전용 리포트(<code>visibility=false</code>)에 본인도 ACTIVE 구독자도 아닌 사람이 <b>좋아요·댓글 작성·댓글 좋아요</b>를 시도하면 403 <code>REPORT_FORBIDDEN</code> 이다. <b>열람(200 + <code>locked:true</code>)과 다른 이유</b> — 열람에는 보여 줄 것(제목·작성자·통계)이 있지만 반응에는 없다. 댓글은 본문에 대한 반응이고, 좋아요만 허용하면 읽지 않고 누른 인기순이 된다. 전체 공개 리포트는 누구나 반응할 수 있다.<br><b>통계(<code>likeCount</code>·<code>liked</code>·<code>commentCount</code>)는 잠긴 리포트에도 실린다</b> — “제목·작성자·통계는 항상 공개” 라는 이 화면의 규칙 그대로다. 반응이 많다는 사실 자체가 구독 유인이다.<br><b><code>sort=POPULAR</code> 는 열람 수 기준 그대로다</b> — 좋아요를 정렬 키로 쓰지 않는다. 바꾸려면 커서(<code>"&lt;viewCount&gt;:&lt;id&gt;"</code>)와 피드 쿼리를 함께 바꿔야 해서 별도 티켓이다.<br><b>댓글은 해시 앵커링하지 않는다</b> — 앵커는 “수정되지 않았다” 를 약속하는데 댓글은 신고·블라인드로 가려져야 한다. 10분 배치 트리에 댓글이 쌓이면 리포트·예측 잎이 묻히고 커밋 원장도 댓글로 채워진다.<br><b>확정 2026-09-15 (ANT-REPORT-SOCIAL 구현)</b></div>
 <details class=ep><summary><span class="m g">GET</span><span class=path>/posts</span><span class=sm>피드 목록 · 🔐</span></summary>
 <div class=body><div class=desc>글 본문 + 리포스팅 원본 리포트 카드 + 첨부 예측 카드 + 공감·댓글 수. BLOCKED 제외, 작성 시각 정렬.<br><b>글 자체에는 공개 범위가 없다</b>(전체 공개) — 잠기는 것은 첨부물뿐이고, 판정은 <b>원본 소유자</b>의 구독 상태로 한다(리포스팅한 사람과 무관). <code>reportCard</code>·<code>predictionCard</code>는 첨부가 없으면 응답에서 생략된다.<br><code>commentCount</code>는 BLOCKED 댓글을 세지 않는다 — 목록에서 빠지는 댓글을 개수에 넣으면 "댓글 3개"를 눌렀는데 1개만 보인다.</div>
 <h4>파라미터</h4>
@@ -994,9 +997,9 @@ nonce=&lt;POST /wallet/nonce 로 발급받은 값&gt;</pre>
 <h4>응답</h4>
 <div class=resp><span class="rc ok"><b>201</b> <code>{ fileId, url, width, height, bytes }</code></span><span class="rc er"><b>400</b> 형식·용량·비율 위반</span><span class="rc er"><b>413</b> 용량 초과</span></div></div>
 </details>
-<h3 class=tag id=tag-ads>광고<span class=d>토큰 지불 배너 · 관리자 승인은 2차</span></h3>
-<details class=ep><summary><span class="m p">POST</span><span class=path>/ads</span><span class=sm>광고 등록 · 🔐 ✍️ 202</span></summary>
-<div class=body><div class=desc>토큰 지불(소각) 동반. 고정 단가 × 기간제 선착순(슬롯 수 상수). 확정 시 ACTIVE → 만료 ENDED. 관리자 사전 승인은 <b>2차</b>.</div>
+<h3 class=tag id=tag-ads>광고<span class=d>토큰 지불 배너 · 관리자 승인 후 게재 (v0.78)</span></h3><div class=callout><b>승인제 (v0.78, ANT-ADMIN-03)</b> — 신청은 <b>접수만</b> 된다. 관리자가 <code>PATCH /admin/ads/{id}</code> 로 승인하는 순간 게재료 소각 tx 가 나가고, 인덱서가 <code>Burned</code> 를 보면 ACTIVE. 반려·취소되면 한 푼도 안 나간다. <b>신청한 게재료는 승인 전까지 가용잔액에서 묶인다</b>(§가용잔액) — 심사 중인 돈으로 배팅·구독을 할 수 없고, <code>DELETE /ads/{id}</code> 로 취소하면 풀린다. 게재 기간은 <b>승인 시점부터</b>.</div>
+<details class=ep><summary><span class="m p">POST</span><span class=path>/ads</span><span class=sm>광고 신청 · 🔐 ✍️ 201</span></summary>
+<div class=body><div class=desc>고정 단가 × 기간제 선착순(슬롯 수 상수). <b>v0.78 — 접수만 한다. 소각 tx 를 보내지 않는다.</b> 승인 대기(PENDING)도 자리를 잡는다 — 예전 유예 창(<code>pending-grace-minutes</code>)은 없어졌다.</div>
 <h4>요청 본문</h4>
 <table>
 <tr><th>필드</th><th>타입</th><th>설명</th></tr>
@@ -1006,7 +1009,12 @@ nonce=&lt;POST /wallet/nonce 로 발급받은 값&gt;</pre>
 <tr><td class=pn>signature <b class=req>*</b></td><td class=pt>string</td><td>지불 서명</td></tr>
 </table>
 <h4>응답</h4>
-<div class=resp><span class="rc ok"><b>202</b> <code>{ operationId, adId, status: PENDING }</code> → 폴링: GET /operations/{operationId}</span><span class="rc er"><b>409</b> 잔액 부족·슬롯 마감 · 체인 잔액 부족(<code>INSUFFICIENT_BALANCE</code> — 이때 배너는 REJECTED 로 닫혀 자리를 막지 않는다)</span><span class="rc er"><b>503</b> <code>CHAIN_UNAVAILABLE</code> 체인 기능이 꺼져 있다(RPC·키·토큰 주소) — 배너·작업을 만들지 않고 nonce 도 태우지 않는다</span></div><p class=small>접수(검사·서명·배너 PENDING·작업)를 커밋한 <b>뒤에</b> 서버가 게재료 소각 tx 를 보낸다(ANT-CHAIN-12, v0.48). 확정(ACTIVE)은 토큰 인덱서 ②(B8)가 <code>Burned</code> 이벤트를 보고 한다.</p></div>
+<div class=resp><span class="rc ok"><b>201</b> <code>{ adId, status: PENDING }</code> — <code>operationId</code> 없음. 폴링할 작업이 없다</span><span class="rc er"><b>400</b> <code>WALLET_NOT_LINKED</code></span><span class="rc er"><b>409</b> <code>INSUFFICIENT_BALANCE</code>(가용잔액 &lt; 게재료) · <code>AD_SLOT_SOLD_OUT</code></span><span class="rc er"><b>503</b> <code>CHAIN_UNAVAILABLE</code> 체인 기능이 꺼져 있다 — 가용잔액을 못 읽는다. 배너를 만들지 않고 nonce 도 태우지 않는다</span></div><p class=small>v0.78 전에는 202 + <code>operationId</code> 였고 접수 직후 소각 tx 가 나갔다. 이제 소각은 승인에서. 잔액 검사 기준도 원장 → <b>가용잔액</b>(체인 잔액 − PENDING 배팅·구독·광고)으로 바뀌었다. 서명은 그대로 받는다 — 소각 tx 에 서명이 실려 가지 않고(서버가 <code>OPERATOR_ROLE</code> 로 태운다, §4) 서버가 보관하는 동의 근거라, 신청 때 받은 서명으로 나중에 태워도 된다. 금액은 신청 시 <code>ad_banners.price_wei</code> 에 박제된다.</p></div>
+</details>
+<details class=ep><summary><span class="m d">DELETE</span><span class=path>/ads/{adId}</span><span class=sm>신청 취소 · 🔐 204</span></summary>
+<div class=body><div class=desc><b>v0.78 신설.</b> 본인의 심사 대기 건만. 배너가 REJECTED 로 닫히고 묶였던 가용잔액이 그 자리에서 풀린다(홀드가 곧 이 행이라서). 소각 tx 가 나가는 중이면 못 취소한다 — 돈이 이미 체인으로 가고 있다. 되돌릴 게 없어 멱등 대상이 아니다.</div>
+<h4>응답</h4>
+<div class=resp><span class="rc ok"><b>204</b></span><span class="rc er"><b>403</b> <code>AD_FORBIDDEN</code> 남의 신청</span><span class="rc er"><b>404</b> <code>AD_NOT_FOUND</code></span><span class="rc er"><b>409</b> <code>AD_ALREADY_HANDLED</code> 이미 승인·반려됐거나 소각 중</span></div></div>
 </details>
 <details class=ep><summary><span class="m g">GET</span><span class=path>/ads/active</span><span class=sm>활성 광고 목록 · 🔐</span></summary>
 <div class=body><div class=desc>메인 측면 노출용.</div>
@@ -1339,22 +1347,33 @@ nonce=&lt;POST /wallet/nonce&gt;</code></pre>
 <h4>파라미터</h4>
 <table>
 <tr><th>이름</th><th>위치</th><th>타입</th><th>설명</th></tr>
-<tr><td class=pn>status</td><td>query</td><td class=pt>string</td><td>PENDING | ACCEPTED | REJECTED</td></tr>
+<tr><td class=pn>status</td><td>query</td><td class=pt>string</td><td>PENDING | ACCEPTED | REJECTED · <b>생략하면 전체</b></td></tr>
 </table>
 <h4>응답</h4>
-<div class=resp><span class="rc ok"><b>200</b> <code>{ items: [{ id, targetType, targetId, reason, detail, reporter, status, createdAt }] }</code></span></div></div>
+<div class=resp><span class="rc ok"><b>200</b> <code>{ items: [{ id, reason, detail, status, targetType, targetId, targetBody, targetBlocked, reporterId, reporterNickname, handledById, handledAt, createdAt }] }</code></span></div>
+<div class=desc><b>v0.77</b> — <code>targetBody</code> 와 <code>targetBlocked</code> 를 함께 내린다. 관리자가 <b>무엇을 가리는지 보지 않고</b> 판단하게 두지 않기 위해서고, 이미 다른 신고로 내려간 글을 또 내리려다 "왜 아무 일도 안 일어나지" 하는 것을 막기 위해서다. 회원 신고면 <code>targetBody</code> 자리에 닉네임이 오고 <code>targetBlocked</code> 는 <code>null</code> 이다.<br><b>페이지네이션이 없다</b> — 운영자 한 명이 보는 목록이고 신고 자체가 드물다. 쌓이기 시작하면 커서를 넣는다. 정렬은 <code>id</code> 내림차순.</div></div>
 </details>
-<details class=ep><summary><span class="m a">PATCH</span><span class=path>/admin/abuse-reports/{id}</span><span class=sm>신고 처리 · 🔐👑</span></summary>
-<div class=body><div class=desc>ACCEPT 시 대상 글/댓글 BLOCKED 전환(행 삭제 없음), 처리자·시각 기록.</div>
+<details class=ep><summary><span class="m a">PATCH</span><span class=path>/admin/abuse-reports/{id}</span><span class=sm>신고 처리 · 🔐👑 204</span></summary>
+<div class=body><div class=desc>ACCEPT 시 대상 글/댓글 BLOCKED 전환(행 삭제 없음), 처리자·시각 기록.<br><b>v0.77 — 회원 신고를 ACCEPT 해도 계정은 막히지 않는다.</b> 신고 한 건으로 계정을 닫는 것은 과하다 — 제재는 <code>PATCH /admin/users/{id}/status</code> 로 관리자가 따로 누른다. 화면은 두 버튼을 나란히 둔다.</div>
 <h4>요청 본문</h4>
 <table>
 <tr><th>필드</th><th>타입</th><th>설명</th></tr>
 <tr><td class=pn>action <b class=req>*</b></td><td class=pt>string</td><td>ACCEPT | REJECT</td></tr>
 </table>
 <h4>응답</h4>
-<div class=resp><span class="rc ok"><b>200</b> 처리 결과</span></div></div>
+<div class=resp><span class="rc ok"><b>204</b> 적용</span><span class="rc er"><b>404</b> <code>TARGET_NOT_FOUND</code></span><span class="rc er"><b>409</b> <code>REPORT_ALREADY_HANDLED</code> — 이미 처리한 신고</span></div></div>
 </details>
-<details class=ep><summary><span class="m a">PATCH</span><span class=path>/admin/posts/{postId}/status</span><span class=sm>글 블라인드·해제 · 🔐👑</span></summary>
+<details class=ep><summary><span class="m a">PATCH</span><span class=path>/admin/posts/{postId}/status</span><span class=sm>글 블라인드·해제 · 🔐👑 204</span></summary>
+<div class=body><div class=desc>신고를 거치지 않고 관리자가 직접 가리거나 되돌린다. <b>블라인드된 글은 없는 것처럼 다뤄진다</b> — 목록에서 빠지고 상세는 404 다(403 을 주면 "가려진 글이 여기 있었다" 가 샌다).</div>
+<h4>요청 본문</h4>
+<table>
+<tr><th>필드</th><th>타입</th><th>설명</th></tr>
+<tr><td class=pn>status <b class=req>*</b></td><td class=pt>string</td><td>VISIBLE | BLOCKED</td></tr>
+</table>
+<h4>응답</h4>
+<div class=resp><span class="rc ok"><b>204</b> 적용</span><span class="rc er"><b>404</b> <code>POST_NOT_FOUND</code></span></div></div>
+</details>
+<details class=ep><summary><span class="m a">PATCH</span><span class=path>/admin/comments/{commentId}/status</span><span class=sm>댓글 블라인드·해제 · 🔐👑 204</span></summary>
 <div class=body>
 <h4>요청 본문</h4>
 <table>
@@ -1362,28 +1381,48 @@ nonce=&lt;POST /wallet/nonce&gt;</code></pre>
 <tr><td class=pn>status <b class=req>*</b></td><td class=pt>string</td><td>VISIBLE | BLOCKED</td></tr>
 </table>
 <h4>응답</h4>
-<div class=resp><span class="rc ok"><b>200</b> 적용</span></div></div>
+<div class=resp><span class="rc ok"><b>204</b> 적용</span><span class="rc er"><b>404</b> <code>TARGET_NOT_FOUND</code></span></div></div>
 </details>
-<details class=ep><summary><span class="m a">PATCH</span><span class=path>/admin/comments/{commentId}/status</span><span class=sm>댓글 블라인드·해제 · 🔐👑</span></summary>
-<div class=body>
+<details class=ep><summary><span class="m g">GET</span><span class=path>/admin/users</span><span class=sm>회원 찾기 · 🔐👑</span></summary>
+<div class=body><div class=desc><b>v0.77 신설.</b> 제재 화면이 대상을 고를 길이 없어 넣었다. 닉네임이 아직 없는 계정(온보딩 전)은 목록에서 뺀다.</div>
+<h4>파라미터</h4>
+<table>
+<tr><th>이름</th><th>위치</th><th>타입</th><th>설명</th></tr>
+<tr><td class=pn>q</td><td>query</td><td class=pt>string</td><td>닉네임 부분 일치 · <b>대소문자를 가리지 않는다</b>. 생략하면 최근 가입 순</td></tr>
+</table>
+<h4>응답</h4>
+<div class=resp><span class="rc ok"><b>200</b> <code>{ items: [{ id, nickname, role, status, createdAt }] }</code> — 최대 50명</span></div></div>
+</details>
+<details class=ep><summary><span class="m a">PATCH</span><span class=path>/admin/users/{userId}/status</span><span class=sm>회원 제재·해제 · 🔐👑 204</span></summary>
+<div class=body><div class=desc><b>v0.77 — <code>SUSPENDED</code> 가 아니라 <code>BANNED</code> 다.</b> <code>User.Status</code> 가 <code>{ACTIVE, BANNED}</code> 이고 <code>AuthService</code> 가 이미 그 값으로 로그인을 거부한다(<code>ACCOUNT_BANNED</code> 403). 이 문서가 코드와 달랐던 것을 코드 기준으로 맞췄다 — 자세한 사정은 맨 위 변경 로그.<br><b>차단해도 기존 예측·원장은 그대로 남는다.</b> 로그인만 막힌다.<br><code>reason</code> 은 <b>받되 저장하지 않는다</b> — <code>users</code> 에 사유 칼럼이 없고, 추가하면 <code>ddl-auto: update</code> 로 팀 DB 에 번진다. 신고를 거친 제재의 근거는 <code>abuse_reports.handled_by/handled_at</code> 에 남는다.</div>
 <h4>요청 본문</h4>
 <table>
 <tr><th>필드</th><th>타입</th><th>설명</th></tr>
-<tr><td class=pn>status <b class=req>*</b></td><td class=pt>string</td><td>VISIBLE | BLOCKED</td></tr>
+<tr><td class=pn>status <b class=req>*</b></td><td class=pt>string</td><td>ACTIVE | <b>BANNED</b></td></tr>
+<tr><td class=pn>reason</td><td class=pt>string</td><td>선택 · 300자 이하 · <b>저장되지 않는다</b></td></tr>
 </table>
 <h4>응답</h4>
-<div class=resp><span class="rc ok"><b>200</b> 적용</span></div></div>
+<div class=resp><span class="rc ok"><b>204</b> 적용</span><span class="rc er"><b>404</b> <code>USER_NOT_FOUND</code></span><span class="rc er"><b>409</b> <code>ADMIN_SELF_DEMOTE</code> — 자기 계정은 못 내린다(되돌릴 길이 없다)</span></div></div>
 </details>
-<details class=ep><summary><span class="m a">PATCH</span><span class=path>/admin/users/{userId}/status</span><span class=sm>회원 제재·해제 · 🔐👑</span></summary>
-<div class=body><div class=desc>※ <code>users.status</code> 컬럼 ERD 추가 필요.</div>
+<details class=ep><summary><span class="m g">GET</span><span class=path>/admin/ads</span><span class=sm>광고 신청 목록 · 🔐👑</span></summary>
+<div class=body><div class=desc><b>v0.78 신설(ANT-ADMIN-03).</b> <code>advertiserAvailable</code> 은 신청자의 <b>지금 가용잔액</b> — 심사 대기 건에만 오고, 운영자가 승인을 누르기 전에 돈이 있는지 보게 한다. 체인을 못 읽으면 <code>null</code>(목록 전체가 503 이 되지 않게). <code>burnPending</code> 은 승인은 눌렀는데 소각 확정을 기다리는 중 — 상태만 보면 심사 대기와 구분이 안 된다(둘 다 PENDING).</div>
+<h4>파라미터</h4>
+<table>
+<tr><th>이름</th><th>위치</th><th>타입</th><th>설명</th></tr>
+<tr><td class=pn>status</td><td>query</td><td class=pt>string</td><td>PENDING | ACTIVE | REJECTED | ENDED · 생략하면 전체</td></tr>
+</table>
+<h4>응답</h4>
+<div class=resp><span class="rc ok"><b>200</b> <code>{ items: [{ id, advertiserId, advertiserNickname, imageUrl, linkUrl, days, startsAt, endsAt, status, price, txHash, createdAt, advertiserAvailable, burnPending }] }</code></span></div></div>
+</details>
+<details class=ep><summary><span class="m a">PATCH</span><span class=path>/admin/ads/{adId}</span><span class=sm>승인(소각) · 반려 · 🔐👑</span></summary>
+<div class=body><div class=desc><b>v0.78 신설(ANT-ADMIN-03). 여기가 돈이 나가는 자리다.</b> APPROVE 면 ① 가용잔액 재확인(이 광고 자신의 홀드는 되돌려 본다 — 안 그러면 자기 돈을 자기가 막는다) ② 게재 기간을 <b>지금부터</b> 다시 잡고 슬롯 재검사 ③ 작업 생성 → 커밋 ④ 트랜잭션 밖에서 소각 tx. 확정(ACTIVE)은 인덱서 몫. REJECT 면 배너만 닫는다 — 아무것도 태우지 않고 홀드가 풀린다.<br><b>실패해도 배너는 PENDING 그대로다.</b> 잔액 부족·RPC 장애·tx 유실 어느 경우든 승인 전 상태로 돌아가 다시 누를 수 있다. 사용자가 다시 신청하고 다시 서명하게 만들지 않는다.</div>
 <h4>요청 본문</h4>
 <table>
 <tr><th>필드</th><th>타입</th><th>설명</th></tr>
-<tr><td class=pn>status <b class=req>*</b></td><td class=pt>string</td><td>ACTIVE | SUSPENDED</td></tr>
-<tr><td class=pn>reason</td><td class=pt>string</td><td>선택</td></tr>
+<tr><td class=pn>action <b class=req>*</b></td><td class=pt>string</td><td>APPROVE | REJECT</td></tr>
 </table>
 <h4>응답</h4>
-<div class=resp><span class="rc ok"><b>200</b> 적용</span></div></div>
+<div class=resp><span class="rc ok"><b>202</b> APPROVE — <code>{ operationId, adId, status: PENDING }</code> → 폴링: GET /operations/{operationId}</span><span class="rc ok"><b>204</b> REJECT</span><span class="rc er"><b>404</b> <code>AD_NOT_FOUND</code></span><span class="rc er"><b>409</b> <code>AD_ALREADY_HANDLED</code>(이미 처리됐거나 소각 중) · <code>INSUFFICIENT_BALANCE</code> · <code>AD_SLOT_SOLD_OUT</code></span><span class="rc er"><b>503</b> <code>CHAIN_UNAVAILABLE</code> — 아무것도 쓰지 않는다</span></div></div>
 </details>
 <details class=ep><summary><span class="m g">GET</span><span class=path>/admin/seasons</span><span class=sm>시즌 운영 목록 · 🔐👑</span></summary>
 <div class=body><div class=desc></div>

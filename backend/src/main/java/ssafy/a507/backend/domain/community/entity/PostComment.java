@@ -65,4 +65,9 @@ public class PostComment {
     public boolean isBlocked() {
         return status == Status.BLOCKED;
     }
+
+    /** 관리자 블라인드 (ANT-ADMIN-01). 행은 그대로 두고 상태만 내린다. */
+    public void changeStatus(Status next) {
+        this.status = next;
+    }
 }

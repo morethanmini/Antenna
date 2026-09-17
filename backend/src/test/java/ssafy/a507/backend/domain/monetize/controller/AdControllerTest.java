@@ -8,6 +8,7 @@ import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.mock;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -42,18 +43,23 @@ import ssafy.a507.backend.common.security.SignatureNonceStore;
 import ssafy.a507.backend.common.security.SignatureScope;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.chain.entity.Operation;
-import ssafy.a507.backend.domain.chain.relay.TokenReason;
 import ssafy.a507.backend.domain.chain.repository.OperationRepository;
+import ssafy.a507.backend.domain.chain.service.AvailableBalanceService;
 import ssafy.a507.backend.domain.chain.service.FakeTokenRelayer;
 import ssafy.a507.backend.domain.monetize.dto.AdCreateRequest;
 import ssafy.a507.backend.domain.monetize.entity.AdBanner;
+import ssafy.a507.backend.domain.monetize.entity.Subscription;
 import ssafy.a507.backend.domain.monetize.repository.AdBannerRepository;
 import ssafy.a507.backend.domain.upload.entity.UploadFile;
 import ssafy.a507.backend.support.TestNonceStoreConfig;
 import ssafy.a507.backend.support.WalletSignatures;
 
 /**
- * POST /api/v1/ads · GET /api/v1/ads/active — ANT-COMMUNITY-05 의 AC 검증 + 게재료 소각 전송(ANT-CHAIN-12).
+ * POST /api/v1/ads · DELETE /api/v1/ads/{id} · GET /api/v1/ads/active — ANT-COMMUNITY-05 의 AC 검증.
+ *
+ * <p><b>승인제(ANT-ADMIN-03)</b> — 신청은 접수만 한다. 소각 tx 는 관리자 승인({@code AdminAdControllerTest})에서 나간다.
+ * 잔액 기준은 원장이 아니라 <b>가용잔액</b>(체인 잔액 − PENDING 배팅·구독·광고, ANT-TOKEN-11)이라 잔액은
+ * {@link FakeTokenRelayer#withBalance} 로 심는다.
  *
  * <p>Redis 는 띄우지 않는다 — 멱등 저장소는 맵으로, nonce 저장소는 인메모리 구현으로 대신한다. 체인은 {@link FakeTokenRelayer}.
  *
@@ -83,6 +89,7 @@ class AdControllerTest {
     @Autowired FakeTokenRelayer relayer;
     @Autowired AdBannerRepository banners;
     @Autowired OperationRepository operations;
+    @Autowired AvailableBalanceService availableBalance;
 
     @MockitoBean StringRedisTemplate redis;
 
@@ -98,6 +105,8 @@ class AdControllerTest {
     void setUp() {
         stubRedis();
         relayer.reset();
+        // 잔액은 체인에서 읽는다(가용잔액). 넉넉히 심고, 모자란 경우만 테스트가 덮어쓴다.
+        relayer.withBalance(RICH);
         credentials = Credentials.create(PRIVATE_KEY);
         advertiser = insertUser("광고주", credentials.getAddress());
         imageFileId = insertUploadFile(advertiser, UploadFile.Purpose.AD);
@@ -110,6 +119,7 @@ class AdControllerTest {
             for (String delete : List.of(
                     "DELETE FROM operations WHERE user_id IN (:ids)",
                     "DELETE FROM ad_banners WHERE advertiser_id IN (:ids)",
+                    "DELETE FROM subscriptions WHERE subscriber_id IN (:ids) OR publisher_id IN (:ids)",
                     "DELETE FROM token_ledger WHERE user_id IN (:ids)",
                     "DELETE FROM upload_files WHERE user_id IN (:ids)",
                     "DELETE FROM users WHERE id IN (:ids)")) {
@@ -120,72 +130,32 @@ class AdControllerTest {
     }
 
     @Test
-    @DisplayName("신청하면 202 와 operationId · adId 를 받고 폴링 창구에서 PENDING 으로 보인다")
+    @DisplayName("신청하면 201 과 adId 를 받는다 — operationId 는 없다. 돈은 승인 때 나간다(ANT-ADMIN-03)")
     void 신청_성공() throws Exception {
-        credit(advertiser, RICH);
-
-        MvcResult result = mockMvc.perform(create(imageFileId, "https://ad.example.com", 7, "key-1"))
-                .andExpect(status().isAccepted())
-                .andExpect(jsonPath("$.operationId").isNotEmpty())
+        mockMvc.perform(create(imageFileId, "https://ad.example.com", 7, "key-1"))
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.adId").isNumber())
                 .andExpect(jsonPath("$.status").value("PENDING"))
-                .andReturn();
-
-        String operationId = jsonValue(result, "operationId");
-        mockMvc.perform(get("/api/v1/operations/" + operationId)
-                        .with(user(String.valueOf(advertiser.getId()))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.kind").value("AD"))
-                .andExpect(jsonPath("$.resource.type").value("AD"));
+                .andExpect(jsonPath("$.operationId").doesNotExist());
     }
 
     @Test
-    @DisplayName("신청하면 게재료 소각 tx 를 보낸다 — 광고주 지갑에서 AD_PAY 로, 작업에 tx 해시가 붙고 상태는 PENDING(확정은 인덱서)")
-    void 신청하면_소각_tx_를_보낸다() throws Exception {
-        credit(advertiser, RICH);
+    @DisplayName("신청은 소각 tx 를 보내지 않는다 — 작업도 만들지 않는다. 배너만 PENDING 으로 남는다(ANT-ADMIN-03)")
+    void 신청은_소각_tx_를_보내지_않는다() throws Exception {
+        mockMvc.perform(create(imageFileId, "https://ad.example.com", 7, "key-no-burn"))
+                .andExpect(status().isCreated());
 
-        String operationId = jsonValue(
-                mockMvc.perform(create(imageFileId, "https://ad.example.com", 7, "key-burn"))
-                        .andExpect(status().isAccepted())
-                        .andReturn(),
-                "operationId");
-
-        assertThat(relayer.calls()).singleElement().satisfies(c -> {
-            assertThat(c.kind()).isEqualTo("burn");
-            assertThat(c.from()).isEqualToIgnoringCase(credentials.getAddress());
-            assertThat(c.amount()).isEqualTo(BigInteger.valueOf(7_000)); // 1,000 ANT/일 × 7일 (금액표 ANT-TOKEN-08)
-            assertThat(c.reason()).isEqualTo(TokenReason.AD_PAY);
+        assertThat(relayer.calls()).isEmpty();
+        assertThat(operationsOf(advertiser)).isEmpty();
+        assertThat(bannersOf(advertiser)).singleElement().satisfies(b -> {
+            assertThat(b.getStatus()).isEqualTo(AdBanner.Status.PENDING);
+            assertThat(b.getPriceWei()).isEqualTo(BigInteger.valueOf(7_000)); // 1,000 ANT/일 × 7일
         });
-        Operation op = operations.findById(operationId).orElseThrow();
-        assertThat(op.getTxHash()).startsWith("0x");
-        assertThat(op.getStatus()).isEqualTo(Operation.Status.PENDING);
-    }
-
-    @Test
-    @DisplayName("체인 잔액이 모자라면 409 — 작업은 FAILED, 배너는 REJECTED 라 유예 창 동안 자리를 막지 않는다")
-    void 체인_잔액이_모자라면_배너를_닫는다() throws Exception {
-        // 원장은 넉넉한데 체인 시뮬레이션이 거부하는 경우(원장과 체인이 어긋난 순간).
-        credit(advertiser, RICH);
-        relayer.thenInsufficientBalance();
-
-        mockMvc.perform(create(imageFileId, "https://ad.example.com", 7, "key-chain-poor"))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("INSUFFICIENT_BALANCE"));
-
-        assertThat(bannersOf(advertiser)).singleElement()
-                .extracting(AdBanner::getStatus).isEqualTo(AdBanner.Status.REJECTED);
-        assertThat(operationsOf(advertiser)).singleElement()
-                .extracting(Operation::getStatus).isEqualTo(Operation.Status.FAILED);
-
-        // 닫힌 배너는 자리를 놓았다 — 바로 다시 신청할 수 있다.
-        mockMvc.perform(create(imageFileId, "https://ad.example.com", 7, "key-chain-retry"))
-                .andExpect(status().isAccepted());
     }
 
     @Test
     @DisplayName("체인이 꺼져 있으면 503 — 배너도 작업도 만들지 않고 nonce 도 태우지 않는다")
     void 체인이_꺼져_있으면_503() throws Exception {
-        credit(advertiser, RICH);
         relayer.disable();
 
         mockMvc.perform(create(imageFileId, "https://ad.example.com", 7, "key-off"))
@@ -200,9 +170,8 @@ class AdControllerTest {
     @Test
     @DisplayName("접수된 배너는 확정 전이라 노출 목록에 들어가지 않는다")
     void 접수만으로는_노출되지_않는다() throws Exception {
-        credit(advertiser, RICH);
         mockMvc.perform(create(imageFileId, "https://ad.example.com", 7, "key-pending"))
-                .andExpect(status().isAccepted());
+                .andExpect(status().isCreated());
 
         mockMvc.perform(get(URL + "/active").with(user(String.valueOf(advertiser.getId()))))
                 .andExpect(status().isOk())
@@ -212,7 +181,6 @@ class AdControllerTest {
     @Test
     @DisplayName("같은 기간에 이미 자리가 찼으면 409 AD_SLOT_SOLD_OUT")
     void 슬롯_마감() throws Exception {
-        credit(advertiser, RICH);
         insertBanner(AdBanner.Status.ACTIVE, Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS));
 
         mockMvc.perform(create(imageFileId, "https://ad.example.com", 7, "key-slot"))
@@ -223,7 +191,6 @@ class AdControllerTest {
     @Test
     @DisplayName("확정을 기다리는 신청도 자리를 차지한다 — 확정되는 순간 배너가 둘이 되면 안 된다")
     void 최근_PENDING_은_슬롯을_막는다() throws Exception {
-        credit(advertiser, RICH);
         insertBanner(AdBanner.Status.PENDING, Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS));
 
         mockMvc.perform(create(imageFileId, "https://ad.example.com", 7, "key-pending-blocks"))
@@ -232,22 +199,23 @@ class AdControllerTest {
     }
 
     @Test
-    @DisplayName("유예 창이 지난 PENDING 은 자리를 놓는다 — 접수는 토큰을 차감하지 않아 공짜 스쿼팅이 된다")
-    void 오래된_PENDING_은_슬롯을_막지_않는다() throws Exception {
-        credit(advertiser, RICH);
-        AdBanner squatter =
+    @DisplayName("오래된 PENDING 도 자리를 잡는다 — 승인 대기는 유예 창 없이 기간 내내 자리를 잡는다(ANT-ADMIN-03)")
+    void 오래된_PENDING_도_슬롯을_막는다() throws Exception {
+        AdBanner waiting =
                 insertBanner(
                         AdBanner.Status.PENDING, Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS));
-        backdate(squatter, Instant.now().minus(1, ChronoUnit.HOURS));
+        backdate(waiting, Instant.now().minus(1, ChronoUnit.HOURS));
 
-        mockMvc.perform(create(imageFileId, "https://ad.example.com", 7, "key-squat"))
-                .andExpect(status().isAccepted());
+        // 승인제 전에는 유예 창(pending-grace-minutes)이 지나 자리를 놓은 것으로 봤다. 이제 자리만 붙잡는 신청은
+        // 관리자가 반려하거나 신청자가 취소한다.
+        mockMvc.perform(create(imageFileId, "https://ad.example.com", 7, "key-waiting"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("AD_SLOT_SOLD_OUT"));
     }
 
     @Test
     @DisplayName("견적가를 배너에 박제한다 — 인덱서가 소각 tx 와 맞출 기대 금액이 필요하다")
     void 게재료를_박제한다() throws Exception {
-        credit(advertiser, RICH);
 
         String adId = jsonValue(
                 mockMvc.perform(create(imageFileId, "https://ad.example.com", 7, "key-price"))
@@ -261,19 +229,17 @@ class AdControllerTest {
     @Test
     @DisplayName("이미 끝난 광고는 슬롯을 막지 않는다 — 겹침 판정이 기간 양쪽을 본다")
     void 지난_광고는_슬롯을_막지_않는다() throws Exception {
-        credit(advertiser, RICH);
         Instant now = Instant.now();
         insertBanner(
                 AdBanner.Status.ACTIVE, now.minus(30, ChronoUnit.DAYS), now.minus(1, ChronoUnit.DAYS));
 
         mockMvc.perform(create(imageFileId, "https://ad.example.com", 7, "key-past"))
-                .andExpect(status().isAccepted());
+                .andExpect(status().isCreated());
     }
 
     @Test
     @DisplayName("링크가 컬럼 길이를 넘으면 400 — INSERT 가 터져 500 이 되게 두지 않는다")
     void 너무_긴_링크는_400() throws Exception {
-        credit(advertiser, RICH);
         String tooLong = "https://ad.example.com/" + "a".repeat(500);
 
         mockMvc.perform(create(imageFileId, tooLong, 7, "key-longurl"))
@@ -282,9 +248,9 @@ class AdControllerTest {
     }
 
     @Test
-    @DisplayName("잔액이 게재료보다 적으면 409 INSUFFICIENT_BALANCE — 원장에서 거르므로 체인에는 가지 않는다")
+    @DisplayName("가용잔액이 게재료보다 적으면 409 INSUFFICIENT_BALANCE — 기준은 원장이 아니라 체인이다(ANT-TOKEN-11)")
     void 잔액_부족() throws Exception {
-        credit(advertiser, BigInteger.ONE);
+        relayer.withBalance(BigInteger.ONE);
 
         mockMvc.perform(create(imageFileId, "https://ad.example.com", 7, "key-poor"))
                 .andExpect(status().isConflict())
@@ -295,7 +261,6 @@ class AdControllerTest {
     @Test
     @DisplayName("남이 올린 이미지의 fileId 로는 등록할 수 없다 — 404 UPLOAD_FILE_NOT_FOUND")
     void 남의_이미지는_거부() throws Exception {
-        credit(advertiser, RICH);
         User other = insertUser("남", null);
         String othersFile = insertUploadFile(other, UploadFile.Purpose.AD);
 
@@ -307,7 +272,6 @@ class AdControllerTest {
     @Test
     @DisplayName("배너 용도로 올리지 않은 이미지는 400 — 비율 검증을 건너뛴 파일이다")
     void 다른_용도_이미지는_거부() throws Exception {
-        credit(advertiser, RICH);
         String postImage = insertUploadFile(advertiser, UploadFile.Purpose.POST);
 
         mockMvc.perform(create(postImage, "https://ad.example.com", 7, "key-purpose"))
@@ -318,7 +282,6 @@ class AdControllerTest {
     @Test
     @DisplayName("http 링크는 400 — 배너는 클릭을 유도하는 자리라 피싱 대상이 된다")
     void http_링크는_거부() throws Exception {
-        credit(advertiser, RICH);
 
         mockMvc.perform(create(imageFileId, "http://ad.example.com", 7, "key-http"))
                 .andExpect(status().isBadRequest())
@@ -328,7 +291,6 @@ class AdControllerTest {
     @Test
     @DisplayName("최대 기간을 넘기면 400 — 한 명이 몇 년치를 선점하지 못한다")
     void 기간_상한() throws Exception {
-        credit(advertiser, RICH);
 
         mockMvc.perform(create(imageFileId, "https://ad.example.com", 365, "key-long"))
                 .andExpect(status().isBadRequest())
@@ -338,15 +300,14 @@ class AdControllerTest {
     @Test
     @DisplayName("같은 Idempotency-Key 재요청은 광고를 하나만 만든다 — 게재료는 되돌릴 수 없다")
     void 멱등_재요청() throws Exception {
-        credit(advertiser, RICH);
         String body = signedBody(imageFileId, "https://ad.example.com", 7);
 
         String first = jsonValue(perform(body, "key-same"), "adId");
         String second = jsonValue(perform(body, "key-same"), "adId");
 
         assertThat(second).isEqualTo(first);
-        // 소각도 한 번뿐이다. 재요청은 저장된 응답을 돌려줄 뿐 서비스를 다시 부르지 않는다.
-        assertThat(relayer.calls()).hasSize(1);
+        // 신청도 하나뿐이다 — 재요청은 저장된 응답을 돌려줄 뿐 서비스를 다시 부르지 않는다. 둘이면 자리와 홀드를 두 배로 잡는다.
+        assertThat(bannersOf(advertiser)).hasSize(1);
     }
 
     @Test
@@ -390,6 +351,76 @@ class AdControllerTest {
     @DisplayName("로그인하지 않으면 401")
     void 미인증은_401() throws Exception {
         mockMvc.perform(get(URL + "/active")).andExpect(status().isUnauthorized());
+    }
+
+    // ── 가용잔액 홀드 (ANT-TOKEN-11) ──────────────────────────
+
+    @Test
+    @DisplayName("구독 PENDING 이 광고 가용잔액을 묶는다 — 전송 중인 구독료로 광고를 낼 수 없다")
+    void 구독_PENDING_이_광고_잔액을_묶는다() throws Exception {
+        // 체인 잔액 30,000 인데 확정 대기 구독이 25,000 을 잡고 있다 → 가용 5,000 < 게재료 7,000
+        User publisher = insertUser("예측가", null);
+        insertPendingSubscription(advertiser, publisher, BigInteger.valueOf(25_000));
+
+        mockMvc.perform(create(imageFileId, "https://ad.example.com", 7, "key-held"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("INSUFFICIENT_BALANCE"));
+        assertThat(bannersOf(advertiser)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("신청하면 그 게재료만큼 가용잔액이 묶이고, 취소하면 풀린다")
+    void 신청은_홀드_취소는_해제() throws Exception {
+        relayer.withBalance(BigInteger.valueOf(7_000));
+
+        String adId = jsonValue(
+                mockMvc.perform(create(imageFileId, "https://ad.example.com", 7, "key-hold")).andReturn(), "adId");
+        assertThat(availableBalance.of(advertiser)).isEqualTo(BigInteger.ZERO);
+
+        mockMvc.perform(delete(URL + "/" + adId)
+                        .with(user(String.valueOf(advertiser.getId()))).with(csrf()))
+                .andExpect(status().isNoContent());
+
+        assertThat(availableBalance.of(advertiser)).isEqualTo(BigInteger.valueOf(7_000));
+        assertThat(bannersOf(advertiser)).singleElement()
+                .extracting(AdBanner::getStatus).isEqualTo(AdBanner.Status.REJECTED);
+        // 돈은 한 푼도 안 나갔다
+        assertThat(relayer.calls()).isEmpty();
+    }
+
+    // ── 신청 취소 (ANT-ADMIN-03) ──────────────────────────────
+
+    @Test
+    @DisplayName("남의 신청은 취소할 수 없다 — 403 AD_FORBIDDEN")
+    void 남의_신청_취소는_403() throws Exception {
+        AdBanner mine = insertBanner(AdBanner.Status.PENDING, Instant.now(), Instant.now().plus(7, ChronoUnit.DAYS));
+        User other = insertUser("남", null);
+
+        mockMvc.perform(delete(URL + "/" + mine.getId())
+                        .with(user(String.valueOf(other.getId()))).with(csrf()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("AD_FORBIDDEN"));
+    }
+
+    @Test
+    @DisplayName("이미 처리된 신청은 취소할 수 없다 — 409 AD_ALREADY_HANDLED")
+    void 처리된_신청_취소는_409() throws Exception {
+        AdBanner rejected =
+                insertBanner(AdBanner.Status.REJECTED, Instant.now(), Instant.now().plus(7, ChronoUnit.DAYS));
+
+        mockMvc.perform(delete(URL + "/" + rejected.getId())
+                        .with(user(String.valueOf(advertiser.getId()))).with(csrf()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("AD_ALREADY_HANDLED"));
+    }
+
+    @Test
+    @DisplayName("없는 신청 취소는 404 AD_NOT_FOUND")
+    void 없는_신청_취소는_404() throws Exception {
+        mockMvc.perform(delete(URL + "/999999")
+                        .with(user(String.valueOf(advertiser.getId()))).with(csrf()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("AD_NOT_FOUND"));
     }
 
     // ── 픽스처 ──────────────────────────────────────────────
@@ -465,10 +496,20 @@ class AdControllerTest {
                             BigInteger.valueOf(7));
             if (status == AdBanner.Status.ACTIVE) {
                 banner.activate("0x" + "1".repeat(64));
+            } else if (status == AdBanner.Status.REJECTED) {
+                banner.reject();
             }
             em.persist(banner);
             return banner;
         });
+    }
+
+    /** 확정 대기 구독. 가용잔액이 이 fee 를 뺀다. */
+    private void insertPendingSubscription(User subscriber, User publisher, BigInteger fee) {
+        tx.executeWithoutResult(s -> em.persist(Subscription.request(
+                em.getReference(User.class, subscriber.getId()),
+                em.getReference(User.class, publisher.getId()),
+                fee)));
     }
 
     private List<AdBanner> bannersOf(User owner) {
@@ -490,17 +531,6 @@ class AdControllerTest {
         tx.executeWithoutResult(s -> em.createNativeQuery("UPDATE ad_banners SET created_at = ? WHERE id = ?")
                 .setParameter(1, java.sql.Timestamp.from(createdAt))
                 .setParameter(2, banner.getId())
-                .executeUpdate());
-    }
-
-    /** 원장은 append-only 라 SUM(delta) 가 잔액이다. 엔티티에 팩터리가 없어 네이티브로 넣는다. */
-    private void credit(User user, BigInteger amount) {
-        tx.executeWithoutResult(s -> em.createNativeQuery("""
-                        INSERT INTO token_ledger (user_id, delta, reason, created_at)
-                        VALUES (?, ?, 'TEST', CURRENT_TIMESTAMP)
-                        """)
-                .setParameter(1, user.getId())
-                .setParameter(2, amount)
                 .executeUpdate());
     }
 

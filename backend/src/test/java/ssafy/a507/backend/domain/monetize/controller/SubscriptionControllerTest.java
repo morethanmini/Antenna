@@ -45,6 +45,7 @@ import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.chain.entity.Operation;
 import ssafy.a507.backend.domain.chain.repository.OperationRepository;
 import ssafy.a507.backend.domain.chain.service.FakeTokenRelayer;
+import ssafy.a507.backend.domain.monetize.entity.AdBanner;
 import ssafy.a507.backend.domain.monetize.entity.Subscription;
 import ssafy.a507.backend.domain.monetize.repository.SubscriptionRepository;
 import ssafy.a507.backend.support.TestNonceStoreConfig;
@@ -94,6 +95,8 @@ class SubscriptionControllerTest {
     void setUp() {
         stubRedis();
         relayer.reset();
+        // 잔액은 체인에서 읽는다(가용잔액, ANT-TOKEN-11). 넉넉히 심고, 모자란 경우만 테스트가 덮어쓴다.
+        relayer.withBalance(RICH);
         credentials = Credentials.create(SUBSCRIBER_KEY);
         subscriber = insertUser("구독자", credentials.getAddress());
         publisher = insertUser("예측가", "0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
@@ -108,6 +111,7 @@ class SubscriptionControllerTest {
                     "DELETE FROM reports WHERE user_id IN (:ids)",
                     "DELETE FROM subscriptions WHERE subscriber_id IN (:ids) OR publisher_id IN (:ids)",
                     "DELETE FROM publisher_fees WHERE publisher_id IN (:ids)",
+                    "DELETE FROM ad_banners WHERE advertiser_id IN (:ids)",
                     "DELETE FROM token_ledger WHERE user_id IN (:ids)",
                     "DELETE FROM users WHERE id IN (:ids)")) {
                 em.createNativeQuery(delete).setParameter("ids", userIds).executeUpdate();
@@ -121,7 +125,6 @@ class SubscriptionControllerTest {
     @Test
     @DisplayName("구독하면 202 와 operationId · subscriptionId 를 받고 폴링 창구에서 PENDING 으로 보인다")
     void 구독_성공() throws Exception {
-        credit(subscriber, RICH);
 
         MvcResult result = mockMvc.perform(subscribe("key-1"))
                 .andExpect(status().isAccepted())
@@ -141,7 +144,6 @@ class SubscriptionControllerTest {
     @Test
     @DisplayName("구독하면 subscribe tx 를 보낸다 — 구독자에서 예측가로, 70:30 분배는 컨트랙트가 한다")
     void 구독하면_subscribe_tx_를_보낸다() throws Exception {
-        credit(subscriber, RICH);
 
         String operationId = jsonValue(
                 mockMvc.perform(subscribe("key-tx")).andExpect(status().isAccepted()).andReturn(),
@@ -161,7 +163,6 @@ class SubscriptionControllerTest {
     @Test
     @DisplayName("접수한 구독은 결제 시점 가격을 박제한다 — 채널이 값을 올려도 이 구독은 그대로다")
     void 결제_시점_가격을_박제한다() throws Exception {
-        credit(subscriber, RICH);
         mockMvc.perform(subscribe("key-fee")).andExpect(status().isAccepted());
 
         assertThat(mine()).singleElement().satisfies(s -> {
@@ -179,7 +180,6 @@ class SubscriptionControllerTest {
     @Test
     @DisplayName("자기 채널은 구독할 수 없다 — 409 SELF_SUBSCRIBE")
     void 자기_구독은_409() throws Exception {
-        credit(subscriber, RICH);
         setFee(subscriber, FEE, Instant.now().minus(1, ChronoUnit.DAYS));
 
         mockMvc.perform(post("/api/v1/channels/{userId}/subscriptions", subscriber.getId())
@@ -196,7 +196,6 @@ class SubscriptionControllerTest {
     @Test
     @DisplayName("이미 구독 중이면 409 — PENDING 도 막는다. 확정 전에 또 누르면 두 번 결제된다")
     void 중복_구독은_409() throws Exception {
-        credit(subscriber, RICH);
         mockMvc.perform(subscribe("key-first")).andExpect(status().isAccepted());
 
         mockMvc.perform(subscribe("key-second"))
@@ -210,7 +209,6 @@ class SubscriptionControllerTest {
     @Test
     @DisplayName("만료된 구독은 재구독을 막지 않는다 — 새 행이 생긴다")
     void 만료_뒤에는_재구독할_수_있다() throws Exception {
-        credit(subscriber, RICH);
         expiredSubscription();
 
         mockMvc.perform(subscribe("key-again")).andExpect(status().isAccepted());
@@ -221,7 +219,6 @@ class SubscriptionControllerTest {
     @Test
     @DisplayName("구독료를 안 정한 채널은 409 FEE_NOT_SET — 0 원으로 열어 주지 않는다")
     void 구독료_미설정은_409() throws Exception {
-        credit(subscriber, RICH);
         User noFee = insertUser("가격없는채널", "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC");
 
         mockMvc.perform(post("/api/v1/channels/{userId}/subscriptions", noFee.getId())
@@ -234,9 +231,9 @@ class SubscriptionControllerTest {
     }
 
     @Test
-    @DisplayName("원장 잔액이 모자라면 409 — 구독도 작업도 만들지 않는다")
+    @DisplayName("가용잔액이 모자라면 409 — 기준은 원장이 아니라 체인이다(ANT-TOKEN-11). 구독도 작업도 만들지 않는다")
     void 잔액_부족은_409() throws Exception {
-        credit(subscriber, BigInteger.ONE);
+        relayer.withBalance(BigInteger.ONE);
 
         mockMvc.perform(subscribe("key-poor"))
                 .andExpect(status().isConflict())
@@ -249,7 +246,6 @@ class SubscriptionControllerTest {
     @Test
     @DisplayName("없는 채널은 404 USER_NOT_FOUND")
     void 없는_채널은_404() throws Exception {
-        credit(subscriber, RICH);
 
         mockMvc.perform(post("/api/v1/channels/{userId}/subscriptions", 999_999L)
                         .with(user(String.valueOf(subscriber.getId()))).with(csrf())
@@ -260,12 +256,27 @@ class SubscriptionControllerTest {
                 .andExpect(jsonPath("$.code").value("USER_NOT_FOUND"));
     }
 
+    // ── 가용잔액 홀드 (ANT-TOKEN-11) ──────────────────────────
+
+    @Test
+    @DisplayName("광고 심사 대기가 구독 가용잔액을 묶는다 — 심사 중인 게재료로 구독할 수 없다")
+    void 광고_심사_대기가_구독_잔액을_묶는다() throws Exception {
+        // 체인 잔액 50,000 인데 심사 대기 광고가 45,000 을 잡고 있다 → 가용 5,000 < 구독료 10,000
+        insertPendingAd(subscriber, BigInteger.valueOf(45_000));
+
+        mockMvc.perform(subscribe("key-held"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("INSUFFICIENT_BALANCE"));
+
+        assertThat(mine()).isEmpty();
+        assertThat(relayer.calls()).isEmpty();
+    }
+
     // ── 체인 실패 · 서명 ─────────────────────────────────
 
     @Test
     @DisplayName("체인 잔액이 모자라면 409 — 구독을 EXPIRED 로 닫아 재시도를 막지 않는다")
     void 체인_잔액이_모자라면_구독을_닫는다() throws Exception {
-        credit(subscriber, RICH);
         relayer.thenInsufficientBalance();
 
         mockMvc.perform(subscribe("key-chain-poor"))
@@ -281,7 +292,6 @@ class SubscriptionControllerTest {
     @Test
     @DisplayName("체인이 꺼져 있으면 503 — 구독도 작업도 만들지 않고 nonce 도 태우지 않는다")
     void 체인이_꺼져_있으면_503() throws Exception {
-        credit(subscriber, RICH);
         relayer.disable();
 
         mockMvc.perform(subscribe("key-off"))
@@ -296,7 +306,6 @@ class SubscriptionControllerTest {
     @Test
     @DisplayName("서명이 채널이 정한 값과 다르면 거절한다 — 화면에서 본 가격과 결제되는 가격을 서명으로 묶는다")
     void 다른_fee_로_서명하면_거절() throws Exception {
-        credit(subscriber, RICH);
 
         mockMvc.perform(post("/api/v1/channels/{userId}/subscriptions", publisher.getId())
                         .with(user(String.valueOf(subscriber.getId()))).with(csrf())
@@ -312,7 +321,6 @@ class SubscriptionControllerTest {
     @Test
     @DisplayName("같은 멱등키로 같은 본문을 다시 보내면 접수를 되풀이하지 않고 같은 202 를 준다")
     void 멱등키가_같으면_한_번만_접수한다() throws Exception {
-        credit(subscriber, RICH);
         // 본문을 다시 만들면 nonce 가 달라져 서명이 바뀐다 — 그건 "같은 키·다른 본문" 이라 409 다.
         // 재시도가 실제로 보내는 것은 같은 본문이므로 여기서도 같은 것을 보낸다.
         String body = signedBody(publisher.getId(), FEE);
@@ -333,7 +341,6 @@ class SubscriptionControllerTest {
     @Test
     @DisplayName("같은 키에 다른 본문이면 409 IDEMPOTENCY_KEY_REUSED — 키를 돌려 쓰며 내용만 바꾸는 것을 막는다")
     void 같은_키_다른_본문은_409() throws Exception {
-        credit(subscriber, RICH);
 
         mockMvc.perform(send(signedBody(publisher.getId(), FEE), "key-reuse"))
                 .andExpect(status().isAccepted());
@@ -349,7 +356,6 @@ class SubscriptionControllerTest {
     @Test
     @DisplayName("PENDING 동안은 근거가 안 열린다 (AC) — 결제가 체인에서 확정돼야 구독이다")
     void PENDING_동안은_잠금이_유지된다() throws Exception {
-        credit(subscriber, RICH);
         long reportId = insertLockedReport();
 
         mockMvc.perform(subscribe("key-gate-pending")).andExpect(status().isAccepted());
@@ -367,7 +373,6 @@ class SubscriptionControllerTest {
     @Test
     @DisplayName("인덱서가 ACTIVE 로 올리면 잠금이 풀린다 — 구독의 값이 실제로 생기는 지점")
     void 확정되면_근거가_열린다() throws Exception {
-        credit(subscriber, RICH);
         long reportId = insertLockedReport();
         mockMvc.perform(subscribe("key-gate-active")).andExpect(status().isAccepted());
 
@@ -385,7 +390,7 @@ class SubscriptionControllerTest {
 
     // ── fixtures ─────────────────────────────────────────
 
-    /** 구독자 전용 리포트. 미구독자에게는 3줄 미리보기만 간다 */
+    /** 구독자 전용 리포트. 미구독자에게는 본문이 가지 않는다 */
     private long insertLockedReport() {
         return tx.execute(s -> {
             em.createNativeQuery("""
@@ -465,14 +470,16 @@ class SubscriptionControllerTest {
                 .executeUpdate());
     }
 
-    private void credit(User user, BigInteger amount) {
-        tx.executeWithoutResult(s -> em.createNativeQuery("""
-                        INSERT INTO token_ledger (user_id, delta, reason, created_at)
-                        VALUES (?, ?, 'TEST', CURRENT_TIMESTAMP)
-                        """)
-                .setParameter(1, user.getId())
-                .setParameter(2, amount)
-                .executeUpdate());
+    /** 심사 대기 광고. 가용잔액이 이 게재료를 뺀다(ANT-ADMIN-03 승인제에서는 승인 전까지 돈이 안 나가고 묶인다). */
+    private void insertPendingAd(User advertiser, BigInteger price) {
+        Instant now = Instant.now();
+        tx.executeWithoutResult(s -> em.persist(AdBanner.request(
+                em.getReference(User.class, advertiser.getId()),
+                "/api/v1/uploads/x",
+                "https://ad.example.com",
+                now,
+                now.plus(7, ChronoUnit.DAYS),
+                price)));
     }
 
     private User insertUser(String nickname, String wallet) {

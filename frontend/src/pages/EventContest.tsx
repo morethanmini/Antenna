@@ -12,6 +12,7 @@
 
    대회 정의(날짜·종목·글귀)는 event/contest.ts 한 곳에 있다. 이 파일에는
    날짜를 적지 않는다 — 일정이 밀릴 때 고칠 곳이 둘이 되면 하나를 빠뜨린다. */
+import { Navigate } from 'react-router-dom'
 import { fetchContestEvent, type EventHome } from '../api/events'
 import { useAsync } from '../api/useAsync'
 import EventLeaderboard from '../components/event/EventLeaderboard'
@@ -127,10 +128,20 @@ export default function EventContest() {
      사용자 눈에는 폼이 비워진 것으로만 보여 등록이 됐는지 알 수 없다(2026-09-16 확인).
      그래서 data 가드 밖에 둔다. */
 
+  /* 판정이 끝난 회차는 이 화면이 아니라 랭킹 탭이 답이다(2026-09-17 결정, ANT-FE-EVENT-LIFECYCLE).
+     여기 남겨 두면 끝난 대회의 종목 카드가 계속 보인다 — 링크로 바로 들어온 사람에게 순위를 보여 준다.
+     훅 뒤에 둔다. 위 useAsync 보다 앞에서 return 하면 훅 순서가 렌더마다 달라진다. */
+  if (data?.phase === 'SETTLED') return <Navigate to="/rankings?tab=event" replace />
+
+  /* 본 대회 회차가 없다 — 아직 안 만들어졌거나 점검용 회차만 있다(그건 사용자 화면에 안 잡힌다,
+     api/events.ts fetchContestSummary). 머리(그림)까지 내린다: 회차가 없는데 하드코딩 일정으로
+     "등록 시작 9/18 13:10" 이 떠 있으면 거짓이다. */
+  const noEvent = !loading && !error && !data
+
   return (
     <main className="main">
       <div className="main-inner ev" aria-labelledby="ev-h">
-        <Hero phase={phase} />
+        {!noEvent && <Hero phase={phase} />}
 
         {loading && (
           /* 자리를 미리 잡는다. 카드가 없다가 한 번에 나타나면 아래가 통째로 밀린다 */
@@ -152,10 +163,10 @@ export default function EventContest() {
           </section>
         )}
 
-        {/* 회차가 아직 안 만들어졌을 수도 있다. 그때 화면이 깨지지 않게 한 줄로 말한다 */}
-        {!loading && !error && !data && (
-          <section className="card ev-block">
-            <p className="ev-state is-quiet">대회를 준비하고 있어요. 곧 열립니다.</p>
+        {noEvent && (
+          <section className="card ev-block" aria-labelledby="ev-h">
+            <h1 id="ev-h" className="ev-state">지금 진행 중인 대회가 없어요</h1>
+            <p className="ev-state is-quiet">대회가 열리면 인사이트 홈 배너로 알려 드릴게요.</p>
           </section>
         )}
 
