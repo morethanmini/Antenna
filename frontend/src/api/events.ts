@@ -318,6 +318,37 @@ export function fetchLeaderboard(eventId: number, cursor?: string | null, size?:
   })
 }
 
+// ── 참가자 ──────────────────────────────────────────────
+
+export type EventParticipant = {
+  userId: number
+  nickname: string | null
+  /** 안 올렸거나 파일이 사라졌으면 null — 화면이 기본 그림을 깐다 */
+  avatarUrl: string | null
+  /** 건 종목 이름, 회차의 종목 순서대로. 타일에 손을 얹으면 뜨는 말풍선의 재료다 */
+  stocks: string[]
+  /** 순위 자격(stockCount >= minStocks). 최소 종목 수는 등록을 막지 않고 자격으로만 걸린다 */
+  qualified: boolean
+}
+
+export type EventParticipants = {
+  /** 참가자 수. 목록을 잘라 내리게 되면 여기만 전체 수로 남는다 */
+  total: number
+  items: EventParticipant[]
+}
+
+/**
+ * 참가자. **순위와 다르다** — 이쪽은 접수 중에도 온다.
+ *
+ * "누가 참가했나" 는 승패와 무관하게 이미 정해진 사실이라 미리 보여줘도 잘못 읽을 것이 없다.
+ * 순위를 미리 안 내리는 이유(승패를 모르는데 줄을 세우면 현재 등수로 읽힌다)가 여기엔 없다.
+ *
+ * 사람별 배팅액은 오지 않는다. 남이 얼마를 걸었는지는 종목 카드의 풀로 집계만 보인다.
+ */
+export function fetchParticipants(eventId: number) {
+  return api.get<EventParticipants>(`/events/${eventId}/participants`)
+}
+
 // ── 등록 ────────────────────────────────────────────────
 
 export type EventEntryItem = {

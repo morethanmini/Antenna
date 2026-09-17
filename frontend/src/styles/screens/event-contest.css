@@ -247,31 +247,87 @@
 }
 
 /* ── 참가자 ───────────────────────────────────────────── */
+/* 가로줄이다(2026-09-17) — 사진 왼쪽, 이름 오른쪽. 세로 타일이던 것을 눕혔다.
+
+   **격자가 아니라 흘려 담는다.** 칸 폭을 정해 두면 짧은 닉네임 뒤에 빈 자리가 길게
+   남는다. flex-wrap 으로 두면 알약이 각자 글자만큼만 차지하고 줄이 차면 다음 줄로
+   넘어간다 — 대신 오른쪽 끝이 들쭉날쭉해진다. 참가자 목록은 세로로 훑는 표가
+   아니라 이름을 찾는 자리라, 줄 맞춤보다 이름이 붙어 있는 편이 낫다. */
 .event-contest-page .ev-tiles{
   list-style:none;margin:0;padding:0;
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;
+  display:flex;flex-wrap:wrap;gap:7px;
 }
+/* 긴 닉네임 하나가 줄을 통째로 밀지 않게 한 칸의 상한을 둔다 — 넘치는 글자는
+   .ev-tile-name 의 말줄임이 접는다 */
+.event-contest-page .ev-tiles > li{max-width:100%}
+/* 알약 모양이다. 사진이 원이라 왼쪽 끝이 이미 둥근데 칸만 각지면 그 사이에
+   어정쩡한 틈이 남는다 — 999px 로 끝까지 깎아 사진 곡률과 맞춘다. */
 .event-contest-page .ev-tile{
-  display:grid;justify-items:center;gap:7px;
-  padding:14px 8px;border:1px solid var(--rule);border-radius:12px;
-  background:var(--surface);text-decoration:none;
-  transition:border-color .14s,background .14s,transform .14s;
+  display:flex;align-items:center;gap:9px;min-width:0;
+  padding:4px 14px 4px 4px;border:1px solid var(--rule);border-radius:999px;
+  background:var(--surface);
+  transition:border-color .14s;
 }
-/* 손을 얹으면 색만 바뀌던 것을 살짝 띄운다 — 누를 수 있는 것이라는 표시다.
-   전체 닉네임은 title 이 띄운다(EventContest.tsx) */
-.event-contest-page .ev-tile:hover{
-  border-color:#cdc9f7;background:var(--brand-softer);transform:translateY(-2px);
-}
-.event-contest-page .ev-tile:hover .ev-tile-name{color:var(--brand-ink)}
-@media (prefers-reduced-motion:reduce){
-  .event-contest-page .ev-tile:hover{transform:none}
-}
+/* 띄우지도 색을 바꾸지도 않는다(2026-09-17). 참가자 채널로 보내던 링크를 떼면서
+   누를 데가 없어졌는데, 손을 얹을 때 카드처럼 반응하면 눌러 보고 아무 일도
+   일어나지 않는 자리가 된다. 대신 말풍선이 뜬다. */
+.event-contest-page .ev-tile{position:relative}
+.event-contest-page .ev-tile:hover{border-color:#cdc9f7}
 .event-contest-page .ev-tile-face{
-  width:44px;height:44px;border-radius:50%;object-fit:cover;background:var(--brand-soft);
+  width:30px;height:30px;flex:none;
+  border-radius:50%;object-fit:cover;background:var(--brand-soft);
 }
+/* min-width:0 이 있어야 긴 닉네임이 말줄임으로 접힌다 — flex 칸은 기본이
+   min-width:auto 라 내용만큼 벌어지고, 그러면 칸이 아니라 줄이 밀린다 */
 .event-contest-page .ev-tile-name{
-  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   color:var(--ink);font-size:var(--fs-md);font-weight:var(--fw-bold);
+}
+/* 눈에 안 보이지만 낭독기는 읽는 줄. position 을 absolute 로 두되 left/top 을 0 으로
+   박는다 — 자리를 안 잡아 두면 가장 가까운 배치 조상 밖(문서 오른쪽 끝)에 놓여
+   가로 스크롤이 생긴다. 홈에서 그 버그를 한 번 잡았다(.hm-sr). */
+.event-contest-page .ev-sr{
+  position:absolute;left:0;top:0;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
+}
+
+/* 건 종목 말풍선. 지도(.mm-tip)·완료 버튼(.ev-card-tip)과 같은 판이다 —
+   판 모양은 아래 공용 규칙이 한 벌로 들고 있다. 여기서는 자리만 정한다.
+   위로 펴고 타일 가운데에 세운다. 타일이 좁아(96px) 오른쪽에 붙이면 말풍선이
+   칸 밖으로 크게 삐져나온다. */
+.event-contest-page .ev-tile-tip{
+  position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%);
+  z-index:5;display:none;width:172px;
+}
+.event-contest-page .ev-tile:hover .ev-tile-tip{display:block}
+/* 옆 타일이 DOM 상 뒤라 그냥 두면 말풍선을 덮는다. 띄운 타일만 올린다 */
+.event-contest-page .ev-tiles > li{position:relative}
+.event-contest-page .ev-tiles > li:has(.ev-tile:hover){z-index:5}
+
+.event-contest-page .ev-tile-tip-name{
+  display:block;margin:0 0 8px;padding-bottom:8px;border-bottom:1px solid #4d5672;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:#fff;font-size:var(--fs-md);font-weight:var(--fw-heavy);letter-spacing:-.02em;
+}
+.event-contest-page .ev-tile-tip-rows{display:grid;gap:4px}
+.event-contest-page .ev-tile-tip-rows > span{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:#e9ebf2;font-size:var(--fs-md);font-weight:var(--fw-bold);
+}
+/* 자격을 못 갖춘 사람에게만 붙는 줄. 종목 목록과 섞이지 않게 선 하나로 끊는다 */
+.event-contest-page .ev-tile-tip-note{
+  display:block;margin:8px 0 0;padding-top:7px;border-top:1px solid #4d5672;
+  color:#98a0b4;font-size:var(--fs-xs);font-weight:var(--fw-bold);
+}
+
+/* 내 참가 내역 · 참가자를 두 칸으로. 둘 다 짧아서 세로로 쌓으면 종목 카드 열 장
+   아래에 빈 칸 두 개가 길게 늘어진다. 카드가 두 열로 접히는 폭(680px)보다 먼저
+   한 줄로 돌린다 — 그 아래에서는 두 칸이 각각 너무 좁다. */
+.event-contest-page .ev-duo{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start;
+}
+@media (max-width:900px){
+  .event-contest-page .ev-duo{grid-template-columns:1fr}
 }
 
 /* ── 좁은 화면 ────────────────────────────────────────── */
@@ -403,7 +459,14 @@
    쏠림 막대를 가린다. 오른쪽 끝을 버튼에 맞춰 카드 밖으로 안 나가게 한다. */
 .event-contest-page .ev-card-tip{
   position:absolute;bottom:calc(100% + 9px);right:0;z-index:5;
-  display:none;width:186px;padding:10px 12px 11px;box-sizing:border-box;
+  display:none;width:186px;
+}
+
+/* 말풍선 판 — 완료 버튼과 참가자 타일이 같은 판을 쓴다. 자리는 각자 정하고
+   모양만 여기 한 벌로 둔다. 둘이 따로 적혀 있으면 한쪽만 고쳐져 어긋난다. */
+.event-contest-page .ev-card-tip,
+.event-contest-page .ev-tile-tip{
+  padding:10px 12px 11px;box-sizing:border-box;
   border:1px solid #4d5672;border-radius:10px;background:#333a4d;
   box-shadow:0 12px 26px rgb(8 10 18 / .5);
   text-align:left;white-space:normal;

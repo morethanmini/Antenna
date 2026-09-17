@@ -15,8 +15,8 @@
 import { Navigate } from 'react-router-dom'
 import { fetchContestEvent, type EventHome } from '../api/events'
 import { useAsync } from '../api/useAsync'
-import EventLeaderboard from '../components/event/EventLeaderboard'
 import EventMyEntries from '../components/event/EventMyEntries'
+import EventParticipants from '../components/event/EventParticipants'
 import EventStocks from '../components/event/EventStocks'
 import { BANNER_BASE, CONTEST, HERO, RULES, phaseAt, stamp } from '../event/contest'
 import '../styles/screens/event-contest.css'
@@ -184,8 +184,19 @@ export default function EventContest() {
                 예측을 쓰는 화면을 한 벌로 둔 것이 핵심이다. 묶음 폼은 목표가와 방향만
                 받을 수 있어서, 대회 예측에는 근거 포인트·내 판단이 빠진 채 남았다.
                 C-01 을 그대로 쓰면 대회 예측도 평소 예측과 한 글자도 다르지 않다. */}
-            <EventMyEntries eventId={data.eventId} />
-            <EventLeaderboard eventId={data.eventId} />
+            {/* 순위판(EventLeaderboard)을 뺐다(2026-09-17). 이 화면이 답하는 것은
+                "무엇에 걸까" 이고, 순위를 보러 온 사람은 랭킹의 이벤트 탭
+                (/rankings?tab=event)으로 간다 — 거기가 전체를 다 보여 주는 자리다.
+                그 자리를 참가자 타일이 받는다. 순위와 달리 접수 중에도 채워진다.
+                컴포넌트는 지우지 않고 남겨 두었다 — 되돌리려면 import 한 줄과 여기
+                한 줄이면 된다.
+
+                두 칸으로 나눈 것은 둘 다 짧아서다. 세로로 쌓으면 종목 카드 열 장 아래에
+                빈 칸 두 개가 길게 늘어진다. 좁아지면 아래에서 한 줄로 돌아간다. */}
+            <div className="ev-duo">
+              <EventMyEntries eventId={data.eventId} />
+              <EventParticipants eventId={data.eventId} />
+            </div>
           </>
         )}
       </div>
