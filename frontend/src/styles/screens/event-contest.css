@@ -322,57 +322,6 @@
 .event-contest-page .ev-card-result.is-down{color:var(--down)}
 .event-contest-page .ev-card-result.is-tie{color:var(--faint)}
 
-/* ── 등록 칸 ─────────────────────────────────────────── */
-.event-contest-page .ev-entry-rows{list-style:none;margin:0;padding:0;display:grid;gap:8px}
-.event-contest-page .ev-entry-rows > li{
-  border:1px solid var(--rule);border-radius:10px;padding:10px 12px;background:var(--surface);
-}
-/* 고른 줄만 눈에 띄게 — 열 줄이 다 같은 무게면 무엇을 골랐는지 세어야 한다 */
-.event-contest-page .ev-entry-rows > li.is-on{border-color:var(--brand);background:var(--brand-softer)}
-.event-contest-page .ev-entry-rows > li.is-done{opacity:.55}
-.event-contest-page .ev-entry-head{
-  display:flex;align-items:baseline;gap:8px;font-size:var(--fs-md);
-}
-.event-contest-page .ev-entry-head b{color:var(--ink);font-weight:var(--fw-bold)}
-.event-contest-page .ev-entry-head span{color:var(--faint);font-size:var(--fs-sm)}
-.event-contest-page .ev-entry-head em{
-  margin-left:auto;color:var(--brand);font-style:normal;font-size:var(--fs-xs);font-weight:var(--fw-bold);
-}
-.event-contest-page .ev-entry-dir{display:flex;gap:6px;margin-top:8px}
-.event-contest-page .ev-entry-dir button{
-  flex:0 0 auto;padding:5px 14px;border:1px solid var(--rule);border-radius:999px;
-  background:var(--surface);color:var(--faint);font-size:var(--fs-sm);cursor:pointer;
-}
-.event-contest-page .ev-entry-dir button.is-on{
-  border-color:var(--brand);background:var(--brand);color:#fff;font-weight:var(--fw-bold);
-}
-.event-contest-page .ev-entry-fields{
-  margin-top:9px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
-}
-.event-contest-page .ev-entry-fields label{display:grid;gap:3px;font-size:var(--fs-xs);color:var(--faint)}
-.event-contest-page .ev-entry-fields input{
-  padding:6px 9px;border:1px solid var(--rule);border-radius:7px;
-  background:var(--surface);color:var(--ink);font-size:var(--fs-sm);
-}
-.event-contest-page .ev-entry-note{grid-column:1 / -1}
-/* 오류는 --danger 다. --down 은 한국식 하락색(파랑)이라 "틀렸다" 로 안 읽힌다 */
-.event-contest-page .ev-entry-bad{
-  grid-column:1 / -1;margin:0;color:var(--danger);font-size:var(--fs-xs);
-}
-.event-contest-page .ev-entry-foot{
-  margin-top:12px;padding-top:11px;border-top:1px solid var(--rule);
-  display:grid;gap:7px;justify-items:start;
-}
-.event-contest-page .ev-entry-foot > p:first-child{
-  margin:0;color:var(--ink);font-size:var(--fs-md);font-weight:var(--fw-bold);
-}
-.event-contest-page .ev-entry-foot button{
-  padding:9px 20px;border:0;border-radius:9px;
-  background:var(--brand);color:#fff;font-size:var(--fs-md);font-weight:var(--fw-bold);cursor:pointer;
-}
-.event-contest-page .ev-entry-foot button:disabled{background:var(--rule);color:var(--faint);cursor:default}
-.event-contest-page .ev-entry-hint{margin:0;color:var(--faint);font-size:var(--fs-xs)}
-
 /* ── 내 참가 내역 · 순위 ──────────────────────────────── */
 .event-contest-page .ev-me-rows,
 .event-contest-page .ev-rank-rows{list-style:none;margin:0;padding:0;display:grid;gap:6px}
@@ -394,9 +343,6 @@
 }
 .event-contest-page .ev-rank-rows > li.is-me{border-color:var(--brand);background:var(--brand-softer)}
 
-@media (max-width:680px){
-  .event-contest-page .ev-entry-fields{grid-template-columns:1fr}
-}
 
 /* ── 카드가 등록 입구가 되면서 (2026-09-18) ────────────────
    카드 전체가 링크다. 누를 수 있다는 것이 보여야 해서 커서·hover 를 준다. */
