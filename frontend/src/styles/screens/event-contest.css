@@ -141,6 +141,11 @@
 }
 /* ── 칸 공통 ──────────────────────────────────────────── */
 .event-contest-page .ev-block-head{margin:0 0 14px;position:relative}
+/* 제목 묶음과 진행 묶음을 양 끝으로. 종목 블록만 이렇게 쓴다 — 순위·내 참가 블록의
+   머리는 한 덩어리 그대로다(.ev-rank-all 은 절대 배치라 이 영향을 안 받는다) */
+.event-contest-page .ev-block-head.is-split{
+  display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;
+}
 /* 랭킹 이벤트 탭으로 가는 문. 제목 줄 오른쪽 끝에 세운다 — 흐름에 두면 제목과
    소개 줄 사이에 끼어 두 줄을 벌린다 */
 .event-contest-page .ev-rank-all{
@@ -152,6 +157,10 @@
   display:flex;align-items:center;gap:7px;
   margin:0 0 4px;font-size:var(--fs-2xl);font-weight:var(--fw-heavy);letter-spacing:-.02em;color:var(--ink);
 }
+/* 종목 블록만 한 단계씩 키운다 — 이 줄이 화면의 머리이고, 다른 블록 머리까지
+   같이 키우면 셋이 나란히 커져 위계가 없어진다 */
+.event-contest-page .ev-block-head.is-split h2{font-size:var(--fs-4xl)}
+.event-contest-page .ev-block-head.is-split p{font-size:var(--fs-xl)}
 .event-contest-page .ev-block-head h2 .num{
   padding:2px 8px;border-radius:999px;
   background:var(--brand-soft);color:var(--brand-ink);font-size:var(--fs-sm);font-weight:var(--fw-heavy);
@@ -422,13 +431,47 @@
 .event-contest-page .ev-card-tip-rows b.up{color:#ff6a6a}
 .event-contest-page .ev-card-tip-rows b.down{color:#6ea6ff}
 
-/* 진행 줄 — 자격까지 몇 개 남았는지. 최소 종목 수가 등록을 막지 않게 되면서
-   이 줄이 그 규칙을 말하는 유일한 자리가 됐다 */
+/* 진행 묶음 — 자격까지 몇 개 남았는지. 최소 종목 수가 등록을 막지 않게 되면서
+   이 줄이 그 규칙을 말하는 유일한 자리가 됐다.
+   회색 띠를 벗겼다(2026-09-17) — 제목 줄 안으로 들어오면서 바탕이 이미 카드다. */
+/* 여백을 아끼는 자리다 — 왼쪽 제목 묶음(22px + 15px)이 머리 줄 높이를 정하고
+   있어서, 오른쪽이 그보다 커지는 순간 카드 전체가 밀린다. 동그라미를 키울 때는
+   여기서 그만큼 빼야 높이가 유지된다 */
 .event-contest-page .ev-progress{
-  display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
-  margin:0 0 14px;padding:10px 13px;border-radius:11px;
-  background:var(--surface-2);font-size:var(--fs-md);color:var(--muted);
+  display:grid;justify-items:end;gap:6px;margin:0;
+  font-size:var(--fs-xl);color:var(--muted);text-align:right;
 }
-.event-contest-page .ev-progress b{font-size:var(--fs-lg);color:var(--ink)}
-.event-contest-page .ev-progress.is-ok{background:var(--brand-softer);color:var(--brand-ink)}
-.event-contest-page .ev-progress.is-ok b{color:var(--brand-ink)}
+/* 자격을 갖춘 뒤. 뜻은 --ok 와 같다(앵커 확정 · 구독 활성) — 브랜드 보라를 쓰면
+   "아직 할 일이 남았다" 로 읽힌다. 볼드는 이 상태에서만 준다. 못 채운 동안에도
+   굵으면 채웠을 때 달라지는 것이 없다.
+
+   --ok(#15803d) 대신 이 한 자리만 값을 따로 쓴다. 빨강을 0 까지 빼고 파랑을 올려
+   형광기와 푸른기를 얻은 값이다(초록 133 · 파랑 106). 파랑이 초록을 넘지 않게
+   두었다 — 넘어가면 하락(--down)의 파랑과 헷갈린다.
+   밝기는 --ok 와 거의 같다. 밝기로 색을 띄우면 흰 바탕에서 글자가 먼저 흐려지므로
+   채도·색상만 움직였다. 대비 4.60 으로 본문 기준 4.5:1 을 지킨다.
+   토큰으로 올리지 않은 것은 쓰는 곳이 여기뿐이어서다 — --ok 는 스무 곳 넘게 쓰므로
+   거기서 바꾸면 다 같이 바뀐다. */
+.event-contest-page .ev-progress.is-ok{color:#00856a}
+.event-contest-page .ev-progress.is-ok .ev-progress-note{font-weight:var(--fw-bold)}
+.event-contest-page .ev-progress-note{max-width:44ch}
+
+/* 자격까지의 걸음. 칸 수는 최소 종목 수라 다섯을 채우면 줄이 끝난다 */
+/* 칸 사이 여백은 잇는 점이 이미 벌려 주므로 3px 만 준다 — 열 칸이면 칸 사이가
+   열여덟 군데라, 5px 씩만 줘도 90px 가 그냥 날아간다 */
+.event-contest-page .ev-steps{
+  display:inline-flex;align-items:center;gap:3px;flex:none;
+}
+.event-contest-page .ev-step{display:block;width:38px;height:38px}
+/* 잇는 점 셋. 반복 배경이라 칸 수가 늘어도 규칙은 하나다 */
+.event-contest-page .ev-step-link{
+  --dot:#c0c0d0;
+  display:block;flex:none;width:20px;height:5px;
+  background-image:radial-gradient(circle,var(--dot) 40%,transparent 44%);
+  background-size:7px 5px;
+}
+.event-contest-page .ev-step-link.is-done{--dot:#10d088}
+/* 좁아지면 제목 아래로 내려온다. 그때는 왼쪽 맞춤이 자연스럽다 */
+@media (max-width:560px){
+  .event-contest-page .ev-progress{justify-items:start;text-align:left}
+}

@@ -14,6 +14,7 @@
    그래서 카드가 답해야 하는 것이 둘 늘었다.
      · 이 종목에 내가 걸었나            — mine
      · 지금까지 몇 개 걸었나 · 자격은    — 머리의 진행 줄 */
+import { Fragment } from 'react'
 import { Link } from 'react-router-dom'
 import type { EventHome, EventStockCard } from '../../api/events'
 import StockLogo from '../stocks/StockLogo'
@@ -152,30 +153,60 @@ export default function EventStocks({ event }: { event: EventHome }) {
   const { me, rules } = event
   const left = Math.max(0, rules.minStocks - me.stockCount)
 
+  /* 걸음 칸. 칸 수는 **대회 종목 수**다 — 열 종목이면 열 칸. 자격선(최소 종목 수)은
+     칸이 아니라 아래 문장이 말한다. 서버가 더 센 개수를 주는 경우는 없지만, 칸보다
+     많이 차면 줄이 넘치므로 종목 수에서 끊는다. */
+  const doneSteps = Math.min(me.stockCount, event.stocks.length)
+
   return (
     <section className="card ev-block" aria-labelledby="ev-stocks-h">
-      <header className="ev-block-head">
-        <h2 id="ev-stocks-h">대회 종목 {event.stocks.length}</h2>
-        {/* 기준가가 덜 찬 회차는 아직 열리지 않는다 — 서버 크론이 그걸 보고 연다 */}
-        {event.phase === 'BEFORE' && <p>기준가가 모두 정해지면 등록이 열립니다.</p>}
-        {event.phase === 'ENTRY' && (
-          <p>종목을 눌러 방향·목표가·배팅을 적습니다. 종목마다 한 번씩 겁니다.</p>
+      {/* 제목 줄과 진행 줄을 한 줄에 마주 세운다(2026-09-17). 따로 두었더니 회색 띠가
+          카드 위에 한 겹 더 앉아 한 블록이 둘로 보였다. */}
+      <header className="ev-block-head is-split">
+        <div>
+          <h2 id="ev-stocks-h">대회 종목 {event.stocks.length}</h2>
+          {/* 기준가가 덜 찬 회차는 아직 열리지 않는다 — 서버 크론이 그걸 보고 연다 */}
+          {event.phase === 'BEFORE' && <p>기준가가 모두 정해지면 등록이 열립니다.</p>}
+          {event.phase === 'ENTRY' && (
+            <p>종목을 눌러 방향·목표가·배팅을 적습니다. 종목마다 한 번씩 겁니다.</p>
+          )}
+        </div>
+
+        {/* 진행 묶음. **자격을 여기서만 말한다** — 최소 종목 수는 등록을 막지 않고
+            순위 자격으로만 걸리므로(2026-09-18), 화면이 말하지 않으면 다섯 개를 못 채운
+            사람이 참가한 줄 알고 정산까지 간다. */}
+        {event.phase !== 'BEFORE' && (
+          <div className={left === 0 ? 'ev-progress is-ok' : 'ev-progress'}>
+            {/* 걸음 칸. 아래 문장과 **같은 것을 말한다** — 문장은 몇 개 남았는지를,
+                이쪽은 그 남은 개수를 한눈에 세게 한다. 그림뿐이라 읽어 주지 않고
+                (alt="" · aria-hidden) 문장 쪽을 읽게 둔다. 두 번 읽히면 성가시다.
+
+                잇는 점은 이미지가 아니라 CSS 다. 원본 점 그림이 2172px 짜리라 20px 로
+                줄이면 뭉개지고, 앞뒤 칸이 다 찼는지에 따라 색이 바뀌어야 한다.
+                색은 그 원본에서 뽑았다(#10d088 · #c0c0d0). */}
+            <span className="ev-steps" aria-hidden="true">
+              {Array.from({ length: event.stocks.length }, (_, i) => (
+                <Fragment key={i}>
+                  {i > 0 && (
+                    <i className={i < doneSteps ? 'ev-step-link is-done' : 'ev-step-link'} />
+                  )}
+                  <img
+                    className="ev-step"
+                    src={i < doneSteps ? '/assets/event/step-done.webp' : '/assets/event/step-todo.webp'}
+                    alt=""
+                  />
+                </Fragment>
+              ))}
+            </span>
+
+            <span className="ev-progress-note">
+              {left === 0
+                ? `참가 자격을 갖췄습니다 · 건 돈 ${me.staked.toLocaleString('ko-KR')} ANT`
+                : `${left}종목 더 걸어야 순위에 오릅니다 (최소 ${rules.minStocks}종목)`}
+            </span>
+          </div>
         )}
       </header>
-
-      {/* 진행 줄. **자격을 여기서만 말한다** — 최소 종목 수는 등록을 막지 않고
-          순위 자격으로만 걸리므로(2026-09-18), 화면이 말하지 않으면 다섯 개를 못 채운
-          사람이 참가한 줄 알고 정산까지 간다. */}
-      {event.phase !== 'BEFORE' && (
-        <p className={left === 0 ? 'ev-progress is-ok' : 'ev-progress'}>
-          <b className="num">{me.stockCount}/{event.stocks.length}종목</b>
-          <span>
-            {left === 0
-              ? `참가 자격을 갖췄습니다 · 건 돈 ${me.staked.toLocaleString('ko-KR')} ANT`
-              : `${left}종목 더 걸어야 순위에 오릅니다 (최소 ${rules.minStocks}종목)`}
-          </span>
-        </p>
-      )}
 
       <ul className="ev-cards">
         {event.stocks.map((s) => (
