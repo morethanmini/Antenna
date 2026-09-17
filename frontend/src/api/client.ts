@@ -132,7 +132,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
       res = await send()
     } else {
       /* 토큰을 쥔 적이 없으면 이 401 은 세션 만료가 아니다 — Authorization 헤더를
-         보낸 적이 없기 때문이다. 임시 로그인으로 화면만 보는 중이거나, 백엔드에
+         보낸 적이 없기 때문이다. 비로그인으로 화면을 보는 중이거나, 백엔드에
          그 API 가 아직 없는 경우다(Spring Security 가 라우팅보다 먼저 걸러서
          없는 경로도 404 가 아니라 401 로 돌려준다). 그때 로그아웃시키면
          화면을 열자마자 로그인으로 튕겨 아무것도 못 본다. */

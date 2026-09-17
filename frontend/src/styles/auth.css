@@ -136,22 +136,6 @@
 }
 .auth .sso-note{margin:9px 0 0;text-align:center;color:var(--faint);font-size:var(--fs-sm)}
 
-/* 백엔드 없이 화면을 볼 때 쓰는 임시 진입로.
-   실제 로그인 버튼과 헷갈리지 않게 점선 아래로 내리고 흐리게 둔다. */
-.auth .dev-signin{
-  margin-top:20px;padding-top:16px;border-top:1px dashed var(--rule);
-  display:flex;flex-direction:column;gap:9px;
-}
-.auth .dev-signin-label{text-align:center;color:var(--faint);font-size:var(--fs-2xs)}
-.auth .dev-signin-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.auth .dev-signin-row button{
-  height:38px;border:1px solid var(--rule);border-radius:10px;background:var(--surface-2);
-  color:var(--muted);font-family:inherit;font-size:var(--fs-md);font-weight:var(--fw-normal);cursor:pointer;
-  transition:background .15s,color .15s;
-}
-.auth .dev-signin-row button:hover{background:#fff;color:var(--ink)}
-.auth .dev-signin-row button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
-
 /* A-01 복귀 구간 — /oauth/callback/:provider
    로그인 화면에서 넘어와 잠깐 머무는 자리다. 카드 하나만 가운데 두고, 배경과
    카드 모양은 .auth · .sso 를 그대로 물려받아 두 화면이 이어져 보이게 한다. */
