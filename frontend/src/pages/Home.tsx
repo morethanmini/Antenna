@@ -11,7 +11,8 @@
    어긋나지 않게 하려는 것이다. */
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getActiveAds, getMarketIndices, getWatchlist } from '../api/insight'
+import { getMarketIndices, getWatchlist } from '../api/insight'
+import { fetchActiveAds } from '../api/ads'
 import { fetchWalletBalance, formatToken } from '../api/wallet'
 import { fetchRankings, formatComputedAt, metric } from '../api/rankings'
 import { getBriefings } from '../api/briefings'
@@ -474,11 +475,17 @@ function TopPredictor() {
    여러 장이 오면 한 장씩 자동으로 넘기고, 점을 눌러 곧바로 고를 수도 있다.
    문구는 ActiveAd 스키마에 없어(이미지·링크뿐) 장마다 같은 안내가 나간다. */
 function Sponsored() {
-  const load = useCallback(() => getActiveAds(), [])
+  const load = useCallback(() => fetchActiveAds(), [])
   const { data, loading, error } = useAsync(load)
   const items = data?.items ?? []
   const { index, setIndex, setPaused } = useRotate(items.length, AD_ROTATE_MS)
   const ad = items[index]
+
+  /* 걸린 배너가 없으면 칸을 통째로 접는다(2026-09-17). 목업을 걷어내고 나니 등록된
+     광고가 0건이라, "아직 표시할 내용이 없습니다" 만 적힌 239px 짜리 검은 박스가
+     홈 오른쪽 맨 위에 남았다 — 빈 광고 자리를 사용자에게 보여 줄 이유가 없다.
+     실패는 접지 않는다. 그건 알려야 하는 상태다. */
+  if (!loading && !error && items.length === 0) return null
 
   return (
     <section className="hm-showcase" aria-labelledby="hm-showcase-h"

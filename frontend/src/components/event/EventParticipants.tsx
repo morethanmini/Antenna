@@ -49,9 +49,12 @@ export default function EventParticipants({ eventId }: { eventId: number }) {
             <li key={p.userId}>
               {/* div 다 — 누를 데가 아니다. 링크로 두면 눌러 보고 아무 일도 안 일어난다 */}
               <div className="ev-tile">
-                {/* 사진이 없으면 <img> 가 실패하고 바탕(--brand-soft)만 남는다.
-                    종목 로고(StockLogo)와 같은 처리다 */}
-                <img className="ev-tile-face" src={p.avatarUrl ?? ''} alt="" aria-hidden="true" />
+                {/* 사진이 없으면 <img> 를 아예 안 그린다. src="" 를 넘기면 리액트가
+                    경고를 띄우고, 브라우저에 따라 **지금 페이지를 통째로 다시 내려받는다**.
+                    빈 원은 같은 클래스를 쓴 <span> 이 바탕색(--brand-soft)으로 대신한다 */}
+                {p.avatarUrl
+                  ? <img className="ev-tile-face" src={p.avatarUrl} alt="" aria-hidden="true" />
+                  : <span className="ev-tile-face" aria-hidden="true" />}
                 <span className="ev-tile-name">{p.nickname ?? '이름 없음'}</span>
 
                 {/* 말풍선은 손을 얹어야 뜨므로 화면 낭독기에는 닿지 않는다. 같은 내용을
