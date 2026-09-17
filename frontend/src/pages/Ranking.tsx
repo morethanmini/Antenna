@@ -41,6 +41,8 @@ import {
   fetchMyRank, fetchRankings, formatComputedAt, metric,
   type MyRank, type Period, type RankingRow, type Track,
 } from '../api/rankings'
+import { fetchContestSummary } from '../api/events'
+import { useAsync } from '../api/useAsync'
 import EventRanking from '../components/ranking/EventRanking'
 import EmptyState from '../components/state/EmptyState'
 import ErrorState from '../components/state/ErrorState'
@@ -254,6 +256,22 @@ const TABS = [
 ] as const
 type Tab = (typeof TABS)[number]['key']
 
+/* ── 이벤트 탭 강조 ───────────────────────────────────────
+   탭이 회색 글자 둘뿐이면 "저기 뭔가 있다" 는 신호가 없다. 이벤트 랭킹은 들어오는 길이
+   배너와 이 탭뿐이라, 안 눌러 보면 있는 줄 모른 채 끝난다.
+
+   **글자를 덧붙이지 않고 색으로만 말한다.** 한때 "진행 중" 같은 단계 배지를 달았는데,
+   고른 탭이 이미 흰 알약이라 그 안에 색 알약이 또 들어가 둔해 보였다. 단계는 들어가면
+   머리 띠가 크게 말해 준다 — 탭이 할 일은 부르는 것 하나다.
+
+   회차가 없으면 색도 주지 않는다. 없는 대회를 있는 것처럼 부추기지 않는다. */
+
+/** 목록 한 번만 읽는다. 여기 필요한 건 "회차가 있나" 뿐이라 상세를 부르지 않는다.
+ *  **모듈 스코프 함수다** — useAsync 는 load 가 바뀌면 다시 읽는다(useAsync 머리말). */
+function loadContestPhase() {
+  return fetchContestSummary(CONTEST.id)
+}
+
 /** 탭마다 제목과 한 줄 소개가 다르다. 한 머리를 두 탭이 나눠 쓴다 */
 const HEAD: Record<Tab, { h1: string; p: string }> = {
   accuracy: { h1: '주가 예측 랭킹', p: '판정이 끝난 예측만 집계합니다' },
@@ -264,6 +282,11 @@ export default function Ranking() {
   const [params, setParams] = useSearchParams()
   /* 모르는 값이 오면 기본 탭이다 — 주소를 손으로 고친 사람에게 빈 화면을 주지 않는다 */
   const tab: Tab = params.get('tab') === 'event' ? 'event' : 'accuracy'
+
+  /* 실패하면 강조만 빠지고 탭은 그대로 산다 — 거들 뿐이라 이것 때문에
+     랭킹 화면 전체를 오류로 덮지 않는다 */
+  const contest = useAsync(loadContestPhase)
+  const hasEvent = contest.data !== null
 
   function go(next: Tab) {
     if (next === tab) return
@@ -289,7 +312,11 @@ export default function Ranking() {
             <button
               key={t.key} type="button"
               role="tab" aria-selected={tab === t.key}
-              className={tab === t.key ? 'on' : ''}
+              /* 회차가 서 있을 때만 이벤트 탭에 색이 붙는다 */
+              className={[
+                tab === t.key ? 'on' : '',
+                t.key === 'event' && hasEvent ? 'rk-tab-event' : '',
+              ].filter(Boolean).join(' ')}
               onClick={() => go(t.key)}
             >{t.label}</button>
           ))}
@@ -302,3 +329,4 @@ export default function Ranking() {
     </main>
   )
 }
+

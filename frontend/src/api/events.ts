@@ -181,16 +181,27 @@ export async function fetchEventBySlug(slug: string) {
  * ②·③은 쓰이지 않는다. 즉 이 대체 경로는 **본 대회가 생기기 전까지만** 산다.
  */
 export async function fetchContestEvent(slug: string) {
+  const summary = await fetchContestSummary(slug)
+  return summary === null ? null : fetchEvent(summary.eventId)
+}
+
+/**
+ * 같은 규칙으로 회차만 고르고 **상세는 읽지 않는다.** 목록 한 번으로 끝난다.
+ *
+ * 랭킹 화면(E-01)의 이벤트 탭 배지가 이것을 쓴다 — 배지에 필요한 건 phase 하나인데
+ * 종목·내 배팅까지 딸려 오는 상세를 부를 이유가 없다. 고르는 규칙을 두 곳에 복사하면
+ * 한쪽만 고쳐져 탭 배지와 실제 화면이 서로 다른 회차를 말하게 된다.
+ */
+export async function fetchContestSummary(slug: string): Promise<EventListItem | null> {
   const { items } = await fetchEvents()
   if (items.length === 0) return null
 
-  const picked =
+  return (
     items.find((e) => e.slug === slug)
     ?? items.find((e) => e.phase === 'ENTRY')
     /* 서버가 id 내림차순으로 준다(EventQueryService.list) — 첫 줄이 가장 최근이다 */
     ?? items[0]
-
-  return fetchEvent(picked.eventId)
+  )
 }
 
 export type EventEntryResult = {
