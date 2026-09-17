@@ -18,27 +18,34 @@
        payout = 0                                              (진 쪽)
        payout = stake                                          (보합 · 이긴 풀이 0 · 미리빌)
 
-   그래서 **"맞히면 몇 배" 를 등록 시점에 적을 수 없다.** 배율은 마감 뒤 양쪽 풀이
-   확정돼야 나오고, 접수 중에는 컨트랙트조차 풀 크기를 모른다 — 방향이 커밋으로
-   가려져 있어 reveal 때 비로소 풀에 들어간다. 화면이 "최대 N ANT" 를 약속하면
-   그건 근거 없는 숫자다. 규칙만 적고 금액은 정산이 말하게 둔다.
+   그래서 **확정 배율이라는 것이 등록 시점에 없다.** 배율은 마감 뒤 양쪽 풀이 닫혀야
+   나온다. 컨트랙트도 접수 중에는 풀 크기를 모른다 — 방향이 커밋으로 가려져 있어
+   reveal 때 비로소 풀에 들어간다.
+
+   ── 그래도 "지금 기준" 은 보여 준다 (2026-09-18) ─────────────────────
+   아무 숫자도 안 보여 주면 얼마를 걸지 정할 근거가 없다. 그래서 **확정값 대신 지금
+   풀로 계산한 값**을 적는다(payoutNow). 서버가 GET /events/{id} 에서 방향별 합계를
+   주므로 지어낸 값이 아니다 — 컨트랙트는 몰라도 서버는 자기 DB 로 안다.
+
+   두 가지를 지킨다.
+     · 내 배팅을 **양쪽 풀에 더한 뒤** 계산한다. 빼고 재면 실제보다 큰 금액이 나온다
+     · "마감까지 남이 걸면 달라진다" 를 같은 자리에 적는다 — 확정으로 읽히면 안 된다
 
    ── 방향은 따로 고르지 않는다 ────────────────────────────────────────
    컨트랙트 커밋이 keccak256(eventId, stockIdx, side, noteHash) 이고 side 는 위에서
-   고른 예측 방향(UP·DOWN)이다. 배팅 카드가 방향을 다시 물으면 예측과 배팅이
-   엇갈린 사람이 생기는데, 컨트랙트에는 그런 자리가 없다. 여기서는 **금액만** 받고,
-   어느 쪽에 걸리는지는 ①에서 정해진 것을 그대로 비춰 준다.
+/* ── 배팅 칸 ──────────────────────────────────────────────────
+   ① 목표가 **안에** 선다(2026-09-18). 전에는 등록 카드 위에 따로 세웠는데,
+   "어느 쪽에 얼마" 는 목표가·방향을 정하는 것과 **한 결정**이다 — 떼어 두면
+   방향 버튼과 금액 칸 사이를 눈이 오간다. 배당률이 방향 버튼에 붙은 지금은
+   고르는 자리와 그 값이 한 덩어리로 읽힌다.
 
-   ── 아직 없는 것 ─────────────────────────────────────────────────────
-   - 배팅 금액은 커밋 문자열에도 예측 서명 문자열에도 들어가지 않는다. 그 다섯 값은
-     예측의 봉인이고, 배팅은 컨트랙트가 제 커밋을 따로 만든다.
-   - 접수 API 가 아직 없다(POST /predictions 에 칸이 없고 배팅 전용 경로도 없다).
-     금액은 화면 상태로만 산다 — 붙일 자리는 PredictTab.submit() 에 표시해 뒀다.
-   - minStake·maxStake 는 회차를 열 때 openEvent 로 체인에 박히는 값이다. 그걸
-     읽어 오는 API 가 없어 아래 상수를 임시로 쓴다. 서버가 내려주면 지운다. */
+   **대회에서는 필수다.** 서버가 종목마다 stake 를 받아 풀에 넣으므로 금액 없는
+   대회 등록이라는 것이 없다(POST /events/{id}/entries). 돈을 걸지 않고 판단만
+   남기고 싶으면 대회 밖에서 같은 종목에 그냥 예측하면 된다 — 그 길은 열려 있다. */
 import { fetchWalletBalance, formatToken } from '../../api/wallet'
 import { useBlock } from '../../api/useBlock'
 import type { Direction } from '../../api/predictions'
+import type { EventPool } from '../../api/events'
 
 /**
  * 빠른 선택 금액. 직접 입력은 이 밖의 값을 위한 칸이다.
@@ -97,19 +104,46 @@ type BetProps = {
   /** 지금 걸어 둔 금액(정수 ANT 문자열). 빈 문자열이면 걸지 않은 것이다 */
   value: string
   onChange: (next: string) => void
-  /** ①에서 정해진 예측 방향. 배팅도 이쪽에 걸린다 — 따로 고르는 자리가 없다 */
+  /** 위에서 정해진 예측 방향. 배팅도 이쪽에 걸린다 — 따로 고르는 자리가 없다 */
   direction: Direction | null
   /** 대회 안내(J-01)로 가는 주소 */
   contestPath: string
+  /**
+   * 이 종목의 지금 풀. 서버가 **확정된 배팅만** 세어 준다(PENDING·FAILED 제외).
+   * 회차를 못 읽었으면 null — 그때는 예상 금액을 적지 않는다.
+   */
+  pool?: EventPool | null
 }
 
 const SIDE_LABEL: Record<Direction, string> = { UP: '상승', DOWN: '하락' }
+
+/**
+ * **지금 걸면 얼마를 받나** — 승자투표권(패리뮤추얼) 계산.
+ *
+ *     받을 돈 = 건 돈 × (전체 풀) ÷ (내가 선 쪽 풀)
+ *
+ * 양쪽 풀 모두 **내 배팅을 더한 뒤** 계산한다. 내가 들어가면 그 순간 풀이 커지므로,
+ * 빼고 재면 실제보다 큰 금액이 나온다 — 화면이 부풀린 숫자를 약속하는 셈이다.
+ *
+ * 반대쪽이 비어 있으면 받을 돈이 건 돈과 같아진다(가져올 남의 돈이 없다). 0 이 아니라
+ * 원금이 맞다 — 컨트랙트도 이긴 풀이 전부일 때 원금을 돌려준다.
+ *
+ * **이 값은 지금 이 순간의 것이다.** 마감까지 남이 걸면 그대로 움직인다. 그래서 화면은
+ * "확정"이라고 말하지 않고 기준 시각을 함께 적는다.
+ */
+function payoutNow(pool: EventPool, direction: Direction, stake: number) {
+  const mine = direction === 'UP' ? pool.up : pool.down
+  const total = pool.up + pool.down + stake
+  const side = mine + stake
+  /* side 는 stake 를 더했으니 0 이 될 수 없다 — stake > 0 일 때만 부른다 */
+  return Math.floor((stake * total) / side)
+}
 
 /* ── 배팅 카드 ──────────────────────────────────────────────
    **선택이다.** 대회 기간이라도 배팅 없이 예측만 등록할 수 있어야 한다 —
    예측은 판단을 남기는 일이고 배팅은 돈을 거는 일이라, 둘을 묶어 강제하면
    대회가 끝난 뒤 남는 기록이 "돈을 걸 수 있는 사람의 판단" 뿐이 된다. */
-export default function EventBet({ value, onChange, direction, contestPath }: BetProps) {
+export default function EventBet({ value, onChange, direction, contestPath, pool }: BetProps) {
   const wallet = useBlock(() => fetchWalletBalance(), [])
 
   const amount = betAmount(value)
@@ -128,22 +162,14 @@ export default function EventBet({ value, onChange, direction, contestPath }: Be
   return (
     <section className="ev-bet" aria-labelledby="ev-bet-h">
       <header className="ev-bet-head">
-        <h3 id="ev-bet-h">
-          <span className="ev-bet-mark" aria-hidden="true">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M3 7.5 7.5 11 12 4.5 16.5 11 21 7.5V18a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z" />
-            </svg>
-          </span>
-          배팅하기 <span className="ev-bet-only">(대회 전용)</span>
-          <span className="pf-opt">선택</span>
-        </h3>
+        <h4 id="ev-bet-h">배팅하기 <span className="pf-req">필수</span></h4>
         <a className="ev-bet-rules" href={contestPath}>대회 안내 ›</a>
       </header>
 
       {/* 어느 쪽에 걸리는지 먼저 못박는다. 금액 칸만 있으면 "방향은 어디서 고르지" 가 된다 */}
       <p className="ev-bet-side">
         {direction
-          ? <>①에서 고른 <b className={`is-${direction.toLowerCase()}`}>{SIDE_LABEL[direction]}</b> 쪽에 걸립니다.</>
+          ? <>위에서 고른 <b className={`is-${direction.toLowerCase()}`}>{SIDE_LABEL[direction]}</b> 쪽에 걸립니다.</>
           : <>목표가를 정하면 그 방향에 걸립니다.</>}
       </p>
 
@@ -176,23 +202,53 @@ export default function EventBet({ value, onChange, direction, contestPath }: Be
         </label>
       </div>
 
-      {/* 건 돈과 받는 방식. **배율을 적지 않는다** — 맞혔을 때 얼마가 되는지는
-          양쪽 풀이 닫혀야 나오고, 지금 적는 숫자는 무엇이든 지어낸 값이다. */}
+      {/* 건 돈과 받을 돈.
+
+          **"지금 기준" 이라고 못박는다.** 패리뮤추얼이라 배율은 마감 뒤에야 확정되는데,
+          그렇다고 아무 숫자도 안 보여 주면 얼마를 걸지 정할 근거가 없다. 그래서 확정값
+          대신 **지금 풀로 계산한 값**을 적고, 움직인다는 사실을 같은 자리에 적는다.
+          숫자를 지어내지 않으면서 판단 재료는 주는 선이다. */}
       <dl className="ev-bet-sum">
-        <div>
-          <dt>배팅 금액</dt>
-          <dd className="num">{picked ? `${amount.toLocaleString('ko-KR')} ANT` : '—'}</dd>
-        </div>
-        <div className="ev-bet-payout">
-          <dt>받는 방식</dt>
-          <dd>
-            맞힌 사람끼리 <b>양쪽에 걸린 ANT 전부</b>를 <b>건 만큼의 비율</b>로 나눠 갖습니다.
-            <span className="ev-bet-rate">
-              배율은 마감 뒤 확정 · 보합이면 원금 환불 · 틀리면 잃음
-            </span>
-          </dd>
-        </div>
+        {picked && direction && pool ? (
+          <div className="ev-bet-payout">
+            <dt>맞히면 (지금 기준)</dt>
+            <dd>
+              <b className="num">{payoutNow(pool, direction, amount).toLocaleString('ko-KR')} ANT</b>
+              {/* 순이익을 따로 적는다 — 받을 돈만 있으면 원금이 포함된 값인지 헷갈린다 */}
+              <span className="ev-bet-net num">
+                {(() => {
+                  const net = payoutNow(pool, direction, amount) - amount
+                  return net > 0 ? `+${net.toLocaleString('ko-KR')} ANT` : '원금만'
+                })()}
+              </span>
+              <span className="ev-bet-rate">
+                지금 걸린 돈으로 계산한 값입니다. 마감까지 남이 걸면 달라집니다 ·
+                보합이면 원금 환불 · 틀리면 잃음
+              </span>
+            </dd>
+          </div>
+        ) : (
+          <div className="ev-bet-payout">
+            <dt>받는 방식</dt>
+            <dd>
+              맞힌 사람끼리 <b>양쪽에 걸린 ANT 전부</b>를 <b>건 만큼의 비율</b>로 나눠 갖습니다.
+              <span className="ev-bet-rate">
+                {!direction ? '목표가를 정하면 지금 기준 받을 금액을 보여 줍니다.'
+                  : !picked ? '금액을 고르면 지금 기준 받을 금액을 보여 줍니다.'
+                    : '보합이면 원금 환불 · 틀리면 잃음'}
+              </span>
+            </dd>
+          </div>
+        )}
       </dl>
+
+      {/* 반대쪽이 비어 있으면 왜 원금뿐인지 말해 준다 — 숫자만 보면 계산이 틀린 줄 안다 */}
+      {picked && direction && pool && (direction === 'UP' ? pool.down : pool.up) === 0 && (
+        <p className="sd-help">
+          아직 <b>{direction === 'UP' ? '내린다' : '오른다'}</b>에 건 사람이 없어 가져올 돈이
+          없습니다. 반대쪽에 돈이 쌓이면 받을 금액이 올라갑니다.
+        </p>
+      )}
 
       {/* 잔액은 고른 뒤에만 말한다. 아무것도 걸지 않았는데 먼저 보이면
           대회가 잔액부터 묻는 화면이 된다 */}

@@ -710,7 +710,10 @@
 .stock-detail-page .pf-price-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .stock-detail-page .pf-dirs{display:flex;gap:6px;flex:none}
 .stock-detail-page .pf-dir{
-  min-width:56px;height:46px;padding:0 14px;
+  /* 대회에서는 라벨 아래 배당률이 한 줄 더 붙는다. 세로로 쌓되 높이는 그대로 둔다 —
+     이 버튼은 목표가 칸과 한 줄에 앉아 있어, 키가 자라면 그 줄 전체가 어긋난다. */
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  min-width:64px;height:46px;padding:0 14px;line-height:1.1;
   border:1px solid transparent;border-radius:12px;
   font-family:inherit;font-size:var(--fs-lg);font-weight:var(--fw-bold);cursor:pointer;
   /* 아직 목표가가 없을 때. 제 색으로 칠하되 흐려서 "정해지지 않았다" 가 보인다 */
@@ -727,6 +730,11 @@
 .stock-detail-page .pf-dir.is-down.is-on{border-color:var(--down)}
 /* 흐린 상태에서도 초점 테두리는 또렷해야 한다 */
 .stock-detail-page .pf-dir:focus-visible{opacity:1;outline:2px solid var(--brand);outline-offset:2px}
+/* 지금 배당률(대회 전용). 라벨보다 작고 흐리게 둔다 — 고르는 대상은 여전히 방향이고
+   배당은 그 방향에 딸린 값이다. 풀이 비어 있으면 컴포넌트가 '—' 를 넣는다. */
+.stock-detail-page .pf-dir-odds{
+  font-size:var(--fs-xs);font-weight:var(--fw-bold);opacity:.78;letter-spacing:-.01em;
+}
 
 /* 등락률 고르개 — 목표가 칸 왼쪽에 붙는다 */
 .stock-detail-page .pf-pct-btn{
@@ -1311,27 +1319,24 @@
   .stock-detail-page .ev-banner-text{padding-right:0}
 }
 
-/* 배팅 카드. 네 단계 뒤, 서명 발판 바로 위에 얹힌다.
-   테두리를 세워 "이건 폼의 다섯 번째 단계가 아니라 얹힌 것" 을 보이게 한다. */
-.stock-detail-page .ev-bet{
-  margin-top:17px;padding:12px 14px 13px;
-  border:1.5px solid #cfc9fa;border-radius:14px;background:var(--brand-softer);
-}
+/* 배팅 칸. ① 목표가 **안**, 방향 버튼 바로 아래다(2026-09-18).
+   **상자를 두르지 않는다.** 테두리와 바닥색을 주면 한 단계 안에 카드가 한 장 더 든
+   꼴이라, 목표가·방향과 한 결정이라고 붙여 놓고도 눈에는 다시 갈라져 보인다.
+   대회에서만 생기는 칸이라는 것은 제목과 안내 문구가 이미 말한다. */
+.stock-detail-page .ev-bet{margin-top:14px}
 .stock-detail-page .ev-bet-head{
   display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:7px;
 }
-.stock-detail-page .ev-bet h3{
+.stock-detail-page .ev-bet h4{
   display:flex;align-items:center;gap:7px;margin:0;
-  font-size:var(--fs-lg);font-weight:var(--fw-bold);color:var(--ink);
+  /* 단계 제목(①②③)보다 한 단 작다. 같은 크기면 안에 든 칸이 단계 행세를 한다 */
+  font-size:var(--fs-md);font-weight:var(--fw-bold);color:var(--ink);
 }
-.stock-detail-page .ev-bet-mark{
-  display:grid;place-items:center;width:20px;height:20px;flex:none;
-  border-radius:6px;background:var(--brand);color:#fff;
-}
-.stock-detail-page .ev-bet-only{color:var(--brand-ink);font-size:var(--fs-sm);font-weight:var(--fw-bold)}
-/* 대회 안내로 돌아가는 길. 규칙 전문은 J-01 에 있고 이 카드는 요약만 진다 */
+/* 대회 안내로 돌아가는 길. 규칙 전문은 J-01 에 있고 이 칸은 요약만 진다.
+   제목 **바로 옆**이다 — 상자가 없어진 뒤로 오른쪽 끝에 밀어 두면 폼 반대편에
+   홀로 떠서 무엇에 딸린 링크인지 읽히지 않는다(2026-09-18). */
 .stock-detail-page .ev-bet-rules{
-  margin-left:auto;color:var(--brand-ink);font-size:var(--fs-sm);font-weight:var(--fw-bold);
+  margin-left:2px;color:var(--brand-ink);font-size:var(--fs-sm);font-weight:var(--fw-bold);
   text-decoration:none;white-space:nowrap;
 }
 .stock-detail-page .ev-bet-rules:hover{text-decoration:underline}
@@ -1382,14 +1387,13 @@
 }
 .stock-detail-page .ev-bet-unit{flex:none;color:var(--muted);font-size:var(--fs-sm);font-weight:var(--fw-bold)}
 
-/* 건 돈과 받을 돈. 배팅은 이 둘을 견주는 결정이라 나란히 둔다 */
+/* 받을 돈. **건 돈은 적지 않는다**(2026-09-18) — 고른 알약이 켜져 있고 직접 입력
+   칸에도 그 값이 있어, 여기 또 적으면 한 화면에서 같은 숫자를 세 번 읽는다.
+   바닥색 대신 선 하나로 금액 버튼과 가른다 — 상자를 씌우면 배팅 칸이 다시
+   작은 카드가 된다. */
 .stock-detail-page .ev-bet-sum{
-  display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;
-  margin:9px 0 0;padding:10px 12px;
-  border-radius:11px;background:var(--surface);
-}
-@media (max-width:860px){
-  .stock-detail-page .ev-bet-sum{grid-template-columns:1fr}
+  margin:11px 0 0;padding:11px 0 0;
+  border-top:1px solid var(--rule);
 }
 .stock-detail-page .ev-bet-sum > div{min-width:0}
 .stock-detail-page .ev-bet-sum dt{
@@ -1440,3 +1444,7 @@
 @media (min-width:1500px){
   .stock-detail-page .pf-points .sd-points{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+/* 지금 기준 받을 금액 (2026-09-18). 확정이 아니라는 것이 같은 자리에서 읽혀야 해서
+   금액은 크게, 조건은 그 아래 작게 둔다 */
+.stock-detail-page .ev-bet-payout dd b{font-size:var(--fs-2xl);color:var(--ink)}
+.stock-detail-page .ev-bet-net{margin-left:8px;font-size:var(--fs-lg);font-weight:var(--fw-bold);color:var(--up)}

@@ -24,7 +24,7 @@ import { useBlock } from '../api/useBlock'
 import ErrorState from '../components/state/ErrorState'
 import { addWatch, removeWatch, MARKET_LABEL } from '../api/stocks'
 import { getSummary } from '../api/stockDetail'
-import { CONTEST, CONTEST_CODES, phaseAt } from '../event/contest'
+import { CONTEST, CONTEST_PATH } from '../event/contest'
 import StockLogo from '../components/stocks/StockLogo'
 import '../styles/screens/stock-detail.css'
 
@@ -41,24 +41,15 @@ export default function StockDetail() {
   const tab: TabKey = params.get('tab') === 'predict' ? 'predict' : 'info'
 
   /* 대회(J-01)로 들어왔는가. 대회 종목 카드가 `?tab=predict&event=scalping` 으로
-     데려온다(event/contest.ts 의 cardHref). 탭과 같이 **주소에** 둔다 — 상태로만
-     들고 있으면 새로고침에 평소 화면으로 돌아가고, 걸어 둔 배팅이 말없이 사라진다.
+     데려온다(EventStocks). 탭과 같이 **주소에** 둔다 — 상태로만 들고 있으면
+     새로고침에 평소 화면으로 돌아가고, 적어 둔 배팅이 말없이 사라진다.
 
-     세 가지를 모두 확인한다. 주소는 누구나 손으로 칠 수 있어서다.
-       · 값이 이 회차의 id 인가      — 아무 문자열이나 배팅 칸을 열지 않는다
-       · 등록 창이 열려 있는가        — cardHref 도 open 일 때만 예측 탭으로 보낸다.
-                                       마감 뒤 링크를 다시 열면 걸 수 없는 칸만 남는다
-       · 이 종목이 대회 종목인가      — 열 개 밖의 종목에 배팅 칸이 뜨면 접수는
-                                       되는데 판정할 자리가 없다(컨트랙트가 stockIdx 로 센다)
-
-     **기간만 개발 빌드에서 푼다.** 등록 창이 9/18 13:10 에야 열리는데 그때까지
-     화면을 못 보면 만들면서 확인할 방법이 없다. 회차 id 와 대회 종목은 개발에서도
-     그대로 본다 — 그 둘까지 풀면 아무 종목에서나 열려 무엇을 보고 있는지 흐려진다.
-     `import.meta.env.DEV` 는 빌드 때 상수로 접히므로 운영 번들에는 이 가지가 없다. */
-  const eventMode =
-    params.get('event') === CONTEST.id &&
-    (phaseAt() === 'open' || import.meta.env.DEV) &&
-    CONTEST_CODES.includes(code)
+     **여기서는 "대회로 들어왔다" 는 의사만 본다**(2026-09-18).
+     회차가 열렸는지·이 종목이 회차 종목인지·이미 걸었는지는 서버만 아는 값이라
+     PredictTab 이 GET /events/{id} 로 확인한다. 예전에는 contest.ts 의 CONTEST_CODES
+     열 개와 대조했는데, 회차 종목이 바뀌면 카드에서 눌러 들어와도 배팅 칸이 조용히
+     사라진다 — 화면 상수와 서버 목록이 갈리는 순간 생기는 사고다. */
+  const eventMode = params.get('event') === CONTEST.id
   const goTab = useCallback((next: TabKey) => {
     const p = new URLSearchParams(params)
     if (next === 'info') p.delete('tab')
@@ -113,12 +104,15 @@ export default function StockDetail() {
             {/* 뒤로가기는 sticky 밖이다. 붙여 두면 스크롤 내내 따라다니는데,
                 한 번 쓰고 마는 길이라 자리만 차지한다. 위로 올리면 다시 보인다. */}
             <div className="sd-head-top">
-              <Link className="sd-back" to="/stocks">
+              {/* 온 곳으로 돌려보낸다. 대회 종목 카드를 눌러 들어왔으면 돌아갈
+                  곳은 대회이지 종목 탐색이 아니다 — 남은 종목을 이어서 걸려면
+                  카드 목록으로 돌아가야 하는데, 목록으로 보내면 길이 끊긴다. */}
+              <Link className="sd-back" to={eventMode ? CONTEST_PATH : '/stocks'}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                      strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M15 5 8 12l7 7" />
                 </svg>
-                종목 탐색
+                {eventMode ? CONTEST.name : '종목 탐색'}
               </Link>
             </div>
 

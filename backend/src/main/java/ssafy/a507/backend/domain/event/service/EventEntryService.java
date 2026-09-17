@@ -138,11 +138,20 @@ public class EventEntryService {
             }
         }
 
-        // ④ 첫 참가는 min_stocks 이상. 두 번째부터는 한 종목씩 더해도 된다.
+        // ④ min_stocks 는 **등록에서 막지 않는다**(2026-09-18).
+        //
+        //    예전에는 첫 제출이 min_stocks 미만이면 여기서 EVENT_MIN_STOCKS 로 거절했다. 그래서 묶음
+        //    등록이 유일한 길이었는데, 화면이 종목 상세(C-01)에서 한 종목씩 거는 구조로 바뀌면서
+        //    첫 건이 늘 이 문에 걸리게 됐다.
+        //
+        //    **규칙이 사라지는 것은 아니다.** 같은 기준이 정산에서 최종적으로 걸린다 —
+        //    EventResultService 가 qualified = stockCount >= minStocks 로 판정하고 순위는 qualified
+        //    에만 매기며, 리더보드 쿼리도 qualified = true 만 읽는다. 등록 문은 같은 규칙의 두 번째
+        //    자물쇠였다.
+        //
+        //    자격은 화면이 미리 알려 준다 — 응답의 qualified·remainingStocks 가 그 값이다.
+        //    묶음 등록(5~10종목 한 서명)도 그대로 받는다. 이 변경은 1건짜리를 막지 않을 뿐이다.
         List<PredictionEventBet> already = bets.findMine(eventId, userId);
-        if (already.isEmpty() && items.size() < event.getMinStocks()) {
-            throw new BusinessException(ErrorCode.EVENT_MIN_STOCKS, "items");
-        }
 
         // ⑤ 이벤트 종목인가 · 이미 걸었나.
         Map<String, PredictionEventStock> byCode = new HashMap<>();

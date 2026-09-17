@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useSearchParams } from 'react-router-dom'
 import Layout from './Layout'
 import RequireAccess from './auth/RequireAccess'
 import ErrorBoundary from './components/state/ErrorBoundary'
@@ -9,6 +9,17 @@ import { ROUTES, type PageMeta } from './routes'
    내용은 meta.element(각 화면 컴포넌트)가 그린다. */
 function Page({ meta }: { meta: PageMeta }) {
   const Element = meta.element
+  const [params] = useSearchParams()
+
+  /* 대회로 들어온 화면은 **아무 메뉴도 칠하지 않는다**(2026-09-18).
+     종목 상세는 routes.ts 에서 nav:'stocks' 인데, 대회 종목 카드를 눌러 들어오면
+     "종목 탐색으로 들어와 있다" 고 말하는 셈이다 — 실제로 있던 자리는 대회다.
+     대회는 사이드바·네비에 메뉴가 없어(들어오는 길이 링크와 홈 배너뿐이다)
+     대신 칠할 항목도 없다. 그래서 빈 문자열을 넘겨 어느 것도 안 맞게 둔다.
+
+     routes.ts 를 고치지 않는 이유 — 같은 화면이 주소에 따라 다른 자리에 속하는
+     것이라, 정적인 표가 답할 수 있는 값이 아니다. */
+  const nav = params.get('event') ? '' : (meta.nav ?? 'home')
 
   useEffect(() => {
     document.title = `${meta.title} · ANTENA`
@@ -35,7 +46,7 @@ function Page({ meta }: { meta: PageMeta }) {
   )
 
   return meta.mode
-    ? <Layout mode={meta.mode} nav={meta.nav ?? 'home'} bodyClass={meta.bodyClass ?? ''}>{body}</Layout>
+    ? <Layout mode={meta.mode} nav={nav} bodyClass={meta.bodyClass ?? ''}>{body}</Layout>
     : body
 }
 
