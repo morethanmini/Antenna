@@ -118,9 +118,15 @@ public class EventAdminService {
     private Accepted accept(Long adminUserId, EventCreateRequest request) {
         User admin = requireAdmin(adminUserId);
         validate(request);
+        /* UNIQUE 제약이 막긴 하지만 그건 DataIntegrityViolation → 500 이다. 관리자가 slug 를
+           겹쳐 적은 것은 서버 버그가 아니라 입력 실수라 409 로 돌려준다. */
+        if (request.slug() != null && events.existsBySlug(request.slug())) {
+            throw new BusinessException(ErrorCode.EVENT_DUPLICATE_SLUG, "slug");
+        }
 
         PredictionEvent event =
                 events.save(PredictionEvent.create(
+                        request.slug(),
                         request.title(),
                         request.opensAt(),
                         request.sealsAt(),

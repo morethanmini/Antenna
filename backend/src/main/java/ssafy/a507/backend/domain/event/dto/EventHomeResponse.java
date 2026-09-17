@@ -23,6 +23,8 @@ import ssafy.a507.backend.domain.prediction.entity.Prediction;
  */
 public record EventHomeResponse(
         Long eventId,
+        /** 화면 주소에 쓰는 이름. 없을 수 있다 */
+        String slug,
         String title,
         PredictionEvent.Status status,
         EventPhase phase,

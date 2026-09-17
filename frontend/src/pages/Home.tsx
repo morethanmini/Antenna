@@ -189,7 +189,13 @@ function Hero() {
           </svg>
         </Link>
       </div>
-      <img className="hm-hero-art" src="/assets/character/antenna-characters-welcome.png" alt=""
+      {/* 개미 한 마리. 둘이 선 그림은 바탕 그림 위에 얹으니 오른쪽이 두 겹으로 무거웠다.
+          한 마리는 자리를 덜 먹고 바탕의 빛줄기를 가리지 않는다.
+          (옛 그림 antenna-characters-welcome.png 는 이 브랜치에서 지웠다 — git 역사에 있다)
+
+          **차트판을 든 판을 골랐다.** black_ant/README 가 이 포즈의 자리를 "예측 등록 유도" 로
+          적어 뒀고, 이 카드의 버튼이 "예측 시작하기" 다 — 그림과 버튼이 같은 말을 한다. */}
+      <img className="hm-hero-art is-one" src="/assets/character/hero-ant.webp" alt=""
            aria-hidden="true" />
     </section>
   )
@@ -281,7 +287,7 @@ function MarketOverview() {
                   {signedAmt(delta, 2)}
                   <em>({signed(it.changeRate)})</em>
                 </span>
-                <Sparkline series={it.series} up={risingOf(it.changeRate, it.series)} width={78} height={52} area />
+                <Sparkline series={it.series} up={risingOf(it.changeRate, it.series)} width={78} height={52} area grow />
               </li>
             )
           })}
@@ -319,8 +325,28 @@ function MyAssets() {
             {/* 충전 버튼을 두지 않는다 — 토큰 유입은 가입 보너스와 성과 보상 mint 뿐이다(§H-01 설계 제약) */}
             <Link className="hm-ant-btn" to="/me/wallet">내역 보기</Link>
           </div>
-          {/* 30일 증감·원화 환산은 서버에 없다. ANT 시세가 없어 환산 자체가 불가능하다.
-              대신 대사 시각을 적는다 — 숫자만 보이면 실시간 잔액으로 오해한다(§H-01). */}
+          {/* 30일 흐름. 잔액 하나만 있으면 "그동안 뭘 했는지" 가 안 보인다.
+
+              **원화 환산은 여전히 없다** — ANT 시세가 없어 환산 자체가 불가능하다. 화면설계서
+              §482 가 "토큰 기간 집계 · KRW 환산" 을 한 줄로 묶어 둔 탓에 둘 다 못 하는 것으로
+              읽혔는데, 집계는 서버가 세어 주면 되는 것이었다(2026-09-16 · ANT-TOKEN-04 확장).
+
+              번 것에서 쓴 것을 빼면 30일간 잔액 변화가 된다. 둘 다 총량이라 환불이 양쪽에
+              잡히지만, 그래야 이 등식이 성립해 나중에 숫자끼리 검산이 된다. */}
+          <dl className="hm-flow">
+            <div>
+              <dt>30일간 번 ANT</dt>
+              {/* **.up / .down 을 쓰지 않는다.** 이 앱에서 빨강·파랑은 주가 등락이라,
+                  여기 쓰면 "번 ANT 가 올랐다" 로 읽힌다. 구분은 부호와 자리로 한다 */}
+              <dd className="num is-in">+{formatToken(data.earned30d)}</dd>
+            </div>
+            <div>
+              <dt>30일간 쓴 ANT</dt>
+              {/* 서버가 양수로 준다. 부호는 여기서 붙인다 */}
+              <dd className="num is-out">−{formatToken(data.spent30d)}</dd>
+            </div>
+          </dl>
+          {/* 대사 시각을 적는다 — 숫자만 보이면 실시간 잔액으로 오해한다(§H-01) */}
           <p className="hm-foot">
             {data.syncedAt
               ? `온체인 대사 ${data.syncedAt.slice(0, 10)} 기준`
@@ -485,7 +511,13 @@ function Sponsored() {
                               strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </Link>
-                    <img className="hm-showcase-art" src={it.imageUrl} alt="" aria-hidden="true" />
+                    {/* 그림을 빼 뒀다(2026-09-17). 되살리려면 이 한 줄이다:
+                          <img className="hm-showcase-art" src={it.imageUrl} alt="" aria-hidden="true" />
+
+                        **여기가 광고에서 유일하게 진짜인 자리였다.** /ads/active 가 주는 것은
+                        imageUrl 과 linkUrl 뿐이고 제목·설명·버튼 글자는 화면이 들고 있는
+                        AD_THEMES 프리셋이다. 그림까지 빼면 이 카드에 광고주의 것은 링크만
+                        남는다 — 문구 필드가 생기거나 라벨을 고치기 전까지 알고 있어야 한다. */}
                   </div>
                 )
               })}

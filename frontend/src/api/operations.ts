@@ -14,8 +14,15 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from './client'
 import { ERROR_CODE, type ApiError } from './errors'
 
-/** 202 를 쓰는 네 곳. POST /wallet/nonce 의 scope 어휘와 같다(WALLET_LINK 만 빠진다) */
-export const OPERATION_KINDS = ['PREDICTION_BURN', 'SUBSCRIBE', 'AD', 'SEASON_JOIN'] as const
+/**
+ * 202 를 쓰는 곳. POST /wallet/nonce 의 scope 어휘와 같다(WALLET_LINK 만 빠진다).
+ *
+ * EVENT_BET 은 **배팅 한 건 = 작업 한 건**이다. 묶음 등록은 5~10 종목을 한 요청으로 받지만
+ * 온체인 placeBet 은 종목마다 따로 나가서, 응답의 entries[].operationId 도 종목 수만큼 온다.
+ */
+export const OPERATION_KINDS = [
+  'PREDICTION_BURN', 'SUBSCRIBE', 'AD', 'SEASON_JOIN', 'EVENT_BET',
+] as const
 export type OperationKind = (typeof OPERATION_KINDS)[number]
 
 export const OPERATION_STATUSES = ['PENDING', 'SUCCEEDED', 'FAILED'] as const

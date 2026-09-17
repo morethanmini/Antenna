@@ -18,7 +18,7 @@ import ssafy.a507.backend.domain.market.entity.Stock;
  * @param changeRate 같은 비교의 등락률(%) · 소수 둘째 자리
  * @param tradingValue 거래대금 <b>근사</b> — 종가 × 거래량(원). daily_quotes 에 거래대금이 없다. 거래량이 없으면 null
  * @param per 배치가 stocks 에 써 둔 파생값 — 목록과 같은 숫자
- * @param predictionCount 판정 대기 예측 수 — 목록과 같이 아직 0
+ * @param predictionCount 판정 대기(BASE·OPEN) 예측 수 — 목록 행과 같은 집계
  * @param watching 내 관심 종목인가
  */
 public record StockSummaryResponse(

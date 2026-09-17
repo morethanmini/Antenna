@@ -22,6 +22,8 @@ import java.util.List;
  * 번호라 순서를 바꾸면 온체인 배팅이 다른 종목을 가리킨다.
  */
 public record EventCreateRequest(
+        @Pattern(regexp = "^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$", message = "slug 는 소문자·숫자·하이픈만 쓸 수 있습니다.")
+                String slug,
         @NotBlank(message = "제목을 입력해주세요.")
                 @Size(max = 80, message = "제목은 80자까지 입력할 수 있습니다.")
                 String title,

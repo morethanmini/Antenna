@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -25,7 +26,9 @@ import org.hibernate.annotations.CreationTimestamp;
  * <p>스키마 소유는 REST(ANT-EVENT-04)지만 인덱서 ③(ANT-EVENT-02)이 먼저 필요해 여기서 만들었다. 컬럼은 REST 명세 v1.1 §2.1 그대로.
  */
 @Entity
-@Table(name = "prediction_events")
+@Table(
+        name = "prediction_events",
+        uniqueConstraints = @UniqueConstraint(name = "uq_prediction_events_slug", columnNames = "slug"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PredictionEvent {
@@ -46,6 +49,24 @@ public class PredictionEvent {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    /**
+     * 화면 주소에 쓰는 이름 — {@code /events/scalping} 의 그 칸이다.
+     *
+     * <p><b>왜 필요한가</b> — 프론트의 대회 화면은 슬러그로 열리는데 응답에 {@code id}(숫자)와
+     * {@code title} 뿐이면 "어느 이벤트가 그 대회인가" 를 알 길이 없다. 숫자 id 를 프론트 상수로
+     * 박으면 회차가 만들어진 <b>뒤에야</b> 그 값을 알 수 있어 접수 직전에 재배포해야 하고, 제목으로
+     * 맞추면 한 글자만 바뀌어도 화면이 빈다.
+     *
+     * <p>리허설 이벤트를 따로 만들 수 있게 하는 값이기도 하다 — 슬러그가 없으면 "목록 첫 번째" 같은
+     * 방법을 쓰게 되는데 그러면 리허설 회차가 사용자 화면에 뜬다.
+     *
+     * <p>nullable 이다. {@code ddl-auto: update} 가 행 있는 표에 기본값 없는 NOT NULL 을 못 붙이고,
+     * 슬러그 없는 회차(운영 점검용)도 만들 수 있어야 한다. 대신 <b>UNIQUE</b> 다 — 같은 슬러그가 둘이면
+     * 화면이 어느 쪽을 열지 갈린다.
+     */
+    @Column(length = 40)
+    private String slug;
 
     /** 화면 제목. */
     @Column(nullable = false, length = 80)
@@ -91,7 +112,12 @@ public class PredictionEvent {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    /** 관리자 생성(REST). SCHEDULED 로 시작하고 온체인 openEvent 는 이 행의 id 가 생긴 뒤 트랜잭션 밖에서 보낸다. */
+    /**
+     * 슬러그 없는 회차. 인덱서·정산 테스트처럼 화면 주소가 필요 없는 자리가 쓴다.
+     *
+     * <p>슬러그를 <b>인자로 더하지 않고 오버로드로 나눈 이유</b> — 이 팩터리는 chain 쪽 테스트 여섯 곳이
+     * 이미 부르고 있다. 인자를 하나 더하면 그 여섯이 전부 깨지는데, 그 파일들은 슬러그와 아무 상관이 없다.
+     */
     public static PredictionEvent create(
             String title,
             Instant opensAt,
@@ -101,7 +127,22 @@ public class PredictionEvent {
             BigInteger minStake,
             BigInteger maxStake,
             short minStocks) {
+        return create(null, title, opensAt, sealsAt, baseDate, settleDate, minStake, maxStake, minStocks);
+    }
+
+    /** 관리자 생성(REST). SCHEDULED 로 시작하고 온체인 openEvent 는 이 행의 id 가 생긴 뒤 트랜잭션 밖에서 보낸다. */
+    public static PredictionEvent create(
+            String slug,
+            String title,
+            Instant opensAt,
+            Instant sealsAt,
+            LocalDate baseDate,
+            LocalDate settleDate,
+            BigInteger minStake,
+            BigInteger maxStake,
+            short minStocks) {
         PredictionEvent e = new PredictionEvent();
+        e.slug = slug;
         e.title = title;
         e.status = Status.SCHEDULED;
         e.opensAt = opensAt;

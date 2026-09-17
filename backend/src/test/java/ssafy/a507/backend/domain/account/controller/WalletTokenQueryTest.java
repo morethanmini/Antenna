@@ -7,6 +7,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import jakarta.persistence.EntityManager;
 import java.math.BigInteger;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +59,24 @@ class WalletTokenQueryTest {
     }
 
     @Test
+    @DisplayName("30일 집계 — 번 것·쓴 것을 둘 다 양수로, 31일 전 행은 안 센다")
+    void 삼십일_집계() throws Exception {
+        User u = newUser();
+        credit(u, 10_000, "SIGNUP_BONUS"); // 오늘 +10,000
+        credit(u, -1_000, "AD_PAY"); // 오늘 −1,000
+        credit(u, -500, "SUBSCRIBE"); // 오늘 −500
+        creditDaysAgo(u, 7_777, "SEASON_REWARD", 31); // 구간 밖
+
+        mockMvc.perform(get("/api/v1/wallet/balance").with(user(String.valueOf(u.getId()))))
+                .andExpect(status().isOk())
+                // 잔액은 구간과 무관하게 원장 전체 합이다 — 31일 전 7,777 도 들어간다
+                .andExpect(jsonPath("$.balance").value("16277"))
+                .andExpect(jsonPath("$.earned30d").value("10000"))
+                // 나간 것은 원장에 음수로 있지만 응답은 양수다 — 부호는 화면이 붙인다
+                .andExpect(jsonPath("$.spent30d").value("1500"));
+    }
+
+    @Test
     @DisplayName("원장이 없으면 잔액 \"0\" — 지갑 미연동 회원도 에러가 아니다")
     void 원장이_없으면_잔액_0() throws Exception {
         User u = User.create();
@@ -65,7 +85,10 @@ class WalletTokenQueryTest {
 
         mockMvc.perform(get("/api/v1/wallet/balance").with(user(String.valueOf(u.getId()))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.balance").value("0"));
+                .andExpect(jsonPath("$.balance").value("0"))
+                // SUM 이 NULL 이라 그냥 두면 키가 빠진다. 화면이 0 을 그릴 수 있어야 한다
+                .andExpect(jsonPath("$.earned30d").value("0"))
+                .andExpect(jsonPath("$.spent30d").value("0"));
         mockMvc.perform(get("/api/v1/wallet/ledger").with(user(String.valueOf(u.getId()))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items.length()").value(0))
@@ -181,5 +204,27 @@ class WalletTokenQueryTest {
         em.persist(row);
         em.flush();
         return row;
+    }
+
+    /**
+     * 과거 날짜의 원장 한 행. 30일 구간 밖을 만들 때만 쓴다.
+     *
+     * <p><b>왜 INSERT 인가</b> — {@code created_at} 은 {@code @CreationTimestamp} 라 persist 때 지금 시각이
+     * 박히고, 나중에 UPDATE 로 되돌릴 수 없다. 원장에 append-only 트리거가 걸려 있어 UPDATE 자체가 막힌다
+     * (db/append-only.sql). 넣을 때 값을 정하는 것이 유일한 길이고, 그건 트리거도 막지 않는다.
+     *
+     * <p>id 는 IDENTITY 라 비워 두고, 근거 이벤트도 비운다 — 이 행은 시각만 쓰이고 목록에 나오지 않는다.
+     */
+    private void creditDaysAgo(User u, long delta, String reason, int daysAgo) {
+        em.createNativeQuery(
+                        "insert into token_ledger (user_id, delta, reason, created_at)"
+                                + " values (?1, ?2, ?3, ?4)")
+                .setParameter(1, u.getId())
+                .setParameter(2, BigInteger.valueOf(delta))
+                .setParameter(3, reason)
+                .setParameter(4, Instant.now().minus(daysAgo, ChronoUnit.DAYS))
+                .executeUpdate();
+        em.flush();
+        em.clear();
     }
 }

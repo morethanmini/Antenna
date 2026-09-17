@@ -15,6 +15,8 @@ public record EventListResponse(List<Item> items) {
 
     public record Item(
             Long eventId,
+            /** 화면 주소에 쓰는 이름. 없을 수 있다(운영 점검용 회차) */
+            String slug,
             String title,
             PredictionEvent.Status status,
             /** 화면용으로 접은 단계. 프론트가 온체인 진행 순서를 몰라도 되게 한다 */
@@ -27,6 +29,7 @@ public record EventListResponse(List<Item> items) {
         public static Item of(PredictionEvent e) {
             return new Item(
                     e.getId(),
+                    e.getSlug(),
                     e.getTitle(),
                     e.getStatus(),
                     EventPhase.of(e.getStatus()),

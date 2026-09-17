@@ -21,6 +21,16 @@ export type WalletBalance = {
    * 서버가 막 떴거나(첫 5초) 인덱서가 꺼져 있으면 null 이다(ANT-TOKEN-04) — 그때는 "대사 전" 으로 그린다.
    */
   syncedAt: string | null
+  /**
+   * 최근 30일에 들어온 ANT. 다른 금액 필드와 같이 정수 문자열이다.
+   *
+   * **총유입이지 순증감이 아니다.** 배팅했다가 환불받으면 이 값과 spent30d 가 둘 다 오른다.
+   * 사유를 골라 빼지 않는 이유는 "번 것 − 쓴 것 = 30일간 잔액 변화" 가 성립해야
+   * 숫자끼리 검산이 되기 때문이다(서버 WalletBalanceResponse 에 같은 설명이 있다).
+   */
+  earned30d: string
+  /** 최근 30일에 나간 ANT. **양수로 온다** — "-" 를 붙일지는 화면이 정한다 */
+  spent30d: string
 }
 
 /* 필터로 고를 수 있는 사유는 명세에 적힌 7종이 전부다. 임의 사유를 만들지 않는다. */
@@ -101,6 +111,10 @@ export const SIGNATURE_SCOPES = {
   PREDICTION: 'prediction',
   PREDICTION_BURN: 'prediction-burn',
   SUBSCRIBE: 'subscribe',
+  /* 대회 묶음 등록(ANT-EVENT-05). 한 서명에 5~10 종목이 함께 들어간다 — 종목마다 받으면
+     지갑 팝업이 다섯 번 뜨고, 그 사이 하나만 거절해도 "5종목 이상" 규칙이 깨진 채 절반만
+     등록된다. 조립은 api/events.ts eventEntrySigningPayload. */
+  EVENT_ENTRY: 'event-entry',
   /* 리포트 발행(ANT-CHAIN-16). 태그가 report 가 아닌 이유 — 봉인 문자열 첫 줄이 이미
      antenna:report:v1 이다. 같게 두면 서명 payload 와 봉인 문자열이 첫 줄까지 같아져
      한쪽을 다른 쪽으로 오인·재사용할 여지가 생긴다(예측의 prediction/commit 과 같은 판단). */

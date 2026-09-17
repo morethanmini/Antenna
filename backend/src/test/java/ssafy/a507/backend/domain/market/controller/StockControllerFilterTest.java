@@ -22,10 +22,10 @@ import org.springframework.transaction.annotation.Transactional;
  * 종목 탐색 화면(B-02)이 GET /api/v1/stocks 에 기대하는 것 — 행별 등락률·관심 여부·집계 자리,
  * 섹터·시장·관심 필터, 그리고 GET /api/v1/stocks/sectors 요약 칩.
  *
- * <p>재료가 아직 없는 값(예측 집계)은 키를 빼지 않고 null · 0 으로 내린다 — 화면이
- * {@code s.per === null} 로 분기하므로 키가 없으면 undefined.toFixed 로 죽는다. 같은 이유로
- * 재료 없는 필터·정렬(sentiment · hasOpenPrediction · 예측 정렬 3종)은 400 이 아니라 무시다.
- * PER 범위 필터와 PER · CHANGE_RATE 정렬은 동작하고, 정렬 안에서 커서가 이어진다.
+ * <p>예측 집계(판정 대기 건수·UP 비율)는 predictions 를 종목·방향별로 세어 채우고, 예측 없는 종목은
+ * 키를 빼지 않고 null · 0 으로 내린다 — 화면이 {@code s.per === null} 로 분기하므로 키가 없으면
+ * undefined.toFixed 로 죽는다. 재료 없는 필터(sentiment · hasOpenPrediction)는 400 이 아니라 무시다.
+ * PER 범위 필터와 PER · CHANGE_RATE · 예측 정렬 3종은 동작하고, 정렬 안에서 커서가 이어진다.
  *
  * <p>기준 데이터 — 삼성전자(PER 12.39)·SK하이닉스(반도체·KOSPI) · 카카오(PER 25 · 인터넷·KOSDAQ) ·
  * 거래정지(섹터 없음·KOSDAQ) · 폐지종목(listed=false). 종가는 8/27 → 8/28.
@@ -161,7 +161,7 @@ class StockControllerFilterTest {
     }
 
     @Test
-    @DisplayName("재료가 없는 필터·정렬(sentiment · hasOpenPrediction · 예측 정렬)은 400 이 아니라 무시다 — 코드순")
+    @DisplayName("재료가 없는 필터(sentiment · hasOpenPrediction)는 400 이 아니라 무시다 — 예측이 없으면 예측순도 코드순")
     void 재료_없는_필터는_무시한다() throws Exception {
         mockMvc.perform(get(URL)
                         .param("sentiment", "UP").param("hasOpenPrediction", "true")
@@ -321,6 +321,74 @@ class StockControllerFilterTest {
         mockMvc.perform(get(URL + "/sectors")).andExpect(status().isUnauthorized());
     }
 
+    // ── 예측 집계 ───────────────────────────────────────────
+
+    @Test
+    @DisplayName("행마다 판정 대기(BASE·OPEN) 예측 수와 UP 비율이 실린다 — 판정이 끝난 건은 세지 않는다")
+    void 행별_예측_집계가_실린다() throws Exception {
+        insertPrediction(me, "005930", "UP", "BASE");
+        insertPrediction(other, "005930", "UP", "OPEN");
+        insertPrediction(other, "005930", "DOWN", "OPEN");
+        insertPrediction(me, "005930", "DOWN", "HIT");
+
+        // 기본 정렬(PREDICTION_COUNT)이라 예측 있는 삼성전자가 앞, 나머지는 코드순.
+        mockMvc.perform(get(URL).with(user(me)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].code").value("005930"))
+                .andExpect(jsonPath("$.items[0].predictionCount").value(3))
+                .andExpect(jsonPath("$.items[0].upRatio").value(66.67))
+                .andExpect(jsonPath("$.items[1].code").value("000660"))
+                .andExpect(jsonPath("$.items[1].predictionCount").value(0))
+                .andExpect(jsonPath("$.items[1].upRatio").value(nullValue()));
+    }
+
+    @Test
+    @DisplayName("sort=PREDICTION_COUNT 는 판정 대기 예측 많은 순 — 없는 종목은 뒤에 코드순")
+    void 예측_많은_순_정렬() throws Exception {
+        insertPrediction(me, "035720", "DOWN", "OPEN");
+        insertPrediction(me, "005930", "UP", "OPEN");
+        insertPrediction(other, "005930", "DOWN", "BASE");
+
+        mockMvc.perform(get(URL).param("sort", "PREDICTION_COUNT").with(user(me)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].code").value("005930"))
+                .andExpect(jsonPath("$.items[1].code").value("035720"))
+                .andExpect(jsonPath("$.items[2].code").value("000660"))
+                .andExpect(jsonPath("$.items[3].code").value("900000"));
+    }
+
+    @Test
+    @DisplayName("sort=UP_RATIO 는 상승 의견 비율 높은 순, DOWN_RATIO 는 그 반대 — 예측 없는 종목은 둘 다 뒤")
+    void 상승_하락_의견_순_정렬() throws Exception {
+        insertPrediction(me, "035720", "DOWN", "OPEN");
+        insertPrediction(me, "005930", "UP", "OPEN");
+        insertPrediction(other, "005930", "DOWN", "BASE");
+        insertPrediction(other, "005930", "UP", "BASE");
+
+        mockMvc.perform(get(URL).param("sort", "UP_RATIO").with(user(me)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].code").value("005930"))
+                .andExpect(jsonPath("$.items[1].code").value("035720"))
+                .andExpect(jsonPath("$.items[2].code").value("000660"));
+
+        mockMvc.perform(get(URL).param("sort", "DOWN_RATIO").with(user(me)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].code").value("035720"))
+                .andExpect(jsonPath("$.items[1].code").value("005930"))
+                .andExpect(jsonPath("$.items[2].code").value("000660"));
+    }
+
+    @Test
+    @DisplayName("요약 헤더의 predictionCount 도 같은 집계다 — 판정 대기만")
+    void 요약_헤더_예측_수() throws Exception {
+        insertPrediction(me, "005930", "UP", "OPEN");
+        insertPrediction(other, "005930", "DOWN", "MISS");
+
+        mockMvc.perform(get(URL + "/005930").with(user(me)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.predictionCount").value(1));
+    }
+
     private Long insertUser(String nickname) {
         em.createNativeQuery(
                         """
@@ -345,6 +413,22 @@ class StockControllerFilterTest {
                 .setParameter(3, sector)
                 .setParameter(4, market)
                 .setParameter(5, listed)
+                .executeUpdate();
+    }
+
+    /** REAL 예측 한 건. 목표가·기간은 집계와 무관하다 — 방향과 상태만 뜻이 있다. */
+    private void insertPrediction(String userId, String code, String direction, String status) {
+        em.createNativeQuery(
+                        """
+                        INSERT INTO predictions
+                          (user_id, track, stock_code, direction, target_price, horizon,
+                           status, created_at, updated_at)
+                        VALUES (?, 'REAL', ?, ?, 70000, 7, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                        """)
+                .setParameter(1, Long.valueOf(userId))
+                .setParameter(2, code)
+                .setParameter(3, direction)
+                .setParameter(4, status)
                 .executeUpdate();
     }
 

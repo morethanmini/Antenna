@@ -23,13 +23,19 @@ export const CONTEST = {
   /** 대회가 시작하는 날(YYYY-MM-DD) */
   startDate: '2026-09-18',
   /** 등록 창이 열리는 순간 */
-  opensAt: '2026-09-18T13:10:00+09:00',
+  opensAt: '2026-09-18T13:30:00+09:00',
   /** 등록 창이 닫히는 순간 */
   closesAt: '2026-09-19T11:59:00+09:00',
   /** 맞혀야 하는 종가의 날짜(YYYY-MM-DD) */
   targetDate: '2026-09-21',
-  /** 순위를 공개하는 날 */
-  revealDate: '2026-09-28',
+  /**
+   * 순위를 공개하는 **순간**.
+   *
+   * 날짜만 있던 것을 시각까지로 넓혔다(2026-09-16 담당자 확정). 날짜만 두면
+   * 그날 0시부터 공개된 것으로 볼 수밖에 없어, 실제로 여는 13:30 까지 반나절
+   * 동안 화면이 "공개됨" 이라고 거짓말을 한다.
+   */
+  revealAt: '2026-09-22T13:30:00+09:00',
 } as const
 
 /** 대회 종목(2026-09-15 확정). **순서가 곧 카드 순서다** — 주신 차례를 그대로 둔다.
@@ -37,6 +43,17 @@ export const CONTEST = {
  *  보통주만 담는다. "삼성전자" 로 찾으면 005935 삼성전자우가, "현대차" 로 찾으면
  *  005387·005385 가 함께 걸리는데, 우선주는 종가가 따로 움직여 같은 종목을 두 번
  *  넣는 셈이 된다. 열 코드 모두 DB 에서 확인한 값이다. */
+/**
+ * 대회 종목 — **화면 진입 표시용이다. 등록의 근거가 아니다.**
+ *
+ * 등록에 쓰는 목록은 서버가 준다(`GET /events/{id}` 의 `stocks[]`). idx 가 온체인 커밋
+ * keccak(eventId, idx, side, noteHash) 의 재료라 순서까지 서버를 따라야 하고, 여기 상수와
+ * 어긋나면 배팅이 엉뚱한 종목에 걸린다(2026-09-16).
+ *
+ * 그래서 이 배열이 남아 있는 곳은 StockDetail 의 "대회로 들어왔는가" 표시 하나뿐이다.
+ * 그 화면에서는 이제 등록을 받지 않으므로 어긋나도 그림만 달라진다. 대회가 끝나면
+ * StockDetail 의 대회 분기와 함께 지운다.
+ */
 export const CONTEST_CODES: readonly string[] = [
   '005930', // 삼성전자
   '000660', // SK하이닉스
@@ -64,9 +81,7 @@ export function phaseAt(now: Date = new Date()): Phase {
   const t = now.getTime()
   if (t < Date.parse(CONTEST.opensAt)) return 'before'
   if (t < Date.parse(CONTEST.closesAt)) return 'open'
-  /* 결과 공개일은 날짜만 정해져 있다. 그날 0시부터 공개된 것으로 본다 —
-     시각을 정하면 그 시각까지 화면이 "곧 공개" 라고 거짓말을 하게 된다. */
-  if (t < Date.parse(`${CONTEST.revealDate}T00:00:00+09:00`)) return 'judging'
+  if (t < Date.parse(CONTEST.revealAt)) return 'judging'
   return 'done'
 }
 
@@ -117,7 +132,7 @@ export const RULES: { k: string; v: string }[] = [
   { k: '시작', v: `${dayStamp(CONTEST.startDate)} 시작합니다.` },
   { k: '등록', v: `${stamp(CONTEST.opensAt)} ~ ${stamp(CONTEST.closesAt)} 사이에만 예측을 등록할 수 있습니다.` },
   { k: '판정', v: `${dayStamp(CONTEST.targetDate)} 종가를 맞히는 대회입니다.` },
-  { k: '공개', v: `결과는 ${dayStamp(CONTEST.revealDate)}에 공개합니다.` },
+  { k: '공개', v: `결과는 ${stamp(CONTEST.revealAt)}에 공개합니다.` },
 ]
 
 /** 단계와 무관하게 늘 깔리는 겹 */
@@ -152,19 +167,19 @@ export const BANNER: Record<Phase, BannerArt> = {
     pill: ART('pill-before'),
     title: ART('title-main'),
     copy: ART('copy-before'),
-    alt: '천하제일 단타대회 — 시작 전. 오늘의 급등주를 맞혀라! 수익률 예측 최강자는 누구?',
+    alt: '천하제일 단타대회 — 시작 전. 롱이냐 숏이냐! 예측 최강자는 누구?',
   },
   open: {
     pill: ART('pill-open'),
     title: ART('title-main'),
     copy: ART('copy-before'),
-    alt: '천하제일 단타대회 — 대회 진행 중. 오늘의 급등주를 맞혀라! 수익률 예측 최강자는 누구?',
+    alt: '천하제일 단타대회 — 대회 진행 중. 롱이냐 숏이냐! 예측 최강자는 누구?',
   },
   judging: {
     pill: ART('pill-judging'),
     title: ART('title-main'),
     copy: ART('copy-before'),
-    alt: '천하제일 단타대회 — 결과 집계 중. 오늘의 급등주를 맞혀라! 수익률 예측 최강자는 누구?',
+    alt: '천하제일 단타대회 — 결과 집계 중. 롱이냐 숏이냐! 예측 최강자는 누구?',
   },
   done: {
     pill: ART('pill-done'),
