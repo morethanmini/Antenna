@@ -46,6 +46,7 @@ import Ad from './pages/Ad'
 import AdminAbuse from './pages/AdminAbuse'
 import AdminUser from './pages/AdminUser'
 import AdminSeason from './pages/AdminSeason'
+import AdminEvent from './pages/AdminEvent'
 import EventContest from './pages/EventContest'
 
 export type Access =
@@ -161,6 +162,9 @@ export const ROUTES: PageMeta[] = [
   { screen: 'I-01', element: AdminAbuse, path: '/admin/abuse-reports', title: '신고 처리', access: 'admin', mode: 'insight', nav: 'home', story: 'ANT-FE-ADMIN-ABUSE' },
   { screen: 'I-02', element: AdminUser, path: '/admin/users', title: '회원 제재', access: 'admin', mode: 'insight', nav: 'home', story: 'ANT-FE-ADMIN-USER' },
   { screen: 'I-03', element: AdminSeason, path: '/admin/seasons', title: '시즌 운영', access: 'admin', mode: 'sim', nav: 'home', story: 'ANT-FE-ADMIN-SEASON' },
+  /* I-04 는 설계서에 없다. 이벤트 관리자 API 6종(ANT-EVENT-04·06)이 열려 있는데 부르는
+     화면이 없어 붙였다. nav 는 home 으로 둔다 — 사이드바에 메뉴를 만들지 않는다. */
+  { screen: 'I-04', element: AdminEvent, path: '/admin/events', title: '이벤트 운영', access: 'admin', mode: 'insight', nav: 'home', story: 'ANT-FE-ADMIN-EVENT' },
 
   /* ── J. 이벤트 ───────────────────────────────────────
      설계서 §3 에 없는 화면이다. 이벤트용으로 뒤에 붙은 것이라 A~I 를 밀지 않으려고
