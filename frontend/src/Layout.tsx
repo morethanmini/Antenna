@@ -139,12 +139,17 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
   const navigate = useNavigate()
   const [confirmingSignOut, setConfirmingSignOut] = useState(false)
 
-  /* 곁창 둘. 하나를 열면 다른 하나는 닫는다 — 네비바 아래 같은 자리에 겹쳐 뜬다 */
+  /* 곁창 셋. 하나를 열면 나머지는 닫는다 — 네비바 아래 같은 자리에 겹쳐 뜬다 */
   const [searchOpen, setSearchOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  /* 좁은 화면에서 메뉴 줄(.navmenu)이 햄버거로 접힐 때 그 안을 여는 곁창이다.
+     넓을 때는 CSS 가 버튼을 숨기므로 이 상태는 쓰이지 않는다. */
+  const [navOpen, setNavOpen] = useState(false)
   const searchBtn = useRef<HTMLButtonElement>(null)
   const menuBtn = useRef<HTMLButtonElement>(null)
   const menuBox = useRef<HTMLDivElement>(null)
+  const navBtn = useRef<HTMLButtonElement>(null)
+  const navBox = useRef<HTMLDivElement>(null)
 
   const closeSearch = useCallback((returnFocus?: boolean) => {
     setSearchOpen(false)
@@ -154,7 +159,12 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
     setMenuOpen(false)
     if (returnFocus) menuBtn.current?.focus()
   }, [])
+  const closeNav = useCallback((returnFocus?: boolean) => {
+    setNavOpen(false)
+    if (returnFocus) navBtn.current?.focus()
+  }, [])
   useDismiss({ open: menuOpen, panel: menuBox, trigger: menuBtn, onClose: closeMenu })
+  useDismiss({ open: navOpen, panel: navBox, trigger: navBtn, onClose: closeNav })
 
   /* M-09 온보딩 튜토리얼. **홈이 아니라 셸에 둔다** — 비로그인 딥링크로 막혔던
      회원도 가입 절차가 끝나면 이 셸 안으로 들어온다. 홈 화면에만 걸어 두면 처음
@@ -213,9 +223,21 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
   return (
     <>
       <header className="navbar">
-        {/* 로고가 홈이다. 모드별 홈으로 간다 — 모의투자에서 누르면 모의투자 홈이다 */}
+        {/* 로고가 홈이다. 모드별 홈으로 간다 — 모의투자에서 누르면 모의투자 홈이다.
+
+            좁아지면 **워드마크를 마크 한 장으로 갈아 끼운다.** 전에는 워드마크를
+            CSS 로 잘라 왼쪽 22% 만 남겼는데(.brand 에 overflow:hidden), 잘린 자리는
+            디자인이 정한 여백이 아니라 우연히 걸린 곳이라 마크가 한쪽으로 치우쳤다.
+            같은 폴더에 마크 파일이 따로 있으므로 그것을 쓴다.
+
+            둘을 겹쳐 두고 CSS 로 감추지 않고 <picture> 로 고르는 이유 — 겹쳐 두면
+            안 보이는 쪽까지 내려받는다(둘 다 0.5MB 다). media 로 고르면 브라우저가
+            한 장만 받는다. alt 는 <img> 가 들고 있으므로 어느 쪽이 뽑히든 같다. */}
         <Link className="brand" to={modeConfig.home}>
-          <img className="brand-logo" src="/assets/logo/antenna-wordmark.png" alt="ANTENNA 홈" />
+          <picture>
+            <source media="(max-width:600px)" srcSet="/assets/logo/antenna-mark-light.png" />
+            <img className="brand-logo" src="/assets/logo/antenna-wordmark.png" alt="ANTENNA 홈" />
+          </picture>
         </Link>
 
         {/* data-on 이 알의 자리를 정한다. 켜진 링크에 배경을 주지 않고 알 하나를
@@ -245,6 +267,37 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
         </nav>
 
         <div className="navbar-right">
+          {/* 접힌 메뉴 줄. **자리가 모자랄 때만 CSS 가 꺼낸다**(.navburger 는 기본이
+              display:none 이다) — 넓은 화면에서는 위의 .navmenu 가 그대로 한 줄로 선다.
+              로그인 여부 바깥에 둔다: 메뉴는 계정이 아니라 서비스를 둘러보는 길이다. */}
+          <div className="navburger">
+            <button
+              ref={navBtn}
+              className="iconbtn" type="button"
+              aria-label="메뉴" aria-haspopup="menu" aria-expanded={navOpen}
+              onClick={() => { setSearchOpen(false); setMenuOpen(false); setNavOpen((v) => !v) }}
+            >
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M4 7h16M4 12h16M4 17h16" />
+              </svg>
+            </button>
+
+            {navOpen && (
+              <div className="navburger-pop" ref={navBox} role="menu" aria-label="주요 메뉴">
+                {modeConfig.nav.map((n) => (
+                  <Link
+                    key={n.key} role="menuitem" to={n.href}
+                    className={n.key === nav ? 'on' : ''}
+                    aria-current={n.key === nav ? 'page' : undefined}
+                    onClick={() => closeNav()}
+                  >
+                    {n.text}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
           {authed ? (
             <>
               <WalletChip />
@@ -253,7 +306,7 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
                 ref={searchBtn}
                 className="iconbtn" type="button"
                 aria-label="검색" aria-expanded={searchOpen} aria-controls="navbar-search"
-                onClick={() => { setMenuOpen(false); setSearchOpen((v) => !v) }}
+                onClick={() => { setMenuOpen(false); setNavOpen(false); setSearchOpen((v) => !v) }}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
                   <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
@@ -265,7 +318,12 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
                   표시다 — 없으면 종을 누를 때 팝업이 닫히고 곧바로 다시 열린다. */}
               <NotificationBell />
 
-              <Link className="iconbtn" to="/settings" aria-label="설정">
+              {/* 600px 아래에서는 이 자리를 비우고 계정 메뉴 안으로 내려간다
+                  (.nav-gear · .accountmenu-pop .only-narrow) — 햄버거가 아이콘 한
+                  칸을 더 쓰면서 360px 에 1px 밖에 안 남았다. 잔액 칩이 먼저 같은
+                  길로 내려갔다: 좁아지면 상단바에 남길 것과 계정 메뉴로 접을 것을
+                  가르고, 설정은 하루에 한 번 열 자리가 아니다. */}
+              <Link className="iconbtn nav-gear" to="/settings" aria-label="설정">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="3" />
                   <path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1v.2a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-2.7-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H3.4a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.7 6.3l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 2.7-1.1V2a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7h.2a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1" />
@@ -279,7 +337,7 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
                   ref={menuBtn}
                   className="avatarbtn" type="button"
                   aria-label="계정 메뉴" aria-haspopup="menu" aria-expanded={menuOpen}
-                  onClick={() => { setSearchOpen(false); setMenuOpen((v) => !v) }}
+                  onClick={() => { setSearchOpen(false); setNavOpen(false); setMenuOpen((v) => !v) }}
                 >
                   <img src={user?.avatarUrl} alt="" />
                 </button>
@@ -288,6 +346,9 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
                   <div className="accountmenu-pop" ref={menuBox} role="menu" aria-label="계정">
                     <Link role="menuitem" to="/me" onClick={() => closeMenu()}>마이페이지</Link>
                     <Link role="menuitem" to="/me/wallet" onClick={() => closeMenu()}>내 지갑</Link>
+                    {/* 넓을 때는 톱니 아이콘이 바에 있으므로 여기서는 숨는다 —
+                        같은 길이 두 곳에 보이면 어느 쪽을 눌러야 하는지가 생긴다 */}
+                    <Link role="menuitem" className="only-narrow" to="/settings" onClick={() => closeMenu()}>환경 설정</Link>
                     {/* 바로 나가지 않고 한 번 더 묻는다 — 되돌리려면 OAuth 를 다시 타야 한다.
                         refresh 는 httpOnly 쿠키라 브라우저가 직접 못 지우고, 서버에 폐기를
                         요청하는 이 버튼이 유일한 정리 수단이다. */}
