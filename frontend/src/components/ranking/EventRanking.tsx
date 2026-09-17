@@ -192,6 +192,12 @@ function Podium(
           key={r.userId}
           className={`rke-pod is-${r.rank ?? 0}${r.userId === meId ? ' is-me' : ''}`}
         >
+          {/* 1등에만 왕관. 손익률 색은 부호(이익 빨강·손실 파랑)를 따르므로 등수를
+              말해 주지 못한다 — 1등이 손실이면 2·3등과 같은 파랑이다. 배너에 쓰던
+              조각을 그대로 써서 두 화면이 한 이벤트로 묶인다. */}
+          {r.rank === 1 && (
+            <img className="rke-pod-crown" src={BANNER_BASE.crown} alt="" aria-hidden="true" />
+          )}
           <span className="rke-pod-no num">{r.rank}</span>
           <Link className="rke-pod-name" to={`/channels/${r.userId}`}>{r.nickname ?? '이름 없음'}</Link>
           <b className={`num ${sign(r.profitRate)}`}>{rate(r.profitRate)}</b>
@@ -368,13 +374,14 @@ export default function EventRanking() {
                             </Link>
                           </td>
                           <td className="rke-col-num">
-                            <span className={`num ${sign(r.profitRate)}`}>{rate(r.profitRate)}</span>
+                            {/* 한 줄의 주인공이다. 이름이 닻이고 나머지는 물러난다 */}
+                            <span className={`num rke-rate ${sign(r.profitRate)}`}>{rate(r.profitRate)}</span>
                             {/* 오차는 열이 아니라 동점인 줄에만 나온다(기획 §4.1).
                                 무리 머리가 이미 "동점" 이라고 말했으므로 값만 둔다 */}
                             {tie && <span className="rke-tie num">{tieValue(r)}</span>}
                           </td>
-                          <td className="rke-col-num num">{ant(r.net)}</td>
-                          <td className="rke-col-num num">{r.hitCount}/{r.doneCount}</td>
+                          <td className="rke-col-num num rke-col-net">{ant(r.net)}</td>
+                          <td className="rke-col-num num rke-col-hit">{r.hitCount}/{r.doneCount}</td>
                         </tr>
                       </Fragment>
                     )

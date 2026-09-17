@@ -78,9 +78,13 @@
 }
 .predictor-market-page .rke-me-rank small{ font-size:var(--fs-base); color:var(--muted); }
 .predictor-market-page .rke-me-stats{
-  display:flex; align-items:baseline; gap:12px; font-size:var(--fs-base); color:var(--body);
+  display:flex; align-items:baseline; gap:14px; font-size:var(--fs-md); color:var(--muted);
 }
 .predictor-market-page .rke-me-rate{ font-size:var(--fs-3xl); font-weight:var(--fw-heavy); }
+/* 손익률 다음 값인 토큰만 진하게. 적중 건수는 맥락이라 그대로 둔다 */
+.predictor-market-page .rke-me-stats > .num:nth-child(2){
+  font-size:var(--fs-base); font-weight:var(--fw-bold); color:var(--ink);
+}
 
 /* 손익 부호. 한국식이라 이익이 빨강이다 */
 .predictor-market-page .rke .is-up{ color:var(--up); }
@@ -93,20 +97,30 @@
   display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); align-items:end; gap:10px;
 }
 .predictor-market-page .rke-pod{
-  display:flex; flex-direction:column; align-items:center; gap:4px;
-  padding:16px 12px 14px; border-radius:14px;
-  border:1px solid var(--rule); background:var(--surface);
+  display:flex; flex-direction:column; align-items:center; gap:5px;
+  padding:18px 12px 16px; border-radius:14px;
+  border:1px solid var(--card-line); background:var(--surface);
   text-align:center;
 }
-/* 등수마다 키가 다르다 — 숫자를 읽지 않아도 차례가 보인다 */
+/* 등수마다 키가 다르다 — 숫자를 읽지 않아도 차례가 보인다.
+   1등만 테두리를 2px 로 준다. 색만 금색으로 바꾸면 2·3등과 같은 무게라 "금색 카드"
+   일 뿐 "이긴 카드" 로는 안 읽힌다. */
 .predictor-market-page .rke-pod.is-1{
-  padding-top:26px; padding-bottom:22px;
-  border-color:var(--gold); background:linear-gradient(180deg,#fffaeb,var(--surface));
-  box-shadow:0 8px 22px -16px rgba(180,140,20,.6);
+  padding-top:28px; padding-bottom:24px;
+  border:2px solid var(--gold); background:linear-gradient(180deg,#fffaeb,var(--surface));
+  box-shadow:0 10px 26px -18px rgba(180,140,20,.7);
 }
 .predictor-market-page .rke-pod.is-2{ padding-top:20px; }
 .predictor-market-page .rke-pod.is-3{ padding-top:14px; }
 .predictor-market-page .rke-pod.is-me{ border-color:var(--brand); background:var(--brand-softer); }
+
+/* 왕관 — 1등 배지 위에 얹는다. 살짝 겹쳐야 "쓴 것" 으로 보인다.
+   띄워 두면 그냥 위에 놓인 그림이 된다. 비율은 그림이 정하므로 높이를 적지 않는다. */
+.predictor-market-page .rke-pod-crown{
+  width:40px; height:auto; display:block;
+  margin-bottom:-9px; transform:rotate(-8deg);
+  filter:drop-shadow(0 2px 3px rgba(120,90,10,.28));
+}
 
 .predictor-market-page .rke-pod-no{
   display:grid; place-items:center; width:30px; height:30px; border-radius:999px;
@@ -121,7 +135,13 @@
 }
 .predictor-market-page .rke-pod-name:hover{ color:var(--brand-ink); text-decoration:underline; }
 .predictor-market-page .rke-pod b{ font-size:var(--fs-4xl); font-weight:var(--fw-heavy); letter-spacing:-.02em; }
-.predictor-market-page .rke-pod-net{ font-size:var(--fs-md); color:var(--body); }
+/* 1등만 한 단 더. 시상대에서 가장 큰 숫자가 1등이어야 순위가 글자보다 먼저 읽힌다 */
+.predictor-market-page .rke-pod.is-1 b{ font-size:var(--fs-6xl); font-weight:var(--fw-black); }
+.predictor-market-page .rke-pod.is-1 .rke-pod-name{ font-size:var(--fs-xl); }
+
+/* 실제로 받은 토큰이다. --body 로 깔면 적중 건수와 같은 무게로 내려앉아
+   "얼마를 벌었나" 가 안 보인다 — 손익률 다음으로 중요한 값이라 진하게 둔다 */
+.predictor-market-page .rke-pod-net{ font-size:var(--fs-base); font-weight:var(--fw-bold); color:var(--ink); }
 .predictor-market-page .rke-pod-hit{ font-size:var(--fs-xs); color:var(--faint); }
 
 /* ── 동점 표시 ───────────────────────────────────────────
@@ -138,15 +158,18 @@
 /* 무리 머리 — 규칙을 여기 한 번만 적는다. 줄마다 "동점" 을 되풀이하지 않으려는 것이다.
    표 안의 줄이지만 데이터가 아니라 설명이라 배경을 깔아 구분한다. */
 .predictor-market-page .rke-table tr.rke-tie-head td{
-  padding:7px 14px;
-  border-bottom:0; background:var(--brand-softer);
-  color:var(--brand-ink); font-size:var(--fs-xs); font-weight:var(--fw-bold);
-  white-space:normal;
+  padding:8px 16px;
+  border-bottom:0; background:var(--brand-soft);
+  color:var(--brand-ink); font-size:var(--fs-xs); font-weight:var(--fw-heavy);
+  letter-spacing:.01em; white-space:normal;
 }
-/* 묶인 줄은 왼쪽 띠로 이어 붙인다 — 머리와 줄들이 한 덩어리로 보인다 */
+/* 묶인 줄은 왼쪽 띠로 이어 붙인다 — 머리와 줄들이 한 덩어리로 보인다.
+   띠가 --brand-soft 면 바탕과 구별이 안 가 무리의 경계가 사라진다 */
+.predictor-market-page .rke-table tr.rke-tie-head td,
 .predictor-market-page .rke-table tr.is-tied td:first-child{
-  box-shadow:inset 3px 0 0 var(--brand-soft);
+  box-shadow:inset 3px 0 0 var(--brand);
 }
+.predictor-market-page .rke-table tr.is-tied{ background:var(--brand-softer); }
 
 /* 시상대는 카드 셋이 가로로 떨어져 있어 묶을 수 없다. 알약으로 대신한다 */
 .predictor-market-page .rke-pod .rke-tie{
@@ -165,17 +188,21 @@
 .predictor-market-page .rke-table{ width:100%; border-collapse:collapse; font-size:var(--fs-lg); }
 .predictor-market-page .rke-table th,
 .predictor-market-page .rke-table td{
-  padding:11px 14px; border-bottom:1px solid var(--rule);
+  /* 줄 하나에 두 층(손익률·오차)이 들어갈 수 있어 위아래를 넉넉히 준다 */
+  padding:13px 16px; border-bottom:1px solid var(--rule);
   text-align:left; white-space:nowrap;
 }
 .predictor-market-page .rke-table thead th{
-  background:var(--surface-2); color:var(--muted);
-  font-size:var(--fs-sm); font-weight:var(--fw-bold);
+  background:var(--surface-2); color:var(--body);
+  font-size:var(--fs-sm); font-weight:var(--fw-bold); letter-spacing:.01em;
 }
 .predictor-market-page .rke-table tbody tr:last-child td{ border-bottom:0; }
 .predictor-market-page .rke-table tbody tr:hover{ background:var(--brand-softer); }
 .predictor-market-page .rke-table tbody tr.is-me{ background:var(--brand-softer); }
-.predictor-market-page .rke-table tbody tr.is-me td{ font-weight:var(--fw-bold); }
+/* 내 줄은 왼쪽 띠로 찾는다. 글자를 통째로 굵히면 아래의 위계가 무너진다 */
+.predictor-market-page .rke-table tbody tr.is-me td:first-child{
+  box-shadow:inset 3px 0 0 var(--brand);
+}
 
 /* **선택자에 th/td 를 붙여야 한다.** 위의 `.rke-table th, .rke-table td` 가 text-align:left
    를 걸고 있는데 그쪽이 요소 하나를 더 물고 있어 명시도가 높다. `.rke-col-num` 만으로는
@@ -183,12 +210,34 @@
    어긋나 보였다(2026-09-17). */
 .predictor-market-page .rke-table th.rke-col-rank,
 .predictor-market-page .rke-table td.rke-col-rank{
-  width:64px; text-align:center; font-weight:var(--fw-bold); color:var(--ink);
+  width:64px; text-align:center; font-weight:var(--fw-heavy); color:var(--muted);
 }
 .predictor-market-page .rke-table th.rke-col-num,
 .predictor-market-page .rke-table td.rke-col-num{ text-align:right; }
-.predictor-market-page .rke-name{ color:var(--ink); font-weight:var(--fw-normal); text-decoration:none; }
+
+/* ── 줄 안의 위계 ────────────────────────────────────────
+   전에는 이름·손익률·손익·적중이 모두 같은 무게였다. 넷이 같이 소리치면 눈이
+   어디부터 볼지 정하지 못해 표가 뿌옇게 읽힌다. 하나만 크게 두고 나머지를 내린다.
+
+   이름은 그 줄이 누구인가라서 닻이고, 손익률은 이 대회의 지표라 가장 크다.
+   손익(ANT)은 손익률을 뒷받침하는 값이라 한 단 낮추고, 적중은 맥락이라 더 낮춘다. */
+.predictor-market-page .rke-name{
+  color:var(--ink); font-size:var(--fs-lg); font-weight:var(--fw-bold); text-decoration:none;
+}
 .predictor-market-page .rke-name:hover{ color:var(--brand-ink); text-decoration:underline; }
+
+.predictor-market-page .rke-rate{
+  font-size:var(--fs-xl); font-weight:var(--fw-heavy); letter-spacing:-.01em;
+}
+.predictor-market-page .rke-table td.rke-col-net{
+  font-size:var(--fs-md); font-weight:var(--fw-normal); color:var(--body);
+}
+.predictor-market-page .rke-table td.rke-col-hit{
+  font-size:var(--fs-sm); font-weight:var(--fw-normal); color:var(--faint);
+}
+/* 내 줄은 통째로 굵히지 않는다 — 위계가 무너져 어디를 볼지 다시 알 수 없게 된다.
+   왼쪽 띠와 바탕색만으로 충분히 찾을 수 있다 */
+.predictor-market-page .rke-table tbody tr.is-me td.rke-col-rank{ color:var(--brand-ink); }
 
 /* ── 안내 · 꼬리 ─────────────────────────────────────────
    정산 전 서버 문구가 앉는 자리. 빈 상태가 아니라 "아직 때가 아니다" 라는 말이다. */
