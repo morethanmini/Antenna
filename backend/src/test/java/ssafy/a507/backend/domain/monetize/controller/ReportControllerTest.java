@@ -582,42 +582,25 @@ class ReportControllerTest {
     }
 
     @Test
-    @DisplayName("비공개 리포트를 미구독자가 열면 앞 3줄만 내려간다 — AC 핵심")
-    void 열람_미리보기_잠금() throws Exception {
-        Long reportId = insertReportWithBody(authorId, "구독자 전용", false, "1줄\n2줄\n3줄\n4줄\n5줄");
+    @DisplayName("비공개 리포트를 미구독자가 열면 본문은 한 글자도 내려가지 않는다 — 미리보기도 없다")
+    void 열람_잠금_본문_없음() throws Exception {
+        // 짧은 글이 핵심이다 — 앞 3줄 미리보기가 있던 때 이런 글은 미리보기가 곧 전문이었다(2026-09-17)
+        Long reportId = insertReportWithBody(authorId, "구독자 전용", false, "배고파요\n살려주세요");
         flush();
 
-        mockMvc.perform(get(URL + "/" + reportId).with(user(String.valueOf(viewerId))))
+        String json = mockMvc.perform(get(URL + "/" + reportId).with(user(String.valueOf(viewerId))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.locked").value(true))
-                .andExpect(jsonPath("$.preview").value("1줄\n2줄\n3줄"))
                 .andExpect(jsonPath("$.body").doesNotExist())
+                .andExpect(jsonPath("$.preview").doesNotExist())
                 // 제목은 항상 공개다 — 구독 유인이다
-                .andExpect(jsonPath("$.title").value("구독자 전용"));
-    }
+                .andExpect(jsonPath("$.title").value("구독자 전용"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
 
-    @Test
-    @DisplayName("개행 없는 본문의 미리보기는 300자에서 끊는다 — 1줄=전문이 되는 구멍을 막는다")
-    void 열람_미리보기_글자수_상한() throws Exception {
-        Long reportId = insertReportWithBody(authorId, "한 줄 리포트", false, "가".repeat(1000));
-        flush();
-
-        mockMvc.perform(get(URL + "/" + reportId).with(user(String.valueOf(viewerId))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.locked").value(true))
-                // JsonPath 의 length() 는 문자열에 쓰면 null 이라 값 자체로 단정한다
-                .andExpect(jsonPath("$.preview").value("가".repeat(300)));
-    }
-
-    @Test
-    @DisplayName("CRLF 본문의 미리보기에 \\r 이 남지 않는다")
-    void 열람_미리보기_CRLF() throws Exception {
-        Long reportId = insertReportWithBody(authorId, "CRLF 리포트", false, "1줄\r\n2줄\r\n3줄\r\n4줄");
-        flush();
-
-        mockMvc.perform(get(URL + "/" + reportId).with(user(String.valueOf(viewerId))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.preview").value("1줄\n2줄\n3줄"));
+        // 키 이름이 무엇이든 본문 글자가 응답 어디에도 없어야 한다
+        assertThat(json).doesNotContain("배고파요").doesNotContain("살려주세요");
     }
 
     @Test
@@ -873,20 +856,6 @@ class ReportControllerTest {
         assertThat(notificationBody(viewerId)).startsWith("닉없음 리포트").doesNotContain("null");
     }
 
-    @Test
-    @DisplayName("미리보기 300자 경계가 이모지를 반으로 쪼개지 않는다")
-    void 미리보기_이모지_경계() throws Exception {
-        // 299자 + 이모지(2칸) → 300번째 칸이 이모지의 앞쪽 절반이다
-        Long reportId = insertReportWithBody(authorId, "이모지 리포트", false, "가".repeat(299) + "😀");
-        flush();
-
-        mockMvc.perform(get(URL + "/" + reportId).with(user(String.valueOf(viewerId))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.locked").value(true))
-                // 반쪼가리를 남기지 않고 한 칸 물러서 299자로 끝낸다
-                .andExpect(jsonPath("$.preview").value("가".repeat(299)));
-    }
-
     // ── 픽스처 ──────────────────────────────────────────────
 
     // ── 서명 (ANT-CHAIN-16) ─────────────────────────────────
@@ -1078,76 +1047,10 @@ class ReportControllerTest {
     }
 
     /* ── 마크다운 본문 (ANT-FE-REPORT-MD) ─────────────────────────
-       본문이 마크다운이 되면서 잠긴 리포트의 앞 3줄에 문법이 새어 나가지 않아야 한다.
-       구독을 권하는 자리라 "## 제목" 이나 이미지 주소가 뜨면 읽히지도 않는다.
-       저장·봉인은 원문 그대로다 — 벗기는 것은 이 응답 필드뿐이다. */
+       서버는 마크다운을 해석하지 않는다. 저장·봉인·응답 모두 원문 그대로다. */
 
     @Test
-    @DisplayName("미리보기에서 마크다운 문법을 벗긴다 — 제목·강조·목록")
-    void 열람_미리보기_마크다운_벗김() throws Exception {
-        Long reportId = insertReportWithBody(
-                authorId, "마크다운 리포트", false,
-                "## 반도체 업황\n**공급 과잉**이 끝났다\n- 재고 감소\n- 가격 반등");
-        flush();
-
-        mockMvc.perform(get(URL + "/" + reportId).with(user(String.valueOf(viewerId))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.locked").value(true))
-                .andExpect(jsonPath("$.preview").value("반도체 업황\n공급 과잉이 끝났다\n재고 감소"));
-    }
-
-    @Test
-    @DisplayName("이미지 줄은 미리보기 세 줄을 먹지 않는다")
-    void 열람_미리보기_이미지_제외() throws Exception {
-        Long reportId = insertReportWithBody(
-                authorId, "그림 있는 리포트", false,
-                "![차트](/api/v1/uploads/abc-123)\n1줄\n2줄\n3줄\n4줄");
-        flush();
-
-        mockMvc.perform(get(URL + "/" + reportId).with(user(String.valueOf(viewerId))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.preview").value("1줄\n2줄\n3줄"));
-    }
-
-    @Test
-    @DisplayName("문단 사이 빈 줄도 미리보기 세 줄을 먹지 않는다")
-    void 열람_미리보기_빈줄_제외() throws Exception {
-        Long reportId = insertReportWithBody(
-                authorId, "문단 리포트", false, "1줄\n\n2줄\n\n3줄\n\n4줄");
-        flush();
-
-        mockMvc.perform(get(URL + "/" + reportId).with(user(String.valueOf(viewerId))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.preview").value("1줄\n2줄\n3줄"));
-    }
-
-    @Test
-    @DisplayName("링크는 글자만 남고 주소는 미리보기에 안 나온다")
-    void 열람_미리보기_링크_주소_제거() throws Exception {
-        Long reportId = insertReportWithBody(
-                authorId, "링크 리포트", false, "[공시 원문](https://dart.fss.or.kr/x)을 봤다");
-        flush();
-
-        mockMvc.perform(get(URL + "/" + reportId).with(user(String.valueOf(viewerId))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.preview").value("공시 원문을 봤다"));
-    }
-
-    @Test
-    @DisplayName("본문이 그림뿐이면 미리보기 키가 아예 없다 — 빈 칸을 그리게 두지 않는다")
-    void 열람_미리보기_그림뿐() throws Exception {
-        Long reportId = insertReportWithBody(
-                authorId, "그림만", false, "![](/api/v1/uploads/a)\n\n![](/api/v1/uploads/b)");
-        flush();
-
-        mockMvc.perform(get(URL + "/" + reportId).with(user(String.valueOf(viewerId))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.locked").value(true))
-                .andExpect(jsonPath("$.preview").doesNotExist());
-    }
-
-    @Test
-    @DisplayName("구독자에게는 본문이 마크다운 원문 그대로 간다 — 벗기는 것은 미리보기뿐")
+    @DisplayName("본문은 마크다운 원문 그대로 간다")
     void 열람_전문은_원문_그대로() throws Exception {
         String body = "## 제목\n**굵게**\n![](/api/v1/uploads/a)";
         Long reportId = insertReportWithBody(authorId, "원문 확인", true, body);

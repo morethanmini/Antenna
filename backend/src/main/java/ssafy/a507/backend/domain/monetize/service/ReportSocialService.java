@@ -42,7 +42,7 @@ import ssafy.a507.backend.domain.monetize.repository.ReportRepository;
  *
  * <p><b>잠긴 리포트에는 반응할 수 없다</b> — 구독자 전용 리포트에 미구독자가 좋아요·댓글을
  * 시도하면 403 {@code REPORT_FORBIDDEN} 이다. 열람이 200 + {@code locked:true} 인 것과 다른데,
- * 열람에는 보여 줄 것(제목·앞 3줄)이 있지만 반응에는 없다. 댓글은 본문에 대한 반응이고,
+ * 열람에는 보여 줄 것(제목·작성자·통계)이 있지만 반응에는 없다. 댓글은 본문에 대한 반응이고,
  * 좋아요만 허용하면 읽지 않고 누른 인기순이 된다.
  *
  * <p>좋아요는 인기순 정렬에 쓰지 않는다. {@code sort=POPULAR} 는 열람 수 기준 그대로다
