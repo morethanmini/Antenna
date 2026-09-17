@@ -75,7 +75,6 @@ function WalletChip() {
 
   return (
     <Link className="wallet" to="/me/wallet" aria-label="보유 ANT · 지갑으로">
-      <i />
       <span className="num">{data ? formatToken(data.balance) : '—'}</span> ANT
     </Link>
   )

@@ -194,7 +194,7 @@ button{border:0;background:none;cursor:pointer}
      선다. 절대 배치로 화면 정가운데에 박지 않는 이유는 좁아질 때 양옆과 겹치기
      때문이다 — 이 방식은 자리가 줄면 저절로 밀린다. */
   flex:1;justify-content:center;
-  display:flex;align-items:center;gap:14px;min-width:0;
+  display:flex;align-items:center;gap:28px;min-width:0;
   overflow-x:auto;scrollbar-width:none;
 }
 .navmenu::-webkit-scrollbar{display:none}
@@ -205,7 +205,7 @@ button{border:0;background:none;cursor:pointer}
    메뉴는 글자 자체로 읽히게 한다. */
 .navmenu a{
   padding:7px 12px;border-radius:9px;white-space:nowrap;
-  font-size:var(--fs-xl);font-weight:var(--fw-bold);color:var(--ink);
+  font-size:var(--fs-2xl);font-weight:var(--fw-bold);color:var(--ink);
   transition:background .15s,color .15s;
 }
 .navmenu a:hover{background:var(--surface-2);color:var(--ink)}
@@ -244,7 +244,6 @@ button{border:0;background:none;cursor:pointer}
 }
 .wallet:hover{border-color:var(--brand-soft);background:var(--brand-softer)}
 .wallet:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
-.wallet i{width:12px;height:18px;border-radius:2px;background:var(--gold);display:block}
 
 /* 바가 72px 이라 32px 아이콘은 왼쪽(로고 51 · 모드 전환 46)에 비해 작아 보였다 */
 .iconbtn{
