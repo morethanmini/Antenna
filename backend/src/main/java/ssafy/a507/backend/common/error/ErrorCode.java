@@ -54,6 +54,24 @@ public enum ErrorCode {
     SELF_REPORT(HttpStatus.BAD_REQUEST, "자신을 신고할 수 없습니다."),
     DUPLICATE_REPORT(HttpStatus.CONFLICT, "이미 접수된 신고입니다."),
 
+    // 관리자 (ANT-ADMIN-01)
+    /**
+     * 관리자 전용 엔드포인트를 일반 회원이 불렀다.
+     *
+     * <p>뜻이 같은 {@code EVENT_ADMIN_ONLY} 가 이미 있는데 새로 두는 이유 — 그쪽은 이벤트 화면이
+     * 분기에 쓰고 있을 수 있는 이름이라 범용으로 바꾸지 않는다. 한 번 나간 code 어휘는 고정이다.
+     */
+    ADMIN_ONLY(HttpStatus.FORBIDDEN, "관리자만 할 수 있습니다."),
+    /** 이미 처리한 신고를 또 처리하려 했다. 두 번 눌러도 두 번 반영되지 않게 막는 자리다. */
+    REPORT_ALREADY_HANDLED(HttpStatus.CONFLICT, "이미 처리한 신고입니다."),
+    /**
+     * 관리자가 자기 계정을 차단하려 했다.
+     *
+     * <p>막지 않으면 되돌릴 길이 없다 — {@code AuthService} 가 BANNED 로그인을 거부하므로
+     * 스스로를 내린 관리자는 다시 들어와 풀 수 없고, DB 를 직접 고치는 수밖에 없어진다.
+     */
+    ADMIN_SELF_DEMOTE(HttpStatus.CONFLICT, "자신의 계정 상태는 바꿀 수 없습니다."),
+
     // 피드 글 (ANT-COMMUNITY-02)
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "글을 찾을 수 없습니다."),
     REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "리포트를 찾을 수 없습니다."),
@@ -80,6 +98,12 @@ public enum ErrorCode {
     INSUFFICIENT_BALANCE(HttpStatus.CONFLICT, "토큰 잔액이 부족합니다."),
     /** 같은 기간에 이미 슬롯이 다 찼다. 선착순이므로 기다렸다 다시 신청하는 수밖에 없다. */
     AD_SLOT_SOLD_OUT(HttpStatus.CONFLICT, "해당 기간의 광고 슬롯이 마감되었습니다."),
+    // 광고 승인제 (ANT-ADMIN-03)
+    AD_NOT_FOUND(HttpStatus.NOT_FOUND, "광고 신청을 찾을 수 없습니다."),
+    /** 남의 신청을 취소하려 했다. 404 로 숨기지 않는 이유 — 광고 id 는 순번이라 어차피 존재를 짐작할 수 있다. */
+    AD_FORBIDDEN(HttpStatus.FORBIDDEN, "본인의 광고 신청만 취소할 수 있습니다."),
+    /** 이미 승인·반려·취소됐거나 소각 tx 가 나가는 중이다. 두 번 눌러도 두 번 태우지 않는다. */
+    AD_ALREADY_HANDLED(HttpStatus.CONFLICT, "이미 처리된 광고 신청입니다."),
 
     // 작업 리소스 (ANT-COMMUNITY-07)
     /** 없는 operationId 이거나 종료 후 24h 가 지나 정리된 작업이다. 둘을 구분해 주지 않는다. */

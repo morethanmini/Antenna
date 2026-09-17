@@ -41,6 +41,10 @@ import SeasonHistory from './pages/SeasonHistory'
 import Wallet from './pages/Wallet'
 import Settings from './pages/Settings'
 import Ad from './pages/Ad'
+import AdminAbuse from './pages/AdminAbuse'
+import AdminUser from './pages/AdminUser'
+import AdminEvent from './pages/AdminEvent'
+import AdminAd from './pages/AdminAd'
 import EventContest from './pages/EventContest'
 
 export type Access =
@@ -159,17 +163,17 @@ export const ROUTES: PageMeta[] = [
   { screen: 'H-04', element: Ad, path: '/ads/new', title: '광고 등록', access: 'user', mode: 'insight', nav: 'home', story: 'ANT-FE-AD' },
 
   /* ── I. 관리자 ────────────────────────────────────────
-     **세 화면(I-01 신고 처리 · I-02 회원 제재 · I-03 시즌 운영)을 지웠다(2026-09-17).**
-     지라에서 셋 다 폐기된 스토리인데 "[ANT-FE-ADMIN-…] 에서 구현합니다" 한 줄짜리
-     자리표시자만 라우트에 남아 있었다. 화면 어디에도 링크가 없어 주소를 직접 쳐야만
-     닿았지만, QA 가 주소로 훑으면 그 빈 페이지를 버그로 적게 된다.
-
-     설계서 §3 I 에는 그대로 있다 — 문서는 팀 공용이라 손대지 않았고, 이 주석이 그
-     차이를 적어 두는 자리다(H-02 알림함과 같은 방식).
-
-     access:'admin' 을 쓰는 라우트가 이제 없다. 그래도 Access 타입과 RequireAccess 의
-     ADMIN 가지는 남겨 둔다 — 그건 화면이 아니라 문지기라, 관리자 화면이 생기는 날
-     다시 만들 것이 아니라 그대로 쓰면 된다. */
+     I-01 신고 처리 · I-02 회원 제재는 dev 에서 한 줄짜리 자리표시자라 라우트째 지워졌다가(2026-09-17),
+     이 브랜치에서 실제 화면으로 되살아났다(ANT-FE-ADMIN-MODERATION · 서버 ANT-ADMIN-01).
+     I-03 시즌 운영은 지라 폐기 그대로 — 되살리지 않는다. 설계서 §3 I 에는 남아 있다(문서는 팀 공용).
+     access:'admin' 은 RequireAccess 의 ADMIN 가지가 지킨다. */
+  { screen: 'I-01', element: AdminAbuse, path: '/admin/abuse-reports', title: '신고 처리', access: 'admin', mode: 'insight', nav: 'home', story: 'ANT-FE-ADMIN-MODERATION' },
+  { screen: 'I-02', element: AdminUser, path: '/admin/users', title: '회원 제재', access: 'admin', mode: 'insight', nav: 'home', story: 'ANT-FE-ADMIN-MODERATION' },
+  /* I-04 는 설계서에 없다. 이벤트 관리자 API 6종(ANT-EVENT-04·06)이 열려 있는데 부르는
+     화면이 없어 붙였다. nav 는 home 으로 둔다 — 사이드바에 메뉴를 만들지 않는다. */
+  { screen: 'I-04', element: AdminEvent, path: '/admin/events', title: '이벤트 운영', access: 'admin', mode: 'insight', nav: 'home', story: 'ANT-FE-ADMIN-EVENT' },
+  /* I-05 광고 승인(ANT-ADMIN-03). 명세가 "관리자 승인은 2차" 로 미뤄 뒀던 것을 여기서 한다 — 승인 버튼이 곧 소각 tx 다. */
+  { screen: 'I-05', element: AdminAd, path: '/admin/ads', title: '광고 승인', access: 'admin', mode: 'insight', nav: 'home', story: 'ANT-ADMIN-03' },
 
   /* ── J. 이벤트 ───────────────────────────────────────
      설계서 §3 에 없는 화면이다. 이벤트용으로 뒤에 붙은 것이라 A~I 를 밀지 않으려고

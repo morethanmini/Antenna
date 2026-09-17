@@ -1,7 +1,14 @@
 /* H-04 광고 등록. API 명세서 §광고 · 설계서 §3 H · §4 H-04.
 
-   POST /ads          202 { operationId, adId, status } — 서명 · Idempotency-Key 필수
+   POST /ads          201 { adId, status: PENDING } — 서명 · Idempotency-Key 필수. 돈은 승인 때 나간다
+   DELETE /ads/{id}   204 — 본인의 심사 대기 건 취소. 묶였던 가용잔액이 풀린다
    GET  /ads/active   200 { items: [{ id, imageUrl, linkUrl }] }  — B-01 홈이 쓴다
+
+   ── 승인제 (ANT-ADMIN-03, 명세 v0.78) ──────────────────────
+   신청은 접수만 된다. 관리자가 승인하는 순간 게재료 소각 tx 가 나가고, 반려·취소되면 한 푼도
+   안 나간다. 그래서 202 + operationId 가 아니라 201 이고, 폴링할 작업이 없다.
+   대신 신청한 게재료만큼 **가용잔액이 묶인다** — 심사 중인 돈으로 배팅·구독을 할 수 없다.
+   사용자가 "광고 신청한 거 기억하고 남겨 둬야" 하지 않게 하려는 것이고, 마음이 바뀌면 취소로 푼다.
    GET  /ads/pricing  200 { pricePerDay, minDays, maxDays, slotCount } · 401 — H-04 가 비용을 그린다
 
    앞의 둘은 백엔드 ANT-COMMUNITY-05, pricing 은 ANT-COMMUNITY-08 로 열려 있다. 목업이 아니다.
@@ -18,7 +25,6 @@
    옮긴 것이고 손대려면 양쪽을 같이 고쳐야 한다. */
 import { api } from './client'
 import { ApiError, CLIENT_ERROR_CODE } from './errors'
-import type { OperationStatus } from './operations'
 import type { WalletNonce } from './wallet'
 
 /* ── 신청 ────────────────────────────────────────────── */
@@ -32,11 +38,11 @@ export type AdDraft = {
   days: number
 }
 
-/** 202 응답. adId 가 함께 오는 이유는 폴링 전에도 화면이 "신청한 배너" 를 가리키기 위해서다 */
+/** 201 응답. operationId 가 없다 — 소각은 승인 때 나가므로 지금 폴링할 작업이 없다 */
 export type AdAccepted = {
-  operationId: string
   adId: number
-  status: OperationStatus
+  /** 항상 PENDING(심사 대기) */
+  status: 'PENDING'
 }
 
 /**
@@ -70,6 +76,14 @@ export function createAd(draft: AdDraft, signature: string) {
   return api.post<AdAccepted>('/ads', { ...draft, signature }, {
     idempotencyScope: adScope(draft),
   })
+}
+
+/**
+ * 신청 취소 — 본인의 심사 대기 건만. 배너가 닫히면서 묶였던 가용잔액이 풀린다.
+ * 소각 tx 가 나가는 중이면 409 AD_ALREADY_HANDLED 다(돈이 이미 체인으로 가고 있다).
+ */
+export function cancelAd(adId: number) {
+  return api.delete<void>(`/ads/${adId}`)
 }
 
 /* ── 노출 중인 배너 (B-01) ───────────────────────────── */

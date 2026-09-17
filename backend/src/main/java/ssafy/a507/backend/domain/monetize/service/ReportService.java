@@ -21,6 +21,7 @@ import ssafy.a507.backend.domain.account.entity.Notification;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.account.repository.NotificationRepository;
 import ssafy.a507.backend.domain.account.repository.UserRepository;
+import ssafy.a507.backend.domain.account.service.AvatarUrls;
 import ssafy.a507.backend.domain.account.service.NotificationGate;
 import ssafy.a507.backend.domain.monetize.dto.ChannelReportItemResponse;
 import ssafy.a507.backend.domain.monetize.dto.ChannelReportListResponse;
@@ -61,6 +62,7 @@ public class ReportService {
     /** 알림 종류 키. {@code notifications.type} 은 24자 제한이다. */
     private static final String NOTIFICATION_TYPE = "REPORT_PUBLISHED";
 
+    private final AvatarUrls avatarUrls;
     private final ReportRepository reportRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final NotificationRepository notificationRepository;
@@ -149,13 +151,18 @@ public class ReportService {
 
         Set<Long> subscribed = reportAccess.subscribedAuthorIds(viewerId, reports);
         Social social = socialOf(viewerId, reports);
+        /* 카드가 작성자 사진을 그린다. 한 줄씩 찾으면 한 페이지에 쿼리가 페이지 크기만큼
+           나가므로 파일 id 를 모아 한 번에 읽는다(AvatarUrls 머리말의 N+1). */
+        Map<Long, String> avatars =
+                avatarUrls.byUserId(reports.stream().map(Report::getUser).toList());
         List<ReportFeedItemResponse> items = reports.stream()
                 .map(report -> ReportFeedItemResponse.of(
                         report,
                         reportAccess.isLocked(report, viewerId, subscribed),
                         social.likeCount(report.getId()),
                         social.liked(report.getId()),
-                        social.commentCount(report.getId())))
+                        social.commentCount(report.getId()),
+                        avatars.get(report.getUser().getId())))
                 .toList();
 
         Report last = reports.get(reports.size() - 1);

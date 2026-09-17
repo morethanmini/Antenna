@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -26,6 +27,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
 import ssafy.a507.backend.common.security.SignatureGuard;
+import ssafy.a507.backend.domain.chain.service.FakeTokenRelayer;
 import ssafy.a507.backend.domain.chain.service.TokenOperationService;
 import ssafy.a507.backend.domain.monetize.dto.SubscribeRequest;
 
@@ -46,6 +48,7 @@ import ssafy.a507.backend.domain.monetize.dto.SubscribeRequest;
  * 없고, 전송은 접수가 커밋된 뒤의 일이다. Docker 가 없으면 건너뛴다.
  */
 @SpringBootTest
+@Import(FakeTokenRelayer.Config.class)
 @Testcontainers(disabledWithoutDocker = true)
 @DisplayName("구독 결제 — PostgreSQL 동시 요청")
 class SubscriptionConcurrentPostgresTest {
@@ -60,6 +63,7 @@ class SubscriptionConcurrentPostgresTest {
     @Autowired JdbcTemplate jdbc;
     @MockitoBean SignatureGuard signatureGuard;
     @MockitoBean TokenOperationService tokenOperationService;
+    @Autowired FakeTokenRelayer relayer;
 
     private long subscriberId;
     private long publisherId;
@@ -71,10 +75,10 @@ class SubscriptionConcurrentPostgresTest {
         jdbc.update(
                 "insert into publisher_fees (publisher_id, fee, effective_from, created_at) values (?, ?, ?, now())",
                 publisherId, FEE, Timestamp.from(Instant.now().minusSeconds(60)));
-        // 원장 기준 잔액 — 구독료의 열 배. 잔액 부족으로 먼저 걸려 레이스가 안 보이면 안 된다.
-        jdbc.update(
-                "insert into token_ledger (user_id, delta, reason, created_at) values (?, ?, 'TEST', now())",
-                subscriberId, FEE.multiply(BigDecimal.TEN));
+        // 잔액 — 구독료의 열 배. 잔액 부족으로 먼저 걸려 레이스가 안 보이면 안 된다.
+        // 기준이 원장 → 가용잔액(체인 잔액 − PENDING 배팅·구독·광고, ANT-TOKEN-11)으로 바뀌어 체인 대역에 심는다.
+        relayer.reset();
+        relayer.withBalance(FEE.multiply(BigDecimal.TEN).toBigInteger());
     }
 
     @Test

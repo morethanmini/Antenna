@@ -277,12 +277,13 @@ export default function EventRanking() {
     )
   }
 
-  /* 회차가 아직 안 만들어졌을 수도 있다. 대회 화면과 같은 말로 받는다 */
+  /* 본 대회 회차가 없다 — 아직 안 만들어졌거나, 점검용 회차만 있다(그건 사용자 화면에 안 잡힌다,
+     api/events.ts fetchContestSummary). 대회 화면과 같은 말로 받는다. */
   if (!data) {
     return (
       <EmptyState
-        title="대회를 준비하고 있어요"
-        hint="회차가 열리면 여기에 순위가 올라옵니다"
+        title="지금 진행 중인 대회가 없어요"
+        hint="대회가 열리면 여기에 순위가 올라옵니다"
       />
     )
   }

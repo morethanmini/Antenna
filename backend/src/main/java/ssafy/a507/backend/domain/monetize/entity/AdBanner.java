@@ -109,8 +109,32 @@ public class AdBanner {
         this.status = Status.ACTIVE;
     }
 
-    /** 결제가 실패했거나 관리자가 반려했다. 노출 쿼리에서 빠진다. */
+    /** 관리자가 반려했거나 신청자가 취소했다. 노출 쿼리에서 빠지고, 가용잔액 홀드도 함께 풀린다. */
     public void reject() {
         this.status = Status.REJECTED;
+    }
+
+    /**
+     * 관리자 승인 (ANT-ADMIN-03) — <b>게재 기간을 지금부터 다시 잡는다.</b>
+     *
+     * <p>접수 때 잡은 {@code startsAt} 은 신청한 순간이다. 승인이 사흘 뒤면 그 사흘이 날아간다. 일수는 접수 때 값을
+     * 그대로 쓰고({@code endsAt − startsAt} 로 되살린다 — 칼럼을 더하지 않는다) 시작만 옮긴다.
+     *
+     * <p>상태는 PENDING 그대로다. ACTIVE 는 인덱서가 소각 확정을 보고 올린다 — 승인은 "돈을 태워도 된다" 지
+     * "게재됐다" 가 아니다. 승인했는지는 이 배너를 가리키는 작업(Operation)의 존재로 안다.
+     */
+    public void approve(Instant now) {
+        long days = days();
+        this.startsAt = now;
+        this.endsAt = now.plus(days, java.time.temporal.ChronoUnit.DAYS);
+    }
+
+    /** 접수 때 신청한 일수. 접수가 {@code startsAt + days} 로 끝을 잡으므로 차이가 정확히 일수다. */
+    public long days() {
+        return java.time.Duration.between(startsAt, endsAt).toDays();
+    }
+
+    public boolean isPending() {
+        return status == Status.PENDING;
     }
 }

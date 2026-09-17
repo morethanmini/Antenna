@@ -119,6 +119,14 @@ public class User {
     }
 
     /**
+     * 관리자 제재 (ANT-ADMIN-01). BANNED 로 내리면 {@code AuthService} 가 로그인을 거부한다 —
+     * 기존 예측·원장은 그대로 남는다(엔티티 머리 주석).
+     */
+    public void changeStatus(Status next) {
+        this.status = next;
+    }
+
+    /**
      * 지갑을 1회 연동한다. 주소는 소문자로 눕혀 저장한다 —
      * EIP-55 체크섬 주소와 소문자 주소는 같은 주소지만 문자열로는 달라서,
      * 정규화 없이 저장하면 unique 제약도 대조도 뚫린다.

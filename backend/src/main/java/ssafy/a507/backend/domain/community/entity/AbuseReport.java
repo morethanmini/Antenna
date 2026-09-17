@@ -148,4 +148,30 @@ public class AbuseReport {
         report.status = Status.PENDING;
         return report;
     }
+
+    /*
+     * 관리자 처리 (ANT-ADMIN-01). 처리자와 처리 시각을 여기서 함께 박는다 —
+     * 상태만 바꾸고 handledBy 를 서비스가 따로 넣게 두면 한쪽을 빠뜨린 행이 생긴다.
+     */
+
+    /** 신고를 받아들인다. 대상을 BLOCKED 로 내리는 것은 서비스 몫이다 — 대상 종류마다 다르므로. */
+    public void accept(User admin) {
+        handle(Status.ACCEPTED, admin);
+    }
+
+    /** 신고를 기각한다. 대상은 건드리지 않는다. */
+    public void reject(User admin) {
+        handle(Status.REJECTED, admin);
+    }
+
+    private void handle(Status next, User admin) {
+        this.status = next;
+        this.handledBy = admin;
+        this.handledAt = Instant.now();
+    }
+
+    /** 아직 처리 전인가. 두 번 처리하는 것을 서비스가 막을 때 쓴다. */
+    public boolean isPending() {
+        return status == Status.PENDING;
+    }
 }
