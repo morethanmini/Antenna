@@ -19,7 +19,7 @@
    - 평균 오차는 열로 두지 않는다. 동점을 가를 때만 쓰는 값이라 상시 지표가 아니다.
    - 대회 정의(날짜·이름)는 event/contest.ts 한 곳이고, 진행 단계는 **서버 phase** 를 쓴다.
      접수는 서버 크론이 세 조건을 보고 열기 때문에 시각만 지났다고 열린 것이 아니다. */
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   fetchContestEvent, fetchLeaderboard,
@@ -100,23 +100,35 @@ const sign = (n: number | null) => (n === null ? '' : n > 0 ? 'is-up' : n < 0 ? 
    같은 손익률이 셋이면 셋 다 표시한다. 둘만 짝지으면 가운데 사람이 위아래 중 누구와
    묶인 것인지 알 수 없다.
 
-   **화면에 찍히는 값으로 묶는다.** 서버가 소수 넷째 자리까지 보내도 화면은 둘째 자리
-   까지만 그리므로, 사용자 눈에 +18.00% 가 둘이면 그건 동점으로 보인다. 실제 값이
-   미세하게 달라 순위가 갈렸더라도 "왜 얘가 위지" 를 설명해 줘야 하는 건 마찬가지다. */
-function tiedUserIds(items: LeaderboardItem[]): Set<number> {
-  const seen = new Map<string, number>()
+   **서버가 준 값 그대로 비교한다. 화면에 찍히는 값이 아니다.**
+   처음엔 화면값(소수 둘째 자리)으로 묶었는데, 그러면 18.004% 와 17.996% 가 둘 다
+   +18.00% 로 찍힌다는 이유만으로 "동점 · 오차로 갈림" 이 붙는다. 그 둘은 동점이 아니라
+   손익률로 갈린 것이라 오차는 순위에 아무 상관이 없다 — 틀린 설명을 붙이는 셈이다.
+   눈에 같아 보이는데 설명이 없는 편이, 아닌 이유를 대는 것보다 낫다.
+
+   **손익률이 null 인 줄은 묶지 않는다.** 값이 없는 것이지 같은 것이 아니다. 예전에는
+   null 끼리 '—' 로 묶여 서로 동점이라고 우겼다.
+
+   **표에서는 무리를 통째로 묶는다.** 줄마다 "동점" 이라고 적으면 셋이 붙었을 때 같은
+   말이 세 번 나오고, 정작 3.15 와 6.05 중 뭐가 이겼는지는 각자 읽어 내야 한다. 무리
+   위에 규칙을 한 번 적고 줄마다 값만 두면 두 값이 세로로 나란히 서서 크기 비교가
+   저절로 된다. 시상대는 카드 셋이 가로로 떨어져 있어 묶을 수 없으므로 알약을 쓴다. */
+function tieCounts(items: LeaderboardItem[]): Map<number, number> {
+  const seen = new Map<number, number>()
   for (const r of items) {
-    const key = rate(r.profitRate)
-    seen.set(key, (seen.get(key) ?? 0) + 1)
+    if (r.profitRate === null) continue
+    seen.set(r.profitRate, (seen.get(r.profitRate) ?? 0) + 1)
   }
-  return new Set(
-    items.filter((r) => (seen.get(rate(r.profitRate)) ?? 0) > 1).map((r) => r.userId),
-  )
+  return seen
 }
 
-/** 동점 줄에 붙는 한 조각. 오차가 없으면(맞힌 건이 없다) 다음 기준인 판정 건수로 말한다 */
-const tieNote = (r: LeaderboardItem) =>
-  r.avgError === null ? `동점 · 판정 ${r.doneCount}건` : `동점 · 오차 ${r.avgError.toFixed(2)}`
+/** 같은 손익률이 둘 이상인가. null 은 "값이 없다" 이지 "같다" 가 아니라 늘 거짓이다 */
+const isTied = (r: LeaderboardItem, counts: Map<number, number>) =>
+  r.profitRate !== null && (counts.get(r.profitRate) ?? 0) > 1
+
+/** 동점 줄에 붙는 값. 오차가 없으면(맞힌 건이 없다) 다음 기준인 판정 건수로 말한다 */
+const tieValue = (r: LeaderboardItem) =>
+  r.avgError === null ? `판정 ${r.doneCount}건` : `오차 ${r.avgError.toFixed(2)}%`
 
 /* ── 머리 띠 ──────────────────────────────────────────────
    배너와 같은 조각을 깐다. 배너를 눌러 들어온 사람이 "그 이벤트의 순위" 라는 걸
@@ -167,7 +179,8 @@ function Head({ event }: { event: EventHome }) {
 
 /** 시상대 — 상위 3명. 시연용 강조다(기획 §4.1). 참가자가 3명 미만이면 있는 만큼만 선다. */
 function Podium(
-  { top, meId, tied }: { top: LeaderboardItem[]; meId: number | null; tied: Set<number> },
+  { top, meId, counts }:
+  { top: LeaderboardItem[]; meId: number | null; counts: Map<number, number> },
 ) {
   /* 2 · 1 · 3 차례로 세운다. 1등이 가운데 높이 서는 모양이라 순서를 바꿔 그린다 */
   const order = [top[1], top[0], top[2]].filter((r): r is LeaderboardItem => r !== undefined)
@@ -182,7 +195,7 @@ function Podium(
           <span className="rke-pod-no num">{r.rank}</span>
           <Link className="rke-pod-name" to={`/channels/${r.userId}`}>{r.nickname ?? '이름 없음'}</Link>
           <b className={`num ${sign(r.profitRate)}`}>{rate(r.profitRate)}</b>
-          {tied.has(r.userId) && <span className="rke-tie num">{tieNote(r)}</span>}
+          {isTied(r, counts) && <span className="rke-tie num">동점 · {tieValue(r)}</span>}
           <span className="num rke-pod-net">{ant(r.net)}</span>
           <span className="num rke-pod-hit">적중 {r.hitCount}/{r.doneCount}</span>
         </li>
@@ -274,7 +287,7 @@ export default function EventRanking() {
   const rest = items.slice(3)
   /* 읽어 온 줄만 놓고 센다. 장 경계에 걸린 동점(20등과 21등)은 "더 보기" 로 다음 장이
      붙는 순간 함께 표시된다 — 아직 못 본 사람과 묶어 "동점" 이라고 말할 수는 없다. */
-  const tied = tiedUserIds(items)
+  const counts = tieCounts(items)
   /* 내가 읽어 온 목록 안에 이미 있으면 따로 줄을 세우지 않는다 — 같은 값이 두 번 보인다.
      "더 보기" 로 내 줄이 올라오면 이 꼬리는 저절로 사라진다 */
   const meOutside = me !== null && items.every((r) => r.userId !== me.userId)
@@ -313,7 +326,7 @@ export default function EventRanking() {
 
       {items.length > 0 && (
         <>
-          <Podium top={top} meId={me?.userId ?? null} tied={tied} />
+          <Podium top={top} meId={me?.userId ?? null} counts={counts} />
 
           {rest.length > 0 && (
             <div className="rke-table-wrap">
@@ -328,23 +341,44 @@ export default function EventRanking() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rest.map((r) => (
-                    <tr key={r.userId} className={r.userId === me?.userId ? 'is-me' : ''}>
-                      <td className="rke-col-rank num">{r.rank}</td>
-                      <td>
-                        <Link className="rke-name" to={`/channels/${r.userId}`}>
-                          {r.nickname ?? '이름 없음'}
-                        </Link>
-                      </td>
-                      <td className="rke-col-num">
-                        <span className={`num ${sign(r.profitRate)}`}>{rate(r.profitRate)}</span>
-                        {/* 동점일 때만. 오차는 열이 아니라 이 자리에만 나온다(기획 §4.1) */}
-                        {tied.has(r.userId) && <span className="rke-tie num">{tieNote(r)}</span>}
-                      </td>
-                      <td className="rke-col-num num">{ant(r.net)}</td>
-                      <td className="rke-col-num num">{r.hitCount}/{r.doneCount}</td>
-                    </tr>
-                  ))}
+                  {rest.map((r, i) => {
+                    const tie = isTied(r, counts)
+                    /* 무리의 첫 줄에만 규칙을 적는다. 시상대에 걸쳐 있는 무리(3·4위)는
+                       표에 4위부터 나오므로 "앞 줄과 손익률이 다른가" 로 판단한다 —
+                       무리의 진짜 1등인지가 아니라 이 표에서 처음 나오는지가 기준이다. */
+                    const opensGroup = tie && (i === 0 || rest[i - 1].profitRate !== r.profitRate)
+
+                    return (
+                      <Fragment key={r.userId}>
+                        {opensGroup && (
+                          <tr className="rke-tie-head">
+                            <td colSpan={5}>손익률 동점 · 목표가 오차가 작은 쪽이 앞섭니다</td>
+                          </tr>
+                        )}
+                        <tr
+                          className={[
+                            r.userId === me?.userId ? 'is-me' : '',
+                            tie ? 'is-tied' : '',
+                          ].filter(Boolean).join(' ')}
+                        >
+                          <td className="rke-col-rank num">{r.rank}</td>
+                          <td>
+                            <Link className="rke-name" to={`/channels/${r.userId}`}>
+                              {r.nickname ?? '이름 없음'}
+                            </Link>
+                          </td>
+                          <td className="rke-col-num">
+                            <span className={`num ${sign(r.profitRate)}`}>{rate(r.profitRate)}</span>
+                            {/* 오차는 열이 아니라 동점인 줄에만 나온다(기획 §4.1).
+                                무리 머리가 이미 "동점" 이라고 말했으므로 값만 둔다 */}
+                            {tie && <span className="rke-tie num">{tieValue(r)}</span>}
+                          </td>
+                          <td className="rke-col-num num">{ant(r.net)}</td>
+                          <td className="rke-col-num num">{r.hitCount}/{r.doneCount}</td>
+                        </tr>
+                      </Fragment>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

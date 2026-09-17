@@ -126,22 +126,34 @@
 
 /* ── 동점 표시 ───────────────────────────────────────────
    손익률이 같은 사람이 둘 이상일 때만 붙는다. 손익률 바로 아래 한 줄로 두어
-   "이 값이 같아서 갈렸다" 가 읽히게 한다. 순위를 가르는 근거지 성적이 아니라서
-   손익률보다 작고 조용하다. */
+   두 값이 세로로 나란히 서게 한다 — 3.15% 와 6.05% 가 같은 자리에 겹쳐 놓이면
+   어느 쪽이 작은지 읽지 않아도 보인다. */
 .predictor-market-page .rke-tie{
-  display:block; margin-top:2px;
-  font-size:var(--fs-xs); font-weight:var(--fw-normal); color:var(--muted);
+  display:block; margin-top:3px;
+  font-size:var(--fs-xs); font-weight:var(--fw-bold); color:var(--brand-ink);
   white-space:nowrap;
 }
-/* 표에서는 숫자 열에 붙으므로 오른쪽으로 선다 */
 .predictor-market-page .rke-col-num .rke-tie{ text-align:right; }
-/* 시상대는 가운데 정렬 칸이라 알약으로 둔다 — 글자만 두면 손익률에 붙어 한 덩어리로 보인다 */
-.predictor-market-page .rke-pod .rke-tie{
-  margin-top:0;
-  padding:2px 9px; border-radius:999px;
-  background:var(--surface-2); color:var(--muted);
+
+/* 무리 머리 — 규칙을 여기 한 번만 적는다. 줄마다 "동점" 을 되풀이하지 않으려는 것이다.
+   표 안의 줄이지만 데이터가 아니라 설명이라 배경을 깔아 구분한다. */
+.predictor-market-page .rke-table tr.rke-tie-head td{
+  padding:7px 14px;
+  border-bottom:0; background:var(--brand-softer);
+  color:var(--brand-ink); font-size:var(--fs-xs); font-weight:var(--fw-bold);
+  white-space:normal;
 }
-.predictor-market-page .rke-pod.is-me .rke-tie{ background:var(--surface); }
+/* 묶인 줄은 왼쪽 띠로 이어 붙인다 — 머리와 줄들이 한 덩어리로 보인다 */
+.predictor-market-page .rke-table tr.is-tied td:first-child{
+  box-shadow:inset 3px 0 0 var(--brand-soft);
+}
+
+/* 시상대는 카드 셋이 가로로 떨어져 있어 묶을 수 없다. 알약으로 대신한다 */
+.predictor-market-page .rke-pod .rke-tie{
+  margin-top:4px;
+  padding:3px 10px; border-radius:999px;
+  background:var(--brand-soft); color:var(--brand-ink);
+}
 
 /* ── 4위 아래 표 ─────────────────────────────────────────
    정확도 탭의 .rk-table 과 같은 모양이다. 열만 다르다. */
