@@ -510,7 +510,13 @@ function Sponsored() {
                               strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </Link>
-                    <img className="hm-showcase-art" src={it.imageUrl} alt="" aria-hidden="true" />
+                    {/* 그림을 빼 뒀다(2026-09-17). 되살리려면 이 한 줄이다:
+                          <img className="hm-showcase-art" src={it.imageUrl} alt="" aria-hidden="true" />
+
+                        **여기가 광고에서 유일하게 진짜인 자리였다.** /ads/active 가 주는 것은
+                        imageUrl 과 linkUrl 뿐이고 제목·설명·버튼 글자는 화면이 들고 있는
+                        AD_THEMES 프리셋이다. 그림까지 빼면 이 카드에 광고주의 것은 링크만
+                        남는다 — 문구 필드가 생기거나 라벨을 고치기 전까지 알고 있어야 한다. */}
                   </div>
                 )
               })}
