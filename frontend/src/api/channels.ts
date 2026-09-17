@@ -103,6 +103,13 @@ export type Channel = {
   mySubscription: MySubscription
   /** 내 채널이면 구독 카드 대신 설정 안내를 그린다 */
   isMe: boolean
+  /**
+   * 내가 이 회원을 신고해 뒀고 아직 처리 전인가 (M-06).
+   *
+   * 브라우저에 기억시키지 않고 서버가 내린다 — 기기를 바꾸면 표시가 사라지고,
+   * 관리자가 처리해 재신고가 열려도 브라우저에 남은 표시는 그걸 모른다.
+   */
+  reportedByMe: boolean
 }
 
 export function fetchChannel(userId: string) {

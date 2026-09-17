@@ -19,7 +19,7 @@
    PENDING 을 ACTIVE 와 같게 그리지 않는다
    결제가 체인에서 확정되기를 기다리는 중이라 아직 열람 권한이 없다. 여기서
    "구독 중" 이라고 쓰면 잠긴 예측을 보고 고장으로 읽는다. */
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import {
   daysLeft, fetchBacktest, fetchChannel, fetchChannelPredictions,
@@ -35,6 +35,8 @@ import ChannelProfileEdit from '../components/channel/ChannelProfileEdit'
 import ProfileAvatar from '../components/channel/ProfileAvatar'
 import PredictionNote from '../components/channel/PredictionNote'
 import SubscribeModal from '../components/channel/SubscribeModal'
+import AbuseReportModal from '../components/report/AbuseReportModal'
+import { useDismiss } from '../components/useDismiss'
 import EmptyState from '../components/state/EmptyState'
 import ErrorState from '../components/state/ErrorState'
 import WalletLinkModal from '../components/wallet/WalletLinkModal'
@@ -110,6 +112,23 @@ export default function ChannelProfile() {
   const [subscribing, setSubscribing] = useState(false)
   const [linking, setLinking] = useState(false)
 
+  /* M-06 신고. 메뉴(⋯) 안에 접어 둔다 — 구독 CTA 와 시선을 다투지 않게.
+     닫는 규칙은 곁창과 같은 것을 쓴다(Escape · 바깥 누르기 · 버튼 재클릭). */
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [reporting, setReporting] = useState(false)
+  /* 접수 직후의 표시. 서버도 reportedByMe 로 같은 사실을 내리지만 그 값은 다시 읽어야
+     갱신된다 — 모달을 닫자마자 메뉴가 "신고함" 이어야 하므로 화면에서도 기억한다. */
+  const [justReported, setJustReported] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const menuBtnRef = useRef<HTMLButtonElement>(null)
+
+  const closeMenu = useCallback((returnFocus?: boolean) => {
+    setMenuOpen(false)
+    if (returnFocus) menuBtnRef.current?.focus()
+  }, [])
+
+  useDismiss({ open: menuOpen, panel: menuRef, trigger: menuBtnRef, onClose: closeMenu })
+
   const channel = ch.data
   const sub = channel?.mySubscription
 
@@ -117,6 +136,10 @@ export default function ChannelProfile() {
   const owner = (channel?.isMe ?? false) && !asVisitor
   /** 미리보기 띠를 띄울 조건. 남의 채널에 ?as=visitor 를 붙여도 바뀔 게 없다 */
   const previewing = (channel?.isMe ?? false) && asVisitor
+
+  /* 서버가 내린 값이 진실이고(다른 기기·새로고침에서도 맞다), 방금 접수한 건은 화면이 얹는다.
+     관리자가 처리해 PENDING 이 풀리면 서버 값이 false 로 돌아와 다시 신고할 수 있다. */
+  const reported = justReported || (channel?.reportedByMe ?? false)
 
   /* 미리보기 안에서 **누구 눈으로** 볼지. 구독료를 정하는 사람이 정말 알고 싶은 것은
      "구독하면 뭐가 더 보이나" 이고, 그 차이는 둘을 번갈아 봐야 보인다.
@@ -192,6 +215,42 @@ export default function ChannelProfile() {
                   onSaved={ch.reload}
                 />
               </div>
+
+              {/* ── ⋯ 메뉴 (M-06 진입) ──────────────────
+                  내 채널에는 아예 그리지 않는다. 자기 신고는 서버가 400 으로 막지만,
+                  누를 수 있게 두면 그 400 을 보려고 누르는 사람이 생긴다.
+                  미리보기(?as=visitor)에서도 숨긴다 — owner 가 아니라 isMe 로 본다. */}
+              {!channel.isMe && (
+                <div className="ch-menu-wrap">
+                  <button
+                    type="button" className="ch-menu-btn" ref={menuBtnRef}
+                    aria-haspopup="menu" aria-expanded={menuOpen} aria-label="채널 메뉴"
+                    onClick={() => setMenuOpen((v) => !v)}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <circle cx="5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="19" cy="12" r="1.8" />
+                    </svg>
+                  </button>
+                  {menuOpen && (
+                    <div className="ch-menu" role="menu" ref={menuRef}>
+                      {reported ? (
+                        /* 처리 전에는 다시 못 넣는다(서버가 409 로 막는다). 버튼 모양으로
+                           두면 눌러 보고 오류를 받게 되므로 결과를 그대로 적는다. */
+                        <span className="ch-menu-item is-done" role="menuitem" aria-disabled="true">
+                          신고함
+                        </span>
+                      ) : (
+                        <button
+                          type="button" className="ch-menu-item" role="menuitem"
+                          onClick={() => { setMenuOpen(false); setReporting(true) }}
+                        >
+                          신고
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </header>
 
             {/* ── 실적 통계 — 세 개 고정 ────────────────── */}
@@ -296,6 +355,18 @@ export default function ChannelProfile() {
                 onClose={closeSubscribe}
                 onSubscribed={markStale}
                 onNeedWallet={() => { setSubscribing(false); setLinking(true) }}
+              />
+            )}
+
+            {reporting && (
+              <AbuseReportModal
+                targetType="USER"
+                /* Channel.userId 는 경로 변수라 문자열이다. 서버 targetId 는 Long 이고
+                   @Positive 라 문자열을 보내면 400 이 된다. */
+                targetId={Number(channel.userId)}
+                targetLabel={`${channel.nickname} 님을 신고합니다.`}
+                onReported={() => setJustReported(true)}
+                onClose={() => setReporting(false)}
               />
             )}
 

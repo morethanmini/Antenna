@@ -41,7 +41,18 @@ public record ChannelProfileResponse(
         long subscriberCount,
         MySubscription mySubscription,
         /** 내 채널이면 화면이 구독 카드 대신 설정 안내를 그린다 */
-        boolean isMe) {
+        boolean isMe,
+        /**
+         * 내가 이 회원을 신고해 두고 아직 처리되지 않았나 (화면 M-06).
+         *
+         * <p>화면이 신고 메뉴를 "신고함" 으로 바꾸는 근거다. 브라우저에 기억시키지 않고 서버가 내리는 이유가
+         * 둘이다: ① 기기를 바꾸면 표시가 사라진다 ② 관리자가 처리해 {@code PENDING} 이 풀리면 재신고가
+         * 허용되는데, 브라우저에 남은 표시는 그 사실을 모른 채 계속 막는다.
+         *
+         * <p>그래서 판정 기준이 중복 신고를 막는 조건과 <b>같아야 한다</b> —
+         * {@code AbuseReportService.rejectDuplicate} 가 보는 것과 같은 (신고자, 대상, PENDING) 이다.
+         */
+        boolean reportedByMe) {
 
     /**
      * 채널 실적. <b>셋 고정이다</b>(설계 제약).

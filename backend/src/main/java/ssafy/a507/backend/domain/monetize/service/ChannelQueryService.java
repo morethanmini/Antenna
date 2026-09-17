@@ -15,6 +15,8 @@ import ssafy.a507.backend.domain.account.repository.UserChannelRepository;
 import ssafy.a507.backend.domain.account.repository.UserInterestRepository;
 import ssafy.a507.backend.domain.account.repository.UserRepository;
 import ssafy.a507.backend.domain.account.service.AvatarUrls;
+import ssafy.a507.backend.domain.community.entity.AbuseReport;
+import ssafy.a507.backend.domain.community.repository.AbuseReportRepository;
 import ssafy.a507.backend.domain.monetize.dto.ChannelProfileResponse;
 import ssafy.a507.backend.domain.monetize.dto.ChannelProfileResponse.ChannelStats;
 import ssafy.a507.backend.domain.monetize.dto.ChannelProfileResponse.MySubscription;
@@ -47,6 +49,9 @@ public class ChannelQueryService {
     private final PublisherFeeRepository fees;
     private final SubscriptionRepository subscriptions;
     private final CurrentUserProvider currentUserProvider;
+    /* 신고는 community 도메인 것이지만 화면 E-02 가 "신고함" 을 이 응답 하나로 그린다.
+       이것만 따로 부르는 엔드포인트를 두면 채널 화면이 요청을 한 번 더 쏜다. */
+    private final AbuseReportRepository abuseReports;
 
     @Transactional(readOnly = true)
     public ChannelProfileResponse profile(Long userId) {
@@ -77,7 +82,8 @@ public class ChannelQueryService {
                         portfolio.avgError()),
                 subscriptions.countSubscribers(userId, Subscription.Status.ACTIVE, Instant.now()),
                 mySubscription(viewerId, userId),
-                userId.equals(viewerId));
+                userId.equals(viewerId),
+                reportedByMe(viewerId, userId));
     }
 
     /** 정수 ANT 문자열. 아직 안 정했으면 null 이다 — 0 으로 내리면 무료 채널로 읽힌다 */
@@ -96,5 +102,19 @@ public class ChannelQueryService {
                 .findLatestBetween(viewerId, publisherId, Limit.of(1))
                 .map(MySubscription::of)
                 .orElse(MySubscription.NONE);
+    }
+
+    /**
+     * 내가 넣어 둔 신고가 아직 처리 전인가. 자기 채널이면 묻지 않는다 — 자기 신고는 애초에 막혀 있다.
+     *
+     * <p>PENDING 만 본다. 관리자가 승인·반려하면 같은 대상을 다시 신고할 수 있어야 하고,
+     * 그 판단은 {@code AbuseReportService} 의 중복 검사와 같은 조건이어야 한다.
+     */
+    private boolean reportedByMe(Long viewerId, Long targetUserId) {
+        if (viewerId == null || viewerId.equals(targetUserId)) {
+            return false;
+        }
+        return abuseReports.existsByReporterIdAndTargetUserIdAndStatus(
+                viewerId, targetUserId, AbuseReport.Status.PENDING);
     }
 }
