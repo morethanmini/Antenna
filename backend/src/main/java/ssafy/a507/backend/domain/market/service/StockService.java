@@ -46,9 +46,9 @@ import ssafy.a507.backend.domain.prediction.repository.PredictionRepository;
  *
  * <p>목록은 명세의 GET /stocks 중 재료가 있는 것만 낸다 — 섹터·시장·관심·PER 범위 필터, PER·등락률
  * 정렬, 행별 등락률·관심 여부·PER·PBR(배치가 stocks 에 써 둔 파생 컬럼을 읽기만 한다), 행별 예측 집계
- * (판정 대기 건수·UP 비율)와 예측 정렬 3종. 예측 심리 필터(sentiment · hasOpenPrediction)는 아직 받아도
- * 무시한다(400 이 아니다 — 모르는 파라미터는 스프링이 버린다). 예측 없는 종목의 집계는 키를 남긴 채
- * null · 0 으로 내린다 — 키가 없으면 화면이 undefined 를 만나 죽는다.
+ * (판정 대기 건수·UP 비율)와 예측 정렬 3종, 내 진행 중 예측 필터(hasOpenPrediction). 예측 심리 필터
+ * (sentiment)는 아직 받아도 무시한다(400 이 아니다 — 모르는 파라미터는 스프링이 버린다). 예측 없는 종목의
+ * 집계는 키를 남긴 채 null · 0 으로 내린다 — 키가 없으면 화면이 undefined 를 만나 죽는다.
  */
 @Service
 @RequiredArgsConstructor
@@ -115,6 +115,7 @@ public class StockService {
      * @param pbrMin PBR 하한(포함) · null 이면 없음. PER 과 같은 규칙이다 — PBR 없는 종목은 어느 범위에도 안 든다
      * @param pbrMax PBR 상한(포함) · null 이면 없음
      * @param watchedOnly 내 관심 종목만
+     * @param hasOpenPrediction 내가 건 판정 대기(BASE·OPEN) 예측이 있는 종목만 — 남의 예측은 안 친다
      * @param sort null 이면 PREDICTION_COUNT
      */
     public StockListResponse list(
@@ -127,6 +128,7 @@ public class StockService {
             BigDecimal pbrMin,
             BigDecimal pbrMax,
             boolean watchedOnly,
+            boolean hasOpenPrediction,
             Sort sort,
             String cursor,
             Integer size) {
@@ -188,6 +190,16 @@ public class StockService {
             }
             if (watchedOnly) {
                 where.add(root.get("code").in(watched));
+            }
+            if (hasOpenPrediction) {
+                // 내가 건 판정 대기 예측이 있는 종목만. 남의 예측은 행별 집계·예측 정렬이 이미 보여 준다.
+                Subquery<String> mine = query.subquery(String.class);
+                Root<Prediction> prediction = mine.from(Prediction.class);
+                mine.select(prediction.get("stock").get("code"))
+                        .where(
+                                cb.equal(prediction.get("user").get("id"), userId),
+                                prediction.get("status").in(PENDING));
+                where.add(root.get("code").in(mine));
             }
             return cb.and(where.toArray(Predicate[]::new));
         };
