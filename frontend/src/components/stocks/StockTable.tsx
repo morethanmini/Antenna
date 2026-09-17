@@ -309,6 +309,14 @@ export default function StockTable({ filter, setFilter }: Props) {
      보이는 값(draft)과 서버로 나간 값(filter)이 잠깐 어긋나는 구간이 있다. */
   const [draft, setDraft] = useState<StockFilter>(filter)
 
+  /* filter 는 주소 쿼리에서 온다(stockFilterParams.ts). 이 화면의 컨트롤이 아닌 곳에서
+     주소가 바뀌면 — 사이드바의 "종목 탐색" 을 다시 눌러 /stocks 로 돌아온 경우 —
+     컨트롤도 따라가야 한다. 안 그러면 목록은 전체인데 슬라이더는 옛 범위를 가리킨다.
+     apply 로 바꾼 직후에는 draft 와 같은 값이 돌아오므로 화면은 그대로다.
+     effect 가 아니라 렌더 중에 맞춘다(MarketMap 의 seen 과 같은 방식). */
+  const [seen, setSeen] = useState(filter)
+  if (seen !== filter) { setSeen(filter); setDraft(filter) }
+
   /* 반영 시점을 조건 종류에 따라 나눈다.
 
      칩·체크박스·섹터처럼 **한 번 눌러 끝나는** 것은 기다릴 이유가 없어 바로 넘긴다.
@@ -351,7 +359,7 @@ export default function StockTable({ filter, setFilter }: Props) {
      경고줄도 함께 걷었다(2026-09-15). */
 
   /* filter 가 바뀔 때만 새 조회 함수를 만든다. 매 렌더 새로 만들면 훅이
-     끝없이 다시 읽는다. filter 는 setFilter 로만 바뀌므로 참조가 안정적이다. */
+     끝없이 다시 읽는다. filter 는 주소 쿼리가 바뀔 때만 새 객체라 참조가 안정적이다. */
   const source = useMemo(() => fetchStocks(filter), [filter])
   const list = useCursorList<StockListItem, StockListMeta>(source)
 

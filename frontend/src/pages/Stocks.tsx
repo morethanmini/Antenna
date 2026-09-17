@@ -14,12 +14,17 @@
 
    필터 상태(filter)는 이 페이지가 들고 두 보기가 나눠 쓴다. 마켓맵은 그중
    관심 여부만 쓰고 누르는 즉시 적용하며, 나머지 조건과 "필터 적용" 버튼은
-   목록 보기 안에 있다(StockTable). */
-import { useMemo, useState } from 'react'
-import { EMPTY_FILTER } from '../api/stocks'
+   목록 보기 안에 있다(StockTable).
+
+   필터와 보기 탭은 **주소 쿼리**에 둔다(2026-09-17 · stockFilterParams.ts) —
+   /stocks?sector=전기·전자&view=map. 페이지 상태로만 들고 있을 때는 종목 상세에
+   다녀오면 고른 섹터가 풀려 전체 종목으로 돌아와 있었다. */
+import { useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import type { StockFilter } from '../api/stocks'
 import MarketMap, { HeatLegend } from '../components/stocks/MarketMap'
 import StockTable from '../components/stocks/StockTable'
+import { useStockFilterParams } from '../components/stocks/stockFilterParams'
 import '../styles/screens/stocks.css'
 
 /**
@@ -40,8 +45,18 @@ type View = (typeof VIEWS)[number]['key']
 const FIRST_VIEW: View = VIEWS[0].key
 
 export default function Stocks() {
-  const [filter, setFilter] = useState<StockFilter>(EMPTY_FILTER)
-  const [view, setView] = useState<View>(FIRST_VIEW)
+  const { filter, setFilter } = useStockFilterParams()
+  const [params, setParams] = useSearchParams()
+
+  /* 첫 탭은 주소에 적지 않는다 — 그냥 /stocks 가 목록이다. 모르는 값도 첫 탭이다.
+     필터와 마찬가지로 replace 라 탭을 오가도 뒤로가기가 늘지 않는다. */
+  const view: View = VIEWS.find((v) => v.key === params.get('view'))?.key ?? FIRST_VIEW
+  const setView = (next: View) => setParams((prev) => {
+    const out = new URLSearchParams(prev)
+    if (next === FIRST_VIEW) out.delete('view')
+    else out.set('view', next)
+    return out
+  }, { replace: true })
 
   /* 마켓맵에는 조건을 **추려서** 넘긴다.
 
