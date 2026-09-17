@@ -25,7 +25,8 @@ import {
   fetchContestEvent, fetchLeaderboard,
   type EventHome, type EventLeaderboard, type EventPhase, type LeaderboardItem,
 } from '../../api/events'
-import { BANNER_BASE, CONTEST, dayStamp, stamp } from '../../event/contest'
+import { CONTEST, STAGE, dayStamp, stamp } from '../../event/contest'
+import { DEFAULT_AVATAR } from '../../auth/context'
 import EmptyState from '../state/EmptyState'
 import ErrorState from '../state/ErrorState'
 import type { ApiError } from '../../api/errors'
@@ -130,26 +131,31 @@ const isTied = (r: LeaderboardItem, counts: Map<number, number>) =>
 const tieValue = (r: LeaderboardItem) =>
   r.avgError === null ? `판정 ${r.doneCount}건` : `오차 ${r.avgError.toFixed(2)}%`
 
-/* ── 머리 띠 ──────────────────────────────────────────────
-   배너와 같은 조각을 깐다. 배너를 눌러 들어온 사람이 "그 이벤트의 순위" 라는 걸
-   글을 읽기 전에 안다. 대회 화면(J-01) 머리보다 낮고 조용하게 — 여기 주인공은
-   그림이 아니라 표다. */
-function Head({ event }: { event: EventHome }) {
+/* ── 시상대 무대 ─────────────────────────────────────────
+   대회 배너와 같은 세계다. 배너를 눌러 들어온 사람이 글을 읽기 전에 "그 이벤트의
+   순위" 라는 걸 알아야 해서, 무대·시상대·캐릭터를 그대로 깐다.
+
+   **캐릭터는 자리에 붙는 그림이지 사람이 아니다.** 1등 자리에는 늘 트로피를 든
+   단타왕이 선다. 참가자를 그림으로 바꿔 세우면 "저 사람이 저렇게 생겼나" 로 읽히고,
+   서버도 순위 응답에 사진을 주지 않는다. 사람은 이름으로, 사진은 아래 표에서 본다.
+
+   왼쪽 판에 단계·회차·판정일을 얹는다. 무대가 넓어 글을 가운데 두면 캐릭터와 겹친다. */
+function Stage(
+  { event, top, meId, counts }:
+  { event: EventHome; top: LeaderboardItem[]; meId: number | null; counts: Map<number, number> },
+) {
   const head = PHASE_HEAD[event.phase]
   const left = useRemaining(head.target === null ? null : event[head.target])
+  /* 2 · 1 · 3 차례로 세운다. 1등이 가운데 높이 서는 모양이라 순서를 바꿔 그린다 */
+  const order = [top[1], top[0], top[2]].filter((r): r is LeaderboardItem => r !== undefined)
 
   return (
-    <header className="rke-head">
-      <span className="rke-head-bg" aria-hidden="true">
-        <img src={BANNER_BASE.bg} alt="" />
-        <img className="rke-head-confetti" src={BANNER_BASE.confetti} alt="" />
-      </span>
+    <header className="rke-stage">
+      <img className="rke-stage-bg" src={STAGE.bg} alt="" aria-hidden="true" />
 
-      <div className="rke-head-lead">
+      <div className="rke-stage-card">
         <span className="rke-pill">{head.pill}</span>
-        <p className="rke-head-title">{event.title}</p>
-
-        {/* 남은 시간이 있으면 그것이 가장 큰 글자다. 지났거나 없는 단계면 제목만 남는다 */}
+        <p className="rke-stage-title">{event.title}</p>
         {left ? (
           <p className="rke-count">
             <span className="rke-count-label">{head.title}</span>
@@ -158,8 +164,7 @@ function Head({ event }: { event: EventHome }) {
         ) : (
           <p className="rke-count"><span className="rke-count-label">{head.title}</span></p>
         )}
-
-        <p className="rke-head-sub">
+        <p className="rke-stage-sub">
           {event.phase === 'SETTLED'
             ? `${dayStamp(event.settleDate)} 종가로 판정했습니다`
             : `${dayStamp(event.settleDate)} 종가로 판정합니다`}
@@ -167,46 +172,39 @@ function Head({ event }: { event: EventHome }) {
         </p>
       </div>
 
-      <img className="rke-head-mascot" src={BANNER_BASE.mascot} alt="" aria-hidden="true" />
-
-      {/* 순위를 보러 왔다가 참가하고 싶어질 수 있다. 되돌아갈 문을 띠 안에 둔다 */}
-      <Link className="rke-head-link" to={`/events/${CONTEST.id}`}>
+      {/* 순위를 보러 왔다가 참가하고 싶어질 수 있다. 되돌아갈 문을 무대 안에 둔다 */}
+      <Link className="rke-stage-link" to={`/events/${CONTEST.id}`}>
+        <img src={STAGE.trophy} alt="" aria-hidden="true" />
         {event.phase === 'ENTRY' ? '대회 참가하기' : '대회 페이지'}
       </Link>
+
+      {/* 참가자가 셋 미만이면 있는 만큼만 선다 — 빈 받침을 세우면 아직 안 온 사람
+          자리처럼 보인다 */}
+      <ol className="rke-podium">
+        {order.map((r) => {
+          const rank = r.rank ?? 0
+          return (
+            <li key={r.userId} className={`rke-pod is-${rank}${r.userId === meId ? ' is-me' : ''}`}>
+              <span className="rke-pod-card">
+                <Link className="rke-pod-name" to={`/channels/${r.userId}`}>
+                  {r.nickname ?? '이름 없음'}
+                </Link>
+                <b className={`num rke-pod-rate ${sign(r.profitRate)}`}>{rate(r.profitRate)}</b>
+                <span className="num rke-pod-net">{ant(r.net)}</span>
+                {isTied(r, counts) && <span className="rke-tie num">동점 · {tieValue(r)}</span>}
+              </span>
+              {STAGE.char[rank] && (
+                <img className="rke-pod-char" src={STAGE.char[rank]} alt="" aria-hidden="true" />
+              )}
+              {/* 받침에 숫자가 새겨져 있어 등수를 글자로 또 적지 않는다 */}
+              {STAGE.podium[rank] && (
+                <img className="rke-pod-block" src={STAGE.podium[rank]} alt={`${rank}위`} />
+              )}
+            </li>
+          )
+        })}
+      </ol>
     </header>
-  )
-}
-
-/** 시상대 — 상위 3명. 시연용 강조다(기획 §4.1). 참가자가 3명 미만이면 있는 만큼만 선다. */
-function Podium(
-  { top, meId, counts }:
-  { top: LeaderboardItem[]; meId: number | null; counts: Map<number, number> },
-) {
-  /* 2 · 1 · 3 차례로 세운다. 1등이 가운데 높이 서는 모양이라 순서를 바꿔 그린다 */
-  const order = [top[1], top[0], top[2]].filter((r): r is LeaderboardItem => r !== undefined)
-
-  return (
-    <ol className="rke-podium">
-      {order.map((r) => (
-        <li
-          key={r.userId}
-          className={`rke-pod is-${r.rank ?? 0}${r.userId === meId ? ' is-me' : ''}`}
-        >
-          {/* 1등에만 왕관. 손익률 색은 부호(이익 빨강·손실 파랑)를 따르므로 등수를
-              말해 주지 못한다 — 1등이 손실이면 2·3등과 같은 파랑이다. 배너에 쓰던
-              조각을 그대로 써서 두 화면이 한 이벤트로 묶인다. */}
-          {r.rank === 1 && (
-            <img className="rke-pod-crown" src={BANNER_BASE.crown} alt="" aria-hidden="true" />
-          )}
-          <span className="rke-pod-no num">{r.rank}</span>
-          <Link className="rke-pod-name" to={`/channels/${r.userId}`}>{r.nickname ?? '이름 없음'}</Link>
-          <b className={`num ${sign(r.profitRate)}`}>{rate(r.profitRate)}</b>
-          {isTied(r, counts) && <span className="rke-tie num">동점 · {tieValue(r)}</span>}
-          <span className="num rke-pod-net">{ant(r.net)}</span>
-          <span className="num rke-pod-hit">적중 {r.hitCount}/{r.doneCount}</span>
-        </li>
-      ))}
-    </ol>
   )
 }
 
@@ -291,7 +289,6 @@ export default function EventRanking() {
   const { event, board } = data
   const me = board.me
   const top = items.slice(0, 3)
-  const rest = items.slice(3)
   /* 읽어 온 줄만 놓고 센다. 장 경계에 걸린 동점(20등과 21등)은 "더 보기" 로 다음 장이
      붙는 순간 함께 표시된다 — 아직 못 본 사람과 묶어 "동점" 이라고 말할 수는 없다. */
   const counts = tieCounts(items)
@@ -301,7 +298,7 @@ export default function EventRanking() {
 
   return (
     <div className="rke">
-      <Head event={event} />
+      <Stage event={event} top={top} meId={me?.userId ?? null} counts={counts} />
 
       {/* 내 성적 — 참가자만. 자격 미달·미참가면 서버가 me 를 null 로 준다 */}
       {me && (
@@ -333,9 +330,10 @@ export default function EventRanking() {
 
       {items.length > 0 && (
         <>
-          <Podium top={top} meId={me?.userId ?? null} counts={counts} />
-
-          {rest.length > 0 && (
+          {/* **표는 1위부터 전부 다시 센다.** 무대가 축하라면 표는 명부다 — 4위부터
+              시작하면 "1등이 표에 없네" 로 읽히고, 내 줄을 찾으려고 눈이 무대와 표
+              사이를 오간다. 위 셋은 메달로 표시해 무대와 짝이 맞는 걸 보인다 */}
+          {items.length > 0 && (
             <div className="rke-table-wrap">
               <table className="rke-table">
                 <thead>
@@ -348,12 +346,12 @@ export default function EventRanking() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rest.map((r, i) => {
+                  {items.map((r, i) => {
                     const tie = isTied(r, counts)
                     /* 무리의 첫 줄에만 규칙을 적는다. 시상대에 걸쳐 있는 무리(3·4위)는
                        표에 4위부터 나오므로 "앞 줄과 손익률이 다른가" 로 판단한다 —
                        무리의 진짜 1등인지가 아니라 이 표에서 처음 나오는지가 기준이다. */
-                    const opensGroup = tie && (i === 0 || rest[i - 1].profitRate !== r.profitRate)
+                    const opensGroup = tie && (i === 0 || items[i - 1].profitRate !== r.profitRate)
 
                     return (
                       <Fragment key={r.userId}>
@@ -368,9 +366,14 @@ export default function EventRanking() {
                             tie ? 'is-tied' : '',
                           ].filter(Boolean).join(' ')}
                         >
-                          <td className="rke-col-rank num">{r.rank}</td>
+                          <td className="rke-col-rank num">
+                            <span className={`rke-medal is-${r.rank ?? 0}`}>{r.rank}</span>
+                          </td>
                           <td>
+                            {/* 순위 응답에 사진이 없다. 서버가 avatarUrl 을 실어 주면
+                                그때 바꿔 끼운다 — 지금은 마이페이지와 같은 기본 그림이다 */}
                             <Link className="rke-name" to={`/channels/${r.userId}`}>
+                              <img className="rke-face" src={DEFAULT_AVATAR} alt="" />
                               {r.nickname ?? '이름 없음'}
                             </Link>
                           </td>

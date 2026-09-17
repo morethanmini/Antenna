@@ -9,56 +9,137 @@
 
 .predictor-market-page .rke{ display:flex; flex-direction:column; gap:14px; }
 
-/* ── 머리 띠 ──────────────────────────────────────────────
-   배너와 같은 조각을 깔되 대회 화면(J-01) 머리보다 낮다. 여기 주인공은 표다. */
-.predictor-market-page .rke-head{
+/* ── 시상대 무대 ──────────────────────────────────────────
+   배경 그림 위에 시상대를 세운다. 그림이 무대 바닥을 아래쪽에 두고 있어, 받침을
+   카드 바닥에 붙여야 실제로 무대 위에 선 것으로 보인다.
+
+   **시상대는 무대 한가운데다.** 천하제일 단타대회의 주인공이라 가장자리로 밀면 안 된다.
+   그래서 왼쪽 판과 버튼은 흐름에서 빼 모서리에 띄우고, 받침은 무대 폭의 한가운데에 둔다.
+   대신 좁아지면 겹칠 수밖에 없으므로 1000px 아래에서는 위아래로 나눈다(맨 아래). */
+.predictor-market-page .rke-stage{
   position:relative; overflow:hidden;
-  display:flex; align-items:center; gap:14px;
-  padding:20px 24px; border-radius:16px;
-  background:#120a4a; color:#fff;   /* 그림이 늦게 뜰 때 흰 네모가 번쩍이지 않게 */
+  border-radius:18px;
+  /* 그림이 늦게 뜰 때 흰 네모가 번쩍이지 않게 바탕을 미리 깐다 */
+  background:#241a63;
+  padding:22px 24px 0;
+  min-height:360px;
+  display:flex; align-items:flex-end; justify-content:center;
 }
-.predictor-market-page .rke-head-bg{ position:absolute; inset:0; border-radius:16px; overflow:hidden; }
-.predictor-market-page .rke-head-bg img{ position:absolute; display:block; }
-.predictor-market-page .rke-head-bg img:first-child{ inset:0; width:100%; height:100%; object-fit:cover; }
-.predictor-market-page .rke-head-confetti{ left:10%; top:-30%; width:52%; opacity:.55; }
+.predictor-market-page .rke-stage-bg{
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+  /* 바닥이 화면 아래에 오도록 아래쪽을 살려 자른다 */
+  object-position:center 68%;
+}
 
-.predictor-market-page .rke-head-lead{ position:relative; flex:1 1 auto; min-width:0; }
-
-/* 단계 알약 — 지금 어느 대목인지. 배너 캡슐과 결을 맞춘다 */
+/* 왼쪽 판 — 단계·회차·판정일. 어두운 무대 위라 색을 토큰으로 못 쓴다(파일 머리말).
+   시상대를 가운데에 두려고 흐름에서 뺐다. 폭을 220 으로 묶어 값 카드와 부딪히지 않는다. */
+.predictor-market-page .rke-stage-card{
+  position:absolute; left:24px; top:22px; z-index:2;
+  width:220px;
+  padding:14px 16px; border-radius:16px;
+  background:rgba(18,12,72,.66);
+  border:1px solid rgba(255,255,255,.18);
+  backdrop-filter:blur(6px);
+  color:#fff;
+}
 .predictor-market-page .rke-pill{
-  display:inline-block; padding:4px 12px; border-radius:999px;
-  background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3);
-  font-size:var(--fs-xs); font-weight:var(--fw-heavy); letter-spacing:.02em;
+  display:inline-block; padding:3px 11px; border-radius:999px;
+  background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.3);
+  font-size:var(--fs-2xs); font-weight:var(--fw-heavy); letter-spacing:.02em;
 }
-.predictor-market-page .rke-head-title{
-  margin:8px 0 0; font-size:var(--fs-2xl); font-weight:var(--fw-heavy); color:#fff;
+.predictor-market-page .rke-stage-title{
+  margin:8px 0 0; font-size:var(--fs-xl); font-weight:var(--fw-heavy); color:#fff;
 }
-
-/* 남은 시간이 이 띠에서 가장 큰 글자다 — 순위보다 먼저 눈에 걸려야 하는 값이다 */
 .predictor-market-page .rke-count{
-  margin:6px 0 0; display:flex; align-items:baseline; flex-wrap:wrap; gap:4px 10px;
+  margin:5px 0 0; display:flex; align-items:baseline; flex-wrap:wrap; gap:2px 8px;
 }
-.predictor-market-page .rke-count-label{ font-size:var(--fs-base); color:rgba(255,255,255,.72); }
+.predictor-market-page .rke-count-label{ font-size:var(--fs-md); color:rgba(255,255,255,.74); }
 .predictor-market-page .rke-count b{
-  font-size:var(--fs-6xl); font-weight:var(--fw-black); letter-spacing:-.02em;
+  font-size:var(--fs-2xl); font-weight:var(--fw-black); letter-spacing:-.02em;
   font-variant-numeric:tabular-nums;
 }
-.predictor-market-page .rke-head-sub{
-  margin:6px 0 0; font-size:var(--fs-md); color:rgba(255,255,255,.7);
+.predictor-market-page .rke-stage-sub{
+  margin:5px 0 0; font-size:var(--fs-sm); color:rgba(255,255,255,.72);
 }
 
-.predictor-market-page .rke-head-mascot{
-  position:relative; width:104px; height:auto; flex:none; align-self:flex-end; margin-bottom:-20px;
-}
-
-.predictor-market-page .rke-head-link{
-  position:relative; flex:0 0 auto; align-self:center;
-  padding:9px 18px; border-radius:999px;
-  background:#fff; color:#2b2670;
-  font-size:var(--fs-md); font-weight:var(--fw-bold); text-decoration:none;
+/* 대회 페이지로 가는 문 — 오른쪽 **아래**.
+   오른쪽 위에 두면 3등 값 카드와 같은 자리를 다퉈 이름을 가리고, 왼쪽 판 밑에 붙이면
+   판이 두 덩어리로 갈려 무거워진다. 값 카드는 전부 위쪽에 뜨므로 아래가 늘 비어 있다. */
+.predictor-market-page .rke-stage-link{
+  position:absolute; right:24px; bottom:24px; z-index:2;
+  display:inline-flex; align-items:center; gap:8px;
+  padding:10px 18px; border-radius:999px;
+  background:linear-gradient(180deg,#8f7bff,#5f49e6);
+  border:1px solid rgba(255,255,255,.35);
+  box-shadow:0 8px 18px -8px rgba(40,20,120,.8);
+  color:#fff; font-size:var(--fs-md); font-weight:var(--fw-bold); text-decoration:none;
   white-space:nowrap;
 }
-.predictor-market-page .rke-head-link:hover{ background:#eeecff; }
+.predictor-market-page .rke-stage-link img{ width:20px; height:auto; }
+.predictor-market-page .rke-stage-link:hover{ background:linear-gradient(180deg,#a08fff,#6f59f0); }
+
+/* ── 시상대 ──────────────────────────────────────────────
+   DOM 차례가 2·1·3 이라 가운데가 1등이다.
+
+   **받침을 서로 붙인다.** 사이를 띄우면 셋이 각자 선 것처럼 보이는데, 시상대는 한 덩어리
+   여야 등수 차이가 높이로 읽힌다. 그림의 투명 여백은 잘라 냈으므로(assets) 받침끼리
+   맞닿고 캐릭터도 받침 한가운데에 선다. */
+.predictor-market-page .rke-podium{
+  position:relative; z-index:1;
+  list-style:none; margin:0 auto; padding:0;
+  width:100%; max-width:520px;
+  display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:end; gap:0;
+}
+.predictor-market-page .rke-pod{
+  display:flex; flex-direction:column; align-items:center; min-width:0;
+}
+
+/* 값 카드 — 받침 위에 떠 있는 말풍선. 이름·손익률·손익을 한 덩어리로 묶는다 */
+.predictor-market-page .rke-pod-card{
+  display:flex; flex-direction:column; align-items:center; gap:0;
+  max-width:100%;
+  padding:8px 12px; margin-bottom:6px;
+  border-radius:14px;
+  /* **불투명이다.** 반투명으로 두면 무대 조명이 카드를 그대로 통과해 손익률 뒤로
+     빛이 흐르고 숫자가 흐려진다. 말풍선은 무대 앞에 있는 물건이라 빛은 뒤에 있어야 한다 */
+  background:#fff;
+  border:1px solid rgba(210,205,240,.9);
+  box-shadow:0 10px 24px -12px rgba(20,10,70,.85);
+  text-align:center;
+}
+.predictor-market-page .rke-pod.is-1 .rke-pod-card{
+  border-color:var(--gold);
+  box-shadow:0 12px 28px -12px rgba(180,140,20,.85);
+}
+.predictor-market-page .rke-pod.is-me .rke-pod-card{ border-color:var(--brand); }
+
+.predictor-market-page .rke-pod-name{
+  max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  color:var(--ink); font-size:var(--fs-sm); font-weight:var(--fw-bold); text-decoration:none;
+}
+.predictor-market-page .rke-pod-name:hover{ color:var(--brand-ink); text-decoration:underline; }
+.predictor-market-page .rke-pod-rate{
+  font-size:var(--fs-2xl); font-weight:var(--fw-heavy); letter-spacing:-.02em;
+}
+.predictor-market-page .rke-pod.is-1 .rke-pod-rate{ font-size:var(--fs-4xl); font-weight:var(--fw-black); }
+.predictor-market-page .rke-pod.is-1 .rke-pod-name{ font-size:var(--fs-md); }
+.predictor-market-page .rke-pod-net{ font-size:var(--fs-sm); font-weight:var(--fw-bold); color:var(--ink); }
+
+/* 캐릭터 — 받침 위에 선다. 그림을 윤곽으로 잘라 두어 아래 끝이 곧 발바닥이다.
+   받침 윗면은 원근 때문에 타원이라, 발이 그 타원 안쪽에 들어가야 올라선 것으로 보인다.
+   그래서 몇 px 만 걸치지 않고 넉넉히 겹친다 */
+.predictor-market-page .rke-pod-char{
+  width:80%; max-width:120px; height:auto; display:block; margin-bottom:-14px;
+  filter:drop-shadow(0 10px 12px rgba(20,10,60,.55));
+}
+.predictor-market-page .rke-pod.is-1 .rke-pod-char{ max-width:140px; margin-bottom:-18px; }
+
+/* 받침 — 숫자가 그림에 새겨져 있어 등수를 글자로 또 적지 않는다.
+   **바깥 광선을 잘라 낸 그림이다**(assets). 알파 윤곽으로만 자르면 3등 그림의 아래
+   흐림 81px 이 그대로 높이가 되어 3등이 1등보다 높아졌다. 이제 세로비가
+   1등 .64 > 2등 .50 > 3등 .42 라, 폭을 같게 두면 높이가 저절로 계단이 된다 */
+.predictor-market-page .rke-pod-block{ width:100%; height:auto; display:block; }
 
 /* ── 내 순위 ─────────────────────────────────────────────
    정확도 탭의 .rk-me 와 같은 모양이다. 탭을 오갈 때 "내 자리" 가 옮겨 다니지 않는다. */
@@ -90,60 +171,6 @@
 .predictor-market-page .rke .is-up{ color:var(--up); }
 .predictor-market-page .rke .is-down{ color:var(--down); }
 
-/* ── 시상대 ──────────────────────────────────────────────
-   상위 3명만. 1등이 가운데에 높이 서는 모양이라 DOM 차례가 2·1·3 이다. */
-.predictor-market-page .rke-podium{
-  list-style:none; margin:0; padding:0;
-  display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); align-items:end; gap:10px;
-}
-.predictor-market-page .rke-pod{
-  display:flex; flex-direction:column; align-items:center; gap:5px;
-  padding:18px 12px 16px; border-radius:14px;
-  border:1px solid var(--card-line); background:var(--surface);
-  text-align:center;
-}
-/* 등수마다 키가 다르다 — 숫자를 읽지 않아도 차례가 보인다.
-   1등만 테두리를 2px 로 준다. 색만 금색으로 바꾸면 2·3등과 같은 무게라 "금색 카드"
-   일 뿐 "이긴 카드" 로는 안 읽힌다. */
-.predictor-market-page .rke-pod.is-1{
-  padding-top:28px; padding-bottom:24px;
-  border:2px solid var(--gold); background:linear-gradient(180deg,#fffaeb,var(--surface));
-  box-shadow:0 10px 26px -18px rgba(180,140,20,.7);
-}
-.predictor-market-page .rke-pod.is-2{ padding-top:20px; }
-.predictor-market-page .rke-pod.is-3{ padding-top:14px; }
-.predictor-market-page .rke-pod.is-me{ border-color:var(--brand); background:var(--brand-softer); }
-
-/* 왕관 — 1등 배지 위에 얹는다. 살짝 겹쳐야 "쓴 것" 으로 보인다.
-   띄워 두면 그냥 위에 놓인 그림이 된다. 비율은 그림이 정하므로 높이를 적지 않는다. */
-.predictor-market-page .rke-pod-crown{
-  width:40px; height:auto; display:block;
-  margin-bottom:-9px; transform:rotate(-8deg);
-  filter:drop-shadow(0 2px 3px rgba(120,90,10,.28));
-}
-
-.predictor-market-page .rke-pod-no{
-  display:grid; place-items:center; width:30px; height:30px; border-radius:999px;
-  background:var(--surface-2); color:var(--muted);
-  font-size:var(--fs-md); font-weight:var(--fw-heavy);
-}
-.predictor-market-page .rke-pod.is-1 .rke-pod-no{ background:var(--gold); color:#4a3a06; }
-
-.predictor-market-page .rke-pod-name{
-  max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  color:var(--ink); font-size:var(--fs-lg); font-weight:var(--fw-bold); text-decoration:none;
-}
-.predictor-market-page .rke-pod-name:hover{ color:var(--brand-ink); text-decoration:underline; }
-.predictor-market-page .rke-pod b{ font-size:var(--fs-4xl); font-weight:var(--fw-heavy); letter-spacing:-.02em; }
-/* 1등만 한 단 더. 시상대에서 가장 큰 숫자가 1등이어야 순위가 글자보다 먼저 읽힌다 */
-.predictor-market-page .rke-pod.is-1 b{ font-size:var(--fs-6xl); font-weight:var(--fw-black); }
-.predictor-market-page .rke-pod.is-1 .rke-pod-name{ font-size:var(--fs-xl); }
-
-/* 실제로 받은 토큰이다. --body 로 깔면 적중 건수와 같은 무게로 내려앉아
-   "얼마를 벌었나" 가 안 보인다 — 손익률 다음으로 중요한 값이라 진하게 둔다 */
-.predictor-market-page .rke-pod-net{ font-size:var(--fs-base); font-weight:var(--fw-bold); color:var(--ink); }
-.predictor-market-page .rke-pod-hit{ font-size:var(--fs-xs); color:var(--faint); }
-
 /* ── 동점 표시 ───────────────────────────────────────────
    손익률이 같은 사람이 둘 이상일 때만 붙는다. 손익률 바로 아래 한 줄로 두어
    두 값이 세로로 나란히 서게 한다 — 3.15% 와 6.05% 가 같은 자리에 겹쳐 놓이면
@@ -173,9 +200,10 @@
 
 /* 시상대는 카드 셋이 가로로 떨어져 있어 묶을 수 없다. 알약으로 대신한다 */
 .predictor-market-page .rke-pod .rke-tie{
-  margin-top:4px;
-  padding:3px 10px; border-radius:999px;
+  margin-top:3px;
+  padding:2px 9px; border-radius:999px;
   background:var(--brand-soft); color:var(--brand-ink);
+  font-size:var(--fs-3xs);
 }
 
 /* ── 4위 아래 표 ─────────────────────────────────────────
@@ -222,8 +250,27 @@
    이름은 그 줄이 누구인가라서 닻이고, 손익률은 이 대회의 지표라 가장 크다.
    손익(ANT)은 손익률을 뒷받침하는 값이라 한 단 낮추고, 적중은 맥락이라 더 낮춘다. */
 .predictor-market-page .rke-name{
+  display:inline-flex; align-items:center; gap:9px;
   color:var(--ink); font-size:var(--fs-lg); font-weight:var(--fw-bold); text-decoration:none;
 }
+/* 프로필 사진. 순위 응답에 avatarUrl 이 없어 지금은 모두 기본 그림이다 —
+   그래도 자리를 지금 잡아 둔다. 나중에 사진이 들어와도 줄 높이가 안 바뀐다 */
+.predictor-market-page .rke-face{
+  width:30px; height:30px; flex:none;
+  border-radius:999px; object-fit:cover;
+  background:var(--surface-2);
+}
+
+/* 메달 — 위 셋만. 무대에 선 사람과 표의 줄이 같다는 걸 색으로 잇는다.
+   4위부터는 숫자만 남아 저절로 경계가 생긴다 */
+.predictor-market-page .rke-medal{
+  display:inline-grid; place-items:center;
+  width:26px; height:26px; border-radius:999px;
+  font-size:var(--fs-sm); font-weight:var(--fw-heavy);
+}
+.predictor-market-page .rke-medal.is-1{ background:linear-gradient(180deg,#ffd76a,#e8a91c); color:#4a3a06; }
+.predictor-market-page .rke-medal.is-2{ background:linear-gradient(180deg,#dfe7f5,#a9bcd6); color:#33415c; }
+.predictor-market-page .rke-medal.is-3{ background:linear-gradient(180deg,#f6c9ae,#d9946a); color:#5a3620; }
 .predictor-market-page .rke-name:hover{ color:var(--brand-ink); text-decoration:underline; }
 
 .predictor-market-page .rke-rate{
@@ -262,4 +309,17 @@
   .predictor-market-page .rke-pod.is-1{ order:-1; padding:14px; }
   .predictor-market-page .rke-pod.is-3{ order:1; }
   .predictor-market-page .rke-pod b{ margin-left:auto; font-size:var(--fs-2xl); }
+}
+
+
+/* 1000px 아래에서는 판·버튼을 흐름으로 되돌려 위아래로 나눈다.
+   가운데 시상대를 지키려고 모서리에 띄운 것이라, 좁아지면 겹칠 수밖에 없다 */
+@media (max-width: 1000px){
+  .predictor-market-page .rke-stage{
+    flex-direction:column; align-items:flex-start; gap:12px; padding:20px 18px 0;
+  }
+  /* 늘리지 않는다. 글 네 줄짜리 판이 가로를 다 먹으면 오른쪽이 통째로 빈다 */
+  .predictor-market-page .rke-stage-card{ position:static; width:auto; max-width:min(100%,340px); }
+  .predictor-market-page .rke-stage-link{ position:static; align-self:flex-start; }
+  .predictor-market-page .rke-podium{ margin-top:4px; }
 }
