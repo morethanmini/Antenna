@@ -203,14 +203,26 @@
 /* 값 두 줄은 로고 아래 칸까지 통째로 쓴다 — 로고 옆에 끼우면 이름이 더 잘린다 */
 .event-contest-page .ev-card-price{
   grid-column:1 / -1;margin-top:10px;
+  display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;
   color:var(--ink);font-size:var(--fs-xl);font-weight:var(--fw-heavy);font-variant-numeric:tabular-nums;
 }
-.event-contest-page .ev-card-rate{
-  grid-column:1 / -1;
-  color:var(--muted);font-size:var(--fs-sm);font-weight:var(--fw-bold);font-variant-numeric:tabular-nums;
+/* 이름표. 값보다 한참 작고 흐리다 — 읽는 것은 숫자이고 이 글자는 그 숫자가 무엇인지만 밝힌다 */
+.event-contest-page .ev-card-price i{
+  color:var(--faint);font-size:var(--fs-xs);font-weight:var(--fw-bold);font-style:normal;
 }
-.event-contest-page .ev-card-rate.is-up{color:var(--up)}
-.event-contest-page .ev-card-rate.is-down{color:var(--down)}
+/* 아직 안 들어온 기준가. 숫자가 아니므로 숫자 크기로 키우지 않는다 */
+.event-contest-page .ev-card-price em{
+  color:var(--faint);font-size:var(--fs-md);font-weight:var(--fw-bold);font-style:normal;
+}
+.event-contest-page .ev-card-rate{
+  grid-column:1 / -1;display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;
+  color:var(--faint);font-size:var(--fs-xs);font-weight:var(--fw-normal);font-variant-numeric:tabular-nums;
+}
+/* 대비 비율만 방향 색을 입는다 — 최신가까지 빨강/파랑이면 기준가와 견주기 전에
+   색부터 눈에 들어와, 오른 쪽이 좋은 것처럼 읽힌다(누가 이겼는지는 내 방향에 달렸다) */
+.event-contest-page .ev-card-rate i{font-style:normal;font-weight:var(--fw-bold)}
+.event-contest-page .ev-card-rate.is-up i{color:var(--up)}
+.event-contest-page .ev-card-rate.is-down i{color:var(--down)}
 
 .event-contest-page .ev-card-go{
   grid-column:1 / -1;margin-top:10px;
@@ -297,6 +309,11 @@
   display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline;font-size:var(--fs-xs);
 }
 .event-contest-page .ev-card-mine b{color:var(--brand)}
+/* 맞혔을 때 받을 돈. 목표가·건 돈과 같은 줄에 있지만 **결과를 말하는 값**이라
+   오른쪽 끝으로 밀고 색을 준다 — 나란히 두면 셋 다 "내가 적은 것" 으로 읽힌다. */
+.event-contest-page .ev-card-win{
+  margin-left:auto;color:var(--brand-ink);font-weight:var(--fw-bold);
+}
 .event-contest-page .ev-card-result{
   margin:6px 0 0;display:flex;gap:8px;align-items:baseline;
   font-size:var(--fs-xs);font-weight:var(--fw-bold);
@@ -304,57 +321,6 @@
 .event-contest-page .ev-card-result.is-up{color:var(--up)}
 .event-contest-page .ev-card-result.is-down{color:var(--down)}
 .event-contest-page .ev-card-result.is-tie{color:var(--faint)}
-
-/* ── 등록 칸 ─────────────────────────────────────────── */
-.event-contest-page .ev-entry-rows{list-style:none;margin:0;padding:0;display:grid;gap:8px}
-.event-contest-page .ev-entry-rows > li{
-  border:1px solid var(--rule);border-radius:10px;padding:10px 12px;background:var(--surface);
-}
-/* 고른 줄만 눈에 띄게 — 열 줄이 다 같은 무게면 무엇을 골랐는지 세어야 한다 */
-.event-contest-page .ev-entry-rows > li.is-on{border-color:var(--brand);background:var(--brand-softer)}
-.event-contest-page .ev-entry-rows > li.is-done{opacity:.55}
-.event-contest-page .ev-entry-head{
-  display:flex;align-items:baseline;gap:8px;font-size:var(--fs-md);
-}
-.event-contest-page .ev-entry-head b{color:var(--ink);font-weight:var(--fw-bold)}
-.event-contest-page .ev-entry-head span{color:var(--faint);font-size:var(--fs-sm)}
-.event-contest-page .ev-entry-head em{
-  margin-left:auto;color:var(--brand);font-style:normal;font-size:var(--fs-xs);font-weight:var(--fw-bold);
-}
-.event-contest-page .ev-entry-dir{display:flex;gap:6px;margin-top:8px}
-.event-contest-page .ev-entry-dir button{
-  flex:0 0 auto;padding:5px 14px;border:1px solid var(--rule);border-radius:999px;
-  background:var(--surface);color:var(--faint);font-size:var(--fs-sm);cursor:pointer;
-}
-.event-contest-page .ev-entry-dir button.is-on{
-  border-color:var(--brand);background:var(--brand);color:#fff;font-weight:var(--fw-bold);
-}
-.event-contest-page .ev-entry-fields{
-  margin-top:9px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
-}
-.event-contest-page .ev-entry-fields label{display:grid;gap:3px;font-size:var(--fs-xs);color:var(--faint)}
-.event-contest-page .ev-entry-fields input{
-  padding:6px 9px;border:1px solid var(--rule);border-radius:7px;
-  background:var(--surface);color:var(--ink);font-size:var(--fs-sm);
-}
-.event-contest-page .ev-entry-note{grid-column:1 / -1}
-/* 오류는 --danger 다. --down 은 한국식 하락색(파랑)이라 "틀렸다" 로 안 읽힌다 */
-.event-contest-page .ev-entry-bad{
-  grid-column:1 / -1;margin:0;color:var(--danger);font-size:var(--fs-xs);
-}
-.event-contest-page .ev-entry-foot{
-  margin-top:12px;padding-top:11px;border-top:1px solid var(--rule);
-  display:grid;gap:7px;justify-items:start;
-}
-.event-contest-page .ev-entry-foot > p:first-child{
-  margin:0;color:var(--ink);font-size:var(--fs-md);font-weight:var(--fw-bold);
-}
-.event-contest-page .ev-entry-foot button{
-  padding:9px 20px;border:0;border-radius:9px;
-  background:var(--brand);color:#fff;font-size:var(--fs-md);font-weight:var(--fw-bold);cursor:pointer;
-}
-.event-contest-page .ev-entry-foot button:disabled{background:var(--rule);color:var(--faint);cursor:default}
-.event-contest-page .ev-entry-hint{margin:0;color:var(--faint);font-size:var(--fs-xs)}
 
 /* ── 내 참가 내역 · 순위 ──────────────────────────────── */
 .event-contest-page .ev-me-rows,
@@ -377,9 +343,6 @@
 }
 .event-contest-page .ev-rank-rows > li.is-me{border-color:var(--brand);background:var(--brand-softer)}
 
-@media (max-width:680px){
-  .event-contest-page .ev-entry-fields{grid-template-columns:1fr}
-}
 
 /* ── 카드가 등록 입구가 되면서 (2026-09-18) ────────────────
    카드 전체가 링크다. 누를 수 있다는 것이 보여야 해서 커서·hover 를 준다. */
@@ -387,8 +350,13 @@
 .event-contest-page a.ev-card:hover{border-color:var(--brand-soft);background:var(--brand-softer)}
 .event-contest-page a.ev-card:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 
-/* 걸었는지 여부. 카드 열 장을 훑으며 "어디까지 했더라" 를 세는 자리라 눈에 먼저 걸려야 한다 */
+/* 걸었는지 여부. 카드 열 장을 훑으며 "어디까지 했더라" 를 세는 자리라 눈에 먼저 걸려야 한다.
+
+   **줄을 통째로 쓴다**(2026-09-18). 전에는 격자의 첫 칸(로고 칸)에 떨어졌는데, 그 칸은
+   auto 라 깃발이 길어지면 폭이 그만큼 벌어지고 오른쪽 이름·값 칸이 밀려 줄바꿈됐다 —
+   "판정 대기" 처럼 넉 자만 돼도 기준가가 "70,000" / "원" 으로 갈라졌다. */
 .event-contest-page .ev-card-flag{
+  grid-column:1 / -1;justify-self:start;
   display:inline-block;margin:2px 0 6px;padding:2px 8px;border-radius:999px;
   background:var(--surface-2);color:var(--muted);
   font-size:var(--fs-md);font-weight:var(--fw-bold);
@@ -405,3 +373,11 @@
 .event-contest-page .ev-progress b{font-size:var(--fs-lg);color:var(--ink)}
 .event-contest-page .ev-progress.is-ok{background:var(--brand-softer);color:var(--brand-ink)}
 .event-contest-page .ev-progress.is-ok b{color:var(--brand-ink)}
+/* 합계는 줄 오른쪽 끝이다. 왼쪽(몇 종목·자격)이 지금까지 한 일이고 이쪽이 그 결과라,
+   가운데에 끼우면 둘이 한 문장처럼 이어져 읽힌다 */
+.event-contest-page .ev-progress-win{margin-left:auto;white-space:nowrap}
+.event-contest-page .ev-progress-win b{font-size:var(--fs-md)}
+@media (max-width:560px){
+  /* 좁으면 줄이 접힌다 — 그때 auto 여백은 줄 하나를 통째로 차지해 보기 나쁘다 */
+  .event-contest-page .ev-progress-win{margin-left:0}
+}
