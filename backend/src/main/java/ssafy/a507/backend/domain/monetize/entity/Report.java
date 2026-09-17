@@ -42,7 +42,7 @@ public class Report {
     @Column(columnDefinition = "text")
     private String body;
 
-    /** true면 본문 전체 공개, false면 미구독자에게 앞 3줄만 보여 준다. */
+    /** true면 본문 전체 공개, false면 미구독자에게 본문을 보여 주지 않는다. */
     @Column(name = "is_public", nullable = false)
     private boolean isPublic;
 

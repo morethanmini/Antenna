@@ -1,7 +1,7 @@
 /* 리포트 도메인. API 명세서 §리포트 · 설계서 §3 F.
 
    GET /reports?scope=&sort=&cursor=&size=  { items, nextCursor, hasNext }
-   GET /reports/{reportId}                  전문 또는 3줄 미리보기 + locked
+   GET /reports/{reportId}                  전문, 잠기면 본문 없이 locked
    POST /reports                            Idempotency-Key 필수
    GET /channels/{userId}/reports           채널별 목록 (E-02 · 최신순 고정)
 
@@ -61,8 +61,8 @@ export type ReportFeedItem = {
 /**
  * 리포트 상세. 서버 ReportDetailResponse 와 짝이다.
  *
- * body 와 preview 는 둘 중 하나만 온다 — locked 가 그 둘을 가른다.
- * 서버가 잠긴 리포트에 body 를 아예 담지 않으므로, 전문을 받아 CSS 로 가리는
+ * 잠긴 리포트는 본문이 한 글자도 오지 않는다 — 미리보기도 없다(2026-09-17 폐지. 짧은 글은
+ * 앞 3줄이 곧 전문이었다). 서버가 잠긴 리포트에 body 를 아예 담지 않으므로, 전문을 받아 CSS 로 가리는
  * 방식이 애초에 불가능하다(설계 제약 그대로다).
  */
 export type ReportDetail = {
@@ -75,8 +75,6 @@ export type ReportDetail = {
   locked: boolean
   /** locked 면 null */
   body: string | null
-  /** locked 일 때만 채워진다. 서버가 앞 3줄(최대 300자)로 잘라 준 값 */
-  preview: string | null
   publishedAt: string
   /**
    * 발행 서명에서 복원한 지갑 주소 (ANT-CHAIN-16).
