@@ -1,10 +1,28 @@
 package ssafy.a507.backend.domain.account.repository;
 
+import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import ssafy.a507.backend.domain.account.entity.User;
 
 public interface UserRepository extends JpaRepository<User, Long> {
+
+    /**
+     * 관리자 제재 화면의 회원 찾기 (ANT-ADMIN-01). {@code q} 가 null 이면 최근 가입 순으로 앞에서부터.
+     *
+     * <p>닉네임 부분 일치를 {@code lower()} 로 맞춘다 — PostgreSQL 은 기본 콜레이션에서 대소문자를
+     * 구분하므로 "Ant" 로 찾으면 "ant" 가 안 걸린다. 닉네임이 없는 계정(온보딩 전)은 목록에서 뺀다.
+     */
+    @Query("""
+            select u from User u
+            where u.nickname is not null
+              and (:q is null or lower(u.nickname) like lower(concat('%', :q, '%')))
+            order by u.id desc
+            """)
+    List<User> searchForAdmin(@Param("q") String q, Limit limit);
 
     boolean existsByNickname(String nickname);
 

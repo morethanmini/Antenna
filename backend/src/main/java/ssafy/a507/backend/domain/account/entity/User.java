@@ -114,6 +114,14 @@ public class User {
     }
 
     /** false 면 온보딩을 마치지 않은 회원이다. */
+    /**
+     * 관리자 제재 (ANT-ADMIN-01). BANNED 로 내리면 {@code AuthService} 가 로그인을 거부한다 —
+     * 기존 예측·원장은 그대로 남는다(엔티티 머리 주석).
+     */
+    public void changeStatus(Status next) {
+        this.status = next;
+    }
+
     public boolean hasNickname() {
         return nickname != null;
     }
