@@ -164,21 +164,24 @@ export async function fetchEventBySlug(slug: string) {
 }
 
 /**
- * 대회 화면(J-01)이 띄울 회차를 고른다. **slug 가 먼저다.**
+ * 대회 화면(J-01)이 띄울 회차를 고른다. **운영에서는 slug 가 맞는 회차뿐이다.**
  *
- * ── 왜 대체 경로가 필요한가 ──────────────────────────────
- * 본 대회 전에 등록·배팅을 실제로 해 보려면 리허설 회차가 먼저 서 있어야 하는데, 운영
- * 점검용으로 만든 회차는 slug 가 비어 있다(`EventListItem.slug` 주석). slug 로만 찾으면
- * DB 에 회차가 멀쩡히 있는데도 화면이 "준비 중" 으로 남는다.
+ * ── 왜 폴백을 걷었나 (2026-09-17, ANT-FE-EVENT-LIFECYCLE) ────────────
+ * 전에는 slug → 접수 중(ENTRY) → 가장 최근 회차 순으로 폴백했다. 리허설 회차가 slug 없이
+ * 만들어져서 QA 때 화면을 띄우려는 것이었는데, 그 폴백 때문에 **끝난 리허설 회차가 배포본의
+ * 대회 페이지와 랭킹 탭에 그대로 새어 나왔다**("리허설 3회차"). 회차가 하나라도 있으면 항상
+ * 뭔가 잡히는 규칙이었다.
  *
- * ── 그래서 어떤 순서로 고르는가 ──────────────────────────
- *   ① slug 가 맞는 회차          — 본 대회가 생기는 순간 무조건 이쪽이 이긴다
- *   ② 지금 등록을 받는 회차(ENTRY) — 리허설 중이면 이것이다
- *   ③ 가장 최근 회차             — 끝난 리허설의 결과를 보러 왔을 때
+ * 이제 운영 빌드는 ① 만 본다. 없으면 null — 화면은 "지금 진행 중인 대회가 없어요". 점검용
+ * 회차는 slug 가 뭐든 사용자 화면에 안 잡히고, 다음 대회가 생기면 slug 상수가 바뀌어 지난
+ * 대회는 저절로 빠진다. **판정이 끝난 본 대회는 그대로 잡힌다** — 순위를 보러 오는 길이
+ * 남아야 해서다. 대회 페이지 쪽은 그때 랭킹 탭으로 보낸다(EventContest).
  *
- * ①이 맨 앞인 것이 중요하다. 서버가 slug 를 둔 이유가 "리허설 회차가 사용자 화면에 뜨는
- * 것" 을 막기 위해서인데(PredictionEvent.slug 주석), 본 대회에 slug 를 달아 두면 그 순간부터
- * ②·③은 쓰이지 않는다. 즉 이 대체 경로는 **본 대회가 생기기 전까지만** 산다.
+ * 개발 빌드(`import.meta.env.DEV`)에서만 옛 폴백을 남긴다 — 리허설 회차로 화면을 확인하는
+ * 길. `cardHref` 가 같은 스위치를 쓰고, 빌드 때 상수로 접혀 운영 번들에는 이 가지가 없다.
+ *
+ * 이 규칙의 대가: **본 대회 slug 가 `CONTEST.id`(scalping) 가 아니면 아무것도 안 보인다.**
+ * 새 제약은 아니다 — StockDetail 이 배팅 요소를 띄우는 조건도 `?event=scalping` 이다.
  */
 export async function fetchContestEvent(slug: string) {
   const summary = await fetchContestSummary(slug)
@@ -196,12 +199,12 @@ export async function fetchContestSummary(slug: string): Promise<EventListItem |
   const { items } = await fetchEvents()
   if (items.length === 0) return null
 
-  return (
-    items.find((e) => e.slug === slug)
-    ?? items.find((e) => e.phase === 'ENTRY')
-    /* 서버가 id 내림차순으로 준다(EventQueryService.list) — 첫 줄이 가장 최근이다 */
-    ?? items[0]
-  )
+  const bySlug = items.find((e) => e.slug === slug) ?? null
+  if (bySlug !== null || !import.meta.env.DEV) return bySlug
+
+  /* 개발 빌드 전용 폴백 — 리허설 회차(slug 없음)로 화면을 확인하는 길.
+     서버가 id 내림차순으로 준다(EventQueryService.list) — 첫 줄이 가장 최근이다 */
+  return items.find((e) => e.phase === 'ENTRY') ?? items[0]
 }
 
 export type EventEntryResult = {
