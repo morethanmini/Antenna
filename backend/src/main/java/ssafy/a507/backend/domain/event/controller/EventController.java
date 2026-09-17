@@ -23,6 +23,7 @@ import ssafy.a507.backend.domain.event.dto.EventHomeResponse;
 import ssafy.a507.backend.domain.event.dto.EventLeaderboardResponse;
 import ssafy.a507.backend.domain.event.dto.EventListResponse;
 import ssafy.a507.backend.domain.event.dto.EventMeResponse;
+import ssafy.a507.backend.domain.event.dto.EventParticipantsResponse;
 import ssafy.a507.backend.domain.event.service.EventEntryService;
 import ssafy.a507.backend.domain.event.service.EventLeaderboardService;
 import ssafy.a507.backend.domain.event.service.EventQueryService;
@@ -110,5 +111,18 @@ public class EventController {
             @RequestParam(required = false) String cursor,
             @RequestParam(required = false) Integer size) {
         return eventLeaderboardService.of(eventId, cursor, size);
+    }
+
+    /**
+     * 참가자 — 순위와 다르다. 순위는 정산이 끝나야 나오지만 이쪽은 <b>접수 중에도 나온다</b>.
+     *
+     * <p>"누가 참가했나" 는 승패와 무관하게 이미 정해진 사실이라 미리 보여줘도 잘못 읽을 것이 없다.
+     * 순위를 미리 안 내리는 이유(승패를 모르는데 줄을 세우면 현재 등수로 읽힌다)가 여기엔 없다.
+     *
+     * <p>돈은 싣지 않는다 — 사람별 배팅액은 내리지 않고, 몇 종목에 걸었는지만 준다.
+     */
+    @GetMapping("/{eventId}/participants")
+    public EventParticipantsResponse participants(@PathVariable Long eventId) {
+        return eventQueryService.participants(eventId);
     }
 }

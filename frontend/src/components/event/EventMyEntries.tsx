@@ -16,10 +16,16 @@ const POLL_MS = 6000
 const won = (n: number | null) => (n === null ? '—' : `${n.toLocaleString('ko-KR')}원`)
 const ant = (n: number | null) => (n === null ? '—' : `${n.toLocaleString('ko-KR')} ANT`)
 
-/** 서버 betStatus 를 사람 말로. FAILED 라도 사용자가 할 일은 없다 — 크론이 다시 보낸다 */
+/**
+ * 서버 betStatus 를 사람 말로. FAILED 라도 사용자가 할 일은 없다 — 크론이 다시 보낸다.
+ *
+ * ACTIVE 를 "확정" 이라 부르던 것을 "등록 완료" 로 바꿨다(2026-09-17). ACTIVE 는 배팅이
+ * 체인에 올라갔다는 뜻일 뿐 승패와는 무관한데, "확정" 은 결과가 정해졌다는 말로 읽힌다 —
+ * 바로 아래 SETTLED("정산 완료") 와도 헷갈렸다.
+ */
 const STATUS: Record<BetStatus, string> = {
   PENDING: '전송 중',
-  ACTIVE: '확정',
+  ACTIVE: '등록 완료',
   REVEALED: '공개됨',
   SETTLED: '정산 완료',
   REFUNDED: '환불',
@@ -88,9 +94,16 @@ export default function EventMyEntries({ eventId }: { eventId: number }) {
           {data.entries.map((e) => (
             <li key={e.predictionId}>
               <b>{e.name}</b>
-              <span>{e.direction === 'UP' ? '오른다' : '내린다'}</span>
+              {/* 방향은 낱말과 색을 같이 준다 — 색만으로는 못 읽는 사람이 있고,
+                  낱말만 있으면 줄 열 개를 훑을 때 어느 쪽인지 한눈에 안 들어온다.
+                  국내 관례대로 오른다가 빨강이다(--up) */}
+              <span className={e.direction === 'UP' ? 'ev-me-dir is-up' : 'ev-me-dir is-down'}>
+                {e.direction === 'UP' ? '오른다' : '내린다'}
+              </span>
               <span className="num">{won(e.targetPrice)}</span>
-              <span className="num">{ant(e.stake)}</span>
+              {/* 건 돈. 토큰은 브랜드 보라로 묶는다 — 잔액 칩·구독료와 같은 색이라
+                  "이건 ANT 다" 가 화면마다 같은 신호로 읽힌다 */}
+              <span className="num ev-me-stake">{ant(e.stake)}</span>
               <span className={`ev-me-status is-${e.betStatus.toLowerCase()}`}>{STATUS[e.betStatus]}</span>
               {e.result && (
                 <span className="num ev-me-payout">
