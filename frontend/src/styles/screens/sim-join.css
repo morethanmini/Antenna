@@ -1,10 +1,32 @@
 /* G-03 시즌 상세 · 참가 · /sim/seasons/:id — [ANT-FE-SEASON-JOIN]
-   프로토타입 assets/sim-contest.css 의 ct-season 블록을 옮겼다.
-   모드별 색은 sim-setup.css 와 같은 값을 쓴다(연습 초록 · 대회 보라 · 시연 파랑). */
+
+   ── 2026-09-17 · 사건 아트 히어로 ───────────────────────────────
+   연습 시즌 다섯 장에 사건 아트를 깔았다(sim/seasonArt). 시즌마다 배경 사진과
+   제목 덩어리(lockup) 두 장이 있고, 표에 없는 제목은 글자 제목으로 떨어진다.
+
+   <b>다크는 걷어냈다.</b> 시안이 다크였고 실제로 한 번 어둡게 만들어 봤지만
+   (이 화면만 → 모의투자 모드 전체 순으로 넓혔다가 둘 다 되돌렸다), 서비스의
+   다른 화면이 전부 밝아서 이 한 장만 검으면 다른 서비스처럼 읽혔다. 지금은
+   <b>히어로 안쪽만</b> 사진 위 흰 글자이고, 히어로 밖은 app.css 의 밝은 토큰을
+   그대로 쓴다 — 이 파일에 자기 판 색(--sj-bg 같은 것)이 없는 이유다.
+
+   그래서 색 규칙이 둘로 갈린다. 고칠 때 어느 쪽인지 먼저 보면 된다:
+     · .sj-hero 안  — 배경이 사진이다. 글자는 흰색 + 그림자로 버틴다.
+     · .sj-hero 밖  — 배경이 --ground/--surface 다. 평범한 밝은 화면이다.
+
+   <b>히어로 밖에는 시즌 색이 없다.</b> 한때 시즌마다 다른 강조색(--accent)을
+   진행 방식 아이콘·머리말에 썼는데, 밝은 판에서 빨강·주황 아이콘이 뜬금없이 튀고
+   화면마다 색이 달라져 같은 서비스로 안 읽혔다. 사진이 이미 시즌을 말하고 있으니
+   밖은 브랜드 하나로 간다 — 참여 버튼도 같은 이유로 다섯 장 모두 --brand 다
+   (시안은 금색이었다).
+
+   모드별 색(연습 초록 · 대회 보라 · 시연 파랑)은 sim-setup.css 와 같은 값이다. */
 
 .sim-join{
   display:flex;flex-direction:column;gap:20px;
-  max-width:1000px;margin-inline:auto;
+  /* 히어로가 본문 폭을 꽉 채운다. 바깥 .main-inner 의 max-width:1600 이
+     이미 한계를 잡고 있어 여기서 또 좁히지 않는다. */
+  max-width:none;
   word-break:keep-all;
 }
 
@@ -13,57 +35,119 @@
 .sim-join.contest{--tone:#5457e8;--tone-ink:#5a52d8;--tone-soft:#ebe9fc}
 .sim-join.demo{--tone:#2f7bf6;--tone-ink:#2a6ad8;--tone-soft:#e8f1fe}
 
-/* ── 머리 ─────────────────────────────────────────────── */
-.sj-crumb{display:flex;align-items:center;gap:9px;color:#8a93ad;font-size:var(--fs-lg);font-weight:var(--fw-bold)}
-.sj-crumb a:hover{color:var(--brand)}
-.sj-crumb i{font-style:normal;color:#c2c8da}
+/* ── 히어로 ───────────────────────────────────────────────
+   .main-inner 의 안쪽 여백(28px 32px)만큼 되밀어 본문 영역을 꽉 채운다.
+   숫자가 app.css 와 짝이다 — 거기 여백이 바뀌면 여기도 같이 바뀐다. */
+.sj-hero{
+  position:relative;isolation:isolate;overflow:hidden;
+  margin:-28px -32px 0;
+  min-height:clamp(320px,31vw,452px);
+  display:flex;align-items:center;
+}
 
-.sj-head{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+/* 사진. 장식이라 <img> 가 아니라 배경이다 — 읽어야 할 글자는 아래 .sj-lockup 이 갖는다 */
+.sj-hero.has-art::before{
+  content:"";position:absolute;inset:0;z-index:-2;
+  background:var(--art) var(--art-pos,center)/cover no-repeat;
+}
 
+/* 사진을 덮는 막. 왼쪽만 살짝 눌러 제목이 앉을 자리를 만들고, 아래는 본문 바탕색
+   으로 녹여 사진이 카드 밑으로 자연스럽게 사라지게 한다 — 밝은 본문 위에서 사진이
+   칼로 자른 듯 끊기면 붙여 놓은 것처럼 보인다. 사진 자체는 거의 그대로다:
+   제목 덩어리에 이미 두꺼운 외곽선이 그려져 있어 더 누를 이유가 없다. */
+.sj-hero.has-art::after{
+  content:"";position:absolute;inset:0;z-index:-1;
+  background:
+    linear-gradient(100deg,rgba(8,9,20,.78) 0%,rgba(8,9,20,.44) 34%,rgba(8,9,20,.06) 66%,transparent 100%),
+    linear-gradient(180deg,rgba(8,9,20,.45) 0%,transparent 24%,transparent 56%,var(--ground) 100%);
+}
+
+/* 아트가 없는 시즌(표에 없는 제목)도 빈 판으로 보이지 않게 한다.
+   사진이 없으니 여기만 글자가 어두워도 된다 — .sj-hero.plain 아래 참고. */
+.sj-hero:not(.has-art){
+  background:var(--wash);border-bottom:1px solid var(--wash-line);
+}
+
+.sj-hero-body{
+  position:relative;z-index:1;
+  display:flex;flex-direction:column;align-items:flex-start;gap:16px;
+  width:100%;max-width:min(760px,64%);
+  padding:26px 32px 34px;
+}
+
+/* ── 히어로 안 · 사진 위 ──────────────────────────────────
+   여기 글자는 어떤 사진이 깔릴지 모른다. 색 토큰 대신 흰색 + 그림자로 버틴다. */
+.sj-crumb{
+  display:flex;align-items:center;gap:9px;
+  color:rgba(255,255,255,.72);font-size:var(--fs-lg);font-weight:var(--fw-bold);
+  text-shadow:0 1px 6px rgba(0,0,0,.6);
+}
+.sj-crumb a:hover{color:#fff}
+.sj-crumb i{font-style:normal;color:rgba(255,255,255,.4)}
+
+.sj-head{display:flex;flex-direction:column;align-items:flex-start;gap:14px;width:100%}
+
+/* 배지는 불투명한 옅은 판이라 사진 위에서도 그대로 읽힌다 */
 .sj-mode{
   padding:4px 12px;border-radius:999px;
   background:var(--tone-soft);color:var(--tone-ink);
   font-size:var(--fs-md);font-weight:var(--fw-bold);
 }
 
+/* 글자 제목으로 떨어졌을 때 */
 .sj-head h1{
-  margin:0;color:var(--ink);
-  text-wrap:balance;
+  margin:0;color:#fff;
+  text-wrap:balance;text-shadow:0 2px 18px rgba(0,0,0,.6);
 }
-.sj-head p{margin:0;color:#6b7291;font-size:var(--fs-xl);font-weight:var(--fw-bold);text-wrap:pretty}
+.sj-head p{
+  margin:0;color:rgba(255,255,255,.82);
+  font-size:var(--fs-xl);font-weight:var(--fw-bold);text-wrap:pretty;
+  text-shadow:0 1px 10px rgba(0,0,0,.6);
+}
 
-/* ── 시즌 카드 ────────────────────────────────────────── */
+/* 아트가 없으면 배경이 연보라 판이라 흰 글자가 날아간다 — 그때만 잉크로 되돌린다 */
+.sj-hero:not(.has-art) .sj-crumb{color:#8a93ad;text-shadow:none}
+.sj-hero:not(.has-art) .sj-crumb a:hover{color:var(--brand)}
+.sj-hero:not(.has-art) .sj-crumb i{color:#c2c8da}
+.sj-hero:not(.has-art) .sj-head h1{color:var(--ink);text-shadow:none}
+.sj-hero:not(.has-art) .sj-head p{color:#6b7291;text-shadow:none}
+
+/* 제목 덩어리(이미지). h1 은 자리만 잡고 크기는 img 가 정한다 —
+   시즌마다 원본 여백이 달라 최대 폭을 화면에서 넘겨준다(seasonArt.lockupMax). */
+.sj-lockup{margin:0;line-height:0}
+.sj-lockup img{
+  display:block;width:100%;height:auto;
+  filter:drop-shadow(0 10px 28px rgba(0,0,0,.5));
+}
+
+/* lockup 안의 설명이 읽히는 폭에서는 글자 설명을 숨긴다(좁은 화면에서만 나온다) */
+.sj-note-sm{display:none}
+
+/* ── 히어로 밖 · 시즌 카드 ────────────────────────────────
+   히어로 위로 올라타 두 덩어리를 한 몸으로 묶는다. 위 여백(gap:20px)을
+   상쇄하고 더 끌어올린 값이다. */
 .sj-card{
-  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,300px);
-  align-items:center;gap:26px;padding:26px 30px;
+  position:relative;z-index:2;margin:-72px 0 0;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,320px);
+  align-items:center;gap:24px;padding:22px 26px;
   border:1px solid var(--rule);border-radius:20px;
-  background:var(--surface);box-shadow:var(--shadow);
+  background:var(--surface);
+  /* 사진 위로 떠 있는 카드라 공용 --shadow 보다 한 단 깊게 준다 */
+  box-shadow:0 1px 2px rgba(20,20,27,.05),0 24px 50px -30px rgba(20,20,27,.5);
 }
 
-/* 추천 모드는 카드에 옅은 색을 깔아 준다 */
-.sim-join.learn .sj-card{
-  border-color:#cfe9dd;
-  background:linear-gradient(120deg,#f4fbf7 0%,#fbfefc 55%,#f1faf6 100%);
-}
-.sim-join.contest .sj-card{
-  border-color:#dedbf8;
-  background:linear-gradient(120deg,#f6f5fe 0%,#faf9ff 52%,#f1f0fd 100%);
-}
-
-.sj-card-main{display:flex;flex-direction:column;gap:18px;min-width:0}
+.sj-card-main{display:flex;flex-direction:column;gap:16px;min-width:0}
 
 /* ── 조건 통계 ────────────────────────────────────────── */
-.sj-stats{
-  display:flex;flex-wrap:wrap;gap:14px 0;margin:0;
-}
+.sj-stats{display:flex;flex-wrap:wrap;gap:14px 0;margin:0}
 .sj-stats > div{
   display:flex;align-items:center;gap:13px;
-  padding:0 24px;border-left:1px solid var(--rule);
+  padding:0 26px;border-left:1px solid var(--rule);
 }
-.sj-stats > div:first-child{padding-left:0;border-left:0}
-.sj-stats svg{flex:none;color:var(--tone)}
+.sj-stats > div:first-child{padding-left:4px;border-left:0}
+.sj-stats svg{flex:none;color:var(--brand)}
 
-.sj-stats dt{margin:0 0 3px;color:#8a90ab;font-size:var(--fs-md);font-weight:var(--fw-bold)}
+.sj-stats dt{margin:0 0 3px;color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold)}
 .sj-stats dd{margin:0;color:var(--ink);font-size:var(--fs-xl);font-weight:var(--fw-bold)}
 .sj-stats dd b{font-size:var(--fs-3xl);font-weight:var(--fw-black);letter-spacing:-.02em}
 .sj-stats dd .num{margin-right:2px}
@@ -71,22 +155,22 @@
 /* 대회만 나온다 */
 .sj-schedule{
   display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:0;
-  padding-top:16px;border-top:1px dashed var(--rule);
+  padding-top:14px;border-top:1px dashed var(--rule);
   color:#6b7291;font-size:var(--fs-lg);font-weight:var(--fw-bold);
 }
-.sj-schedule svg{flex:none;color:#8a90ab}
+.sj-schedule svg{flex:none;color:var(--muted)}
 
 /* ── 참가 버튼 ────────────────────────────────────────── */
-.sj-cta-wrap{display:flex;flex-direction:column;gap:10px;min-width:0}
+.sj-cta-wrap{display:flex;flex-direction:column;gap:9px;min-width:0}
 
 .sj-cta{
   display:flex;align-items:center;justify-content:center;gap:10px;
   width:100%;height:56px;padding:0 20px;border-radius:13px;
-  background:var(--tone);color:#fff;
+  background:var(--brand);color:#fff;
   font-size:var(--fs-2xl);font-weight:var(--fw-heavy);letter-spacing:-.02em;
   transition:background .15s;
 }
-.sj-cta:hover{background:var(--tone-ink)}
+.sj-cta:hover{background:var(--brand-ink)}
 .sj-cta em{font-style:normal;font-size:var(--fs-3xl)}
 .sj-cta:disabled{opacity:.6;cursor:default}
 
@@ -103,31 +187,53 @@
 }
 
 /* ── 진행 방식 ────────────────────────────────────────── */
-.sj-rules{
-  padding:24px 28px;border:1px solid var(--rule);border-radius:16px;
+.sj-rules{display:flex;flex-direction:column;gap:16px}
+
+.sj-rules-head{
+  display:grid;grid-template-columns:minmax(0,auto) minmax(0,1fr);
+  align-items:baseline;column-gap:18px;
+}
+.sj-rules-kicker{
+  grid-column:1/-1;margin:0 0 2px;
+  color:var(--brand);font-size:var(--fs-2xs);font-weight:var(--fw-bold);
+  letter-spacing:.24em;
+}
+.sj-rules h2{
+  margin:0;color:var(--ink);
+  font-size:var(--fs-6xl);font-weight:var(--fw-black);letter-spacing:-.03em;
+}
+/* 제목 오른쪽으로 빠지는 가는 줄 */
+.sj-rules h2::after{
+  content:"";display:inline-block;vertical-align:middle;
+  width:clamp(40px,14vw,220px);height:1px;margin-left:16px;
+  background:linear-gradient(90deg,var(--rule),transparent);
+}
+.sj-rules-lead{
+  margin:0;justify-self:end;text-align:right;
+  color:var(--muted);font-size:var(--fs-lg);font-weight:var(--fw-normal);
+}
+
+.sj-steps{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;
+  margin:0;padding:0;list-style:none;
+}
+.sj-steps li{
+  display:flex;flex-direction:column;gap:8px;
+  padding:18px 18px 20px;
+  border:1px solid var(--rule);border-radius:16px;
   background:var(--surface);box-shadow:var(--shadow);
 }
-
-.sj-rules h2{
-  margin:0 0 14px;color:var(--ink);font-size:var(--fs-2xl);font-weight:var(--fw-heavy);letter-spacing:-.02em;
+/* 번호는 순서를 세는 눈금이라 크게 키우지 않는다 */
+.sj-step-no{
+  color:var(--faint);font-family:var(--mono);font-size:var(--fs-xs);
+  font-weight:var(--fw-bold);letter-spacing:.14em;
 }
-
-.sj-rules ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:11px}
-
-.sj-rules li{
-  position:relative;padding-left:20px;
-  color:var(--body);font-size:var(--fs-lg);line-height:1.65;
+.sj-steps svg{color:var(--brand);margin:-2px 0 2px}
+.sj-steps b{
+  color:var(--ink);font-size:var(--fs-xl);font-weight:var(--fw-bold);
+  line-height:1.45;letter-spacing:-.01em;
 }
-.sj-rules li::before{
-  content:"";position:absolute;left:5px;top:9px;
-  width:5px;height:5px;border-radius:50%;background:var(--tone);
-}
-.sj-rules b{color:var(--ink);font-weight:var(--fw-bold)}
-.sj-rules code{
-  padding:1px 6px;border-radius:5px;
-  background:var(--surface-2);color:var(--ink);
-  font-family:var(--mono);font-size:var(--fs-md);
-}
+.sj-steps p{margin:0;color:var(--muted);font-size:var(--fs-md);line-height:1.62}
 
 /* ── 초기화 확인 ──────────────────────────────────────── */
 /* 네이티브 dialog. 배경막은 ::backdrop 이 그린다 */
@@ -149,20 +255,41 @@
   background:var(--surface);color:var(--ink);font-size:var(--fs-lg);font-weight:var(--fw-bold);
 }
 .sj-dialog-btn:hover{background:var(--surface-2)}
-.sj-dialog-btn.solid{border-color:var(--tone);background:var(--tone);color:#fff}
-.sj-dialog-btn.solid:hover{background:var(--tone-ink)}
+.sj-dialog-btn.solid{border-color:var(--brand);background:var(--brand);color:#fff}
+.sj-dialog-btn.solid:hover{background:var(--brand-ink)}
 .sj-dialog-btn:disabled{opacity:.6;cursor:default}
 
 /* ── 좁은 화면 ────────────────────────────────────────── */
+@media(max-width:1100px){
+  .sj-steps{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 @media(max-width:900px){
-  .sj-card{grid-template-columns:minmax(0,1fr);gap:20px}
+  .sj-hero-body{max-width:100%;padding-bottom:64px}
+  .sj-card{grid-template-columns:minmax(0,1fr);gap:18px;margin-top:-52px}
   .sj-head h1{font-size:var(--fs-title-lg)}
+  .sj-rules-head{grid-template-columns:minmax(0,1fr)}
+  .sj-rules h2::after{display:none}
+  .sj-rules-lead{justify-self:start;text-align:left;margin-top:6px}
+}
+@media(max-width:860px){
+  /* .main-inner 의 여백이 20px 16px 로 줄어든다(app.css) — 되밀 값도 같이 줄인다 */
+  .sj-hero{margin:-20px -16px 0}
 }
 @media(max-width:600px){
   .sj-head h1{font-size:var(--fs-title)}
-  .sj-card{padding:22px 20px}
+  .sj-hero{min-height:260px}
+  .sj-hero-body{padding:20px 18px 58px}
+  .sj-card{padding:18px 16px}
   .sj-stats > div{padding:0;border-left:0;flex:1 1 45%}
-  .sj-rules{padding:20px}
+  .sj-steps{grid-template-columns:minmax(0,1fr)}
+  /* lockup 의 설명 줄이 이 폭부터 못 읽을 크기가 된다 — 글자로 다시 깐다.
+     히어로 안이라 사진 위 흰 글자다. */
+  .sj-note-sm{
+    display:block;margin:0;color:rgba(255,255,255,.85);
+    font-size:var(--fs-lg);font-weight:var(--fw-bold);line-height:1.55;
+    text-shadow:0 1px 10px rgba(0,0,0,.7);
+  }
+  .sj-hero:not(.has-art) .sj-note-sm{color:#6b7291;text-shadow:none}
 }
 @media(prefers-reduced-motion:reduce){
   .sj-cta{transition:none}
