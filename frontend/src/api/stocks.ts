@@ -7,9 +7,9 @@
    POST   /watchlist              { stockCode }
    DELETE /watchlist/{stockCode}
 
-   전부 실제 호출이다(명세서 v0.73). perMin/perMax · sort 6종 · per · pbr · 행별 예측 집계
-   (predictionCount · upRatio — 판정 대기만)가 동작한다. 서버가 아직 무시하는 것 —
-   sentiment · hasOpenPrediction 은 보내도 결과가 안 바뀐다. */
+   전부 실제 호출이다(명세서 v0.75). perMin/perMax · sort 6종 · per · pbr · 행별 예측 집계
+   (predictionCount · upRatio — 판정 대기만) · hasOpenPrediction(내 진행 중 예측)이
+   동작한다. 서버가 아직 무시하는 것 — sentiment 는 보내도 결과가 안 바뀐다. */
 import { api } from './client'
 import type { CursorList } from './types'
 
@@ -120,6 +120,7 @@ export type StockFilter = {
   /** PBR 범위. PER 과 같은 규칙이다 — 값이 없는 종목은 어느 범위에도 안 든다 */
   pbrMin?: number
   pbrMax?: number
+  /** 내가 건 판정 대기(BASE·OPEN) 예측이 있는 종목만. 남의 예측은 안 친다 */
   hasOpenPrediction?: boolean
   watchedOnly?: boolean
   sort: StockSort
