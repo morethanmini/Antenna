@@ -5,7 +5,6 @@ import { Navigate, useLocation } from 'react-router-dom'
 import LockedCard from '../components/state/LockedCard'
 import type { Access } from '../routes'
 import { useAuth } from './context'
-import { rememberReturnTo } from './returnTo'
 
 /** 닉네임을 정하기 전까지 머무는 화면. */
 const ONBOARDING_PATH = '/onboarding/nickname'
@@ -20,8 +19,8 @@ export default function RequireAccess({ access, children }: { access: Access; ch
   if (booting) return null
 
   if (!authed) {
-    // 로그인 후 이 자리로 돌려보내기 위해 경로를 남긴다
-    rememberReturnTo(location.pathname + location.search)
+    /* **막힌 자리를 기억하지 않는다**(2026-09-17). 로그인 뒤에는 늘 인사이트 홈으로
+       간다 — 들어오자마자 맥락 없는 화면에 떨어지는 편이 헷갈린다는 판단이다. */
     return <Navigate to="/login" replace />
   }
 

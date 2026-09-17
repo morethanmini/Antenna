@@ -157,8 +157,8 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
   useDismiss({ open: menuOpen, panel: menuBox, trigger: menuBtn, onClose: closeMenu })
 
   /* M-09 온보딩 튜토리얼. **홈이 아니라 셸에 둔다** — 비로그인 딥링크로 막혔던
-     회원은 가입 뒤 홈이 아니라 그 경로로 착지한다(returnTo). 홈에만 걸면 그
-     사람은 튜토리얼을 아예 못 본다.
+     회원도 가입 절차가 끝나면 이 셸 안으로 들어온다. 홈 화면에만 걸어 두면 처음
+     닿는 곳이 홈이 아닐 때 튜토리얼을 아예 못 본다.
 
      로그인(A-01)과 닉네임(A-02)에는 셸이 없어서(routes.ts 의 mode 가 없다)
      저절로 제외된다. 그래도 authed · nickname 을 확인한다 — 셸은 가드가
