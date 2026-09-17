@@ -25,7 +25,7 @@ import ssafy.a507.backend.domain.account.entity.UserInterest;
 import ssafy.a507.backend.domain.account.repository.UserInterestRepository;
 import ssafy.a507.backend.domain.chain.entity.Operation;
 import ssafy.a507.backend.domain.chain.repository.OperationRepository;
-import ssafy.a507.backend.domain.chain.repository.TokenLedgerRepository;
+import ssafy.a507.backend.domain.chain.service.AvailableBalanceService;
 import ssafy.a507.backend.domain.chain.service.OperationService;
 import ssafy.a507.backend.domain.chain.service.TokenOperationService;
 import ssafy.a507.backend.domain.monetize.dto.MySubscriptionListResponse;
@@ -62,7 +62,7 @@ public class SubscriptionService {
     private final UserRepository users;
     private final SubscriptionRepository subscriptions;
     private final PublisherFeeRepository fees;
-    private final TokenLedgerRepository ledger;
+    private final AvailableBalanceService availableBalance;
     private final OperationRepository operations;
     private final SignatureGuard signatureGuard;
     private final OperationService operationService;
@@ -140,11 +140,12 @@ public class SubscriptionService {
                     throw new BusinessException(ErrorCode.ALREADY_SUBSCRIBED, "userId");
                 });
 
-        // 원장 기준 1차 거름. 체인 잔액은 전송 시뮬레이션이 한 번 더 본다(AdService 와 같다).
-        if (ledger.balanceOf(subscriberId).compareTo(fee) < 0) {
+        // 가용잔액 = 체인 잔액 − 전송 중인 내 돈(PENDING 배팅·구독·광고). ANT-TOKEN-11 — 예전엔 원장을 봤는데
+        // 원장은 인덱서 지연이 있고, 셋이 서로의 PENDING 을 못 보면 광고 심사 중인 돈으로 구독이 된다.
+        // 체인 잔액은 전송 시뮬레이션이 한 번 더 본다. subscriber 는 위에서 행 잠금과 함께 읽었다.
+        if (availableBalance.of(subscriber).compareTo(fee) < 0) {
             throw new BusinessException(ErrorCode.INSUFFICIENT_BALANCE);
         }
-
         signatureGuard.verify(subscriberId, new Signed(publisherId, fee, request.signature()));
 
         Subscription subscription =

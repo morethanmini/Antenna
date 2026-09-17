@@ -4,7 +4,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -12,11 +14,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ssafy.a507.backend.common.idempotency.IdempotencyStore;
 import ssafy.a507.backend.common.security.CurrentUserProvider;
-import ssafy.a507.backend.domain.chain.entity.Operation;
 import ssafy.a507.backend.domain.monetize.dto.AdActiveResponse;
 import ssafy.a507.backend.domain.monetize.dto.AdCreateRequest;
 import ssafy.a507.backend.domain.monetize.dto.AdCreateResponse;
 import ssafy.a507.backend.domain.monetize.dto.AdPricingResponse;
+import ssafy.a507.backend.domain.monetize.entity.AdBanner;
 import ssafy.a507.backend.domain.monetize.service.AdService;
 
 /** 스폰서드 광고 — ANT-COMMUNITY-05. */
@@ -32,13 +34,13 @@ public class AdController {
     private final CurrentUserProvider currentUserProvider;
 
     /**
-     * 게재 신청 — 202. 명세 §1 의 멱등성 필수 대상이다.
+     * 게재 신청 — 201. 명세 §1 의 멱등성 필수 대상이다.
      *
-     * <p>토큰이 소각되는 요청이라 되돌릴 수단이 없다. 타임아웃 뒤 한 번의 재시도로 게재료가
-     * 두 번 나가면 복구 경로가 없으므로, 재요청에는 처음 만든 작업을 그대로 돌려준다.
+     * <p>승인제(ANT-ADMIN-03)라 여기서는 돈이 안 나가지만 멱등 대상은 유지한다 — 재시도로 신청이 둘이 되면 자리를
+     * 두 개 잡고 가용잔액도 두 배로 묶인다. 재요청에는 처음 만든 배너 id 를 그대로 돌려준다.
      *
-     * <p>멱등 저장소에는 {@code operationId:adId} 두 값만 넣는다 — 상태는 항상 PENDING 이라
-     * 저장할 필요가 없고, 저장한 시점의 상태를 돌려주면 오히려 낡은 값이 된다.
+     * <p>멱등 저장소에는 {@code adId} 만 넣는다 — 상태는 항상 PENDING 이라 저장할 필요가 없고,
+     * 저장한 시점의 상태를 돌려주면 오히려 낡은 값이 된다.
      */
     @PostMapping
     public ResponseEntity<AdCreateResponse> create(
@@ -46,22 +48,22 @@ public class AdController {
             @Valid @RequestBody AdCreateRequest request) {
 
         Long userId = currentUserProvider.currentUserId();
-        String accepted = idempotencyStore.execute(
+        String adId = idempotencyStore.execute(
                 userId,
                 CREATE_ENDPOINT,
                 idempotencyKey,
                 IdempotencyStore.hash(request.toString()),
-                () -> {
-                    AdCreateResponse created = adService.create(userId, request);
-                    return created.operationId() + ":" + created.adId();
-                });
+                () -> String.valueOf(adService.create(userId, request).adId()));
 
-        int at = accepted.lastIndexOf(':');
-        return ResponseEntity.status(HttpStatus.ACCEPTED)
-                .body(new AdCreateResponse(
-                        accepted.substring(0, at),
-                        Long.valueOf(accepted.substring(at + 1)),
-                        Operation.Status.PENDING));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new AdCreateResponse(Long.valueOf(adId), AdBanner.Status.PENDING));
+    }
+
+    /** 신청 취소 — 본인의 심사 대기 건만. 가용잔액 홀드가 풀린다. 되돌릴 게 없어 멱등 대상이 아니다. */
+    @DeleteMapping("/{adId}")
+    public ResponseEntity<Void> cancel(@PathVariable Long adId) {
+        adService.cancel(currentUserProvider.currentUserId(), adId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/active")

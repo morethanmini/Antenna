@@ -1,5 +1,6 @@
 package ssafy.a507.backend.domain.monetize.repository;
 
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -131,4 +132,15 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
              order by s.id desc
             """)
     List<Subscription> findMine(@Param("subscriberId") Long subscriberId);
+
+    /**
+     * 전송이 끝나지 않은 내 구독의 구독료 합 — 가용잔액에서 뺀다 (ANT-TOKEN-11).
+     *
+     * <p>접수한 구독은 tx 가 채굴될 때까지 PENDING 이고 그동안 체인 잔액에는 옛 값이 보인다. 그 창에서 같은 돈으로
+     * 배팅·광고를 넣으면 검사를 통과한다. {@code PredictionEventBetRepository.sumPendingStake} 와 같은 꼴이다.
+     */
+    @Query("select coalesce(sum(s.fee), 0) from Subscription s"
+            + " where s.subscriber.id = :subscriberId"
+            + " and s.status = ssafy.a507.backend.domain.monetize.entity.Subscription$Status.PENDING")
+    BigInteger sumPendingFee(@Param("subscriberId") Long subscriberId);
 }

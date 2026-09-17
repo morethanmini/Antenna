@@ -31,6 +31,14 @@ public interface OperationRepository extends JpaRepository<Operation, String> {
     /** 인덱서 ②(ANT-CHAIN-11)가 이벤트의 tx 로 작업을 찾는다. 릴레이어가 전송 직후 채운 값이라 응답 시점엔 있다. */
     Optional<Operation> findByTxHash(String txHash);
 
+    /**
+     * 리소스 하나의 <b>가장 최근 작업</b> (ANT-ADMIN-03). 광고 승인이 소각을 보냈는지는 배너 행에 칸이 없어 작업으로
+     * 안다 — 최근 작업이 PENDING 이면 소각이 나가는 중이고, FAILED 면 다시 승인할 수 있고, 없으면 아직 안 눌렀다.
+     * 배너에 칸을 더하지 않는 이유는 {@code ddl-auto: update} 라 스키마가 팀 DB 에 번지기 때문이다.
+     */
+    Optional<Operation> findFirstByResourceTypeAndResourceIdOrderByCreatedAtDesc(
+            Operation.ResourceType resourceType, Long resourceId);
+
     /** 전송 주체가 tx 를 못 보낸 채 남은 PENDING — "전송~markSent 사이 크래시" 창. 인덱서 ② 가 SEND_LOST 로 닫는다. */
     List<Operation> findByStatusAndTxHashIsNullAndCreatedAtBefore(Operation.Status status, Instant before);
 
