@@ -85,6 +85,37 @@ export type EventPool = {
   oddsDown: number | null
 }
 
+/**
+ * **승자투표권(패리뮤추얼) 배당 — 이 규칙이 사는 곳은 여기 한 곳이다.**
+ *
+ *     받을 돈 = 건 돈 × (양쪽 풀 합) ÷ (내가 선 쪽 풀)
+ *
+ * 두 가지로 갈리는 이유는 **내 배팅이 이미 풀에 들어 있는가** 하나뿐이다.
+ * 걸기 전 미리보기(C-01 배팅 칸)는 내가 들어가면 그 순간 풀이 커지므로 양쪽에 더한
+ * 뒤 재야 한다 — 빼고 재면 실제보다 큰 금액이 나와 화면이 부풀린 숫자를 약속한다.
+ * 이미 건 뒤(대회 카드)는 서버가 준 풀에 내 돈이 들어 있으므로 그대로 나눈다.
+ *
+ * 반대쪽이 비어 있으면 받을 돈이 건 돈과 같아진다(가져올 남의 돈이 없다). 0 이 아니라
+ * 원금이 맞다 — 컨트랙트도 이긴 풀이 전부일 때 원금을 돌려준다.
+ */
+function share(total: number, side: number, stake: number) {
+  /* 내 쪽 풀이 0 이면 나눌 수 없다. 걸었는데 0 이라는 것은 아직 체인에 안 올라갔다는
+     뜻이다(PENDING·FAILED 는 집계에서 빠진다) — 그때는 값을 지어내지 않는다. */
+  if (side <= 0) return null
+  return Math.floor((stake * total) / side)
+}
+
+/** 이미 걸어 둔 배팅이 **맞으면** 받을 돈. 내 stake 는 pool 에 이미 들어 있다. */
+export function payoutOfBet(pool: EventPool, direction: BetDirection, stake: number) {
+  return share(pool.up + pool.down, direction === 'UP' ? pool.up : pool.down, stake)
+}
+
+/** 아직 걸기 전 미리보기. 내 stake 를 양쪽에 더한 뒤 잰다. */
+export function payoutIfIBet(pool: EventPool, direction: BetDirection, stake: number) {
+  const mine = direction === 'UP' ? pool.up : pool.down
+  return share(pool.up + pool.down + stake, mine + stake, stake)
+}
+
 /** 내가 그 종목에 건 것. 남의 방향·목표가는 응답에 아예 없다(집계만 나온다). */
 export type EventMyBet = {
   predictionId: number
