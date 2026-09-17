@@ -177,8 +177,16 @@
 .predictor-market-page .rke-table tbody tr.is-me{ background:var(--brand-softer); }
 .predictor-market-page .rke-table tbody tr.is-me td{ font-weight:var(--fw-bold); }
 
-.predictor-market-page .rke-col-rank{ width:64px; text-align:center; font-weight:var(--fw-bold); color:var(--ink); }
-.predictor-market-page .rke-col-num{ text-align:right; }
+/* **선택자에 th/td 를 붙여야 한다.** 위의 `.rke-table th, .rke-table td` 가 text-align:left
+   를 걸고 있는데 그쪽이 요소 하나를 더 물고 있어 명시도가 높다. `.rke-col-num` 만으로는
+   덮이지 못해 숫자가 왼쪽에 남았고, 동점 오차만 제 규칙대로 오른쪽에 붙어 두 줄이
+   어긋나 보였다(2026-09-17). */
+.predictor-market-page .rke-table th.rke-col-rank,
+.predictor-market-page .rke-table td.rke-col-rank{
+  width:64px; text-align:center; font-weight:var(--fw-bold); color:var(--ink);
+}
+.predictor-market-page .rke-table th.rke-col-num,
+.predictor-market-page .rke-table td.rke-col-num{ text-align:right; }
 .predictor-market-page .rke-name{ color:var(--ink); font-weight:var(--fw-normal); text-decoration:none; }
 .predictor-market-page .rke-name:hover{ color:var(--brand-ink); text-decoration:underline; }
 
