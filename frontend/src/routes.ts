@@ -47,6 +47,7 @@ import AdminAbuse from './pages/AdminAbuse'
 import AdminUser from './pages/AdminUser'
 import AdminSeason from './pages/AdminSeason'
 import AdminEvent from './pages/AdminEvent'
+import AdminAd from './pages/AdminAd'
 import EventContest from './pages/EventContest'
 
 export type Access =
@@ -165,6 +166,8 @@ export const ROUTES: PageMeta[] = [
   /* I-04 는 설계서에 없다. 이벤트 관리자 API 6종(ANT-EVENT-04·06)이 열려 있는데 부르는
      화면이 없어 붙였다. nav 는 home 으로 둔다 — 사이드바에 메뉴를 만들지 않는다. */
   { screen: 'I-04', element: AdminEvent, path: '/admin/events', title: '이벤트 운영', access: 'admin', mode: 'insight', nav: 'home', story: 'ANT-FE-ADMIN-EVENT' },
+  /* I-05 광고 승인(ANT-ADMIN-03). 명세가 "관리자 승인은 2차" 로 미뤄 뒀던 것을 여기서 한다 — 승인 버튼이 곧 소각 tx 다. */
+  { screen: 'I-05', element: AdminAd, path: '/admin/ads', title: '광고 승인', access: 'admin', mode: 'insight', nav: 'home', story: 'ANT-ADMIN-03' },
 
   /* ── J. 이벤트 ───────────────────────────────────────
      설계서 §3 에 없는 화면이다. 이벤트용으로 뒤에 붙은 것이라 A~I 를 밀지 않으려고

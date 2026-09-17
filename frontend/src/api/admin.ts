@@ -175,3 +175,41 @@ export function getSettlementStatus(eventId: number) {
 export function setBasePrice(eventId: number, idx: number, basePrice: string) {
   return api.put<void>(`/admin/events/${eventId}/stocks/${idx}/base-price`, { basePrice })
 }
+
+/* ── I-05 광고 승인 (ANT-ADMIN-03) ───────────────────────── */
+
+export type AdStatus = 'PENDING' | 'ACTIVE' | 'REJECTED' | 'ENDED'
+
+export type AdminAdItem = {
+  id: number
+  advertiserId: number
+  advertiserNickname: string | null
+  imageUrl: string
+  linkUrl: string
+  days: number
+  startsAt: string
+  endsAt: string
+  status: AdStatus
+  /** 게재료(정수 ANT 문자열). 신청 때 박제된 값이라 승인해도 이 금액이 나간다 */
+  price: string
+  txHash: string | null
+  createdAt: string
+  /** 신청자의 지금 가용잔액. 심사 대기 건에만 오고, 체인을 못 읽으면 null */
+  advertiserAvailable: string | null
+  /** 승인은 눌렀는데 소각 tx 확정을 기다리는 중. 상태만 보면 심사 대기와 구분이 안 된다 */
+  burnPending: boolean
+}
+
+/** status 를 생략하면 전체. 화면 기본값은 PENDING(심사 대기). */
+export function getAdminAds(status?: AdStatus) {
+  return api.get<{ items: AdminAdItem[] }>('/admin/ads', { query: { status } })
+}
+
+/**
+ * 승인 → **그 자리에서 게재료 소각 tx 가 나간다.** 202 + operationId. 확정(ACTIVE)은 인덱서 몫.
+ * 반려 → 204. 아무것도 태우지 않는다.
+ * 잔액이 모자라면 409 INSUFFICIENT_BALANCE 이고 신청은 대기로 남는다 — 충전 뒤 다시 누를 수 있다.
+ */
+export function handleAd(id: number, action: 'APPROVE' | 'REJECT') {
+  return api.patch<{ operationId: string; adId: number } | void>(`/admin/ads/${id}`, { action })
+}
