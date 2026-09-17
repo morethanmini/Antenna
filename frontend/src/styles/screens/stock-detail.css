@@ -623,13 +623,6 @@
 .stock-detail-page .pf-line-input:focus-visible::-webkit-slider-thumb{
   outline:2px solid var(--brand);outline-offset:2px;
 }
-/* 아직 안 고른 상태 — 손잡이가 왼쪽 끝에 있지만 값은 null 이다. 흐리게 두어
-   "이미 3일이 골라졌다" 로 읽히지 않게 한다 */
-.stock-detail-page .pf-line.is-unset .pf-line-input::-webkit-slider-thumb{
-  background:var(--faint);
-}
-.stock-detail-page .pf-line.is-unset .pf-line-input::-moz-range-thumb{background:var(--faint)}
-
 /* 선과 눈금. 손잡이 뒤에 깔린다 */
 /* 손잡이 반지름(10px)만큼 양쪽을 좁혀 두면, 눈금을 그냥 0~100% 에 놓아도
    손잡이 중심과 정확히 맞는다 */

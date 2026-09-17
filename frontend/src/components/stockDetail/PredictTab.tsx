@@ -526,6 +526,9 @@ export default function PredictTab({
           {/* ② 기간 — 3~90 일 연속 구간이다(2026-09-14). 눈금 네 개 고정이던 때는 range 를
               **눈금 번호**로 썼는데, 이제 값 자체를 싣는다. 눈금은 3·30·60·90 참조선으로만
               남긴다 — 화살표키 한 칸이 1일이라 손잡이가 눈금에 붙지 않는다.
+              처음 값은 3일이다(2026-09-17). "안 고름" 상태를 두면 손잡이는 3일 자리에
+              서 있는데 값은 null 이라, 3일로 끌어도 DOM 값이 그대로여서 change 가 나지
+              않았다 — 3일만 고를 수 없는 칸이었다.
               native range 를 쓰는 이유는 접근성이다. 직접 만든 끌개는 키보드·스크린리더가
               못 쓰는데, range 는 화살표키·Home/End 가 그냥 된다. */}
           <li className="pf-step">
@@ -549,16 +552,16 @@ export default function PredictTab({
                 <span>만기 <b>{dayStamp(CONTEST.targetDate)}</b> 종가</span>
               </p>
             ) : (
-            <div className={`pf-line${horizon === null ? ' is-unset' : ''}`}>
+            <div className="pf-line">
               <input
                 type="range"
                 className="pf-line-input"
                 min={HORIZON_MIN}
                 max={HORIZON_MAX}
                 step={1}
-                value={horizon ?? HORIZON_MIN}
+                value={horizon}
                 aria-label="예측 기간"
-                aria-valuetext={horizon === null ? '고르지 않음' : `${horizonLabel(horizon)} · ${dueLabel(horizon)} 만기`}
+                aria-valuetext={`${horizonLabel(horizon)} · ${dueLabel(horizon)} 만기`}
                 onChange={(e) => setHorizon(Number(e.target.value))}
               />
               <div className="pf-line-ticks" aria-hidden="true">
@@ -580,9 +583,7 @@ export default function PredictTab({
                 이미 말하고 있어, 같은 말을 한 번 더 길게 적는 셈이다 */}
             {!eventMode && (
               <p className="sd-help">
-                {horizon === null
-                  ? '손잡이를 옮겨 3일에서 90일 사이로 고르세요.'
-                  : <><b className="num">{horizonLabel(horizon)}</b> · 만기 <b className="num">{dueLabel(horizon)}</b> · 기준일(다음 평일)부터 캘린더일로 셉니다. 기준가는 기준일 종가로 확정됩니다.</>}
+                <b className="num">{horizonLabel(horizon)}</b> · 만기 <b className="num">{dueLabel(horizon)}</b> · 기준일(다음 평일)부터 캘린더일로 셉니다. 기준가는 기준일 종가로 확정됩니다.
               </p>
             )}
           </li>
