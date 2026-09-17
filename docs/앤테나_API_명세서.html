@@ -67,6 +67,7 @@ footer{margin-top:50px;padding-top:14px;border-top:1px solid var(--line);color:v
 <tr><td><b>시스템</b></td><td>—</td><td>—</td><td>이벤트 인덱싱</td><td>—</td><td>B1~B6</td></tr>
 </table>
 <div class="changelog" style="margin:0 0 20px;padding:12px 16px;border-left:5px solid #e8a13c;background:#fff8e6;border-radius:0 8px 8px 0;font-size:12.5px;line-height:1.7;font-family:system-ui,-apple-system,"Malgun Gothic",sans-serif;color:#3a3730;"><b style="display:block;margin-bottom:6px;font-size:13px;">변경 로그 (최신이 위)</b>
+<div><b>v0.74</b> · 2026-09-17 · 김성령(KSR) · <code>KSR_ANT-ADMIN-01</code> — <b>§관리자 신고 처리·블라인드·제재 5종 구현. 제재 상태를 <code>SUSPENDED</code> → <code>BANNED</code> 로 정정한다.</b> ① <b>이 문서가 코드와 달랐다.</b> <code>User.Status</code> 는 처음부터 <code>{ACTIVE, BANNED}</code> 였고(엔티티 주석: "영구 차단만 둔다"), <code>AuthService</code> 가 이미 <code>BANNED</code> 를 보고 로그인을 <code>ACCOUNT_BANNED</code> 로 거부하고 있었다. 명세의 <code>SUSPENDED</code> 를 그대로 구현하려면 enum 값을 늘려야 하는데 <code>ddl-auto: update</code> 라 팀 DB 에 번지고, "일시 정지" 를 제대로 하려면 해제 시각·자동 해제 배치가 따라온다 — <b>코드를 기준으로 삼고 문서를 고쳤다.</b> ② <code>reason</code> 은 <b>받되 저장하지 않는다</b>(<code>users</code> 에 사유 칼럼이 없다). 신고를 거친 제재의 근거는 <code>abuse_reports.handled_by/handled_at</code> 에 남는다. 직권 제재의 사유 보존은 후속. ③ <b>성공 응답을 200 → 204</b> 로 바꿨다 — 상태만 바꾸고 돌려줄 표현이 없다. 화면은 처리 뒤 목록을 다시 읽는다. ④ <b><code>GET /admin/users</code> 신설</b> — 제재 화면이 대상을 고를 길이 없었다. 닉네임 부분 일치(대소문자 무시)·최대 50명. ⑤ 오류 3종 신설: <code>ADMIN_ONLY</code> 403 · <code>REPORT_ALREADY_HANDLED</code> 409(같은 신고 두 번 처리) · <code>ADMIN_SELF_DEMOTE</code> 409(관리자가 자기 계정을 내리면 로그인이 막혀 되돌릴 길이 없다). ⑥ <code>§/admin/users/{id}/status</code> 의 "users.status 컬럼 ERD 추가 필요" 주석을 지웠다 — 이미 있다. <b>권한은 서비스 안에서 <code>role</code> 을 비교</b>한다(<code>EventAdminService</code> 와 같은 관례) — 매처·<code>@PreAuthorize</code> 는 JWT <code>role</code> 클레임 컨버터와 공용 <code>SecurityConfig</code> 신설을 부르므로 별도 사안이다. 스키마 변경 없음. 근거: 지라 S15P21A507-76</div>
 <div><b>v0.73</b> · 2026-09-16 · 이상민(SM) · <code>SM_ANT-EVENT-08</code> — <b>이벤트에 <code>slug</code> 추가</b>(생성 요청 · 목록·홈 응답). 프론트의 대회 화면은 <code>/events/scalping</code> 이라는 주소로 열리는데 응답에 숫자 <code>eventId</code> 와 제목뿐이라 <b>어느 회차가 그 대회인지 알 방법이 없었다.</b> 숫자 id 를 화면 상수로 박으면 회차가 만들어진 <b>뒤에야</b> 그 값을 알 수 있어 접수 직전에 재배포해야 하고, 제목으로 맞추면 한 글자만 바뀌어도 화면이 빈다. 접수 전에 운영에서 점검용 회차를 하나 만들 것이라 "목록 첫 번째" 도 못 쓴다 — 그게 사용자 화면에 뜬다.<br>
 <b>선택 값이고 UNIQUE 다.</b> 점검용 회차는 화면 주소가 필요 없어 비워 두고, 같은 slug 가 둘이면 화면이 어느 쪽을 열지 갈리므로 막는다. UNIQUE 제약이 최종 방어선이지만 그건 500 이라, 관리자가 겹쳐 적은 것은 <b>입력 실수</b>로 보고 409 <code>EVENT_DUPLICATE_SLUG</code> 로 돌려준다.<br>
 <b>경로는 숫자 id 그대로 둔다.</b> <code>/events/{slug}</code> 를 따로 받으면 같은 리소스에 문이 둘이 된다 — 프론트가 목록에서 slug → eventId 를 한 번 풀고 그 뒤로는 id 를 쓴다. 근거: 지라 S15P21A507-274</div>
@@ -1337,22 +1338,33 @@ nonce=&lt;POST /wallet/nonce&gt;</code></pre>
 <h4>파라미터</h4>
 <table>
 <tr><th>이름</th><th>위치</th><th>타입</th><th>설명</th></tr>
-<tr><td class=pn>status</td><td>query</td><td class=pt>string</td><td>PENDING | ACCEPTED | REJECTED</td></tr>
+<tr><td class=pn>status</td><td>query</td><td class=pt>string</td><td>PENDING | ACCEPTED | REJECTED · <b>생략하면 전체</b></td></tr>
 </table>
 <h4>응답</h4>
-<div class=resp><span class="rc ok"><b>200</b> <code>{ items: [{ id, targetType, targetId, reason, detail, reporter, status, createdAt }] }</code></span></div></div>
+<div class=resp><span class="rc ok"><b>200</b> <code>{ items: [{ id, reason, detail, status, targetType, targetId, targetBody, targetBlocked, reporterId, reporterNickname, handledById, handledAt, createdAt }] }</code></span></div>
+<div class=desc><b>v0.74</b> — <code>targetBody</code> 와 <code>targetBlocked</code> 를 함께 내린다. 관리자가 <b>무엇을 가리는지 보지 않고</b> 판단하게 두지 않기 위해서고, 이미 다른 신고로 내려간 글을 또 내리려다 "왜 아무 일도 안 일어나지" 하는 것을 막기 위해서다. 회원 신고면 <code>targetBody</code> 자리에 닉네임이 오고 <code>targetBlocked</code> 는 <code>null</code> 이다.<br><b>페이지네이션이 없다</b> — 운영자 한 명이 보는 목록이고 신고 자체가 드물다. 쌓이기 시작하면 커서를 넣는다. 정렬은 <code>id</code> 내림차순.</div></div>
 </details>
-<details class=ep><summary><span class="m a">PATCH</span><span class=path>/admin/abuse-reports/{id}</span><span class=sm>신고 처리 · 🔐👑</span></summary>
-<div class=body><div class=desc>ACCEPT 시 대상 글/댓글 BLOCKED 전환(행 삭제 없음), 처리자·시각 기록.</div>
+<details class=ep><summary><span class="m a">PATCH</span><span class=path>/admin/abuse-reports/{id}</span><span class=sm>신고 처리 · 🔐👑 204</span></summary>
+<div class=body><div class=desc>ACCEPT 시 대상 글/댓글 BLOCKED 전환(행 삭제 없음), 처리자·시각 기록.<br><b>v0.74 — 회원 신고를 ACCEPT 해도 계정은 막히지 않는다.</b> 신고 한 건으로 계정을 닫는 것은 과하다 — 제재는 <code>PATCH /admin/users/{id}/status</code> 로 관리자가 따로 누른다. 화면은 두 버튼을 나란히 둔다.</div>
 <h4>요청 본문</h4>
 <table>
 <tr><th>필드</th><th>타입</th><th>설명</th></tr>
 <tr><td class=pn>action <b class=req>*</b></td><td class=pt>string</td><td>ACCEPT | REJECT</td></tr>
 </table>
 <h4>응답</h4>
-<div class=resp><span class="rc ok"><b>200</b> 처리 결과</span></div></div>
+<div class=resp><span class="rc ok"><b>204</b> 적용</span><span class="rc er"><b>404</b> <code>TARGET_NOT_FOUND</code></span><span class="rc er"><b>409</b> <code>REPORT_ALREADY_HANDLED</code> — 이미 처리한 신고</span></div></div>
 </details>
-<details class=ep><summary><span class="m a">PATCH</span><span class=path>/admin/posts/{postId}/status</span><span class=sm>글 블라인드·해제 · 🔐👑</span></summary>
+<details class=ep><summary><span class="m a">PATCH</span><span class=path>/admin/posts/{postId}/status</span><span class=sm>글 블라인드·해제 · 🔐👑 204</span></summary>
+<div class=body><div class=desc>신고를 거치지 않고 관리자가 직접 가리거나 되돌린다. <b>블라인드된 글은 없는 것처럼 다뤄진다</b> — 목록에서 빠지고 상세는 404 다(403 을 주면 "가려진 글이 여기 있었다" 가 샌다).</div>
+<h4>요청 본문</h4>
+<table>
+<tr><th>필드</th><th>타입</th><th>설명</th></tr>
+<tr><td class=pn>status <b class=req>*</b></td><td class=pt>string</td><td>VISIBLE | BLOCKED</td></tr>
+</table>
+<h4>응답</h4>
+<div class=resp><span class="rc ok"><b>204</b> 적용</span><span class="rc er"><b>404</b> <code>POST_NOT_FOUND</code></span></div></div>
+</details>
+<details class=ep><summary><span class="m a">PATCH</span><span class=path>/admin/comments/{commentId}/status</span><span class=sm>댓글 블라인드·해제 · 🔐👑 204</span></summary>
 <div class=body>
 <h4>요청 본문</h4>
 <table>
@@ -1360,28 +1372,28 @@ nonce=&lt;POST /wallet/nonce&gt;</code></pre>
 <tr><td class=pn>status <b class=req>*</b></td><td class=pt>string</td><td>VISIBLE | BLOCKED</td></tr>
 </table>
 <h4>응답</h4>
-<div class=resp><span class="rc ok"><b>200</b> 적용</span></div></div>
+<div class=resp><span class="rc ok"><b>204</b> 적용</span><span class="rc er"><b>404</b> <code>TARGET_NOT_FOUND</code></span></div></div>
 </details>
-<details class=ep><summary><span class="m a">PATCH</span><span class=path>/admin/comments/{commentId}/status</span><span class=sm>댓글 블라인드·해제 · 🔐👑</span></summary>
-<div class=body>
+<details class=ep><summary><span class="m g">GET</span><span class=path>/admin/users</span><span class=sm>회원 찾기 · 🔐👑</span></summary>
+<div class=body><div class=desc><b>v0.74 신설.</b> 제재 화면이 대상을 고를 길이 없어 넣었다. 닉네임이 아직 없는 계정(온보딩 전)은 목록에서 뺀다.</div>
+<h4>파라미터</h4>
+<table>
+<tr><th>이름</th><th>위치</th><th>타입</th><th>설명</th></tr>
+<tr><td class=pn>q</td><td>query</td><td class=pt>string</td><td>닉네임 부분 일치 · <b>대소문자를 가리지 않는다</b>. 생략하면 최근 가입 순</td></tr>
+</table>
+<h4>응답</h4>
+<div class=resp><span class="rc ok"><b>200</b> <code>{ items: [{ id, nickname, role, status, createdAt }] }</code> — 최대 50명</span></div></div>
+</details>
+<details class=ep><summary><span class="m a">PATCH</span><span class=path>/admin/users/{userId}/status</span><span class=sm>회원 제재·해제 · 🔐👑 204</span></summary>
+<div class=body><div class=desc><b>v0.74 — <code>SUSPENDED</code> 가 아니라 <code>BANNED</code> 다.</b> <code>User.Status</code> 가 <code>{ACTIVE, BANNED}</code> 이고 <code>AuthService</code> 가 이미 그 값으로 로그인을 거부한다(<code>ACCOUNT_BANNED</code> 403). 이 문서가 코드와 달랐던 것을 코드 기준으로 맞췄다 — 자세한 사정은 맨 위 변경 로그.<br><b>차단해도 기존 예측·원장은 그대로 남는다.</b> 로그인만 막힌다.<br><code>reason</code> 은 <b>받되 저장하지 않는다</b> — <code>users</code> 에 사유 칼럼이 없고, 추가하면 <code>ddl-auto: update</code> 로 팀 DB 에 번진다. 신고를 거친 제재의 근거는 <code>abuse_reports.handled_by/handled_at</code> 에 남는다.</div>
 <h4>요청 본문</h4>
 <table>
 <tr><th>필드</th><th>타입</th><th>설명</th></tr>
-<tr><td class=pn>status <b class=req>*</b></td><td class=pt>string</td><td>VISIBLE | BLOCKED</td></tr>
+<tr><td class=pn>status <b class=req>*</b></td><td class=pt>string</td><td>ACTIVE | <b>BANNED</b></td></tr>
+<tr><td class=pn>reason</td><td class=pt>string</td><td>선택 · 300자 이하 · <b>저장되지 않는다</b></td></tr>
 </table>
 <h4>응답</h4>
-<div class=resp><span class="rc ok"><b>200</b> 적용</span></div></div>
-</details>
-<details class=ep><summary><span class="m a">PATCH</span><span class=path>/admin/users/{userId}/status</span><span class=sm>회원 제재·해제 · 🔐👑</span></summary>
-<div class=body><div class=desc>※ <code>users.status</code> 컬럼 ERD 추가 필요.</div>
-<h4>요청 본문</h4>
-<table>
-<tr><th>필드</th><th>타입</th><th>설명</th></tr>
-<tr><td class=pn>status <b class=req>*</b></td><td class=pt>string</td><td>ACTIVE | SUSPENDED</td></tr>
-<tr><td class=pn>reason</td><td class=pt>string</td><td>선택</td></tr>
-</table>
-<h4>응답</h4>
-<div class=resp><span class="rc ok"><b>200</b> 적용</span></div></div>
+<div class=resp><span class="rc ok"><b>204</b> 적용</span><span class="rc er"><b>404</b> <code>USER_NOT_FOUND</code></span><span class="rc er"><b>409</b> <code>ADMIN_SELF_DEMOTE</code> — 자기 계정은 못 내린다(되돌릴 길이 없다)</span></div></div>
 </details>
 <details class=ep><summary><span class="m g">GET</span><span class=path>/admin/seasons</span><span class=sm>시즌 운영 목록 · 🔐👑</span></summary>
 <div class=body><div class=desc></div>
