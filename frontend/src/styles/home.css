@@ -90,6 +90,31 @@
 .up{color:var(--up)}
 .down{color:var(--down)}
 .spark{display:block; flex:none}
+
+/* ── 그래프가 왼쪽에서 자라난다 ─────────────────────────
+   Sparkline 의 grow 를 켠 자리에만 붙는다(지금은 시장 카드 셋).
+
+   **덮개 하나를 늘린다.** 선·면·끝점을 따로 움직이면 셋의 속도가 어긋나
+   점이 선보다 먼저 도착한다. 덮개를 걷으면 셋이 같은 속도로 드러난다.
+
+   폭 자체가 아니라 **scaleX** 를 쓴다 — 폭은 매 프레임 도형을 다시 그리게
+   하지만 변형은 합성만 한다. transform-box 를 view-box 로 박아 두는 것은
+   클립 안 도형의 기준 상자가 브라우저마다 갈렸던 자리라서다.
+
+   both 로 시작 상태를 미리 건다. 없으면 기다리는 동안 그래프가 다 보이다가
+   사라진 뒤 다시 자란다 — 순서가 지연을 준 카드마다 눈에 띈다. */
+.spark-wipe{
+  transform-box:view-box; transform-origin:0 0;
+  animation:spark-grow .85s cubic-bezier(.22,.61,.36,1) both;
+}
+@keyframes spark-grow{from{transform:scaleX(0)} to{transform:scaleX(1)}}
+/* 왼쪽부터 차례로. 셋이 동시에 자라면 화면이 한 번 출렁이는 것으로 보인다 */
+.hm-indices li:nth-child(2) .spark-wipe{animation-delay:.1s}
+.hm-indices li:nth-child(3) .spark-wipe{animation-delay:.2s}
+/* 움직임을 줄인 설정에서는 덮개를 아예 안 움직인다 — 그림은 그대로 다 보인다 */
+@media (prefers-reduced-motion:reduce){
+  .spark-wipe{animation:none}
+}
 .spark-empty{display:inline-block; width:88px; height:30px}
 
 /* ── 히어로 ──────────────────────────────────────────────── */
@@ -97,12 +122,19 @@
   position:relative; overflow:hidden;
   display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:16px;
   padding:28px 30px; border:1px solid var(--wash-line); border-radius:16px;
-  /* 판은 모의투자 홈 히어로(G-01)와 같은 --wash 다 — 두 모드의 첫 화면이
-     같은 결로 보여야 한다. 위에 얹은 빛 얼룩도 그쪽과 같은 구성이되,
-     이 히어로가 더 납작해서 위치만 이 비율에 맞춰 옮겼다. */
+  /* 바탕은 그림 한 장이다(2026-09-16). 전에는 --wash 위에 빛 얼룩 두 겹을
+     CSS 로 얹었는데, 캔들과 빛줄기가 들어간 그림을 받아 그 자리를 넘겼다.
+
+     **--wash 를 그림 뒤에 남겨 둔다.** 그림이 늦게 뜨는 사이 흰 판이 번쩍이면
+     첫 화면에서 제일 큰 카드가 깜빡이는 것으로 보인다. 색이 먼저 깔려 있으면
+     그림은 그 위에 조용히 얹힌다.
+
+     **그림의 둥근 모서리는 구워진 채로 오지 않는다.** 원본에 테두리와 모서리가
+     그려져 있었지만 카드가 제 모서리를 따로 깎으므로, 구울 때 안쪽으로 2.5%
+     잘라 내 그 테두리를 아예 없앴다(2100x749 -> 1600x571). 안 그러면 모서리마다
+     흰 조각이 남는다. */
   background:
-    radial-gradient(64% 86% at 78% 22%,rgba(255,255,255,.85),transparent 62%),
-    radial-gradient(48% 70% at 96% 96%,rgba(196,186,255,.45),transparent 70%),
+    url(/assets/character/hero-bg.webp) center/cover no-repeat,
     var(--wash);
   box-shadow:var(--shadow);
 }
@@ -129,6 +161,14 @@
   align-self:end; width:330px; height:auto;
   margin:0 -14px -14px 0;
 }
+
+/* 한 마리짜리는 **키로 잰다.** 세로가 더 긴 그림이라(560×611) 폭을 맞추면 카드보다
+   높아져 얼굴부터 잘린다. 카드 높이는 여전히 왼쪽 글자가 정하고, 이 그림은 그 안에서
+   바닥에 선다.
+
+   오른쪽 마진을 음수에서 양수로 돌려 안쪽으로 들인다. **음수 마진은 오른쪽으로
+   끌어낸다** — 왼쪽으로 옮기려면 그 값을 키워야 한다(-14 → 6px, 20px 만큼 왼쪽). */
+.hm-hero-art.is-one{width:auto; height:275px; margin-right:6px}
 
 /* ── 시장 Overview — 지수 셋을 가로로 세운다 ──────────────── */
 .hm-indices{
@@ -173,6 +213,26 @@
 }
 .hm-ant-label .hm-ico{color:var(--brand)}
 .hm-ant{margin:0; color:var(--ink)}
+
+/* ── 30일 흐름 (번 ANT · 쓴 ANT) ────────────────────────
+   잔액 상자 아래 두 칸. 잔액이 "지금" 이라면 이쪽은 "그동안" 이다.
+
+   **주가 색(.up/.down)을 쓰지 않는다.** 이 앱에서 빨강·파랑은 종목이 오르고 내린
+   것을 뜻한다. 토큰 수입·지출에 그 색을 쓰면 "번 ANT 가 올랐다" 로 읽히고, 같은
+   화면 위쪽 지수 카드의 등락과 뜻이 섞인다. 부호(+/−)가 이미 방향을 말하므로 색은
+   한 단계 힘만 준다 — 들어온 쪽만 진하게, 나간 쪽은 본문색 그대로. */
+.hm-flow{
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;
+  margin:10px 0 0;
+}
+.hm-flow > div{
+  padding:10px 12px; border:1px solid var(--rule); border-radius:10px;
+  background:var(--surface-2);
+}
+.hm-flow dt{margin:0 0 3px; color:var(--muted); font-size:var(--fs-xs); font-weight:var(--fw-bold)}
+.hm-flow dd{margin:0; font-size:var(--fs-xl); font-weight:var(--fw-heavy)}
+.hm-flow .is-in{color:var(--brand-ink)}
+.hm-flow .is-out{color:var(--body)}
 /* app.css 의 .card p 가 (0,1,1) 로 더 세서, 색을 b 에 직접 걸지 않으면
    잔액이 회색(--muted)을 물려받는다. */
 .hm-ant b{color:var(--ink); font-size:var(--fs-7xl); font-weight:var(--fw-bold); letter-spacing:-.03em}
@@ -428,7 +488,10 @@
    합친 덩어리의 가운데라, 그대로 두면 캡슐이 제목보다 한 뼘 아래에 앉는다.
    (50 - 30) / 2 = 10cqh 만큼 내리면 두 중심이 정확히 겹친다 */
 .hm-ev-pill{height:30cqh; width:auto; align-self:flex-start; margin-top:10cqh}
-.hm-ev-words{display:flex; flex-direction:column; align-items:flex-start; gap:2cqh}
+/* **제목을 축으로 가운데로 모은다.** 제목이 이 칸에서 제일 넓어 칸 폭을 제목이
+   정하므로, 가운데맞춤이 곧 제목 기준 가운데맞춤이다. 왼쪽에 맞춰 두었더니
+   짧아진 문구가 제목 왼쪽 끝에만 매달려 한쪽으로 쏠려 보였다 */
+.hm-ev-words{display:flex; flex-direction:column; align-items:center; gap:2cqh}
 .hm-ev-titlebox{position:relative; display:block}
 /* 40 -> 50cqh. 배너에서 제일 먼저 읽혀야 하는 글자다 */
 .hm-ev-title{height:50cqh; width:auto}
@@ -436,9 +499,17 @@
    위에 얹힌다 — cqh 로 잡으면 제목과 어긋난다.
    **왕관 크기는 제목이 정한다.** 제목이 50cqh 라 띠 위쪽에 남는 자리가
    17.5cqh 뿐이고, 왕관은 그 자리에 제목과 조금 겹치는 만큼까지만 들어간다.
-   22cqh 가 그 한계다 — 더 키우면 띠 위로 잘려 나간다. */
-.hm-ev-crown{position:absolute; left:34%; top:-32%; height:22cqh; width:auto}
-.hm-ev-copy{height:13cqh; width:auto}
+   22cqh 가 그 한계다 — 더 키우면 띠 위로 잘려 나간다.
+   왕관도 **제목 한가운데**에 세운다. 34% 는 "천하제일" 과 "단타" 사이라,
+   글자만 보면 그럴듯해도 제목 전체로는 왼쪽에 쏠려 있었다.
+   translateX 로 제 폭의 절반을 되물리므로 왕관이 커지고 작아져도 축은 그대로다.
+   **-32% 는 왕관 아랫자락이 글자 위로 9px 내려와 겹쳤다.** 제목에 얹힌 것이
+   아니라 글자를 파먹는 것으로 보여, 왕관 아랫변이 글자 윗변에 닿을 때까지
+   올린다(-46%). 띠 위로는 5px 밖에 안 남으니 **여기서 더 올리면 잘린다** —
+   더 띄우고 싶으면 왕관 키(22cqh)부터 줄여야 한다 */
+.hm-ev-crown{position:absolute; left:50%; transform:translateX(-50%); top:-46%; height:22cqh; width:auto}
+/* 13 -> 11cqh. 문구가 짧아지면서 글자 하나하나가 커 보여 제목과 다투었다 */
+.hm-ev-copy{height:11cqh; width:auto}
 
 /* 캐릭터는 띠 위로 넘친다. 스티커는 캐릭터 옆에서 캔들과 겹쳐 안 읽혀,
    비어 있는 가운데로 옮겼다 — 여백도 함께 메운다 */

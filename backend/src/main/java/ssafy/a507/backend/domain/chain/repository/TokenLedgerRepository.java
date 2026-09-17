@@ -22,6 +22,34 @@ public interface TokenLedgerRepository extends JpaRepository<TokenLedger, Long> 
     }
 
     /**
+     * 기간 안에 <b>들어온</b> ANT 합 (ANT-TOKEN-04 · 화면 B-01 · H-01).
+     *
+     * <p>사유를 가리지 않는다. 배팅했다가 환불받으면 이 합과 나간 합이 둘 다 오르지만, 그래야 {@code 들어온 것 -
+     * 나간 것 = 그 기간의 잔액 변화} 가 성립해 나중에 숫자끼리 검산이 된다.
+     *
+     * <p>위 {@link #sumDeltaByUserId} 와 같은 이유로 {@link java.util.Optional} 로 받는다 — 맞는 행이 없으면
+     * SUM 이 NULL 이다.
+     */
+    @Query(
+            "select sum(l.delta) from TokenLedger l"
+                    + " where l.user.id = :userId and l.createdAt >= :from and l.delta > 0")
+    java.util.Optional<BigInteger> sumEarnedSince(
+            @Param("userId") Long userId, @Param("from") java.time.Instant from);
+
+    /**
+     * 기간 안에 <b>나간</b> ANT 합. 원장 값이 음수라 <b>음수로 돌아온다</b> — 뒤집는 것은 서비스가 한다.
+     *
+     * <p>유입·유출을 {@code case when} 하나로 묶어 한 번에 셀 수도 있지만 두 벌로 나눴다. 위 잔액 쿼리와 같은 모양이라
+     * 반환 타입이 어긋날 여지가 없고, 둘 다 {@code (user_id, created_at)} 인덱스를 그대로 타서 구간이 좁다 — 한 번 더
+     * 훑는 값이 그 위험보다 싸다.
+     */
+    @Query(
+            "select sum(l.delta) from TokenLedger l"
+                    + " where l.user.id = :userId and l.createdAt >= :from and l.delta < 0")
+    java.util.Optional<BigInteger> sumSpentSince(
+            @Param("userId") Long userId, @Param("from") java.time.Instant from);
+
+    /**
      * 지갑 원장 목록 (ANT-TOKEN-04) — 최신부터, 커서 id 미만, reason 선택. 커밋 원장 목록({@code AnchorBatchRepository.findPage})과
      * 같은 커서 규칙이다. 근거 이벤트를 같이 읽는다 — 행마다 tx 해시를 다시 묻지 않으려는 것(대부분 이벤트가 있다).
      */
