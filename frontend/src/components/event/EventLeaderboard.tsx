@@ -4,6 +4,7 @@
    승패를 모르는데 화면에 순위로 뜨면 사용자는 현재 등수로 읽는다. 서버가 그때는
    items 를 비우고 notice 문구만 주므로, 화면은 그걸 그대로 띄운다. */
 import { useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import { fetchLeaderboard } from '../../api/events'
 import { useAsync } from '../../api/useAsync'
 
@@ -19,6 +20,9 @@ export default function EventLeaderboard({ eventId }: { eventId: number }) {
     <section className="card ev-block" aria-labelledby="ev-rank-h">
       <header className="ev-block-head">
         <h2 id="ev-rank-h">순위</h2>
+        {/* 이 블록은 등록·내 내역 아래에 깔린 꼬리라 순위만 보러 온 사람에게는 너무 깊다.
+            같은 값을 크게 그리는 곳이 랭킹의 이벤트 탭이다 — 거기로 가는 문을 둔다 */}
+        <Link className="ev-rank-all" to="/rankings?tab=event">전체 순위 보기</Link>
       </header>
 
       {data.notice ? (

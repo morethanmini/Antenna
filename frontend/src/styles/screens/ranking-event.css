@@ -1,0 +1,177 @@
+/* E-01 랭킹 · 이벤트 탭. components/ranking/EventRanking.tsx
+
+   **모든 선택자를 .predictor-market-page 아래에 둔다.** 화면별 CSS 가 전역으로 함께
+   올라오는 구조라 접두사만으로는 다른 화면과 충돌한다(event-contest.css 와 같은 이유).
+
+   색은 브랜드 토큰 안에서만 쓴다. 머리 띠 하나만 어두운 배너 색이고, 그 위에 얹히는
+   글자는 토큰을 못 쓴다 — 앱 토큰은 흰 바탕 기준이라 어두운 판에 올리면 안 읽힌다.
+   그 자리만 배너 그림에서 뽑은 값을 직접 적는다(event-contest.css 의 .ev-rules 와 같다). */
+
+.predictor-market-page .rke{ display:flex; flex-direction:column; gap:14px; }
+
+/* ── 머리 띠 ──────────────────────────────────────────────
+   배너와 같은 조각을 깔되 대회 화면(J-01) 머리보다 낮다. 여기 주인공은 표다. */
+.predictor-market-page .rke-head{
+  position:relative; overflow:hidden;
+  display:flex; align-items:center; gap:14px;
+  padding:20px 24px; border-radius:16px;
+  background:#120a4a; color:#fff;   /* 그림이 늦게 뜰 때 흰 네모가 번쩍이지 않게 */
+}
+.predictor-market-page .rke-head-bg{ position:absolute; inset:0; border-radius:16px; overflow:hidden; }
+.predictor-market-page .rke-head-bg img{ position:absolute; display:block; }
+.predictor-market-page .rke-head-bg img:first-child{ inset:0; width:100%; height:100%; object-fit:cover; }
+.predictor-market-page .rke-head-confetti{ left:10%; top:-30%; width:52%; opacity:.55; }
+
+.predictor-market-page .rke-head-lead{ position:relative; flex:1 1 auto; min-width:0; }
+
+/* 단계 알약 — 지금 어느 대목인지. 배너 캡슐과 결을 맞춘다 */
+.predictor-market-page .rke-pill{
+  display:inline-block; padding:4px 12px; border-radius:999px;
+  background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3);
+  font-size:var(--fs-xs); font-weight:var(--fw-heavy); letter-spacing:.02em;
+}
+.predictor-market-page .rke-head-title{
+  margin:8px 0 0; font-size:var(--fs-2xl); font-weight:var(--fw-heavy); color:#fff;
+}
+
+/* 남은 시간이 이 띠에서 가장 큰 글자다 — 순위보다 먼저 눈에 걸려야 하는 값이다 */
+.predictor-market-page .rke-count{
+  margin:6px 0 0; display:flex; align-items:baseline; flex-wrap:wrap; gap:4px 10px;
+}
+.predictor-market-page .rke-count-label{ font-size:var(--fs-base); color:rgba(255,255,255,.72); }
+.predictor-market-page .rke-count b{
+  font-size:var(--fs-6xl); font-weight:var(--fw-black); letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;
+}
+.predictor-market-page .rke-head-sub{
+  margin:6px 0 0; font-size:var(--fs-md); color:rgba(255,255,255,.7);
+}
+
+.predictor-market-page .rke-head-mascot{
+  position:relative; width:104px; height:auto; flex:none; align-self:flex-end; margin-bottom:-20px;
+}
+
+.predictor-market-page .rke-head-link{
+  position:relative; flex:0 0 auto; align-self:center;
+  padding:9px 18px; border-radius:999px;
+  background:#fff; color:#2b2670;
+  font-size:var(--fs-md); font-weight:var(--fw-bold); text-decoration:none;
+  white-space:nowrap;
+}
+.predictor-market-page .rke-head-link:hover{ background:#eeecff; }
+
+/* ── 내 순위 ─────────────────────────────────────────────
+   정확도 탭의 .rk-me 와 같은 모양이다. 탭을 오갈 때 "내 자리" 가 옮겨 다니지 않는다. */
+.predictor-market-page .rke-me{
+  display:flex; align-items:center; justify-content:space-between;
+  flex-wrap:wrap; gap:12px;
+  padding:14px 18px;
+  border:1px solid var(--brand-soft); border-radius:12px;
+  background:var(--brand-softer);
+}
+.predictor-market-page .rke-me-label{
+  display:block; font-size:var(--fs-xs); font-weight:var(--fw-normal); color:var(--brand-ink);
+}
+.predictor-market-page .rke-me-rank p{ margin:2px 0 0; display:flex; align-items:baseline; gap:3px; }
+.predictor-market-page .rke-me-rank b{
+  font-size:var(--fs-6xl); font-weight:var(--fw-heavy); color:var(--ink); letter-spacing:-.02em;
+}
+.predictor-market-page .rke-me-rank small{ font-size:var(--fs-base); color:var(--muted); }
+.predictor-market-page .rke-me-stats{
+  display:flex; align-items:baseline; gap:12px; font-size:var(--fs-base); color:var(--body);
+}
+.predictor-market-page .rke-me-rate{ font-size:var(--fs-3xl); font-weight:var(--fw-heavy); }
+
+/* 손익 부호. 한국식이라 이익이 빨강이다 */
+.predictor-market-page .rke .is-up{ color:var(--up); }
+.predictor-market-page .rke .is-down{ color:var(--down); }
+
+/* ── 시상대 ──────────────────────────────────────────────
+   상위 3명만. 1등이 가운데에 높이 서는 모양이라 DOM 차례가 2·1·3 이다. */
+.predictor-market-page .rke-podium{
+  list-style:none; margin:0; padding:0;
+  display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); align-items:end; gap:10px;
+}
+.predictor-market-page .rke-pod{
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  padding:16px 12px 14px; border-radius:14px;
+  border:1px solid var(--rule); background:var(--surface);
+  text-align:center;
+}
+/* 등수마다 키가 다르다 — 숫자를 읽지 않아도 차례가 보인다 */
+.predictor-market-page .rke-pod.is-1{
+  padding-top:26px; padding-bottom:22px;
+  border-color:var(--gold); background:linear-gradient(180deg,#fffaeb,var(--surface));
+  box-shadow:0 8px 22px -16px rgba(180,140,20,.6);
+}
+.predictor-market-page .rke-pod.is-2{ padding-top:20px; }
+.predictor-market-page .rke-pod.is-3{ padding-top:14px; }
+.predictor-market-page .rke-pod.is-me{ border-color:var(--brand); background:var(--brand-softer); }
+
+.predictor-market-page .rke-pod-no{
+  display:grid; place-items:center; width:30px; height:30px; border-radius:999px;
+  background:var(--surface-2); color:var(--muted);
+  font-size:var(--fs-md); font-weight:var(--fw-heavy);
+}
+.predictor-market-page .rke-pod.is-1 .rke-pod-no{ background:var(--gold); color:#4a3a06; }
+
+.predictor-market-page .rke-pod-name{
+  max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  color:var(--ink); font-size:var(--fs-lg); font-weight:var(--fw-bold); text-decoration:none;
+}
+.predictor-market-page .rke-pod-name:hover{ color:var(--brand-ink); text-decoration:underline; }
+.predictor-market-page .rke-pod b{ font-size:var(--fs-4xl); font-weight:var(--fw-heavy); letter-spacing:-.02em; }
+.predictor-market-page .rke-pod-net{ font-size:var(--fs-md); color:var(--body); }
+.predictor-market-page .rke-pod-hit{ font-size:var(--fs-xs); color:var(--faint); }
+
+/* ── 4위 아래 표 ─────────────────────────────────────────
+   정확도 탭의 .rk-table 과 같은 모양이다. 열만 다르다. */
+.predictor-market-page .rke-table-wrap{
+  border:1px solid var(--rule); border-radius:12px;
+  background:var(--surface);
+  overflow-x:auto;
+}
+.predictor-market-page .rke-table{ width:100%; border-collapse:collapse; font-size:var(--fs-lg); }
+.predictor-market-page .rke-table th,
+.predictor-market-page .rke-table td{
+  padding:11px 14px; border-bottom:1px solid var(--rule);
+  text-align:left; white-space:nowrap;
+}
+.predictor-market-page .rke-table thead th{
+  background:var(--surface-2); color:var(--muted);
+  font-size:var(--fs-sm); font-weight:var(--fw-bold);
+}
+.predictor-market-page .rke-table tbody tr:last-child td{ border-bottom:0; }
+.predictor-market-page .rke-table tbody tr:hover{ background:var(--brand-softer); }
+.predictor-market-page .rke-table tbody tr.is-me{ background:var(--brand-softer); }
+.predictor-market-page .rke-table tbody tr.is-me td{ font-weight:var(--fw-bold); }
+
+.predictor-market-page .rke-col-rank{ width:64px; text-align:center; font-weight:var(--fw-bold); color:var(--ink); }
+.predictor-market-page .rke-col-num{ text-align:right; }
+.predictor-market-page .rke-name{ color:var(--ink); font-weight:var(--fw-normal); text-decoration:none; }
+.predictor-market-page .rke-name:hover{ color:var(--brand-ink); text-decoration:underline; }
+
+/* ── 안내 · 꼬리 ─────────────────────────────────────────
+   정산 전 서버 문구가 앉는 자리. 빈 상태가 아니라 "아직 때가 아니다" 라는 말이다. */
+.predictor-market-page .rke-notice{
+  margin:0; padding:22px 18px; border-radius:12px;
+  border:1px dashed var(--brand-soft); background:var(--brand-softer);
+  color:var(--brand-ink); font-size:var(--fs-base); text-align:center;
+}
+.predictor-market-page .rke-me-foot{
+  margin:0; text-align:center; font-size:var(--fs-md); color:var(--muted);
+}
+
+@media (max-width: 720px){
+  /* 캐릭터부터 내린다 — 좁아지면 숫자가 먼저 눌린다 */
+  .predictor-market-page .rke-head-mascot{ display:none; }
+  .predictor-market-page .rke-head{ flex-wrap:wrap; }
+  .predictor-market-page .rke-head-link{ align-self:flex-start; }
+  .predictor-market-page .rke-count b{ font-size:var(--fs-4xl); }
+  /* 시상대를 세로로 세우면 키 차이가 뜻을 잃는다 — 1등을 맨 위로 돌린다 */
+  .predictor-market-page .rke-podium{ grid-template-columns:1fr; align-items:stretch; }
+  .predictor-market-page .rke-pod{ flex-direction:row; flex-wrap:wrap; justify-content:flex-start; gap:8px 12px; text-align:left; padding:12px 14px; }
+  .predictor-market-page .rke-pod.is-1{ order:-1; padding:14px; }
+  .predictor-market-page .rke-pod.is-3{ order:1; }
+  .predictor-market-page .rke-pod b{ margin-left:auto; font-size:var(--fs-2xl); }
+}

@@ -34,6 +34,8 @@ import { Panel } from './Block'
 import PredictionDepth from './PredictionDepth'
 import PointPicker from './PointPicker'
 import { useBlock } from '../../api/useBlock'
+import { useAsync } from '../../api/useAsync'
+import { eventEntrySigningPayload, fetchContestEvent, registerEntries } from '../../api/events'
 import WalletLinkModal from '../wallet/WalletLinkModal'
 import ConfirmDialog from '../ConfirmDialog'
 import OperationModal from '../operation/OperationModal'
@@ -49,7 +51,7 @@ import type { InvestPoint, PointKind, StockSummary } from '../../api/stockDetail
 import {
   DIRECTIONS, HORIZON_MAX, HORIZON_MIN, HORIZON_TICKS, NOTE_MAX,
   commitHash, commitPayload, createPrediction, getSlots, horizonLabel, newNoteSalt, noteHash,
-  predictionSigningPayload, targetPriceInScale,
+  formatTargetPrice, predictionSigningPayload, targetPriceInScale,
 } from '../../api/predictions'
 import type {
   CommitFields, CreateResult, Direction, Horizon, PredictionDraft,
@@ -272,11 +274,88 @@ export default function PredictTab({
   /* 이벤트 배팅. 이벤트가 아니면 폼에 값이 있어도 없는 셈 친다 — 배너로 들어왔다가
      주소에서 event 를 지우고 새로고침하면 화면에 보이지도 않는 금액이 걸린 채
      서명 발판의 문구만 "예측하고 배팅하기" 로 남는다. */
+  /* 회차·규칙·이 종목의 자리는 서버만 안다. contest.ts 는 화면용 사본이라 돈이 걸리는
+     값을 거기서 읽으면 안 된다 — 회차 종목이 바뀌면 엉뚱한 종목에 걸린다. */
+  const contest = useAsync(useMemo(
+    () => () => (eventMode ? fetchContestEvent(CONTEST.id) : Promise.resolve(null)),
+    [eventMode],
+  ))
+  const ev = contest.data
+  /** 이 종목의 회차 카드. null 이면 이 회차 종목이 아니다 */
+  const evCard = ev?.stocks.find((s) => s.stockCode === code) ?? null
+  /** 지금 이 종목에 걸 수 있는가 — 등록 중 · 회차 종목 · 아직 안 걸었음 */
+  const canBet = Boolean(ev && ev.phase === 'ENTRY' && evCard && evCard.mine === null)
+  /** 대회 경로로 등록하는가. 배팅이 **필수**라 대회 종목이면 늘 이 길이다 */
+  const eventPath = eventMode && canBet
+
   const bet = eventMode ? betAmount(form.bet) : 0
   /* 한도를 벗어나면 등록을 막는다. 카드가 경고를 띄우고 있는데 발판이 열려 있으면
      걸린 줄 알고 서명한다 — 배팅은 취소할 수 없는 쪽에 붙는 결정이다.
      컨트랙트도 StakeOutOfRange 로 되돌리지만, 거기까지 가면 서명은 이미 끝난 뒤다. */
-  const betOutOfRange = bet > 0 && (bet < BET_MIN || bet > BET_MAX)
+  /* 한도는 **서버 값이 있으면 그것**을 쓴다. BET_MIN·BET_MAX 는 회차를 못 읽었을 때만
+     버티는 임시값이고 회차마다 달라질 수 있다(서버 rules 주석). */
+  const minStake = ev?.rules.minStake ?? BET_MIN
+  const maxStake = ev?.rules.maxStake ?? BET_MAX
+  const betOutOfRange = bet > 0 && (bet < minStake || bet > maxStake)
+  /* **대회 종목이면 배팅이 필수다**(2026-09-18 결정 A). 배팅 없이 등록하면 평소 경로로
+     가 대회 집계에 안 잡히는데, 대회 페이지에서 들어온 사람에게 그건 설명할 수 없는
+     결과다 — 카드에는 "예측함" 이 안 뜨고 순위에도 안 오른다. */
+  const betMissing = eventPath && bet === 0
+
+  /**
+   * 대회 등록 — 예측과 배팅이 한 요청으로 간다(POST /events/{eventId}/entries).
+   *
+   * 평소 경로(POST /predictions)와 다른 점 셋.
+   *  · **서명 문자열이 다르다.** `antenna:event-entry:v1` 이고 stake 가 줄 안에 들어간다.
+   *    scope 도 EVENT_ENTRY 라 서버 nonce 칸이 갈린다 — PREDICTION 으로 받으면 401 이다.
+   *  · **horizon 을 보내지 않는다.** 회차가 정한 값(baseDate→settleDate)을 서버가 채운다.
+   *  · **슬롯을 쓰지 않는다.** 이벤트 등록에는 소각 경로가 없다.
+   *
+   * 서버는 5~10 종목 묶음도 그대로 받지만, 최소 종목 수가 등록을 막지 않게 되면서
+   * (2026-09-18) 1건짜리도 통과한다. 그래서 이 화면이 종목마다 한 번씩 부른다.
+   */
+  async function submitEventEntry(eventId: number) {
+    if (!draft) return
+    setSubmitting(true)
+    setPhase('signing')
+    try {
+      const items = [{
+        stockCode: draft.stockCode,
+        direction: draft.direction,
+        targetPrice: draft.targetPrice,
+        stake: bet,
+        note: draft.note,
+        noteSalt: draft.noteSalt,
+        evidencePointIds: draft.evidencePointIds,
+      }]
+      const address = await connectAddress()
+      const nonce = await requestNonce('EVENT_ENTRY')
+      const payload = await eventEntrySigningPayload(eventId, items, nonce)
+      const signature = await personalSign(payload, address)
+
+      setPhase('committing')
+      const accepted = await registerEntries(eventId, { items, signature })
+      /* 202 다. 체인 전송은 뒤에서 돌고 화면은 기다리지 않는다 — 진행은 M-02 가
+         operationId 로 맡는다. 예측 등록의 소각 경로와 같은 모양이다. */
+      setPhase(null)
+      const op = accepted.entries[0]?.operationId
+      if (op) setBurnOp(op)
+      /* 다음 등록은 새 난수로 봉인하고 금액은 비운다 — 한 종목에 두 번은 못 걸어서,
+         그대로 두면 다른 종목으로 옮겼을 때 걸 생각이 없던 돈이 남는다. */
+      onForm((f) => ({ ...f, noteSalt: newNoteSalt(), bet: '' }))
+      contest.reload()
+    } catch (e) {
+      setPhase(null)
+      if (e instanceof ApiError) setFailure(e)
+      else if (e && typeof e === 'object' && 'code' in e) {
+        setFailure(new ApiError({
+          code: String((e as { code: unknown }).code), message: '',
+        }, Number((e as { status?: number }).status ?? 0)))
+      } else setLocalMsg(e instanceof Error ? e.message : '서명을 마치지 못했습니다.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   async function submit() {
     if (!draft) return
@@ -293,6 +372,15 @@ export default function PredictTab({
        티켓도 "지갑이 연동되지 않은 상태로 진입하면 M-01 을 먼저 띄운다" 다. */
     if (!hasWallet() || !user?.walletLinked) {
       setLinking(true)
+      return
+    }
+
+    /* 대회 등록은 이벤트 경로로 간다 — POST /events/{id}/entries.
+       여기서 일찍 갈라서는 이유는 아래 소각 확인을 지나치기 위해서다: 이벤트 등록은
+       일일 예측 슬롯을 쓰지 않아(EventEntryService 에 슬롯·소각 코드가 없다) 소각
+       동의를 받을 이유가 없다. */
+    if (eventPath && ev) {
+      await submitEventEntry(ev.eventId)
       return
     }
 
@@ -423,10 +511,12 @@ export default function PredictTab({
 
       <Panel
         title="예측 등록하기"
-        note={slots.data ? `오늘 ${remaining}/${slots.data.freeLimit}회` : undefined}
+        /* 대회 등록은 일일 예측 슬롯을 쓰지 않는다 — EventEntryService 에 슬롯·소각
+           코드가 없다. 남은 횟수를 그대로 띄우면 걸 때마다 줄어드는 것처럼 읽힌다. */
+        note={!eventPath && slots.data ? `오늘 ${remaining}/${slots.data.freeLimit}회` : undefined}
         span={6}
       >
-        {overSlot && (
+        {overSlot && !eventPath && (
           /* 무료 슬롯을 넘기면 등록마다 ANT 를 태운다(ANT-PRED-10). 발판 라벨에도 같은 금액을
              적고, 밀면 서명 전에 확인 창이 한 번 더 묻는다 */
           <p className="sd-slot-warn">
@@ -495,17 +585,30 @@ export default function PredictTab({
               {/* 방향은 가격 **오른쪽**이다. 목표가를 넣으면 이쪽이 저절로 정해지므로,
                   읽는 순서(값 → 결과)와 놓인 순서가 같아야 한다. */}
               <div className="pf-dirs">
-                {DIRECTIONS.map((d) => (
-                  <button
-                    key={d}
-                    type="button"
-                    className={`pf-dir is-${d.toLowerCase()} ${direction === d ? 'is-on' : ''}`}
-                    aria-pressed={direction === d}
-                    onClick={() => setDirection(d)}
-                  >
-                    {d === 'UP' ? '상승' : '하락'}
-                  </button>
-                ))}
+                {DIRECTIONS.map((d) => {
+                  /* 대회에서는 방향 버튼이 **배당률까지 말한다**(2026-09-18). 어느 쪽에
+                     걸지는 곧 얼마를 받을지의 문제라, 고르는 자리에 그 값이 있어야 한다.
+                     풀이 0 인 쪽은 서버가 null 을 준다 — 0 배당은 "걸면 못 받는다" 는
+                     거짓이라 그때는 적지 않는다. */
+                  const odds = !evCard ? null
+                    : d === 'UP' ? evCard.pool.oddsUp : evCard.pool.oddsDown
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      className={`pf-dir is-${d.toLowerCase()} ${direction === d ? 'is-on' : ''}`}
+                      aria-pressed={direction === d}
+                      onClick={() => setDirection(d)}
+                    >
+                      {d === 'UP' ? '상승' : '하락'}
+                      {eventMode && (
+                        <span className="pf-dir-odds num">
+                          {odds === null ? '—' : `${odds.toFixed(2)}배`}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
             </div>
             {/* 실전 시세는 전일 종가뿐이다 — "현재가" 라는 말을 만들지 않는다(§7 legal) */}
@@ -527,6 +630,33 @@ export default function PredictTab({
               <p className="sd-warn">
                 {`방향은 "${DIRECTION_LABEL[direction]}" 인데 목표가가 반대쪽입니다. 다시 확인해 주세요.`}
               </p>
+            )}
+
+            {/* 배팅이 ① 안으로 들어왔다(2026-09-18). 전에는 별도 카드로 위에 세웠는데,
+                "어느 쪽에 얼마" 는 목표가·방향을 정하는 것과 **한 결정**이다 — 떼어 두면
+                방향 버튼과 금액 칸 사이를 눈이 오간다. 배당률이 방향 버튼에 붙은 지금은
+                고르는 자리와 값이 한 덩어리로 읽힌다. */}
+            {eventMode && (
+              <EventBet
+                value={form.bet}
+                onChange={setBet}
+                direction={direction}
+                contestPath={CONTEST_PATH}
+                pool={evCard?.pool ?? null}
+              />
+            )}
+
+            {/* 왜 못 거는지 그 자리에서 말한다. 회차 상태는 서버만 알아 화면이 짐작할 수 없다 */}
+            {eventMode && !canBet && contest.data && (
+              <p className="sd-warn">
+                {contest.data.phase !== 'ENTRY' ? '지금은 대회 등록 시간이 아닙니다.'
+                  : !evCard ? '이 종목은 이번 회차에 없습니다.'
+                    : '이 종목에는 이미 걸었습니다. 한 종목에 한 번만 걸 수 있습니다.'}
+                {' '}예측만 등록하면 대회에는 잡히지 않습니다.
+              </p>
+            )}
+            {betMissing && (
+              <p className="sd-warn">대회 종목은 배팅과 함께 등록합니다. 금액을 골라 주세요.</p>
             )}
           </li>
 
@@ -707,19 +837,8 @@ export default function PredictTab({
           </li>
         </ol>
 
-        {/* 배팅은 **단계에 끼어들지 않는다.** ①~④ 는 이벤트든 아니든 같은 네 개이고,
-            배팅은 그 뒤에 얹히는 이벤트 전용 카드다. 번호 사이에 밀어 넣으면 같은
-            화면의 단계 수가 경로에 따라 달라진다.
-            자리가 발판 바로 위인 것도 뜻이 있다 — 돈을 거는 결정은 서명 직전에
-            마지막으로 한 번 더 보이는 게 맞다. */}
-        {eventMode && (
-          <EventBet
-            value={form.bet}
-            onChange={setBet}
-            direction={direction}
-            contestPath={CONTEST_PATH}
-          />
-        )}
+        {/* 배팅 카드는 이 폼 **밖**, 등록 카드 위에 따로 선다(2026-09-18).
+            여기 있던 것을 위로 올린 이유는 아래 betCard 주석에 적었다. */}
 
         {/* 커밋 미리보기 + 서명 */}
         <div className="pf-sign">
@@ -727,11 +846,26 @@ export default function PredictTab({
             <>
               {/* 커밋 문자열을 그대로 펼쳐 보여 준다(SignConfirm, §7). 커밋 salt 가 없어져
                   (09-09) 이 브라우저가 원장에 남을 commitHash 를 직접 계산할 수 있다 —
-                  값이 서로 다르면 등록 전에 알아챌 수 있어야 하므로 둘 다 적는다. */}
+                  값이 서로 다르면 등록 전에 알아챌 수 있어야 하므로 둘 다 적는다.
+
+                  **대회 등록은 다르다**(2026-09-18). 이벤트 온체인 커밋은
+                  keccak(eventId, idx, direction, noteHash) 이라 아래 antenna:commit:v1
+                  해시와 **다른 값**이고, 브라우저가 재현하려면 abi.encodePacked 를 흉내내야
+                  한다 — 서버가 일부러 그 일을 떠맡았다(EventEntryService.Signed 주석).
+                  그래서 그 경우에는 "원장에 남는 값과 같다" 고 말하지 않는다. 대신 실제로
+                  서명할 줄을 보여 주고, 커밋은 서버가 만든다고 적는다. */}
               <p className="sd-help">
-                아래 내용에 서명합니다. 커밋 해시는 이 브라우저가 계산한 값이며, 등록 뒤 원장에 남는 값과 같습니다.
+                {eventPath
+                  ? '아래 줄에 서명합니다. 배팅 금액이 줄 안에 함께 봉인되고, 원장에 남을 커밋은 서버가 같은 재료로 만듭니다.'
+                  : '아래 내용에 서명합니다. 커밋 해시는 이 브라우저가 계산한 값이며, 등록 뒤 원장에 남는 값과 같습니다.'}
               </p>
-              <pre className="sd-payload num">{shown ? shown.payload : '커밋 문자열을 만드는 중…'}</pre>
+              <pre className="sd-payload num">
+                {eventPath
+                  ? (shown
+                    ? `${draft.stockCode}/${draft.direction}/${formatTargetPrice(draft.targetPrice)}/${shown.noteHash}/${bet}`
+                    : '서명 문자열을 만드는 중…')
+                  : (shown ? shown.payload : '커밋 문자열을 만드는 중…')}
+              </pre>
               <dl className="sd-commit">
                 <div>
                   <dt>근거 본문 해시</dt>
@@ -739,7 +873,10 @@ export default function PredictTab({
                 </div>
                 <div>
                   <dt>커밋 해시</dt>
-                  <dd className="num">{shown?.commitHash ?? '계산 중…'}</dd>
+                  <dd className="num">
+                    {/* 모르는 값을 채우지 않는다 — 지어낸 해시를 보여 주느니 모른다고 적는다 */}
+                    {eventPath ? '등록 뒤 서버가 만듭니다' : (shown?.commitHash ?? '계산 중…')}
+                  </dd>
                 </div>
               </dl>
 
@@ -756,10 +893,11 @@ export default function PredictTab({
               끝나는지 알 수 없다. 못 누르는 상태로 자리를 지키게 한다. */}
           <SlideToSign
             onConfirm={submit}
-            disabled={!draft || betOutOfRange}
+            disabled={!draft || betOutOfRange || betMissing}
             busy={submitting}
             label={
-              overSlot ? `${overCost} ANT 소각하고 등록하기`
+              eventPath ? '예측하고 배팅하기'
+                : overSlot ? `${overCost} ANT 소각하고 등록하기`
                 : bet > 0 ? '예측하고 배팅하기'
                   : '밀어서 등록하기'
             }

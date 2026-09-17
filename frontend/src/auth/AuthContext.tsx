@@ -2,12 +2,11 @@
    실제 토큰 발급·갱신은 [ANT-FE-LOGIN] · [ANT-FE-SESSION] 에서 붙인다.
    여기서는 셸이 로그인/비로그인 두 모습을 그릴 수 있을 만큼만 들고 있는다. */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { setAccessToken, setUnauthorizedHandler } from '../api/client'
 import SessionExpiredModal from '../components/session/SessionExpiredModal'
 import { DEFAULT_AVATAR } from './context'
 import { endSession, restoreSession } from './session'
-import { rememberReturnTo } from './returnTo'
 import { AuthCtx, type AuthState, type AuthUser, type Role } from './context'
 
 /* 프로토타입이 쓰던 임시 플래그. [ANT-FE-LOGIN] 이 실제 토큰으로 갈아끼운다.
@@ -53,7 +52,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [expired, setExpired] = useState(false)
 
   const navigate = useNavigate()
-  const location = useLocation()
 
   useEffect(() => { writeStub(user?.role ?? null) }, [user])
 
@@ -84,14 +82,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUnauthorizedHandler(() => setExpired(true))
   }, [])
 
-  /** "다시 로그인". 돌아올 자리를 남기고 나서 비운다 */
+  /** "다시 로그인". 비우고 로그인 화면으로 보낸다.
+
+      **보던 자리로 돌려보내지 않는다**(2026-09-17). 로그인 뒤에는 늘 인사이트 홈이다.
+      위 주석의 설계 제약("보던 화면과 입력값을 잃지 않는다")은 **세션이 끊긴 순간**에
+      화면을 비우지 않는다는 뜻으로 지킨다 — 창을 띄워 알리고, 비우는 것은 사용자가
+      이 버튼을 눌렀을 때다. 그 뒤 어디로 가느냐는 별개이고, 그쪽을 홈으로 정했다. */
   const relogin = useCallback(() => {
-    rememberReturnTo(location.pathname + location.search)
     setExpired(false)
     setAccessToken(null)
     setUser(null)
     navigate('/login')
-  }, [location.pathname, location.search, navigate])
+  }, [navigate])
 
   const value = useMemo<AuthState>(() => ({
     user,

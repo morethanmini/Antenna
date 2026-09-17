@@ -133,6 +133,9 @@ deploy-backend:
       JWT_REFRESH_TTL_DAYS=14
       COOKIE_SECURE=true
       CORS_ALLOWED_ORIGINS=https://stock-antenna.com
+      # 업로드 이미지 저장 경로(ANT-INFRA-07). docker-compose.prod.yml 이 이 경로를 호스트
+      # /srv/antenna/uploads 로 마운트한다 — 둘이 어긋나면 배포 때 이미지가 전부 사라진다.
+      UPLOAD_DIR=/app/uploads
       CHAIN_ID=31221
       CHAIN_RPC_URL=wss://ws.ssafy-blockchain.com
       CONTRACT_COMMIT_ANCHOR=0x7c661F80EA46Ff7d63ab7F5Bb59d8d66E256DF99

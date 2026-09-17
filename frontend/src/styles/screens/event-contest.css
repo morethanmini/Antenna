@@ -140,7 +140,14 @@
   .event-contest-page .ev-hero-lead{width:100%; max-width:620px; margin-inline:0}
 }
 /* ── 칸 공통 ──────────────────────────────────────────── */
-.event-contest-page .ev-block-head{margin:0 0 14px}
+.event-contest-page .ev-block-head{margin:0 0 14px;position:relative}
+/* 랭킹 이벤트 탭으로 가는 문. 제목 줄 오른쪽 끝에 세운다 — 흐름에 두면 제목과
+   소개 줄 사이에 끼어 두 줄을 벌린다 */
+.event-contest-page .ev-rank-all{
+  position:absolute;right:0;top:0;
+  color:var(--brand-ink);font-size:var(--fs-md);font-weight:var(--fw-bold);text-decoration:none;
+}
+.event-contest-page .ev-rank-all:hover{text-decoration:underline}
 .event-contest-page .ev-block-head h2{
   display:flex;align-items:center;gap:7px;
   margin:0 0 4px;font-size:var(--fs-2xl);font-weight:var(--fw-heavy);letter-spacing:-.02em;color:var(--ink);
@@ -373,3 +380,28 @@
 @media (max-width:680px){
   .event-contest-page .ev-entry-fields{grid-template-columns:1fr}
 }
+
+/* ── 카드가 등록 입구가 되면서 (2026-09-18) ────────────────
+   카드 전체가 링크다. 누를 수 있다는 것이 보여야 해서 커서·hover 를 준다. */
+.event-contest-page a.ev-card{display:block;text-decoration:none;color:inherit;cursor:pointer}
+.event-contest-page a.ev-card:hover{border-color:var(--brand-soft);background:var(--brand-softer)}
+.event-contest-page a.ev-card:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+/* 걸었는지 여부. 카드 열 장을 훑으며 "어디까지 했더라" 를 세는 자리라 눈에 먼저 걸려야 한다 */
+.event-contest-page .ev-card-flag{
+  display:inline-block;margin:2px 0 6px;padding:2px 8px;border-radius:999px;
+  background:var(--surface-2);color:var(--muted);
+  font-size:var(--fs-md);font-weight:var(--fw-bold);
+}
+.event-contest-page .ev-card-flag.is-done{background:var(--brand);color:#fff}
+
+/* 진행 줄 — 자격까지 몇 개 남았는지. 최소 종목 수가 등록을 막지 않게 되면서
+   이 줄이 그 규칙을 말하는 유일한 자리가 됐다 */
+.event-contest-page .ev-progress{
+  display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+  margin:0 0 14px;padding:10px 13px;border-radius:11px;
+  background:var(--surface-2);font-size:var(--fs-md);color:var(--muted);
+}
+.event-contest-page .ev-progress b{font-size:var(--fs-lg);color:var(--ink)}
+.event-contest-page .ev-progress.is-ok{background:var(--brand-softer);color:var(--brand-ink)}
+.event-contest-page .ev-progress.is-ok b{color:var(--brand-ink)}
