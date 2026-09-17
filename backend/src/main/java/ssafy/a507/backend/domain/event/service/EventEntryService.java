@@ -29,7 +29,7 @@ import ssafy.a507.backend.common.security.WalletSigned;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.chain.commit.EventCommits;
 import ssafy.a507.backend.domain.chain.entity.Operation;
-import ssafy.a507.backend.domain.chain.relay.TokenRelayer;
+import ssafy.a507.backend.domain.chain.service.AvailableBalanceService;
 import ssafy.a507.backend.domain.chain.service.OperationService;
 import ssafy.a507.backend.domain.event.dto.EventEntryCreateRequest;
 import ssafy.a507.backend.domain.event.dto.EventEntryCreateResponse;
@@ -89,7 +89,7 @@ public class EventEntryService {
     private final PredictionCommitFactory commitFactory;
     private final PredictionRegisterService predictionRegisterService;
     private final SignatureGuard signatureGuard;
-    private final TokenRelayer tokenRelayer;
+    private final AvailableBalanceService availableBalance;
     private final EventBetDispatcher dispatcher;
     private final TransactionTemplate tx;
 
@@ -176,15 +176,12 @@ public class EventEntryService {
         }
 
         // ⑦ 잔액. 기준은 체인 잔액이다 — 원장은 인덱서 지연이 있어 방금 쓴 돈이 아직 남아 보인다.
-        //    전송 중인 내 배팅(PENDING)도 빼야 한다. 안 빼면 잔액 1,000 에 500 짜리를 세 번 넣을 수 있다.
-        String wallet = user.getWalletAddress();
-        if (wallet == null || wallet.isBlank()) {
-            throw new BusinessException(ErrorCode.WALLET_NOT_LINKED);
-        }
-        BigInteger needed = total.add(bets.sumPendingStake(userId));
-        if (tokenRelayer.balanceOf(wallet).compareTo(needed) < 0) {
+        //    전송 중인 내 돈(PENDING 배팅·구독·광고)도 빼야 한다. 안 빼면 잔액 1,000 에 500 짜리를 세 번 넣을 수 있고,
+        //    광고 심사 중인 돈으로 배팅이 된다(ANT-TOKEN-11). 지갑이 없으면 헬퍼가 WALLET_NOT_LINKED 를 던진다.
+        if (availableBalance.of(user).compareTo(total) < 0) {
             throw new BusinessException(ErrorCode.EVENT_INSUFFICIENT_BALANCE);
         }
+        String wallet = user.getWalletAddress(); // 위에서 지갑 없음을 걸렀다. 전송 목록이 쓴다.
 
         // ⑧ 항목별 기존 검사 — 상장 · 방향 모순 · 근거 포인트 · noteSalt. 등록 서비스의 규칙 그대로다.
         LocalDate today = LocalDate.now(KST);
@@ -400,8 +397,9 @@ public class EventEntryService {
 
             BigInteger remaining;
             try {
-                remaining = tokenRelayer.balanceOf(mine.get(0).wallet())
-                        .subtract(tx.execute(s -> bets.sumPendingStake(userId)));
+                // 가용잔액 — 배팅뿐 아니라 구독·광고의 PENDING 도 뺀다(ANT-TOKEN-11). 헬퍼가 합계는 트랜잭션 안에서,
+                // 체인 조회는 밖에서 한다(이 메서드 머리 주석의 "잔액 확인(밖)" 그대로).
+                remaining = availableBalance.of(userId, mine.get(0).wallet());
             } catch (RuntimeException e) {
                 log.warn("[EVENT] 재전송 잔액 확인 실패 — 회원 {} 건너뜀: {}", userId, e.toString());
                 continue;

@@ -44,6 +44,7 @@ import org.web3j.crypto.Credentials;
 import ssafy.a507.backend.common.security.SignatureNonceStore;
 import ssafy.a507.backend.common.security.SignatureScope;
 import ssafy.a507.backend.domain.account.entity.User;
+import ssafy.a507.backend.domain.monetize.entity.AdBanner;
 import ssafy.a507.backend.domain.chain.service.FakeTokenRelayer;
 import ssafy.a507.backend.domain.event.relay.ScriptedPoolRelayer;
 import ssafy.a507.backend.support.TestNonceStoreConfig;
@@ -128,6 +129,7 @@ class EventEntryControllerTest {
                     "DELETE FROM prediction_evidences WHERE prediction_id IN"
                             + " (SELECT id FROM predictions WHERE user_id IN (:ids))",
                     "DELETE FROM predictions WHERE user_id IN (:ids)",
+                    "DELETE FROM ad_banners WHERE advertiser_id IN (:ids)",
                     "DELETE FROM users WHERE id IN (:ids)")) {
                 em.createNativeQuery(delete).setParameter("ids", userIds).executeUpdate();
             }
@@ -289,6 +291,20 @@ class EventEntryControllerTest {
     @DisplayName("체인 잔액이 모자라면 409 — 기준은 원장이 아니라 체인이다(인덱서 지연)")
     void 잔액_부족은_409() throws Exception {
         tokenRelayer.withBalance(BigInteger.valueOf(4_999));
+
+        mockMvc.perform(entries(items(5), "key-1"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("EVENT_INSUFFICIENT_BALANCE"));
+
+        assertThat(count("SELECT count(*) FROM predictions")).isZero();
+    }
+
+    @Test
+    @DisplayName("광고 심사 대기가 배팅 가용잔액을 묶는다 — 심사 중인 게재료로 배팅할 수 없다(ANT-TOKEN-11)")
+    void 광고_심사_대기가_배팅_잔액을_묶는다() throws Exception {
+        // 체인 잔액은 넉넉한데 승인 대기 광고가 4,999 만 남기고 묶어 둔다 — 위 테스트와 같은 잔액이 된다.
+        // 사용자가 "광고 신청한 거 기억하고 남겨 둬야" 하는 게 아니라, 쓰려는 순간 여기서 막힌다.
+        insertPendingAd(bettor, RICH.subtract(BigInteger.valueOf(4_999)));
 
         mockMvc.perform(entries(items(5), "key-1"))
                 .andExpect(status().isConflict())
@@ -554,6 +570,18 @@ class EventEntryControllerTest {
                     .setParameter("codes", all)
                     .executeUpdate();
         });
+    }
+
+    /** 심사 대기 광고. 가용잔액이 이 게재료를 뺀다(ANT-ADMIN-03 승인제에서는 승인 전까지 돈이 안 나가고 묶인다). */
+    private void insertPendingAd(User advertiser, BigInteger price) {
+        Instant now = Instant.now();
+        tx.executeWithoutResult(s -> em.persist(AdBanner.request(
+                em.getReference(User.class, advertiser.getId()),
+                "/api/v1/uploads/x",
+                "https://ad.example.com",
+                now,
+                now.plus(7, ChronoUnit.DAYS),
+                price)));
     }
 
     private User insertUser(String nickname, String wallet) {

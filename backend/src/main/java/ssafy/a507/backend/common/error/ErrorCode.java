@@ -98,6 +98,12 @@ public enum ErrorCode {
     INSUFFICIENT_BALANCE(HttpStatus.CONFLICT, "토큰 잔액이 부족합니다."),
     /** 같은 기간에 이미 슬롯이 다 찼다. 선착순이므로 기다렸다 다시 신청하는 수밖에 없다. */
     AD_SLOT_SOLD_OUT(HttpStatus.CONFLICT, "해당 기간의 광고 슬롯이 마감되었습니다."),
+    // 광고 승인제 (ANT-ADMIN-03)
+    AD_NOT_FOUND(HttpStatus.NOT_FOUND, "광고 신청을 찾을 수 없습니다."),
+    /** 남의 신청을 취소하려 했다. 404 로 숨기지 않는 이유 — 광고 id 는 순번이라 어차피 존재를 짐작할 수 있다. */
+    AD_FORBIDDEN(HttpStatus.FORBIDDEN, "본인의 광고 신청만 취소할 수 있습니다."),
+    /** 이미 승인·반려·취소됐거나 소각 tx 가 나가는 중이다. 두 번 눌러도 두 번 태우지 않는다. */
+    AD_ALREADY_HANDLED(HttpStatus.CONFLICT, "이미 처리된 광고 신청입니다."),
 
     // 작업 리소스 (ANT-COMMUNITY-07)
     /** 없는 operationId 이거나 종료 후 24h 가 지나 정리된 작업이다. 둘을 구분해 주지 않는다. */

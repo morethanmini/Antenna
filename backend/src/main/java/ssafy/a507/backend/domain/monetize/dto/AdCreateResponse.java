@@ -1,11 +1,11 @@
 package ssafy.a507.backend.domain.monetize.dto;
 
-import ssafy.a507.backend.domain.chain.entity.Operation;
+import ssafy.a507.backend.domain.monetize.entity.AdBanner;
 
 /**
- * POST /api/v1/ads 202 응답.
+ * POST /api/v1/ads 201 응답.
  *
- * <p>{@code adId} 를 함께 내리는 이유는, 폴링이 끝나기 전에도 화면이 "신청한 배너"를 가리킬
- * 수 있어야 하기 때문이다. 상태 확인은 {@code GET /operations/{operationId}} 하나로 한다.
+ * <p>{@code operationId} 가 없어졌다(ANT-ADMIN-03). 신청은 접수만 하고 소각 tx 를 보내지 않으므로 폴링할 작업이 없다.
+ * 돈은 관리자가 승인하는 순간 나간다. 화면은 "심사 중" 으로 끝내고, 마음이 바뀌면 {@code DELETE /ads/{adId}} 로 취소한다.
  */
-public record AdCreateResponse(String operationId, Long adId, Operation.Status status) {}
+public record AdCreateResponse(Long adId, AdBanner.Status status) {}

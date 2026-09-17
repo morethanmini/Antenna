@@ -251,7 +251,7 @@ class TokenIndexerTest {
     }
 
     @Test
-    @DisplayName("receipt status 0 → REVERTED. 30초 전에는 receipt 를 묻지 않는다. 광고면 배너 REJECTED")
+    @DisplayName("receipt status 0 → REVERTED. 30초 전에는 receipt 를 묻지 않는다. 광고 배너는 승인 대기(PENDING)로 남는다")
     void reverted() {
         User a = user(WALLET_A);
         AdBanner banner = pendingBanner(a);
@@ -267,7 +267,9 @@ class TokenIndexerTest {
         assertThat(source.receiptCalls()).isEqualTo(1);
         assertThat(reload(op).getStatus()).isEqualTo(Operation.Status.FAILED);
         assertThat(reload(op).getErrorCode()).isEqualTo("REVERTED");
-        assertThat(banner.getStatus()).isEqualTo(AdBanner.Status.REJECTED);
+        // 승인제(ANT-ADMIN-03) 전에는 여기서 REJECTED 로 닫았다 — 접수가 곧 소각이라 실패한 신청이 자리를 막지 않게.
+        // 이제 소각은 관리자 승인에서 나가므로, 실패하면 승인 전 상태로 돌아가 다시 승인하거나 반려한다.
+        assertThat(banner.getStatus()).isEqualTo(AdBanner.Status.PENDING);
     }
 
     @Test
