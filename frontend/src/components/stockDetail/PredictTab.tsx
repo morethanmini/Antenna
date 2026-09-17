@@ -32,6 +32,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Panel } from './Block'
 import PredictionDepth from './PredictionDepth'
+import PointPicker from './PointPicker'
 import { useBlock } from '../../api/useBlock'
 import WalletLinkModal from '../wallet/WalletLinkModal'
 import ConfirmDialog from '../ConfirmDialog'
@@ -135,6 +136,12 @@ export default function PredictTab({
   /* 사람이 직접 고른 방향. 이때부터 목표가가 방향을 바꾸지 않는다 */
   const setDirection = (v: Direction) =>
     onForm((f) => ({ ...f, direction: v, directionTouched: true }))
+
+  /* ③의 투자 포인트 격자를 펼쳤는가. **기본은 접힘** — 포인트가 많은 종목이면 격자가
+     폼을 반으로 갈라 ④ 내 판단이 화면 밖으로 밀린다.
+     한 번 펼치면 종목을 옮겨도 펼친 채로 둔다. 근거를 고르며 종목을 견주는 사람에게
+     매번 다시 누르게 할 이유가 없다 — 탭 이동으로 언마운트되지도 않는다. */
+  const [pickerOpen, setPickerOpen] = useState(false)
 
   const [linking, setLinking] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -597,10 +604,8 @@ export default function PredictTab({
             {points.error ? (
               <ErrorState error={points.error} onRetry={points.retry} inline />
             ) : picked.length === 0 ? (
-              <p className="pf-none">
-                고른 근거가 없습니다.{' '}
-                <button type="button" className="sd-link" onClick={onGoInfo}>종목 정보에서 고르기</button>
-              </p>
+              /* 탭을 옮기라고 하지 않는다 — 아래 버튼이 같은 격자를 펼친다 */
+              <p className="pf-none">아래 <b>근거 포인트 선택하기</b>에서 고르면 여기에 모입니다.</p>
             ) : (
               <ul className="sd-picked">
                 {picked.map((id) => {
@@ -622,6 +627,48 @@ export default function PredictTab({
                   )
                 })}
               </ul>
+            )}
+
+            {/* 투자 포인트를 **여기에 그대로 둔다**(2026-09-17). 전에는 고른 것만 요약하고
+                못 고르면 종목 정보 탭으로 보냈는데, 예측을 쓰다 근거를 하나 더 붙이려면
+                탭을 옮겼다 돌아와야 했다 — 그 사이 화면이 갈리고 돌아오면 어디까지
+                적었는지 다시 찾는다. 같은 격자를 InfoTab 과 **한 컴포넌트로** 쓴다
+                (PointPicker) — 복사하면 라벨·출처·선택 규칙이 두 벌이 된다.
+
+                로딩·오류는 위 분기가 이미 맡는다. 목록이 안 왔으면 종류마다 "없음" 이
+                서고, 오류면 이 자리까지 오지 않는다. */}
+            {!points.error && (
+              <div className="pf-points">
+                {/* 접어 둔다. 포인트가 열 개 넘게 오는 종목이면 격자가 폼을 반으로
+                    가르고 ④ 내 판단이 화면 밖으로 밀린다 — 근거는 **더할 수도 있는**
+                    것이고 목표가·기간·판단이 이 폼의 본줄기다. 눌러야 나오게 두면
+                    필요한 사람만 펼친다. */}
+                <button
+                  type="button"
+                  className="pf-points-toggle"
+                  onClick={() => setPickerOpen((v) => !v)}
+                  aria-expanded={pickerOpen}
+                  aria-controls="pf-point-picker"
+                >
+                  근거 포인트 선택하기
+                  <span className="num">{picked.length > 0 && `${picked.length}개 선택됨`}</span>
+                  <span className="pf-points-caret" aria-hidden="true">{pickerOpen ? '▴' : '▾'}</span>
+                </button>
+
+                {/* hidden 으로 감추지 않고 아예 안 그린다 — 포인트가 많으면 접힌 채로도
+                    체크박스 수십 개가 초점 순서에 남는다 */}
+                {pickerOpen && (
+                  <div id="pf-point-picker">
+                    <PointPicker points={points.data} picked={picked} onPick={onPick} />
+                    <p className="pf-points-foot">
+                      {/* 전문을 보려면 여전히 종목 정보가 낫다 — 여기는 고르는 자리다 */}
+                      <button type="button" className="sd-link" onClick={onGoInfo}>
+                        종목 정보에서 자세히 보기
+                      </button>
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
           </li>
 

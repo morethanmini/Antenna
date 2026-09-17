@@ -32,10 +32,11 @@ import { Link } from 'react-router-dom'
 import CloseChart from '../CloseChart'
 import Block, { BlockState, Panel } from './Block'
 import PredictionDepth from './PredictionDepth'
+import PointPicker from './PointPicker'
 import { useBlock } from '../../api/useBlock'
 import { useCursorList } from '../../api/useCursorList'
 import {
-  POINT_KINDS, POINT_LABEL, SOURCE_LABEL,
+  POINT_KINDS, SOURCE_LABEL,
   getFinancials, getPeers, getPoints,
   getPrices, getProfile, getValuation,
 } from '../../api/stockDetail'
@@ -212,41 +213,8 @@ export default function InfoTab({ code, summary, picked, onPick, onGoPredict }: 
         isEmpty={points.data !== null && pointCount === 0}
         empty="투자 포인트가 아직 없습니다. 공시·뉴스를 요약하는 기능이 준비되면 이 자리에 채워집니다."
       >
-        <div className="sd-points">
-          {POINT_KINDS.map((kind) => {
-            const list = points.data?.[kind] ?? []
-            return (
-              <div key={kind} className={`sd-point-col is-${kind}`}>
-                <h3>{POINT_LABEL[kind]}</h3>
-                {list.length === 0 ? (
-                  <p className="sd-point-none">없음</p>
-                ) : (
-                  <ul>
-                    {list.map((p) => {
-                      const on = picked.includes(p.id)
-                      return (
-                        <li key={p.id}>
-                          {/* 체크박스로 두는 이유 — 여러 개를 고르는 조작이고,
-                              키보드·보조기술이 선택 상태를 그대로 읽는다 */}
-                          <label className={on ? 'sd-point is-on' : 'sd-point'}>
-                            <input type="checkbox" checked={on} onChange={() => onPick(p.id)} />
-                            {/* 제목이 따로 없다. 본문 한 덩어리가 포인트 전체다 */}
-                            <span className="sd-point-body">{p.body}</span>
-                          </label>
-                          {/* 근거 문서가 있으면 원문으로 갈 길을 준다.
-                              없는 포인트는 시세·재무 수치에서 나온 종합이라 링크가 없다 */}
-                          {p.source && (
-                            <span className="sd-point-src">{SOURCE_LABEL[p.source]}</span>
-                          )}
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
-              </div>
-            )
-          })}
-        </div>
+        {/* 격자는 PointPicker 가 그린다 — 예측 등록(C-01) ③이 같은 것을 쓴다 */}
+        <PointPicker points={points.data} picked={picked} onPick={onPick} />
 
         <p className="sd-point-foot">
           <span className="num">{`${picked.length}개 선택됨`}</span>
