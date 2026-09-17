@@ -1,0 +1,121 @@
+/* M-06 신고 모달 — [ANT-FE-ABUSE-REPORT]
+   틀(백드롭·모달·헤드·바디·버튼)은 M-03 subscribe.css 와 같은 치수·같은 토큰을 쓴다.
+   둘 다 채널 프로필(E-02)에서 뜨는 창이라 크기가 다르면 화면이 튄다.
+   색·글꼴은 app.css 토큰만 쓴다 — 이 파일에서 새 색을 만들지 않는다. */
+
+.ab-backdrop{
+  position:fixed; inset:0; z-index:60;   /* 사이드바(40)·상단바(30) 위 — subscribe.css 와 같은 층 */
+  display:flex; align-items:center; justify-content:center;
+  padding:20px;
+  background:rgba(20,20,27,.44);
+}
+
+.ab-modal{
+  width:100%; max-width:440px;
+  background:var(--surface);
+  border-radius:14px;
+  box-shadow:0 24px 60px -20px rgba(20,20,27,.4);
+  outline:none;
+  max-height:calc(100vh - 40px);
+  display:flex; flex-direction:column;
+}
+
+.ab-head{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; padding:16px 18px;
+  border-bottom:1px solid var(--rule);
+}
+.ab-head h2{ margin:0; font-size:var(--fs-xl); font-weight:var(--fw-bold); color:var(--ink); }
+
+.ab-x{
+  display:grid; place-items:center;
+  width:28px; height:28px; padding:0;
+  border:0; border-radius:8px;
+  background:transparent; color:var(--muted); cursor:pointer;
+}
+.ab-x:hover{ background:var(--surface-2); color:var(--ink); }
+.ab-x:disabled{ opacity:.45; cursor:default; }
+
+.ab-body{ padding:18px; overflow-y:auto; }
+
+/* 누구를 신고하는지. 잘못 누른 사람이 여기서 알아채야 해서 본문 맨 위에 둔다 */
+.ab-target{
+  margin:0 0 14px; padding:10px 12px;
+  border-radius:9px; background:var(--surface-2);
+  font-size:var(--fs-md); line-height:1.6; color:var(--body);
+}
+
+.ab-legend{
+  display:block; margin-bottom:7px;
+  font-size:var(--fs-md); font-weight:var(--fw-bold); color:var(--ink);
+}
+
+/* ── 사유 넷 ─────────────────────────────────────────
+   라디오 동그라미를 지우지 않는다. 카드만 남기면 "고른 것" 인지 "누를 것" 인지
+   구분이 색 하나에 걸리고, 그 색은 고대비 설정에서 사라진다. */
+.ab-reasons{ margin:0 0 14px; padding:0; border:0; }
+.ab-reasons:disabled{ opacity:.6; }
+
+.ab-reason{
+  display:flex; align-items:center; gap:9px;
+  padding:9px 11px; margin-bottom:6px;
+  border:1px solid var(--rule); border-radius:9px;
+  font-size:var(--fs-base); color:var(--body);
+  cursor:pointer;
+}
+.ab-reason:last-child{ margin-bottom:0; }
+.ab-reason:hover{ border-color:var(--brand-soft); background:var(--brand-softer); }
+.ab-reason.is-on{ border-color:var(--brand); background:var(--brand-softer); color:var(--brand-ink); font-weight:var(--fw-bold); }
+.ab-reason input{ accent-color:var(--brand); margin:0; }
+
+/* ── 상세 ────────────────────────────────────────────── */
+.ab-detail{ display:block; }
+.ab-detail textarea{
+  display:block; width:100%; box-sizing:border-box;
+  padding:10px 12px;
+  border:1px solid var(--rule); border-radius:9px;
+  background:var(--surface);
+  font:inherit; font-size:var(--fs-base); line-height:1.65; color:var(--ink);
+  resize:vertical;
+}
+.ab-detail textarea:focus{ outline:none; border-color:var(--brand); }
+.ab-detail textarea:disabled{ background:var(--surface-2); color:var(--muted); }
+
+.ab-count{
+  display:block; margin-top:5px;
+  text-align:right; font-size:var(--fs-sm); color:var(--muted);
+}
+
+/* ── 접수 완료 ───────────────────────────────────────── */
+.ab-done{ margin:0; font-size:var(--fs-lg); font-weight:var(--fw-bold); color:var(--ink); }
+.ab-sub{ margin:6px 0 0; font-size:var(--fs-md); line-height:1.6; color:var(--muted); }
+
+.ab-error{
+  display:flex; flex-direction:column; align-items:flex-start; gap:4px;
+  margin:12px 0 0; padding:10px 12px;
+  border:1px solid #f3c9c9; border-radius:9px; background:#fdf4f4;
+  font-size:var(--fs-md); line-height:1.6; color:var(--danger);
+}
+.ab-error span{ color:var(--body); }
+
+/* ── 버튼 ────────────────────────────────────────────── */
+.ab-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:16px; }
+
+.ab-btn{
+  padding:9px 16px;
+  border:1px solid var(--rule); border-radius:9px;
+  background:var(--surface);
+  font:inherit; font-size:var(--fs-base); font-weight:var(--fw-bold); color:var(--body);
+  cursor:pointer;
+}
+.ab-btn:hover{ border-color:var(--brand-soft); background:var(--brand-softer); color:var(--brand-ink); }
+.ab-btn.solid{ border-color:var(--brand); background:var(--brand); color:#fff; }
+.ab-btn.solid:hover{ background:var(--brand-ink); border-color:var(--brand-ink); color:#fff; }
+.ab-btn:disabled{ opacity:.5; cursor:default; }
+.ab-btn:disabled:hover{ border-color:var(--rule); background:var(--surface); color:var(--body); }
+.ab-btn.solid:disabled:hover{ border-color:var(--brand); background:var(--brand); color:#fff; }
+
+@media (max-width:520px){
+  .ab-actions{ flex-direction:column-reverse; }
+  .ab-btn{ width:100%; }
+}
