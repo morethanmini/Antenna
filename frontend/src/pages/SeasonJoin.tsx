@@ -31,7 +31,16 @@
    이고, 본문 { restart: true } 일 때만 그 회차를 ABANDONED 로 버리고 새 회차를 연다.
    버튼은 "참여하기" 하나다 — 진행 중 회차가 있으면 그 버튼이 초기화 확인창을 띄운다
    (2026-09-09). 이어하기는 홈·연습 페이지 카드의 몫이라 여기 따로 두지 않는다.
-   버린 회차는 끝낸 것이 아니라 성적표·복기가 생기지 않는다 — 확인창이 그 말을 한다. */
+   버린 회차는 끝낸 것이 아니라 성적표·복기가 생기지 않는다 — 확인창이 그 말을 한다.
+
+   ── 2026-09-17 · 사건 아트 히어로 ───────────────────────────────
+   시즌 다섯 장에 사건 아트를 깔았다. 위쪽 히어로만 사진이고 그 아래는 서비스
+   기본 밝은 판 그대로다 — 다크로 만들어 봤다가 되돌렸다(이 화면만 → 모의투자
+   모드 전체 순으로 넓혔다가 둘 다). 히어로 안쪽 글자만 흰색이라는 뜻이고,
+   그 경계는 sim-join.css 가 지킨다.
+
+   제목·설명은 시즌마다 통 이미지(lockup)로 들어온다(sim/seasonArt). 글자가
+   그림이라 <img alt> 로 읽히게 하고, 표에 없는 시즌은 종전대로 글자 제목이다. */
 import { useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ApiError } from '../api/errors'
@@ -39,6 +48,7 @@ import { join as joinApi } from '../api/seasonPlay'
 import { useApiQuery } from '../api/useApiQuery'
 import ErrorState from '../components/state/ErrorState'
 import EmptyState from '../components/state/EmptyState'
+import { seasonArt } from '../sim/seasonArt'
 import '../styles/screens/sim-join.css'
 
 type Mode = 'PRACTICE' | 'COMPETITION' | 'DEMO'
@@ -175,25 +185,62 @@ export default function SeasonJoin() {
   const isCompetition = s.mode === 'COMPETITION'
   const opens = hhmm(s.opensAt)
   const closes = hhmm(s.closesAt)
+  const art = seasonArt(s.title)
 
   return (
     <main className="main">
-      <div className={`main-inner sim-join ${TONE[s.mode]}`}>
-        <nav className="sj-crumb" aria-label="위치">
-          <Link to="/sim">모의투자 홈</Link>
-          <i aria-hidden="true">›</i>
-          <Link to={s.mode === 'PRACTICE' ? '/sim/practice' : '/sim/modes'}>
-            {MODE_LABEL[s.mode]}
-          </Link>
-          <i aria-hidden="true">›</i>
-          <span>시즌 상세</span>
-        </nav>
+      <div className={`main-inner sim-join ${TONE[s.mode]}`} data-season={art?.key}>
+        {/* ── 히어로 ─────────────────────────────────────────
+            사진은 배경으로 깔고 글자는 그 위에 올린다. 사진을 <img> 로 두면
+            제목 덩어리와 겹치게 하려고 position:absolute 를 또 써야 해서다.
+            장식이라 role 도 alt 도 없다 — 읽어야 할 글자는 아래 lockup 이 갖는다. */}
+        <section
+          className={`sj-hero${art ? ' has-art' : ''}`}
+          style={
+            art
+              ? ({ '--art': `url("${art.art}")`, '--art-pos': art.position } as React.CSSProperties)
+              : undefined
+          }
+        >
+          <div className="sj-hero-body">
+            <nav className="sj-crumb" aria-label="위치">
+              <Link to="/sim">모의투자 홈</Link>
+              <i aria-hidden="true">›</i>
+              <Link to={s.mode === 'PRACTICE' ? '/sim/practice' : '/sim/modes'}>
+                {MODE_LABEL[s.mode]}
+              </Link>
+              <i aria-hidden="true">›</i>
+              <span>시즌 상세</span>
+            </nav>
 
-        <header className="sj-head">
-          <span className="sj-mode">{MODE_LABEL[s.mode]}</span>
-          <h1>{s.title}</h1>
-          {s.note && <p>{s.note}</p>}
-        </header>
+            <header className="sj-head">
+              <span className="sj-mode">{MODE_LABEL[s.mode]}</span>
+              {art ? (
+                /* 제목·설명이 한 장에 그려져 있다. h1 안에 넣어 제목의 자리는
+                   지키고, 읽히는 글자는 alt 가 준다. */
+                <>
+                  <h1 className="sj-lockup">
+                    <img
+                      src={art.lockup}
+                      alt={s.note ? `${s.title} — ${s.note}` : s.title}
+                      style={{ maxWidth: `${art.lockupMax}px` }}
+                    />
+                  </h1>
+                  {/* 좁은 화면 전용. lockup 안의 한 줄 설명은 그림이라 폭이 줄면
+                      같이 줄어서 폰에서 못 읽는다. 그 크기부터는 글자로 다시
+                      깔아 준다 — 넓은 화면에서는 CSS 가 숨긴다.
+                      alt 가 이미 같은 문장을 읽어 주므로 보조기기에는 숨긴다. */}
+                  {s.note && <p className="sj-note-sm" aria-hidden="true">{s.note}</p>}
+                </>
+              ) : (
+                <>
+                  <h1>{s.title}</h1>
+                  {s.note && <p>{s.note}</p>}
+                </>
+              )}
+            </header>
+          </div>
+        </section>
 
         {/* 시즌 카드 — 프로토타입 ct-season */}
         <section className="sj-card" aria-label="시즌 조건">
@@ -225,17 +272,27 @@ export default function SeasonJoin() {
                 </Ico>
                 <div>
                   <dt>종목</dt>
-                  <dd><b className="num">{s.tickerCount}</b>개</dd>
+                  {/* 그 구간 첫날 시가총액 상위 200 이라 규모가 지수와 같다(시더 주석).
+                      200 일 때만 지수 이름으로 부른다 — 180 을 "코스피 180" 이라 쓰면
+                      있지도 않은 지수가 된다. */}
+                  <dd>
+                    {s.tickerCount === 200
+                      ? <b>코스피 <span className="num">200</span></b>
+                      : <><b className="num">{s.tickerCount}</b>개</>}
+                  </dd>
                 </div>
               </div>
               {s.sector && (
                 <div>
                   <Ico>
-                    <path d="M4 20V9l8-5 8 5v11" />
-                    <path d="M9 20v-6h6v6" />
+                    <path d="M12 3a9 9 0 1 0 9 9h-9z" />
+                    <path d="M14.5 2.5A8 8 0 0 1 21.5 9.5h-7z" />
                   </Ico>
                   <div>
-                    <dt>섹터</dt>
+                    {/* "섹터" 는 종목을 그 업종으로 거른다는 뜻으로 읽힌다. 실제로는
+                        주제가 가리키는 업종 하나일 뿐이고 종목은 전 업종이 들어 있다
+                        (시더 주석). 그래서 이름을 "주목 업종" 으로 바꾼다. */}
+                    <dt>주목 업종</dt>
                     <dd><b>{s.sector}</b></dd>
                   </div>
                 </div>
@@ -321,39 +378,68 @@ export default function SeasonJoin() {
           </div>
         </dialog>
 
-        {/* 진행 규칙 요약 — 명세 §2·설계서 §4 G-04 에서 확정된 것만 적는다 */}
+        {/* 진행 규칙 요약 — 명세 §2·설계서 §4 G-04 에서 확정된 것만 적는다.
+            글은 그대로고 모양만 번호 붙은 넉 장으로 바꿨다(2026-09-17). 규칙이
+            네 개로 고정이라 번호가 헛돌지 않는다 — 다섯 번째가 생기면 한 줄이
+            혼자 남으니 그때 배치를 다시 본다. */}
         <section className="sj-rules" aria-labelledby="sj-rules-title">
-          <h2 id="sj-rules-title">진행 방식</h2>
-          <ul>
+          <header className="sj-rules-head">
+            <p className="sj-rules-kicker" aria-hidden="true">PRACTICE GUIDE</p>
+            <h2 id="sj-rules-title">진행 방식</h2>
+            <p className="sj-rules-lead">
+              실제와 닮은 시장, 그러나 부담 없이. {s.title}이 만든 변화를 직접 경험해보세요.
+            </p>
+          </header>
+
+          <ol className="sj-steps">
             <li>
-              <b>시기는 공개되지 않습니다.</b> 어떤 장이었는지만 알려주고 실제 날짜는
-              가립니다. 종목은 실명이며, 그 구간의 대형주가 전부 들어 있습니다.
+              <span className="sj-step-no" aria-hidden="true">01</span>
+              <Ico>
+                <path d="M6 3h8l4 4v14H6z" /><path d="M14 3v4h4" /><path d="M9 12h6M9 16h6" />
+              </Ico>
+              <b>시기는 공개되지 않습니다.</b>
+              <p>
+                어떤 장이었는지만 알려주고 실제 날짜는 가립니다. 종목은 실명이며,
+                그 구간의 대형주가 전부 들어 있습니다.
+              </p>
             </li>
             <li>
-              <b>주문은 그 게임일 종가로 한 번에 체결됩니다.</b> 수수료·슬리피지·예약
-              주문이 없고, 수량과 방향만 정합니다.
+              <span className="sj-step-no" aria-hidden="true">02</span>
+              <Ico>
+                <path d="M4 8h13l-3-3M20 16H7l3 3" />
+              </Ico>
+              <b>주문은 그 게임일 종가로 한 번에 체결됩니다.</b>
+              <p>수수료·슬리피지·예약 주문이 없고, 수량과 방향만 정합니다.</p>
             </li>
             <li>
+              <span className="sj-step-no" aria-hidden="true">03</span>
+              <Ico>
+                <path d="M4 5l7 7-7 7zM13 5l7 7-7 7z" />
+              </Ico>
               {isCompetition ? (
                 <>
-                  <b>게임일은 시간이 지나면 자동으로 넘어갑니다.</b> 모든 참가자가 같은
-                  게임일을 같은 시각에 보며, 직접 넘길 수 없습니다.
+                  <b>게임일은 시간이 지나면 자동으로 넘어갑니다.</b>
+                  <p>모든 참가자가 같은 게임일을 같은 시각에 보며, 직접 넘길 수 없습니다.</p>
                 </>
               ) : (
                 <>
-                  <b>게임일은 직접 넘깁니다.</b> 중단해도 진행하던 게임일부터 이어서
-                  할 수 있습니다.
+                  <b>게임일은 직접 넘깁니다.</b>
+                  <p>중단해도 진행하던 게임일부터 이어서 할 수 있습니다.</p>
                 </>
               )}
             </li>
             <li>
+              <span className="sj-step-no" aria-hidden="true">04</span>
+              <Ico>
+                <path d="M3 20h18" /><path d="M6 20v-7M11 20v-11M16 20v-5" />
+              </Ico>
               {isCompetition ? (
-                <>성과가 집계되어 리더보드에 오릅니다.</>
+                <b>성과가 집계되어 리더보드에 오릅니다.</b>
               ) : (
-                <>연습 성과는 <b>실전 랭킹과 신뢰도에 반영되지 않습니다.</b></>
+                <b>연습 성과는 실전 랭킹과 신뢰도에 반영되지 않습니다.</b>
               )}
             </li>
-          </ul>
+          </ol>
         </section>
       </div>
     </main>

@@ -33,7 +33,7 @@ public class StockController {
     private final CurrentUserProvider currentUserProvider;
 
     /**
-     * 탐색 목록. 명세의 sentiment · hasOpenPrediction 은 predictions 가 없어 받지 않는다 — 모르는
+     * 탐색 목록. 명세의 sentiment 는 아직 받지 않는다 — 모르는
      * 파라미터는 스프링이 무시하므로 화면은 그대로 보내도 된다. sort · perMin/perMax 는 어휘 밖
      * 값이면 400 이다(타입 변환 실패는 GlobalExceptionHandler 가 field 와 함께 400 으로 낸다).
      */
@@ -47,6 +47,7 @@ public class StockController {
             @RequestParam(required = false) BigDecimal pbrMin,
             @RequestParam(required = false) BigDecimal pbrMax,
             @RequestParam(required = false, defaultValue = "false") boolean watchedOnly,
+            @RequestParam(required = false, defaultValue = "false") boolean hasOpenPrediction,
             @RequestParam(required = false) StockService.Sort sort,
             @RequestParam(required = false) String cursor,
             @RequestParam(required = false) Integer size) {
@@ -60,6 +61,7 @@ public class StockController {
                 pbrMin,
                 pbrMax,
                 watchedOnly,
+                hasOpenPrediction,
                 sort,
                 cursor,
                 size);

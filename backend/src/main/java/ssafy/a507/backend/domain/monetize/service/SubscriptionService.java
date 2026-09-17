@@ -1,5 +1,7 @@
 package ssafy.a507.backend.domain.monetize.service;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.List;
@@ -56,6 +58,7 @@ import ssafy.a507.backend.domain.prediction.repository.PredictionRepository;
 @RequiredArgsConstructor
 public class SubscriptionService {
 
+    private final EntityManager em;
     private final UserRepository users;
     private final SubscriptionRepository subscriptions;
     private final PublisherFeeRepository fees;
@@ -88,16 +91,36 @@ public class SubscriptionService {
     }
 
     /**
-     * 접수. 검증 순서가 <b>자기 구독 → 채널 존재 → 구독료 → 중복 → 잔액 → 서명</b> 인 것은 의도적이다.
+     * 접수. 순서가 <b>자기 구독 → 구독자 행 잠금 → 채널 존재 → 구독료 → 중복 → 잔액 → 서명</b> 인 것은
+     * 의도적이다.
+     *
+     * <p><b>잠금이 검사보다 먼저다.</b> 중복 검사와 행 생성 사이가 열려 있어 같은 순간 두 요청이 둘 다
+     * "기존 구독 없음" 을 보고 통과하면 같은 채널에 두 번 결제된다 — 토큰이 두 번 나가고 70:30 분배는
+     * 되돌릴 수단이 없다. 구독 행을 잠글 수는 없다(아직 없는 행이라 {@code FOR UPDATE} 가 0행을 잠근다).
+     * 그래서 두 요청이 반드시 거쳐가는 <b>구독자 행</b>을 대신 잠근다. 검사를 잠금 뒤로 미뤄야 두 번째
+     * 요청이 첫 번째의 커밋을 본다 — 순서가 뒤집히면 잠금이 있으나 마나다.
      *
      * <p>{@link SignatureGuard#verify} 는 nonce 를 태운다. 서명을 먼저 검증하면 중복 구독으로 409 를
-     * 받는 요청에서도 nonce 가 사라져 사용자가 지갑에서 다시 서명해야 한다. 앞의 다섯은 상태를 바꾸지
-     * 않는 판정이라 앞에 둔다. 거꾸로 서명 검증은 <b>행을 만들기 직전</b>이어야 한다 — 검증 없이
+     * 받는 요청에서도 nonce 가 사라져 사용자가 지갑에서 다시 서명해야 한다. 앞의 판정들은 상태를 바꾸지
+     * 않으므로 앞에 둔다. 거꾸로 서명 검증은 <b>행을 만들기 직전</b>이어야 한다 — 검증 없이
      * 만들면 남의 지갑으로 결제되는 구독을 만들 수 있다({@link AdService} 와 같은 판단).
      */
     private Accepted accept(Long subscriberId, Long publisherId, SubscribeRequest request) {
+        // 자기 구독은 인자 비교라 DB 를 타지 않는다. 어차피 409 를 줄 요청에 행 잠금을 잡을 이유가 없어
+        // 잠금보다 앞에 둔다(형제 둘은 이런 검사가 없어 잠금이 ① 이다).
         if (subscriberId.equals(publisherId)) {
             throw new BusinessException(ErrorCode.SELF_SUBSCRIBE, "userId");
+        }
+        // 구독자 행 잠금 — 이 사용자의 구독 접수를 직렬화한다. 아래 중복 검사가 이 뒤에 있어야 두 번째
+        // 요청이 첫 번째가 커밋한 행을 보고 409 를 받는다(PredictionRegisterService · EventEntryService 와
+        // 같은 판단). 남의 구독에는 영향이 없다. 잠금은 이 접수 트랜잭션이 커밋될 때 풀리므로 체인 전송을
+        // 기다리지 않는다.
+        // ponytail: 코드가 지키는 규칙이다. 구독 행을 만드는 경로가 여기 말고 더 생기면 그 경로도 같은
+        // 잠금을 잡아야 한다. 자동 갱신(ANT-TOKEN-06)이 옛 행을 먼저 EXPIRED 로 내리는 모양으로 확정되면
+        // 부분 유니크 제약으로 올리는 것이 맞다 — 그때는 DB 가 경로와 무관하게 지킨다.
+        User subscriber = em.find(User.class, subscriberId, LockModeType.PESSIMISTIC_WRITE);
+        if (subscriber == null) {
+            throw new BusinessException(ErrorCode.UNAUTHENTICATED);
         }
         User publisher =
                 users.findById(publisherId)
@@ -117,12 +140,9 @@ public class SubscriptionService {
                     throw new BusinessException(ErrorCode.ALREADY_SUBSCRIBED, "userId");
                 });
 
-        User subscriber =
-                users.findById(subscriberId)
-                        .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHENTICATED));
         // 가용잔액 = 체인 잔액 − 전송 중인 내 돈(PENDING 배팅·구독·광고). ANT-TOKEN-11 — 예전엔 원장을 봤는데
         // 원장은 인덱서 지연이 있고, 셋이 서로의 PENDING 을 못 보면 광고 심사 중인 돈으로 구독이 된다.
-        // 체인 잔액은 전송 시뮬레이션이 한 번 더 본다.
+        // 체인 잔액은 전송 시뮬레이션이 한 번 더 본다. subscriber 는 위에서 행 잠금과 함께 읽었다.
         if (availableBalance.of(subscriber).compareTo(fee) < 0) {
             throw new BusinessException(ErrorCode.INSUFFICIENT_BALANCE);
         }

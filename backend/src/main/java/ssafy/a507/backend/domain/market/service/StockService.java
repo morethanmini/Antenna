@@ -35,6 +35,8 @@ import ssafy.a507.backend.domain.market.entity.DailyQuote;
 import ssafy.a507.backend.domain.market.entity.Stock;
 import ssafy.a507.backend.domain.market.repository.DailyQuoteRepository;
 import ssafy.a507.backend.domain.market.repository.StockRepository;
+import ssafy.a507.backend.domain.prediction.entity.Prediction;
+import ssafy.a507.backend.domain.prediction.repository.PredictionRepository;
 
 /**
  * 종목 목록·시세 조회.
@@ -43,10 +45,10 @@ import ssafy.a507.backend.domain.market.repository.StockRepository;
  * 실시간 시세 제공은 법적 제약이라 애초에 수집하지 않는다(명세 §1, 화면설계 D17).
  *
  * <p>목록은 명세의 GET /stocks 중 재료가 있는 것만 낸다 — 섹터·시장·관심·PER 범위 필터, PER·등락률
- * 정렬, 행별 등락률·관심 여부·PER·PBR(배치가 stocks 에 써 둔 파생 컬럼을 읽기만 한다). 예측 심리
- * 필터와 예측 정렬 3종은 predictions 가 아직 없어 받아도 무시한다(400 이 아니다 — 화면 컨트롤이
- * 이미 있고, 재료가 생기면 서버만 바꾸면 된다). 그 값들은 키를 남긴 채 null · 0 으로 내린다 —
- * 키가 없으면 화면이 undefined 를 만나 죽는다.
+ * 정렬, 행별 등락률·관심 여부·PER·PBR(배치가 stocks 에 써 둔 파생 컬럼을 읽기만 한다), 행별 예측 집계
+ * (판정 대기 건수·UP 비율)와 예측 정렬 3종, 내 진행 중 예측 필터(hasOpenPrediction). 예측 심리 필터
+ * (sentiment)는 아직 받아도 무시한다(400 이 아니다 — 모르는 파라미터는 스프링이 버린다). 예측 없는 종목의
+ * 집계는 키를 남긴 채 null · 0 으로 내린다 — 키가 없으면 화면이 undefined 를 만나 죽는다.
  */
 @Service
 @RequiredArgsConstructor
@@ -68,11 +70,15 @@ public class StockService {
      */
     private static final int ACTIVE_WINDOW_DAYS = 7;
 
+    /** 집계에 드는 예측 — 판정 대기만. 호가창(StockPredictionService)과 같은 규칙이다: 끝난 예측은 기록이다. */
+    private static final List<Prediction.Status> PENDING = List.of(Prediction.Status.BASE, Prediction.Status.OPEN);
+
     private final StockRepository stockRepository;
     private final DailyQuoteRepository dailyQuoteRepository;
     private final WatchlistItemRepository watchlistItemRepository;
+    private final PredictionRepository predictionRepository;
 
-    /** 목록 정렬. 예측 집계 3종은 predictions 가 없어 아직 전부 코드순이다. */
+    /** 목록 정렬. 예측 집계 3종은 판정 대기 예측만 센다 — 끝난 예측은 걸려 있는 의견이 아니다. */
     public enum Sort {
         MARKET_CAP,
         PREDICTION_COUNT,
@@ -83,11 +89,15 @@ public class StockService {
     }
 
     /** 정렬·커서 비교에 쓰는 한 줄. 등락률은 컬럼이 아니라 두 날 종가에서 낸다. */
-    private record Row(Stock stock, BigDecimal close, BigDecimal changeRate) {
+    private record Row(
+            Stock stock, BigDecimal close, BigDecimal changeRate, int predictionCount, BigDecimal upRatio) {
         String code() {
             return stock.getCode();
         }
     }
+
+    /** 종목 하나의 판정 대기 예측 집계. 예측이 없는 종목은 이 값 자체가 없다(맵에 키가 없다). */
+    private record Sentiment(int count, BigDecimal upRatio) {}
 
     /**
      * 탐색 목록 한 페이지.
@@ -105,7 +115,8 @@ public class StockService {
      * @param pbrMin PBR 하한(포함) · null 이면 없음. PER 과 같은 규칙이다 — PBR 없는 종목은 어느 범위에도 안 든다
      * @param pbrMax PBR 상한(포함) · null 이면 없음
      * @param watchedOnly 내 관심 종목만
-     * @param sort null 이면 PREDICTION_COUNT — 아직 코드순과 같다
+     * @param hasOpenPrediction 내가 건 판정 대기(BASE·OPEN) 예측이 있는 종목만 — 남의 예측은 안 친다
+     * @param sort null 이면 PREDICTION_COUNT
      */
     public StockListResponse list(
             Long userId,
@@ -117,6 +128,7 @@ public class StockService {
             BigDecimal pbrMin,
             BigDecimal pbrMax,
             boolean watchedOnly,
+            boolean hasOpenPrediction,
             Sort sort,
             String cursor,
             Integer size) {
@@ -132,11 +144,11 @@ public class StockService {
         LocalDate baseDate = dailyQuoteRepository.findLatestTradeDate().orElse(null);
         if (baseDate == null) {
             // 시세가 한 건도 없다. 종가 없는 종목 목록은 화면이 그릴 것이 없다.
-            return new StockListResponse(List.of(), null, null, false);
+            return new StockListResponse(List.of(), null, null, false, 0);
         }
         Set<String> watched = new HashSet<>(watchlistItemRepository.findWatchedCodes(userId));
         if (watchedOnly && watched.isEmpty()) {
-            return new StockListResponse(List.of(), baseDate, null, false);
+            return new StockListResponse(List.of(), baseDate, null, false, 0);
         }
 
         LocalDate activeSince = baseDate.minusDays(ACTIVE_WINDOW_DAYS);
@@ -179,6 +191,16 @@ public class StockService {
             if (watchedOnly) {
                 where.add(root.get("code").in(watched));
             }
+            if (hasOpenPrediction) {
+                // 내가 건 판정 대기 예측이 있는 종목만. 남의 예측은 행별 집계·예측 정렬이 이미 보여 준다.
+                Subquery<String> mine = query.subquery(String.class);
+                Root<Prediction> prediction = mine.from(Prediction.class);
+                mine.select(prediction.get("stock").get("code"))
+                        .where(
+                                cb.equal(prediction.get("user").get("id"), userId),
+                                prediction.get("status").in(PENDING));
+                where.add(root.get("code").in(mine));
+            }
             return cb.and(where.toArray(Predicate[]::new));
         };
         // ponytail: 필터에 맞는 종목을 전부 읽어 메모리에서 정렬·페이징한다 — 활성 종목 300개 안팎.
@@ -192,9 +214,16 @@ public class StockService {
         }
         Map<String, BigDecimal> closes = closesOn(baseDate, codes);
         Map<String, BigDecimal> previousCloses = closesOn(previousDate, codes);
+        Map<String, Sentiment> sentiments = pendingSentiments();
         Function<Stock, Row> toRow = stock -> {
             BigDecimal close = closes.get(stock.getCode());
-            return new Row(stock, close, changeRate(close, previousCloses.get(stock.getCode())));
+            Sentiment sentiment = sentiments.get(stock.getCode());
+            return new Row(
+                    stock,
+                    close,
+                    changeRate(close, previousCloses.get(stock.getCode())),
+                    sentiment == null ? 0 : sentiment.count(),
+                    sentiment == null ? null : sentiment.upRatio());
         };
         Comparator<Row> order = order(sort);
         List<Row> rows = found.stream().map(toRow).sorted(order).toList();
@@ -222,18 +251,19 @@ public class StockService {
                         row.stock().getPer(),
                         row.stock().getPbr(),
                         marketCap(row.close(), row.stock().getListedShares()),
-                        0,
-                        null,
+                        row.predictionCount(),
+                        row.upRatio(),
                         watched.contains(row.code())))
                 .toList();
 
         String nextCursor = hasNext ? page.get(page.size() - 1).code() : null;
-        return new StockListResponse(items, baseDate, nextCursor, hasNext);
+        return new StockListResponse(items, baseDate, nextCursor, hasNext, found.size());
     }
 
     /**
      * 값이 없는 행은 뒤로, 같은 값 안에서는 코드순 — 전순서라 커서가 같은 비교로 자리를 잡는다.
-     * PER 은 낮은 순(싼 순), 등락률·시가총액은 높은 순.
+     * PER 은 낮은 순(싼 순), 등락률·시가총액·예측 수·UP 비율은 높은 순. DOWN_RATIO 는 하락 비율이
+     * 100 − upRatio 라 UP 비율 낮은 순과 같다 — 예측 없는 종목(null)은 어느 쪽에서도 뒤다.
      */
     private static Comparator<Row> order(Sort sort) {
         Comparator<Row> byCode = Comparator.comparing(Row::code);
@@ -255,8 +285,43 @@ public class StockService {
                             Row::changeRate, Comparator.nullsLast(Comparator.reverseOrder()))
                     .thenComparing(byCode);
         }
-        // 예측 집계 정렬 3종 — predictions 가 없어 전부 0 · null 이라 코드순과 같다.
-        return byCode;
+        if (sort == Sort.UP_RATIO) {
+            return Comparator.<Row, BigDecimal>comparing(
+                            Row::upRatio, Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(byCode);
+        }
+        if (sort == Sort.DOWN_RATIO) {
+            return Comparator.<Row, BigDecimal>comparing(
+                            Row::upRatio, Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(byCode);
+        }
+        // PREDICTION_COUNT(기본) — 예측 없는 종목은 0 이라 뒤에 코드순.
+        return Comparator.comparingInt(Row::predictionCount).reversed().thenComparing(byCode);
+    }
+
+    /**
+     * 종목별 (판정 대기 예측 수, UP 비율 %). 한 쿼리로 전부 읽는다 — 예측이 걸린 종목은 활성 300개보다
+     * 훨씬 적다. 비율은 소수 둘째 자리(등락률과 같은 자리수)이고, 예측 없는 종목은 맵에 없다.
+     */
+    private Map<String, Sentiment> pendingSentiments() {
+        Map<String, Integer> totals = new HashMap<>();
+        Map<String, Integer> ups = new HashMap<>();
+        for (Object[] row : predictionRepository.countByStockAndDirection(PENDING)) {
+            String code = (String) row[0];
+            int count = ((Number) row[2]).intValue();
+            totals.merge(code, count, Integer::sum);
+            if (row[1] == Prediction.Direction.UP) {
+                ups.merge(code, count, Integer::sum);
+            }
+        }
+        Map<String, Sentiment> sentiments = new HashMap<>();
+        totals.forEach((code, total) -> sentiments.put(
+                code,
+                new Sentiment(
+                        total,
+                        BigDecimal.valueOf(ups.getOrDefault(code, 0) * 100L)
+                                .divide(BigDecimal.valueOf(total), RATE_SCALE, RoundingMode.HALF_UP))));
+        return sentiments;
     }
 
     /**
@@ -363,7 +428,7 @@ public class StockService {
                 tradingValue(last),
                 stock.getPer(),
                 stock.getPbr(),
-                0,
+                (int) predictionRepository.countByStock_CodeAndStatusIn(code, PENDING),
                 watchlistItemRepository.existsByUser_IdAndStock_Code(userId, code));
     }
 

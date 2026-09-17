@@ -13,6 +13,11 @@ services:
     # CI 가 생성한 .env 를 그대로 컨테이너 환경변수로 넣는다.
     # 이 파일에서는 DB_HOST=postgres, REDIS_HOST=redis 여야 한다(컨테이너 이름 기준).
     env_file: .env
+    # 업로드 이미지(ANT-COMMUNITY-06). **이 마운트가 없으면 배포할 때마다 전부 사라진다** —
+    # 컨테이너 파일시스템에만 남고 배포는 컨테이너를 새로 만들기 때문이다(ANT-INFRA-07).
+    # 컨테이너 안 경로는 UPLOAD_DIR(=/app/uploads, .gitlab-ci.yml 의 .env 블록)과 같아야 한다.
+    volumes:
+      - /srv/antenna/uploads:/app/uploads
     # 뉴스 관련도 판정(ANT-RESEARCH-02)이 쓰는 자체 서빙 LLM 은 EC2 호스트에 선 ssh 역터널
     # 반대편(교내 GPU)에 있다. 컨테이너에서 호스트를 부를 이름이 필요하다 —
     # AI_GPU_BASE_URL=http://host.docker.internal:8100/v1. 리눅스 도커에는 이 이름이 기본으로

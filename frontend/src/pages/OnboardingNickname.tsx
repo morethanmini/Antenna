@@ -41,8 +41,7 @@ export default function OnboardingNickname() {
       await api.patch<{ nickname: string }>('/users/me', { nickname: value })
       setNickname(value)
       /* 다음은 구독료다(OnboardingFee). 건너뛸 수 있는 단계라 여기서 막지 않는다.
-         takeReturnTo() 를 여기서 부르지 않는 이유 — 값을 꺼내며 지우므로 구독료 화면에
-         닿기 전에 사라져, 로그인 전에 막혔던 경로로 못 돌아간다. 그 호출은 그쪽에 있다. */
+         홈으로 보내는 것은 그 화면이 맡는다 — 저장하든 건너뛰든 거기가 마지막 걸음이다. */
       navigate('/onboarding/fee', { replace: true })
     } catch (e) {
       // 중복 검사와 확정 사이에 누가 먼저 가져갔을 수 있다. 최종 판정은 서버다.

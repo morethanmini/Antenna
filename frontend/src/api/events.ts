@@ -19,6 +19,7 @@
       정산 전 paid·net·rank·avgError, 관리자 입력 전 basePrice, 안 건 종목의 mine.
       0 으로 읽으면 "본전"·"꼴찌"·"기준가 0원" 이 된다. */
 import { api } from './client'
+import { releaseIdempotencyKey } from './idempotency'
 import { formatTargetPrice, noteHash } from './predictions'
 import type { WalletNonce } from './wallet'
 
@@ -162,6 +163,47 @@ export async function fetchEventBySlug(slug: string) {
   return items.find((e) => e.slug === slug) ?? null
 }
 
+/**
+ * 대회 화면(J-01)이 띄울 회차를 고른다. **slug 가 먼저다.**
+ *
+ * ── 왜 대체 경로가 필요한가 ──────────────────────────────
+ * 본 대회 전에 등록·배팅을 실제로 해 보려면 리허설 회차가 먼저 서 있어야 하는데, 운영
+ * 점검용으로 만든 회차는 slug 가 비어 있다(`EventListItem.slug` 주석). slug 로만 찾으면
+ * DB 에 회차가 멀쩡히 있는데도 화면이 "준비 중" 으로 남는다.
+ *
+ * ── 그래서 어떤 순서로 고르는가 ──────────────────────────
+ *   ① slug 가 맞는 회차          — 본 대회가 생기는 순간 무조건 이쪽이 이긴다
+ *   ② 지금 등록을 받는 회차(ENTRY) — 리허설 중이면 이것이다
+ *   ③ 가장 최근 회차             — 끝난 리허설의 결과를 보러 왔을 때
+ *
+ * ①이 맨 앞인 것이 중요하다. 서버가 slug 를 둔 이유가 "리허설 회차가 사용자 화면에 뜨는
+ * 것" 을 막기 위해서인데(PredictionEvent.slug 주석), 본 대회에 slug 를 달아 두면 그 순간부터
+ * ②·③은 쓰이지 않는다. 즉 이 대체 경로는 **본 대회가 생기기 전까지만** 산다.
+ */
+export async function fetchContestEvent(slug: string) {
+  const summary = await fetchContestSummary(slug)
+  return summary === null ? null : fetchEvent(summary.eventId)
+}
+
+/**
+ * 같은 규칙으로 회차만 고르고 **상세는 읽지 않는다.** 목록 한 번으로 끝난다.
+ *
+ * 랭킹 화면(E-01)의 이벤트 탭 배지가 이것을 쓴다 — 배지에 필요한 건 phase 하나인데
+ * 종목·내 배팅까지 딸려 오는 상세를 부를 이유가 없다. 고르는 규칙을 두 곳에 복사하면
+ * 한쪽만 고쳐져 탭 배지와 실제 화면이 서로 다른 회차를 말하게 된다.
+ */
+export async function fetchContestSummary(slug: string): Promise<EventListItem | null> {
+  const { items } = await fetchEvents()
+  if (items.length === 0) return null
+
+  return (
+    items.find((e) => e.slug === slug)
+    ?? items.find((e) => e.phase === 'ENTRY')
+    /* 서버가 id 내림차순으로 준다(EventQueryService.list) — 첫 줄이 가장 최근이다 */
+    ?? items[0]
+  )
+}
+
 export type EventEntryResult = {
   closePrice: number
   winner: StockWinner
@@ -275,8 +317,17 @@ export type EventEntryAccepted = {
   me: Omit<EventMeSummary, 'paid' | 'net' | 'rank'>
 }
 
-/** 멱등키 칸. 회차별로 나눈다 — 두 번째 제출이 첫 제출의 키를 물려받으면 안 된다. */
-export const eventEntryScope = (eventId: number) => `event-entry:${eventId}`
+/**
+ * 멱등키 칸. **제출마다 나뉜다** — 회차 하나로 묶으면 두 번째 제출이 첫 제출의 키를
+ * 물려받아, 서버가 첫 응답을 그대로 돌려준다(같은 키 = 같은 요청으로 본다).
+ *
+ * 화면이 종목마다 따로 등록하게 되면서(2026-09-18) 이게 실제 사고가 된다 — 두 번째
+ * 종목을 걸면 첫 종목의 결과가 돌아온다. noteSalt 는 제출마다 새로 뽑히므로
+ * (newNoteSalt) 첫 항목의 것만으로 제출이 갈린다. 재시도는 같은 items 를 다시 넘기니
+ * 같은 키가 나가 중복 등록이 막힌다 — 멱등키의 본래 목적은 그대로다.
+ */
+export const eventEntryScope = (eventId: number, items: EventEntryItem[]) =>
+  `event-entry:${eventId}:${items[0]?.noteSalt ?? ''}`
 
 /**
  * 서명 대상 문자열. **서버 EventEntryService.Signed.signingPayload 와 바이트가 같아야 한다.**
@@ -329,7 +380,11 @@ export async function eventEntrySigningPayload(
  * 다시 보낸다 — 사용자가 할 일은 없다.
  */
 export function registerEntries(eventId: number, body: EventEntryBody) {
-  return api.post<EventEntryAccepted>(`/events/${eventId}/entries`, body, {
-    idempotencyScope: eventEntryScope(eventId),
-  })
+  const scope = eventEntryScope(eventId, body.items)
+  return api
+    .post<EventEntryAccepted>(`/events/${eventId}/entries`, body, { idempotencyScope: scope })
+    /* 확정된 뒤에야 키를 버린다 — 실패한 재시도는 같은 키로 가야 서버가 중복으로 세지
+       않는다. 예측 등록(createPrediction)과 같은 규칙이다. 안 버리면 다음 제출이 이 키를
+       물려받아 첫 응답을 그대로 돌려받는다. */
+    .then((r) => { releaseIdempotencyKey(scope); return r })
 }

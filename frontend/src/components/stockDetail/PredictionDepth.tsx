@@ -63,8 +63,10 @@ function Rows({ d }: { d: PredictionDistribution }) {
           무엇인지 모르고 표를 읽으면 등락률이 무엇 대비인지 알 수 없어, 표보다
           먼저 와야 하는 문장이다. 개미가 말해 주는 모양으로 둔다. */}
       <div className="pd-say">
-        <img className="pd-face" src="/assets/character/black_ant/antenna-profile.png"
-             alt="" aria-hidden="true" />
+        {/* 표정 있는 얼굴로 바꿨다(2026-09-17). 기준가를 짚어 주는 말이라
+            웃는 얼굴이 맞다 — 값이 좋다 나쁘다를 말하는 자리가 아니다 */}
+        <img className="pd-face" src="/assets/character/face_ant/face-smile.webp"
+             alt="" aria-hidden="true" width="42" height="42" />
         <p className="pd-bubble">
           등락률은 전일 종가 <b className="num">{won(d.basePrice)}원</b>({dot(d.asOf)}) 기준입니다.
           개별 예측은 작성자 채널에서 볼 수 있습니다.

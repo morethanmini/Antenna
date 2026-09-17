@@ -7,10 +7,9 @@
    POST   /watchlist              { stockCode }
    DELETE /watchlist/{stockCode}
 
-   전부 실제 호출이다(명세서 v0.19). perMin/perMax · sort=PER · CHANGE_RATE 와 per · pbr 은
-   동작한다. 서버가 아직 재료가 없어 무시하는 것 — sentiment · hasOpenPrediction 과 예측
-   정렬 3종은 보내도 결과가 안 바뀌고(코드순), upRatio 는 null, predictionCount 는 0 으로
-   온다. predictions 가 생기면 서버만 바뀌고 이 파일은 그대로다. */
+   전부 실제 호출이다(명세서 v0.75). perMin/perMax · sort 6종 · per · pbr · 행별 예측 집계
+   (predictionCount · upRatio — 판정 대기만) · hasOpenPrediction(내 진행 중 예측)이
+   동작한다. 서버가 아직 무시하는 것 — sentiment 는 보내도 결과가 안 바뀐다. */
 import { api } from './client'
 import type { CursorList } from './types'
 
@@ -25,9 +24,8 @@ export const MARKET_LABEL: Record<Market, string> = {
 }
 
 /* 설계서 §4 B-02 는 정렬 5종을 적어 두었다. 거기에 **시가총액 순**을 더했다
-   (2026-09-14, 서버 Sort enum 도 함께). 예측 집계 3종은 predictions 가 비어 있는
-   동안 전부 코드순으로 떨어져, 목록 첫 장이 000020·000050… 으로 채워진다 —
-   시장을 훑으러 온 사람에게 가나다도 아니고 규모도 아닌 번호순은 뜻이 없다.
+   (2026-09-14, 서버 Sort enum 도 함께). 예측 집계 3종은 서버가 판정 대기 예측을 세어
+   줄 세운다(2026-09-17) — 예측 없는 종목은 뒤에 코드순.
    종목명·종가 정렬은 여전히 두지 않는다 — 어휘에 없다.
    적히는 차례가 드롭다운에 서는 차례다. */
 export const STOCK_SORTS = [
@@ -86,6 +84,8 @@ export type StockListItem = {
 export type StockListMeta = {
   /** 목록의 종가가 기준하는 영업일 YYYY-MM-DD. 수집된 시세가 없으면 null */
   baseDate: string | null
+  /** 필터에 맞는 종목 수 전체. 페이지 행 수(items.length)가 아니다 */
+  total: number
 }
 
 export type StockList = CursorList<StockListItem> & StockListMeta
@@ -120,6 +120,7 @@ export type StockFilter = {
   /** PBR 범위. PER 과 같은 규칙이다 — 값이 없는 종목은 어느 범위에도 안 든다 */
   pbrMin?: number
   pbrMax?: number
+  /** 내가 건 판정 대기(BASE·OPEN) 예측이 있는 종목만. 남의 예측은 안 친다 */
   hasOpenPrediction?: boolean
   watchedOnly?: boolean
   sort: StockSort
@@ -130,9 +131,9 @@ export const STOCK_PAGE_SIZE = 10
 
 /** 빈 필터. "필터 초기화" 가 이 값으로 되돌린다.
  *
- *  기본을 예측 많은 순에서 **시가총액 순**으로 옮겼다(2026-09-14). 예측이 아직
- *  한 건도 없어 그 정렬이 코드순으로 떨어지고 있었다 — 첫 화면이 번호순인 셈이다.
- *  예측이 쌓이기 시작하면 이 한 줄을 PREDICTION_COUNT 로 되돌리면 된다. */
+ *  기본을 예측 많은 순에서 **시가총액 순**으로 옮겼다(2026-09-14). 서버가 예측을
+ *  세기 시작한 뒤(2026-09-17)에도 그대로 둔다 — 예측 없는 종목이 대부분이라 첫 화면은
+ *  규모순이 자연스럽고, 예측순은 드롭다운에서 고른다. */
 export const EMPTY_FILTER: StockFilter = { sort: 'MARKET_CAP' }
 
 /* 목록은 useCursorList 가 커서를 관리하므로 함수를 그대로 넘긴다.
@@ -173,7 +174,7 @@ export async function fetchAllStocks(filter: StockFilter): Promise<StockList> {
     cursor = res.nextCursor
   }
 
-  return { items, nextCursor: null, hasNext: false, baseDate }
+  return { items, nextCursor: null, hasNext: false, baseDate, total: items.length }
 }
 
 export function getSectorSummary() {

@@ -390,7 +390,7 @@ class SubscriptionControllerTest {
 
     // ── fixtures ─────────────────────────────────────────
 
-    /** 구독자 전용 리포트. 미구독자에게는 3줄 미리보기만 간다 */
+    /** 구독자 전용 리포트. 미구독자에게는 본문이 가지 않는다 */
     private long insertLockedReport() {
         return tx.execute(s -> {
             em.createNativeQuery("""

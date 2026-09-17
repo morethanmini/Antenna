@@ -44,7 +44,7 @@ type Visibility = boolean | null
 
 const VISIBILITY_OPTIONS = [
   { value: true, label: '공개', desc: '누구나 전문을 읽을 수 있습니다' },
-  { value: false, label: '구독자 전용', desc: '구독자만 전문을 읽고, 나머지는 앞 3줄만 봅니다' },
+  { value: false, label: '구독자 전용', desc: '구독자만 본문을 읽고, 나머지는 제목만 봅니다' },
 ] as const
 
 export default function ReportNew() {

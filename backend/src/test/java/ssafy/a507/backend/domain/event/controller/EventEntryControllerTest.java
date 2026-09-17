@@ -235,15 +235,32 @@ class EventEntryControllerTest {
     // ── 거절 ─────────────────────────────────────────────
 
     @Test
-    @DisplayName("첫 제출이 4종목이면 400 EVENT_MIN_STOCKS — 하나도 저장하지 않는다")
-    void 첫_제출_4종목은_400() throws Exception {
-        mockMvc.perform(entries(items(4), "key-1"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("EVENT_MIN_STOCKS"))
-                .andExpect(jsonPath("$.field").value("items"));
+    @DisplayName("첫 제출이 1종목이어도 받는다 — 화면이 종목마다 따로 등록한다(2026-09-18)")
+    void 첫_제출_1종목도_받는다() throws Exception {
+        mockMvc.perform(entries(items(1), "key-1"))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.entries.length()").value(1))
+                .andExpect(jsonPath("$.me.stockCount").value(1))
+                /* 규칙은 그대로다 — 정산에서 EventResultService 가 같은 기준으로 qualified 를
+                   세우고 순위는 qualified 에만 매긴다. 등록 문은 두 번째 자물쇠였다. */
+                .andExpect(jsonPath("$.me.qualified").value(false));
 
-        assertThat(count("SELECT count(*) FROM predictions")).isZero();
-        assertThat(poolRelayer.calls()).isEmpty();
+        assertThat(count("SELECT count(*) FROM predictions")).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("한 종목씩 다섯 번 걸면 자격이 선다 — C-01 종목별 등록 경로")
+    void 한_종목씩_다섯_번() throws Exception {
+        for (int i = 0; i < 4; i++) {
+            mockMvc.perform(entries(itemsFrom(i, 1), "key-" + i))
+                    .andExpect(status().isAccepted())
+                    .andExpect(jsonPath("$.me.stockCount").value(i + 1))
+                    .andExpect(jsonPath("$.me.qualified").value(false));
+        }
+        mockMvc.perform(entries(itemsFrom(4, 1), "key-4"))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.me.stockCount").value(5))
+                .andExpect(jsonPath("$.me.qualified").value(true));
     }
 
     @Test

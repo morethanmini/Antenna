@@ -12,15 +12,8 @@
 
    대회 정의(날짜·종목·글귀)는 event/contest.ts 한 곳에 있다. 이 파일에는
    날짜를 적지 않는다 — 일정이 밀릴 때 고칠 곳이 둘이 되면 하나를 빠뜨린다. */
-import { useState } from 'react'
-import {
-  fetchEvent,
-  fetchEventBySlug,
-  type EventEntryAccepted,
-  type EventHome,
-} from '../api/events'
+import { fetchContestEvent, type EventHome } from '../api/events'
 import { useAsync } from '../api/useAsync'
-import EventEntryForm from '../components/event/EventEntryForm'
 import EventLeaderboard from '../components/event/EventLeaderboard'
 import EventMyEntries from '../components/event/EventMyEntries'
 import EventStocks from '../components/event/EventStocks'
@@ -36,8 +29,10 @@ import '../styles/screens/event-contest.css'
    **모듈 스코프 함수다.** useAsync 는 load 가 바뀌면 다시 읽으므로 컴포넌트 안에서
    만들면 매 렌더 새로 읽는다(useAsync 머리말). */
 async function loadContest(): Promise<EventHome | null> {
-  const found = await fetchEventBySlug(CONTEST.id)
-  return found ? fetchEvent(found.eventId) : null
+  /* slug 가 우선이고, 없으면 지금 등록받는 회차 → 가장 최근 회차 순으로 잡는다.
+     운영 점검용 리허설 회차는 slug 가 비어 있어 slug 로만 찾으면 못 띄운다
+     (api/events.ts fetchContestEvent 머리말). */
+  return fetchContestEvent(CONTEST.id)
 }
 
 /* 머리 — 대회 이름 · 한 줄 소개 · 다음 마감 · 규칙을 한 카드에 담는다.
@@ -131,7 +126,6 @@ export default function EventContest() {
      data 가 잠깐 null 이 되어 폼이 언마운트되고, 성공 화면이 그대로 사라진다 —
      사용자 눈에는 폼이 비워진 것으로만 보여 등록이 됐는지 알 수 없다(2026-09-16 확인).
      그래서 data 가드 밖에 둔다. */
-  const [accepted, setAccepted] = useState<EventEntryAccepted | null>(null)
 
   return (
     <main className="main">
@@ -165,35 +159,20 @@ export default function EventContest() {
           </section>
         )}
 
-        {/* data 가드 밖이다 — 다시 읽는 동안에도 남아 있어야 한다 */}
-        {accepted && (
-          <section className="card ev-block ev-done" aria-live="polite">
-            <header className="ev-block-head">
-              <h2>등록했습니다</h2>
-              <p>
-                {accepted.entries.length}종목 · 지금 블록체인에 올리는 중입니다.
-                아래 <b>내 참가 내역</b>에서 확정을 확인할 수 있습니다.
-              </p>
-            </header>
-            <p className="ev-state is-quiet">
-              {accepted.me.qualified
-                ? `참가 자격을 채웠습니다 (${accepted.me.stockCount}종목).`
-                : `순위에 들려면 종목을 더 골라야 합니다. 지금 ${accepted.me.stockCount}종목입니다.`}
-            </p>
-          </section>
-        )}
+        {/* "등록했습니다" 배너를 뺐다(2026-09-18) — 등록이 이 화면에서 일어나지 않는다.
+            종목마다 C-01 에서 걸고 돌아오므로, 결과는 위 진행 줄(N/10)과 아래
+            내 참가 내역이 말한다. 돌아온 사람에게 지난 등록을 다시 알릴 이유가 없다. */}
 
         {data && (
           <>
             <EventStocks event={data} />
-            {/* 등록은 서버가 ENTRY 라고 할 때만 연다. 등록 뒤에도 폼은 남는다 —
-                이미 건 종목은 잠기고 남은 종목을 이어서 고를 수 있다 */}
-            {data.phase === 'ENTRY' && (
-              <EventEntryForm
-                event={data}
-                onDone={(r) => { setAccepted(r); reload() }}
-              />
-            )}
+            {/* 등록 폼이 여기 없다(2026-09-18). 열 종목을 한 화면에서 적던 묶음 폼을
+                걷고, **종목 카드가 곧 입구**가 됐다 — 카드를 누르면 그 종목의 C-01 로
+                가고 거기서 방향·목표가·근거·배팅을 적는다.
+
+                예측을 쓰는 화면을 한 벌로 둔 것이 핵심이다. 묶음 폼은 목표가와 방향만
+                받을 수 있어서, 대회 예측에는 근거 포인트·내 판단이 빠진 채 남았다.
+                C-01 을 그대로 쓰면 대회 예측도 평소 예측과 한 글자도 다르지 않다. */}
             <EventMyEntries eventId={data.eventId} />
             <EventLeaderboard eventId={data.eventId} />
           </>

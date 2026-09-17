@@ -134,6 +134,25 @@ public interface PredictionRepository extends JpaRepository<Prediction, Long> {
             @Param("statuses") Collection<Prediction.Status> statuses);
 
     /**
+     * 종목 탐색 목록(B-02)의 행별 집계 재료 — 종목·방향별 판정 대기 예측 수. 목록 한 장에 한 번만 부르고
+     * 서비스가 종목별 (건수, UP 비율) 로 접는다 — 행마다 세면 페이지 크기만큼 쿼리가 나간다.
+     *
+     * <p>종목 조건이 없다. 예측이 걸린 종목은 활성 300개보다 훨씬 적어 전부 읽어도 몇 줄이고, 필터에 맞는
+     * 종목코드 300개를 IN 으로 넘기는 편이 더 무겁다. 예측이 없는 종목은 줄 자체가 없다 — 부르는 쪽이 0 으로
+     * 다룬다. REPLAY 예측은 stock 이 비어 있어 빠진다(ck_predictions_target_matches_track).
+     */
+    @Query("""
+            select p.stock.code, p.direction, count(p) from Prediction p
+             where p.stock is not null
+               and p.status in :statuses
+             group by p.stock.code, p.direction
+            """)
+    List<Object[]> countByStockAndDirection(@Param("statuses") Collection<Prediction.Status> statuses);
+
+    /** 한 종목의 상태별 예측 수 — 요약 헤더(B-03 머리)의 predictionCount. */
+    long countByStock_CodeAndStatusIn(String stockCode, Collection<Prediction.Status> statuses);
+
+    /**
      * 이 종목에서 [from, to) 사이에 판정된 예측 (ANT-PRED-07 "오늘 판정"). 작성자를 같이 끌어온다(N+1 방지).
      *
      * <p><b>updated_at 으로 거르는 이유.</b> 판정 배치는 13:30 에 <b>어제</b> 종가로 판정한다 — settled_on 은 어제다.

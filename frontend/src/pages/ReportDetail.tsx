@@ -3,12 +3,13 @@
    설계서 docs/화면설계서.md §3 F · §4 F-02 · §5 · §7
 
    설계 제약
-   - visibility=false 이고 미구독이면 200 + { preview, locked } 가 온다. 404 가 아니다
+   - visibility=false 이고 미구독이면 200 + { locked } 가 온다(본문·미리보기 없음). 404 가 아니다
      — 없는 것처럼 보이면 구독 유인이 사라진다.
-   - 서버가 잘라서 내려준 만큼만 그린다. 전문을 받아 CSS 로 가리지 않는다.
-     서버가 잠긴 리포트에 body 를 아예 담지 않으므로 이 화면은 가릴 전문을 갖지 못한다.
-   - 3줄 미리보기 + 페이드 + 구독 CTA 가 잠금 표현이다. 설계서 §7 의 SubscriptionGate 는
-     [ANT-FE-ERROR] 가 만든 LockedCard 다 — preview·channelId 를 받아 그 셋을 그린다.
+   - 전문을 받아 CSS 로 가리지 않는다. 서버가 잠긴 리포트에 body 를 아예 담지 않으므로
+     이 화면은 가릴 전문을 갖지 못한다.
+   - 잠금 문구 + 구독 CTA 가 잠금 표현이다. 미리보기는 없다 — 짧은 글은 앞 3줄이 곧
+     전문이라 폐지했다(2026-09-17). 설계서 §7 의 SubscriptionGate 는 [ANT-FE-ERROR] 가
+     만든 LockedCard 다.
    - 구독 CTA 는 채널 프로필(E-02)로 보낸다. 결제 흐름(M-03 → 서명 → 202 → M-02)은
      그쪽 스토리 몫이라 여기서 만들지 않는다.
 
@@ -19,7 +20,7 @@
    좋아요·댓글 (ANT-REPORT-SOCIAL)
    잠긴 리포트에는 반응할 수 없다 — 서버가 403 REPORT_FORBIDDEN 을 준다. locked 를
    이미 알고 있으니 좋아요 버튼은 아예 그리지 않고, 댓글은 목록만 보여 준다(읽기는
-   허용된다 — 반응이 오가는 리포트라는 사실이 미리보기와 같은 부류의 구독 유인이다). */
+   허용된다 — 반응이 오가는 리포트라는 사실이 제목·통계와 같은 부류의 구독 유인이다). */
 import Markdown from '../components/report/Markdown'
 import { Link, useParams } from 'react-router-dom'
 import { useApiQuery } from '../api/useApiQuery'
@@ -98,7 +99,6 @@ export default function ReportDetail() {
               <LockedCard
                 label="리포트 본문"
                 title="리포트 본문은 구독자에게만 공개됩니다"
-                preview={report.data.preview ?? undefined}
                 channelId={String(report.data.author.userId)}
               />
             ) : (

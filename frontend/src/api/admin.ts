@@ -81,7 +81,7 @@ export function searchUsers(q?: string) {
 /**
  * 회원 상태 전이.
  *
- * **SUSPENDED 가 아니라 BANNED 다**(명세 v0.74). 영구 차단만 있고, 차단되면 로그인이
+ * **SUSPENDED 가 아니라 BANNED 다**(명세 v0.77). 영구 차단만 있고, 차단되면 로그인이
  * 거부되지만 기존 예측·원장은 남는다. reason 은 서버가 받기만 하고 저장하지 않는다.
  * 관리자가 자기 계정을 내리려 하면 409 ADMIN_SELF_DEMOTE 다.
  */

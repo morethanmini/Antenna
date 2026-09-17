@@ -10,10 +10,7 @@
 
    회원가입 화면은 없다 — 설계서 §2 상 최초 로그인 시 회원이 자동 생성되므로
    SSO 버튼이 로그인과 가입을 겸한다. */
-import { useNavigate } from 'react-router-dom'
 import { Link } from 'react-router-dom'
-import { DEFAULT_AVATAR, useAuth } from '../auth/context'
-import { takeReturnTo } from '../auth/returnTo'
 import { isConfigured, startLogin } from '../auth/oauth'
 import '../styles/auth.css'
 
@@ -57,22 +54,9 @@ const FEATURES = [
 ]
 
 export default function Login() {
-  const navigate = useNavigate()
-  const { signIn } = useAuth()
-
   /* 자격증명이 env 에 들어왔는지로 버튼을 연다. 빌드 시점에 정해지는 값이라
      렌더마다 다시 계산할 이유가 없다. */
   const ssafyReady = isConfigured('ssafy')
-
-  /* 백엔드 없이 화면을 만드는 팀원을 위해 남겨 둔 임시 진입로.
-     실제 로그인이 안정되면 지운다. — [ANT-AUTH-01] 이 남긴 것을 그대로 둔다.
-     라우트 40개 중 39개가 가드 뒤에 있어 이게 없으면 로컬에서 화면을 못 본다. */
-  function signInAsDemo(role: 'USER' | 'ADMIN') {
-    /* id 는 목업 채널표(api/mock/channels.ts)의 1번 자리를 쓴다 — 데모 계정도
-       "내 채널 보기" 가 실제로 열린다. 아바타는 DEFAULT_AVATAR 한 곳에서 온다. */
-    signIn({ id: 1, nickname: '안테나', avatarUrl: DEFAULT_AVATAR, role, walletLinked: false })
-    navigate(takeReturnTo(), { replace: true })
-  }
 
   return (
     <div className="auth">
@@ -111,7 +95,7 @@ export default function Login() {
           <p className="sub">계정을 선택하여 간편하게 로그인하세요.</p>
 
           {/* 구글로 나갔다가 /oauth/callback/google 로 전체 페이지 로드로 돌아온다.
-              돌아올 경로는 returnTo 가 sessionStorage 에 들고 있는다. */}
+              돌아온 뒤에는 늘 인사이트 홈으로 보낸다(2026-09-17). */}
           <button type="button" className="sso-btn google" onClick={() => startLogin('google')}>
             <svg width="24" height="24" viewBox="0 0 48 48" aria-hidden="true">
               <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
@@ -140,14 +124,6 @@ export default function Login() {
           {!ssafyReady && (
             <p className="sso-note" id="ssafy-note">SSAFY 로그인은 준비 중입니다.</p>
           )}
-
-          <div className="dev-signin">
-            <span className="dev-signin-label">백엔드 없이 화면을 볼 때 쓰는 임시 진입로</span>
-            <div className="dev-signin-row">
-              <button type="button" onClick={() => signInAsDemo('USER')}>임시 로그인 (일반)</button>
-              <button type="button" onClick={() => signInAsDemo('ADMIN')}>임시 로그인 (관리자)</button>
-            </div>
-          </div>
         </section>
       </main>
     </div>

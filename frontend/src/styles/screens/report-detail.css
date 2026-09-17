@@ -64,10 +64,6 @@
   font-size:var(--fs-xl); line-height:1.85; color:var(--body);
 }
 
-/* 잠금 미리보기도 서버가 "앞 3줄"로 잘라 준 값이라 줄바꿈이 의미를 갖는다.
-   공용 LockedCard 는 건드리지 않고 이 화면 안에서만 살린다. */
-.rd .state-locked-preview p{ white-space:pre-line; }
-
 /* 검산 진입점. 버튼처럼 크게 두지 않는다 — 본문을 읽은 뒤의 다음 걸음이지
    이 화면의 주된 행동이 아니다. */
 .rd-verify{

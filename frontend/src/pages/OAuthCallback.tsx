@@ -10,7 +10,6 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { completeLogin, isProvider, providerLabel } from '../auth/oauth'
 import { useAuth } from '../auth/context'
 import { markOnboardingPending } from '../auth/onboarding'
-import { takeReturnTo } from '../auth/returnTo'
 import '../styles/auth.css'
 
 /* A-01 로그인 화면과 같은 마크. 두 화면이 잇달아 보이므로 로고가 바뀌면 안 된다.
@@ -68,12 +67,14 @@ export default function OAuthCallback() {
         markOnboardingPending()
 
         if (isNew) {
-          // 닉네임이 없는 회원은 온보딩부터. returnTo 는 온보딩이 끝난 뒤에 꺼낸다.
+          // 닉네임이 없는 회원은 온보딩부터. 그 끝에서 홈으로 보낸다.
           navigate('/onboarding/nickname', { replace: true })
           return
         }
-        // 비로그인 딥링크로 막혔던 경로가 있으면 그리로, 없으면 홈으로.
-        navigate(takeReturnTo(), { replace: true })
+        /* **로그인 뒤에는 늘 인사이트 홈이다**(2026-09-17). 전에는 막혔던 경로로
+           되돌려 보냈는데, 들어오자마자 맥락 없는 화면에 떨어지는 편이 헷갈린다는
+           판단이다. 되돌려 보내던 장치(auth/returnTo.ts)는 통째로 걷어냈다. */
+        navigate('/', { replace: true })
       })
       .catch((e: Error) => setError(e.message))
   }, [known, code, denied, params, navigate, signIn])
