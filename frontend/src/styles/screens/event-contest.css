@@ -176,6 +176,8 @@
   list-style:none;margin:0;padding:0;
   display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;
 }
+/* 자동 배치에 맡기면 이름과 코드가 1행에 나란히 서 버린다 — 머리 두 칸은
+   아래에서 자리를 못박는다. */
 .event-contest-page .ev-card{
   display:grid;grid-template-columns:auto minmax(0,1fr);grid-auto-rows:auto;
   gap:2px 10px;align-items:center;
@@ -190,48 +192,44 @@
 .event-contest-page .ev-card:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 
 .event-contest-page .ev-card-logo{
-  grid-row:1 / span 2;
+  grid-column:1;grid-row:1 / span 2;
   display:grid;place-items:center;width:36px;height:36px;flex:none;
   border-radius:50%;font-size:var(--fs-lg);font-weight:var(--fw-bold);
 }
+/* 이름이 카드의 머리다. 셸이 상단 네비바로 바뀌며 카드가 넓어졌는데 글자만 14px 로
+   남아 상대적으로 작아 보였다 — 설계 그림의 비례에 맞춰 17px 로 올린다 */
+/* 이름과 코드는 한 덩어리로 읽혀야 한다. 전역 line-height 1.6 이 둘을 떼어
+   놓아 로고 옆이 헐거웠다 — 1.2 로 조이고 이름을 조금 내려 로고 가운데에 맞춘다 */
 .event-contest-page .ev-card-name{
+  grid-column:2;grid-row:1;margin-top:5px;line-height:1.2;
   min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  color:var(--ink);font-size:var(--fs-lg);font-weight:var(--fw-bold);letter-spacing:-.02em;
+  color:var(--ink);font-size:var(--fs-2xl);font-weight:var(--fw-bold);letter-spacing:-.02em;
 }
-.event-contest-page .ev-card-code{color:var(--faint);font-size:var(--fs-xs);font-weight:var(--fw-normal)}
+.event-contest-page .ev-card-code{
+  grid-column:2;grid-row:2;line-height:1.2;
+  color:var(--faint);font-size:var(--fs-md);font-weight:var(--fw-normal);
+}
 
-/* 값 두 줄은 로고 아래 칸까지 통째로 쓴다 — 로고 옆에 끼우면 이름이 더 잘린다 */
+
+/* 값묶음과 들어가는 문을 한 줄에 마주 세운다(설계 그림). 카드 폭을 통째로 쓴다 —
+   로고 옆에 끼우면 이름이 더 잘린다 */
+.event-contest-page .ev-card-mid{
+  grid-column:1 / -1;margin-top:13px;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+}
+.event-contest-page .ev-card-figs{display:grid;gap:1px;min-width:0}
 .event-contest-page .ev-card-price{
-  grid-column:1 / -1;margin-top:10px;
-  display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;
   color:var(--ink);font-size:var(--fs-xl);font-weight:var(--fw-heavy);font-variant-numeric:tabular-nums;
 }
-/* 이름표. 값보다 한참 작고 흐리다 — 읽는 것은 숫자이고 이 글자는 그 숫자가 무엇인지만 밝힌다 */
-.event-contest-page .ev-card-price i{
-  color:var(--faint);font-size:var(--fs-xs);font-weight:var(--fw-bold);font-style:normal;
-}
-/* 아직 안 들어온 기준가. 숫자가 아니므로 숫자 크기로 키우지 않는다 */
-.event-contest-page .ev-card-price em{
-  color:var(--faint);font-size:var(--fs-md);font-weight:var(--fw-bold);font-style:normal;
-}
 .event-contest-page .ev-card-rate{
-  grid-column:1 / -1;display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;
-  color:var(--faint);font-size:var(--fs-xs);font-weight:var(--fw-normal);font-variant-numeric:tabular-nums;
+  color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold);font-variant-numeric:tabular-nums;
 }
-/* 대비 비율만 방향 색을 입는다 — 최신가까지 빨강/파랑이면 기준가와 견주기 전에
-   색부터 눈에 들어와, 오른 쪽이 좋은 것처럼 읽힌다(누가 이겼는지는 내 방향에 달렸다) */
-.event-contest-page .ev-card-rate i{font-style:normal;font-weight:var(--fw-bold)}
-.event-contest-page .ev-card-rate.is-up i{color:var(--up)}
-.event-contest-page .ev-card-rate.is-down i{color:var(--down)}
-
-.event-contest-page .ev-card-go{
-  grid-column:1 / -1;margin-top:10px;
-  color:var(--brand);font-size:var(--fs-sm);font-weight:var(--fw-bold);
-}
+.event-contest-page .ev-card-rate.is-up{color:var(--up)}
+.event-contest-page .ev-card-rate.is-down{color:var(--down)}
 
 /* 불러오는 중 자리. 카드와 **같은 높이**여야 아래 칸이 안 밀린다 */
 .event-contest-page .ev-card.is-skel{
-  display:block;height:136px;border-style:dashed;background:var(--surface-2);
+  display:block;height:202px;border-style:dashed;background:var(--surface-2);
   animation:ev-breathe 1.4s ease-in-out infinite;
 }
 @keyframes ev-breathe{50%{opacity:.55}}
@@ -287,33 +285,35 @@
 .event-contest-page .ev-card.is-static:hover{
   border-color:var(--rule);transform:none;box-shadow:none;
 }
-/* 풀·내 배팅·결과는 카드 폭을 통째로 쓴다 */
+/* 풀·결과는 카드 폭을 통째로 쓴다 */
 .event-contest-page .ev-card-pool,
-.event-contest-page .ev-card-sum,
-.event-contest-page .ev-card-mine,
 .event-contest-page .ev-card-result{grid-column:1 / -1}
-.event-contest-page .ev-card-wrap.is-mine .ev-card{
-  border-color:var(--brand);box-shadow:0 0 0 1px var(--brand) inset;
-}
+/* 걸었다는 신호는 머리의 체크 배지 하나로 모았다(2026-09-17). 전에는 보라 테두리 ·
+   보라로 채운 버튼 · 내 배팅 줄까지 셋이 동시에 말해 카드가 시끄러웠다. */
 .event-contest-page .ev-card-pool{
-  margin:8px 0 0;display:grid;gap:2px;font-size:var(--fs-xs);
+  margin:14px 0 0;display:grid;gap:5px;font-size:var(--fs-xs);
 }
-.event-contest-page .ev-card-pool div{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.event-contest-page .ev-card-pool > div{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
 .event-contest-page .ev-card-pool dt{color:var(--faint)}
 .event-contest-page .ev-card-pool dd{margin:0;color:var(--ink);font-weight:var(--fw-bold)}
-/* 건수는 배당 옆에 작게 — 숫자 둘이 같은 무게면 무엇이 배당인지 흐려진다 */
-.event-contest-page .ev-card-pool dd i{margin-left:5px;color:var(--faint);font-weight:400;font-style:normal}
-.event-contest-page .ev-card-sum{margin:6px 0 0;color:var(--faint);font-size:var(--fs-xs)}
-.event-contest-page .ev-card-mine{
-  margin:8px 0 0;padding-top:7px;border-top:1px solid var(--rule);
-  display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline;font-size:var(--fs-xs);
+
+/* 쏠림 막대. 오른다(빨강)를 왼쪽부터 채우고 남은 폭이 내린다(파랑)가 된다 —
+   두 칸을 따로 그리면 반올림 때문에 1px 틈이 생긴다.
+   아무도 안 걸었으면 반반으로 칠하지 않는다. 그건 "팽팽하다" 는 거짓말이 된다 */
+.event-contest-page .ev-card-bar{
+  height:7px;border-radius:999px;overflow:hidden;background:var(--down);
 }
-.event-contest-page .ev-card-mine b{color:var(--brand)}
-/* 맞혔을 때 받을 돈. 목표가·건 돈과 같은 줄에 있지만 **결과를 말하는 값**이라
-   오른쪽 끝으로 밀고 색을 준다 — 나란히 두면 셋 다 "내가 적은 것" 으로 읽힌다. */
-.event-contest-page .ev-card-win{
-  margin-left:auto;color:var(--brand-ink);font-weight:var(--fw-bold);
-}
+.event-contest-page .ev-card-bar > i{display:block;height:100%;background:var(--up)}
+.event-contest-page .ev-card-bar.is-empty{background:var(--surface-2)}
+.event-contest-page .ev-card-bar.is-empty > i{display:none}
+/* 건수는 배당 옆에 작게 — 숫자 둘이 같은 무게면 무엇이 배당인지 흐려진다.
+   배당이 없는(아무도 안 건) 쪽은 앞이 비므로 사이 여백도 같이 없앤다 —
+   margin 을 i 에 고정으로 걸면 "0명" 이 혼자 한 칸 들여쓰기된 것처럼 보인다 */
+.event-contest-page .ev-card-pool dd i{color:var(--faint);font-weight:400;font-style:normal}
+.event-contest-page .ev-card-pool dd .ev-odds + i{margin-left:5px}
+/* 풀 합계(.ev-card-sum)와 내 배팅 줄(.ev-card-mine)을 뺐다(2026-09-17).
+   걸린 카드만 세 줄 길어져 열 장 격자에서 혼자 튀었고, 내 배팅은 완료 버튼의
+   툴팁으로 접었다. 풀 규모는 바로 위 배당·인원이 이미 말한다. */
 .event-contest-page .ev-card-result{
   margin:6px 0 0;display:flex;gap:8px;align-items:baseline;
   font-size:var(--fs-xs);font-weight:var(--fw-bold);
@@ -321,6 +321,11 @@
 .event-contest-page .ev-card-result.is-up{color:var(--up)}
 .event-contest-page .ev-card-result.is-down{color:var(--down)}
 .event-contest-page .ev-card-result.is-tie{color:var(--faint)}
+
+/* 묶음 등록 칸(.ev-entry-*)의 규칙을 지웠다(2026-09-17).
+   그 폼(EventEntryForm)이 화면 어디에도 안 붙어 있었고 — 등록이 종목 상세에서 한 종목씩
+   거는 방식으로 바뀌면서(김경민, 2026-09-17) 대체됐다 — 쓰는 곳 없는 규칙 8종만 남았다.
+   되살리려면 git 역사에서 이 파일과 EventEntryForm.tsx 를 함께 꺼내면 된다. */
 
 /* ── 내 참가 내역 · 순위 ──────────────────────────────── */
 .event-contest-page .ev-me-rows,
@@ -356,18 +361,66 @@
 .event-contest-page a.ev-card:hover{border-color:var(--brand-soft);background:var(--brand-softer)}
 .event-contest-page a.ev-card:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 
-/* 걸었는지 여부. 카드 열 장을 훑으며 "어디까지 했더라" 를 세는 자리라 눈에 먼저 걸려야 한다.
-
-   **줄을 통째로 쓴다**(2026-09-18). 전에는 격자의 첫 칸(로고 칸)에 떨어졌는데, 그 칸은
-   auto 라 깃발이 길어지면 폭이 그만큼 벌어지고 오른쪽 이름·값 칸이 밀려 줄바꿈됐다 —
-   "판정 대기" 처럼 넉 자만 돼도 기준가가 "70,000" / "원" 으로 갈라졌다. */
-.event-contest-page .ev-card-flag{
-  grid-column:1 / -1;justify-self:start;
-  display:inline-block;margin:2px 0 6px;padding:2px 8px;border-radius:999px;
-  background:var(--surface-2);color:var(--muted);
-  font-size:var(--fs-md);font-weight:var(--fw-bold);
+/* 들어가는 문 겸 "걸었나" 의 답. 카드 열 장을 훑으며 "어디까지 했더라" 를 세는
+   자리라 눈에 먼저 걸려야 한다. 테두리만 있는 버튼이라 기준가 쪽 무게를 안 뺏는다 */
+.event-contest-page .ev-card-cta{
+  flex:none;padding:6px 12px;border-radius:9px;
+  background:var(--brand-soft);color:var(--brand-ink);
+  font-size:var(--fs-md);font-weight:var(--fw-bold);white-space:nowrap;
+  transition:background .14s,color .14s;
 }
-.event-contest-page .ev-card-flag.is-done{background:var(--brand);color:#fff}
+/* 카드에 손이 닿을 때만 꽉 채운다. 열 장이 한 화면에 깔리는 격자라, 평소에도
+   진한 보라 열 개가 켜져 있으면 기준가보다 버튼이 먼저 읽힌다.
+   카드 hover 바탕이 --brand-softer 라, 이때 옅은 칩은 바탕에 묻힌다 */
+.event-contest-page a.ev-card:hover .ev-card-cta{background:var(--brand);color:#fff}
+/* 걸고 난 뒤. 문구가 곧 상태라 배지를 따로 달지 않는다. **잠긴 버튼처럼 보이게**
+   회색으로 둔다 — 한 종목에 한 번뿐이라 여기서 색이 살아 있으면 아직 누를 데가
+   남은 것으로 읽힌다. 손 모양도 끈다(카드째 링크가 떨어져 있다).
+   대비 4.32 는 본문 기준에 조금 못 미치지만, 잠긴 컨트롤은 WCAG 1.4.3 이 대비
+   요구에서 빼 두는 자리이고 흐려 보이는 것이 이 칩의 일이다. */
+.event-contest-page .ev-card-cta.is-done{
+  position:relative;background:var(--surface-2);color:var(--muted);cursor:default;
+}
+
+/* 내 예측 말풍선. 지도(.mm-tip)와 같은 판이다 — 어두운 판에 제목 한 줄,
+   그 아래 이름:값 줄들. 거기 주석대로 브라우저 기본 title 은 값이 여럿일 때
+   읽기 어렵고 늦게 뜬다.
+
+   지도 것과 다른 점 둘. 커서를 따라다니지 않고 버튼 위에 붙으므로 자리를 JS 로
+   계산하지 않는다. 그리고 마우스를 가로채도 상관없다 — 덮는 것이 자기를 띄운
+   버튼 자신이라, 가려도 hover 가 안 풀린다.
+
+   위로 편다. 카드가 격자 아래쪽에 있어도 잘리지 않고, 아래로 펴면 바로 밑의
+   쏠림 막대를 가린다. 오른쪽 끝을 버튼에 맞춰 카드 밖으로 안 나가게 한다. */
+.event-contest-page .ev-card-tip{
+  position:absolute;bottom:calc(100% + 9px);right:0;z-index:5;
+  display:none;width:186px;padding:10px 12px 11px;box-sizing:border-box;
+  border:1px solid #4d5672;border-radius:10px;background:#333a4d;
+  box-shadow:0 12px 26px rgb(8 10 18 / .5);
+  text-align:left;white-space:normal;
+}
+.event-contest-page .ev-card-cta.is-done:hover .ev-card-tip{display:block}
+/* 옆 카드가 DOM 상 뒤라 그냥 두면 말풍선을 덮는다. 띄운 카드만 올린다 */
+.event-contest-page .ev-card-wrap{position:relative}
+.event-contest-page .ev-card-wrap:has(.ev-card-cta.is-done:hover){z-index:5}
+
+.event-contest-page .ev-card-tip-name{
+  display:block;margin:0 0 8px;padding-bottom:8px;border-bottom:1px solid #4d5672;
+  color:#fff;font-size:var(--fs-md);font-weight:var(--fw-heavy);letter-spacing:-.02em;
+}
+.event-contest-page .ev-card-tip-rows{display:grid;gap:5px}
+.event-contest-page .ev-card-tip-rows > span{display:flex;align-items:baseline;gap:5px;min-width:0}
+.event-contest-page .ev-card-tip-rows i{
+  flex:none;font-style:normal;color:#98a0b4;font-size:var(--fs-xs);font-weight:var(--fw-bold);
+}
+.event-contest-page .ev-card-tip-rows i::after{content:':'}
+.event-contest-page .ev-card-tip-rows b{
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:#e9ebf2;font-size:var(--fs-md);font-weight:var(--fw-bold);font-variant-numeric:tabular-nums;
+}
+/* 어두운 판 위에서는 앱의 --up/--down 이 너무 어둡다 — 지도와 같은 밝은 짝 */
+.event-contest-page .ev-card-tip-rows b.up{color:#ff6a6a}
+.event-contest-page .ev-card-tip-rows b.down{color:#6ea6ff}
 
 /* 진행 줄 — 자격까지 몇 개 남았는지. 최소 종목 수가 등록을 막지 않게 되면서
    이 줄이 그 규칙을 말하는 유일한 자리가 됐다 */
@@ -379,11 +432,3 @@
 .event-contest-page .ev-progress b{font-size:var(--fs-lg);color:var(--ink)}
 .event-contest-page .ev-progress.is-ok{background:var(--brand-softer);color:var(--brand-ink)}
 .event-contest-page .ev-progress.is-ok b{color:var(--brand-ink)}
-/* 합계는 줄 오른쪽 끝이다. 왼쪽(몇 종목·자격)이 지금까지 한 일이고 이쪽이 그 결과라,
-   가운데에 끼우면 둘이 한 문장처럼 이어져 읽힌다 */
-.event-contest-page .ev-progress-win{margin-left:auto;white-space:nowrap}
-.event-contest-page .ev-progress-win b{font-size:var(--fs-md)}
-@media (max-width:560px){
-  /* 좁으면 줄이 접힌다 — 그때 auto 여백은 줄 하나를 통째로 차지해 보기 나쁘다 */
-  .event-contest-page .ev-progress-win{margin-left:0}
-}
