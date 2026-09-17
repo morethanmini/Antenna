@@ -228,11 +228,26 @@
 }
 .event-contest-page .ev-card-figs{display:grid;gap:1px;min-width:0}
 .event-contest-page .ev-card-price{
+  display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;
   color:var(--ink);font-size:var(--fs-xl);font-weight:var(--fw-heavy);font-variant-numeric:tabular-nums;
 }
-.event-contest-page .ev-card-rate{
-  color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold);font-variant-numeric:tabular-nums;
+/* 이름표. 값보다 한참 작고 흐리다 — 읽는 것은 숫자이고 이 글자는 그 숫자가 무엇인지만 밝힌다 */
+.event-contest-page .ev-card-price i{
+  color:var(--faint);font-size:var(--fs-xs);font-weight:var(--fw-bold);font-style:normal;
 }
+/* 아직 안 들어온 기준가. 숫자가 아니므로 숫자 크기로 키우지 않는다 */
+.event-contest-page .ev-card-price em{
+  color:var(--faint);font-size:var(--fs-md);font-weight:var(--fw-bold);font-style:normal;
+}
+.event-contest-page .ev-card-rate{
+  display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;
+  color:var(--faint);font-size:var(--fs-xs);font-weight:var(--fw-normal);font-variant-numeric:tabular-nums;
+}
+/* 대비 비율만 방향 색을 입는다 — 최신가까지 빨강/파랑이면 기준가와 견주기 전에
+   색부터 눈에 들어와, 오른 쪽이 좋은 것처럼 읽힌다(누가 이겼는지는 내 방향에 달렸다) */
+.event-contest-page .ev-card-rate i{font-style:normal;font-weight:var(--fw-bold)}
+.event-contest-page .ev-card-rate.is-up i{color:var(--up)}
+.event-contest-page .ev-card-rate.is-down i{color:var(--down)}
 .event-contest-page .ev-card-rate.is-up{color:var(--up)}
 .event-contest-page .ev-card-rate.is-down{color:var(--down)}
 
@@ -532,6 +547,10 @@
 .event-contest-page .ev-progress.is-ok{color:#00856a}
 .event-contest-page .ev-progress.is-ok .ev-progress-note{font-weight:var(--fw-bold)}
 .event-contest-page .ev-progress-note{max-width:44ch}
+/* 합계는 진행 문장 아래 한 줄 더. 왼쪽(몇 종목·자격)이 지금까지 한 일이고 이쪽이
+   그 결과라, 같은 줄에 끼우면 둘이 한 문장처럼 이어져 읽힌다 */
+.event-contest-page .ev-progress-win{white-space:nowrap;color:var(--muted)}
+.event-contest-page .ev-progress-win b{color:var(--brand-ink);font-weight:var(--fw-bold)}
 
 /* 자격까지의 걸음. 칸 수는 최소 종목 수라 다섯을 채우면 줄이 끝난다 */
 /* 칸 사이 여백은 잇는 점이 이미 벌려 주므로 3px 만 준다 — 열 칸이면 칸 사이가
