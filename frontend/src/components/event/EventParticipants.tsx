@@ -20,6 +20,7 @@
    접수가 열린 직후에는 참가자가 0명이다. 빈 목록도 그릴 줄 알아야 한다. */
 import { useCallback } from 'react'
 import { fetchParticipants } from '../../api/events'
+import { DEFAULT_AVATAR } from '../../auth/context'
 import { useAsync } from '../../api/useAsync'
 
 export default function EventParticipants({ eventId }: { eventId: number }) {
@@ -49,12 +50,18 @@ export default function EventParticipants({ eventId }: { eventId: number }) {
             <li key={p.userId}>
               {/* div 다 — 누를 데가 아니다. 링크로 두면 눌러 보고 아무 일도 안 일어난다 */}
               <div className="ev-tile">
-                {/* 사진이 없으면 <img> 를 아예 안 그린다. src="" 를 넘기면 리액트가
-                    경고를 띄우고, 브라우저에 따라 **지금 페이지를 통째로 다시 내려받는다**.
-                    빈 원은 같은 클래스를 쓴 <span> 이 바탕색(--brand-soft)으로 대신한다 */}
-                {p.avatarUrl
-                  ? <img className="ev-tile-face" src={p.avatarUrl} alt="" aria-hidden="true" />
-                  : <span className="ev-tile-face" aria-hidden="true" />}
+                {/* 안 올렸으면 기본 개미다(DEFAULT_AVATAR) — 리포트·랭킹·구독 목록이
+                    쓰는 그 상수 그대로다. 빈 원으로 두면 이 화면만 다른 규칙이 된다.
+
+                    `?? DEFAULT_AVATAR` 로 받는 것이지 src="" 를 넘기지 않는다 — 빈
+                    문자열은 리액트가 경고를 띄우고, 브라우저에 따라 지금 페이지를
+                    통째로 다시 내려받는다. */}
+                <img
+                  className="ev-tile-face"
+                  src={p.avatarUrl ?? DEFAULT_AVATAR}
+                  alt=""
+                  aria-hidden="true"
+                />
                 <span className="ev-tile-name">{p.nickname ?? '이름 없음'}</span>
 
                 {/* 말풍선은 손을 얹어야 뜨므로 화면 낭독기에는 닿지 않는다. 같은 내용을
