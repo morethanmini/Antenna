@@ -20,15 +20,15 @@
    **필수 단계는 아니다** — RequireAccess 는 닉네임만 보므로(그 파일 참고) 이
    화면을 지나지 않아도 아무 데도 걸리지 않는다.
 
-   ── returnTo 는 여기서 소비한다 ──────────────────────────
-   닉네임 화면이 takeReturnTo() 를 부르면 이 화면에 오기 전에 값이 지워져, 로그인
-   전에 막혔던 경로로 못 돌아간다. 그래서 그 호출을 이 화면으로 옮겼다. */
+   ── 끝나면 홈으로 ────────────────────────────────────────
+   저장하든 건너뛰든 인사이트 홈으로 보낸다. 전에는 로그인 전에 막혔던 경로로 되돌려
+   보냈는데(auth/returnTo.ts) 그 장치를 통째로 걷어냈다(2026-09-17) — 가입 절차를 막
+   끝낸 사람을 맥락 없는 화면에 떨어뜨리는 편이 오히려 헷갈린다. */
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FEE_MAX, isValidFee, updateChannelFee } from '../api/channelFee'
 import { ApiError } from '../api/client'
 import { formatToken } from '../api/wallet'
-import { takeReturnTo } from '../auth/returnTo'
 import '../styles/auth.css'
 
 export default function OnboardingFee() {
@@ -59,7 +59,7 @@ export default function OnboardingFee() {
   const valid = isValidFee(value)
 
   function leave() {
-    navigate(takeReturnTo(), { replace: true })
+    navigate('/', { replace: true })
   }
 
   async function submit(event: React.FormEvent) {

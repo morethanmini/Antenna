@@ -13,7 +13,6 @@
 import { useNavigate } from 'react-router-dom'
 import { Link } from 'react-router-dom'
 import { DEFAULT_AVATAR, useAuth } from '../auth/context'
-import { takeReturnTo } from '../auth/returnTo'
 import { isConfigured, startLogin } from '../auth/oauth'
 import '../styles/auth.css'
 
@@ -71,7 +70,7 @@ export default function Login() {
     /* id 는 목업 채널표(api/mock/channels.ts)의 1번 자리를 쓴다 — 데모 계정도
        "내 채널 보기" 가 실제로 열린다. 아바타는 DEFAULT_AVATAR 한 곳에서 온다. */
     signIn({ id: 1, nickname: '안테나', avatarUrl: DEFAULT_AVATAR, role, walletLinked: false })
-    navigate(takeReturnTo(), { replace: true })
+    navigate('/', { replace: true })
   }
 
   return (
@@ -111,7 +110,7 @@ export default function Login() {
           <p className="sub">계정을 선택하여 간편하게 로그인하세요.</p>
 
           {/* 구글로 나갔다가 /oauth/callback/google 로 전체 페이지 로드로 돌아온다.
-              돌아올 경로는 returnTo 가 sessionStorage 에 들고 있는다. */}
+              돌아온 뒤에는 늘 인사이트 홈으로 보낸다(2026-09-17). */}
           <button type="button" className="sso-btn google" onClick={() => startLogin('google')}>
             <svg width="24" height="24" viewBox="0 0 48 48" aria-hidden="true">
               <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
