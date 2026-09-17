@@ -345,8 +345,14 @@
 
 
 /* ── 카드가 등록 입구가 되면서 (2026-09-18) ────────────────
-   카드 전체가 링크다. 누를 수 있다는 것이 보여야 해서 커서·hover 를 준다. */
-.event-contest-page a.ev-card{display:block;text-decoration:none;color:inherit;cursor:pointer}
+   카드 전체가 링크다. 누를 수 있다는 것이 보여야 해서 커서·hover 를 준다.
+
+   **display 는 건드리지 않는다**(2026-09-17 고침). 여기 있던 display:block 이 위
+   .ev-card 의 display:grid 를 덮어(a.ev-card 쪽이 한 수 세다) 카드 배치가 통째로
+   죽어 있었다 — 이름·종목코드·예측하기·기준가가 한 줄에 붙어 나오고
+   grid-column:1 / -1 이 전부 무효가 됐다. 바로 위 .is-static 주석이
+   "display 를 덮으면 아래 칸 배치가 통째로 죽는다" 고 경고하던 그 건이다. */
+.event-contest-page a.ev-card{text-decoration:none;color:inherit;cursor:pointer}
 .event-contest-page a.ev-card:hover{border-color:var(--brand-soft);background:var(--brand-softer)}
 .event-contest-page a.ev-card:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 
