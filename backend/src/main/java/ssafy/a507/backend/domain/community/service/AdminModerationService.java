@@ -1,5 +1,6 @@
 package ssafy.a507.backend.domain.community.service;
 
+import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -43,7 +44,11 @@ public class AdminModerationService {
     @Transactional(readOnly = true)
     public AbuseReportListResponse list(AbuseReport.Status status) {
         requireAdmin();
-        List<AbuseReportItem> items = abuseReportRepository.findForAdmin(status).stream()
+        /* 상태를 안 고르면 전 상태를 넘긴다. 널을 넘기면 PostgreSQL 이 파라미터 타입을
+           정하지 못해 거부한다 — 리포지토리 주석 참고. */
+        List<AbuseReport.Status> statuses =
+                status == null ? Arrays.asList(AbuseReport.Status.values()) : List.of(status);
+        List<AbuseReportItem> items = abuseReportRepository.findForAdmin(statuses).stream()
                 .map(AbuseReportItem::of)
                 .toList();
         return new AbuseReportListResponse(items);

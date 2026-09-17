@@ -36,14 +36,14 @@ public class AdminUserService {
      * 닉네임으로 회원을 찾는다. {@code q} 가 비면 최근 가입 순으로 앞에서 {@value #LIST_LIMIT} 명.
      *
      * <p>AC 에는 없는 엔드포인트다. 제재 화면이 대상을 고를 길이 없으면 API 만 있고 쓸 수 없어서 넣었다.
+     *
+     * <p>검색어가 없어도 <b>널이 아니라 빈 문자열</b>을 넘긴다 — 리포지토리 주석 참고(널이면 PostgreSQL 에서 깨진다).
      */
     @Transactional(readOnly = true)
     public AdminUserListResponse search(String q) {
         requireAdmin();
         List<AdminUserItem> items =
-                userRepository
-                        .searchForAdmin(q == null || q.isBlank() ? null : q.trim(), Limit.of(LIST_LIMIT))
-                        .stream()
+                userRepository.searchForAdmin(q == null ? "" : q.trim(), Limit.of(LIST_LIMIT)).stream()
                         .map(AdminUserItem::of)
                         .toList();
         return new AdminUserListResponse(items);
