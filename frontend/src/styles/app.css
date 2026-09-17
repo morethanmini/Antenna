@@ -189,16 +189,26 @@ button{border:0;background:none;cursor:pointer}
    감출 값이 없어서고, 구르게 두면 로고·아이콘은 제자리에 남는다.
    scrollbar-width:none 은 줄 아래에 스크롤바가 생겨 바 높이가 흔들리는 것을 막는다. */
 .navmenu{
+  /* **남는 자리를 다 먹고 그 안에서 가운데로 모은다.** 로고·모드 전환이 왼쪽,
+     아이콘 묶음이 오른쪽에 고정돼 있어, 그 사이를 이 줄이 채우면 메뉴가 바 가운데에
+     선다. 절대 배치로 화면 정가운데에 박지 않는 이유는 좁아질 때 양옆과 겹치기
+     때문이다 — 이 방식은 자리가 줄면 저절로 밀린다. */
+  flex:1;justify-content:center;
   display:flex;align-items:center;gap:4px;min-width:0;
   overflow-x:auto;scrollbar-width:none;
 }
 .navmenu::-webkit-scrollbar{display:none}
+/* 12.5 -> 15px. 사이드바에서는 아이콘이 옆에 붙어 작아도 읽혔는데, 글자만 한 줄로
+   서니 그 크기로는 바가 비어 보였다.
+   색은 브랜드 보라다 — 회색이면 로고·모드 전환만 색을 갖고 메뉴가 부속처럼 읽힌다. */
 .navmenu a{
-  padding:7px 11px;border-radius:9px;white-space:nowrap;
-  font-size:var(--fs-md);font-weight:var(--fw-normal);color:var(--muted);
+  padding:7px 12px;border-radius:9px;white-space:nowrap;
+  font-size:var(--fs-xl);font-weight:var(--fw-normal);color:var(--brand);
   transition:background .15s,color .15s;
 }
-.navmenu a:hover{background:var(--surface-2);color:var(--ink)}
+.navmenu a:hover{background:var(--brand-softer);color:var(--brand-ink)}
+/* 지금 있는 자리. 다 보라색이 됐으므로 **색만으로는 구분이 안 된다** —
+   바탕과 굵기까지 함께 줘야 어디에 있는지 보인다 */
 .navmenu a.on{background:var(--brand-soft);color:var(--brand-ink);font-weight:var(--fw-bold)}
 
 /* 오른쪽 묶음. margin-left:auto 로 밀어 두면 메뉴가 길어져도 끝에 붙어 있는다.

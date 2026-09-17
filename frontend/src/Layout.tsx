@@ -289,6 +289,12 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
               </div>
             </>
           ) : (
+            /* **지금은 그려질 일이 없다.** 셸이 붙는 라우트는 전부 access:'user' 이고,
+               비로그인은 RequireAccess 가 셸을 그리기 전에 /login 으로 보낸다. 공개
+               라우트는 /login 과 OAuth 복귀 둘뿐인데 그 둘은 mode 가 없어 셸이 없다
+               (설계서 §1 "공개 화면은 A-01 하나"). 그래도 지우지 않는 것은, 서비스
+               소개 같은 공개 화면이 생기면 그날 바로 필요한 자리여서다 — 2026-09-17
+               에 강제로 그려 레이아웃이 멀쩡한 것까지 확인해 뒀다. */
             <nav className="navbar-auth" aria-label="계정">
               <Link className="navbar-login" to="/login">로그인</Link>
               <Link className="navbar-signup" to="/login">회원가입</Link>
