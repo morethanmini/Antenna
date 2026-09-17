@@ -84,6 +84,8 @@ export type StockListItem = {
 export type StockListMeta = {
   /** 목록의 종가가 기준하는 영업일 YYYY-MM-DD. 수집된 시세가 없으면 null */
   baseDate: string | null
+  /** 필터에 맞는 종목 수 전체. 페이지 행 수(items.length)가 아니다 */
+  total: number
 }
 
 export type StockList = CursorList<StockListItem> & StockListMeta
@@ -171,7 +173,7 @@ export async function fetchAllStocks(filter: StockFilter): Promise<StockList> {
     cursor = res.nextCursor
   }
 
-  return { items, nextCursor: null, hasNext: false, baseDate }
+  return { items, nextCursor: null, hasNext: false, baseDate, total: items.length }
 }
 
 export function getSectorSummary() {

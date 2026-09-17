@@ -142,11 +142,11 @@ public class StockService {
         LocalDate baseDate = dailyQuoteRepository.findLatestTradeDate().orElse(null);
         if (baseDate == null) {
             // 시세가 한 건도 없다. 종가 없는 종목 목록은 화면이 그릴 것이 없다.
-            return new StockListResponse(List.of(), null, null, false);
+            return new StockListResponse(List.of(), null, null, false, 0);
         }
         Set<String> watched = new HashSet<>(watchlistItemRepository.findWatchedCodes(userId));
         if (watchedOnly && watched.isEmpty()) {
-            return new StockListResponse(List.of(), baseDate, null, false);
+            return new StockListResponse(List.of(), baseDate, null, false, 0);
         }
 
         LocalDate activeSince = baseDate.minusDays(ACTIVE_WINDOW_DAYS);
@@ -245,7 +245,7 @@ public class StockService {
                 .toList();
 
         String nextCursor = hasNext ? page.get(page.size() - 1).code() : null;
-        return new StockListResponse(items, baseDate, nextCursor, hasNext);
+        return new StockListResponse(items, baseDate, nextCursor, hasNext, found.size());
     }
 
     /**

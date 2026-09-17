@@ -480,8 +480,8 @@ export default function StockTable({ filter, setFilter }: Props) {
         <section className="card st-panel" aria-labelledby="st-list-h">
           <header className="st-panel-head">
             <h2 id="st-list-h">종목 리스트</h2>
-            {list.items.length > 0 && (
-              <span className="st-count num">{list.items.length}개 종목</span>
+            {list.meta && list.meta.total > 0 && (
+              <span className="st-count num">{list.meta.total}개 종목</span>
             )}
             {baseDate && (
               <span className="st-panel-asof">
