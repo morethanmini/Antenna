@@ -7,10 +7,14 @@
    짧은 접두사가 다른 화면과 부딪힌 적이 있어(B-02 의 st-), 겹치지 않는 두 글자를
    골랐다 — 지금 nt- 를 쓰는 곳은 이 파일뿐이다. */
 
-.nt-wrap{position:relative}
+/* **바 높이만큼 늘린다.** 팝업이 `top:100%` 로 매달리는데 이 상자가 종 버튼(32px)만
+   하면 100% 가 바 아래가 아니라 바 **안쪽**을 가리킨다 — 바가 52 -> 58px 로 높아지자
+   팝업이 바닥 선을 3px 덮었다(2026-09-17 실측). 상자를 바 높이에 맞추면 100% 가 곧 바
+   아래라, 바 높이가 또 바뀌어도 따라온다. 계정 메뉴도 같은 이유로 같은 방법을 쓴다. */
+.nt-wrap{position:relative; align-self:stretch; display:flex; align-items:center}
 
 .nt-pop{
-  position:absolute;top:calc(100% + 10px);right:0;z-index:40;
+  position:absolute;top:calc(100% + 8px);right:0;z-index:40;
   width:380px;max-width:calc(100vw - 24px);
   background:var(--surface);border:1px solid var(--rule);border-radius:14px;
   box-shadow:0 18px 44px -20px rgba(20,20,27,.42),0 2px 8px rgba(20,20,27,.06);
