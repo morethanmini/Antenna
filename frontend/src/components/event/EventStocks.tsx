@@ -23,12 +23,6 @@ const won = (n: number | null) => (n === null ? '—' : `${n.toLocaleString('ko-
 /** 배당률. 그 방향 풀이 0 이면 서버가 null 을 준다 — 0 배당은 "걸면 못 받는다" 는 거짓이다 */
 const odds = (n: number | null) => (n === null ? '—' : `${n.toFixed(2)}배`)
 
-/** 기준가 대비 지금. 기준가가 아직 없으면 잴 것이 없다 */
-function change(base: number | null, last: number | null) {
-  if (base === null || last === null || base === 0) return null
-  return ((last - base) / base) * 100
-}
-
 type CardProps = {
   s: EventStockCard
   /** 회차가 어느 단계인가. 깃발 문구와 링크가 이 값으로 갈린다 */
@@ -53,8 +47,6 @@ function flagOf(s: EventStockCard, phase: EventPhase) {
 
 function StockCard({ s, phase, slug }: CardProps) {
   const open = phase === 'ENTRY'
-  const rate = change(s.basePrice, s.lastPrice)
-  const tone = rate === null ? '' : rate > 0 ? ' is-up' : rate < 0 ? ' is-down' : ''
   const pool = s.pool.up + s.pool.down
   /* 맞았을 때 받을 돈. **등록이 닫힌 뒤에만 적는다**(2026-09-18).
      등록 중에는 풀이 계속 커져 이 값이 시시각각 달라지는데, 카드 열 장에 흔들리는
@@ -93,16 +85,11 @@ function StockCard({ s, phase, slug }: CardProps) {
         {s.basePrice === null ? <em>아직 없음</em> : `${s.basePrice.toLocaleString('ko-KR')}원`}
       </span>
 
-      {/* 최신 종가와 그 대비. **없으면 줄째로 걷는다**(2026-09-18) — 전에는 대시
-          하나만 남았는데, 기준가 바로 옆의 정체 모를 작대기가 기준가에 딸린 기호처럼
-          보였다. 참고용 값이라 없을 때 자리까지 지킬 이유가 없다.
-          lastPrice 는 표시용이고 판정에는 쓰지 않는다. */}
-      {rate !== null && s.lastPrice !== null && (
-        <span className={`ev-card-rate num${tone}`}>
-          최신 {s.lastPrice.toLocaleString('ko-KR')}원
-          <i>{`${rate > 0 ? '+' : ''}${rate.toFixed(2)}%`}</i>
-        </span>
-      )}
+      {/* 최신 종가와 그 대비를 **적지 않는다**(2026-09-18).
+          판정은 오직 기준가 대비 판정일 종가로 갈리는데, 그 사이의 값을 카드마다
+          띄우면 지금 이기고 있는지를 말하는 것처럼 읽힌다 — 실제로는 아무것도
+          정해지지 않은 중간값이다. 서버는 여전히 lastPrice 를 내려 주므로,
+          필요해지면 이 자리에 되살리면 된다(.ev-card-rate 규칙도 남겨 뒀다). */}
 
       {/* 남의 방향·목표가는 애초에 응답에 없다. 집계만 보인다 */}
       <dl className="ev-card-pool">
