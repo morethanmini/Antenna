@@ -188,7 +188,7 @@ button{border:0;background:none;cursor:pointer}
 .brand{display:flex;align-items:center;flex:none}
 .brand picture{display:block}
 /* 전역 img{max-width:100%} 가 폭을 갉지 않게 풀어 둔다 */
-.brand-logo{width:150px;height:auto;max-width:none;display:block}
+.brand-logo{width:170px;height:auto;max-width:none;display:block}
 
 /* 모드 토글 — 클레이 3D 스위치(2026-09-18, 시안 "E · 클레이 3D 스위치").
    파인 홈(트랙) 안에서 알 하나가 미끄러진다. **켜진 칸을 칠하는 것이 아니라 알을
@@ -671,7 +671,7 @@ button{border:0;background:none;cursor:pointer}
 @media(max-width:900px){
   .main-inner{padding:20px 16px 48px}
   .navbar{gap:12px;padding:0 12px}
-  .brand-logo{width:112px}
+  .brand-logo{width:128px}
 }
 
 /* 600px 아래 — 여기서부터 한 줄에 다 못 담는다.

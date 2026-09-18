@@ -231,12 +231,17 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
             같은 폴더에 마크 파일이 따로 있으므로 그것을 쓴다.
 
             둘을 겹쳐 두고 CSS 로 감추지 않고 <picture> 로 고르는 이유 — 겹쳐 두면
-            안 보이는 쪽까지 내려받는다(둘 다 0.5MB 다). media 로 고르면 브라우저가
-            한 장만 받는다. alt 는 <img> 가 들고 있으므로 어느 쪽이 뽑히든 같다. */}
+            안 보이는 쪽까지 내려받는다. media 로 고르면 브라우저가 한 장만 받는다.
+            alt 는 <img> 가 들고 있으므로 어느 쪽이 뽑히든 같다.
+
+            워드마크는 배경을 지운 3D 버전으로 바꿨다(2026-09-18). 전 파일은 흰 배경이
+            깔린 RGB 라 유리 상단바 위에서 흰 판이 떠 보였다. 새 파일은 투명 여백까지
+            잘라내고 720px 로 줄여 둬서, 상단바가 쓰는 폭(최대 170px)의 4배를 넘는다 —
+            고해상도에서도 또렷하면서 0.5MB → 74KB 로 줄었다. */}
         <Link className="brand" to={modeConfig.home}>
           <picture>
             <source media="(max-width:600px)" srcSet="/assets/logo/antenna-mark-light.png" />
-            <img className="brand-logo" src="/assets/logo/antenna-wordmark.png" alt="ANTENNA 홈" />
+            <img className="brand-logo" src="/assets/logo/antenna-wordmark-3d.png" alt="ANTENNA 홈" />
           </picture>
         </Link>
 
