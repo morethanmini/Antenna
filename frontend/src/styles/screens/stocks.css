@@ -163,6 +163,25 @@
 }
 .stocks-page .st-sector-track::-webkit-scrollbar{display:none}
 
+/* 가장자리 흐림. 칩 폭이 148px 로 고정이라 줄 끝에서는 늘 한 장이 반쯤 잘리는데,
+   딱 잘린 채로 두면 "더 있다" 가 아니라 "잘렸다" 로 읽힌다.
+
+   mask 를 쓰는 이유는 흰 그라데이션을 덧대는 방식이 여기서는 안 먹기 때문이다 —
+   이 줄은 카드 위가 아니라 페이지 바탕 위에 떠 있고, 위에 덧대면 그 조각이 칩의
+   마우스·클릭까지 가로챈다. mask 는 그리기만 깎으므로 누르는 데는 지장이 없다.
+
+   넘길 데가 있는 쪽만 깎는다(fade-l · fade-r). 끝에 닿으면 클래스가 빠져 마지막
+   칩이 또렷해진다 — 넘김 버튼이 꺼지는 것과 같은 값(more)으로 움직인다. */
+.stocks-page .st-sector-track.fade-r{
+  mask-image:linear-gradient(to right,#000 calc(100% - 46px),transparent 100%);
+}
+.stocks-page .st-sector-track.fade-l{
+  mask-image:linear-gradient(to left,#000 calc(100% - 46px),transparent 100%);
+}
+.stocks-page .st-sector-track.fade-l.fade-r{
+  mask-image:linear-gradient(to right,transparent 0,#000 46px,#000 calc(100% - 46px),transparent 100%);
+}
+
 /* 끌어서 넘기기. 끄는 동안에는 부드러운 스크롤과 스냅을 끈다 — 켜 두면 손을
    따라오지 않고 한 박자 늦게 미끄러져 "잡고 있다" 는 느낌이 깨진다.
    글자 선택도 막는다. 안 막으면 칩 이름이 파랗게 드래그된 채로 끌린다. */

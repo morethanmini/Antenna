@@ -217,8 +217,16 @@ function SectorChips({ current, onPick }: {
       {/* 스크롤 상자 자체에는 tabIndex 를 주지 않는다 — 안쪽 칩이 전부 버튼이라
           탭으로 닿고, 브라우저가 포커스 간 칩을 알아서 끌어온다. 탭 정거장을
           하나 더 만들면 키보드로 지나가기만 번거로워진다. */}
+      {/* 가장자리를 흐리게 할지는 넘길 데가 있는지로 정한다 — 넘김 버튼의 켜짐과
+          같은 값(more)을 쓰므로 둘이 어긋날 일이 없다. 끝에 닿으면 흐림도 걷힌다.
+          잘린 칩을 그냥 두면 "잘렸다" 로 읽히는데, 흐려지면 "더 있다" 가 된다. */}
       <div
-        className={`st-sector-track${grabbing ? ' is-dragging' : ''}`}
+        className={[
+          'st-sector-track',
+          grabbing ? 'is-dragging' : '',
+          more.left ? 'fade-l' : '',
+          more.right ? 'fade-r' : '',
+        ].filter(Boolean).join(' ')}
         ref={trackRef} onScroll={measure}
         role="group" aria-label="섹터별 보기"
         onPointerDown={onPointerDown}
