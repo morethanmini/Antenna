@@ -7,70 +7,41 @@
    섹터 칩(.rk-filters · .rk-sectors)도 지웠다 — 필터는 기간 하나만 남았다
    (2026-09-17, Ranking.tsx 머리말). */
 
-/* ── 탭 (정확도 · 이벤트) ──────────────────────
-   머리 바로 아래. 기간 스위치(.rk-period-seg)와 같은 세그먼트 모양이지만 한 치수 크다 —
-   목록 안의 조건이 아니라 "어느 랭킹을 보는가" 라서 무게가 다르다. */
-.rk-tabs{
-  display:inline-flex;
-  padding:4px; margin-bottom:14px;
-  /* 캡슐 안의 캡슐. 알약 하나가 트랙 안을 옮겨 다니는 모양이라 "둘 중 하나" 가 보인다 */
-  border-radius:999px;
-  background:var(--surface-2);
-}
-.rk-tabs button{
-  display:inline-flex; align-items:center; gap:7px;
-  padding:9px 20px;
-  border:0; border-radius:999px;
-  background:transparent; color:var(--muted);
-  font-family:inherit; font-size:var(--fs-base); font-weight:var(--fw-normal);
-  cursor:pointer;
-  transition:background .16s ease, color .16s ease, box-shadow .16s ease;
-}
-.rk-tabs button:hover{ color:var(--ink); }
-.rk-tabs button:focus-visible{ outline:2px solid var(--brand); outline-offset:1px; }
+/* ── 두 랭킹 오가기 ────────────────────────────
+   세그먼트 알약 둘을 나란히 두던 자리다(2026-09-18 교체). 회색 알약 둘은 이벤트 랭킹을
+   "또 하나의 필터" 처럼 보이게 했다. 지금은 보고 있는 쪽 이름을 머리가 말하고,
+   오른쪽 위 그림 버튼이 **가지 않은 쪽 하나만** 가리킨다.
 
-/* ── 이벤트 탭 강조 ────────────────────────────────────
-   이벤트 랭킹은 들어오는 길이 배너와 이 탭뿐이라, 회색 글자 둘을 나란히 두면
-   안 눌러 보고 지나친다.
-
-   **글자를 덧붙이지 않고 색으로만 말한다.** 한때 "진행 중" 같은 단계 배지를 달았는데,
-   고른 탭이 이미 흰 알약이라 그 안에 색 알약이 또 들어가 둔해 보였고 탭 폭도 벌어졌다.
-   단계는 들어가면 머리 띠가 크게 말해 준다.
-
-   **떠 있는 캡슐로 그린다.** 평평한 색 한 칸은 트랙에 눌러 담긴 것처럼 보여 눈이
-   그냥 지나간다. 위가 밝은 기울기 · 안쪽 흰 선 · 아래로 번지는 브랜드색 그림자를
-   겹치면 트랙 위로 떠오른다.
-
-   **다만 고른 탭보다 세면 안 된다.** 한때 고른 탭을 흰 캡슐 + 옅은 회색 그림자로 두고
-   이쪽에 보라빛을 번지게 했는데, 안 고른 탭이 더 강해서 무엇을 누른 상태인지 알 수
-   없었다. 그래서 고른 탭을 브랜드색으로 꽉 채우고(아래), 이쪽 빛은 한 단 낮췄다.
-   채운 색은 어떤 번짐보다도 세다 — 선택은 언제나 이겨야 한다. */
-.rk-tabs button.rk-tab-event{
-  background:linear-gradient(180deg,#fff 0%,var(--brand-softer) 100%);
-  color:var(--brand); font-weight:var(--fw-bold);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.95),
-    0 1px 2px rgba(84,87,232,.16),
-    0 6px 14px -10px rgba(84,87,232,.42);
-}
-.rk-tabs button.rk-tab-event:hover{
-  color:var(--brand-ink);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.95),
-    0 2px 4px rgba(84,87,232,.20),
-    0 10px 20px -10px rgba(84,87,232,.50);
+   제목과 같은 줄에 둔다. 아래로 내리면 목록과 붙어 "표를 거르는 것" 으로 읽힌다. */
+.rk-head{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:16px; flex-wrap:wrap;
 }
 
-/* ── 고른 탭 ───────────────────────────────────────────
-   **채워야 한다.** 흰 캡슐은 트랙(--surface-2)과 밝기 차이가 얼마 안 나서, 옆에 색을
-   띤 탭이 있으면 그쪽이 눌린 것처럼 보인다. 브랜드색을 꽉 채우면 무엇을 보고 있는지가
-   한 눈에 끝난다.
+/* 그림이 곧 버튼이다. 캐릭터가 테두리 밖으로 나오는 그림이라 배경·테두리를 주지 않는다 —
+   주면 캐릭터 둘레에 네모가 생겨 그림이 상자 안에 갇힌다 */
+.rk-switch{
+  flex:0 0 auto;
+  padding:0; border:0; background:none; cursor:pointer;
+  line-height:0;                       /* 아래 빈 줄 없이 그림 높이에 딱 맞는다 */
+  transition:transform .14s ease, filter .14s ease;
+}
+.rk-switch img{
+  display:block; width:250px; height:auto;
+  /* 그림에 이미 빛이 들어 있어 그림자는 바닥에만 옅게 */
+  filter:drop-shadow(0 6px 10px rgba(60,40,140,.28));
+}
+.rk-switch:hover{ transform:translateY(-2px); filter:brightness(1.04); }
+.rk-switch:active{ transform:translateY(0); }
+.rk-switch:focus-visible{ outline:2px solid var(--brand); outline-offset:4px; border-radius:999px; }
 
-   뒤에 두어 위의 규칙을 덮는다 — 같은 명시도라 차례가 정한다. */
-.rk-tabs button.on,
-.rk-tabs button.on:hover{
-  background:var(--brand); color:#fff; font-weight:var(--fw-bold);
-  box-shadow:0 2px 8px -2px rgba(84,87,232,.45);
+@media (prefers-reduced-motion: reduce){
+  .rk-switch:hover{ transform:none; }
+}
+/* 좁아지면 제목 아래로 내려온다. 그림이 250px 이라 제목과 한 줄에 못 선다 */
+@media (max-width: 680px){
+  .rk-head{ align-items:flex-start; }
+  .rk-switch img{ width:210px; }
 }
 
 /* ── 표 툴바 ──────────────────────────────────

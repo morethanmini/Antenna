@@ -240,31 +240,28 @@ function RankingBoard({ track }: { track: Track }) {
   )
 }
 
-/* ── 탭 ───────────────────────────────────────────────────
+/* ── 두 랭킹 오가기 ───────────────────────────────────────
    정확도(서비스 랭킹) · 이벤트 둘이다. 기획 docs/기획_랭킹_이벤트탭.md §2.
 
    **라우트는 하나다.** 트랙(REAL/REPLAY)을 화면으로 갈랐던 것은 셸 모드가 달라서였는데
    (파일 머리말), 이 둘은 모두 인사이트 모드라 셸이 갈리지 않는다.
 
-   탭 상태는 쿼리스트링(`?tab=event`)에 남긴다 — 시연 때 링크 하나로 이벤트 순위를 열 수
+   상태는 쿼리스트링(`?tab=event`)에 남긴다 — 시연 때 링크 하나로 이벤트 순위를 열 수
    있어야 하고, 홈 배너·대회 화면에서 여기로 바로 보낼 주소가 필요하다.
 
-   **이벤트가 끝나도 탭은 남긴다.** 최종 결과를 계속 볼 수 있어야 한다(기획 §2). */
-const TABS = [
-  { key: 'accuracy', label: '서비스 랭킹' },
-  { key: 'event', label: '이벤트 랭킹' },
-] as const
-type Tab = (typeof TABS)[number]['key']
+   **이벤트가 끝나도 길은 남긴다.** 최종 결과를 계속 볼 수 있어야 한다(기획 §2).
 
-/* ── 이벤트 탭 강조 ───────────────────────────────────────
-   탭이 회색 글자 둘뿐이면 "저기 뭔가 있다" 는 신호가 없다. 이벤트 랭킹은 들어오는 길이
-   배너와 이 탭뿐이라, 안 눌러 보면 있는 줄 모른 채 끝난다.
-
-   **글자를 덧붙이지 않고 색으로만 말한다.** 한때 "진행 중" 같은 단계 배지를 달았는데,
-   고른 탭이 이미 흰 알약이라 그 안에 색 알약이 또 들어가 둔해 보였다. 단계는 들어가면
-   머리 띠가 크게 말해 준다 — 탭이 할 일은 부르는 것 하나다.
-
-   회차가 없으면 색도 주지 않는다. 없는 대회를 있는 것처럼 부추기지 않는다. */
+   ── 세그먼트 탭을 걷고 그림 버튼 하나로 바꿨다(2026-09-18) ──
+   회색 알약 둘을 나란히 두면 이벤트 랭킹이 "또 하나의 필터" 로 보인다. 지금은 보고 있는
+   쪽 이름을 머리가 말하고, 오른쪽 위 버튼이 **가지 않은 쪽 하나만** 가리킨다. 둘 중
+   어디에 있든 누를 것이 하나뿐이라 고민할 것이 없고, 캐릭터가 들고 있는 버튼이라
+   회색 글자와 달리 안 눌러 보고 지나치지 않는다. */
+const ART = {
+  /* 그림에 글자가 구워져 있다. 읽어 주는 기기를 위해 alt 로 같은 말을 남긴다 */
+  event: { src: '/assets/event/btn-event.webp', alt: '이벤트 랭킹 보기' },
+  accuracy: { src: '/assets/event/btn-service.webp', alt: '서비스 랭킹 보기' },
+} as const
+type Tab = keyof typeof ART
 
 /** 목록 한 번만 읽는다. 여기 필요한 건 "회차가 있나" 뿐이라 상세를 부르지 않는다.
  *  **모듈 스코프 함수다** — useAsync 는 load 가 바뀌면 다시 읽는다(useAsync 머리말). */
@@ -272,7 +269,7 @@ function loadContestPhase() {
   return fetchContestSummary(CONTEST.id)
 }
 
-/** 탭마다 제목과 한 줄 소개가 다르다. 한 머리를 두 탭이 나눠 쓴다 */
+/** 보고 있는 쪽의 제목과 한 줄 소개. 한 머리를 둘이 나눠 쓴다 */
 const HEAD: Record<Tab, { h1: string; p: string }> = {
   accuracy: { h1: '주가 예측 랭킹', p: '판정이 끝난 예측만 집계합니다' },
   event: { h1: '이벤트 랭킹', p: `${CONTEST.name} 참가자의 베팅 손익률 순위입니다` },
@@ -283,15 +280,18 @@ export default function Ranking() {
   /* 모르는 값이 오면 기본 탭이다 — 주소를 손으로 고친 사람에게 빈 화면을 주지 않는다 */
   const tab: Tab = params.get('tab') === 'event' ? 'event' : 'accuracy'
 
-  /* 실패하면 강조만 빠지고 탭은 그대로 산다 — 거들 뿐이라 이것 때문에
-     랭킹 화면 전체를 오류로 덮지 않는다 */
+  /* 실패하면 버튼만 빠지고 화면은 그대로 산다 — 거들 뿐이라 이것 때문에
+     랭킹 전체를 오류로 덮지 않는다 */
   const contest = useAsync(loadContestPhase)
-  const hasEvent = contest.data !== null
+  /* 회차가 없으면 이벤트로 가는 버튼을 내건다. 없는 대회를 있는 것처럼 부추기지 않는다.
+     반대로 이벤트 쪽에 있을 때는 늘 돌아올 길이 있어야 하므로 조건을 걸지 않는다 */
+  const other: Tab = tab === 'accuracy' ? 'event' : 'accuracy'
+  const showSwitch = tab === 'event' || contest.data !== null
 
   function go(next: Tab) {
     if (next === tab) return
-    /* 기본 탭은 쿼리를 지운다. `/rankings` 와 `/rankings?tab=accuracy` 가 같은 화면인데
-       주소가 둘이면 공유된 링크가 제각각이 된다. replace 라 뒤로 가기가 탭을 되짚지 않는다 */
+    /* 기본 쪽은 쿼리를 지운다. `/rankings` 와 `/rankings?tab=accuracy` 가 같은 화면인데
+       주소가 둘이면 공유된 링크가 제각각이 된다. replace 라 뒤로 가기가 이 전환을 되짚지 않는다 */
     if (next === 'accuracy') params.delete('tab')
     else params.set('tab', next)
     setParams(params, { replace: true })
@@ -300,26 +300,19 @@ export default function Ranking() {
   return (
     <main className="main">
       <div className="main-inner">
-        <div className="page-head">
-          <h1>{HEAD[tab].h1}</h1>
-          <p>{HEAD[tab].p}</p>
-        </div>
+        {/* 제목과 전환 버튼이 한 줄이다. 버튼이 오른쪽 위에 서야 제목과 눈높이가 맞고,
+            아래 목록과 겹치지 않는다 */}
+        <div className="page-head rk-head">
+          <div>
+            <h1>{HEAD[tab].h1}</h1>
+            <p>{HEAD[tab].p}</p>
+          </div>
 
-        {/* 두 목록 중 하나를 고르는 배타 선택이라 세그먼트 컨트롤이다. 기간 스위치
-            (.rk-period-seg)와 같은 모양을 쓰되 머리 아래라 한 치수 크다 */}
-        <div className="rk-tabs" role="tablist" aria-label="랭킹 종류">
-          {TABS.map((t) => (
-            <button
-              key={t.key} type="button"
-              role="tab" aria-selected={tab === t.key}
-              /* 회차가 서 있을 때만 이벤트 탭에 색이 붙는다 */
-              className={[
-                tab === t.key ? 'on' : '',
-                t.key === 'event' && hasEvent ? 'rk-tab-event' : '',
-              ].filter(Boolean).join(' ')}
-              onClick={() => go(t.key)}
-            >{t.label}</button>
-          ))}
+          {showSwitch && (
+            <button type="button" className="rk-switch" onClick={() => go(other)}>
+              <img src={ART[other].src} alt={ART[other].alt} />
+            </button>
+          )}
         </div>
 
         {/* 탭을 옮기면 통째로 갈아친다 — 정확도 표가 이벤트 순위로 읽히면 안 된다.
