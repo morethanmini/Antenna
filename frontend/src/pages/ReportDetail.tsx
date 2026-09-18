@@ -23,7 +23,7 @@
    허용된다 — 반응이 오가는 리포트라는 사실이 제목·통계와 같은 부류의 구독 유인이다).
 
    신고 (M-06 · ANT-FE-ABUSE-REPORT)
-   메타 줄 오른쪽 끝의 ⋯ 에 접어 둔다. 내 리포트에는 그리지 않는다. 신고가 승인돼 가려진
+   헤더 오른쪽 위의 ⋯ 에 접어 둔다(채널 프로필과 같은 자리). 내 리포트에는 그리지 않는다. 신고가 승인돼 가려진
    리포트는 410 REPORT_BLOCKED 로 오고, 아래 ErrorState 가 그 문구를 그린다. */
 import Markdown from '../components/report/Markdown'
 import { Link, useParams } from 'react-router-dom'
@@ -63,7 +63,17 @@ export default function ReportDetail() {
 
         {report.data && (
           <article className="rd">
-            <header className="rd-head">
+            <header className={`rd-head${user?.id !== report.data.author.userId ? ' has-menu' : ''}`}>
+              {/* 신고 ⋯ 는 헤더 오른쪽 위 — 채널 프로필(E-02)과 같은 자리다. 내 리포트에는 없다 */}
+              {user?.id !== report.data.author.userId && (
+                <AbuseMenu
+                  className="rd-menu"
+                  targetType="REPORT"
+                  targetId={report.data.id}
+                  targetLabel={`「${report.data.title}」 리포트를 신고합니다.`}
+                  menuLabel="리포트 메뉴"
+                />
+              )}
               <h1 className="rd-title">{report.data.title}</h1>
 
               <div className="rd-meta">
@@ -98,15 +108,6 @@ export default function ReportDetail() {
                   </Link>
                 )}
 
-                {user?.id !== report.data.author.userId && (
-                  <AbuseMenu
-                    className="rd-menu"
-                    targetType="REPORT"
-                    targetId={report.data.id}
-                    targetLabel={`「${report.data.title}」 리포트를 신고합니다.`}
-                    menuLabel="리포트 메뉴"
-                  />
-                )}
               </div>
             </header>
 
