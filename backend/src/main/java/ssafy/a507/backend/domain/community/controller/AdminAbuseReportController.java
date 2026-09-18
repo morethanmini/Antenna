@@ -17,7 +17,7 @@ import ssafy.a507.backend.domain.community.entity.AbuseReport;
 import ssafy.a507.backend.domain.community.service.AdminModerationService;
 
 /**
- * 관리자 신고 처리 · 글/댓글 블라인드 (ANT-ADMIN-01).
+ * 관리자 신고 처리 · 글/댓글 · 리포트/리포트 댓글 블라인드 (ANT-ADMIN-01 · 리포트 쪽은 ANT-FE-ABUSE-REPORT).
  *
  * <p>{@code EventAdminController} 와 같은 자리 규칙을 따른다 — 관리자 컨트롤러라고 {@code domain/admin}
  * 을 새로 파지 않고 <b>그 도메인 안에</b> 둔다. 신고와 글·댓글은 커뮤니티 도메인의 것이다.
@@ -56,6 +56,26 @@ public class AdminAbuseReportController {
     public ResponseEntity<Void> changeCommentStatus(
             @PathVariable Long commentId, @Valid @RequestBody ContentStatusUpdateRequest request) {
         adminModerationService.changeCommentStatus(commentId, request.status());
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 리포트 블라인드 직접 전환 — 가리기와 <b>복구</b>. 신고 승인으로 가려진 리포트를 되돌리는 길이 이것뿐이다.
+     *
+     * <p>커뮤니티 글·댓글과 경로를 나눈 이유는 표가 달라서다. 같은 경로에 id 만 넘기면 id 번호 체계가
+     * 달라 엉뚱한 행을 바꾼다.
+     */
+    @PatchMapping("/reports/{reportId}/status")
+    public ResponseEntity<Void> changeReportStatus(
+            @PathVariable Long reportId, @Valid @RequestBody ContentStatusUpdateRequest request) {
+        adminModerationService.changeReportStatus(reportId, request.status());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/report-comments/{commentId}/status")
+    public ResponseEntity<Void> changeReportCommentStatus(
+            @PathVariable Long commentId, @Valid @RequestBody ContentStatusUpdateRequest request) {
+        adminModerationService.changeReportCommentStatus(commentId, request.status());
         return ResponseEntity.noContent().build();
     }
 }

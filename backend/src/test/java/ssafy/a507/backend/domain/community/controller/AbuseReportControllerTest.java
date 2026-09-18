@@ -192,6 +192,130 @@ class AbuseReportControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    // ── 리포트 · 리포트 댓글 (ANT-FE-ABUSE-REPORT) ─────────────
+
+    @Test
+    @DisplayName("남의 리포트를 신고하면 201")
+    void 리포트_신고_성공() throws Exception {
+        Long reportId = insertMonetizeReport(authorId, "문제되는 리포트");
+        flush();
+
+        mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(reporterId))).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("REPORT", reportId, "FRAUD", "허위 수익률")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").exists());
+    }
+
+    @Test
+    @DisplayName("리포트 댓글도 신고할 수 있다 — 커뮤니티 댓글(COMMENT)과 다른 대상이다")
+    void 리포트_댓글_신고_성공() throws Exception {
+        Long reportId = insertMonetizeReport(authorId, "댓글 달린 리포트");
+        Long reportCommentId = insertReportComment(reportId, authorId, "문제되는 리포트 댓글");
+        flush();
+
+        mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(reporterId))).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("REPORT_COMMENT", reportCommentId, "ABUSE", null)))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("내 리포트를 신고하면 400 SELF_REPORT")
+    void 자기_리포트_신고는_거부() throws Exception {
+        Long reportId = insertMonetizeReport(reporterId, "내 리포트");
+        flush();
+
+        mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(reporterId))).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("REPORT", reportId, "SPAM", null)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("SELF_REPORT"));
+    }
+
+    @Test
+    @DisplayName("내 리포트 댓글을 신고하면 400 SELF_REPORT")
+    void 자기_리포트_댓글_신고는_거부() throws Exception {
+        Long reportId = insertMonetizeReport(authorId, "리포트");
+        Long reportCommentId = insertReportComment(reportId, reporterId, "내가 단 댓글");
+        flush();
+
+        mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(reporterId))).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("REPORT_COMMENT", reportCommentId, "SPAM", null)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("SELF_REPORT"));
+    }
+
+    @Test
+    @DisplayName("같은 리포트를 처리 전에 다시 신고하면 409 DUPLICATE_REPORT")
+    void 리포트_중복_신고는_409() throws Exception {
+        Long reportId = insertMonetizeReport(authorId, "두 번 신고될 리포트");
+        flush();
+
+        mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(reporterId))).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("REPORT", reportId, "SPAM", null)))
+                .andExpect(status().isCreated());
+        mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(reporterId))).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("REPORT", reportId, "ABUSE", null)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("DUPLICATE_REPORT"));
+    }
+
+    @Test
+    @DisplayName("COMMENT 와 REPORT_COMMENT 는 다른 대상이다 — 서로 중복으로 막지 않는다")
+    void 댓글과_리포트댓글은_섞이지_않는다() throws Exception {
+        Long reportId = insertMonetizeReport(authorId, "리포트");
+        Long reportCommentId = insertReportComment(reportId, authorId, "리포트 댓글");
+        flush();
+
+        mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(reporterId))).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("REPORT_COMMENT", reportCommentId, "SPAM", null)))
+                .andExpect(status().isCreated());
+        mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(reporterId))).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("COMMENT", commentId, "SPAM", null)))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("이미 가려진 리포트는 없는 것으로 다룬다 — 404 TARGET_NOT_FOUND")
+    void 가려진_리포트_신고는_404() throws Exception {
+        Long reportId = insertMonetizeReport(authorId, "가려진 리포트");
+        em.createNativeQuery("UPDATE reports SET status = 'BLOCKED' WHERE id = ?")
+                .setParameter(1, reportId).executeUpdate();
+        flush();
+
+        mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(reporterId))).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("REPORT", reportId, "SPAM", null)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TARGET_NOT_FOUND"));
+    }
+
+    @Test
+    @DisplayName("없는 리포트 댓글을 신고하면 404 TARGET_NOT_FOUND")
+    void 없는_리포트댓글_신고는_404() throws Exception {
+        mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(reporterId))).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("REPORT_COMMENT", 999_999L, "SPAM", null)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TARGET_NOT_FOUND"));
+    }
+
     // ── 픽스처 ──────────────────────────────────────────────
     // User 는 ANT-AUTH 담당 엔티티라 생성 팩터리를 추가하지 않고 네이티브 INSERT 로 넣는다.
 
@@ -223,6 +347,26 @@ class AbuseReportControllerTest {
                 .setParameter(3, body).executeUpdate();
         return ((Number) em.createNativeQuery(
                         "SELECT id FROM post_comments WHERE body = ?")
+                .setParameter(1, body).getSingleResult()).longValue();
+    }
+
+    /** 리포트는 monetize 담당 엔티티다. NOT NULL 칼럼만 채운다 — status 는 DB 기본값 VISIBLE. */
+    private Long insertMonetizeReport(Long userId, String title) {
+        em.createNativeQuery("""
+                INSERT INTO reports (user_id, title, body, is_public, view_count, created_at)
+                VALUES (?, ?, '본문', true, 0, CURRENT_TIMESTAMP)
+                """).setParameter(1, userId).setParameter(2, title).executeUpdate();
+        return ((Number) em.createNativeQuery("SELECT id FROM reports WHERE title = ?")
+                .setParameter(1, title).getSingleResult()).longValue();
+    }
+
+    private Long insertReportComment(Long reportId, Long userId, String body) {
+        em.createNativeQuery("""
+                INSERT INTO report_comments (report_id, user_id, body, status, created_at)
+                VALUES (?, ?, ?, 'VISIBLE', CURRENT_TIMESTAMP)
+                """).setParameter(1, reportId).setParameter(2, userId)
+                .setParameter(3, body).executeUpdate();
+        return ((Number) em.createNativeQuery("SELECT id FROM report_comments WHERE body = ?")
                 .setParameter(1, body).getSingleResult()).longValue();
     }
 

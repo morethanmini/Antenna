@@ -238,9 +238,14 @@ public class ReportSocialService {
      * 프록시로 두면 판정하는 순간 SELECT 가 따로 나간다.
      */
     private Report existingReport(Long reportId) {
-        return reportRepository
+        Report report = reportRepository
                 .findDetailById(reportId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REPORT_NOT_FOUND, "reportId"));
+        // 가려진 리포트에는 반응도 댓글 목록도 없다 — 상세가 410 인데 댓글만 열리면 우회로가 된다.
+        if (report.isBlocked()) {
+            throw new BusinessException(ErrorCode.REPORT_BLOCKED, "reportId");
+        }
+        return report;
     }
 
     /**
@@ -256,6 +261,9 @@ public class ReportSocialService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.COMMENT_NOT_FOUND, "commentId"));
         if (comment.isBlocked()) {
             throw new BusinessException(ErrorCode.COMMENT_NOT_FOUND, "commentId");
+        }
+        if (comment.getReport().isBlocked()) {
+            throw new BusinessException(ErrorCode.REPORT_BLOCKED, "commentId");
         }
         if (reportAccess.isLocked(comment.getReport(), viewerId)) {
             throw new BusinessException(ErrorCode.REPORT_FORBIDDEN, "commentId");

@@ -218,6 +218,10 @@ public class ReportService {
         Report report = reportRepository
                 .findDetailById(reportId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REPORT_NOT_FOUND, "reportId"));
+        // 작성자에게도 막는다. 가려진 뒤에도 작성자만 계속 보면 "왜 가려졌냐" 를 모른 채 링크를 퍼뜨린다.
+        if (report.isBlocked()) {
+            throw new BusinessException(ErrorCode.REPORT_BLOCKED, "reportId");
+        }
 
         boolean own = report.getUser().getId().equals(viewerId);
         int viewCount = report.getViewCount();

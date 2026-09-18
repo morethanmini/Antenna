@@ -14,7 +14,7 @@ public interface AbuseReportRepository extends JpaRepository<AbuseReport, Long> 
      * 관리자 목록 (ANT-ADMIN-01). 전체를 볼 때는 <b>상태 세 개를 다 넘긴다</b>.
      *
      * <p>연관을 전부 fetch join 하는 이유 — 목록 한 줄마다 신고자 닉네임과 대상을 같이 보여 준다.
-     * 지연 로딩에 맡기면 행 하나에 쿼리 네 개가 더 나간다. 셋 중 하나만 채워지는 구조(팩터리 주석)라
+     * 지연 로딩에 맡기면 행 하나에 쿼리가 여럿 더 나간다. 대상 중 하나만 채워지는 구조(팩터리 주석)라
      * left join 이어야 한다.
      *
      * <p><b>{@code :status is null} 분기를 두지 않는 이유.</b> 널을 받을 수 있는 파라미터는 Hibernate 가
@@ -30,6 +30,8 @@ public interface AbuseReportRepository extends JpaRepository<AbuseReport, Long> 
               left join fetch r.targetPost
               left join fetch r.targetComment
               left join fetch r.targetUser
+              left join fetch r.targetReport
+              left join fetch r.targetReportComment
               left join fetch r.handledBy
             where r.status in :statuses
             order by r.id desc
@@ -42,6 +44,8 @@ public interface AbuseReportRepository extends JpaRepository<AbuseReport, Long> 
               left join fetch r.targetPost
               left join fetch r.targetComment
               left join fetch r.targetUser
+              left join fetch r.targetReport
+              left join fetch r.targetReportComment
             where r.id = :id
             """)
     Optional<AbuseReport> findWithTargets(@Param("id") Long id);
@@ -58,4 +62,10 @@ public interface AbuseReportRepository extends JpaRepository<AbuseReport, Long> 
 
     boolean existsByReporterIdAndTargetUserIdAndStatus(
             Long reporterId, Long targetUserId, AbuseReport.Status status);
+
+    boolean existsByReporterIdAndTargetReportIdAndStatus(
+            Long reporterId, Long targetReportId, AbuseReport.Status status);
+
+    boolean existsByReporterIdAndTargetReportCommentIdAndStatus(
+            Long reporterId, Long targetReportCommentId, AbuseReport.Status status);
 }

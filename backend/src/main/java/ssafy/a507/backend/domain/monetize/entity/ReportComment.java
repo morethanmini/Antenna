@@ -82,4 +82,9 @@ public class ReportComment {
     public boolean isBlocked() {
         return status == Status.BLOCKED;
     }
+
+    /** 관리자 처리. 신고 승인(ACCEPT) 때 BLOCKED 로 내린다 — 목록·개수 쿼리가 이미 BLOCKED 를 뺀다. */
+    public void changeStatus(Status status) {
+        this.status = status;
+    }
 }
