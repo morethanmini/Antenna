@@ -19,6 +19,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { TYPE_LABEL } from '../api/notifications'
 import type { Notification } from '../api/notifications'
+import NotificationTypeIcon from './NotificationTypeIcon'
 import '../styles/notification.css'
 
 type Props = {
@@ -153,16 +154,23 @@ export default function NotificationPopover({
                 {/* 서버가 새 종류를 보내면 표에 없다. 빈 칸보다 종류 이름이 낫다 */}
                 {/* 표에 없는 종류는 종류 문자열이 그대로 보인다 — 새 종류가 붙은 것을
                     알아채라는 뜻이다(api/notifications.ts). 그 값이 길면 이름표 폭에서
-                    잘리므로(notification.css) 온전한 값을 title 로 남긴다. */}
+                    잘리므로(notification.css) 온전한 값을 title 로 남긴다.
+                    아이콘은 글자를 대신하지 않는다 — 까닭은 NotificationTypeIcon 머리말. */}
                 <span className="nt-type" title={TYPE_LABEL[n.type] ?? n.type}>
-                  {TYPE_LABEL[n.type] ?? n.type}
+                  <NotificationTypeIcon type={n.type} />
+                  <span className="nt-type-txt">{TYPE_LABEL[n.type] ?? n.type}</span>
                 </span>
                 <b className="nt-title">{n.title}</b>
                 <span className="nt-body">{n.body}</span>
                 <span className="nt-when num">{ago(n.createdAt)}</span>
-                {/* 안 읽은 표시는 점 하나다. 목록에서 색만으로 나누면
-                    색을 못 보는 사람에게는 같은 줄이 된다 */}
-                {!n.read && <i className="nt-dot" aria-label="읽지 않음" />}
+                {/* 파란 점을 뺐다(2026-09-18). 안 읽은 표시가 바탕색과 점 둘이라
+                    같은 말을 두 번 하고 있었다.
+
+                    **글자는 남긴다.** 점이 지던 몫이 눈에 보이는 표시만은 아니었다 —
+                    바탕색만 남기면 화면에 나오는 단서가 색 하나뿐이라, 색을 못 보는
+                    사람에게는 읽은 줄과 안 읽은 줄이 같아진다. 이 글자는 눈에는
+                    안 보이고 스크린리더만 읽는다. */}
+                {!n.read && <span className="nt-sr">읽지 않음</span>}
               </button>
               {/* 항목 버튼 **바깥**에 둔다. 버튼 안에 버튼을 넣으면 마크업이 깨지고,
                   지우기를 눌렀는데 그 알림으로 이동해 버린다 */}
