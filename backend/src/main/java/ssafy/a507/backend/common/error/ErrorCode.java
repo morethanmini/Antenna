@@ -254,6 +254,8 @@ public enum ErrorCode {
     EVENT_STAKE_OUT_OF_RANGE(HttpStatus.BAD_REQUEST, "배팅 금액은 500 ~ 2,000 ANT 사이여야 합니다."),
     EVENT_INSUFFICIENT_BALANCE(HttpStatus.CONFLICT, "ANT 잔액이 부족합니다."),
     EVENT_DUPLICATE_SLUG(HttpStatus.CONFLICT, "이미 쓰고 있는 대회 주소입니다."),
+    // 기준가는 접수 전(SCHEDULED)에만 고칠 수 있다. 열린 뒤 바꾸면 그 값이 온체인 판정에 들어가 승패가 뒤집힌다.
+    EVENT_BASE_PRICE_LOCKED(HttpStatus.CONFLICT, "접수가 시작된 뒤에는 기준가를 바꿀 수 없습니다."),
     EVENT_NOT_READY(HttpStatus.CONFLICT, "정산 조건이 아직 갖춰지지 않았습니다."),
     // 정산 러너 (ANT-EVENT-03). 셋 다 "다시 누르면 온체인 상태를 읽어 이어 간다" 가 대응이다.
     EVENT_SETTLING(HttpStatus.CONFLICT, "정산이 이미 진행 중입니다."),
