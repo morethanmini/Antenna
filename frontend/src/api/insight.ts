@@ -2,18 +2,12 @@
 
    타입은 API 명세서의 응답 스키마를 그대로 옮겼다.
 
-   ── 남은 목업 하나 ────────────────────────────────────────
-   MOCK 이 걸린 함수는 이제 하나뿐이다. 나머지는 실 API 다.
-
-     /ads/active  등록된 배너가 없어 화면이 비어 보인다 — 시연 동안 유지(2026-09-03 결정)
-
-   실제 호출부는 명세서 경로·쿼리대로 적어 두었다. 광고가 붙으면 그 함수의
-   `if (MOCK)` 한 줄과 mock/insight.ts 의 짝을 지우고, MOCK 상수와 import 까지 지운다.
+   ── 목업은 없다 ──────────────────────────────────────────
+   마지막까지 남아 있던 /ads/active 목업을 걷었다(2026-09-17). 등록된 배너가 없으면
+   가짜 배너가 아니라 빈 상태가 뜬다 — 시연에서 가짜가 진짜처럼 보이는 것보다
+   비어 있는 편이 정직하다. 광고 조회는 api/ads.ts 의 fetchActiveAds 한 벌만 쓴다.
    ─────────────────────────────────────────────────────── */
 import { api } from './client'
-import * as mock from './mock/insight'
-
-const MOCK = true
 
 /* ── 시장 Overview · GET /market/indices ─────────────────── */
 
@@ -68,15 +62,8 @@ export function getWatchlist() {
    api/rankings.ts 의 fetchRankings 한 벌을 홈도 같이 쓴다. 전에는 여기에도
    같은 타입이 있었는데, 지표 셋을 non-null 로 적어 두어 배치 전 응답과 어긋났다. */
 
-/* ── 스폰서드 · GET /ads/active ───────────────────────────── */
-
-export type ActiveAd = { id: number; imageUrl: string; linkUrl: string }
-
-/* 광고는 등록된 배너가 아직 없어 화면이 비어 보인다 — 시연 동안 목업을 둔다(2026-09-03 결정). */
-export function getActiveAds() {
-  if (MOCK) return mock.activeAds()
-  return api.get<{ items: ActiveAd[] }>('/ads/active')
-}
+/* 스폰서드(GET /ads/active)는 여기 없다 — api/ads.ts 의 fetchActiveAds 를 홈이 직접
+   쓴다. 같은 경로를 두 파일이 각자 부르고 있었고, 목업이 걸려 있던 쪽이 이 파일이었다. */
 
 /* 내 자산(GET /wallet/balance)은 여기 없다 — 지갑 화면(H-01)과 같은 응답이라 api/wallet.ts
    한 벌을 홈도 같이 쓴다. 전에는 여기에도 같은 이름의 타입이 있었는데 모양이 아예 달랐다
