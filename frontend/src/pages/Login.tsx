@@ -53,6 +53,10 @@ const FEATURES = [
   },
 ]
 
+/** 앞부분을 이만큼 건너뛴다(초). 첫 프레임 몇 장이 나머지보다 밝아 되감길 때마다
+ *  한 번씩 튄다. 재생을 시작할 때와 되감을 때 **같은 값**을 써야 앞뒤가 맞는다. */
+const CLIP_START = 0.1
+
 export default function Login() {
   /* 자격증명이 env 에 들어왔는지로 버튼을 연다. 빌드 시점에 정해지는 값이라
      렌더마다 다시 계산할 이유가 없다. */
@@ -85,7 +89,53 @@ export default function Login() {
             </ul>
           </div>
 
+          {/* 제자리 뛰는 개미(2026-09-18). 소리 없는 6.6초짜리 반복 영상이다.
+
+              **알파가 없다.** H.264(avc1) 라 투명 채널을 못 싣고, 바탕이 #f7f6fb 로
+              칠해져 온다. 로그인 화면 그러데이션(#fcfcff~#eff1fa)과 거의 같은 색이라
+              mix-blend-mode 로 녹인다 — 안 녹이면 개미 둘레에 옅은 네모가 보인다.
+
+              autoPlay 는 muted 와 playsInline 이 **둘 다** 있어야 모바일에서도 돈다.
+              둘 중 하나라도 빠지면 iOS 가 재생을 막고 첫 프레임에서 멈춘다.
+
+              poster 는 **이 영상에서 뽑은 프레임**이다(0.25초, 504×737, 43KB).
+              캐릭터 PNG 를 쓰면 9.4MB 를 받는 동안 다른 포즈·다른 조명의 그림이 먼저
+              떠 있다가 영상이 시작되는 순간 튄다 — "앞부분만 밝기가 다르다" 로 읽히던
+              것이 이것이다. 같은 프레임을 쓰면 영상이 늦게 와도 화면이 안 바뀐다.
+
+              아래 img 는 움직임을 줄인 사람에게 보여 줄 정지 그림이다(CSS 가 고른다). */}
           <figure className="intro-art">
+            <video
+              poster="/assets/character/white_ant/running-in-place-poster.jpg"
+              autoPlay
+              muted
+              playsInline
+              aria-hidden="true"
+              /* 앞부분을 건너뛰는 자리. 주소에 #t=0.1 을 붙이는 방법도 있지만 source
+                 안에서는 브라우저가 늘 지키지 않아(크롬 실측: 첫 재생이 0 에서 시작)
+                 여기서 직접 맞춘다. 길이를 아는 시점이 metadata 다. */
+              onLoadedMetadata={(e) => { e.currentTarget.currentTime = CLIP_START }}
+              /* loop 속성을 안 쓴다. 되감길 때 브라우저는 **0 으로** 돌아가서
+                 (크롬 실측) 잘라낸 앞부분이 매 바퀴 다시 나온다. 직접 되감아야 한다. */
+              onEnded={(e) => {
+                const v = e.currentTarget
+                v.currentTime = CLIP_START
+                v.play().catch(() => { /* 탭이 숨으면 브라우저가 막는다 — 다시 보이면 알아서 돈다 */ })
+              }}
+            >
+              {/* src 를 video 에 직접 달지 않고 source 로 내린 이유 — **media 가 여기서만
+                  먹는다.** 1180px 아래에서는 이 그림 칸이 통째로 숨는데(auth.css),
+                  display:none 은 내려받기를 막지 못한다. 실제로 420px 에서 보이지도
+                  않는 8.7MB 를 받고 있었다. 맞는 source 가 없으면 아무것도 받지 않는다.
+
+                  이 조건은 **불러올 때 한 번만** 재는 값이다. 창을 좁혔다 넓히면 그
+                  세션에서는 영상이 안 뜨고 poster 만 남는데, 새로고침이면 돌아온다. */}
+              <source
+                src="/assets/character/white_ant/running-in-place.mp4"
+                type="video/mp4"
+                media="(min-width: 1181px)"
+              />
+            </video>
             <img src="/assets/character/white_ant/antenna-character-transparent.png" alt="" aria-hidden="true" />
           </figure>
         </section>
