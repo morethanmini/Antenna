@@ -1,93 +1,212 @@
-/* D-01 커밋 원장 — [ANT-FE-LEDGER-LIST]
-   색·간격은 app.css 의 토큰만 쓴다. */
+/* D-01 커밋 원장 — [ANT-FE-LEDGER-LIST] · 리디자인 S15P21A507-292
+   색·간격은 app.css 의 토큰만 쓴다 — 단 하나, 어두운 체인 패널(.lg-chain)은 빼고.
 
-/* 배치 주기 안내. 방금 등록한 예측이 없다고 고장으로 읽히지 않게 하는 줄이다 */
-.lg-note{
-  display:flex; align-items:center; gap:6px;
-  margin:0 0 14px; padding:9px 12px;
-  border:1px solid var(--brand-soft); border-radius:9px;
-  background:var(--brand-softer);
-  font-size:var(--fs-sm); color:var(--brand-ink);
+   **어두운 패널 위에서는 토큰을 쓸 수 없다.** --ink · --body · --muted 는 전부
+   흰 바탕을 전제로 고른 값이라 어두운 바탕에서는 대비가 무너진다. 그래서 그
+   블록 안에서만 값을 직접 적는다 — ranking-event.css · event-contest.css 가
+   같은 이유로 같은 예외를 쓴다.
+
+   바탕색 #1a1147 은 그 둘(#241a63 랭킹 무대 · #120a4a 대회 히어로) 사이 값이고,
+   브랜드 --brand:#5457e8 및 큐브 스프라이트와 같은 딥 인디고 계열이다 —
+   새로 정한 색이 아니다.
+
+   ── 구조 ──────────────────────────────────────────────────
+   머리  .lg-chain   어두운 체인 패널 (Bitfeed 사각형 무리 + Solscan 점 격자)
+   본문  .lg-group   배치 묶음 = 머리줄 + 좌측 세로선 + 줄들 (GitHub 커밋 목록)
+
+   **목록에 테두리 카드를 쓰지 않는다.** 2026-09-18 에 탐색기 여섯 곳을 조사했는데
+   목록 줄에 테두리 카드를 쓰는 곳이 하나도 없었다. 전에 이 화면이 쓰던 흰 카드 +
+   --rule 테두리 + 12px 라운드는 리포트 피드·예측 목록과 같은 값이라, 원장이
+   다른 목록과 구별되지 않는 가장 큰 원인이었다. 구분은 세로선과 여백이 맡는다. */
+
+/* ══ 머리 — 얇은 체인 띠 ══════════════════════════════════
+   처음에는 여기에 Bitfeed 식 사각형 무리(배치마다 커밋 수만큼의 사각형)를
+   그렸다가 걷어냈다 — 본문이 배치 묶음 구조가 되면서 배치 번호·건수·상태·
+   D-02 링크가 전부 그룹 머리줄에 있게 됐고, 패널은 같은 말을 두 번 하면서
+   스크롤만 170px 먹었다. 지금은 56px 안팎이다.
+
+   남긴 일은 둘 — "여기는 체인 영역" 을 색으로 말하는 것과, 배치 주기 안내다.
+   안내는 리디자인 전 .lg-note 가 하던 일이고 빠지면 방금 등록한 예측이
+   "대기" 로 있는 것을 고장으로 읽는다. */
+
+.lg-chain{
+  position:relative; overflow:hidden;
+  display:flex; align-items:center; gap:11px;
+  margin:0 0 20px; padding:13px 16px;
+  border-radius:14px;
+  /* 그림이 늦게 뜰 때 흰 네모가 번쩍이지 않게 바탕을 미리 깐다
+     (event-contest.css 와 같은 이유) */
+  background:#1a1147;
+  color:#fff;
 }
-.lg-note svg{ flex:0 0 auto; }
-
-.lg-list{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:10px; }
-
-.lg-item{
-  background:var(--surface);
-  border:1px solid var(--rule);
-  border-radius:12px;
-  padding:14px 16px;
+/* 점 격자 — Solscan · Starkscan 이 함께 쓰는 "체인/네트워크" 관용 배경.
+   이미지를 안 쓴다. 16px 간격에 1px 점이라 글자를 방해하지 않는다. */
+.lg-chain::before{
+  content:''; position:absolute; inset:0;
+  background-image:radial-gradient(rgba(255,255,255,.14) 1px, transparent 1px);
+  background-size:16px 16px;
+  pointer-events:none;
 }
-.lg-item:hover{ border-color:var(--brand-soft); }
+.lg-chain > *{ position:relative; }
 
-/* ── 무엇을 봉인했나 — 한 줄의 머리 ─────────── */
+/* 등록 모달과 같은 큐브. 사각형 무리를 걷어내도 스프라이트 어휘가 남는다 */
+.lg-chain-cube{ flex:0 0 auto; width:26px; height:26px; object-fit:contain; }
+
+.lg-chain-text{
+  display:flex; align-items:baseline; flex-wrap:wrap; gap:4px 9px;
+  margin:0; min-width:0;
+}
+.lg-chain-text b{
+  font-size:var(--fs-lg); font-weight:var(--fw-bold); color:#fff;
+}
+.lg-chain-text span{
+  font-size:var(--fs-base); color:rgba(255,255,255,.66);
+}
+
+/* ══ 본문 — 배치 묶음 ════════════════════════════════════ */
+
+/* 좌측 세로선이 묶음을 관통한다(GitHub 커밋 목록).
+   큐브 노드가 left:0~26 이므로 선은 그 한가운데인 13 - 1 = 12 에 선다. */
+.lg-group{
+  position:relative;
+  padding-left:38px;
+  margin-bottom:6px;
+}
+.lg-group::before{
+  content:''; position:absolute;
+  left:12px; top:30px; bottom:2px; width:2px;
+  background:var(--rule);
+}
+/* 마지막 묶음의 선은 끝을 흐린다 — 딱 잘리면 목록이 끊긴 것처럼 보인다 */
+.lg-group:last-of-type::before{
+  background:linear-gradient(180deg, var(--rule) 70%, transparent);
+}
+
+/* ── 배치 머리줄 ─────────────────────────────────────── */
+.lg-head{
+  display:flex; align-items:center; flex-wrap:wrap; gap:8px;
+  padding:8px 0 8px 2px;
+}
+
+/* 세로선 위에 얹히는 노드. 등록 모달의 큐브 그대로다 */
+.lg-node{
+  position:absolute; left:0; top:8px;
+  width:26px; height:26px;
+  object-fit:contain;
+}
+
+.lg-head-text{ display:flex; align-items:baseline; flex-wrap:wrap; gap:8px; min-width:0; }
+.lg-head-text b,
+.lg-head-no{
+  font-size:var(--fs-xl); font-weight:var(--fw-heavy); color:var(--ink);
+  text-decoration:none;
+}
+.lg-head-no:hover{ color:var(--brand-ink); text-decoration:underline; }
+.lg-head-text span{ font-size:var(--fs-base); color:var(--muted); }
+
+/* 대기 묶음. 실패가 아니므로 경고색을 쓰지 않는다 — 배지도 안 단다 */
+.lg-head.is-waiting .lg-head-text b{ color:var(--body); }
+
+/* 머클루트. 머리줄 오른쪽 끝에 붙는다 */
+.lg-head-hash{ margin-left:auto; }
+
+/* ── 줄 ───────────────────────────────────────────────── */
+.lg-rows{ margin:0; padding:0; list-style:none; }
+
+.lg-row{
+  padding:11px 0 12px;
+  border-top:1px solid var(--rule);
+}
+.lg-row:hover{ background:var(--brand-softer); }
+/* 배경이 세로선까지 닿아 보이도록 왼쪽으로 늘린다 */
+.lg-row:hover{ box-shadow:-14px 0 0 var(--brand-softer), 14px 0 0 var(--brand-softer); }
+
+/* ── 무엇을 봉인했나 — 줄의 머리 ───────────────────────
+   **이 줄의 주인공은 아래 해시다.** 종목명·제목은 "무엇이 봉인됐나" 를 알려 주는
+   맥락이지 이 화면이 증명하는 대상이 아니다.
+
+   리디자인 첫 판에서는 종목명이 800 굵기로 줄에서 가장 컸고 해시가 회색 본문이었다
+   — 리디자인 전 위계를 그대로 물려받은 것이다. 그러면 원장이 리포트 피드처럼 읽히고,
+   정작 증거인 해시가 곁다리가 된다.
+   레퍼런스로 고른 Blockscout 이 정확히 반대로 한다: 해시가 굵은 링크색으로 서고
+   나머지가 보조다. 조사한 여섯 곳이 예외 없이 같았다.
+
+   그래서 종목명은 굵기를 800 → 700 으로 내리고, 해시는 브랜드색 700 으로 올렸다
+   (아래 .lg-row .copy-hash). 크기는 종목 15 · 해시 14 로 한 칸 차이인데, 색이
+   그 차이를 뒤집는다 — 먹색 15 보다 브랜드색 14 에 눈이 먼저 간다. */
 .lg-what{
   display:flex; align-items:center; flex-wrap:wrap;
-  gap:8px; margin-bottom:10px;
+  gap:8px; margin-bottom:3px;
 }
-.lg-stock{ font-size:var(--fs-xl); font-weight:var(--fw-heavy); color:var(--ink); letter-spacing:-.01em; }
+.lg-stock{ font-size:var(--fs-xl); font-weight:var(--fw-bold); color:var(--ink); letter-spacing:-.01em; }
 /* 종목이 지워진 건. 이름 자리라 굵게 두되 색으로 가른다 */
 .lg-stock.is-none{ color:var(--faint); }
-.lg-code{ font-style:normal; font-size:var(--fs-sm); color:var(--faint); }
-.lg-horizon{ font-size:var(--fs-md); color:var(--muted); }
+.lg-code{ font-style:normal; font-size:var(--fs-base); color:var(--faint); }
+.lg-horizon{ font-size:var(--fs-lg); color:var(--muted); }
 /* 리포트 줄의 제목. 종목명 자리가 아니라 그 옆이라 본문 굵기로 두고, 링크임을 색으로 알린다.
-   긴 제목이 검산 링크를 밀어내지 않게 줄인다 — 이름 자리는 "리포트" 네 글자로 이미 찼다 */
+   긴 제목이 검산 링크를 밀어내지 않게 줄인다 — 이름 자리는 "리포트" 네 글자로 이미 찼다.
+
+   먹색이 아니라 --body 다. 해시가 이 줄의 유일한 브랜드색 링크여야 눈이 거기로 간다 —
+   제목까지 브랜드색이면 둘이 같은 무게로 경쟁한다. 링크라는 것은 밑줄이 알린다. */
 .lg-title{
   min-width:0; max-width:min(100%, 30ch);
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  font-size:var(--fs-lg); font-weight:var(--fw-normal); color:var(--brand-ink); text-decoration:none;
+  font-size:var(--fs-xl); font-weight:var(--fw-normal); color:var(--body); text-decoration:none;
 }
-.lg-title:hover{ text-decoration:underline; }
+.lg-title:hover{ color:var(--brand-ink); text-decoration:underline; }
 
-/* 배치 칸 — 번호·영업일·상태가 한 줄에 선다 */
-.lg-batch{ display:flex; align-items:center; flex-wrap:wrap; gap:7px; }
-.lg-batch a{ font-weight:var(--fw-bold); color:var(--brand-ink); text-decoration:none; }
-.lg-batch a:hover{ text-decoration:underline; }
-.lg-date{ font-size:var(--fs-sm); color:var(--muted); }
-/* 대기는 실패가 아니다 — 경고색을 쓰지 않는다 */
-.lg-waiting{ margin:0; font-size:var(--fs-md); color:var(--muted); }
-
-/* ── 필드 ────────────────────────────────────── */
-.lg-fields{
-  display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));
-  gap:8px 18px; margin:0;
+/* ── 증거 — 이 줄의 주인공 ─────────────────────────────
+   공용 CopyHash(copy-hash.css)는 D-02 · D-03 도 함께 쓰므로 건드리지 않는다.
+   원장 줄 안에서만 덮어쓴다 — 저기서는 해시가 여러 값 중 하나지만
+   여기서는 줄이 존재하는 이유다. */
+.lg-row .copy-hash{ margin-left:-6px; }
+.lg-row .copy-hash code{
+  font-size:var(--fs-lg); font-weight:var(--fw-bold); color:var(--brand-ink);
 }
-.lg-field{ display:flex; align-items:baseline; gap:8px; min-width:0; }
-.lg-field dt{
-  flex:0 0 auto; width:52px;
-  font-size:var(--fs-xs); font-weight:var(--fw-normal); color:var(--faint);
-}
-.lg-field dd{
-  margin:0; min-width:0;
-  font-size:var(--fs-md); color:var(--body);
-  overflow:hidden; text-overflow:ellipsis;
-}
+.lg-row .copy-hash .copy-hash-icon{ color:var(--brand); }
 
+/* ── 공용 칩 두 개 ─────────────────────────────────────
+   이 화면의 글자를 전체적으로 한 단계 키우면서(2026-09-18) 공용 칩만 제자리에
+   남아 상대적으로 작아졌다. 원장 안에서만 한 단계 올린다 —
+   anchor-badge.css · prediction.css 는 다른 화면도 쓰므로 건드리지 않는다. */
+.lg-row .pred-status{ font-size:var(--fs-xs); }
+.lg-head .anchor-badge{ font-size:var(--fs-sm); }
 
-/* 머리줄 오른쪽 끝. margin-left:auto 로 종목·기간·상태 뒤에 붙는다 */
+/* 줄 오른쪽 끝. margin-left:auto 로 종목·기간·상태 뒤에 붙는다 */
 .lg-go{
   flex:0 0 auto; margin-left:auto;
   display:inline-flex; align-items:center; gap:3px;
-  font-size:var(--fs-md); font-weight:var(--fw-normal); color:var(--brand-ink);
+  font-size:var(--fs-lg); font-weight:var(--fw-normal); color:var(--brand-ink);
   text-decoration:none;
 }
 .lg-go:hover{ text-decoration:underline; }
 .lg-go em{ font-style:normal; }
 
-/* ── 더 보기 · 로딩 ──────────────────────────── */
+/* ── 더 보기 · 로딩 ──────────────────────────────────── */
 .lg-more{
   display:block; width:100%;
   margin-top:12px; padding:11px;
   border:1px solid var(--rule); border-radius:10px;
   background:var(--surface); color:var(--body);
-  font-family:inherit; font-size:var(--fs-base); font-weight:var(--fw-normal);
+  font-family:inherit; font-size:var(--fs-lg); font-weight:var(--fw-normal);
   cursor:pointer;
 }
 .lg-more:hover{ background:var(--surface-2); }
 
-.lg-loading{ margin:12px 0 0; text-align:center; font-size:var(--fs-md); color:var(--muted); }
+.lg-loading{ margin:12px 0 0; text-align:center; font-size:var(--fs-base); color:var(--muted); }
 
+/* ── 좁은 화면 ───────────────────────────────────────── */
 @media (max-width: 560px){
-  .lg-fields{ grid-template-columns:1fr; }
+  .lg-chain{ padding:12px 13px; gap:9px; align-items:flex-start; }
+  .lg-group{ padding-left:30px; }
+  .lg-group::before{ left:9px; }
+  .lg-node{ width:20px; height:20px; top:10px; }
+  /* 머클루트가 머리줄을 밀어내지 않게 아래로 내린다 */
+  .lg-head-hash{ margin-left:0; flex-basis:100%; }
+  .lg-row:hover{ box-shadow:none; }
 }
+
+/* 움직이는 것이 없다. Bitfeed 식 사각형 무리를 걷어내면서 그 칸의 숨쉬기
+   애니메이션(lg-breathe)도 함께 사라졌다 — 이 화면에 prefers-reduced-motion 으로
+   꺼야 할 것이 남아 있지 않다. 나중에 무엇이든 움직이는 것을 더하면 여기에 가드를
+   되살린다. */
