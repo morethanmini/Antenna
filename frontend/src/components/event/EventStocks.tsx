@@ -31,12 +31,6 @@ const won = (n: number | null) => (n === null ? '—' : `${n.toLocaleString('ko-
 const odds = (n: number | null) =>
   n === null ? null : <span className="ev-odds">{n.toFixed(2)}배</span>
 
-/** 기준가 대비 지금. 기준가가 아직 없으면 잴 것이 없다 */
-function change(base: number | null, last: number | null) {
-  if (base === null || last === null || base === 0) return null
-  return ((last - base) / base) * 100
-}
-
 type CardProps = {
   s: EventStockCard
   /** 회차가 어느 단계인가. 버튼 문구와 링크가 이 값으로 갈린다 */
@@ -65,8 +59,6 @@ function ctaOf(s: EventStockCard, phase: EventPhase) {
 
 function StockCard({ s, phase, slug }: CardProps) {
   const open = phase === 'ENTRY'
-  const rate = change(s.basePrice, s.lastPrice)
-  const tone = rate === null ? '' : rate > 0 ? ' is-up' : rate < 0 ? ' is-down' : ''
   const pool = s.pool.up + s.pool.down
 
   /* 등록 중이면 예측 탭으로, 아니면 종목 정보로. 닫힌 창에서 예측 탭을 열어 봐야
@@ -88,7 +80,7 @@ function StockCard({ s, phase, slug }: CardProps) {
      판정이 끝나면 적지 않는다(!s.result). 결과 줄에 실제로 받은 금액이 나오는데
      그 옆에 예상치가 같이 있으면 어느 쪽이 진짜인지 헷갈린다. */
   const win = s.mine && !s.result && phase === 'SEALED'
-    ? payoutOfBet(s.pool, s.mine.direction, s.mine.stake)
+    ? payoutOfBet(s.pool, s.mine)
     : null
 
   /* 내가 건 것. 카드에 줄로 펴지 않고 완료 버튼의 말풍선으로 접었다 — 한 장만 세 줄
@@ -110,27 +102,19 @@ function StockCard({ s, phase, slug }: CardProps) {
       <span className="ev-card-code num">{s.stockCode}</span>
 
 
-      {/* 기준가·등락률을 왼쪽에, 들어가는 문을 오른쪽에 둔다(설계 그림). */}
+      {/* 윗줄에 기준가 이름표, 아랫줄에 금액과 들어가는 문을 마주 세운다(설계 그림).
+          금액과 문이 같은 줄이라 둘의 세로 가운데가 맞는다. */}
       <div className="ev-card-mid">
-        <div className="ev-card-figs">
-          {/* 판정의 **기준**이 되는 값이라 이름을 붙인다(김경민, 2026-09-18). 숫자만
-              크게 놓으면 현재가로 읽히는데, 이 회차의 승패는 이 값 대비로 갈린다.
-              기준가는 관리자가 넣기 전까지 비어 있다 — 그때 대시 하나만 남기면 값이
-              0 인지 아직 없는지 알 수 없다. */}
-          <span className="ev-card-price num">
-            <i>기준가</i>
-            {s.basePrice === null ? <em>아직 없음</em> : `${s.basePrice.toLocaleString('ko-KR')}원`}
-          </span>
-          {/* 최신 종가와 그 대비. **없으면 줄째로 걷는다**(김경민, 2026-09-18) — 전에는
-              대시 하나만 남았는데, 기준가 바로 옆의 정체 모를 작대기가 기준가에 딸린
-              기호처럼 보였다. 참고용 값이라 없을 때 자리까지 지킬 이유가 없다. */}
-          {rate !== null && s.lastPrice !== null && (
-            <span className={`ev-card-rate num${tone}`}>
-              최신 {s.lastPrice.toLocaleString('ko-KR')}원
-              <i>{`${rate > 0 ? '+' : ''}${rate.toFixed(2)}%`}</i>
-            </span>
-          )}
-        </div>
+        {/* 판정의 **기준**이 되는 값이라 이름을 붙인다(김경민, 2026-09-18). 숫자만
+            크게 놓으면 현재가로 읽히는데, 이 회차의 승패는 이 값 대비로 갈린다.
+            기준가는 관리자가 넣기 전까지 비어 있다 — 그때 대시 하나만 남기면 값이
+            0 인지 아직 없는지 알 수 없다.
+            최신 종가·등락률은 싣지 않는다(2026-09-18) — 판정 전 중간값이 "지금 이기고
+            있다" 로 읽힌다. */}
+        <i className="ev-card-price-label">기준가</i>
+        <span className="ev-card-price num">
+          {s.basePrice === null ? <em>아직 없음</em> : `${s.basePrice.toLocaleString('ko-KR')}원`}
+        </span>
         {/* 걸었으면 여기서 멈춘다. 한 종목에 두 번은 못 걸고(서버가 409),
             버튼만 잠가 두면 카드는 그대로 눌려 예측 탭이 열린다 — 아래에서
             카드째 링크를 뗀다. 문구가 곧 상태라 따로 배지를 달지 않는다 */}
@@ -213,9 +197,9 @@ export default function EventStocks({ event }: { event: EventHome }) {
      눈으로 더하게 둘 값이 아니다.
      카드와 같은 문(phase === 'SEALED')을 쓴다. 등록 중에 합계를 띄우면 종목을 하나
      더 걸 때마다 다른 종목의 몫까지 같이 흔들려, 방금 한 일과 숫자의 변화가 어긋난다.
-     아직 체인에 안 올라간 배팅(null)은 빼고 센다. */
+     아직 체인에 안 올라간 배팅(PENDING·FAILED)은 payoutOfBet 이 null 을 주므로 빠진다. */
   const win = event.phase !== 'SEALED' ? 0 : event.stocks.reduce(
-    (sum, s) => sum + (s.mine && !s.result ? (payoutOfBet(s.pool, s.mine.direction, s.mine.stake) ?? 0) : 0),
+    (sum, s) => sum + (s.mine && !s.result ? (payoutOfBet(s.pool, s.mine) ?? 0) : 0),
     0,
   )
 

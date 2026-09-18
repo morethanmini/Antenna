@@ -224,32 +224,24 @@
    로고 옆에 끼우면 이름이 더 잘린다 */
 .event-contest-page .ev-card-mid{
   grid-column:1 / -1;margin-top:13px;
-  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:10px;
 }
-.event-contest-page .ev-card-figs{display:grid;gap:1px;min-width:0}
-.event-contest-page .ev-card-price{
-  display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;
-  color:var(--ink);font-size:var(--fs-xl);font-weight:var(--fw-heavy);font-variant-numeric:tabular-nums;
-}
-/* 이름표. 값보다 한참 작고 흐리다 — 읽는 것은 숫자이고 이 글자는 그 숫자가 무엇인지만 밝힌다 */
-.event-contest-page .ev-card-price i{
+/* 이름표. 값보다 한참 작고 흐리다 — 읽는 것은 숫자이고 이 글자는 그 숫자가 무엇인지만 밝힌다.
+   늘 금액 윗줄에 둔다 — 카드 폭에 따라 옆에 붙었다 줄바꿈됐다 하면 열 장의 금액 높이가 들쭉날쭉하다 */
+.event-contest-page .ev-card-price-label{
+  grid-column:1 / -1;line-height:1.2;
+  /* 아랫줄 높이는 버튼이 정한다 — 금액이 그 가운데에 서면서 위로 빈틈이 생기므로 당겨 붙인다 */
+  margin-bottom:-4px;
   color:var(--faint);font-size:var(--fs-xs);font-weight:var(--fw-bold);font-style:normal;
+}
+.event-contest-page .ev-card-price{
+  min-width:0;line-height:1.2;
+  color:var(--ink);font-size:var(--fs-xl);font-weight:var(--fw-heavy);font-variant-numeric:tabular-nums;
 }
 /* 아직 안 들어온 기준가. 숫자가 아니므로 숫자 크기로 키우지 않는다 */
 .event-contest-page .ev-card-price em{
   color:var(--faint);font-size:var(--fs-md);font-weight:var(--fw-bold);font-style:normal;
 }
-.event-contest-page .ev-card-rate{
-  display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;
-  color:var(--faint);font-size:var(--fs-xs);font-weight:var(--fw-normal);font-variant-numeric:tabular-nums;
-}
-/* 대비 비율만 방향 색을 입는다 — 최신가까지 빨강/파랑이면 기준가와 견주기 전에
-   색부터 눈에 들어와, 오른 쪽이 좋은 것처럼 읽힌다(누가 이겼는지는 내 방향에 달렸다) */
-.event-contest-page .ev-card-rate i{font-style:normal;font-weight:var(--fw-bold)}
-.event-contest-page .ev-card-rate.is-up i{color:var(--up)}
-.event-contest-page .ev-card-rate.is-down i{color:var(--down)}
-.event-contest-page .ev-card-rate.is-up{color:var(--up)}
-.event-contest-page .ev-card-rate.is-down{color:var(--down)}
 
 /* 불러오는 중 자리. 카드와 **같은 높이**여야 아래 칸이 안 밀린다 */
 .event-contest-page .ev-card.is-skel{

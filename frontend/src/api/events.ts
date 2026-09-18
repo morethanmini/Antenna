@@ -105,9 +105,17 @@ function share(total: number, side: number, stake: number) {
   return Math.floor((stake * total) / side)
 }
 
-/** 이미 걸어 둔 배팅이 **맞으면** 받을 돈. 내 stake 는 pool 에 이미 들어 있다. */
-export function payoutOfBet(pool: EventPool, direction: BetDirection, stake: number) {
-  return share(pool.up + pool.down, direction === 'UP' ? pool.up : pool.down, stake)
+/**
+ * 이미 걸어 둔 배팅이 **맞으면** 받을 돈. 내 stake 는 pool 에 이미 들어 있다.
+ *
+ * 단, 그 전제는 배팅이 체인에 올라갔을 때만 참이다. PENDING·FAILED 는 서버 풀
+ * 집계(PredictionEventBetRepository.LIVE_FOR_POOL)에서 빠지므로 풀에 내 돈이 없다 —
+ * 그대로 나누면 남의 돈만으로 몫을 재서 부풀린 금액이 나온다(FAILED 는 받을 돈이 아예 없다).
+ * 내 쪽 풀에 다른 사람이 있으면 share 의 side 방어도 못 거르므로 여기서 상태로 끊는다.
+ */
+export function payoutOfBet(pool: EventPool, bet: EventMyBet) {
+  if (bet.betStatus === 'PENDING' || bet.betStatus === 'FAILED') return null
+  return share(pool.up + pool.down, bet.direction === 'UP' ? pool.up : pool.down, bet.stake)
 }
 
 /** 아직 걸기 전 미리보기. 내 stake 를 양쪽에 더한 뒤 잰다. */
