@@ -151,7 +151,12 @@ export default function NotificationPopover({
                    기본값이라, 커서까지 손가락으로 바꾸지는 않는다(.is-flat) */
               >
                 {/* 서버가 새 종류를 보내면 표에 없다. 빈 칸보다 종류 이름이 낫다 */}
-                <span className="nt-type">{TYPE_LABEL[n.type] ?? n.type}</span>
+                {/* 표에 없는 종류는 종류 문자열이 그대로 보인다 — 새 종류가 붙은 것을
+                    알아채라는 뜻이다(api/notifications.ts). 그 값이 길면 이름표 폭에서
+                    잘리므로(notification.css) 온전한 값을 title 로 남긴다. */}
+                <span className="nt-type" title={TYPE_LABEL[n.type] ?? n.type}>
+                  {TYPE_LABEL[n.type] ?? n.type}
+                </span>
                 <b className="nt-title">{n.title}</b>
                 <span className="nt-body">{n.body}</span>
                 <span className="nt-when num">{ago(n.createdAt)}</span>

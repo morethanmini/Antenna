@@ -42,8 +42,15 @@
 .nt-clear:hover{color:var(--down);text-decoration:underline}
 
 /* 목록이 길어지면 팝업 안에서 구른다. 팝업 자체가 길어지면 화면 밖으로 나간다 */
+/* 줄 사이를 띄운다(2026-09-18). 전에는 간격이 0 이라 항목이 맞붙어 있었는데,
+   읽은 줄은 배경이 없어 티가 안 나지만 **안 읽은 줄은 배경이 칠해져 있어** 이웃한
+   둥근 블록끼리 달라붙어 한 덩어리로 읽혔다 — 어디서 한 알림이 끝나는지 안 보인다.
+   radius 가 10px 이라 4px 이면 모서리 곡선이 서로를 비켜 간다.
+   grid 로 두는 이유 — 뼈대(.nt-item.is-skel)는 .nt-row 없이 li 로 바로 들어와서,
+   .nt-row + .nt-row 로 붙이면 불러오는 동안에는 간격이 없다. */
 .nt-list{
   list-style:none;margin:0;padding:6px;
+  display:grid;gap:4px;align-content:start;
   max-height:min(60vh,440px);overflow-y:auto;
 }
 
@@ -63,12 +70,22 @@
 
 /* **폭을 고정한다.** 이름표 글자 수가 2자(판정)에서 4자(결제 실패)까지 오가는데,
    폭을 내용에 맡기면 줄마다 제목 시작점이 달라져 목록이 흔들려 보인다.
-   종목 상세의 .st-tag 가 같은 이유로 같은 방법을 쓴다(적중 2자 vs 빗나감 3자). */
+   종목 상세의 .st-tag 가 같은 이유로 같은 방법을 쓴다(적중 2자 vs 빗나감 3자).
+
+   **넘치면 자른다**(2026-09-18). 폭만 고정하고 넘침을 열어 두면, 표에 없는 종류가
+   왔을 때(TYPE_LABEL 에 없으면 종류 문자열이 그대로 그려진다 — NotificationPopover)
+   "EVENT_SETTLED" 같은 raw 값이 알약을 뚫고 **제목 위로 올라탄다.** 서버의
+   notifications.type 은 enum 이 아니라 자유 문자열이라 새 종류가 언제든 올 수 있다.
+
+   display 를 grid 에서 block 으로 바꾼 이유 — grid 컨테이너에는 text-overflow 가
+   안 먹는다(글자가 익명 그리드 아이템에 들어간다). text-align 과 line-height 로
+   같은 자리에 세운다. */
 .nt-type{
   grid-row:1;width:60px;padding:2px 0;border-radius:999px;
-  display:grid;place-items:center;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  text-align:center;line-height:1.45;
   background:var(--surface-2);color:var(--muted);
-  font-size:var(--fs-3xs);font-weight:var(--fw-heavy);white-space:nowrap;
+  font-size:var(--fs-3xs);font-weight:var(--fw-heavy);
 }
 .nt-title{
   grid-row:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
