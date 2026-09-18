@@ -36,8 +36,6 @@ function base(userId: string, nickname: string): Omit<Channel, 'mySubscription' 
   return {
     userId,
     nickname,
-    /* 목업에는 신고 이력이 없다. 실제 값은 서버가 (신고자, 대상, PENDING) 으로 판단한다 */
-    reportedByMe: false,
     /* 남의 채널 사진은 지어낸 값이다 — GET /channels/{userId} 가 아직 없다(S15P21A507-214).
        열리면 서버가 users.avatar_file_id 로 만든 주소를 준다. 내 채널은 아래 mine() 이
        /users/me 의 값을 그대로 쓴다. */

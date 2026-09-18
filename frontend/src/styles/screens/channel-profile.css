@@ -71,9 +71,6 @@
   color:var(--danger); cursor:pointer;
 }
 .ch-menu-item:hover{ background:#fdf4f4; }
-/* 접수된 뒤. 누를 수 없으므로 경고색을 빼고 상태 글씨로 둔다 */
-.ch-menu-item.is-done{ color:var(--muted); font-weight:var(--fw-bold); cursor:default; }
-.ch-menu-item.is-done:hover{ background:transparent; }
 .ch-id h1{ margin:0; font-size:var(--fs-3xl); font-weight:var(--fw-heavy); color:var(--ink); letter-spacing:-.02em; }
 /* ── 실적 통계 — 세 개 고정 ──────────────────────────── */
 .ch-stats{

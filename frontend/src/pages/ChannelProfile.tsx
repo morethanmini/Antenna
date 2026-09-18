@@ -116,9 +116,6 @@ export default function ChannelProfile() {
      닫는 규칙은 곁창과 같은 것을 쓴다(Escape · 바깥 누르기 · 버튼 재클릭). */
   const [menuOpen, setMenuOpen] = useState(false)
   const [reporting, setReporting] = useState(false)
-  /* 접수 직후의 표시. 서버도 reportedByMe 로 같은 사실을 내리지만 그 값은 다시 읽어야
-     갱신된다 — 모달을 닫자마자 메뉴가 "신고함" 이어야 하므로 화면에서도 기억한다. */
-  const [justReported, setJustReported] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const menuBtnRef = useRef<HTMLButtonElement>(null)
 
@@ -136,10 +133,6 @@ export default function ChannelProfile() {
   const owner = (channel?.isMe ?? false) && !asVisitor
   /** 미리보기 띠를 띄울 조건. 남의 채널에 ?as=visitor 를 붙여도 바뀔 게 없다 */
   const previewing = (channel?.isMe ?? false) && asVisitor
-
-  /* 서버가 내린 값이 진실이고(다른 기기·새로고침에서도 맞다), 방금 접수한 건은 화면이 얹는다.
-     관리자가 처리해 PENDING 이 풀리면 서버 값이 false 로 돌아와 다시 신고할 수 있다. */
-  const reported = justReported || (channel?.reportedByMe ?? false)
 
   /* 미리보기 안에서 **누구 눈으로** 볼지. 구독료를 정하는 사람이 정말 알고 싶은 것은
      "구독하면 뭐가 더 보이나" 이고, 그 차이는 둘을 번갈아 봐야 보인다.
@@ -232,21 +225,16 @@ export default function ChannelProfile() {
                     </svg>
                   </button>
                   {menuOpen && (
+                    /* 이미 신고했어도 항목은 늘 "신고" 다. 중복은 신고하기를 누를 때 서버가
+                       409 로 막고 모달이 그 자리에서 알린다 — 신고 여부는 서버만 정확히 안다
+                       (관리자가 처리하면 다시 신고할 수 있게 풀린다). */
                     <div className="ch-menu" role="menu" ref={menuRef}>
-                      {reported ? (
-                        /* 처리 전에는 다시 못 넣는다(서버가 409 로 막는다). 버튼 모양으로
-                           두면 눌러 보고 오류를 받게 되므로 결과를 그대로 적는다. */
-                        <span className="ch-menu-item is-done" role="menuitem" aria-disabled="true">
-                          신고함
-                        </span>
-                      ) : (
-                        <button
-                          type="button" className="ch-menu-item" role="menuitem"
-                          onClick={() => { setMenuOpen(false); setReporting(true) }}
-                        >
-                          신고
-                        </button>
-                      )}
+                      <button
+                        type="button" className="ch-menu-item" role="menuitem"
+                        onClick={() => { setMenuOpen(false); setReporting(true) }}
+                      >
+                        신고
+                      </button>
                     </div>
                   )}
                 </div>
@@ -365,7 +353,6 @@ export default function ChannelProfile() {
                    @Positive 라 문자열을 보내면 400 이 된다. */
                 targetId={Number(channel.userId)}
                 targetLabel={`${channel.nickname} 님을 신고합니다.`}
-                onReported={() => setJustReported(true)}
                 onClose={() => setReporting(false)}
               />
             )}

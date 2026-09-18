@@ -23,6 +23,7 @@ import {
 } from '../../api/abuse'
 import type { AbuseReason, AbuseTargetType } from '../../api/abuse'
 import type { ApiError } from '../../api/errors'
+import { ERROR_CODE } from '../../api/errors'
 import { errorText } from '../state/errorText'
 import FieldError from '../state/FieldError'
 import '../../styles/screens/abuse-report.css'
@@ -32,13 +33,11 @@ type Props = {
   targetId: number
   /** 창 제목 아래에 누구(무엇)를 신고하는지 밝힌다 — 잘못 누른 사람이 여기서 알아채야 한다 */
   targetLabel: string
-  /** 접수 성공. 부모가 진입점 표시를 "신고함" 으로 바꾼다 */
-  onReported: () => void
   onClose: () => void
 }
 
 export default function AbuseReportModal({
-  targetType, targetId, targetLabel, onReported, onClose,
+  targetType, targetId, targetLabel, onClose,
 }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null)
   const [reason, setReason] = useState<AbuseReason | null>(null)
@@ -72,7 +71,6 @@ export default function AbuseReportModal({
     try {
       await reportAbuse({ targetType, targetId, reason, detail })
       setDone(true)
-      onReported()
     } catch (e) {
       /* 여기서 창을 닫지 않는다. 409(이미 신고함) · 404(대상 없음) 는 사용자가 읽고
          납득해야 하는 결과이고, 닫아 버리면 아무 일도 안 일어난 것처럼 보인다. */
@@ -82,7 +80,7 @@ export default function AbuseReportModal({
     }
   }
 
-  const text = error ? errorText(error) : null
+  const text = error ? reportErrorText(error, targetType) : null
 
   return (
     <div className="ab-backdrop" onClick={close} role="presentation">
@@ -170,4 +168,20 @@ export default function AbuseReportModal({
       </div>
     </div>
   )
+}
+
+/* 중복 신고는 "무엇을" 이미 신고했는지까지 말한다. 공용 문구(errorText)는
+   "이미 신고한 대상입니다" 로 대상 종류를 모르고 쓰인다 — 그쪽을 고치면 글·댓글
+   신고가 붙었을 때 틀린 말이 되므로, 대상을 아는 이 창에서만 바꿔 쓴다. */
+const DUPLICATE_TITLE: Record<AbuseTargetType, string> = {
+  USER: '이미 신고한 유저입니다',
+  POST: '이미 신고한 글입니다',
+  COMMENT: '이미 신고한 댓글입니다',
+}
+
+function reportErrorText(error: ApiError, targetType: AbuseTargetType) {
+  const text = errorText(error)
+  return error.code === ERROR_CODE.DUPLICATE_REPORT
+    ? { ...text, title: DUPLICATE_TITLE[targetType] }
+    : text
 }
