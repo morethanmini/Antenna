@@ -42,9 +42,11 @@ type Props = {
   canWrite: boolean
   /** 잠금을 푸는 채널. 안내에서 구독 진입점으로 쓴다 */
   channelId: string
+  /** 신고로 가려진 리포트를 관리자가 보는 중. 쓰기가 막힌 이유가 구독이 아니므로 안내를 바꾼다 */
+  blocked?: boolean
 }
 
-export default function ReportComments({ reportId, commentCount, canWrite, channelId }: Props) {
+export default function ReportComments({ reportId, commentCount, canWrite, channelId, blocked = false }: Props) {
   const list = useCursorList<ReportComment>(`/reports/${reportId}/comments`)
   const { user } = useAuth()
   const [count, setCount] = useState(commentCount)
@@ -63,7 +65,9 @@ export default function ReportComments({ reportId, commentCount, canWrite, chann
 
       {canWrite
         ? <CommentForm reportId={reportId} onDone={afterCreate} />
-        : (
+        : blocked
+          ? <p className="rc-gate">신고로 가려진 리포트라 댓글을 남길 수 없습니다.</p>
+          : (
           <p className="rc-gate">
             구독자만 댓글을 남길 수 있습니다.
             {' '}

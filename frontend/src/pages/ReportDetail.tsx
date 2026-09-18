@@ -61,6 +61,14 @@ export default function ReportDetail() {
           <p className="rd-loading">불러오는 중…</p>
         )}
 
+        {/* 신고로 가려진 리포트를 관리자가 보는 중. 다른 사람에게는 410 안내가 뜬다 */}
+        {report.data?.blocked && (
+          <p className="rd-blocked" role="status">
+            <b>신고로 가려진 리포트입니다.</b>
+            관리자에게만 보입니다. 되돌리려면 신고 처리 화면에서 <Link to="/admin/abuse-reports">복구</Link>를 누르세요.
+          </p>
+        )}
+
         {report.data && (
           <article className="rd">
             <header className={`rd-head${user?.id !== report.data.author.userId ? ' has-menu' : ''}`}>
@@ -128,7 +136,8 @@ export default function ReportDetail() {
             {/* 잠긴 리포트에는 버튼을 내밀지 않는다 — 누르면 403 인 버튼은 없느니만 못하다.
                 key 로 리포트 id 를 준다: 상세에서 상세로 이동하면 훅 상태가 남아 이전
                 리포트의 좋아요 수가 잠깐 보인다. */}
-            {!report.data.locked && <Reactions key={report.data.id} report={report.data} />}
+            {/* 가려진 리포트에는 관리자도 반응하지 않는다 — 서버가 410 을 준다 */}
+            {!report.data.locked && !report.data.blocked && <Reactions key={report.data.id} report={report.data} />}
 
             {/* 검산 진입점. 배지가 없는(서명 이전) 리포트에도 길을 둔다 — 봉인·앵커는 그 글에도
                 있을 수 있고, 없으면 검산 화면이 "봉인 이전 발행분" 이라고 말해 준다. */}
@@ -147,7 +156,8 @@ export default function ReportDetail() {
             key={report.data.id}
             reportId={report.data.id}
             commentCount={report.data.commentCount}
-            canWrite={!report.data.locked}
+            canWrite={!report.data.locked && !report.data.blocked}
+            blocked={report.data.blocked === true}
             channelId={String(report.data.author.userId)}
           />
         )}

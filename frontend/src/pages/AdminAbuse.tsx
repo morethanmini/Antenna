@@ -38,6 +38,16 @@ const TARGET_LABEL: Record<string, string> = {
   POST: '글', COMMENT: '댓글', USER: '회원', REPORT: '리포트', REPORT_COMMENT: '리포트 댓글',
 }
 
+/**
+ * 주격 조사를 붙인다 — 마지막 글자에 받침이 있으면 "이", 없으면 "가". "리포트가" · "댓글이" · "글이".
+ * "이(가)" 로 흘리면 대상이 늘 때마다 어색한 문장이 된다(확인창이 "리포트이(가)" 로 나왔다).
+ */
+function withSubject(word: string) {
+  const code = word.charCodeAt(word.length - 1) - 0xac00
+  if (code < 0 || code > 11171) return `${word}이(가)` // 한글 음절이 아니면 판단하지 않는다
+  return `${word}${code % 28 === 0 ? '가' : '이'}`
+}
+
 /** 대상 종류 → 가리기·복구 API. 회원은 가릴 대상이 없어 없다(차단은 회원 제재 화면). */
 const SET_STATUS: Partial<Record<AbuseTargetType, (id: number, status: ContentStatus) => Promise<void>>> = {
   POST: setPostStatus,
@@ -151,8 +161,8 @@ export default function AdminAbuse() {
                       {r.targetBody ?? '(내용 없음)'}
                     </span>
                     {r.targetBlocked && <span className="admin-chip warn">가려짐</span>}
-                    {/* 가려진 리포트는 상세가 410 이라 열어도 볼 수 없다 — 가려지기 전일 때만 건다 */}
-                    {r.targetReportId !== null && !r.targetBlocked && (
+                    {/* 가려진 뒤에도 건다 — 관리자는 가려진 리포트를 열어 보고 복구할지 정한다(다른 사람에게는 410) */}
+                    {r.targetReportId !== null && (
                       <div>
                         <Link className="admin-dim" to={`/reports/${r.targetReportId}`} target="_blank" rel="noreferrer">
                           리포트 열기 ↗
@@ -205,7 +215,7 @@ export default function AdminAbuse() {
           description={
             confirming.targetType === 'USER'
               ? '신고가 닫힙니다. 계정은 막히지 않습니다 — 차단은 회원 제재에서 따로 합니다.'
-              : `대상 ${TARGET_LABEL[confirming.targetType]}이(가) 가려집니다. 지워지지 않고, 나중에 복구할 수 있습니다.`
+              : `대상 ${withSubject(TARGET_LABEL[confirming.targetType])} 가려집니다. 지워지지 않고, 나중에 복구할 수 있습니다.`
           }
           confirmLabel="수락"
           tone="danger"

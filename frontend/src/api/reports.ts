@@ -106,6 +106,11 @@ export type ReportDetail = {
   signerAddress?: string
   /** 서버가 이번 열람을 반영해 내려준다. 본인 글은 증가하지 않는다 */
   viewCount: number
+  /**
+   * 신고로 가려진 리포트를 **관리자가** 보는 중이다(ANT-FE-ABUSE-REPORT). 평소에는 키가 없다.
+   * 가려진 리포트는 관리자 말고는 410 REPORT_BLOCKED 라 true 가 오는 경우는 관리자뿐이다.
+   */
+  blocked?: boolean
   likeCount: number
   /** 이 열람자가 이미 눌렀는지 */
   liked: boolean
