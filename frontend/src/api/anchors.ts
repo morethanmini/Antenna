@@ -178,3 +178,24 @@ export function formatConfirmedAt(iso: string) {
     hour: '2-digit', minute: '2-digit',
   })
 }
+
+/**
+ * 체인에 올라간 지 얼마나 됐나. D-01 원장의 배치 머리줄이 쓴다.
+ *
+ * 절대 시각(`formatConfirmedAt`)을 쓰면 방금 올라간 배치와 어제 것이 같아 보인다 —
+ * 원장에서 중요한 것은 "언제인가" 가 아니라 "얼마나 됐나" 다. 하루가 넘으면
+ * 간격이 더는 쓸모가 없어져 날짜로 돌아간다.
+ *
+ * 배치 상세(D-02)는 그대로 `formatConfirmedAt` 을 쓴다 — 거기서는 검증 재료라
+ * 분 단위 절대값이어야 한다.
+ */
+export function formatAnchorAgo(iso: string) {
+  const t = Date.parse(iso)
+  if (Number.isNaN(t)) return iso
+  const min = Math.floor((Date.now() - t) / 60_000)
+  if (min < 1) return '방금 확정'
+  if (min < 60) return `${min}분 전 확정`
+  const hour = Math.floor(min / 60)
+  if (hour < 24) return `${hour}시간 전 확정`
+  return `${formatBusinessDate(iso)} 확정`
+}
