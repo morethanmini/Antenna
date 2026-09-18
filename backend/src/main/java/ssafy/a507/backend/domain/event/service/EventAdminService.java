@@ -194,12 +194,20 @@ public class EventAdminService {
                 send.operationId(), eventId, send.stockCount(), send.minStake(), send.maxStake());
     }
 
-    /** 기준가 수동 입력. 배치가 늦거나 실패했을 때 쓰는 길이다(§1 "없으면 관리자가 넣는다"). */
+    /**
+     * 기준가 수동 입력. 배치가 늦거나 실패했을 때 쓰는 길이다(§1 "없으면 관리자가 넣는다").
+     *
+     * <p><b>SCHEDULED 일 때만 받는다.</b> 접수가 열린 뒤에는 참가자가 그 기준가를 보고 걸었고, 봉인 뒤에는 그 값이
+     * 그대로 {@code resolveStock} 으로 체인에 올라간다 — 여기서 바꾸면 이미 걸린 배팅의 승패가 뒤집힌다(2026-09-18).
+     */
     @Transactional
     public void fixBasePrice(Long adminUserId, Long eventId, short idx, BigDecimal basePrice) {
         requireAdmin(adminUserId);
-        if (!events.existsById(eventId)) {
-            throw new BusinessException(ErrorCode.EVENT_NOT_FOUND, "eventId");
+        PredictionEvent event =
+                events.findById(eventId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "eventId"));
+        if (event.getStatus() != PredictionEvent.Status.SCHEDULED) {
+            throw new BusinessException(ErrorCode.EVENT_BASE_PRICE_LOCKED, "eventId");
         }
         PredictionEventStock stock =
                 eventStocks
