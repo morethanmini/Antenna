@@ -37,6 +37,8 @@
 .rd-author{ color:var(--body); font-weight:var(--fw-bold); text-decoration:none; }
 .rd-author:hover{ color:var(--brand-ink); text-decoration:underline; }
 .rd-dot{ color:var(--faint); }
+/* 신고 ⋯ (AbuseMenu). 메타 줄 오른쪽 끝으로 민다 — 제목 줄을 flex 로 바꾸지 않아도 된다 */
+.rd-menu{ margin-left:auto; }
 
 /* 작성자 증명 배지. 구독자 공개(브랜드색)와 색을 나눈다 — 하나는 판매 조건,
    하나는 무결성이라 같은 색으로 묶으면 뜻이 섞인다. */

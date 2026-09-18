@@ -9,6 +9,8 @@
    - 작성 성공 후 목록을 통째로 다시 읽는다. 새 댓글을 손으로 이어 붙이면 그 사이
      다른 사람이 단 댓글이 빠진 채로 남고, 커서가 어디까지 왔는지도 어긋난다.
    - 대댓글은 없다. 서버가 부모 id 를 받지 않는다.
+   - 신고(M-06)는 줄마다 오른쪽 끝 ⋯ 에 접어 둔다. 내 댓글에는 그리지 않는다.
+     승인되면 서버가 BLOCKED 로 내려 목록에서 빠진다 — 화면이 따로 지우지 않는다.
 
    개수는 서버 commentCount 로 그린다 — items.length 가 아니다
    목록은 커서 페이징이라 items 에는 불러온 만큼만 있다. 20건 넘는 리포트에서
@@ -28,6 +30,8 @@ import { ERROR_CODE } from '../../api/errors'
 import ErrorState from '../state/ErrorState'
 import { errorText } from '../state/errorText'
 import LikeButton from './LikeButton'
+import AbuseMenu from './AbuseMenu'
+import { useAuth } from '../../auth/context'
 import '../../styles/report-comments.css'
 
 type Props = {
@@ -42,6 +46,7 @@ type Props = {
 
 export default function ReportComments({ reportId, commentCount, canWrite, channelId }: Props) {
   const list = useCursorList<ReportComment>(`/reports/${reportId}/comments`)
+  const { user } = useAuth()
   const [count, setCount] = useState(commentCount)
 
   function afterCreate() {
@@ -82,6 +87,16 @@ export default function ReportComments({ reportId, commentCount, canWrite, chann
                 </Link>
                 <span className="rc-dot" aria-hidden="true">·</span>
                 <span className="rc-when">{formatDateTime(c.createdAt)}</span>
+                {user?.id !== c.author.userId && (
+                  <AbuseMenu
+                    small
+                    className="rc-menu"
+                    targetType="REPORT_COMMENT"
+                    targetId={c.id}
+                    targetLabel={`${c.author.nickname} 님의 댓글을 신고합니다.`}
+                    menuLabel="댓글 메뉴"
+                  />
+                )}
               </div>
 
               <p className="rc-body">{c.body}</p>

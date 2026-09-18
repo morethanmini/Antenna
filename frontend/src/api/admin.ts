@@ -10,7 +10,8 @@ import { api } from './client'
 
 /* ── I-01 신고 처리 ───────────────────────────────────── */
 
-export type AbuseTargetType = 'POST' | 'COMMENT' | 'USER'
+/** COMMENT 는 커뮤니티 댓글, REPORT_COMMENT 는 리포트 댓글이다 — 표가 달라 id 가 섞이면 안 된다 */
+export type AbuseTargetType = 'POST' | 'COMMENT' | 'USER' | 'REPORT' | 'REPORT_COMMENT'
 export type AbuseReportStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED'
 
 export type AbuseReportItem = {
@@ -21,10 +22,12 @@ export type AbuseReportItem = {
   status: AbuseReportStatus
   targetType: AbuseTargetType
   targetId: number
-  /** 글·댓글이면 본문, 회원이면 닉네임. 무엇을 가리는지 보고 판단하라고 서버가 실어 준다 */
+  /** 글·댓글이면 본문, 회원이면 닉네임, 리포트면 제목. 무엇을 가리는지 보고 판단하라고 서버가 실어 준다 */
   targetBody: string | null
   /** 지금 이미 가려져 있는가. 회원 신고면 null 이다 */
   targetBlocked: boolean | null
+  /** 리포트·리포트 댓글 신고일 때 그 리포트 id. 댓글은 맥락을 봐야 판단된다 — 상세로 여는 데 쓴다 */
+  targetReportId: number | null
   reporterId: number
   reporterNickname: string | null
   handledById: number | null
@@ -40,7 +43,7 @@ export function getAbuseReports(status?: AbuseReportStatus) {
 }
 
 /**
- * 신고 처리. ACCEPT 면 대상 글·댓글이 BLOCKED 로 내려간다.
+ * 신고 처리. ACCEPT 면 대상 글·댓글·리포트·리포트 댓글이 BLOCKED 로 내려간다.
  *
  * **회원 신고를 ACCEPT 해도 계정은 막히지 않는다** — 제재는 banUser 로 따로 누른다.
  */
@@ -57,6 +60,15 @@ export function setPostStatus(postId: number, status: ContentStatus) {
 
 export function setCommentStatus(commentId: number, status: ContentStatus) {
   return api.patch<void>(`/admin/comments/${commentId}/status`, { status })
+}
+
+/** 리포트 가리기·복구. 신고 승인으로 가려진 리포트를 되돌리는 유일한 길이다 */
+export function setReportStatus(reportId: number, status: ContentStatus) {
+  return api.patch<void>(`/admin/reports/${reportId}/status`, { status })
+}
+
+export function setReportCommentStatus(commentId: number, status: ContentStatus) {
+  return api.patch<void>(`/admin/report-comments/${commentId}/status`, { status })
 }
 
 /* ── I-02 회원 제재 ───────────────────────────────────── */

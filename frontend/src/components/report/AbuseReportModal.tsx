@@ -177,6 +177,8 @@ const DUPLICATE_TITLE: Record<AbuseTargetType, string> = {
   USER: '이미 신고한 유저입니다',
   POST: '이미 신고한 글입니다',
   COMMENT: '이미 신고한 댓글입니다',
+  REPORT: '이미 신고한 리포트입니다',
+  REPORT_COMMENT: '이미 신고한 댓글입니다',
 }
 
 function reportErrorText(error: ApiError, targetType: AbuseTargetType) {

@@ -20,7 +20,11 @@
    좋아요·댓글 (ANT-REPORT-SOCIAL)
    잠긴 리포트에는 반응할 수 없다 — 서버가 403 REPORT_FORBIDDEN 을 준다. locked 를
    이미 알고 있으니 좋아요 버튼은 아예 그리지 않고, 댓글은 목록만 보여 준다(읽기는
-   허용된다 — 반응이 오가는 리포트라는 사실이 제목·통계와 같은 부류의 구독 유인이다). */
+   허용된다 — 반응이 오가는 리포트라는 사실이 제목·통계와 같은 부류의 구독 유인이다).
+
+   신고 (M-06 · ANT-FE-ABUSE-REPORT)
+   메타 줄 오른쪽 끝의 ⋯ 에 접어 둔다. 내 리포트에는 그리지 않는다. 신고가 승인돼 가려진
+   리포트는 410 REPORT_BLOCKED 로 오고, 아래 ErrorState 가 그 문구를 그린다. */
 import Markdown from '../components/report/Markdown'
 import { Link, useParams } from 'react-router-dom'
 import { useApiQuery } from '../api/useApiQuery'
@@ -29,6 +33,8 @@ import {
 } from '../api/reports'
 import LikeButton from '../components/report/LikeButton'
 import ReportComments from '../components/report/ReportComments'
+import AbuseMenu from '../components/report/AbuseMenu'
+import { useAuth } from '../auth/context'
 import ErrorState from '../components/state/ErrorState'
 import LockedCard from '../components/state/LockedCard'
 import '../styles/screens/report-detail.css'
@@ -36,6 +42,7 @@ import '../styles/screens/report-detail.css'
 export default function ReportDetail() {
   const { id } = useParams<{ id: string }>()
   const report = useApiQuery<Report>(`/reports/${id}`)
+  const { user } = useAuth()
 
   return (
     <main className="main">
@@ -89,6 +96,16 @@ export default function ReportDetail() {
                     </svg>
                     지갑 서명
                   </Link>
+                )}
+
+                {user?.id !== report.data.author.userId && (
+                  <AbuseMenu
+                    className="rd-menu"
+                    targetType="REPORT"
+                    targetId={report.data.id}
+                    targetLabel={`「${report.data.title}」 리포트를 신고합니다.`}
+                    menuLabel="리포트 메뉴"
+                  />
                 )}
               </div>
             </header>

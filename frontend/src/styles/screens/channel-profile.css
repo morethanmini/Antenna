@@ -41,36 +41,10 @@
 .ch-id{ min-width:0; }
 
 /* ── ⋯ 메뉴 (M-06 신고 진입) ──────────────────────────
+   모양은 공용 AbuseMenu(abuse-report.css 의 ab-menu-*)가 갖고, 여기는 자리만 잡는다.
    헤더 오른쪽 끝에 민다. .ch-id 에 flex:1 을 주지 않는 이유 — 그 안의 편집 폼이
    폭을 늘리면 닉네임 줄바꿈 위치가 바뀐다. 여백을 미는 쪽이 기존 레이아웃을 안 건드린다. */
-.ch-menu-wrap{ position:relative; margin-left:auto; flex:0 0 auto; }
-
-.ch-menu-btn{
-  display:grid; place-items:center;
-  width:30px; height:30px; padding:0;
-  border:0; border-radius:8px;
-  background:transparent; color:var(--muted); cursor:pointer;
-}
-.ch-menu-btn:hover{ background:var(--surface-2); color:var(--ink); }
-.ch-menu-btn[aria-expanded="true"]{ background:var(--surface-2); color:var(--ink); }
-
-.ch-menu{
-  position:absolute; top:34px; right:0; z-index:20;   /* 카드 안에서만 뜬다 — 모달(60)보다 아래 */
-  min-width:132px; padding:5px;
-  background:var(--surface);
-  border:1px solid var(--rule); border-radius:10px;
-  box-shadow:0 12px 28px -12px rgba(20,20,27,.28);
-}
-
-.ch-menu-item{
-  display:block; width:100%; box-sizing:border-box;
-  padding:8px 10px;
-  border:0; border-radius:7px;
-  background:transparent;
-  font:inherit; font-size:var(--fs-md); font-weight:var(--fw-bold); text-align:left;
-  color:var(--danger); cursor:pointer;
-}
-.ch-menu-item:hover{ background:#fdf4f4; }
+.ch-menu-wrap{ margin-left:auto; }
 .ch-id h1{ margin:0; font-size:var(--fs-3xl); font-weight:var(--fw-heavy); color:var(--ink); letter-spacing:-.02em; }
 /* ── 실적 통계 — 세 개 고정 ──────────────────────────── */
 .ch-stats{

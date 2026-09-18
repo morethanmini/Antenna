@@ -7,16 +7,16 @@
    들어오면 (신고자, 대상, PENDING) 유니크 제약이 잡아 409 DUPLICATE_REPORT 로 돌아온다.
    즉 중복 방지는 이미 서버 쪽에 있고, 키를 얹으면 저장소만 하나 더 쓰는 꼴이다.
 
-   ── targetType 이 셋인데 지금은 USER 만 쓴다 ────────────
-   설계서 M-06 의 호출 위치는 F-04(커뮤니티 피드) · F-05(글 상세) · E-02(채널 프로필) 셋인데
-   앞의 둘은 화면이 아직 없다(routes.ts 에 /posts 계열이 없다). 타입만 셋 다 열어 둔다 —
-   피드 화면이 생기면 같은 모달에 targetType 만 바꿔 넘기면 된다.
+   ── 대상 다섯 중 셋을 쓴다 ──────────────────────────────
+   USER(채널 프로필) · REPORT(리포트 상세) · REPORT_COMMENT(리포트 댓글).
+   커뮤니티(피드 글 POST · 피드 댓글 COMMENT)는 개발 범위에서 빠져 화면이 없다. 리포트가 그
+   자리를 맡는다. 서버에는 남아 있어 타입도 그대로 둔다.
 
-   주의: 여기의 COMMENT 는 커뮤니티 댓글(post_comments)이다. 리포트 댓글(report_comments)은
-   표가 다르고 id 공간도 다르다 — 그걸 신고하려면 서버 TargetType 에 항목이 먼저 생겨야 한다. */
+   주의: COMMENT 는 커뮤니티 댓글(post_comments)이고 REPORT_COMMENT 는 리포트 댓글(report_comments)
+   이다. 표가 다르고 id 번호 체계도 달라서, 리포트 댓글을 COMMENT 로 보내면 엉뚱한 댓글이 신고된다. */
 import { api } from './client'
 
-export const ABUSE_TARGET_TYPES = ['POST', 'COMMENT', 'USER'] as const
+export const ABUSE_TARGET_TYPES = ['POST', 'COMMENT', 'USER', 'REPORT', 'REPORT_COMMENT'] as const
 export type AbuseTargetType = (typeof ABUSE_TARGET_TYPES)[number]
 
 export const ABUSE_REASONS = ['SPAM', 'ABUSE', 'FRAUD', 'ETC'] as const

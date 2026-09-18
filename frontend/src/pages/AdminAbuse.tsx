@@ -6,13 +6,20 @@
    기준이다. 새 CSS 를 만들지 않고 admin.css 하나에 표 스타일만 둔다.
 
    ACCEPT 는 되돌릴 수 없다(신고가 닫힌다). 그래서 확인 대화상자를 끼운다.
-   대상 글·댓글 자체는 아래 블라인드 버튼으로 언제든 되돌릴 수 있다. */
+   대상 글·댓글·리포트 자체는 아래 블라인드 버튼으로 언제든 되돌릴 수 있다.
+
+   ── 대상 종류마다 가리는 경로가 다르다 (ANT-FE-ABUSE-REPORT) ──
+   커뮤니티 글·댓글과 리포트·리포트 댓글은 다른 표라 id 번호 체계가 다르다. 종류를 보고
+   알맞은 API 를 불러야 한다 — 리포트 id 로 커뮤니티 댓글 API 를 부르면 엉뚱한 댓글이 가려진다.
+   리포트·리포트 댓글은 "리포트 열기" 로 맥락을 보고 판단한다(댓글은 앞뒤를 봐야 안다). */
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import ConfirmDialog from '../components/ConfirmDialog'
 import {
   getAbuseReports, handleAbuseReport, setCommentStatus, setPostStatus,
+  setReportCommentStatus, setReportStatus,
 } from '../api/admin'
-import type { AbuseReportItem, AbuseReportStatus } from '../api/admin'
+import type { AbuseReportItem, AbuseReportStatus, AbuseTargetType, ContentStatus } from '../api/admin'
 import type { ApiError } from '../api/errors'
 import '../styles/screens/admin.css'
 
@@ -28,7 +35,15 @@ const REASON_LABEL: Record<string, string> = {
 }
 
 const TARGET_LABEL: Record<string, string> = {
-  POST: '글', COMMENT: '댓글', USER: '회원',
+  POST: '글', COMMENT: '댓글', USER: '회원', REPORT: '리포트', REPORT_COMMENT: '리포트 댓글',
+}
+
+/** 대상 종류 → 가리기·복구 API. 회원은 가릴 대상이 없어 없다(차단은 회원 제재 화면). */
+const SET_STATUS: Partial<Record<AbuseTargetType, (id: number, status: ContentStatus) => Promise<void>>> = {
+  POST: setPostStatus,
+  COMMENT: setCommentStatus,
+  REPORT: setReportStatus,
+  REPORT_COMMENT: setReportCommentStatus,
 }
 
 export default function AdminAbuse() {
@@ -75,8 +90,9 @@ export default function AdminAbuse() {
     setBusy(report.id)
     setError(null)
     try {
-      if (report.targetType === 'POST') await setPostStatus(report.targetId, next)
-      else await setCommentStatus(report.targetId, next)
+      const setStatus = SET_STATUS[report.targetType]
+      if (!setStatus) return
+      await setStatus(report.targetId, next)
       await load()
     } catch (e) {
       setError((e as ApiError).message)
@@ -90,7 +106,7 @@ export default function AdminAbuse() {
       <div className="main-inner">
         <div className="page-head">
           <h1>신고 처리</h1>
-          <p>접수된 신고를 보고 글·댓글을 가리거나 신고를 기각합니다. 회원 차단은 <a href="/admin/users">회원 제재</a>에서 합니다.</p>
+          <p>접수된 신고를 보고 리포트·댓글을 가리거나 신고를 기각합니다. 회원 차단은 <a href="/admin/users">회원 제재</a>에서 합니다.</p>
         </div>
 
         <div className="admin-tabs" role="tablist">
@@ -135,6 +151,14 @@ export default function AdminAbuse() {
                       {r.targetBody ?? '(내용 없음)'}
                     </span>
                     {r.targetBlocked && <span className="admin-chip warn">가려짐</span>}
+                    {/* 가려진 리포트는 상세가 410 이라 열어도 볼 수 없다 — 가려지기 전일 때만 건다 */}
+                    {r.targetReportId !== null && !r.targetBlocked && (
+                      <div>
+                        <Link className="admin-dim" to={`/reports/${r.targetReportId}`} target="_blank" rel="noreferrer">
+                          리포트 열기 ↗
+                        </Link>
+                      </div>
+                    )}
                   </td>
                   <td>
                     {REASON_LABEL[r.reason] ?? r.reason}
@@ -161,7 +185,7 @@ export default function AdminAbuse() {
                     ) : <span className="admin-dim">처리됨</span>}
 
                     {/* 신고 상태와 무관하게, 대상 자체는 언제든 가리고 되돌릴 수 있다 */}
-                    {r.targetType !== 'USER' && (
+                    {SET_STATUS[r.targetType] && (
                       <button
                         type="button" className="se-btn" disabled={busy === r.id}
                         onClick={() => { void 블라인드토글(r) }}
@@ -181,7 +205,7 @@ export default function AdminAbuse() {
           description={
             confirming.targetType === 'USER'
               ? '신고가 닫힙니다. 계정은 막히지 않습니다 — 차단은 회원 제재에서 따로 합니다.'
-              : `대상 ${TARGET_LABEL[confirming.targetType]}이(가) 가려집니다. 글은 지워지지 않고, 나중에 복구할 수 있습니다.`
+              : `대상 ${TARGET_LABEL[confirming.targetType]}이(가) 가려집니다. 지워지지 않고, 나중에 복구할 수 있습니다.`
           }
           confirmLabel="수락"
           tone="danger"

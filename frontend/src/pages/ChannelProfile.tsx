@@ -19,7 +19,7 @@
    PENDING 을 ACTIVE 와 같게 그리지 않는다
    결제가 체인에서 확정되기를 기다리는 중이라 아직 열람 권한이 없다. 여기서
    "구독 중" 이라고 쓰면 잠긴 예측을 보고 고장으로 읽는다. */
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import {
   daysLeft, fetchBacktest, fetchChannel, fetchChannelPredictions,
@@ -35,8 +35,7 @@ import ChannelProfileEdit from '../components/channel/ChannelProfileEdit'
 import ProfileAvatar from '../components/channel/ProfileAvatar'
 import PredictionNote from '../components/channel/PredictionNote'
 import SubscribeModal from '../components/channel/SubscribeModal'
-import AbuseReportModal from '../components/report/AbuseReportModal'
-import { useDismiss } from '../components/useDismiss'
+import AbuseMenu from '../components/report/AbuseMenu'
 import EmptyState from '../components/state/EmptyState'
 import ErrorState from '../components/state/ErrorState'
 import WalletLinkModal from '../components/wallet/WalletLinkModal'
@@ -112,19 +111,6 @@ export default function ChannelProfile() {
   const [subscribing, setSubscribing] = useState(false)
   const [linking, setLinking] = useState(false)
 
-  /* M-06 신고. 메뉴(⋯) 안에 접어 둔다 — 구독 CTA 와 시선을 다투지 않게.
-     닫는 규칙은 곁창과 같은 것을 쓴다(Escape · 바깥 누르기 · 버튼 재클릭). */
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [reporting, setReporting] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
-  const menuBtnRef = useRef<HTMLButtonElement>(null)
-
-  const closeMenu = useCallback((returnFocus?: boolean) => {
-    setMenuOpen(false)
-    if (returnFocus) menuBtnRef.current?.focus()
-  }, [])
-
-  useDismiss({ open: menuOpen, panel: menuRef, trigger: menuBtnRef, onClose: closeMenu })
 
   const channel = ch.data
   const sub = channel?.mySubscription
@@ -214,30 +200,15 @@ export default function ChannelProfile() {
                   누를 수 있게 두면 그 400 을 보려고 누르는 사람이 생긴다.
                   미리보기(?as=visitor)에서도 숨긴다 — owner 가 아니라 isMe 로 본다. */}
               {!channel.isMe && (
-                <div className="ch-menu-wrap">
-                  <button
-                    type="button" className="ch-menu-btn" ref={menuBtnRef}
-                    aria-haspopup="menu" aria-expanded={menuOpen} aria-label="채널 메뉴"
-                    onClick={() => setMenuOpen((v) => !v)}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                      <circle cx="5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="19" cy="12" r="1.8" />
-                    </svg>
-                  </button>
-                  {menuOpen && (
-                    /* 이미 신고했어도 항목은 늘 "신고" 다. 중복은 신고하기를 누를 때 서버가
-                       409 로 막고 모달이 그 자리에서 알린다 — 신고 여부는 서버만 정확히 안다
-                       (관리자가 처리하면 다시 신고할 수 있게 풀린다). */
-                    <div className="ch-menu" role="menu" ref={menuRef}>
-                      <button
-                        type="button" className="ch-menu-item" role="menuitem"
-                        onClick={() => { setMenuOpen(false); setReporting(true) }}
-                      >
-                        신고
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <AbuseMenu
+                  className="ch-menu-wrap"
+                  targetType="USER"
+                  /* Channel.userId 는 경로 변수라 문자열이다. 서버 targetId 는 Long 이고
+                     @Positive 라 문자열을 보내면 400 이 된다. */
+                  targetId={Number(channel.userId)}
+                  targetLabel={`${channel.nickname} 님을 신고합니다.`}
+                  menuLabel="채널 메뉴"
+                />
               )}
             </header>
 
@@ -343,17 +314,6 @@ export default function ChannelProfile() {
                 onClose={closeSubscribe}
                 onSubscribed={markStale}
                 onNeedWallet={() => { setSubscribing(false); setLinking(true) }}
-              />
-            )}
-
-            {reporting && (
-              <AbuseReportModal
-                targetType="USER"
-                /* Channel.userId 는 경로 변수라 문자열이다. 서버 targetId 는 Long 이고
-                   @Positive 라 문자열을 보내면 400 이 된다. */
-                targetId={Number(channel.userId)}
-                targetLabel={`${channel.nickname} 님을 신고합니다.`}
-                onClose={() => setReporting(false)}
               />
             )}
 
