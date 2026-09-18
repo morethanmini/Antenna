@@ -157,7 +157,8 @@ public class ReportSocialService {
     @Transactional(readOnly = true)
     public ReportCommentListResponse listComments(Long reportId, Long cursor, Integer size) {
         Long viewerId = currentUserProvider.currentUserId();
-        existingReport(reportId);
+        // 가려진 리포트의 댓글은 관리자만 읽는다 — 상세와 같은 판정(검토할 때 맥락이 필요하다)
+        reportAccess.requireVisible(existingReport(reportId), viewerId);
         int pageSize = pageSize(size);
 
         // 한 건 더 읽어 다음 페이지가 있는지 본다(리포트 목록과 같은 방식).
@@ -227,6 +228,10 @@ public class ReportSocialService {
     /** 반응할 수 있는 리포트인가 — 존재하고(404), 이 사람에게 잠겨 있지 않아야(403) 한다. */
     private Report openReport(Long reportId, Long viewerId) {
         Report report = existingReport(reportId);
+        // 가려진 리포트에는 누구도 반응하지 않는다 — 관리자도(읽기만 연다)
+        if (report.isBlocked()) {
+            throw new BusinessException(ErrorCode.REPORT_BLOCKED, "reportId");
+        }
         if (reportAccess.isLocked(report, viewerId)) {
             throw new BusinessException(ErrorCode.REPORT_FORBIDDEN, "reportId");
         }
@@ -256,6 +261,9 @@ public class ReportSocialService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.COMMENT_NOT_FOUND, "commentId"));
         if (comment.isBlocked()) {
             throw new BusinessException(ErrorCode.COMMENT_NOT_FOUND, "commentId");
+        }
+        if (comment.getReport().isBlocked()) {
+            throw new BusinessException(ErrorCode.REPORT_BLOCKED, "commentId");
         }
         if (reportAccess.isLocked(comment.getReport(), viewerId)) {
             throw new BusinessException(ErrorCode.REPORT_FORBIDDEN, "commentId");

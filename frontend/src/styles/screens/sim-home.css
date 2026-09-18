@@ -80,7 +80,111 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
     radial-gradient(46% 62% at 96% 96%,rgba(196,186,255,.45),transparent 70%),
     var(--wash);
 }
+
+/* ── 어두운 히어로 (모의투자 전용) ──────────────────────
+   인사이트와 모의투자가 같은 연보라 판을 쓰면 모드를 바꿔도 화면이 그대로인 것처럼
+   보인다. 여기만 판을 어둡게 깔아 "지금 모의투자에 있다" 를 바탕색으로 알린다.
+
+   **색상환은 그대로다.** --wash 의 118deg 방향과 네 정거장 구조를 그대로 두고
+   명도만 내렸다 — 브랜드 보라 계열을 벗어나지 않아야 다른 화면과 한 서비스로 읽힌다.
+
+   판이 어두워지면 그 위의 글·칩·막대가 전부 따라와야 한다. 아래가 그 한 벌이다.
+   되돌릴 때는 SeasonHome 의 is-dark 한 글자만 떼면 된다. */
+.sh-hero.is-dark{
+  border-color:rgba(255,255,255,.10);
+  background:
+    radial-gradient(58% 74% at 76% 24%,rgba(255,255,255,.10),transparent 62%),
+    radial-gradient(46% 62% at 96% 96%,rgba(138,123,245,.34),transparent 70%),
+    linear-gradient(118deg,#241f4a 0%,#2b2559 44%,#332b6b 74%,#272151 100%);
+}
+.sh-hero.is-dark .sh-flag{background:#3a3475;color:#cfc8ff}
+.sh-hero.is-dark .sh-title{color:#f4f2ff}
+.sh-hero.is-dark .sh-title em{color:#a99cff}
+.sh-hero.is-dark .sh-lead{color:#aaa6cd}
+.sim-home .sh-hero.is-dark .sh-bar{background:#322c66}
+.sh-hero.is-dark .sh-progress b{color:#e7e4ff}
+/* **불투명이다.** 반투명으로 두면 뒤의 배경 요소가 비쳐 숫자가 안 읽힌다.
+   판 색(#2b2559 언저리)에서 조금 올린 값이라 떠 보이지도 않는다. */
+.sim-home .sh-hero.is-dark .sh-stat{
+  border-color:rgba(255,255,255,.13);background:#332d68;
+  box-shadow:0 6px 18px -12px rgba(0,0,0,.6);
+}
+.sim-home .sh-hero.is-dark .sh-stat svg{color:#a99cff}
+.sim-home .sh-hero.is-dark .sh-stat dt{color:#9b9abd}
+.sim-home .sh-hero.is-dark .sh-stat dd{color:#f1efff}
 .sh-hero-copy{position:relative;z-index:1;min-width:0}
+
+/* ── 어두운 판의 배경 요소 ────────────────────────────
+   글과 개미 사이가 통째로 비어 있어서, 개미 누끼의 거친 가장자리가 그 빈 바탕에
+   그대로 드러났다. 가장자리를 더 깎는 것으로는 한계라 **빈자리를 채워** 시선이
+   경계에 머물지 않게 한다.
+
+   층이 셋이다. 뒤에서부터 캔들 · 빛줄기 · 유리판이고, 앞의 두 층은 가만히 있고
+   유리판만 뜬다 — 배경이 전부 움직이면 글을 읽는 동안 눈이 쉴 곳이 없다.
+
+   **무대(.sh-stage)가 아니라 카드(.sh-hero) 전체에 깐다.** 무대는 오른쪽 칸이라
+   채워야 할 가운데 빈자리가 거기에 안 들어온다.
+
+   전부 장식이라 읽어 주는 기기에서 감추고 마우스도 받지 않는다.
+
+   **규칙을 전부 .is-dark 아래 둔다.** 빛으로 그린 조각이라 밝은 판에 얹으면 하얗게
+   떠 버린다 — is-dark 한 글자를 떼면 배경도 같이 사라지는 것이 맞다.
+   원본과 굽는 법은 scripts/build-hero-backdrop.py 에 있다. */
+.sh-hero.is-dark .sh-backdrop{
+  position:absolute;inset:0;z-index:0;
+  border-radius:inherit;overflow:hidden;pointer-events:none;
+}
+
+/* 빛줄기만 카드를 통째로 가로지른다. 두 덩어리가 이어져 보이려면 끊기면 안 된다.
+   top 26% 는 위아래가 다 막힌 값이다 — 더 올리면 칩 세 개 뒤를 지나며 글자를 씻어
+   내고, 더 내리면 카드 아래 모서리에서 혼자 끊긴다. 굵은 둘(wave-mid·wave-wide)로도
+   해 봤는데 띠가 두꺼워 어느 높이에서도 칩에 닿았다. */
+.sh-hero.is-dark .sh-bd-wave{
+  position:absolute;left:0;top:26%;width:100%;height:auto;opacity:.75;
+  /* 글 칸만 지운다. 칩과 알약이 반투명이라 z-index 로 뒤에 보내도 소용이 없다 —
+     빛이 칩을 통과해 글자를 씻어 낸다.
+     **% 가 아니라 px 다.** 글은 카드가 넓어져도 같은 크기라, % 로 잡으면 넓은
+     화면에서는 글 한참 오른쪽에서 걸리고 좁은 화면에서는 글을 덮는다. 565px 은
+     이 칸에서 가장 긴 줄(진행률 막대, max-width 520px)이 끝나는 자리를 재서 넣은
+     값이고 카드 폭이 변해도 그대로다. */
+  -webkit-mask-image:linear-gradient(90deg,transparent 575px,#000 660px);
+  mask-image:linear-gradient(90deg,transparent 575px,#000 660px);
+}
+
+/* ── 채울 띠 ──────────────────────────────────────────
+   나머지 넷은 이 띠 안에 % 로 앉힌다. 카드 폭에 따라 빈자리 크기가 크게 달라져서
+   (1536px 에서 441px, 1186px 에서 201px) 카드 기준 % 도, 고정 px 도 양쪽을 동시에
+   만족시키지 못한다. 띠를 "글 끝 ~ 개미" 로 잡아 두면 그 안의 % 는 저절로 따라온다.
+
+   왼쪽 575px 은 위 마스크와 같은 근거이고, 오른쪽은 개미 왼쪽 가장자리보다 조금
+   더 오른쪽이다 — 캔들이 판 뒤로 조금 물려 들어가야 배경으로 읽힌다. */
+.sh-hero.is-dark .sh-bd-band{
+  position:absolute;left:575px;right:calc(var(--art) * .6);top:0;bottom:0;
+}
+.sh-hero.is-dark .sh-bd-band img{position:absolute;display:block;height:auto}
+
+/* 반짝임 — 띠 왼쪽 위 한 군데만. 여러 군데 뿌리면 지저분해진다 */
+.sh-hero.is-dark .sh-bd-spark{left:1%;top:3%;width:17%;opacity:.75}
+/* 캔들 — 가장 뒤. 아래를 넘겨 잘리게 둔다. 통째로 보이면 그림 한 장이 놓인 것으로
+   읽히는데, 잘려야 "바탕에 깔린 것" 으로 물러난다 */
+.sh-hero.is-dark .sh-bd-candles{right:2%;bottom:-12%;width:30%;opacity:.5}
+
+/* 유리판 둘만 뜬다. 주기를 서로 나누어떨어지지 않게 잡아 같은 박자로 모이지 않게 한다
+   (.sh-drift 머리말과 같은 이유). 움직임을 줄여 달라고 하면 아래 @media 가 끈다. */
+.sh-hero.is-dark .sh-bd-panel{animation:sh-float var(--dur) var(--delay) ease-in-out infinite alternate}
+.sh-hero.is-dark .sh-bd-panel1{
+  left:14%;top:11%;width:23%;opacity:.9;
+  --dur:8.6s;--delay:-2.7s;--dx:9px;--dy:-16px;--r0:-2.4deg;--r1:2.2deg;
+}
+.sh-hero.is-dark .sh-bd-panel2{
+  left:30%;top:50%;width:25%;opacity:.85;
+  --dur:7.1s;--delay:-5.3s;--dx:-10px;--dy:14px;--r0:3deg;--r1:-2.8deg;
+}
+@media (prefers-reduced-motion:reduce){ .sh-hero.is-dark .sh-bd-panel{animation:none} }
+
+/* 무대가 내려가는 폭에서는 배경도 같이 내린다 — 글만 남는 카드에 빛줄기만 떠
+   있으면 채우려던 빈자리가 아니라 그냥 얼룩이 된다 */
+@media(max-width:1120px){ .sh-hero.is-dark .sh-backdrop{display:none} }
 
 .sh-flag{
   display:inline-block;margin-bottom:var(--mb-flag);padding:6px 14px;border-radius:10px;
@@ -135,7 +239,8 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
    아래 여백 8% 를 더하면 1.45배다. 단계마다 따로 적지 않아 어긋날 일이 없다.
    왼쪽 글이 짧아도 무대가 카드 높이를 잡아 준다. */
 .sh-stage{
-  position:relative;align-self:stretch;
+  /* z-index 는 배경 요소(.sh-backdrop, z 0) 위에 서기 위한 것이다 */
+  position:relative;z-index:1;align-self:stretch;
   margin:calc(var(--hero-py) * -1) 0;min-height:calc(var(--art) * 1.45);
   border-radius:0 25px 25px 0;overflow:hidden;
   /* 전부 장식이다. 마우스를 받지 않아야 글자 선택이나 커서가 걸리지 않는다 */
@@ -147,6 +252,32 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
   display:block;width:var(--art);height:auto;transform:translateX(-50%);
   filter:drop-shadow(0 26px 34px rgba(70,66,229,.24));
 }
+/* 스프라이트판. 시트가 1048×876 으로 가로로 넓어 --art 를 그대로 주면 개미가
+   그림 폭의 절반만 차지해 옛 그림보다 작아 보인다. 1.62 배로 키우면 개미 키가
+   옛 그림과 엇비슷해진다 — 세로는 폭×0.836 이라 무대 높이(--art*1.45)에 들어간다.
+
+   canvas 는 <img> 와 달리 그림이 상자를 꽉 채운다. drawImage 가 프레임을 canvas
+   크기로 늘려 그리므로 CSS 로 폭만 주면 나머지는 따라온다. */
+.sh-hero-art.is-sprite{width:calc(var(--art) * 1.62);bottom:5%}
+
+/* ── 스프라이트를 쓸 때의 장식 구성 ──────────────────
+   옛 그림은 개미가 작은 태블릿 하나만 들고 있어 무대가 비었고, 그 빈자리를
+   장식 일곱이 채우는 구성이었다. 스프라이트는 **큰 차트판을 함께 들고 온다** —
+   판에 이미 차트와 BUY·SELL 버튼이 그려져 있어, 같은 것을 한 번 더 띄우면
+   겹치기만 하고 읽히지 않는다. 그래서 겹치는 넷을 내린다.
+
+     d2 BUY·d7 SELL  판의 초록·빨강 버튼과 같은 말이다
+     d3 MY MARKET    판의 차트와 같은 말인 데다 판 뒤로 완전히 가려졌다
+     d4 손글씨        개미 더듬이와 자리가 겹친다. 오른쪽 위는 d5 화살표만 남긴다
+
+   남는 셋은 판과 겹치지 않게 자리를 옮긴다 — 말풍선은 판 위로, 화살표는
+   오른쪽 위 구석으로. PRACTICE 카드(d6)는 원래 자리가 개미 뒤라 그대로 둔다. */
+.sh-stage.has-sprite .sh-drift.d2,
+.sh-stage.has-sprite .sh-drift.d3,
+.sh-stage.has-sprite .sh-drift.d4,
+.sh-stage.has-sprite .sh-drift.d7{display:none}
+.sh-stage.has-sprite .sh-drift.d1{top:1%;left:6%;width:calc(var(--art) * .58)}
+.sh-stage.has-sprite .sh-drift.d5{top:4%;right:2%}
 
 /* ── 떠다니는 장식 ──────────────────────────────────── */
 /* 위치는 무대 기준 % 라 무대가 줄어도 구성이 유지된다. 크기만 마스코트와 함께

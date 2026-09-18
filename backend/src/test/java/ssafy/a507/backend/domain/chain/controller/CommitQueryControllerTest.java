@@ -236,6 +236,20 @@ class CommitQueryControllerTest {
 
     // ── 픽스처 ──────────────────────────────────────────────────────
 
+    @Test
+    @DisplayName("신고로 가려진 리포트는 원장에 남되 제목은 자리표시 — 해시는 그대로다")
+    void 가려진_리포트는_원장에서_제목만_가린다() throws Exception {
+        long r = insertReport("이번 주 급등주 무조건 오릅니다", true, T0.plusSeconds(10));
+        em.createNativeQuery("UPDATE reports SET status = 'BLOCKED' WHERE id = ?").setParameter(1, r).executeUpdate();
+        em.flush();
+        em.clear();
+
+        ledger().andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].reportId").value(r))
+                .andExpect(jsonPath("$.items[0].title").value("신고로 가려진 리포트"))
+                .andExpect(jsonPath("$.items[0].commitHash").value(hashOf("report:이번 주 급등주 무조건 오릅니다")));
+    }
+
     private ResultActions ledger() throws Exception {
         return mockMvc.perform(get("/api/v1/commits").with(user(viewer)));
     }

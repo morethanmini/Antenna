@@ -101,6 +101,20 @@
   align-items: center;
 }
 
+/* 표 안의 처리 칸은 flex 로 두지 않는다. <td> 에 display:flex 를 주면 그 칸이 표 칸(table-cell)이
+   아니게 되어, 같은 줄의 다른 칸과 높이·밑줄이 따로 논다 — 상태 칸과 처리 칸의 가로줄이 어긋나던 원인.
+   표 칸으로 되돌리고 버튼 사이 간격만 여백으로 준다. 신고·광고·회원 세 표가 같이 쓴다. */
+.admin-table td.admin-actions {
+  display: table-cell;
+  white-space: nowrap;
+}
+.admin-table td.admin-actions > * {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+.admin-table td.admin-actions > * + * { margin-left: 6px; }
+
 /* ── 알림 줄 ─────────────────────────────────────────── */
 .admin-error,
 .admin-note {

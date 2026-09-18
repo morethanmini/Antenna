@@ -566,6 +566,127 @@ class ReportControllerTest {
                 .andExpect(jsonPath("$.field").value("cursor"));
     }
 
+    // ── 신고로 가려진 리포트 (ANT-FE-ABUSE-REPORT) ─────────────
+
+    @Test
+    @DisplayName("BLOCKED 리포트는 통합 피드(최신·인기)에서 빠진다")
+    void 가려진_리포트는_피드에서_빠진다() throws Exception {
+        insertReport(authorId, "보이는 것", true, 0);
+        Long hidden = insertReport(authorId, "가려진 것", true, 99);
+        block(hidden);
+        flush();
+
+        mockMvc.perform(get(URL).with(user(String.valueOf(viewerId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].title").value("보이는 것"));
+        // 인기순은 열람 수가 가장 많은 가려진 것이 맨 앞에 올 자리다 — 거기서도 빠져야 한다.
+        mockMvc.perform(get(URL).param("sort", "POPULAR").with(user(String.valueOf(viewerId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].title").value("보이는 것"));
+    }
+
+    @Test
+    @DisplayName("BLOCKED 리포트는 채널 리포트 목록과 통합 검색에서도 빠진다")
+    void 가려진_리포트는_채널과_검색에서도_빠진다() throws Exception {
+        insertReport(authorId, "반도체 전망 보이는 것", true, 0);
+        block(insertReport(authorId, "반도체 전망 가려진 것", true, 0));
+        flush();
+
+        mockMvc.perform(get("/api/v1/channels/" + authorId + "/reports").with(user(String.valueOf(viewerId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].title").value("반도체 전망 보이는 것"));
+        mockMvc.perform(get("/api/v1/search").param("q", "반도체 전망").with(user(String.valueOf(viewerId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reports.length()").value(1));
+    }
+
+    @Test
+    @DisplayName("BLOCKED 리포트 상세는 410 REPORT_BLOCKED — 작성자에게도 같다")
+    void 가려진_리포트_상세는_410() throws Exception {
+        Long reportId = insertReport(authorId, "가려진 것", true, 0);
+        block(reportId);
+        flush();
+
+        mockMvc.perform(get(URL + "/" + reportId).with(user(String.valueOf(viewerId))))
+                .andExpect(status().isGone())
+                .andExpect(jsonPath("$.code").value("REPORT_BLOCKED"));
+        mockMvc.perform(get(URL + "/" + reportId).with(user(String.valueOf(authorId))))
+                .andExpect(status().isGone())
+                .andExpect(jsonPath("$.code").value("REPORT_BLOCKED"));
+    }
+
+    @Test
+    @DisplayName("BLOCKED 리포트에는 댓글 목록도 열리지 않는다 — 상세를 우회하는 길을 막는다")
+    void 가려진_리포트_댓글목록은_410() throws Exception {
+        Long reportId = insertReport(authorId, "가려진 것", true, 0);
+        block(reportId);
+        flush();
+
+        mockMvc.perform(get(URL + "/" + reportId + "/comments").with(user(String.valueOf(viewerId))))
+                .andExpect(status().isGone())
+                .andExpect(jsonPath("$.code").value("REPORT_BLOCKED"));
+    }
+
+    @Test
+    @DisplayName("관리자는 가려진 리포트를 본다 — 구독자 전용이어도 전문과 blocked:true")
+    void 관리자는_가려진_리포트를_본다() throws Exception {
+        Long reportId = insertReportWithBody(authorId, "가려진 구독자 전용", false, "가려진 본문");
+        block(reportId);
+        Long adminId = insertUser("운영자");
+        makeAdmin(adminId);
+        flush();
+
+        mockMvc.perform(get(URL + "/" + reportId).with(user(String.valueOf(adminId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.blocked").value(true))
+                .andExpect(jsonPath("$.locked").value(false))
+                .andExpect(jsonPath("$.body").value("가려진 본문"));
+        // 검토는 열람이 아니다 — 조회수가 오르지 않는다
+        org.assertj.core.api.Assertions.assertThat(viewCountOf(reportId)).isZero();
+    }
+
+    @Test
+    @DisplayName("가려지지 않은 리포트 응답에는 blocked 키가 없다")
+    void 평소에는_blocked_키가_없다() throws Exception {
+        Long reportId = insertReport(authorId, "보이는 것", true, 0);
+        flush();
+
+        mockMvc.perform(get(URL + "/" + reportId).with(user(String.valueOf(viewerId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.blocked").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("관리자는 가려진 리포트의 댓글도 읽는다 — 반응(좋아요)은 관리자도 410")
+    void 관리자는_댓글을_읽되_반응은_못한다() throws Exception {
+        Long reportId = insertReport(authorId, "가려진 것", true, 0);
+        block(reportId);
+        Long adminId = insertUser("운영자");
+        makeAdmin(adminId);
+        flush();
+
+        mockMvc.perform(get(URL + "/" + reportId + "/comments").with(user(String.valueOf(adminId))))
+                .andExpect(status().isOk());
+        mockMvc.perform(post(URL + "/" + reportId + "/like").with(user(String.valueOf(adminId))).with(csrf()))
+                .andExpect(status().isGone())
+                .andExpect(jsonPath("$.code").value("REPORT_BLOCKED"));
+    }
+
+    @Test
+    @DisplayName("가려진 리포트의 검산은 410 — 제목을 바꿔 내리면 해시가 틀리므로 가리지 않고 막는다")
+    void 가려진_리포트_검산은_410() throws Exception {
+        Long reportId = insertReport(authorId, "가려진 것", true, 0);
+        block(reportId);
+        flush();
+
+        mockMvc.perform(get(URL + "/" + reportId + "/proof").with(user(String.valueOf(viewerId))))
+                .andExpect(status().isGone())
+                .andExpect(jsonPath("$.code").value("REPORT_BLOCKED"));
+    }
+
     // ── GET /reports/{id} ───────────────────────────────────
 
     @Test
@@ -899,6 +1020,16 @@ class ReportControllerTest {
                 .setParameter(1, address.toLowerCase(java.util.Locale.ROOT))
                 .setParameter(2, userId)
                 .executeUpdate();
+    }
+
+    private void makeAdmin(Long userId) {
+        em.createNativeQuery("UPDATE users SET role = 'ADMIN' WHERE id = ?").setParameter(1, userId).executeUpdate();
+    }
+
+    /** 관리자 ACCEPT 가 하는 일을 흉내 낸다. 처리 경로는 AdminAbuseReportControllerTest 가 따로 본다. */
+    private void block(Long reportId) {
+        em.createNativeQuery("UPDATE reports SET status = 'BLOCKED' WHERE id = ?")
+                .setParameter(1, reportId).executeUpdate();
     }
 
     private void flush() {

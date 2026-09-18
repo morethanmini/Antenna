@@ -163,11 +163,32 @@ button{border:0;background:none;cursor:pointer}
   display:flex;align-items:center;gap:18px;padding:0 20px;
   background:var(--surface);border-bottom:1px solid var(--nav-line);
 }
+/* **바를 반투명 프로스트로 둔다(2026-09-17).** 위의 불투명 흰색은 지원하지 않는
+   브라우저용 대비책이다.
 
-/* 로고 = 홈. 워드마크를 통째로 보인다(접힘 상태가 없어져 잘라 쓸 이유가 사라졌다) */
+   버튼을 유리로 만들려면 바가 먼저 유리여야 한다 — 유리는 뒤에 있는 것이 비쳐야
+   유리로 읽히는데, 바가 불투명한 흰색이면 버튼 뒤에 흰 벽밖에 없어서 아무리 묽혀도
+   그냥 옅은 회색 알약이 된다. 싸방팔방의 물방울 버튼이 유리로 보였던 것도 버튼이
+   **지도 위에** 떠 있어서였다.
+
+   본문이 바 밑으로 지나갈 때 흐릿하게 비친다. saturate 를 함께 주는 것은 iOS 의
+   재료와 같은 이유다 — 블러만 걸면 비친 색이 잿빛으로 바래서, 채도를 되살려야
+   유리 너머로 본 색이 된다. */
+@supports (backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px)){
+  .navbar{
+    background:rgba(255,255,255,.72);
+    -webkit-backdrop-filter:blur(20px) saturate(180%);
+    backdrop-filter:blur(20px) saturate(180%);
+  }
+}
+
+/* 로고 = 홈. 넓을 때는 워드마크를 통째로 보이고, 600px 아래에서는 **마크 파일로
+   갈아 끼운다**(Layout.tsx 의 <picture>). 자르는 것이 아니라 파일이 바뀌므로
+   여기서는 폭만 바꿔 주면 된다. */
 .brand{display:flex;align-items:center;flex:none}
+.brand picture{display:block}
 /* 전역 img{max-width:100%} 가 폭을 갉지 않게 풀어 둔다 */
-.brand-logo{width:150px;height:auto;max-width:none;display:block}
+.brand-logo{width:170px;height:auto;max-width:none;display:block}
 
 /* 모드 토글 — 클레이 3D 스위치(2026-09-18, 시안 "E · 클레이 3D 스위치").
    파인 홈(트랙) 안에서 알 하나가 미끄러진다. **켜진 칸을 칠하는 것이 아니라 알을
@@ -192,8 +213,11 @@ button{border:0;background:none;cursor:pointer}
   --ms-h:30px;--ms-pad:4px;
   /* 트랙 색. 시안은 #e3e3ec 이었는데 흰 네비바 위에서 덩어리져 보여 한 단계
      밝혔다(2026-09-18). 대신 홈이 얕아지므로 위쪽 안쪽 그림자를 조금 더 진하게
-     준다 — 색만 밝히면 파인 자국이 사라져 그냥 밝은 띠가 된다. */
-  --ms-track:#eef0f6;
+     준다 — 색만 밝히면 파인 자국이 사라져 그냥 밝은 띠가 된다.
+     **반투명으로 바꿨다(2026-09-17).** 바와 오른쪽 버튼이 전부 유리가 되고 나니
+     이 트랙만 불투명한 회색 띠로 남아 혼자 무거웠다. 파인 자국은 그대로 둔다 —
+     유리에도 파임은 있고, 그것이 알과 트랙을 가르는 유일한 표시다. */
+  --ms-track:rgba(226,230,242,.55);
   height:calc(var(--ms-h) + var(--ms-pad) * 2);padding:var(--ms-pad);
   border-radius:999px;background:var(--ms-track);
   box-shadow:
@@ -233,9 +257,17 @@ button{border:0;background:none;cursor:pointer}
 /* 메뉴 — 글자만. 아이콘을 뺐다: 한 줄에 늘어놓으면 아이콘이 글자 사이를 벌려
    덩어리로 읽히지 않는다(세로로 쌓던 사이드바와 다른 점이다).
 
-   **좁아지면 이 줄만 가로로 구른다.** 메뉴를 햄버거로 감추지 않는 것은 넷뿐이라
-   감출 값이 없어서고, 구르게 두면 로고·아이콘은 제자리에 남는다.
-   scrollbar-width:none 은 줄 아래에 스크롤바가 생겨 바 높이가 흔들리는 것을 막는다. */
+   **가로 스크롤을 걷어냈다(2026-09-17).** 전에는 좁아지면 이 줄만 굴렀는데, 구르는
+   줄은 스크롤바가 없어서(scrollbar-width:none) 굴릴 수 있다는 신호가 하나도 없었다.
+   화면에는 "주가 예측 랭킹" 이 "가 예측 랭킹" 으로, "리포트" 가 "리포" 로 글자 가운데가
+   잘린 채 남아 — 줄어드는 것이 아니라 바가 오른쪽으로 밀려난 것처럼 보였다.
+
+   대신 두 단계로 줄이다가 접는다(실측값은 브라우저에서 잰 것이다).
+   - 1200px 아래: 글자·여백·사이를 한 단계 줄인다(넷 합 445 -> 346px).
+     제 크기 445px 이 실제로 넘치기 시작하는 곳은 1159px 인데, 넘치기 직전까지
+     버티면 양옆에 붙어 답답하므로 40px 일찍 줄인다.
+   - 1080px 아래: 줄인 346px 마저 넘치기 시작하는 곳이 1048px 이다. 더 줄이면
+     읽히지 않으므로 그 앞에서 **햄버거(.navburger)로 통째로 접는다.** */
 .navmenu{
   /* **남는 자리를 다 먹고 그 안에서 가운데로 모은다.** 로고·모드 전환이 왼쪽,
      아이콘 묶음이 오른쪽에 고정돼 있어, 그 사이를 이 줄이 채우면 메뉴가 바 가운데에
@@ -243,9 +275,7 @@ button{border:0;background:none;cursor:pointer}
      때문이다 — 이 방식은 자리가 줄면 저절로 밀린다. */
   flex:1;justify-content:center;
   display:flex;align-items:center;gap:28px;min-width:0;
-  overflow-x:auto;scrollbar-width:none;
 }
-.navmenu::-webkit-scrollbar{display:none}
 /* 12.5 -> 15px. 사이드바에서는 아이콘이 옆에 붙어 작아도 읽혔는데, 글자만 한 줄로
    서니 그 크기로는 바가 비어 보였다.
    **색은 검정이다.** 보라로 뒀더니 메뉴 넷이 통째로 한 덩어리 색면이 되어, 지금 있는
@@ -256,16 +286,66 @@ button{border:0;background:none;cursor:pointer}
   font-size:var(--fs-2xl);font-weight:var(--fw-bold);color:var(--ink);
   transition:background .15s,color .15s;
 }
-.navmenu a:hover{background:var(--surface-2);color:var(--ink)}
-/* 지금 있는 자리. **보라 알약이 아니라 눌린 자국처럼 보이게 한다** — 메뉴가 전부
-   보라라 같은 색 알약을 깔면 글자와 바탕이 한 덩어리로 뭉친다. 옅은 회색 바닥에
-   안쪽 그림자를 얹으면 그 칸만 살짝 파인 것으로 읽혀, 색을 더 쓰지 않고도 자리가
-   보인다. 글자는 한 단계 진한 보라로 둔다. */
-.navmenu a.on{
-  background:var(--surface-2);color:var(--ink);
-  box-shadow:inset 0 1px 2px rgba(20,20,27,.09),inset 0 0 0 1px rgba(20,20,27,.04);
+/* **손을 짚었을 때는 뜬다.** 전에는 회색 상자를 깔았는데, 그 납작한 회색이
+   "눌렀다" 로 읽혀서 정작 현재 칸(아래 .on)과 구별되지 않았다. 옆의 아이콘
+   버튼과 같은 유리가 살짝 떠오르는 것으로 바꿨다 — 짚은 것은 뜨고, 지금 있는
+   자리는 들어가 있다. 두 상태가 빛의 방향으로 갈린다.
+   backdrop-filter 를 :hover 에만 거는 것은, 늘 걸어 두면 짚지도 않은 메뉴 넷
+   뒤가 항상 흐려지기 때문이다. */
+.navmenu a:hover{
+  color:var(--ink);
+  background-image:var(--glass-fill);box-shadow:var(--glass-raise);
+  -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);
 }
-.navmenu a.on:hover{background:var(--surface-2);color:var(--ink)}
+/* 지금 있는 자리 = **눌린 채로 있는 칸(음각)**. 떠 있는 것으로 두었더니 호버와
+   같은 방향이라 둘이 구별되지 않았다. 지금은 반대다 — 짚으면 뜨고, 지금 있는
+   자리는 들어가 있다.
+
+   유리를 쓰되 채움은 거의 없다. 파임을 만드는 것은 **안쪽 위의 그늘 하나**이고,
+   아래 모서리의 흰 줄이 그 그늘을 받아 홈처럼 보이게 한다. */
+.navmenu a.on{
+  color:var(--ink);
+  background-color:rgba(22,26,48,.016);box-shadow:var(--glass-inset);
+  -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);
+}
+/* 현재 칸은 짚어도 **뜨지 않는다** — 떠오르면 "여기 있다" 가 그 순간 사라진다.
+   짚었다는 것은 한 꺼풀 진해지는 것으로만 말한다. */
+.navmenu a.on:hover{
+  background-image:none;background-color:rgba(22,26,48,.03);
+  box-shadow:var(--glass-inset);
+}
+
+/* ── 접힌 메뉴(햄버거) ────────────────────────────────
+   좁아져 .navmenu 가 한 줄에 못 들어갈 때 그 넷을 여기로 접는다. **넓은 화면에서는
+   아예 없다** — 같은 길이 두 곳에 있으면 어느 쪽을 눌러야 하는지가 생긴다.
+
+   오른쪽 아이콘 묶음의 맨 앞에 선다. 왼쪽(로고·모드 전환)에 두면 메뉴가 접힐 때마다
+   왼쪽 덩어리의 폭이 바뀌어 모드 전환이 좌우로 흔들린다.
+
+   계정 메뉴(.accountmenu)와 같은 이유로 **바 높이만큼 늘린다** — 곁창이 top:100% 로
+   매달리므로 상자가 버튼(38px)만 하면 곁창이 바 안쪽에서 시작해 바닥 선을 덮는다. */
+.navburger{display:none;position:relative;flex:none;align-self:stretch;align-items:center}
+.navburger-pop{
+  position:absolute;top:calc(100% + 8px);right:0;z-index:40;
+  min-width:172px;padding:6px;
+  background:var(--surface);border:1px solid var(--rule);border-radius:12px;
+  box-shadow:0 18px 44px -20px rgba(20,20,27,.42),0 2px 8px rgba(20,20,27,.06);
+  display:flex;flex-direction:column;gap:2px;
+}
+.navburger-pop a{
+  display:block;width:100%;padding:10px 11px;border-radius:8px;
+  text-align:left;font-size:var(--fs-xl);font-weight:var(--fw-bold);color:var(--body);
+  white-space:nowrap;
+}
+.navburger-pop a:hover{background:var(--surface-2);color:var(--ink)}
+/* 지금 있는 자리. 한 줄일 때(.navmenu a.on)와 **같은 음각**이다 — 접혔다고
+   표시 방식까지 달라지면 같은 메뉴로 읽히지 않는다.
+   backdrop-filter 는 뺐다: 이 팝오버는 불투명한 흰 상자라 뒤에 비칠 것이 없다. */
+.navburger-pop a.on{
+  background-color:rgba(22,26,48,.016);
+  color:var(--ink);box-shadow:var(--glass-inset);
+}
+.navburger-pop a.on:hover{background-color:rgba(22,26,48,.03);box-shadow:var(--glass-inset)}
 
 /* 오른쪽 묶음. margin-left:auto 로 밀어 두면 메뉴가 길어져도 끝에 붙어 있는다.
    **바 높이만큼 편다(align-self:stretch).** 안쪽의 알림·계정 곁창이 top:100% 로
@@ -283,23 +363,129 @@ button{border:0;background:none;cursor:pointer}
 .navbar-auth a:hover{border-color:#c8c9f5;color:var(--brand-ink)}
 .navbar-signup:hover{background:var(--brand-ink);color:#fff!important}
 
-/* 지갑(H-01)으로 가는 링크다. 누를 수 있다는 것이 보여야 해서 호버를 준다 —
-   옆의 아이콘 버튼(.iconbtn)과 같은 결로 맞춘다 */
-.wallet{
-  display:flex;align-items:center;gap:7px;height:40px;padding:0 15px;
-  border:1px solid var(--rule);border-radius:999px;font-weight:var(--fw-bold);color:var(--ink);
-  text-decoration:none;transition:border-color .15s ease,background .15s ease;
+/* ── 유리 한 벌 ───────────────────────────────────────
+   원본은 싸방팔방의 물방울 버튼(GlassSurface + GlossyFill)이고, 시안은 iOS 26 의
+   리퀴드 글래스다. 옮기면서 **흰 바탕에 맞게 뒤집어야 했던 것**이 있어 적어 둔다.
+
+   ⚠ **시안을 그대로 베끼면 흰 바에서는 아무것도 안 보인다.**
+   그 유리가 보이는 것은 뒤가 회색이어서다 — 유리가 배경보다 밝으니 흰 테와 광택이
+   전부 살아난다. 흰 바탕에서는 흰색보다 밝을 수가 없으므로 같은 값이 통째로 죽고,
+   몸통에 깐 틴트만 남아 탁한 회색 알약이 된다(2026-09-17 에 한 번 그렇게 만들었다).
+
+   그래서 흰 바탕에서는 이렇게 뒤집는다.
+   1. **몸통은 찬 흰색에서 옅은 청회색으로 내려가는 그러데이션.** 알파를 .9 안팎으로
+      두어 색이 탁해지지 않게 한다 — 회색을 옅게 까는 것과 흰색을 진하게 까는 것은
+      같은 밝기라도 결과가 다르다. 앞은 맑고 뒤는 때가 낀 것처럼 보인다.
+   2. **형태는 바깥 헤어라인이 잡는다.** 흰 테는 흰 바탕에서 안 보이므로, 아주 옅은
+      어두운 선(.055)을 한 바퀴 둘러 경계를 만든다. 흰 테는 안쪽 위·아래 모서리에만
+      남겨 두께를 낸다.
+   3. **그림자를 되살린다.** 흰 위에 흰 것을 올릴 때 떠 있다는 것을 말해 주는 유일한
+      수단이다. 리퀴드 글래스가 그림자를 거의 안 쓰는 것은 뒤가 어두워 경계가 저절로
+      보이기 때문이지, 그림자가 유리답지 않아서가 아니다.
+
+   backdrop-filter 는 살려 둔다. 지금은 바 위쪽이 흰 화면이라 티가 안 나지만,
+   색이 있는 본문이 바 밑으로 지나갈 때 그만큼 물든다 — 그때가 이 재질이 제일
+   유리에 가까워지는 순간이다.
+
+   아이콘 색은 싸방팔방 그대로의 판단이다(#26343A, "반투명 배경 위에서도 읽히도록"). */
+:root{
+/* **가운데가 가라앉고 위·아래 끝이 둘 다 밝다.** 한 방향으로 내려가는 그러데이션
+     (위 흰색 -> 아래 회색)은 아래 모서리가 제일 어두워서 그냥 깨끗한 알약이 된다.
+     렌즈는 굽은 면이 위아래 양쪽에서 빛을 꺾어 모으므로 **끝이 둘 다 밝고 중간이
+     가라앉는다** — 65% 언저리를 가장 어둡게 두고 다시 흰색으로 올리는 이유다. */
+  /* **한 듯 안 한 듯.** 알파를 두 번 내렸다 — .86~1(흰 플라스틱) -> .28~.5 ->
+     지금의 .10~.32 다. 유리가 있다는 것을 말하는 것은 채움이 아니라 **위·아래
+     모서리의 흰 줄 두 개**이고, 나머지는 뒤엣것이 그대로 지나간다.
+     흰 바 위에서는 거의 안 보이는 것이 맞다. 아이콘이 이미 자기 할 일을 하고 있고,
+     유리는 그 아이콘이 누를 수 있는 것임을 **귀띔만** 한다. 색 있는 본문이 밑으로
+     지나갈 때 그만큼 물드는 것이 이 재질이 실제로 일하는 순간이다. */
+  --glass-fill:linear-gradient(180deg,
+    rgba(255,255,255,.32) 0%,
+    rgba(255,255,255,.10) 22%,
+    rgba(216,225,244,.13) 62%,
+    rgba(233,239,252,.15) 86%,
+    rgba(255,255,255,.3) 100%);
+  --glass-fill-hi:linear-gradient(180deg,
+    rgba(255,255,255,.5) 0%,
+    rgba(255,255,255,.24) 22%,
+    rgba(222,230,247,.26) 62%,
+    rgba(238,243,253,.28) 86%,
+    rgba(255,255,255,.48) 100%);
+  /* 바깥 헤어라인 + 그림자 둘(가까운 것·먼 것) + 안쪽 위·아래 모서리 */
+  --glass-raise:
+    0 0 0 1px rgba(22,26,48,.04),
+    0 1px 1px rgba(22,26,48,.035),
+    0 4px 10px -8px rgba(22,26,48,.14),
+    inset 0 1px 0 rgba(255,255,255,.85),
+    inset 0 -1.5px 0 rgba(255,255,255,.7);
+  --glass-raise-hi:
+    0 0 0 1px rgba(22,26,48,.055),
+    0 1px 2px rgba(22,26,48,.05),
+    0 8px 16px -8px rgba(22,26,48,.2),
+    inset 0 1px 0 rgba(255,255,255,1),
+    inset 0 -1.5px 0 rgba(255,255,255,.9);
+  /* 눌림 — 렌즈가 눌려 얇아진다. 바깥 그림자가 꺼지고 안쪽 위가 어두워진다 */
+  --glass-press:
+    0 0 0 1px rgba(22,26,48,.07),
+    inset 0 2px 6px rgba(22,26,48,.15);
+  --glass-press-brand:
+    0 0 0 1px color-mix(in oklab, var(--brand) 22%, transparent),
+    inset 0 2px 7px color-mix(in oklab, var(--brand) 28%, transparent);
+  /* 파임 — 누른 자국이 아니라 **눌린 채로 있는 자리**다. 유리가 그 칸만 안으로
+     들어가 있는 것이라, 볼록(--glass-raise)과 빛의 방향이 정확히 반대다:
+     안쪽 위가 어둡고 아래 모서리가 밝다. 모드 토글의 트랙과 같은 규칙이다. */
+  --glass-inset:
+    inset 0 0 0 1px rgba(22,26,48,.03),
+    inset 0 2px 4px rgba(22,26,48,.055),
+    inset 0 -1px 0 rgba(255,255,255,.78);
+  --glass-ink:#3b4150;
+  --glass-blur:blur(18px) saturate(180%);
 }
-.wallet:hover{border-color:var(--brand-soft);background:var(--brand-softer)}
+
+/* 유리를 쓰는 것들이 공유하는 바탕 */
+.wallet,.iconbtn{
+  background-image:var(--glass-fill);
+  -webkit-backdrop-filter:var(--glass-blur);
+  backdrop-filter:var(--glass-blur);
+}
+
+/* 지갑(H-01)으로 가는 링크다. 누를 수 있다는 것이 보여야 해서 호버를 준다 —
+   옆의 아이콘 버튼(.iconbtn)과 같은 결로 맞춘다.
+   **1px 선을 걷어냈다** — 클레이는 모서리의 밝고 어두움으로 자기 테두리를 만든다.
+   선까지 있으면 그 위에 검은 윤곽이 한 겹 더 얹혀 도로 납작해 보인다. */
+/* 높이가 38px 인 것은 옆의 아이콘 버튼·프로필·모드 토글이 전부 38 이어서다.
+   전에는 40 이었는데, 그때는 이 칩만 1px 선이 둘린 다른 재질이라 티가 안 났다.
+   넷이 같은 유리가 된 지금은 혼자 2px 큰 것이 그대로 보인다. */
+.wallet{
+  display:flex;align-items:center;gap:7px;height:38px;padding:0 16px;
+  border:0;border-radius:999px;font-weight:var(--fw-bold);color:var(--ink);
+  box-shadow:var(--glass-raise);
+  text-decoration:none;transition:box-shadow .15s ease,background-color .15s ease;
+}
+.wallet:hover{background-image:var(--glass-fill-hi);box-shadow:var(--glass-raise-hi)}
+.wallet:active{box-shadow:var(--glass-press)}
 .wallet:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 
-/* 바가 72px 이라 32px 아이콘은 왼쪽(로고 51 · 모드 전환 46)에 비해 작아 보였다 */
+/* 바가 72px 이라 32px 아이콘은 왼쪽(로고 51 · 모드 전환 46)에 비해 작아 보였다.
+   **모서리를 없앴다(999px).** 각이 남아 있으면 빚은 것이 아니라 잘라 낸 것으로
+   보이고, 옆의 잔액 칩·프로필·모드 토글이 전부 완전한 원이라 네모 넷만 결이 달랐다. */
 .iconbtn{
-  position:relative;width:38px;height:38px;border-radius:11px;color:var(--muted);
+  position:relative;width:38px;height:38px;border-radius:999px;color:var(--glass-ink);
   display:grid;place-items:center;
+  box-shadow:var(--glass-raise);
+  transition:box-shadow .15s ease,background-color .15s ease,color .15s ease;
 }
-.iconbtn:hover{background:var(--surface-2);color:var(--ink)}
-.iconbtn[aria-expanded="true"]{background:var(--brand-soft);color:var(--brand-ink)}
+.iconbtn:hover{background-image:var(--glass-fill-hi);box-shadow:var(--glass-raise-hi);color:var(--ink)}
+.iconbtn:active{box-shadow:var(--glass-press);color:var(--ink)}
+/* 곁창(검색줄 · 계정 메뉴 · 햄버거)이 열려 있는 동안은 **눌린 채로 둔다** —
+   파인 자국이 곧 "이게 열어 놓은 버튼이다" 다. 색만 갈아 끼우면 옆의 볼록한
+   버튼들과 재질이 갈려, 켜진 것이 아니라 다른 종류의 버튼처럼 보인다. */
+.iconbtn[aria-expanded="true"]{
+  background-image:linear-gradient(180deg,
+    color-mix(in oklab, var(--brand) 11%, transparent) 0%,
+    color-mix(in oklab, var(--brand) 17%, transparent) 100%);
+  color:var(--brand-ink);box-shadow:var(--glass-press-brand);
+}
 .badge{
   position:absolute;top:-2px;right:-2px;min-width:16px;height:16px;padding:0 4px;
   border-radius:999px;background:var(--danger);color:#fff;
@@ -313,12 +499,25 @@ button{border:0;background:none;cursor:pointer}
    매달리므로 이 상자가 버튼(32px)만 하면 바 안쪽에서 시작해 바닥 선을 덮는다.
    늘려 두면 100% 가 곧 바 아래라 바 높이가 바뀌어도 따라온다. */
 .accountmenu{position:relative;flex:none;align-self:stretch;display:flex;align-items:center}
+/* 프로필도 같은 클레이다. 다만 **안쪽 그림자를 겹으로 덧댄다**(::after) —
+   inset 그림자는 배경 위·자식 아래에 그려지므로, 사진이 들어차 있으면 그 밑에
+   깔려 하나도 보이지 않는다. 바깥으로 드리운 그늘만 남아 평평한 원이 된다. */
 .avatarbtn{
-  display:block;width:38px;height:38px;padding:0;border-radius:50%;
-  border:1px solid var(--rule);overflow:hidden;background:var(--brand-soft);
-  transition:border-color .15s ease;
+  position:relative;display:block;width:38px;height:38px;padding:0;border-radius:50%;
+  border:0;overflow:hidden;background:var(--brand-soft);
+  box-shadow:var(--glass-raise);
+  transition:box-shadow .15s ease;
 }
-.avatarbtn:hover{border-color:var(--brand)}
+/* 사진 위에 유리 한 겹. 위쪽 광택만 얹고 **틴트는 깔지 않는다** — 얼굴에 색을
+   씌우면 사람이 달라 보인다. 바깥 헤어라인·그림자는 버튼 쪽(--glass-raise)이
+   들고 있으므로 여기서는 안쪽 빛만 맡는다. */
+.avatarbtn::after{
+  content:'';position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.30) 0%,rgba(255,255,255,0) 52%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.75);
+}
+.avatarbtn:hover{box-shadow:var(--glass-raise-hi)}
+.avatarbtn:active::after{background:none;box-shadow:var(--glass-press)}
 .avatarbtn:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 /* 원본이 정사각이 아니어도 잘라서 채운다 */
 .avatarbtn img{width:100%;height:100%;object-fit:cover;display:block}
@@ -335,6 +534,8 @@ button{border:0;background:none;cursor:pointer}
   text-align:left;font-size:var(--fs-md);font-weight:var(--fw-bold);color:var(--body);
 }
 .accountmenu-pop a:hover,.accountmenu-pop button:hover{background:var(--surface-2);color:var(--ink)}
+/* 좁을 때만 나오는 줄(환경 설정). 넓을 때는 톱니 아이콘이 바에 있다 */
+.accountmenu-pop .only-narrow{display:none}
 /* 로그아웃만 색으로 구분한다 — 되돌리려면 OAuth 를 다시 타야 하는 동작이다 */
 .accountmenu-pop .is-danger{color:var(--danger)}
 .accountmenu-pop .is-danger:hover{background:#fdf1f1;color:var(--danger)}
@@ -359,7 +560,7 @@ button{border:0;background:none;cursor:pointer}
 .navsearch-form input:focus{border-color:var(--brand);outline:none}
 
 @media(prefers-reduced-motion:reduce){
-  .navbar a,.navmenu a,.modeswitch a,.modeswitch-thumb,.wallet,.avatarbtn{transition:none}
+  .navbar a,.navmenu a,.modeswitch a,.modeswitch-thumb,.wallet,.iconbtn,.avatarbtn{transition:none}
 }
 /* ── 메인 ─────────────────────────────────────────────── */
 .main{min-height:100vh;padding-top:var(--topbar-h)}
@@ -452,10 +653,25 @@ button{border:0;background:none;cursor:pointer}
   object-fit:cover;border-radius:inherit;background:#fff;
 }
 
+/* 1200px 아래 — 한 단계 줄인다. 아직 넷이 다 보인다 */
+@media(max-width:1200px){
+  .navbar{gap:14px}
+  .navmenu{gap:16px}
+  .navmenu a{padding:7px 8px;font-size:var(--fs-xl)}
+}
+
+/* 1080px 아래 — 더 줄이면 읽히지 않는다. 메뉴 줄을 통째로 햄버거에 접는다.
+   로고·모드 전환·오른쪽 아이콘은 제자리에 남는다 — 어느 서비스에 있는지와
+   검색·알림·계정은 좁은 화면에서도 한 번에 닿아야 하는 것들이다. */
+@media(max-width:1080px){
+  .navmenu{display:none}
+  .navburger{display:flex}
+}
+
 @media(max-width:900px){
   .main-inner{padding:20px 16px 48px}
   .navbar{gap:12px;padding:0 12px}
-  .brand-logo{width:112px}
+  .brand-logo{width:128px}
 }
 
 /* 600px 아래 — 여기서부터 한 줄에 다 못 담는다.
@@ -464,14 +680,23 @@ button{border:0;background:none;cursor:pointer}
    **오른쪽 아이콘 넷이 163px 밖으로 나가 누를 수 없었다.** 600px 에서는 12px 남아
    들어가므로 그 아래에서만 접는다.
 
-   접는 것은 둘이다.
-   - **로고를 마크만 남긴다.** 워드마크 한 장을 잘라 쓴다 — 왼쪽 22% 가 개미 마크다.
+   접는 것은 셋이다.
+   - **로고를 마크만 남긴다.** 마크 파일(antenna-mark-light.png)로 갈아 끼운다 —
+     <picture> 의 media 가 고르므로 여기서는 폭만 정사각으로 되돌린다.
+     42px 인 것은 그 파일이 사방에 여백을 안고 있어서다 — 그림이 실제로 차지하는
+     것은 가로 72% · 세로 88% 라, 34px 로 두면 그림은 24px 이 되어 옆의 아이콘
+     버튼(38px)보다 눈에 띄게 작다. 42px 이면 그림이 30px 안팎으로 맞는다.
    - **잔액 칩을 뺀다.** 오른쪽에서 제일 넓고(133px), 없어도 잃는 길이 없다.
      프로필 메뉴의 내 지갑이 같은 곳으로 간다.
-   메뉴 줄은 그대로 가로로 구른다 — 넷뿐이라 감출 값이 없다. */
+   - **톱니(설정)를 계정 메뉴로 내린다(2026-09-17).** 햄버거가 아이콘 한 칸을 더
+     쓰면서 360px 에서 1px 밖에 안 남았다. 아이콘을 32px 아래로 더 줄이면 손가락이
+     못 맞추므로, 줄이는 대신 하나를 접는다 — 잔액 칩과 같은 판단이다.
+   메뉴 줄은 이미 1080px 에서 햄버거로 접혔다. */
 @media(max-width:600px){
-  .brand{width:34px;overflow:hidden}
+  .brand-logo{width:42px}
   .wallet{display:none}
+  .nav-gear{display:none}
+  .accountmenu-pop .only-narrow{display:block}
   /* 여백도 함께 좁힌다. 이것까지 해야 360px(아이폰 SE)이 들어간다 — 16px 모자랐다 */
   .navbar{gap:8px;padding:0 8px}
 }
@@ -479,11 +704,19 @@ button{border:0;background:none;cursor:pointer}
 /* 440px 아래 — 바를 키우면서(로고 150 · 모드 전환 176 · 아이콘 38) 여기가 다시
    모자라졌다. 실측 360px 에서 58px 넘쳤다. 키운 것을 이 폭에서만 되돌린다:
    모드 전환 글자·여백을 줄이고(176 -> 146) 아이콘을 32 로 내리면(-24) 들어간다.
-   메뉴 줄은 그대로 가로로 구른다. */
+
+   **햄버거(2026-09-17)가 아이콘 한 칸을 더 요구해 여기가 또 43px 모자라졌다.**
+   큰 몫은 600px 에서 톱니를 계정 메뉴로 내려 되찾았고(-36), 나머지는 여백에서
+   긁는다 — 바 사이 6 -> 4 · 좌우 8 -> 6 · 아이콘 사이 8 -> 5 · 모드 전환 좌우
+   13 -> 11 · 로고 42 -> 34. 360px 에서 남는 자리를 실측으로 확인했다.
+   로고를 34 로 되돌려도 되는 것은, 이 폭에서는 옆의 아이콘도 32 라 그림이 24px
+   여도 혼자 작아 보이지 않아서다. */
 @media(max-width:440px){
-  .navbar{gap:6px}
+  .navbar{gap:4px;padding:0 6px}
+  .navbar-right{gap:5px}
+  .brand-logo{width:34px}
   /* 높이·여백을 변수로 줄인다 — 알 크기와 모서리가 같이 따라온다 */
   .modeswitch{--ms-h:26px;--ms-pad:3px}
-  .modeswitch a{padding:0 13px;font-size:var(--fs-md)}
+  .modeswitch a{padding:0 11px;font-size:var(--fs-md)}
   .iconbtn,.avatarbtn{width:32px;height:32px}
 }

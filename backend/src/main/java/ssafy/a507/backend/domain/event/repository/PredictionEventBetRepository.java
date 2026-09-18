@@ -74,6 +74,37 @@ public interface PredictionEventBetRepository extends JpaRepository<PredictionEv
     }
 
     /**
+     * 참가자 — 화면 J-01 의 "대회 참가자" 타일 (ANT-EVENT-04).
+     *
+     * <p>돌려주는 행은 배팅 한 건에 하나씩, {@code [user, 종목 idx, 종목명, 건 시각]} 이다.
+     * 사람 단위로 묶는 일은 서비스가 한다 — 타일에 닉네임·사진과 함께 <b>건 종목 목록</b>까지
+     * 필요해서, 세는 쿼리와 목록 쿼리를 따로 두느니 한 번에 읽고 자바에서 묶는 편이 싸다.
+     * {@code user} 를 통째로 돌려주는 것은 닉네임과 프로필 사진 id 를 같이 쓰기 위해서다.
+     *
+     * <p><b>돈도 방향도 없다.</b> 이 도메인의 "남의 방향·목표가는 나가지 않는다" 규칙을 따른다 —
+     * 누가 얼마를 어느 쪽으로 걸었는지는 집계(종목 카드의 풀)로만 보인다. 여기서 나가는 것은
+     * "이 사람이 이 종목에 걸었다" 까지이고, 그건 카드의 참가 인원이 이미 세고 있는 사실이다.
+     *
+     * <p>상태는 풀 집계와 같은 {@code LIVE_FOR_POOL} 을 쓴다. PENDING 은 아직 체인에 없는 배팅이라
+     * 이름이 먼저 올라갔다가 전송이 실패하면 사라지는 일이 생긴다 — 자기 것은 "내 참가 내역" 이
+     * 전송 중까지 다 보여 준다.
+     */
+    @Query("""
+            select b.user, b.eventStock.idx, b.eventStock.stock.name, b.createdAt
+              from PredictionEventBet b
+             where b.event.id = :eventId
+               and b.betStatus in :live
+             order by b.createdAt asc, b.eventStock.idx asc
+            """)
+    List<Object[]> findParticipantBets(
+            @Param("eventId") Long eventId, @Param("live") Collection<PredictionEventBet.Status> live);
+
+    /** 건 순서대로. 회차가 한 번뿐이라 통째로 읽는다 — 수천이 되면 커서를 붙인다. */
+    default List<Object[]> findParticipantBets(Long eventId) {
+        return findParticipantBets(eventId, LIVE_FOR_POOL);
+    }
+
+    /**
      * 아직 전송이 끝나지 않은 내 배팅의 합계 — 묶음 등록의 잔액 검사에서 뺀다 (ANT-EVENT-05).
      *
      * <p><b>왜 빼나</b> — PENDING 은 체인에 나갔거나 나가는 중이라 곧 잔액에서 사라질 돈이다. 그걸 안

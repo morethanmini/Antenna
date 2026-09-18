@@ -163,6 +163,25 @@
 }
 .stocks-page .st-sector-track::-webkit-scrollbar{display:none}
 
+/* 가장자리 흐림. 칩 폭이 148px 로 고정이라 줄 끝에서는 늘 한 장이 반쯤 잘리는데,
+   딱 잘린 채로 두면 "더 있다" 가 아니라 "잘렸다" 로 읽힌다.
+
+   mask 를 쓰는 이유는 흰 그라데이션을 덧대는 방식이 여기서는 안 먹기 때문이다 —
+   이 줄은 카드 위가 아니라 페이지 바탕 위에 떠 있고, 위에 덧대면 그 조각이 칩의
+   마우스·클릭까지 가로챈다. mask 는 그리기만 깎으므로 누르는 데는 지장이 없다.
+
+   넘길 데가 있는 쪽만 깎는다(fade-l · fade-r). 끝에 닿으면 클래스가 빠져 마지막
+   칩이 또렷해진다 — 넘김 버튼이 꺼지는 것과 같은 값(more)으로 움직인다. */
+.stocks-page .st-sector-track.fade-r{
+  mask-image:linear-gradient(to right,#000 calc(100% - 46px),transparent 100%);
+}
+.stocks-page .st-sector-track.fade-l{
+  mask-image:linear-gradient(to left,#000 calc(100% - 46px),transparent 100%);
+}
+.stocks-page .st-sector-track.fade-l.fade-r{
+  mask-image:linear-gradient(to right,transparent 0,#000 46px,#000 calc(100% - 46px),transparent 100%);
+}
+
 /* 끌어서 넘기기. 끄는 동안에는 부드러운 스크롤과 스냅을 끈다 — 켜 두면 손을
    따라오지 않고 한 박자 늦게 미끄러져 "잡고 있다" 는 느낌이 깨진다.
    글자 선택도 막는다. 안 막으면 칩 이름이 파랗게 드래그된 채로 끌린다. */
@@ -370,15 +389,25 @@
 
 /* ── 목록 패널 ──────────────────────────────────────────── */
 .stocks-page .st-panel{display:flex; flex-direction:column; gap:14px; min-width:0}
-.stocks-page .st-panel-head{display:flex; align-items:center; gap:10px}
+/* 머리말 — 제목 · 종목 수 · 기준일 · 정렬 넷이 한 줄에 선다.
+
+   **줄을 바꿀 수 있어야 한다**(2026-09-18). flex 는 자리가 모자라면 아이템을 줄이는데,
+   기준일은 nowrap 이고 정렬은 flex:none 이라 줄어들 수 있는 것이 제목뿐이었다. 그래서
+   좁은 화면에서 "종목 리스트" 가 글자마다 줄바꿈돼 머리말 높이가 136px 까지 늘어나고,
+   그러고도 모자라 정렬 드롭다운이 카드 밖으로 밀려났다(420px 실측).
+   넷 다 줄어들지 않게 못 박고 wrap 을 켜서, 모자라면 아래로 내려가게 한다. */
+/* 줄 사이는 칸 사이보다 좁다 — 줄이 바뀌면 같은 값이 세로로도 벌어져, 안 그래도
+   두 줄이 된 머리말이 더 헐거워 보인다 */
+.stocks-page .st-panel-head{display:flex; align-items:center; gap:6px 10px; flex-wrap:wrap}
 .stocks-page .st-panel-head h2{
   margin:0; color:var(--ink); font-size:var(--fs-2xl); font-weight:var(--fw-bold); letter-spacing:-.02em;
+  flex:none; white-space:nowrap;
 }
 /* margin:0 은 장식이 아니다 — F-06 체결내역(sim-trades.css)의 같은 이름이
    margin:0 0 0 auto 로 배지를 오른쪽 끝까지 밀어붙인다. 스코프를 씌워도 **내가
    적지 않은 속성**은 저쪽 값이 그대로 남으므로, 기대는 값은 적어 둬야 한다. */
 .stocks-page .st-count{
-  margin:0;
+  margin:0; flex:none; white-space:nowrap;
   padding:3px 9px; border-radius:99px;
   background:var(--brand-softer); color:var(--brand-ink);
   font-size:var(--fs-xs); font-weight:var(--fw-bold);
@@ -386,6 +415,7 @@
 /* 기준 영업일 — 머리글에서 목록 패널로 내려왔다(2026-09-11). 마켓맵 탭에서는
    목록을 부르지 않아 baseDate 가 없고, 머리글에 두면 탭마다 있다 없다 한다 */
 .stocks-page .st-panel-asof{
+  flex:none;
   color:var(--muted); font-size:var(--fs-sm); font-weight:var(--fw-bold); white-space:nowrap;
 }
 .stocks-page .st-panel-asof b{color:var(--ink); font-weight:var(--fw-bold)}
@@ -404,16 +434,22 @@
 }
 .stocks-page .st-sort select:focus{border-color:var(--brand); outline:none}
 
-/* 칸 나눔은 머리글과 행이 같은 값을 써야 어긋나지 않는다 */
+/* 칸 나눔은 머리글과 행이 같은 값을 써야 어긋나지 않는다.
+
+   **사이를 22px 로 벌렸다**(2026-09-18, 전 12px). 값 칸 다섯이 다닥다닥 붙어 한
+   덩어리로 뭉치니, 그 덩어리가 오른쪽 끝으로 밀려 종목명과 사이가 휑했다. 칸을
+   벌리면 덩어리가 왼쪽으로 퍼지면서 종목명 쪽 빈자리도 같이 줄어든다.
+   PER·PBR 도 두 자리씩 넓혔다 — 1062.8x 같은 값이 칸에 꽉 차 있었다. */
 .stocks-page .st-cols,.stocks-page .st-link{
   display:grid;
-  grid-template-columns:minmax(0,1fr) 92px 82px 62px 64px minmax(0,176px);
-  align-items:center; gap:12px;
+  grid-template-columns:minmax(0,1fr) 92px 82px 70px 72px minmax(0,176px);
+  align-items:center; gap:22px;
 }
-/* 오른쪽 여백은 행의 관심 버튼 칸과 같아야 한다 — 이 값이 어긋나면 그 차이가
-   여섯 칸 모두에 그대로 밀려 머리글과 값이 따로 논다. .st-item 의 44px 과 한 쌍이다. */
+/* 왼쪽 여백은 행의 관심 버튼 칸과 같아야 한다 — 이 값이 어긋나면 그 차이가
+   여섯 칸 모두에 그대로 밀려 머리글과 값이 따로 논다. .st-item 의 44px 과 한 쌍이다.
+   별이 줄 맨 앞으로 오면서 그 44px 도 왼쪽으로 옮겼다(2026-09-18). */
 .stocks-page .st-cols{
-  margin:0 -20px; padding:0 44px 10px 20px; border-bottom:1px solid var(--rule);
+  margin:0 -20px; padding:0 20px 10px 52px; border-bottom:1px solid var(--rule);
   color:var(--muted); font-size:var(--fs-xs); font-weight:var(--fw-bold); letter-spacing:.02em;
 }
 .stocks-page .st-cols .r{text-align:right}
@@ -428,9 +464,10 @@
    flex column + gap:4px 이라, 안 적으면 행 사이가 4px 씩 벌어지고 구분선이 끊긴다.
    여기 행은 border-bottom 으로 이어 붙는 목록이라 틈이 있으면 안 된다. */
 .stocks-page .st-list{list-style:none; margin:0 -20px; padding:0; display:block; gap:0}
-/* 행은 링크(정보)와 관심 버튼 두 칸이다 — a 안에 button 을 둘 수 없다 */
+/* 행은 관심 버튼과 링크(정보) 두 칸이다 — a 안에 button 을 둘 수 없다.
+   별이 앞이라 44px 이 첫 칸이다(2026-09-18). */
 .stocks-page .st-item{
-  display:grid; grid-template-columns:minmax(0,1fr) 44px;
+  display:grid; grid-template-columns:52px minmax(0,1fr);
   align-items:center; border-bottom:1px solid var(--rule);
 }
 .stocks-page .st-item:last-child{border-bottom:0}
@@ -440,7 +477,7 @@
    더해 한 행이 70px 이었다. 줄 높이를 좁히고 여백을 10 으로 줄여 59px 로
    낮췄다(2026-09-14) — 열 줄이면 110px, 화면 하나만큼 덜 스크롤한다.
    더 줄이려면 로고를 건드려야 한다: 36 + 20 = 56 이 그다음 바닥이다. */
-.stocks-page .st-link{padding:10px 0 10px 20px; color:var(--ink)}
+.stocks-page .st-link{padding:10px 20px 10px 0; color:var(--ink)}
 .stocks-page .st-item:hover .st-name{color:var(--brand-ink)}
 
 .stocks-page .st-id{display:flex; align-items:center; gap:11px; min-width:0}
@@ -462,23 +499,37 @@
 }
 .stocks-page .st-close{color:var(--ink); font-size:var(--fs-lg); font-weight:var(--fw-bold)}
 .stocks-page .st-rate{font-size:var(--fs-base); font-weight:var(--fw-bold)}
+/* 상승·하락 색(2026-09-18). toneOf() 가 up·down 클래스를 붙이고 있었는데 그걸 칠하는
+   규칙이 이 화면에 없어서, 오른 종목도 내린 종목도 전부 회색으로 나왔다 — 표에서
+   가장 먼저 훑는 칸인데 방향이 부호 하나로만 남아 있던 셈이다.
+   국내 관례대로 상승이 빨강이다. 0 은 칠하지 않는다(toneOf 가 빈 문자열을 준다) —
+   오른 것도 내린 것도 아닌데 색이 붙으면 그렇게 읽힌다. */
+.stocks-page .st-rate.up{color:var(--up)}
+.stocks-page .st-rate.down{color:var(--down)}
 .stocks-page .st-per{color:var(--body); font-size:var(--fs-md); font-weight:var(--fw-bold)}
 
 /* ── 예측 심리 막대 ─────────────────────────────────────── */
+/* 앞의 숫자 칸들과 같이 오른쪽에 붙인다(2026-09-18). 막대는 칸 폭을 다 쓰므로
+   오른쪽으로 가는 것은 글자 줄이다 */
 .stocks-page .st-senti{display:flex; flex-direction:column; gap:5px; min-width:0}
-.stocks-page .st-senti-head{display:flex; align-items:baseline; gap:8px}
+.stocks-page .st-senti-head{display:flex; align-items:baseline; justify-content:flex-end; gap:8px}
 .stocks-page .st-senti-head b{font-size:var(--fs-xs); font-weight:var(--fw-heavy); letter-spacing:.02em}
-.stocks-page .st-senti-head em{margin-left:auto; color:var(--faint); font-style:normal; font-size:var(--fs-2xs)}
+.stocks-page .st-senti-head em{color:var(--faint); font-style:normal; font-size:var(--fs-2xs)}
 .stocks-page .st-senti-track{display:flex; height:5px; border-radius:99px; overflow:hidden}
 /* 막대는 글자가 아니라 그래픽이라 밝은 쪽을 쓴다 */
 .stocks-page .st-senti-up{background:var(--up-vivid)}
 .stocks-page .st-senti-down{background:var(--down-vivid)}
-.stocks-page .st-senti-none{color:var(--faint); font-size:var(--fs-xs)}
+/* 아무도 안 건 종목. 글자는 흐리게, 막대는 회색으로 꽉 채운다 — 빨강·파랑이 한
+   칸도 없다는 것이 곧 "예측이 없다" 는 뜻이다 */
+.stocks-page .st-senti.is-none b{color:var(--faint); font-weight:var(--fw-bold); letter-spacing:0}
+.stocks-page .st-senti-empty{width:100%; background:var(--surface-2)}
 
 /* ── 관심 별 ────────────────────────────────────────────── */
+/* 별 칸은 52px 이다(2026-09-18, 전 44px). 별을 키우면서 종목 로고와 붙는 것을
+   막으려고 칸째로 넓혔다 — 별만 키우면 오른쪽으로 번져 로고를 밀어붙인다. */
 .stocks-page .st-star{
-  display:grid; place-items:center; width:32px; height:32px; margin:0 6px 0 auto;
-  border-radius:9px; color:var(--faint);
+  display:grid; place-items:center; width:36px; height:36px; margin:0 auto 0 8px;
+  border-radius:10px; color:var(--faint);
 }
 .stocks-page .st-star:hover{background:var(--brand-softer); color:var(--brand)}
 .stocks-page .st-star.on{color:var(--gold)}
@@ -522,9 +573,11 @@
   /* 심리 막대까지 접고 종목·종가·등락률만 남긴다 */
   .stocks-page .st-cols{display:none}
   .stocks-page .st-cols,.stocks-page .st-link{grid-template-columns:minmax(0,1fr) auto}
+  /* 왼쪽 여백은 0 이다 — 별 칸이 앞에 서면서 그 자리를 이미 비운다(2026-09-18).
+     16px 을 그대로 두었더니 별과 로고 사이만 24px 로 벌어졌다. */
   .stocks-page .st-link{
     grid-template-areas:'id close' 'id rate';
-    gap:2px 12px; padding:10px 0 10px 16px;
+    gap:2px 12px; padding:10px 16px 10px 0;
   }
   .stocks-page .st-id{grid-area:id}
   .stocks-page .st-close{grid-area:close}

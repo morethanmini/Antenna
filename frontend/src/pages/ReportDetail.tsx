@@ -20,7 +20,11 @@
    좋아요·댓글 (ANT-REPORT-SOCIAL)
    잠긴 리포트에는 반응할 수 없다 — 서버가 403 REPORT_FORBIDDEN 을 준다. locked 를
    이미 알고 있으니 좋아요 버튼은 아예 그리지 않고, 댓글은 목록만 보여 준다(읽기는
-   허용된다 — 반응이 오가는 리포트라는 사실이 제목·통계와 같은 부류의 구독 유인이다). */
+   허용된다 — 반응이 오가는 리포트라는 사실이 제목·통계와 같은 부류의 구독 유인이다).
+
+   신고 (M-06 · ANT-FE-ABUSE-REPORT)
+   헤더 오른쪽 위의 ⋯ 에 접어 둔다(채널 프로필과 같은 자리). 내 리포트에는 그리지 않는다. 신고가 승인돼 가려진
+   리포트는 410 REPORT_BLOCKED 로 오고, 아래 ErrorState 가 그 문구를 그린다. */
 import Markdown from '../components/report/Markdown'
 import { Link, useParams } from 'react-router-dom'
 import { useApiQuery } from '../api/useApiQuery'
@@ -29,6 +33,8 @@ import {
 } from '../api/reports'
 import LikeButton from '../components/report/LikeButton'
 import ReportComments from '../components/report/ReportComments'
+import AbuseMenu from '../components/report/AbuseMenu'
+import { useAuth } from '../auth/context'
 import ErrorState from '../components/state/ErrorState'
 import LockedCard from '../components/state/LockedCard'
 import '../styles/screens/report-detail.css'
@@ -36,6 +42,7 @@ import '../styles/screens/report-detail.css'
 export default function ReportDetail() {
   const { id } = useParams<{ id: string }>()
   const report = useApiQuery<Report>(`/reports/${id}`)
+  const { user } = useAuth()
 
   return (
     <main className="main">
@@ -54,9 +61,27 @@ export default function ReportDetail() {
           <p className="rd-loading">불러오는 중…</p>
         )}
 
+        {/* 신고로 가려진 리포트를 관리자가 보는 중. 다른 사람에게는 410 안내가 뜬다 */}
+        {report.data?.blocked && (
+          <p className="rd-blocked" role="status">
+            <b>신고로 가려진 리포트입니다.</b>
+            관리자에게만 보입니다. 되돌리려면 신고 처리 화면에서 <Link to="/admin/abuse-reports">복구</Link>를 누르세요.
+          </p>
+        )}
+
         {report.data && (
           <article className="rd">
-            <header className="rd-head">
+            <header className={`rd-head${user?.id !== report.data.author.userId ? ' has-menu' : ''}`}>
+              {/* 신고 ⋯ 는 헤더 오른쪽 위 — 채널 프로필(E-02)과 같은 자리다. 내 리포트에는 없다 */}
+              {user?.id !== report.data.author.userId && (
+                <AbuseMenu
+                  className="rd-menu"
+                  targetType="REPORT"
+                  targetId={report.data.id}
+                  targetLabel={`「${report.data.title}」 리포트를 신고합니다.`}
+                  menuLabel="리포트 메뉴"
+                />
+              )}
               <h1 className="rd-title">{report.data.title}</h1>
 
               <div className="rd-meta">
@@ -90,6 +115,7 @@ export default function ReportDetail() {
                     지갑 서명
                   </Link>
                 )}
+
               </div>
             </header>
 
@@ -110,7 +136,8 @@ export default function ReportDetail() {
             {/* 잠긴 리포트에는 버튼을 내밀지 않는다 — 누르면 403 인 버튼은 없느니만 못하다.
                 key 로 리포트 id 를 준다: 상세에서 상세로 이동하면 훅 상태가 남아 이전
                 리포트의 좋아요 수가 잠깐 보인다. */}
-            {!report.data.locked && <Reactions key={report.data.id} report={report.data} />}
+            {/* 가려진 리포트에는 관리자도 반응하지 않는다 — 서버가 410 을 준다 */}
+            {!report.data.locked && !report.data.blocked && <Reactions key={report.data.id} report={report.data} />}
 
             {/* 검산 진입점. 배지가 없는(서명 이전) 리포트에도 길을 둔다 — 봉인·앵커는 그 글에도
                 있을 수 있고, 없으면 검산 화면이 "봉인 이전 발행분" 이라고 말해 준다. */}
@@ -129,7 +156,8 @@ export default function ReportDetail() {
             key={report.data.id}
             reportId={report.data.id}
             commentCount={report.data.commentCount}
-            canWrite={!report.data.locked}
+            canWrite={!report.data.locked && !report.data.blocked}
+            blocked={report.data.blocked === true}
             channelId={String(report.data.author.userId)}
           />
         )}

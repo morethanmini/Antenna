@@ -35,6 +35,7 @@ import ChannelProfileEdit from '../components/channel/ChannelProfileEdit'
 import ProfileAvatar from '../components/channel/ProfileAvatar'
 import PredictionNote from '../components/channel/PredictionNote'
 import SubscribeModal from '../components/channel/SubscribeModal'
+import AbuseMenu from '../components/report/AbuseMenu'
 import EmptyState from '../components/state/EmptyState'
 import ErrorState from '../components/state/ErrorState'
 import WalletLinkModal from '../components/wallet/WalletLinkModal'
@@ -109,6 +110,7 @@ export default function ChannelProfile() {
      지갑이 없으면 M-03 을 닫고 M-01 을 띄운다 — 모달 2겹을 만들지 않는다. */
   const [subscribing, setSubscribing] = useState(false)
   const [linking, setLinking] = useState(false)
+
 
   const channel = ch.data
   const sub = channel?.mySubscription
@@ -192,6 +194,22 @@ export default function ChannelProfile() {
                   onSaved={ch.reload}
                 />
               </div>
+
+              {/* ── ⋯ 메뉴 (M-06 진입) ──────────────────
+                  내 채널에는 아예 그리지 않는다. 자기 신고는 서버가 400 으로 막지만,
+                  누를 수 있게 두면 그 400 을 보려고 누르는 사람이 생긴다.
+                  미리보기(?as=visitor)에서도 숨긴다 — owner 가 아니라 isMe 로 본다. */}
+              {!channel.isMe && (
+                <AbuseMenu
+                  className="ch-menu-wrap"
+                  targetType="USER"
+                  /* Channel.userId 는 경로 변수라 문자열이다. 서버 targetId 는 Long 이고
+                     @Positive 라 문자열을 보내면 400 이 된다. */
+                  targetId={Number(channel.userId)}
+                  targetLabel={`${channel.nickname} 님을 신고합니다.`}
+                  menuLabel="채널 메뉴"
+                />
+              )}
             </header>
 
             {/* ── 실적 통계 — 세 개 고정 ────────────────── */}

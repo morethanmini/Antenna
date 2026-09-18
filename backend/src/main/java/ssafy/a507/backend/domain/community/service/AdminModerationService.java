@@ -20,9 +20,13 @@ import ssafy.a507.backend.domain.community.entity.PostComment;
 import ssafy.a507.backend.domain.community.repository.AbuseReportRepository;
 import ssafy.a507.backend.domain.community.repository.FeedPostRepository;
 import ssafy.a507.backend.domain.community.repository.PostCommentRepository;
+import ssafy.a507.backend.domain.monetize.entity.Report;
+import ssafy.a507.backend.domain.monetize.entity.ReportComment;
+import ssafy.a507.backend.domain.monetize.repository.ReportCommentRepository;
+import ssafy.a507.backend.domain.monetize.repository.ReportRepository;
 
 /**
- * 신고 처리와 글·댓글 블라인드 (ANT-ADMIN-01).
+ * 신고 처리와 글·댓글·리포트·리포트 댓글 블라인드 (ANT-ADMIN-01 · 리포트 쪽은 ANT-FE-ABUSE-REPORT).
  *
  * <p>접수는 {@link AbuseReportService} 가 하고 여기는 그 뒤를 맡는다 — 접수 서비스 주석이
  * "블라인드는 관리자 몫" 이라고 남겨 둔 자리가 여기다.
@@ -38,6 +42,8 @@ public class AdminModerationService {
     private final AbuseReportRepository abuseReportRepository;
     private final FeedPostRepository feedPostRepository;
     private final PostCommentRepository postCommentRepository;
+    private final ReportRepository reportRepository;
+    private final ReportCommentRepository reportCommentRepository;
     private final UserRepository userRepository;
     private final CurrentUserProvider currentUserProvider;
 
@@ -83,6 +89,11 @@ public class AdminModerationService {
             report.getTargetPost().changeStatus(FeedPost.Status.BLOCKED);
         } else if (report.getTargetComment() != null) {
             report.getTargetComment().changeStatus(PostComment.Status.BLOCKED);
+        } else if (report.getTargetReport() != null) {
+            // 행은 남긴다 — 봉인·앵커된 리포트라 지우면 원장 잎이 사라진다(Report.Status 주석).
+            report.getTargetReport().changeStatus(Report.Status.BLOCKED);
+        } else if (report.getTargetReportComment() != null) {
+            report.getTargetReportComment().changeStatus(ReportComment.Status.BLOCKED);
         }
     }
 
@@ -102,6 +113,24 @@ public class AdminModerationService {
                 .findById(commentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TARGET_NOT_FOUND));
         comment.changeStatus(PostComment.Status.valueOf(status.name()));
+    }
+
+    @Transactional
+    public void changeReportStatus(Long reportId, ContentStatus status) {
+        requireAdmin();
+        Report report = reportRepository
+                .findById(reportId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.REPORT_NOT_FOUND));
+        report.changeStatus(Report.Status.valueOf(status.name()));
+    }
+
+    @Transactional
+    public void changeReportCommentStatus(Long commentId, ContentStatus status) {
+        requireAdmin();
+        ReportComment comment = reportCommentRepository
+                .findById(commentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.COMMENT_NOT_FOUND));
+        comment.changeStatus(ReportComment.Status.valueOf(status.name()));
     }
 
     private User requireAdmin() {

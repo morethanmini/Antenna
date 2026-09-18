@@ -17,6 +17,12 @@ import { SIGNATURE_SCOPES, type WalletNonce } from './wallet'
 export type Author = {
   userId: number
   nickname: string
+  /**
+   * 프로필 사진 주소. 안 올린 사람은 null 이고, 서명 이전 응답에는 키 자체가 없다.
+   * 화면은 둘 다 DEFAULT_AVATAR 로 떨어뜨린다 — 목록에서 "사진이 없다"와 "필드가
+   * 아직 없다"를 다르게 그릴 이유가 없다.
+   */
+  avatarUrl?: string | null
 }
 
 /* 서버 ReportService.Scope · Sort 를 그대로 옮긴다.
@@ -56,6 +62,21 @@ export type ReportFeedItem = {
   liked: boolean
   /** 블라인드된 댓글은 빠진 수다 */
   commentCount: number
+  /**
+   * 카드 썸네일. 서버가 본문 첫 이미지를 뽑아 준다.
+   *
+   * 본문에 이미지가 없으면 null 이고 화면이 기본 그림(블록체인 큐브)을 깐다 —
+   * 회색 빈 칸을 남기면 "이미지를 못 불러왔다"로 읽힌다. 잠긴 리포트도 썸네일은
+   * 온다(통계와 같은 규칙이다 — 표지는 늘 공개다).
+   */
+  thumbnailUrl?: string | null
+  /**
+   * 카드 발췌. 서버가 본문 앞부분에서 마크다운 기호를 걷어내고 잘라 준다.
+   *
+   * 프론트가 자르지 않는 이유 — 목록 응답에 body 가 실리지 않고(잠긴 글은 애초에
+   * 못 받는다), 실어 오면 20,000자 본문이 한 페이지에 20개 실려 온다.
+   */
+  summary?: string | null
 }
 
 /**
@@ -85,6 +106,11 @@ export type ReportDetail = {
   signerAddress?: string
   /** 서버가 이번 열람을 반영해 내려준다. 본인 글은 증가하지 않는다 */
   viewCount: number
+  /**
+   * 신고로 가려진 리포트를 **관리자가** 보는 중이다(ANT-FE-ABUSE-REPORT). 평소에는 키가 없다.
+   * 가려진 리포트는 관리자 말고는 410 REPORT_BLOCKED 라 true 가 오는 경우는 관리자뿐이다.
+   */
+  blocked?: boolean
   likeCount: number
   /** 이 열람자가 이미 눌렀는지 */
   liked: boolean

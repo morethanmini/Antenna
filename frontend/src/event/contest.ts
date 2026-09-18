@@ -145,6 +145,27 @@ export const BANNER_BASE = {
   sticker: ART('sticker'),
 }
 
+/**
+ * 시상대 무대 — 랭킹의 이벤트 탭(E-01)이 쓴다.
+ *
+ * 받은 원본은 1~2MB PNG 열한 장(합 12MB)이었다. 배경은 가로 1600, 조각은 700 으로 줄여
+ * webp 로 굽고 원본은 지웠다(합 2.2MB) — 순위 화면은 배너처럼 한 번 스치는 곳이 아니라
+ * 결과를 들여다보는 자리라, 그림 열한 장이 매번 12MB 씩 내려오면 표가 뜨기 전에 기다리게 된다.
+ *
+ * **무대 배경 한 장만 쓴다.** 조명·관중·색종이 겹도 함께 받았는데(stage-lights ·
+ * stage-crowd · stage-confetti) 셋 다 배경에 이미 그려져 있어 겹쳐도 달라지는 게 거의 없고,
+ * 둘이 합쳐 680KB 라 배경(77KB)의 아홉 배다. 자산은 남겨 두었으니 더 화려하게 갈 때 얹으면 된다.
+ */
+export const STAGE = {
+  bg: ART('stage-bg'),
+  /** 등수별 받침. 숫자가 그림에 새겨져 있어 따로 글자를 얹지 않는다 */
+  podium: { 1: ART('podium-1'), 2: ART('podium-2'), 3: ART('podium-3') } as Record<number, string>,
+  /** 등수별 캐릭터. 사람마다 다른 게 아니라 **자리에 붙는 그림**이다 — 1등 자리에는 늘
+   *  트로피를 든 단타왕이 선다. 참가자 사진은 표에서 보여 준다 */
+  char: { 1: ART('hero-champion'), 2: ART('char-2nd'), 3: ART('char-3rd') } as Record<number, string>,
+  trophy: ART('trophy'),
+}
+
 export type BannerArt = {
   pill: string
   title: string

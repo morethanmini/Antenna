@@ -5,6 +5,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import ssafy.a507.backend.common.error.BusinessException;
+import ssafy.a507.backend.common.error.ErrorCode;
+import ssafy.a507.backend.domain.account.entity.User;
+import ssafy.a507.backend.domain.account.repository.UserRepository;
 import org.springframework.stereotype.Component;
 import ssafy.a507.backend.domain.monetize.entity.Report;
 import ssafy.a507.backend.domain.monetize.entity.Subscription;
@@ -26,6 +30,27 @@ import ssafy.a507.backend.domain.monetize.repository.SubscriptionRepository;
 public class ReportAccess {
 
     private final SubscriptionRepository subscriptionRepository;
+    private final UserRepository userRepository;
+
+    /**
+     * 가려진(BLOCKED) 리포트를 이 사람이 열 수 있나. <b>관리자만</b> 연다 — 복구할지 판단하려면 본문을 봐야 한다.
+     * 작성자도 막는다(가려진 뒤에도 작성자만 계속 보면 이유를 모른 채 링크를 퍼뜨린다).
+     *
+     * <p>상세 · 댓글 목록 · 검산 세 곳이 이것을 부른다. 한 곳에 두는 이유는 {@link #isLocked} 와 같다 —
+     * 한쪽만 고쳐지면 상세는 막혔는데 검산으로 제목·본문 해시가 열리는 식의 우회로가 생긴다.
+     */
+    public void requireVisible(Report report, Long viewerId) {
+        if (report.isBlocked() && !isAdmin(viewerId)) {
+            throw new BusinessException(ErrorCode.REPORT_BLOCKED, "reportId");
+        }
+    }
+
+    /** 가려진 리포트를 볼 때만 부른다 — 평소 경로에서 회원을 한 번 더 읽지 않게 */
+    private boolean isAdmin(Long viewerId) {
+        return viewerId != null && userRepository.findById(viewerId)
+                .map(u -> u.getRole() == User.Role.ADMIN)
+                .orElse(false);
+    }
 
     /** 본인이거나 ACTIVE 구독자면 잠기지 않는다. 전체 공개 리포트는 애초에 잠기지 않는다. */
     public boolean isLocked(Report report, Long viewerId, Set<Long> subscribedAuthorIds) {

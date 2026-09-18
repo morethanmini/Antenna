@@ -85,6 +85,45 @@ export type EventPool = {
   oddsDown: number | null
 }
 
+/**
+ * **승자투표권(패리뮤추얼) 배당 — 이 규칙이 사는 곳은 여기 한 곳이다.**
+ *
+ *     받을 돈 = 건 돈 × (양쪽 풀 합) ÷ (내가 선 쪽 풀)
+ *
+ * 두 가지로 갈리는 이유는 **내 배팅이 이미 풀에 들어 있는가** 하나뿐이다.
+ * 걸기 전 미리보기(C-01 배팅 칸)는 내가 들어가면 그 순간 풀이 커지므로 양쪽에 더한
+ * 뒤 재야 한다 — 빼고 재면 실제보다 큰 금액이 나와 화면이 부풀린 숫자를 약속한다.
+ * 이미 건 뒤(대회 카드)는 서버가 준 풀에 내 돈이 들어 있으므로 그대로 나눈다.
+ *
+ * 반대쪽이 비어 있으면 받을 돈이 건 돈과 같아진다(가져올 남의 돈이 없다). 0 이 아니라
+ * 원금이 맞다 — 컨트랙트도 이긴 풀이 전부일 때 원금을 돌려준다.
+ */
+function share(total: number, side: number, stake: number) {
+  /* 내 쪽 풀이 0 이면 나눌 수 없다. 걸었는데 0 이라는 것은 아직 체인에 안 올라갔다는
+     뜻이다(PENDING·FAILED 는 집계에서 빠진다) — 그때는 값을 지어내지 않는다. */
+  if (side <= 0) return null
+  return Math.floor((stake * total) / side)
+}
+
+/**
+ * 이미 걸어 둔 배팅이 **맞으면** 받을 돈. 내 stake 는 pool 에 이미 들어 있다.
+ *
+ * 단, 그 전제는 배팅이 체인에 올라갔을 때만 참이다. PENDING·FAILED 는 서버 풀
+ * 집계(PredictionEventBetRepository.LIVE_FOR_POOL)에서 빠지므로 풀에 내 돈이 없다 —
+ * 그대로 나누면 남의 돈만으로 몫을 재서 부풀린 금액이 나온다(FAILED 는 받을 돈이 아예 없다).
+ * 내 쪽 풀에 다른 사람이 있으면 share 의 side 방어도 못 거르므로 여기서 상태로 끊는다.
+ */
+export function payoutOfBet(pool: EventPool, bet: EventMyBet) {
+  if (bet.betStatus === 'PENDING' || bet.betStatus === 'FAILED') return null
+  return share(pool.up + pool.down, bet.direction === 'UP' ? pool.up : pool.down, bet.stake)
+}
+
+/** 아직 걸기 전 미리보기. 내 stake 를 양쪽에 더한 뒤 잰다. */
+export function payoutIfIBet(pool: EventPool, direction: BetDirection, stake: number) {
+  const mine = direction === 'UP' ? pool.up : pool.down
+  return share(pool.up + pool.down + stake, mine + stake, stake)
+}
+
 /** 내가 그 종목에 건 것. 남의 방향·목표가는 응답에 아예 없다(집계만 나온다). */
 export type EventMyBet = {
   predictionId: number
@@ -285,6 +324,37 @@ export function fetchLeaderboard(eventId: number, cursor?: string | null, size?:
   return api.get<EventLeaderboard>(`/events/${eventId}/leaderboard`, {
     query: { cursor: cursor ?? undefined, size },
   })
+}
+
+// ── 참가자 ──────────────────────────────────────────────
+
+export type EventParticipant = {
+  userId: number
+  nickname: string | null
+  /** 안 올렸거나 파일이 사라졌으면 null — 화면이 기본 그림을 깐다 */
+  avatarUrl: string | null
+  /** 건 종목 이름, 회차의 종목 순서대로. 타일에 손을 얹으면 뜨는 말풍선의 재료다 */
+  stocks: string[]
+  /** 순위 자격(stockCount >= minStocks). 최소 종목 수는 등록을 막지 않고 자격으로만 걸린다 */
+  qualified: boolean
+}
+
+export type EventParticipants = {
+  /** 참가자 수. 목록을 잘라 내리게 되면 여기만 전체 수로 남는다 */
+  total: number
+  items: EventParticipant[]
+}
+
+/**
+ * 참가자. **순위와 다르다** — 이쪽은 접수 중에도 온다.
+ *
+ * "누가 참가했나" 는 승패와 무관하게 이미 정해진 사실이라 미리 보여줘도 잘못 읽을 것이 없다.
+ * 순위를 미리 안 내리는 이유(승패를 모르는데 줄을 세우면 현재 등수로 읽힌다)가 여기엔 없다.
+ *
+ * 사람별 배팅액은 오지 않는다. 남이 얼마를 걸었는지는 종목 카드의 풀로 집계만 보인다.
+ */
+export function fetchParticipants(eventId: number) {
+  return api.get<EventParticipants>(`/events/${eventId}/participants`)
 }
 
 // ── 등록 ────────────────────────────────────────────────

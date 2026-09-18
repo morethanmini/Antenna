@@ -201,6 +201,16 @@ public enum ErrorCode {
      */
     REPORT_FORBIDDEN(HttpStatus.FORBIDDEN, "구독자 전용 리포트에는 구독자만 반응할 수 있습니다."),
 
+    // 리포트 신고 블라인드 (ANT-FE-ABUSE-REPORT)
+    /**
+     * 신고가 승인돼 가려진 리포트를 열었다(상세·좋아요·댓글).
+     *
+     * <p>{@code REPORT_NOT_FOUND} 로 뭉개지 않는 이유 — 알림이나 북마크로 들어온 사람에게 "없는 리포트"
+     * 라고 하면 고장으로 읽는다. 있었고 가려졌다는 사실은 말해 준다. 410 인 이유는 지금 이 주소의 내용을
+     * 내줄 수 없다는 뜻이어서다 — 관리자가 {@code PATCH /admin/reports/{id}/status} 로 복구하면 다시 열린다.
+     */
+    REPORT_BLOCKED(HttpStatus.GONE, "신고로 가려진 리포트입니다."),
+
     // 리포트 검산 (ANT-CHAIN-17)
     /**
      * 봉인 이전에 발행된 리포트의 검산을 요청했다({@code body_hash} NULL). 404 지만
@@ -244,6 +254,8 @@ public enum ErrorCode {
     EVENT_STAKE_OUT_OF_RANGE(HttpStatus.BAD_REQUEST, "배팅 금액은 500 ~ 2,000 ANT 사이여야 합니다."),
     EVENT_INSUFFICIENT_BALANCE(HttpStatus.CONFLICT, "ANT 잔액이 부족합니다."),
     EVENT_DUPLICATE_SLUG(HttpStatus.CONFLICT, "이미 쓰고 있는 대회 주소입니다."),
+    // 기준가는 접수 전(SCHEDULED)에만 고칠 수 있다. 열린 뒤 바꾸면 그 값이 온체인 판정에 들어가 승패가 뒤집힌다.
+    EVENT_BASE_PRICE_LOCKED(HttpStatus.CONFLICT, "접수가 시작된 뒤에는 기준가를 바꿀 수 없습니다."),
     EVENT_NOT_READY(HttpStatus.CONFLICT, "정산 조건이 아직 갖춰지지 않았습니다."),
     // 정산 러너 (ANT-EVENT-03). 셋 다 "다시 누르면 온체인 상태를 읽어 이어 간다" 가 대응이다.
     EVENT_SETTLING(HttpStatus.CONFLICT, "정산이 이미 진행 중입니다."),

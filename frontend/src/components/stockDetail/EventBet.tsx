@@ -45,7 +45,7 @@
 import { fetchWalletBalance, formatToken } from '../../api/wallet'
 import { useBlock } from '../../api/useBlock'
 import type { Direction } from '../../api/predictions'
-import type { EventPool } from '../../api/events'
+import { payoutIfIBet, type EventPool } from '../../api/events'
 
 /**
  * 빠른 선택 금액. 직접 입력은 이 밖의 값을 위한 칸이다.
@@ -117,27 +117,12 @@ type BetProps = {
 
 const SIDE_LABEL: Record<Direction, string> = { UP: '상승', DOWN: '하락' }
 
-/**
- * **지금 걸면 얼마를 받나** — 승자투표권(패리뮤추얼) 계산.
- *
- *     받을 돈 = 건 돈 × (전체 풀) ÷ (내가 선 쪽 풀)
- *
- * 양쪽 풀 모두 **내 배팅을 더한 뒤** 계산한다. 내가 들어가면 그 순간 풀이 커지므로,
- * 빼고 재면 실제보다 큰 금액이 나온다 — 화면이 부풀린 숫자를 약속하는 셈이다.
- *
- * 반대쪽이 비어 있으면 받을 돈이 건 돈과 같아진다(가져올 남의 돈이 없다). 0 이 아니라
- * 원금이 맞다 — 컨트랙트도 이긴 풀이 전부일 때 원금을 돌려준다.
- *
- * **이 값은 지금 이 순간의 것이다.** 마감까지 남이 걸면 그대로 움직인다. 그래서 화면은
- * "확정"이라고 말하지 않고 기준 시각을 함께 적는다.
- */
-function payoutNow(pool: EventPool, direction: Direction, stake: number) {
-  const mine = direction === 'UP' ? pool.up : pool.down
-  const total = pool.up + pool.down + stake
-  const side = mine + stake
-  /* side 는 stake 를 더했으니 0 이 될 수 없다 — stake > 0 일 때만 부른다 */
-  return Math.floor((stake * total) / side)
-}
+/* payoutNow 를 api/events.ts 의 payoutIfIBet 으로 옮겼다(2026-09-18). 같은 식을
+   대회 종목 카드도 써야 하는데(이미 건 배팅이 맞으면 받을 돈), 두 곳에 적어 두면
+   한쪽만 고쳤을 때 화면 둘이 다른 금액을 약속한다. 규칙과 그 이유는 그쪽 주석에 있다.
+
+   **이 값은 지금 이 순간의 것이다.** 마감까지 남이 걸면 그대로 움직인다. 그래서 화면은
+   "확정"이라고 말하지 않고 기준 시각을 함께 적는다. */
 
 /* ── 배팅 카드 ──────────────────────────────────────────────
    **선택이다.** 대회 기간이라도 배팅 없이 예측만 등록할 수 있어야 한다 —
@@ -213,11 +198,11 @@ export default function EventBet({ value, onChange, direction, contestPath, pool
           <div className="ev-bet-payout">
             <dt>맞히면 (지금 기준)</dt>
             <dd>
-              <b className="num">{payoutNow(pool, direction, amount).toLocaleString('ko-KR')} ANT</b>
+              <b className="num">{(payoutIfIBet(pool, direction, amount) ?? amount).toLocaleString('ko-KR')} ANT</b>
               {/* 순이익을 따로 적는다 — 받을 돈만 있으면 원금이 포함된 값인지 헷갈린다 */}
               <span className="ev-bet-net num">
                 {(() => {
-                  const net = payoutNow(pool, direction, amount) - amount
+                  const net = (payoutIfIBet(pool, direction, amount) ?? amount) - amount
                   return net > 0 ? `+${net.toLocaleString('ko-KR')} ANT` : '원금만'
                 })()}
               </span>

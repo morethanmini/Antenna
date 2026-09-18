@@ -23,6 +23,7 @@ import ssafy.a507.backend.domain.event.dto.EventHomeResponse.Rules;
 import ssafy.a507.backend.domain.event.dto.EventHomeResponse.StockCard;
 import ssafy.a507.backend.domain.event.dto.EventListResponse;
 import ssafy.a507.backend.domain.event.dto.EventMeResponse;
+import ssafy.a507.backend.domain.event.dto.EventParticipantsResponse;
 import ssafy.a507.backend.domain.event.dto.EventPhase;
 import ssafy.a507.backend.domain.event.entity.PredictionEvent;
 import ssafy.a507.backend.domain.event.entity.PredictionEventBet;
@@ -32,6 +33,8 @@ import ssafy.a507.backend.domain.event.repository.PredictionEventBetRepository;
 import ssafy.a507.backend.domain.event.repository.PredictionEventRepository;
 import ssafy.a507.backend.domain.event.repository.PredictionEventResultRepository;
 import ssafy.a507.backend.domain.event.repository.PredictionEventStockRepository;
+import ssafy.a507.backend.domain.account.entity.User;
+import ssafy.a507.backend.domain.account.service.AvatarUrls;
 import ssafy.a507.backend.domain.market.repository.DailyQuoteRepository;
 import ssafy.a507.backend.domain.prediction.entity.Prediction;
 
@@ -57,6 +60,7 @@ public class EventQueryService {
     private final PredictionEventBetRepository bets;
     private final PredictionEventResultRepository results;
     private final DailyQuoteRepository dailyQuotes;
+    private final AvatarUrls avatarUrls;
     private final CurrentUserProvider currentUserProvider;
 
     @Transactional(readOnly = true)
@@ -273,6 +277,59 @@ public class EventQueryService {
             byCode.put((String) row[0], (BigDecimal) row[1]);
         }
         return byCode;
+    }
+
+    /**
+     * 참가자 — 화면 J-01 의 "대회 참가자" 타일.
+     *
+     * <p><b>단계로 막지 않는다.</b> 순위({@code EventLeaderboardService})는 정산 전에 빈 목록을
+     * 내리지만, 여기는 접수가 시작된 순간부터 그대로 낸다 — "누가 참가했나" 는 승패와 무관하게
+     * 이미 정해진 사실이라, 미리 보여줘도 사용자가 잘못 읽을 것이 없다.
+     *
+     * <p>쿼리는 둘이다 — 배팅 묶음 읽기(+user 페치) · 프로필 사진 묶음 읽기. 사람마다 사진을
+     * 물으면 서른 명이면 서른 번이라 {@link AvatarUrls#byUserId} 로 모아 읽는다.
+     *
+     * <p>사람 단위로 묶는 일을 자바에서 하는 것은 <b>건 종목 목록</b>까지 필요해서다. 세는 쿼리와
+     * 목록 쿼리를 따로 두면 두 번 읽게 되고, 두 결과가 어긋날 여지도 생긴다.
+     * {@link java.util.LinkedHashMap} 이라 <b>처음 건 순서</b>가 그대로 참가 순서가 된다.
+     */
+    @Transactional(readOnly = true)
+    public EventParticipantsResponse participants(Long eventId) {
+        PredictionEvent event =
+                events.findById(eventId)
+                        .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "eventId"));
+
+        List<Object[]> rows = bets.findParticipantBets(eventId);
+        if (rows.isEmpty()) {
+            return new EventParticipantsResponse(0, List.of());
+        }
+
+        // 사람 -> (종목 idx -> 종목명). idx 를 키로 두면 회차의 종목 순서대로 정렬되고,
+        // 한 종목에 두 번 걸린 행이 있어도(있어선 안 되지만) 한 칸으로 접힌다.
+        Map<User, java.util.TreeMap<Short, String>> byUser = new java.util.LinkedHashMap<>();
+        for (Object[] row : rows) {
+            User user = (User) row[0];
+            short idx = ((Number) row[1]).shortValue();
+            String name = (String) row[2];
+            byUser.computeIfAbsent(user, u -> new java.util.TreeMap<>()).put(idx, name);
+        }
+
+        Map<Long, String> avatars = avatarUrls.byUserId(byUser.keySet());
+
+        int minStocks = event.getMinStocks();
+        List<EventParticipantsResponse.Item> items = new ArrayList<>(byUser.size());
+        for (Map.Entry<User, java.util.TreeMap<Short, String>> e : byUser.entrySet()) {
+            User user = e.getKey();
+            List<String> stocks = List.copyOf(e.getValue().values());
+            items.add(
+                    new EventParticipantsResponse.Item(
+                            user.getId(),
+                            user.getNickname(),
+                            avatars.get(user.getId()),
+                            stocks,
+                            stocks.size() >= minStocks));
+        }
+        return new EventParticipantsResponse(items.size(), items);
     }
 
     private static BigInteger toBigInteger(Object value) {

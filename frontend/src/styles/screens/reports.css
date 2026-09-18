@@ -7,93 +7,181 @@
   margin-bottom:16px;
 }
 
-/* ── 종류 (리포트 / 예측) ─────────────────────
-   scope 와 다른 축이라 줄을 나눈다. 알약 모양으로 두어 아래 밑줄 탭(scope)과
-   한눈에 구분되게 했다 — 같은 모양이면 탭 두 줄이 한 묶음으로 읽힌다. */
+/* ── 탭 — dub.co/blog 카테고리 내비 ────────────
+   dub 은 Overview·Company News·Education… 을 한 줄에 두고, 고른 것만 진한 알약으로
+   칠한다. 테두리도 밑줄도 없다 — 배경 하나로 "지금 여기" 를 말한다.
+
+   세 줄이 다 같은 알약이면 무엇이 상위인지 사라지므로 진하기로 층을 준다.
+     종류(리포트/예측)   진한 알약  — 목록 자체가 바뀌는 축이라 제일 세다
+     범위(전체/구독 중)  연한 알약
+     정렬(최신/인기)     연한 알약, 오른쪽
+
+   전환은 카드와 같은 곡선을 쓴다(.15s cubic-bezier(.4,0,.2,1)) — 한 화면에서 서로
+   다른 속도로 움직이면 따로 만든 것처럼 보인다. */
 .rp-kinds{
-  display:inline-flex; gap:2px; margin-bottom:14px;
-  padding:3px; border-radius:10px; background:var(--surface-2);
+  display:inline-flex; gap:4px;
+  margin-bottom:14px;
 }
-.rp-kinds button{
-  padding:7px 18px;
-  border:0; border-radius:8px;
+.rp-kinds button,
+.rp-tabs button,
+.rp-sorts button{
+  border:0; border-radius:999px;
   background:transparent; color:var(--muted);
-  font-family:inherit; font-size:var(--fs-lg); font-weight:var(--fw-bold);
+  font-family:inherit; font-weight:var(--fw-normal);
   cursor:pointer;
+  transition:background .15s cubic-bezier(.4,0,.2,1), color .15s cubic-bezier(.4,0,.2,1);
 }
-.rp-kinds button:hover{ color:var(--ink); }
-.rp-kinds button.on{ background:var(--surface); color:var(--brand-ink); box-shadow:0 1px 2px rgb(0 0 0 / .06); }
+.rp-kinds button:hover,
+.rp-tabs button:hover,
+.rp-sorts button:hover{ background:var(--surface-2); color:var(--ink); }
+
+.rp-kinds button{ padding:8px 16px; font-size:var(--fs-lg); }
+/* 고른 종류만 진하게. dub 의 Overview 알약 자리다 */
+.rp-kinds button.on{ background:var(--ink); color:#fff; }
+.rp-kinds button.on:hover{ background:var(--ink); color:#fff; }
 
 /* 예측 줄은 공용 PredictionCard 가 그린다 — 카드가 자기 여백을 가져서 간격만 준다 */
 .rp-pred-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px; }
 
-/* ── 탭 (전체 / 구독 중) ─────────────────────── */
-.rp-tabs{ display:flex; gap:2px; }
-.rp-tabs button{
-  padding:8px 14px;
-  border:0; border-bottom:2px solid transparent;
-  background:transparent; color:var(--muted);
-  font-family:inherit; font-size:var(--fs-lg); font-weight:var(--fw-normal);
-  cursor:pointer;
-}
-.rp-tabs button:hover{ color:var(--ink); }
-.rp-tabs button.on{ color:var(--brand-ink); border-bottom-color:var(--brand); }
+/* ── 범위 (전체 / 구독 중) ────────────────────── */
+.rp-tabs{ display:flex; gap:4px; }
+.rp-tabs button{ padding:7px 14px; font-size:var(--fs-lg); }
+.rp-tabs button.on{ background:var(--surface-2); color:var(--ink); font-weight:var(--fw-bold); }
 
 /* ── 정렬 ────────────────────────────────────── */
-.rp-sorts{ display:flex; gap:6px; }
-.rp-sorts button{
-  padding:6px 12px;
-  border:1px solid var(--rule); border-radius:999px;
-  background:var(--surface); color:var(--body);
-  font-family:inherit; font-size:var(--fs-md); font-weight:var(--fw-normal);
-  cursor:pointer;
-}
-.rp-sorts button:hover{ background:var(--surface-2); }
-.rp-sorts button.on{
-  background:var(--brand-soft); border-color:var(--brand-soft); color:var(--brand-ink);
+.rp-sorts{ display:flex; gap:4px; }
+.rp-sorts button{ padding:7px 14px; font-size:var(--fs-md); }
+.rp-sorts button.on{ background:var(--surface-2); color:var(--ink); font-weight:var(--fw-bold); }
+
+/* ── 목록 — dub.co/blog 격자 ───────────────────
+   실측 스펙(2026-09-17, 확대 110% 보정)
+     격자   3열 등폭
+     카드   padding 0 · hover 는 배경만 · transition .15s cubic-bezier(.4,0,.2,1)
+     표지   width 100% · aspect-ratio 1200/630 · object-fit cover
+     본문   padding 24px · 제목 아래 8px · 푸터 위 16px
+     제목   700 · line-clamp 2
+     발췌   muted · line-clamp 2
+
+   dub 은 칸끼리 선 하나를 나눠 쓰고 간격이 0 이다. 여기서는 **카드마다 모서리를 깎으려고**
+   그 방식을 버렸다 — 모서리를 주려면 카드가 자기 테두리를 가져야 하고, 자기 테두리를 가지면
+   이웃과 붙은 자리가 2px 로 겹치므로 간격을 벌려야 한다. 둘은 같이 간다.
+
+   그래서 격자는 간격 16px, 카드는 자기 테두리 + 14px 모서리다. */
+.rp-list{
+  margin:0; padding:0; list-style:none;
+  display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:16px;
 }
 
-/* ── 목록 ────────────────────────────────────── */
-.rp-list{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:10px; }
-
-.rp-item{
-  background:var(--surface);
+.rp-card{
+  min-width:0;               /* 긴 제목이 격자 칸을 밀어내지 않게 */
   border:1px solid var(--rule);
-  border-radius:12px;
+  border-radius:14px;
+  background:var(--surface);
+  /* 표지의 위쪽 두 모서리를 카드 모양대로 자른다 — 이게 없으면 둥근 테두리 안쪽에
+     사각 이미지가 삐져나와 모서리만 각져 보인다 */
+  overflow:hidden;
+  transition:box-shadow .15s cubic-bezier(.4,0,.2,1), border-color .15s cubic-bezier(.4,0,.2,1);
 }
-.rp-item:hover{ border-color:var(--brand-soft); box-shadow:var(--shadow); }
+/* 카드가 자기 판을 갖게 되면서 hover 를 배경색에서 그림자로 바꿨다 — 테두리 있는 흰 카드가
+   회색으로 바뀌면 눌린 것처럼 보이고, 떠오르는 쪽이 "누를 수 있다" 로 읽힌다 */
+.rp-card:hover{ border-color:var(--card-line); box-shadow:var(--shadow); }
 
 .rp-link{
-  display:flex; flex-direction:column; gap:8px;
-  padding:16px 18px;
+  display:block; height:100%;
   text-decoration:none;
 }
 
-.rp-head{ display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+/* ── 표지 ─────────────────────────────────────
+   1200/630 은 OG 이미지 비율이다. 본문에서 뽑아 온 그림이 어떤 크기로 오든
+   같은 칸에 담기려면 비율을 화면이 정해야 한다. */
+.rp-thumb{
+  position:relative;
+  aspect-ratio:1200/630;
+  overflow:hidden;
+  background:var(--surface-2);
+}
+.rp-thumb img{ display:block; width:100%; height:100%; object-fit:cover; }
+
+/* 본문에 그림이 없을 때. 큐브를 판 위에 올려 둔 것처럼 보이게 가운데에 작게 둔다 —
+   cover 로 늘리면 큐브가 잘려 무슨 그림인지 사라진다 */
+.rp-thumb.is-fallback{ background:var(--wash); }
+.rp-thumb.is-fallback img{
+  width:auto; height:56%;
+  object-fit:contain;
+  position:absolute; inset:0; margin:auto;
+}
+
+/* 잠금은 표지 위에 얹는다 — 제목·작성자·통계는 그대로 보인다(구독 유인, 설계서 §5) */
+.rp-lock{
+  position:absolute; top:10px; left:10px;
+  display:inline-flex; align-items:center; gap:4px;
+  padding:4px 9px;
+  border-radius:999px;
+  background:rgb(20 20 27 / .72); color:#fff;
+  font-size:var(--fs-xs); font-weight:var(--fw-normal);
+  backdrop-filter:blur(3px);
+}
+
+/* ── 본문 ─────────────────────────────────────
+   아바타가 표지와 본문의 경계선에 걸터앉는다.
+
+   .rp-thumb 안에 절대배치하지 않은 이유 — 거기엔 표지를 자르는 overflow:hidden 이 있어
+   경계 밖으로 나온 위쪽 절반이 잘린다. 본문의 첫 요소로 두고 음수 margin 으로 끌어올리면
+   자를 것이 없다.
+
+   계산: 본문 padding-top 이 24 이므로 margin-top:-44 면 아바타 윗변이 본문 위 20px,
+   즉 표지 쪽으로 20px 올라간다(지름 40 의 절반). 뒤따르는 줄은 그만큼 같이 올라오므로
+   margin-bottom 으로 되돌린다. */
+.rp-body{ padding:24px; }
+
+.rp-avatar{
+  display:block; position:relative;
+  width:40px; height:40px;
+  margin:-44px 0 10px;
+  border-radius:999px; object-fit:cover;
+  background:var(--surface);
+  /* 표지가 어떤 색이든 아바타가 떠 보이게 판 색으로 두른다 */
+  border:3px solid var(--surface);
+}
+
+.rp-author{
+  margin:0 0 6px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-size:var(--fs-md); font-weight:var(--fw-normal); color:var(--body);
+}
 
 .rp-title{
   margin:0;
-  font-size:var(--fs-xl); font-weight:var(--fw-bold); line-height:1.45; color:var(--ink);
+  font-size:var(--fs-2xl); font-weight:var(--fw-bold); line-height:1.5; color:var(--ink);
+  /* 두 줄에서 자른다. 자르지 않으면 제목 길이에 따라 카드 키가 달라져 격자가 어긋난다 */
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden;
 }
 
-/* 잠금은 배지로만 알린다 — 제목·작성자는 그대로 보인다(구독 유인) */
-.rp-lock{
-  flex:0 0 auto;
-  display:inline-flex; align-items:center; gap:4px;
-  padding:3px 9px;
-  border-radius:999px;
-  background:var(--surface-2); color:var(--muted);
-  font-size:var(--fs-xs); font-weight:var(--fw-normal);
+.rp-summary{
+  margin:8px 0 0;
+  font-size:var(--fs-base); line-height:1.6; color:var(--muted);
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden;
 }
 
-.rp-meta{
-  display:flex; align-items:center; flex-wrap:wrap; gap:6px;
-  font-size:var(--fs-md); color:var(--muted);
+.rp-foot{
+  display:flex; align-items:center; flex-wrap:wrap; gap:5px;
+  margin-top:16px;
+  font-size:var(--fs-sm); color:var(--muted);
 }
-.rp-author{ font-weight:var(--fw-normal); color:var(--body); }
+.rp-date{ flex:0 0 auto; }
 .rp-dot{ color:var(--faint); }
 /* 내가 이미 누른 리포트. 목록에서 굳이 하트를 그리지 않고 글자색만 바꾼다 */
 .rp-liked{ color:var(--danger); font-weight:var(--fw-normal); }
+
+/* 3 → 2 → 1. 카드 최소 폭이 260px 아래로 내려가면 제목 두 줄이 넉 자씩 끊긴다 */
+@media (max-width: 1024px){
+  .rp-list{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 640px){
+  .rp-list{ grid-template-columns:minmax(0,1fr); }
+  .rp-body{ padding:18px; }
+}
 
 /* ── 더 보기 ─────────────────────────────────── */
 .rp-more{

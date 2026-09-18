@@ -21,6 +21,7 @@ import ssafy.a507.backend.domain.account.entity.Notification;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.account.repository.NotificationRepository;
 import ssafy.a507.backend.domain.account.repository.UserRepository;
+import ssafy.a507.backend.domain.account.service.AvatarUrls;
 import ssafy.a507.backend.domain.account.service.NotificationGate;
 import ssafy.a507.backend.domain.monetize.dto.ChannelReportItemResponse;
 import ssafy.a507.backend.domain.monetize.dto.ChannelReportListResponse;
@@ -61,6 +62,7 @@ public class ReportService {
     /** 알림 종류 키. {@code notifications.type} 은 24자 제한이다. */
     private static final String NOTIFICATION_TYPE = "REPORT_PUBLISHED";
 
+    private final AvatarUrls avatarUrls;
     private final ReportRepository reportRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final NotificationRepository notificationRepository;
@@ -149,13 +151,18 @@ public class ReportService {
 
         Set<Long> subscribed = reportAccess.subscribedAuthorIds(viewerId, reports);
         Social social = socialOf(viewerId, reports);
+        /* 카드가 작성자 사진을 그린다. 한 줄씩 찾으면 한 페이지에 쿼리가 페이지 크기만큼
+           나가므로 파일 id 를 모아 한 번에 읽는다(AvatarUrls 머리말의 N+1). */
+        Map<Long, String> avatars =
+                avatarUrls.byUserId(reports.stream().map(Report::getUser).toList());
         List<ReportFeedItemResponse> items = reports.stream()
                 .map(report -> ReportFeedItemResponse.of(
                         report,
                         reportAccess.isLocked(report, viewerId, subscribed),
                         social.likeCount(report.getId()),
                         social.liked(report.getId()),
-                        social.commentCount(report.getId())))
+                        social.commentCount(report.getId()),
+                        avatars.get(report.getUser().getId())))
                 .toList();
 
         Report last = reports.get(reports.size() - 1);
@@ -211,20 +218,28 @@ public class ReportService {
         Report report = reportRepository
                 .findDetailById(reportId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REPORT_NOT_FOUND, "reportId"));
+        // 가려졌으면 관리자만 연다(작성자 포함 나머지는 410). 판정은 ReportAccess 한 곳.
+        reportAccess.requireVisible(report, viewerId);
 
         boolean own = report.getUser().getId().equals(viewerId);
         int viewCount = report.getViewCount();
-        if (!own && firstViewToday(reportId, viewerId)) {
+        // 관리자가 가려진 리포트를 검토하는 것은 열람이 아니다 — 조회수에 넣지 않는다
+        if (!own && !report.isBlocked() && firstViewToday(reportId, viewerId)) {
             reportRepository.incrementViewCount(reportId);
             // UPDATE 는 영속성 컨텍스트를 거치지 않아 엔티티 값이 옛것이다. 응답에는 이번
             // 열람이 반영된 값을 담는다 — 눌러 들어왔는데 숫자가 그대로면 버그로 보인다.
             viewCount += 1;
         }
 
-        boolean locked = reportAccess.isLocked(report, viewerId);
         Social social = socialOf(viewerId, List.of(report));
         ReportDetailResponse.Social counts = new ReportDetailResponse.Social(
                 social.likeCount(reportId), social.liked(reportId), social.commentCount(reportId));
+        /* 여기까지 온 가려진 리포트는 관리자가 보는 것이다. 구독자 전용이어도 전문을 싣는다 —
+           복구 판단의 근거가 본문이다. blocked:true 로 화면이 "가려진 리포트" 띠를 띄운다. */
+        if (report.isBlocked()) {
+            return ReportDetailResponse.full(report, viewCount, counts).asBlocked();
+        }
+        boolean locked = reportAccess.isLocked(report, viewerId);
         return locked
                 ? ReportDetailResponse.locked(report, viewCount, counts)
                 : ReportDetailResponse.full(report, viewCount, counts);

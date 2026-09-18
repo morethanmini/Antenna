@@ -5,6 +5,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -235,6 +236,150 @@ class AdminAbuseReportControllerTest {
                 .andExpect(jsonPath("$.code").value("POST_NOT_FOUND"));
     }
 
+    // ── 리포트 · 리포트 댓글 (ANT-FE-ABUSE-REPORT) ─────────────
+
+    @Test
+    @DisplayName("리포트 신고를 ACCEPT 하면 리포트가 BLOCKED 로 내려가고 행은 남는다")
+    void 리포트_신고_수락() throws Exception {
+        Long reportId = insertMonetizeReport(authorId, "문제되는 리포트");
+        Long abuseId = insertReport(reporterId, "targetReport", reportId);
+        flush();
+
+        처리(abuseId, "ACCEPT");
+        flush();
+
+        assertThat(신고상태(abuseId)).isEqualTo("ACCEPTED");
+        assertThat(리포트상태(reportId)).isEqualTo("BLOCKED");
+        assertThat(리포트_행_수(reportId)).isEqualTo(1); // 봉인·앵커된 행이라 지우지 않는다
+    }
+
+    @Test
+    @DisplayName("리포트 댓글 신고를 ACCEPT 하면 그 댓글만 BLOCKED 로 내려간다")
+    void 리포트댓글_신고_수락() throws Exception {
+        Long reportId = insertMonetizeReport(authorId, "리포트");
+        Long reportCommentId = insertReportComment(reportId, authorId, "문제되는 리포트 댓글");
+        Long abuseId = insertReport(reporterId, "targetReportComment", reportCommentId);
+        flush();
+
+        처리(abuseId, "ACCEPT");
+        flush();
+
+        assertThat(리포트댓글상태(reportCommentId)).isEqualTo("BLOCKED");
+        assertThat(리포트상태(reportId)).isEqualTo("VISIBLE"); // 댓글 신고로 리포트까지 가리지 않는다
+    }
+
+    @Test
+    @DisplayName("리포트 신고를 REJECT 하면 리포트는 그대로 보인다")
+    void 리포트_신고_기각() throws Exception {
+        Long reportId = insertMonetizeReport(authorId, "멀쩡한 리포트");
+        Long abuseId = insertReport(reporterId, "targetReport", reportId);
+        flush();
+
+        처리(abuseId, "REJECT");
+        flush();
+
+        assertThat(리포트상태(reportId)).isEqualTo("VISIBLE");
+    }
+
+    @Test
+    @DisplayName("목록에 리포트·리포트 댓글 신고가 제목·본문과 리포트 id 를 달고 나온다")
+    void 리포트_신고_목록() throws Exception {
+        Long reportId = insertMonetizeReport(authorId, "문제되는 리포트");
+        Long reportCommentId = insertReportComment(reportId, authorId, "문제되는 리포트 댓글");
+        insertReport(reporterId, "targetReport", reportId);
+        insertReport(reporterId, "targetReportComment", reportCommentId);
+        flush();
+
+        mockMvc.perform(get(REPORTS).param("status", "PENDING")
+                        .with(user(String.valueOf(adminId))).with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(5))
+                // id desc — 마지막에 넣은 리포트 댓글 신고가 맨 앞
+                .andExpect(jsonPath("$.items[0].targetType").value("REPORT_COMMENT"))
+                .andExpect(jsonPath("$.items[0].targetBody").value("문제되는 리포트 댓글"))
+                .andExpect(jsonPath("$.items[0].targetReportId").value(reportId))
+                .andExpect(jsonPath("$.items[0].targetBlocked").value(false))
+                .andExpect(jsonPath("$.items[1].targetType").value("REPORT"))
+                .andExpect(jsonPath("$.items[1].targetBody").value("문제되는 리포트"))
+                .andExpect(jsonPath("$.items[1].targetReportId").value(reportId));
+    }
+
+    @Test
+    @DisplayName("관리자는 리포트를 직접 가리고 복구할 수 있다 — 신고 승인으로 가려진 것을 되돌리는 길")
+    void 리포트_블라인드_토글() throws Exception {
+        Long reportId = insertMonetizeReport(authorId, "가렸다 되돌릴 리포트");
+        flush();
+
+        상태변경("/api/v1/admin/reports/" + reportId + "/status", "BLOCKED");
+        flush();
+        assertThat(리포트상태(reportId)).isEqualTo("BLOCKED");
+
+        상태변경("/api/v1/admin/reports/" + reportId + "/status", "VISIBLE");
+        flush();
+        assertThat(리포트상태(reportId)).isEqualTo("VISIBLE");
+    }
+
+    @Test
+    @DisplayName("리포트 댓글 블라인드는 report_comments 를 바꾼다 — 같은 id 의 커뮤니티 댓글은 그대로다")
+    void 리포트댓글_블라인드는_표를_섞지_않는다() throws Exception {
+        Long reportId = insertMonetizeReport(authorId, "리포트");
+        Long reportCommentId = insertReportComment(reportId, authorId, "리포트 댓글");
+        flush();
+
+        상태변경("/api/v1/admin/report-comments/" + reportCommentId + "/status", "BLOCKED");
+        flush();
+
+        assertThat(리포트댓글상태(reportCommentId)).isEqualTo("BLOCKED");
+        assertThat(댓글상태(commentId)).isEqualTo("VISIBLE");
+    }
+
+    @Test
+    @DisplayName("일반 회원은 리포트를 가릴 수 없다 — 403 ADMIN_ONLY")
+    void 일반회원_리포트_블라인드는_403() throws Exception {
+        Long reportId = insertMonetizeReport(authorId, "리포트");
+        flush();
+
+        mockMvc.perform(patch("/api/v1/admin/reports/" + reportId + "/status")
+                        .with(user(String.valueOf(reporterId))).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\": \"BLOCKED\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ADMIN_ONLY"));
+    }
+
+    @Test
+    @DisplayName("없는 리포트를 가리려 하면 404 REPORT_NOT_FOUND")
+    void 없는_리포트_블라인드는_404() throws Exception {
+        mockMvc.perform(patch("/api/v1/admin/reports/999999/status")
+                        .with(user(String.valueOf(adminId))).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\": \"BLOCKED\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("REPORT_NOT_FOUND"));
+    }
+
+    @Test
+    @DisplayName("같은 사람이 같은 리포트를 다시 신고하면 두 번째 신고도 처리할 수 있다")
+    void 재신고도_처리된다() throws Exception {
+        Long reportId = insertMonetizeReport(authorId, "두 번 신고될 리포트");
+        flush();
+
+        mockMvc.perform(post("/api/v1/abuse-reports")
+                        .with(user(String.valueOf(reporterId))).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetType\": \"REPORT\", \"targetId\": %d, \"reason\": \"SPAM\"}".formatted(reportId)))
+                .andExpect(status().isCreated());
+        처리(최근신고(), "REJECT");
+        flush();
+
+        mockMvc.perform(post("/api/v1/abuse-reports")
+                        .with(user(String.valueOf(reporterId))).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetType\": \"REPORT\", \"targetId\": %d, \"reason\": \"ABUSE\"}".formatted(reportId)))
+                .andExpect(status().isCreated());
+        처리(최근신고(), "REJECT"); // 옛 제약이면 여기서 (신고자, 대상, REJECTED) 중복 — 실제 PG 는 PendingUniqueTest
+    }
+
     // ── 호출 도우미 ──────────────────────────────────────────
 
     private void 처리(Long reportId, String action) throws Exception {
@@ -284,11 +429,13 @@ class AdminAbuseReportControllerTest {
                 .setParameter(1, body).getSingleResult()).longValue();
     }
 
-    /** 대상 칸 하나만 채운 PENDING 신고. {@code column} 은 target_post_id · target_comment_id · target_user_id 중 하나의 뜻이다. */
+    /** 대상 칸 하나만 채운 PENDING 신고. {@code field} 는 대상 칼럼(target_*_id) 중 하나의 뜻이다. */
     private Long insertReport(Long reporterId, String field, Long targetId) {
         String column = switch (field) {
             case "targetPost" -> "target_post_id";
             case "targetComment" -> "target_comment_id";
+            case "targetReport" -> "target_report_id";
+            case "targetReportComment" -> "target_report_comment_id";
             default -> "target_user_id";
         };
         String detail = "신고-" + column + "-" + targetId;
@@ -329,6 +476,44 @@ class AdminAbuseReportControllerTest {
 
     private String 댓글상태(Long id) {
         return (String) em.createNativeQuery("SELECT status FROM post_comments WHERE id = ?")
+                .setParameter(1, id).getSingleResult();
+    }
+
+    private Long insertMonetizeReport(Long userId, String title) {
+        em.createNativeQuery("""
+                INSERT INTO reports (user_id, title, body, is_public, view_count, created_at)
+                VALUES (?, ?, '본문', true, 0, CURRENT_TIMESTAMP)
+                """).setParameter(1, userId).setParameter(2, title).executeUpdate();
+        return ((Number) em.createNativeQuery("SELECT id FROM reports WHERE title = ?")
+                .setParameter(1, title).getSingleResult()).longValue();
+    }
+
+    private Long insertReportComment(Long reportId, Long userId, String body) {
+        em.createNativeQuery("""
+                INSERT INTO report_comments (report_id, user_id, body, status, created_at)
+                VALUES (?, ?, ?, 'VISIBLE', CURRENT_TIMESTAMP)
+                """).setParameter(1, reportId).setParameter(2, userId)
+                .setParameter(3, body).executeUpdate();
+        return ((Number) em.createNativeQuery("SELECT id FROM report_comments WHERE body = ?")
+                .setParameter(1, body).getSingleResult()).longValue();
+    }
+
+    private Long 최근신고() {
+        return ((Number) em.createNativeQuery("SELECT MAX(id) FROM abuse_reports").getSingleResult()).longValue();
+    }
+
+    private String 리포트상태(Long id) {
+        return (String) em.createNativeQuery("SELECT status FROM reports WHERE id = ?")
+                .setParameter(1, id).getSingleResult();
+    }
+
+    private int 리포트_행_수(Long id) {
+        return ((Number) em.createNativeQuery("SELECT COUNT(*) FROM reports WHERE id = ?")
+                .setParameter(1, id).getSingleResult()).intValue();
+    }
+
+    private String 리포트댓글상태(Long id) {
+        return (String) em.createNativeQuery("SELECT status FROM report_comments WHERE id = ?")
                 .setParameter(1, id).getSingleResult();
     }
 

@@ -87,7 +87,8 @@ public class AnchorQueryService {
                 .map(leaf -> {
                     if (leaf.kind() == AnchorLeaves.Kind.REPORT) {
                         Report r = byReport.get(leaf.id());
-                        return AnchorDetailResponse.Leaf.report(leaf.id(), leaf.hash(), r.getTitle());
+                        // 잎 해시만 증명에 쓰인다. 제목은 표시용이라 가려진 리포트면 자리표시로(Report.listedTitle)
+                        return AnchorDetailResponse.Leaf.report(leaf.id(), leaf.hash(), r.listedTitle());
                     }
                     Prediction p = byPrediction.get(leaf.id()).getPrediction();
                     Stock stock = p.getStock();

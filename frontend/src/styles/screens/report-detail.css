@@ -18,11 +18,26 @@
   padding:26px 28px 30px;
 }
 
+/* 관리자가 가려진 리포트를 볼 때만 뜨는 띠. 경고색 — 일반 공개 상태가 아니라는 것을 먼저 알아야 한다 */
+/* flex 로 두지 않는다 — 문장 안의 링크 앞뒤로 gap 이 끼어 "복구 를" 처럼 띄어진다 */
+.rd-blocked{
+  margin:0 0 12px; padding:11px 14px;
+  border:1px solid #f3c9c9; border-radius:10px; background:#fdf4f4;
+  font-size:var(--fs-md); line-height:1.6; color:var(--body);
+}
+.rd-blocked b{ color:var(--danger); margin-right:6px; }
+.rd-blocked a{ color:var(--brand-ink); font-weight:var(--fw-bold); }
+
 .rd-head{
+  position:relative;
   padding-bottom:18px;
   border-bottom:1px solid var(--rule);
   margin-bottom:22px;
 }
+/* 신고 ⋯ (AbuseMenu). 헤더 오른쪽 위 — 채널 프로필과 같은 자리다.
+   흐름에서 빼 두는 이유: 제목이 길어 줄이 바뀌어도 ⋯ 가 따라 내려가지 않게. 대신 제목 오른쪽을 비운다 */
+.rd-menu{ position:absolute; top:0; right:0; }
+.rd-head.has-menu .rd-title{ padding-right:44px; }
 
 .rd-title{
   margin:0 0 10px;
