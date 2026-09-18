@@ -202,4 +202,18 @@ public class Report {
     public boolean isBlocked() {
         return status == Status.BLOCKED;
     }
+
+    /** 가려진 리포트가 원장·앵커 목록에 나올 때 제목 대신 쓰는 말 */
+    public static final String BLOCKED_TITLE = "신고로 가려진 리포트";
+
+    /**
+     * 목록에 보여 줄 제목. 가려졌으면 {@link #BLOCKED_TITLE}.
+     *
+     * <p><b>원장·앵커 목록 전용이다. 검산(proof)에는 쓰지 않는다</b> — 제목은 봉인 문자열의 재료라
+     * ({@link ReportSeal#canonical}) 바꿔 내리면 검산이 "조작됨" 으로 틀리게 나온다. 목록에서 필요한 것은
+     * 해시이고 제목은 표시용이라, 가려도 증명은 그대로 선다. 검산은 대신 상세처럼 막는다(ReportAccess).
+     */
+    public String listedTitle() {
+        return isBlocked() ? BLOCKED_TITLE : title;
+    }
 }

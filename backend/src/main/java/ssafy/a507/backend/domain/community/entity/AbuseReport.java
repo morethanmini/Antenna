@@ -11,7 +11,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -36,30 +35,20 @@ import ssafy.a507.backend.domain.monetize.entity.ReportComment;
  * 자기 신고 CHECK 는 유저 신고만 덮는다 — 글·댓글·리포트의 작성자는 다른 테이블에 있어
  * CHECK 로는 볼 수 없다. 그쪽은 AbuseReportService 가 유일한 방어선이다.
  *
- * 중복 신고는 유니크 제약으로 막는다. 대상 컬럼이 NULL 인 행끼리는 Postgres 가
- * 서로 다른 값으로 보므로 종류가 다른 신고끼리는 충돌하지 않는다.
- * status 를 키에 넣어 관리자가 처리한 뒤의 재신고는 새 사안으로 받는다.
+ * 중복 신고는 <b>처리 대기(PENDING) 중인 것끼리만</b> 막는다 — db/enum-checks.sql 의 부분 유니크 인덱스
+ * {@code uq_abuse_reports_pending_*}(… WHERE status = 'PENDING'). 관리자가 처리한 뒤의 재신고는 새 사안이다.
+ *
+ * 전에는 (신고자, 대상, status) 유니크 제약이었다. status 를 키에 넣으면 PENDING 끼리는 막지만
+ * <b>처리된 행끼리도 부딪힌다</b> — 같은 사람이 같은 대상을 두 번 신고해 두 번 다 기각(또는 수락)되면
+ * 두 번째 처리의 UPDATE 가 (신고자, 대상, REJECTED) 중복으로 500 이 났고, 그 신고는 영원히 PENDING 에
+ * 남았다(ANT-FE-ABUSE-REPORT 검토에서 실제 PostgreSQL 로 재현). 규칙은 "처리 대기 중복 금지" 인데 키는
+ * "상태별 한 건" 이었던 것이다. 부분 인덱스는 JPA 로 표현할 수 없어 SQL 로 건다 — 그래서 여기에는
+ * {@code @UniqueConstraint} 를 두지 않는다(두면 ddl-auto 가 매 부팅 옛 제약을 다시 만든다).
+ * H2 테스트에는 이 인덱스가 없고 서비스의 중복 검사만 돈다. 인덱스 자체는
+ * {@code AbuseReportPendingUniqueTest}(실제 PostgreSQL)가 본다.
  */
 @Entity
-@Table(
-        name = "abuse_reports",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_abuse_reports_reporter_post_status",
-                        columnNames = {"reporter_id", "target_post_id", "status"}),
-                @UniqueConstraint(
-                        name = "uk_abuse_reports_reporter_comment_status",
-                        columnNames = {"reporter_id", "target_comment_id", "status"}),
-                @UniqueConstraint(
-                        name = "uk_abuse_reports_reporter_user_status",
-                        columnNames = {"reporter_id", "target_user_id", "status"}),
-                @UniqueConstraint(
-                        name = "uk_abuse_reports_reporter_report_status",
-                        columnNames = {"reporter_id", "target_report_id", "status"}),
-                @UniqueConstraint(
-                        name = "uk_abuse_reports_reporter_report_comment_status",
-                        columnNames = {"reporter_id", "target_report_comment_id", "status"})
-        })
+@Table(name = "abuse_reports")
 // Postgres 의 num_nonnulls 가 짧지만 H2 에 없어 테스트가 통째로 깨진다. CASE 합산은 양쪽에서 돈다.
 // 이미 있는 DB 에는 ddl-auto 가 이 제약을 고쳐 주지 않는다 — db/enum-checks.sql 이 같은 글자로 다시 건다.
 // 여기를 고치면 그 파일도 같이 고친다(한쪽만 고치면 새 DB 와 옛 DB 가 다른 규칙을 갖는다).

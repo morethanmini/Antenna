@@ -1,4 +1,5 @@
 -- 이미 있는 DB 의 낡은 CHECK 제약을 부팅 때 맞춘다(ANT-TOKEN-07 · ANT-PRED-08).
+-- 맨 아래 ③ 은 같은 이유로 유니크 제약을 부분 유니크 인덱스로 바꾼다(ANT-FE-ABUSE-REPORT).
 --
 -- 뿌리는 하나다 — Hibernate 는 CHECK 를 **테이블을 만들 때** 박고, ddl-auto: update 는 이미 있는 제약을 고치지 않는다.
 -- 그래서 규칙을 넓히면 테이블이 이미 있는 DB(로컬·팀·운영)에서만 INSERT 가 깨진다. 매번 새로 만드는 H2 테스트는
@@ -45,3 +46,24 @@ ALTER TABLE abuse_reports ADD CONSTRAINT ck_abuse_reports_exactly_one_target
           + case when target_user_id is null then 0 else 1 end
           + case when target_report_id is null then 0 else 1 end
           + case when target_report_comment_id is null then 0 else 1 end) = 1);
+
+-- ③ 신고 중복 방지를 "상태별 한 건" 유니크 제약에서 "처리 대기(PENDING) 중 한 건" 부분 인덱스로 바꾼다(ANT-FE-ABUSE-REPORT).
+--    옛 제약은 status 를 키에 넣어, 같은 사람이 같은 대상을 두 번 신고해 두 번 다 기각되면 두 번째 처리 UPDATE 가
+--    (신고자, 대상, REJECTED) 중복으로 500 이 났다. 부분 인덱스는 JPA 로 표현할 수 없어 여기서만 건다 —
+--    엔티티에는 @UniqueConstraint 가 없다(AbuseReport 머리말). 옛 제약이 PENDING 중복을 이미 막고 있었으므로
+--    기존 행이 새 인덱스를 어기는 일은 없다. IF [NOT] EXISTS 라 매 부팅 돌아도 같다.
+ALTER TABLE abuse_reports DROP CONSTRAINT IF EXISTS uk_abuse_reports_reporter_post_status;
+ALTER TABLE abuse_reports DROP CONSTRAINT IF EXISTS uk_abuse_reports_reporter_comment_status;
+ALTER TABLE abuse_reports DROP CONSTRAINT IF EXISTS uk_abuse_reports_reporter_user_status;
+ALTER TABLE abuse_reports DROP CONSTRAINT IF EXISTS uk_abuse_reports_reporter_report_status;
+ALTER TABLE abuse_reports DROP CONSTRAINT IF EXISTS uk_abuse_reports_reporter_report_comment_status;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_abuse_reports_pending_post
+    ON abuse_reports (reporter_id, target_post_id) WHERE status = 'PENDING';
+CREATE UNIQUE INDEX IF NOT EXISTS uq_abuse_reports_pending_comment
+    ON abuse_reports (reporter_id, target_comment_id) WHERE status = 'PENDING';
+CREATE UNIQUE INDEX IF NOT EXISTS uq_abuse_reports_pending_user
+    ON abuse_reports (reporter_id, target_user_id) WHERE status = 'PENDING';
+CREATE UNIQUE INDEX IF NOT EXISTS uq_abuse_reports_pending_report
+    ON abuse_reports (reporter_id, target_report_id) WHERE status = 'PENDING';
+CREATE UNIQUE INDEX IF NOT EXISTS uq_abuse_reports_pending_report_comment
+    ON abuse_reports (reporter_id, target_report_comment_id) WHERE status = 'PENDING';

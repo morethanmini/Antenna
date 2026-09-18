@@ -5,6 +5,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -357,6 +358,28 @@ class AdminAbuseReportControllerTest {
                 .andExpect(jsonPath("$.code").value("REPORT_NOT_FOUND"));
     }
 
+    @Test
+    @DisplayName("같은 사람이 같은 리포트를 다시 신고하면 두 번째 신고도 처리할 수 있다")
+    void 재신고도_처리된다() throws Exception {
+        Long reportId = insertMonetizeReport(authorId, "두 번 신고될 리포트");
+        flush();
+
+        mockMvc.perform(post("/api/v1/abuse-reports")
+                        .with(user(String.valueOf(reporterId))).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetType\": \"REPORT\", \"targetId\": %d, \"reason\": \"SPAM\"}".formatted(reportId)))
+                .andExpect(status().isCreated());
+        처리(최근신고(), "REJECT");
+        flush();
+
+        mockMvc.perform(post("/api/v1/abuse-reports")
+                        .with(user(String.valueOf(reporterId))).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetType\": \"REPORT\", \"targetId\": %d, \"reason\": \"ABUSE\"}".formatted(reportId)))
+                .andExpect(status().isCreated());
+        처리(최근신고(), "REJECT"); // 옛 제약이면 여기서 (신고자, 대상, REJECTED) 중복 — 실제 PG 는 PendingUniqueTest
+    }
+
     // ── 호출 도우미 ──────────────────────────────────────────
 
     private void 처리(Long reportId, String action) throws Exception {
@@ -473,6 +496,10 @@ class AdminAbuseReportControllerTest {
                 .setParameter(3, body).executeUpdate();
         return ((Number) em.createNativeQuery("SELECT id FROM report_comments WHERE body = ?")
                 .setParameter(1, body).getSingleResult()).longValue();
+    }
+
+    private Long 최근신고() {
+        return ((Number) em.createNativeQuery("SELECT MAX(id) FROM abuse_reports").getSingleResult()).longValue();
     }
 
     private String 리포트상태(Long id) {

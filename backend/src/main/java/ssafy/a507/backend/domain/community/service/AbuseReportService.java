@@ -116,7 +116,7 @@ public class AbuseReportService {
 
     /*
      * ponytail: 이 검사와 save 사이에는 빈틈이 있다. 같은 신고가 동시에 두 건 들어오면
-     * 둘 다 여기를 통과하고, 뒤엣것이 유니크 제약(uk_abuse_reports_reporter_*_status)에
+     * 둘 다 여기를 통과하고, 뒤엣것이 부분 유니크 인덱스(uq_abuse_reports_pending_*)에
      * 걸려 500 으로 나간다 — 409 가 맞는 자리다. 데이터는 제약이 지키므로 손상은 없다.
      * 제대로 하려면 DataIntegrityViolationException 을 제약 이름으로 골라 409 로 되돌려야
      * 하는데, 공통 핸들러가 특정 도메인의 제약 이름을 알게 된다. 실제로 부딪히면 그때 하자.
