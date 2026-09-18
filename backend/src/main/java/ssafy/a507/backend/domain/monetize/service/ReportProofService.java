@@ -54,6 +54,10 @@ public class ReportProofService {
                 .findDetailById(reportId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REPORT_NOT_FOUND, "reportId"));
 
+        /* 가려진 리포트의 검산은 상세처럼 관리자만. 제목을 자리표시로 바꿔 내리는 길은 없다 — 제목이 봉인
+           문자열의 재료라 바꾸면 검산이 "조작됨" 으로 틀린다. 그래서 가리지 않고 막는다(원장 목록은 Report.listedTitle). */
+        reportAccess.requireVisible(report, viewerId);
+
         /* 봉인 이전에 발행된 리포트(body_hash NULL)는 검산할 거리가 없다. 404 로 숨기지 않는다 —
            리포트는 있고 앵커 대상이 아닐 뿐이라, 화면이 "봉인 이전 발행분" 이라고 말할 수 있어야 한다.
            소급 봉인은 하지 않는다는 결정(ANT-CHAIN-14)의 겉면이다. */

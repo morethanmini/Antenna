@@ -201,6 +201,16 @@ public enum ErrorCode {
      */
     REPORT_FORBIDDEN(HttpStatus.FORBIDDEN, "구독자 전용 리포트에는 구독자만 반응할 수 있습니다."),
 
+    // 리포트 신고 블라인드 (ANT-FE-ABUSE-REPORT)
+    /**
+     * 신고가 승인돼 가려진 리포트를 열었다(상세·좋아요·댓글).
+     *
+     * <p>{@code REPORT_NOT_FOUND} 로 뭉개지 않는 이유 — 알림이나 북마크로 들어온 사람에게 "없는 리포트"
+     * 라고 하면 고장으로 읽는다. 있었고 가려졌다는 사실은 말해 준다. 410 인 이유는 지금 이 주소의 내용을
+     * 내줄 수 없다는 뜻이어서다 — 관리자가 {@code PATCH /admin/reports/{id}/status} 로 복구하면 다시 열린다.
+     */
+    REPORT_BLOCKED(HttpStatus.GONE, "신고로 가려진 리포트입니다."),
+
     // 리포트 검산 (ANT-CHAIN-17)
     /**
      * 봉인 이전에 발행된 리포트의 검산을 요청했다({@code body_hash} NULL). 404 지만

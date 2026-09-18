@@ -87,6 +87,8 @@ export const ERROR_CODE = {
   DUPLICATE_LIKE: 'DUPLICATE_LIKE',
   /** 구독자 전용 리포트에는 구독자만 좋아요·댓글을 남길 수 있다. 열람(200 + locked)과 다른 규칙이다 */
   REPORT_FORBIDDEN: 'REPORT_FORBIDDEN',
+  /** 신고가 승인돼 가려진 리포트(410). 없는 리포트(REPORT_NOT_FOUND)와 다르다 — 있었고 가려졌다 */
+  REPORT_BLOCKED: 'REPORT_BLOCKED',
   /** 봉인 이전에 발행된 리포트의 검산을 요청했다. 리포트는 있으므로 REPORT_NOT_FOUND 와 다르다 */
   REPORT_NOT_SEALED: 'REPORT_NOT_SEALED',
   // 업로드 (ANT-COMMUNITY-06)

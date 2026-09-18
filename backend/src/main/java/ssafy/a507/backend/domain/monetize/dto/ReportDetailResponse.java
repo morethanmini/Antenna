@@ -31,7 +31,12 @@ public record ReportDetailResponse(
         long likeCount,
         boolean liked,
         long commentCount,
-        String signerAddress) {
+        String signerAddress,
+        /**
+         * 신고로 가려진 리포트를 <b>관리자가</b> 보는 중이다. 평소에는 키가 없다(NON_NULL) — 가려진 리포트는
+         * 관리자 말고는 410 이라 이 값이 true 로 내려가는 경우는 관리자뿐이다.
+         */
+        Boolean blocked) {
 
     /** 전문 공개. {@code viewCount} 는 이번 열람을 반영한 값을 호출부가 넘긴다. */
     public static ReportDetailResponse full(Report report, int viewCount, Social social) {
@@ -47,7 +52,15 @@ public record ReportDetailResponse(
                 social.likeCount(),
                 social.liked(),
                 social.commentCount(),
-                report.getSignerAddress());
+                report.getSignerAddress(),
+                null);
+    }
+
+    /** 관리자가 가려진 리포트를 볼 때. 나머지는 그대로 두고 표시만 붙인다 */
+    public ReportDetailResponse asBlocked() {
+        return new ReportDetailResponse(
+                id, title, author, visibility, locked, body, publishedAt, viewCount,
+                likeCount, liked, commentCount, signerAddress, true);
     }
 
     /** 잠금. 제목·작성자·통계는 그대로 공개하고 본문은 싣지 않는다. */
@@ -64,7 +77,8 @@ public record ReportDetailResponse(
                 social.likeCount(),
                 social.liked(),
                 social.commentCount(),
-                report.getSignerAddress());
+                report.getSignerAddress(),
+                null);
     }
 
     /**
