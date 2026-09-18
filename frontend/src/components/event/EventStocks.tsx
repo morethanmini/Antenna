@@ -88,7 +88,7 @@ function StockCard({ s, phase, slug }: CardProps) {
      판정이 끝나면 적지 않는다(!s.result). 결과 줄에 실제로 받은 금액이 나오는데
      그 옆에 예상치가 같이 있으면 어느 쪽이 진짜인지 헷갈린다. */
   const win = s.mine && !s.result && phase === 'SEALED'
-    ? payoutOfBet(s.pool, s.mine.direction, s.mine.stake)
+    ? payoutOfBet(s.pool, s.mine)
     : null
 
   /* 내가 건 것. 카드에 줄로 펴지 않고 완료 버튼의 말풍선으로 접었다 — 한 장만 세 줄
@@ -213,9 +213,9 @@ export default function EventStocks({ event }: { event: EventHome }) {
      눈으로 더하게 둘 값이 아니다.
      카드와 같은 문(phase === 'SEALED')을 쓴다. 등록 중에 합계를 띄우면 종목을 하나
      더 걸 때마다 다른 종목의 몫까지 같이 흔들려, 방금 한 일과 숫자의 변화가 어긋난다.
-     아직 체인에 안 올라간 배팅(null)은 빼고 센다. */
+     아직 체인에 안 올라간 배팅(PENDING·FAILED)은 payoutOfBet 이 null 을 주므로 빠진다. */
   const win = event.phase !== 'SEALED' ? 0 : event.stocks.reduce(
-    (sum, s) => sum + (s.mine && !s.result ? (payoutOfBet(s.pool, s.mine.direction, s.mine.stake) ?? 0) : 0),
+    (sum, s) => sum + (s.mine && !s.result ? (payoutOfBet(s.pool, s.mine) ?? 0) : 0),
     0,
   )
 
