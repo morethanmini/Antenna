@@ -29,6 +29,7 @@ import {
   type MyRun, type OpenRun,
 } from '../api/seasons'
 import { useAsync } from '../api/useAsync'
+import SpriteAnimation from '../components/SpriteAnimation'
 import ErrorState from '../components/state/ErrorState'
 import { openSimOnboarding } from '../sim/onboardingSeen'
 import '../styles/screens/sim-home.css'
@@ -117,7 +118,21 @@ function Hero({ run, practice }: { run: MyRun | null; practice: OpenRun[] | unde
   const days = agreed(practice, 'lengthDays')
 
   return (
-    <section className="sh-hero" aria-labelledby="sh-hero-h">
+    /* is-dark: 모의투자 히어로만 어두운 판을 쓴다. 딸려 오는 색 한 벌은 sim-home.css 에 있다 */
+    <section className="sh-hero is-dark" aria-labelledby="sh-hero-h">
+      {/* 배경 요소 — 글과 개미 사이 빈자리를 채운다. 어두운 판에서만 쓴다.
+          무엇을 왜 까는지는 sim-home.css 의 .sh-backdrop 머리말에 있다. */}
+      <div className="sh-backdrop" aria-hidden="true">
+        {/* 빛줄기만 카드를 통째로 가로지르고, 나머지 넷은 "글 끝 ~ 개미" 띠 안에 앉는다 */}
+        <img className="sh-bd-wave" src="/assets/pageset/wave-thin.webp" alt="" />
+        <div className="sh-bd-band">
+          <img className="sh-bd-candles" src="/assets/pageset/candles.webp" alt="" />
+          <img className="sh-bd-spark" src="/assets/pageset/sparks.webp" alt="" />
+          <img className="sh-bd-panel sh-bd-panel1" src="/assets/pageset/panel-line.webp" alt="" />
+          <img className="sh-bd-panel sh-bd-panel2" src="/assets/pageset/panel-pie.webp" alt="" />
+        </div>
+      </div>
+
       <div className="sh-hero-copy">
         <span className="sh-flag">{run ? '진행 중' : '모의투자'}</span>
 
@@ -227,11 +242,38 @@ function Hero({ run, practice }: { run: MyRun | null; practice: OpenRun[] | unde
 
           모의투자 캐릭터는 검정 개미다. 인사이트 쪽 흰 개미와 다른 이미지이며,
           모의투자 화면에는 이쪽만 쓴다. */}
-      <div className="sh-stage" aria-hidden="true">
+      {/* has-sprite — 스프라이트가 차트판을 함께 들고 와서 겹치는 장식을 내린다.
+          어느 것을 왜 내리는지는 sim-home.css 의 같은 이름 규칙에 적어 뒀다. */}
+      <div className="sh-stage has-sprite" aria-hidden="true">
         {DRIFT.map((name, i) => (
           <img key={name} className={`sh-drift d${i + 1}`} src={`/assets/pageset/${name}.webp`} alt="" />
         ))}
-        <img className="sh-hero-art" src="/assets/pageset/ant-chart.webp" alt="" />
+        {/* 정지 그림(ant-chart.webp)에서 스프라이트로 바꿨다 — 같은 개미가 차트판을
+            가리키는 37 프레임짜리 시트다. 원본 시트는 27MB 라 그대로 쓰면 첫 화면이
+            한참 비어 있어, 0.6 배로 줄이고 WebP 로 다시 구운 1.2MB 짜리를 쓴다
+            (원본은 assets/kingsparaid_sprite_assets_v7/ 에 그대로 있다).
+
+            **프레임 크기는 시트를 구운 배율을 그대로 적는다.** 여기 숫자가 어긋나면
+            엉뚱한 자리를 잘라 그린다 — scripts/build-ant-sprite.py 의 SCALE 을 바꾸면
+            이 두 값도 같이 바꿔야 한다.
+
+            시트를 다시 구우면서 오른쪽 아래 생성기 워터마크(KlingAI)도 지웠다.
+            원본 프레임에서 알파로 깎이다 만 글자 조각이 남아 있었다.
+
+            **비율이 달라 폭을 따로 잡는다.** 옛 그림은 460×611 로 세로가 길었고
+            이 시트는 1048×876 으로 가로가 길다 — --art 를 그대로 주면 개미가 반쪽만
+            차지해 작아 보인다. 그래서 CSS 에 .is-sprite 로 폭을 따로 뒀다.
+
+            **왕복으로 돌린다.** 1 번은 웃는 얼굴이고 37 번은 SELL 을 가리키는
+            시무룩한 얼굴이라, 정방향으로만 돌리면 37 → 1 에서 표정이 툭 튄다.
+            되감으면 표정이 이어져 한 동작으로 읽힌다. 대신 한 바퀴가 72 프레임이라
+            fps 를 12 → 16 으로 올려 길이를 맞췄다. */}
+        <SpriteAnimation
+          className="sh-hero-art is-sprite"
+          src="/assets/pageset/ant-play-sprite.webp"
+          frameCount={37} columns={6} frameWidth={629} frameHeight={526}
+          fps={16} pingpong
+        />
       </div>
     </section>
   )
