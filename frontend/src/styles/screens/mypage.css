@@ -1,60 +1,144 @@
-/* E-05 마이페이지 [ANT-FE-MYPAGE]
+/* E-05 마이페이지 [ANT-FE-MYPAGE] · S15P21A507-290
    화면 전용 CSS. 셸(app.css)·공용 상태(state.css)와 섞지 않는다.
-   .badges 는 G-09 와 공유하는 컴포넌트 스타일이라 아래쪽에 따로 모아 둔다. */
+   .badges 는 BadgeList 컴포넌트 스타일이라 아래쪽에 따로 모아 둔다. 설계상 G-09 와
+   공유하기로 한 것인데 지금 그 컴포넌트를 그리는 화면은 여기뿐이다(2026-09-18 확인).
 
-/* ── 프로필 요약 ─────────────────────────────────────── */
-.mp-profile{
-  display:grid;align-items:center;gap:20px;
-  grid-template-columns:auto minmax(0,1fr) auto;
-  padding:24px;border:1px solid var(--rule);border-radius:16px;
-  background:var(--surface);box-shadow:var(--shadow);
+   ── 레퍼런스: solved.ac 뼈대 + op.gg 순위 표기 ────────────────
+   고른 기준과 실측값은 backend/docs/마이페이지 레퍼런스/실측.md 에 있다.
+
+   solved.ac 에서 가져온 것
+     배너 띠 + 아바타가 경계에 걸터앉기
+     닉네임 아래 진행 바 (저쪽은 다음 티어까지, 우리는 적중률 자체)
+     통계를 문장처럼 — 숫자 진하게 + 이름표 흐리게, **같은 줄** (14px, 우리 본문과 같다)
+   op.gg 에서 가져온 것
+     순위와 백분위를 한 줄로 — "Ladder Rank 134 (0.0044% of top)"
+     성적을 크기가 아니라 색으로 말하기 (티어 20px · 나머지 12~14px)
+
+   ⚠ 1차 시안(Kaggle 뼈대)에서 통계를 34px 로 키웠던 것은 본문 16px 인 서양
+   레퍼런스에서 온 오역이라 되돌렸다. 여기서 제일 큰 글자는 닉네임(30px)이고,
+   성적은 진행 바와 색이 말한다.
+
+   카드 겉모습(테두리 1px · 모서리 14px · 간격 16px · hover 그림자)과 알약은
+   /reports 리디자인에서 정한 어휘를 그대로 쓴다 — 두 화면이 한 제품으로 읽혀야 한다. */
+
+/* ── 머리 ───────────────────────────────────────────── */
+.mp-hero{
+  border:1px solid var(--rule);border-radius:18px;background:var(--surface);
+  overflow:hidden;                 /* 배너 위쪽 모서리를 카드 모양대로 자른다 */
 }
+/* 배너. solved.ac 는 사용자가 고른 배경 이미지이고, 우리는 그런 값이 없으므로
+   브랜드 톤 띠 하나다. 높이는 아바타가 절반쯤 걸치도록 잡았다. */
+.mp-banner{
+  height:104px;
+  background:linear-gradient(115deg,var(--brand-soft),var(--brand-softer));
+}
+/* 아바타 | 신원 | 성적 세 칸. 전에는 신원 칸 하나에 일곱 줄(닉네임·소개·섹터·채널·
+   순위·적중률·통계)을 세로로 쌓아 벽처럼 읽혔다 — 폭은 남는데 세로로만 쌓은 탓이다.
+   격자가 아니라 flex 인 이유는 1차에서 겪었다: `auto|1fr|auto` 격자는 폭이 줄면
+   가운데 칸을 0 으로 찌부러뜨린다. flex 는 성적 칸을 아랫줄로 내려보낸다. */
+.mp-hero-body{display:flex;flex-wrap:wrap;align-items:flex-start;gap:20px 36px;padding:0 28px 28px}
+/* 경계에 걸터앉는다 — 배너 높이의 절반쯤 위로 올린다 */
 .mp-avatar{
-  width:72px;height:72px;flex:none;border-radius:50%;
+  width:104px;height:104px;flex:none;margin-top:-52px;border-radius:50%;
   object-fit:cover;background:var(--brand-soft);
+  box-shadow:0 0 0 4px var(--surface);
 }
-/* 카드 안쪽(닉네임·소개·관심 섹터·외부 채널)은 ChannelProfileEdit 가 그린다 —
-   E-02 채널 머리와 같은 컴포넌트이고, 스타일도 styles/profile-edit.css 가 들고 간다.
-   여기서는 제목 크기만 이 화면 몫으로 맞춘다(채널은 h1, 여기는 h2). */
-.mp-who{min-width:0}
-.mp-who h2{margin:0;color:var(--ink);font-size:var(--fs-3xl);font-weight:var(--fw-black);letter-spacing:-.02em}
+.mp-who{flex:1 1 360px;min-width:0;padding-top:16px}
+.mp-who h1{margin:0;color:var(--ink);font-size:var(--fs-7xl);font-weight:var(--fw-black);letter-spacing:-.025em}
 
-.mp-actions{display:grid;gap:8px}
-.mp-btn{
-  display:grid;place-items:center;height:36px;padding:0 16px;
-  border-radius:10px;font-size:var(--fs-base);font-weight:var(--fw-bold);white-space:nowrap;
+/* 성적 묶음. 자기 판을 가져야 신원과 섞이지 않고, 줄바꿈이 일어나도 덩어리가 유지된다 */
+.mp-record{
+  flex:1 1 320px;min-width:0;margin-top:14px;
+  padding:18px 20px;border-radius:14px;background:var(--surface-2);
 }
-.mp-btn.solid{background:var(--brand);color:#fff}
-.mp-btn.solid:hover{background:var(--brand-ink)}
-.mp-btn.ghost{border:1px solid var(--rule);background:var(--surface);color:var(--body)}
-.mp-btn.ghost:hover{border-color:#cdc9f7;color:var(--brand-ink)}
 
-/* ── 블록 공통 ───────────────────────────────────────── */
+/* ── 순위 한 줄 (op.gg) ─────────────────────────────── */
+.mp-rank{
+  display:flex;align-items:center;flex-wrap:wrap;gap:8px;
+  margin:0;font-size:var(--fs-lg);
+}
+.mp-rank em{font-style:normal;color:var(--brand-ink);font-weight:var(--fw-heavy)}
+.mp-rank span{color:var(--muted)}
+.mp-rank b{font-weight:var(--fw-heavy);font-size:var(--fs-md)}
+.mp-rank b.up{color:var(--up)}
+.mp-rank b.down{color:var(--down)}
+
+/* ── 적중률 진행 바 (solved.ac) ─────────────────────── */
+.mp-gauge{margin-top:18px}
+.mp-gauge-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:6px}
+.mp-gauge-head b{color:var(--ink);font-size:var(--fs-xl);font-weight:var(--fw-heavy)}
+.mp-gauge-head small{color:var(--faint);font-size:var(--fs-md)}
+.mp-gauge-rail{height:10px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+.mp-gauge-rail span{
+  display:block;height:100%;border-radius:999px;
+  background:linear-gradient(90deg,var(--brand),color-mix(in oklab,var(--brand) 72%,#fff));
+  transition:width .35s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── 통계 문장 (solved.ac) ──────────────────────────
+   칸을 나누지 않는다. 숫자만 진하게 하고 이름표는 바로 뒤에 붙여 흐리게 둔다 —
+   "4,039문제 해결" 처럼 읽히는 것이 목적이라 값과 라벨 사이에 공백도 두지 않는다. */
+.mp-stats{
+  display:flex;flex-wrap:wrap;gap:8px 20px;
+  margin:18px 0 0;padding:0;list-style:none;
+  color:var(--muted);font-size:var(--fs-lg);
+}
+.mp-stats b{color:var(--ink);font-weight:var(--fw-heavy)}
+
+/* ── 나가는 길 (알약 한 줄) ─────────────────────────── */
+.mp-nav{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.mp-pill{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:9px 15px;border:1px solid var(--rule);border-radius:999px;
+  background:var(--surface);color:var(--body);
+  font-size:var(--fs-base);font-weight:var(--fw-bold);white-space:nowrap;
+  transition:border-color .14s,background .14s,color .14s;
+}
+.mp-pill svg{color:var(--brand)}
+.mp-pill:hover{border-color:#cdc9f7;background:var(--brand-softer);color:var(--brand-ink)}
+
+/* ── 블록 공통 ──────────────────────────────────────── */
 .mp-block{margin-top:32px}
-.mp-block h3{margin:0 0 12px;color:var(--ink);font-size:var(--fs-2xl);font-weight:var(--fw-heavy)}
+.mp-block h2{margin:0 0 12px;color:var(--ink);font-size:var(--fs-2xl);font-weight:var(--fw-heavy)}
 
-/* ── 활동 진입점 ─────────────────────────────────────── */
-.mp-links{
-  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;
+/* ── 예측 성적표 ────────────────────────────────────── */
+.mp-score{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;
   margin:0;padding:0;list-style:none;
 }
-.mp-links a{
-  display:flex;align-items:center;gap:13px;padding:16px 18px;
+.mp-score-card{
+  min-width:0;padding:18px;
   border:1px solid var(--rule);border-radius:14px;background:var(--surface);
-  transition:border-color .14s,background .14s;
+  transition:box-shadow .15s cubic-bezier(.4,0,.2,1), border-color .15s cubic-bezier(.4,0,.2,1);
 }
-.mp-links a:hover{border-color:#cdc9f7;background:var(--brand-softer)}
-.mp-link-ic{
-  display:grid;place-items:center;width:40px;height:40px;flex:none;
-  border-radius:11px;background:var(--brand-soft);color:var(--brand);
+.mp-score-card:hover{border-color:var(--card-line);box-shadow:var(--shadow)}
+.mp-score-head{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid var(--rule);
+  color:var(--brand);
 }
-.mp-link-text{flex:1;min-width:0}
-.mp-link-text b{display:block;color:var(--ink);font-size:var(--fs-lg);font-weight:var(--fw-bold)}
-.mp-link-text small{display:block;margin-top:2px;color:var(--muted);font-size:var(--fs-sm)}
-.mp-link-go{flex:none;font-style:normal;color:#b3b9c9;font-size:var(--fs-2xl)}
-.mp-links a:hover .mp-link-go{color:var(--brand)}
+.mp-score-head b{color:var(--body);font-size:var(--fs-lg);font-weight:var(--fw-bold)}
+/* 22px. 1차의 30px 에서 내렸다 — 레퍼런스가 성적을 크기로 말하지 않는다 */
+.mp-score-card strong{
+  display:flex;align-items:baseline;gap:6px;color:var(--ink);
+  font-size:var(--fs-4xl);font-weight:var(--fw-heavy);line-height:1.1;letter-spacing:-.02em;
+}
+/* 분모. "11 / 17" 이 한 덩어리로 읽혀야 한다 */
+.mp-score-card strong i{
+  font-style:normal;font-size:var(--fs-xl);font-weight:var(--fw-bold);color:var(--faint);
+}
+.mp-score-card small{display:block;margin-top:6px;color:var(--faint);font-size:var(--fs-md)}
 
-/* ── 배지 (G-09 와 공유) ─────────────────────────────── */
+/* 체인 기록만 채운다 — 어느 레퍼런스에도 없는, 우리만 가진 칸이다 */
+.mp-score-card.is-chain{border-color:var(--brand);background:var(--brand)}
+.mp-score-card.is-chain:hover{border-color:var(--brand-ink);background:var(--brand-ink);box-shadow:var(--shadow)}
+.mp-score-card.is-chain .mp-score-head{border-bottom-color:rgba(255,255,255,.28);color:rgba(255,255,255,.75)}
+.mp-score-card.is-chain .mp-score-head b,
+.mp-score-card.is-chain strong{color:#fff}
+.mp-score-card.is-chain strong i,
+.mp-score-card.is-chain small{color:rgba(255,255,255,.72)}
+
+/* ── 배지 (BadgeList 컴포넌트) ───────────────────────── */
 .badges{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none}
 .badge-chip{
   display:inline-flex;align-items:center;gap:7px;
@@ -71,10 +155,8 @@
 .badges-empty{margin:0;color:var(--faint);font-size:var(--fs-base)}
 
 @media(max-width:760px){
-  .mp-profile{grid-template-columns:auto minmax(0,1fr);gap:16px}
-  .mp-actions{grid-column:1/-1;grid-template-columns:1fr 1fr}
-  .mp-links{grid-template-columns:minmax(0,1fr)}
+  .mp-hero-body{padding:0 18px 20px;gap:12px}
+  .mp-avatar{width:84px;height:84px;margin-top:-42px}
+  .mp-who{padding-top:12px}
+  .mp-banner{height:88px}
 }
-
-/* 배지 섹션을 내리면서(S15P21A507-230) .mp-pending 규칙도 함께 뺐다.
-   그 섹션 말고 쓰는 곳이 없었다. 배지를 되살릴 때 이 자리도 같이 되살린다. */
