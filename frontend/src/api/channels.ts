@@ -8,7 +8,9 @@
 
    ── 백엔드 현황 (2026-09-15 확인) ────────────────────────
    조회 넷이 다 열렸다 — {userId}(ANT-TOKEN-09) · {userId}/predictions(ANT-PRED-05) ·
-   {userId}/reports(ANT-COMMUNITY-01) · {userId}/backtest(ANT-TOKEN-03). 그래서 MOCK 을 껐다.
+   {userId}/reports(ANT-COMMUNITY-01) · {userId}/backtest(ANT-TOKEN-03).
+   목업은 2026-09-17 에 통째로 걷었다 — MOCK 이 false 로 꺼진 채 남아 있던 분기와
+   mock/channels.ts 를 지웠다.
 
    구독 개시(POST {userId}/subscriptions, ANT-TOKEN-01)도 실제다. 서명 원문은 아래
    subscribeSigningPayload — 서버 SubscriptionService.Signed 와 바이트가 같아야 한다.
@@ -19,12 +21,10 @@
    구현된 {userId}/predictions 를 "백엔드 없음" 으로 오판하게 만들었다. */
 import { api } from './client'
 import type { ChannelPlatform } from './account'
-import * as mock from './mock/channels'
 import type { CursorList } from './types'
 import type { Direction, PredictionStatus } from './predictions'
 import type { WalletNonce } from './wallet'
 
-const MOCK = false
 
 /* ── 채널 프로필 ─────────────────────────────────────── */
 
@@ -106,7 +106,6 @@ export type Channel = {
 }
 
 export function fetchChannel(userId: string) {
-  if (MOCK) return mock.channel(userId)
   return api.get<Channel>(`/channels/${userId}`)
 }
 
@@ -140,7 +139,6 @@ export type ChannelPrediction = {
 export type ChannelPredictionPage = CursorList<ChannelPrediction>
 
 export function fetchChannelPredictions(userId: string, cursor?: string | number | null) {
-  if (MOCK) return mock.predictions(userId, cursor)
   return api.get<ChannelPredictionPage>(`/channels/${userId}/predictions`, {
     query: { cursor: cursor ?? undefined },
   })
@@ -170,7 +168,6 @@ export type Backtest = {
 }
 
 export function fetchBacktest(userId: string) {
-  if (MOCK) return mock.backtest(userId)
   return api.get<Backtest>(`/channels/${userId}/backtest`)
 }
 
@@ -219,7 +216,6 @@ export function subscribeSigningPayload(publisherId: string, fee: string | null,
 }
 
 export function subscribe(userId: string, body: SubscribeBody) {
-  if (MOCK) return mock.subscribe(userId, body)
   return api.post<{ operationId: string }>(`/channels/${userId}/subscriptions`, body, {
     idempotencyScope: subscribeScope(userId),
   })

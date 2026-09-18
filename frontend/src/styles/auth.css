@@ -55,11 +55,38 @@
 .auth .feat h3{margin:0;font-size:var(--fs-xl);font-weight:var(--fw-bold);letter-spacing:-.01em;color:var(--ink)}
 
 .auth .intro-art{position:relative;margin:0;min-width:0;display:grid;place-items:end center}
+/* 영상과 정지 그림이 같은 자리·같은 크기다. 한 칸(1/1)에 겹쳐 두고 CSS 가 하나만 보인다 */
+.auth .intro-art video,
 .auth .intro-art img{
+  grid-area:1 / 1;
   width:100%;max-width:400px;height:auto;max-height:52vh;object-fit:contain;
   /* 코멘트 반영: 개미를 살짝 왼쪽으로. transform 이라 레이아웃에는 영향이 없다. */
   transform:translateX(-30px);
-  filter:drop-shadow(0 30px 40px rgba(72,64,160,.16));
+}
+/* 영상에는 알파가 없다(H.264 는 투명 채널을 못 싣는다). 바탕이 #f7f6fb 로 칠해져
+   오는데 이 화면 바탕(#fcfcff~#eff1fa)과 몇 단계 차이라, 그냥 두면 개미 둘레에
+   옅은 네모가 보인다.
+
+   **밝기로 바탕을 순백까지 올린 뒤 곱한다.**
+     247 × 1.033 ≈ 255 → multiply 에서 흰색은 아래 색을 그대로 통과시킨다.
+   그래서 바탕 픽셀이 페이지와 **정확히 같아진다**(실측 차이 0). 개미는 3% 밝아졌다가
+   페이지 색(≈0.96)이 곱해져 원래대로 돌아온다.
+
+   1.033 은 이 영상의 바탕값(247)에서 나온 수다 — 영상을 다시 뽑으면 바탕값을 재서
+   255 ÷ 그 값으로 고쳐야 한다. 이 수법 자체가 화면 바탕이 흰색 계열일 때만 성립하고,
+   정석은 알파를 싣는 WebM(VP9)이나 HEVC 로 갈아 끼우는 것이다. */
+/* 밝기를 1.10 까지 올렸다(요청, 2026-09-18). 255 를 넘긴 바탕은 흰색에서 잘리고,
+   multiply 에서 흰색은 아래 색을 그대로 통과시키므로 **더 올려도 네모는 안 생긴다** —
+   1.033 이 경계였고 그 위로는 얼마를 주든 바탕이 안전하다. 캐릭터만 밝아진다. */
+.auth .intro-art video{mix-blend-mode:multiply;filter:brightness(1.1)}
+/* 정지 그림은 평소에 숨는다 — poster 로 이미 같은 파일을 받아 두므로 값은 안 든다 */
+.auth .intro-art img{display:none}
+
+/* 움직임을 줄여 달라고 한 사람에게는 정지 그림을 보인다. 6.6초마다 되감기는 반복
+   재생이 이 화면에서 가장 큰 움직임이라, 여기가 빠지면 설정을 켠 의미가 없다. */
+@media (prefers-reduced-motion:reduce){
+  .auth .intro-art video{display:none}
+  .auth .intro-art img{display:block}
 }
 
 /* 우측 SSO 카드 */

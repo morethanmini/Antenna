@@ -11,7 +11,8 @@
    어긋나지 않게 하려는 것이다. */
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getActiveAds, getMarketIndices, getWatchlist } from '../api/insight'
+import { getMarketIndices, getWatchlist } from '../api/insight'
+import { fetchActiveAds } from '../api/ads'
 import { fetchWalletBalance, formatToken } from '../api/wallet'
 import { fetchRankings, formatComputedAt, metric } from '../api/rankings'
 import { getBriefings } from '../api/briefings'
@@ -474,11 +475,21 @@ function TopPredictor() {
    여러 장이 오면 한 장씩 자동으로 넘기고, 점을 눌러 곧바로 고를 수도 있다.
    문구는 ActiveAd 스키마에 없어(이미지·링크뿐) 장마다 같은 안내가 나간다. */
 function Sponsored() {
-  const load = useCallback(() => getActiveAds(), [])
+  const load = useCallback(() => fetchActiveAds(), [])
   const { data, loading, error } = useAsync(load)
   const items = data?.items ?? []
   const { index, setIndex, setPaused } = useRotate(items.length, AD_ROTATE_MS)
   const ad = items[index]
+
+  /* 걸린 배너가 없으면 **우리 배너**를 건다(2026-09-17). 목업을 걷어내고 나니 등록된
+     광고가 0건이라 이 칸이 통째로 비었는데, 빈 칸을 접어 버리면 광고 등록(H-04)으로
+     가는 길이 홈에서 사라진다 — 지금은 마이페이지 안쪽 메뉴뿐이다.
+
+     목업이 아니다. 가짜 광고주를 지어내는 것이 아니라 "이 자리를 팝니다" 라고 우리가
+     말하는 것이고, 광고가 한 건이라도 승인되면 그 배너에 자리를 내준다.
+
+     실패(error)일 때는 걸지 않는다. 불러오지 못한 것과 비어 있는 것은 다른 상태다. */
+  const house = !loading && !error && items.length === 0
 
   return (
     <section className="hm-showcase" aria-labelledby="hm-showcase-h"
@@ -486,7 +497,25 @@ function Sponsored() {
       <header className="hm-showcase-head">
         <h2 id="hm-showcase-h" className="hm-badge">스폰서드</h2>
       </header>
-      <State loading={loading} error={error} empty={data?.items.length === 0} />
+      <State loading={loading} error={error} />
+
+      {house && (
+        <div className="hm-showcase-viewport">
+          <div className="hm-showcase-track">
+            <div className="hm-showcase-slide hm-t-a">
+              <p className="hm-showcase-title">이 자리에 광고를 실어 보세요</p>
+              <p className="hm-showcase-sub">홈 첫 화면에 배너가 걸립니다. ANT 로 결제합니다.</p>
+              <Link className="hm-showcase-btn" to="/ads/new">
+                광고 등록하기
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 12h13M13 6.5l5.5 5.5L13 17.5" stroke="currentColor"
+                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
       {ad && (
         <>
           {/* 창 하나를 두고 띠를 옆으로 민다. 보이지 않는 장은 읽기·탭 대상에서 뺀다. */}
