@@ -45,8 +45,16 @@ const DASH = '—'
    합이 100 이라는 게 보이지 않는다. 비율만으로 방향을 전달하지 않도록
    우세 쪽 라벨과 퍼센트를 함께 적는다. */
 function SentimentBar({ upRatio, count }: { upRatio: number | null; count: number }) {
+  /* 예측이 없어도 **같은 모양**으로 그린다(2026-09-18) — 글자 한 줄만 두었더니 열 줄 중
+     예닐곱이 그 줄이라 칸이 비어 보였고, 막대가 있는 줄만 튀어 목록이 들쭉날쭉했다.
+     회색 막대는 "아직 아무도 안 걸었다" 를 자리로 말한다. */
   if (upRatio === null || count === 0) {
-    return <span className="st-senti-none">예측 없음</span>
+    return (
+      <span className="st-senti is-none">
+        <span className="st-senti-head"><b>예측 없음</b></span>
+        <span className="st-senti-track" aria-hidden="true"><i className="st-senti-empty" /></span>
+      </span>
+    )
   }
   const up = upRatio >= 50
   return (
@@ -209,8 +217,16 @@ function SectorChips({ current, onPick }: {
       {/* 스크롤 상자 자체에는 tabIndex 를 주지 않는다 — 안쪽 칩이 전부 버튼이라
           탭으로 닿고, 브라우저가 포커스 간 칩을 알아서 끌어온다. 탭 정거장을
           하나 더 만들면 키보드로 지나가기만 번거로워진다. */}
+      {/* 가장자리를 흐리게 할지는 넘길 데가 있는지로 정한다 — 넘김 버튼의 켜짐과
+          같은 값(more)을 쓰므로 둘이 어긋날 일이 없다. 끝에 닿으면 흐림도 걷힌다.
+          잘린 칩을 그냥 두면 "잘렸다" 로 읽히는데, 흐려지면 "더 있다" 가 된다. */}
       <div
-        className={`st-sector-track${grabbing ? ' is-dragging' : ''}`}
+        className={[
+          'st-sector-track',
+          grabbing ? 'is-dragging' : '',
+          more.left ? 'fade-l' : '',
+          more.right ? 'fade-r' : '',
+        ].filter(Boolean).join(' ')}
         ref={trackRef} onScroll={measure}
         role="group" aria-label="섹터별 보기"
         onPointerDown={onPointerDown}
@@ -529,15 +545,28 @@ export default function StockTable({ filter, setFilter }: Props) {
                 <span className="r">등락률</span>
                 <span className="r">PER</span>
                 <span className="r">PBR</span>
-                {/* 관심 버튼 칸은 머리글을 두지 않는다 — .st-cols 의
-                    padding-right 가 그 자리를 비운다 */}
-                <span>예측 현황</span>
+                {/* 앞의 넷과 같이 오른쪽에 붙인다(2026-09-18) — 숫자 칸이 다 오른쪽인데
+                    여기만 왼쪽이면 줄 끝이 톱니처럼 어긋난다 */}
+                <span className="r">예측 현황</span>
               </div>
               <ul className="st-list">
                 {list.items.map((s) => {
                   const on = watchFix[s.code] ?? s.watched
                   return (
                     <li key={s.code} className="st-item">
+                      {/* 별이 줄 맨 앞이다(2026-09-18). a 안에 button 을 둘 수 없어
+                          형제로 두는 구조는 그대로고, DOM 순서만 앞으로 옮겼다 —
+                          CSS order 로 옮기면 탭 순서가 보이는 것과 어긋난다. */}
+                      <button type="button" className={`st-star${on ? ' on' : ''}`}
+                              aria-pressed={on}
+                              aria-label={`${s.name} 관심 ${on ? '해제' : '추가'}`}
+                              onClick={() => void toggleWatch(s)}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8-4.2-4.1 5.8-.8z"
+                                fill={on ? 'currentColor' : 'none'}
+                                stroke="currentColor" strokeWidth="1.6" />
+                        </svg>
+                      </button>
                       <Link className="st-link" to={`/stocks/${s.code}`}>
                         <span className="st-id">
                           <StockLogo code={s.code} name={s.name} className="st-logo" />
@@ -564,16 +593,6 @@ export default function StockTable({ filter, setFilter }: Props) {
                         </span>
                         <SentimentBar upRatio={s.upRatio} count={s.predictionCount} />
                       </Link>
-                      <button type="button" className={`st-star${on ? ' on' : ''}`}
-                              aria-pressed={on}
-                              aria-label={`${s.name} 관심 ${on ? '해제' : '추가'}`}
-                              onClick={() => void toggleWatch(s)}>
-                        <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
-                          <path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8-4.2-4.1 5.8-.8z"
-                                fill={on ? 'currentColor' : 'none'}
-                                stroke="currentColor" strokeWidth="1.6" />
-                        </svg>
-                      </button>
                     </li>
                   )
                 })}
