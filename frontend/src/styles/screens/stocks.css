@@ -469,6 +469,13 @@
 }
 .stocks-page .st-close{color:var(--ink); font-size:var(--fs-lg); font-weight:var(--fw-bold)}
 .stocks-page .st-rate{font-size:var(--fs-base); font-weight:var(--fw-bold)}
+/* 상승·하락 색(2026-09-18). toneOf() 가 up·down 클래스를 붙이고 있었는데 그걸 칠하는
+   규칙이 이 화면에 없어서, 오른 종목도 내린 종목도 전부 회색으로 나왔다 — 표에서
+   가장 먼저 훑는 칸인데 방향이 부호 하나로만 남아 있던 셈이다.
+   국내 관례대로 상승이 빨강이다. 0 은 칠하지 않는다(toneOf 가 빈 문자열을 준다) —
+   오른 것도 내린 것도 아닌데 색이 붙으면 그렇게 읽힌다. */
+.stocks-page .st-rate.up{color:var(--up)}
+.stocks-page .st-rate.down{color:var(--down)}
 .stocks-page .st-per{color:var(--body); font-size:var(--fs-md); font-weight:var(--fw-bold)}
 
 /* ── 예측 심리 막대 ─────────────────────────────────────── */
