@@ -25,3 +25,6 @@ dist-ssr
 
 # 애니메이션 프레임 검수 도구. 로컬에서만 쓰고 배포에 싣지 않는다
 public/dev/
+
+# 빌드 스크립트(scripts/*.py) 가 남기는 것
+__pycache__/

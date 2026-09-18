@@ -83,7 +83,8 @@ public record CommitItemResponse(
                 null,
                 null,
                 r.getId(),
-                r.getTitle(),
+                // 가려진 리포트는 제목 대신 자리표시 — 해시·배치는 그대로라 원장 증명은 선다(Report.listedTitle)
+                r.listedTitle(),
                 r.isPublic(),
                 batchId(r.getAnchorBatch()),
                 businessDate(r.getAnchorBatch()),

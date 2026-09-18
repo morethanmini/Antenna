@@ -21,9 +21,15 @@ public record AbuseReportCreateRequest(
         @Size(max = 300, message = "상세 사유는 300자를 넘을 수 없습니다.")
         String detail
 ) {
+    /**
+     * 신고 대상 종류. COMMENT 는 커뮤니티 댓글(post_comments)이고, 리포트 댓글은
+     * REPORT_COMMENT 로 따로 받는다 — 두 표의 id 번호 체계가 달라서다.
+     */
     public enum TargetType {
         POST,
         COMMENT,
-        USER
+        USER,
+        REPORT,
+        REPORT_COMMENT
     }
 }

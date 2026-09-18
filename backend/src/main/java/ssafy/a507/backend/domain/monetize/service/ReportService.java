@@ -218,20 +218,28 @@ public class ReportService {
         Report report = reportRepository
                 .findDetailById(reportId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REPORT_NOT_FOUND, "reportId"));
+        // 가려졌으면 관리자만 연다(작성자 포함 나머지는 410). 판정은 ReportAccess 한 곳.
+        reportAccess.requireVisible(report, viewerId);
 
         boolean own = report.getUser().getId().equals(viewerId);
         int viewCount = report.getViewCount();
-        if (!own && firstViewToday(reportId, viewerId)) {
+        // 관리자가 가려진 리포트를 검토하는 것은 열람이 아니다 — 조회수에 넣지 않는다
+        if (!own && !report.isBlocked() && firstViewToday(reportId, viewerId)) {
             reportRepository.incrementViewCount(reportId);
             // UPDATE 는 영속성 컨텍스트를 거치지 않아 엔티티 값이 옛것이다. 응답에는 이번
             // 열람이 반영된 값을 담는다 — 눌러 들어왔는데 숫자가 그대로면 버그로 보인다.
             viewCount += 1;
         }
 
-        boolean locked = reportAccess.isLocked(report, viewerId);
         Social social = socialOf(viewerId, List.of(report));
         ReportDetailResponse.Social counts = new ReportDetailResponse.Social(
                 social.likeCount(reportId), social.liked(reportId), social.commentCount(reportId));
+        /* 여기까지 온 가려진 리포트는 관리자가 보는 것이다. 구독자 전용이어도 전문을 싣는다 —
+           복구 판단의 근거가 본문이다. blocked:true 로 화면이 "가려진 리포트" 띠를 띄운다. */
+        if (report.isBlocked()) {
+            return ReportDetailResponse.full(report, viewCount, counts).asBlocked();
+        }
+        boolean locked = reportAccess.isLocked(report, viewerId);
         return locked
                 ? ReportDetailResponse.locked(report, viewCount, counts)
                 : ReportDetailResponse.full(report, viewCount, counts);

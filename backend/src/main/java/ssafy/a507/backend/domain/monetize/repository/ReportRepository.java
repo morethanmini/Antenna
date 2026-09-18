@@ -34,6 +34,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
                                  and s.publisher.id = r.user.id
                                  and s.status = :activeStatus
                                  and (s.expiresAt is null or s.expiresAt > :now)))
+              and r.status = ssafy.a507.backend.domain.monetize.entity.Report$Status.VISIBLE
               and (:cursorId is null or r.id < :cursorId)
             order by r.id desc
             """)
@@ -60,6 +61,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
                                  and s.publisher.id = r.user.id
                                  and s.status = :activeStatus
                                  and (s.expiresAt is null or s.expiresAt > :now)))
+              and r.status = ssafy.a507.backend.domain.monetize.entity.Report$Status.VISIBLE
               and (:cursorViewCount is null
                    or r.viewCount < :cursorViewCount
                    or (r.viewCount = :cursorViewCount and r.id < :cursorId))
@@ -73,11 +75,18 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
             @Param("cursorId") Long cursorId,
             Limit limit);
 
-    /** 채널 리포트 목록 한 페이지. 최신순 고정이고 비공개 리포트도 제목까지는 내려간다. */
+    /**
+     * 채널 리포트 목록 한 페이지. 최신순 고정이고 비공개 리포트도 제목까지는 내려간다.
+     *
+     * <p>신고로 가려진(BLOCKED) 리포트는 피드·채널·검색 네 쿼리에서 모두 뺀다. 원장·앵커 쿼리
+     * ({@code findLedgerPage} · {@code findSealedWithoutBatch} · {@code findByAnchorBatch…})는 거르지 않는다 —
+     * 검산이 가리키는 잎이 사라지면 봉인 증명이 깨진다({@code Report.Status} 주석).
+     */
     @Query("""
             select r from Report r
               join fetch r.user
             where r.user.id = :userId
+              and r.status = ssafy.a507.backend.domain.monetize.entity.Report$Status.VISIBLE
               and (:cursorId is null or r.id < :cursorId)
             order by r.id desc
             """)
@@ -93,6 +102,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
             select r from Report r
               join fetch r.user
             where lower(r.title) like :contains escape '!'
+              and r.status = ssafy.a507.backend.domain.monetize.entity.Report$Status.VISIBLE
             order by r.id desc
             """)
     List<Report> searchByTitle(@Param("contains") String contains, Limit limit);

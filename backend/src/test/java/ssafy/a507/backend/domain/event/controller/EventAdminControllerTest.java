@@ -312,6 +312,25 @@ class EventAdminControllerTest {
     }
 
     @Test
+    @DisplayName("접수가 열린 뒤에는 기준가를 못 바꾼다 — 409 EVENT_BASE_PRICE_LOCKED (OPEN · SEALED 모두)")
+    void 접수_시작_후_기준가_수정은_409() throws Exception {
+        mockMvc.perform(create(admin, body(2))).andExpect(status().isAccepted());
+        long eventId = count("SELECT max(id) FROM prediction_events");
+
+        for (String status : List.of("OPEN", "SEALED")) {
+            update("UPDATE prediction_events SET status = '" + status + "' WHERE id = " + eventId);
+            mockMvc.perform(put(BASE_PRICE, eventId, 1)
+                            .with(user(String.valueOf(admin))).with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"basePrice\":210000.00}"))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value("EVENT_BASE_PRICE_LOCKED"));
+        }
+        // 값이 안 바뀌었다 — 000660 은 여전히 기준가 없음
+        assertThat(count("SELECT count(*) FROM prediction_event_stocks WHERE base_price IS NULL")).isEqualTo(1);
+    }
+
+    @Test
     @DisplayName("기준가 입력도 관리자만 — 일반 회원은 403")
     void 기준가_입력은_관리자만() throws Exception {
         mockMvc.perform(create(admin, body(2))).andExpect(status().isAccepted());

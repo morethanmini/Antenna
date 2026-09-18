@@ -3,6 +3,8 @@ package ssafy.a507.backend.domain.monetize.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -26,6 +28,18 @@ import ssafy.a507.backend.domain.monetize.report.ReportSeal;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Report {
+
+    /**
+     * 노출 상태. 신고가 승인되면 BLOCKED 로 내려간다(ANT-FE-ABUSE-REPORT · 관리자 ACCEPT).
+     *
+     * <p><b>행을 지우지 않고 상태로 가리는 이유</b> — 리포트는 봉인돼 체인에 앵커된다. 행이 사라지면
+     * 원장·검산이 가리키던 잎이 증발해 "위변조 불가" 약속이 깨진다. 그래서 피드·채널·검색·상세에서만
+     * 빼고, 원장과 검산 경로({@code findLedgerPage} · 앵커 배치)는 그대로 둔다.
+     */
+    public enum Status {
+        VISIBLE,
+        BLOCKED
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -117,6 +131,17 @@ public class Report {
     @Column(name = "sign_nonce", length = 64)
     private String signNonce;
 
+    /**
+     * 노출 상태. 해시 재료가 아니다 — 가려도 봉인은 그대로 검증된다.
+     *
+     * <p>DB 기본값 VISIBLE 을 함께 박는다. 행이 있는 표에 뒤늦게 붙는 NOT NULL 컬럼이라
+     * {@code ddl-auto: update} 가 기본값 없이는 추가하지 못한다({@code viewCount} 와 같은 이유).
+     */
+    @Enumerated(EnumType.STRING)
+    @ColumnDefault("'VISIBLE'")
+    @Column(nullable = false, length = 10)
+    private Status status;
+
     /** 소속 앵커 배치. NULL 이면 앵커 대기 상태다 — {@code PredictionCommit.anchorBatch} 와 같은 뜻이다. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "anchor_batch_id")
@@ -134,6 +159,7 @@ public class Report {
         report.body = body;
         report.isPublic = isPublic;
         report.viewCount = 0;
+        report.status = Status.VISIBLE;
         return report;
     }
 
@@ -166,5 +192,28 @@ public class Report {
         if (this.anchorBatch == null) {
             this.anchorBatch = batch;
         }
+    }
+
+    /** 관리자 처리. 신고 승인(ACCEPT) 때 BLOCKED 로 내린다. */
+    public void changeStatus(Status status) {
+        this.status = status;
+    }
+
+    public boolean isBlocked() {
+        return status == Status.BLOCKED;
+    }
+
+    /** 가려진 리포트가 원장·앵커 목록에 나올 때 제목 대신 쓰는 말 */
+    public static final String BLOCKED_TITLE = "신고로 가려진 리포트";
+
+    /**
+     * 목록에 보여 줄 제목. 가려졌으면 {@link #BLOCKED_TITLE}.
+     *
+     * <p><b>원장·앵커 목록 전용이다. 검산(proof)에는 쓰지 않는다</b> — 제목은 봉인 문자열의 재료라
+     * ({@link ReportSeal#canonical}) 바꿔 내리면 검산이 "조작됨" 으로 틀리게 나온다. 목록에서 필요한 것은
+     * 해시이고 제목은 표시용이라, 가려도 증명은 그대로 선다. 검산은 대신 상세처럼 막는다(ReportAccess).
+     */
+    public String listedTitle() {
+        return isBlocked() ? BLOCKED_TITLE : title;
     }
 }
