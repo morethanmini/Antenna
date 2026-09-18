@@ -42,8 +42,15 @@
 .nt-clear:hover{color:var(--down);text-decoration:underline}
 
 /* 목록이 길어지면 팝업 안에서 구른다. 팝업 자체가 길어지면 화면 밖으로 나간다 */
+/* 줄 사이를 띄운다(2026-09-18). 전에는 간격이 0 이라 항목이 맞붙어 있었는데,
+   읽은 줄은 배경이 없어 티가 안 나지만 **안 읽은 줄은 배경이 칠해져 있어** 이웃한
+   둥근 블록끼리 달라붙어 한 덩어리로 읽혔다 — 어디서 한 알림이 끝나는지 안 보인다.
+   radius 가 10px 이라 4px 이면 모서리 곡선이 서로를 비켜 간다.
+   grid 로 두는 이유 — 뼈대(.nt-item.is-skel)는 .nt-row 없이 li 로 바로 들어와서,
+   .nt-row + .nt-row 로 붙이면 불러오는 동안에는 간격이 없다. */
 .nt-list{
   list-style:none;margin:0;padding:6px;
+  display:grid;gap:4px;align-content:start;
   max-height:min(60vh,440px);overflow-y:auto;
 }
 
@@ -63,13 +70,34 @@
 
 /* **폭을 고정한다.** 이름표 글자 수가 2자(판정)에서 4자(결제 실패)까지 오가는데,
    폭을 내용에 맡기면 줄마다 제목 시작점이 달라져 목록이 흔들려 보인다.
-   종목 상세의 .st-tag 가 같은 이유로 같은 방법을 쓴다(적중 2자 vs 빗나감 3자). */
+   종목 상세의 .st-tag 가 같은 이유로 같은 방법을 쓴다(적중 2자 vs 빗나감 3자).
+
+   **넘치면 자른다**(2026-09-18). 폭만 고정하고 넘침을 열어 두면, 표에 없는 종류가
+   왔을 때(TYPE_LABEL 에 없으면 종류 문자열이 그대로 그려진다 — NotificationPopover)
+   "EVENT_SETTLED" 같은 raw 값이 알약을 뚫고 **제목 위로 올라탄다.** 서버의
+   notifications.type 은 enum 이 아니라 자유 문자열이라 새 종류가 언제든 올 수 있다.
+
+   **아이콘 위, 글자 아래로 쌓는다**(2026-09-18). 가로로 나란히 두면 이름표가 길어져
+   제목 칸을 그만큼 먹는데, 세로로 쌓으면 폭이 56px 로 줄면서 아이콘도 14px 까지
+   키울 수 있다 — 11px 때보다 그림이 또렷하다.
+
+   **줄 전체 높이의 가운데에 선다.** grid-row 를 두 줄에 걸치고 align-self:center 로
+   둔다. 전에는 첫 줄에만 있어서 제목과 기준선을 맞췄는데, 본문이 두 줄인 알림에서는
+   이름표가 위로 쏠려 빈 아래쪽이 허전했다. 걸침만 주고 stretch 를 두면 알약이
+   줄 높이만큼 늘어나므로 center 로 내용 크기를 지킨다.
+
+   자르기는 **글자에만** 건다(.nt-type-txt). 알약 자체에 걸면 잘린 말줄임표가
+   알약 모서리에 닿고, 아이콘까지 같이 잘려 나간다. */
 .nt-type{
-  grid-row:1;width:60px;padding:2px 0;border-radius:999px;
-  display:grid;place-items:center;
+  grid-row:1 / -1;align-self:center;
+  width:56px;padding:6px 5px;border-radius:12px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
   background:var(--surface-2);color:var(--muted);
-  font-size:var(--fs-3xs);font-weight:var(--fw-heavy);white-space:nowrap;
+  font-size:var(--fs-3xs);font-weight:var(--fw-heavy);line-height:1.35;
 }
+/* 아이콘은 줄어들지 않는다 — 글자가 길면 글자가 잘리고 그림은 온전히 남는다 */
+.nt-type-ic{flex:none;width:14px;height:14px}
+.nt-type-txt{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nt-title{
   grid-row:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   color:var(--ink);font-size:var(--fs-base);font-weight:var(--fw-bold);
@@ -82,12 +110,14 @@
   color:var(--body);font-size:var(--fs-md);line-height:1.5;
 }
 
-/* 안 읽음 — 왼쪽 가장자리에 점. 색만으로 나누지 않으려고 모양을 준다 */
+/* 안 읽음 — 바탕색 하나로 말한다. 왼쪽 가장자리의 파란 점을 뺐다(2026-09-18) */
 .nt-item.is-unread{background:var(--brand-softer)}
 .nt-item.is-unread:hover{background:var(--brand-soft)}
-.nt-dot{
-  position:absolute;left:3px;top:50%;transform:translateY(-50%);
-  width:5px;height:5px;border-radius:50%;background:var(--brand);
+/* 눈에는 안 보이고 스크린리더만 읽는 글자. 화면 밖으로 밀지 않고 1px 로 접는 방식이라
+   초점이 들어가도 화면이 옆으로 튀지 않는다 */
+.nt-sr{
+  position:absolute;width:1px;height:1px;margin:-1px;padding:0;
+  overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0;
 }
 
 /* ── 항목 한 줄 = 알림 버튼 + 지우기 ────────────────────
