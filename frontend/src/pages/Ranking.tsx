@@ -41,8 +41,6 @@ import {
   fetchMyRank, fetchRankings, formatComputedAt, metric,
   type MyRank, type Period, type RankingRow, type Track,
 } from '../api/rankings'
-import { fetchContestSummary } from '../api/events'
-import { useAsync } from '../api/useAsync'
 import EventRanking from '../components/ranking/EventRanking'
 import EmptyState from '../components/state/EmptyState'
 import ErrorState from '../components/state/ErrorState'
@@ -263,12 +261,6 @@ const ART = {
 } as const
 type Tab = keyof typeof ART
 
-/** 목록 한 번만 읽는다. 여기 필요한 건 "회차가 있나" 뿐이라 상세를 부르지 않는다.
- *  **모듈 스코프 함수다** — useAsync 는 load 가 바뀌면 다시 읽는다(useAsync 머리말). */
-function loadContestPhase() {
-  return fetchContestSummary(CONTEST.id)
-}
-
 /** 보고 있는 쪽의 제목과 한 줄 소개. 한 머리를 둘이 나눠 쓴다 */
 const HEAD: Record<Tab, { h1: string; p: string }> = {
   accuracy: { h1: '주가 예측 랭킹', p: '판정이 끝난 예측만 집계합니다' },
@@ -280,13 +272,13 @@ export default function Ranking() {
   /* 모르는 값이 오면 기본 탭이다 — 주소를 손으로 고친 사람에게 빈 화면을 주지 않는다 */
   const tab: Tab = params.get('tab') === 'event' ? 'event' : 'accuracy'
 
-  /* 실패하면 버튼만 빠지고 화면은 그대로 산다 — 거들 뿐이라 이것 때문에
-     랭킹 전체를 오류로 덮지 않는다 */
-  const contest = useAsync(loadContestPhase)
-  /* 회차가 없으면 이벤트로 가는 버튼을 내건다. 없는 대회를 있는 것처럼 부추기지 않는다.
-     반대로 이벤트 쪽에 있을 때는 늘 돌아올 길이 있어야 하므로 조건을 걸지 않는다 */
+  /* **버튼은 조건 없이 늘 선다.**
+     한때 회차를 한 번 읽어 보고 없으면 버튼을 숨겼다("없는 대회를 부추기지 않는다").
+     그런데 이 버튼은 이벤트 랭킹으로 가는 **유일한 길**이라, 숨기면 회차가 서기 전까지
+     그런 화면이 있다는 것 자체를 알 수 없다. 조회가 느리거나 실패해도 같이 사라졌다.
+     빈 회차는 이벤트 랭킹 화면이 "대회를 준비하고 있어요" 로 정직하게 받는다 —
+     거기서 할 말을 여기서 미리 감출 이유가 없다. 덤으로 요청 하나가 줄었다. */
   const other: Tab = tab === 'accuracy' ? 'event' : 'accuracy'
-  const showSwitch = tab === 'event' || contest.data !== null
 
   function go(next: Tab) {
     if (next === tab) return
@@ -308,11 +300,9 @@ export default function Ranking() {
             <p>{HEAD[tab].p}</p>
           </div>
 
-          {showSwitch && (
-            <button type="button" className="rk-switch" onClick={() => go(other)}>
-              <img src={ART[other].src} alt={ART[other].alt} />
-            </button>
-          )}
+          <button type="button" className="rk-switch" onClick={() => go(other)}>
+            <img src={ART[other].src} alt={ART[other].alt} />
+          </button>
         </div>
 
         {/* 탭을 옮기면 통째로 갈아친다 — 정확도 표가 이벤트 순위로 읽히면 안 된다.
