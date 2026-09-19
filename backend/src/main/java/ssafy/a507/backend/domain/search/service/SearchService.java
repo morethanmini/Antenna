@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
+import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.common.Track;
 import ssafy.a507.backend.domain.market.service.StockService;
 import ssafy.a507.backend.domain.monetize.repository.ReportRepository;
@@ -64,8 +65,9 @@ public class SearchService {
 
     private List<SearchResponse.Channel> channels(String contains, int size) {
         String allTime = RankingFilterKey.of(Track.REAL, null, null, null);
-        return rankingRepository.searchByNickname(Track.REAL, allTime, contains, Limit.of(size)).stream()
-                .map(r -> new SearchResponse.Channel(r.getUser().getId(), r.getUser().getNickname(), r.getHitRate()))
+        return rankingRepository
+                .searchByNickname(Track.REAL, allTime, contains, User.Status.ACTIVE, Limit.of(size)).stream()
+                .map(hit -> new SearchResponse.Channel(hit.userId(), hit.nickname(), hit.hitRate()))
                 .toList();
     }
 
