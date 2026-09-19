@@ -8,33 +8,33 @@
    (2026-09-17, Ranking.tsx 머리말). */
 
 /* ── 하늘 배경 ─────────────────────────────────
-   랭킹 화면만 벽지를 갈아입는다. 완성된 그림 한 장이고, 그림 자체가 아주 느리게
-   흔들린다.
+   랭킹 화면만 벽지를 갈아입는다. 받은 그림은 **가운데가 빈 액자**다 — 왼쪽 아래
+   캐릭터, 오른쪽 위 1·2·3 블록, 양옆 차트가 테두리를 두르고 가운데는 비어 있다.
+   그 구도를 그대로 쓴다: 그림이 화면을 감싸고 본문이 빈 가운데에 앉는다.
 
-   **조각을 낱개로 띄우던 것을 걷었다(2026-09-19).** 오려 낸 조각을 본문 바깥에
-   세우려면 자리를 본문 폭에 맞춰 하나씩 잡아야 했는데, 공용 .main-inner 가
-   1600px 이라 넓은 화면에서 조각이 표 위를 덮었다. 그림에 이미 같은 물체가 그려져
-   있어 나란히 놓이면 겹쳐 보이기도 했다. 한 장을 통째로 움직이면 이 둘이 같이 없어진다. */
+   **화면에 고정한다(fixed).** 문서에 붙여 두면 스크롤할 때 그림이 위로 흘러가
+   테두리가 사라진다. 고정하면 목록이 아무리 길어도 액자가 늘 화면을 두른다.
+
+   **본문을 좁힌다.** 공용 .main-inner 는 1600px 이라 본문이 테두리까지 덮는다.
+   순위표는 열이 여섯뿐이라 좁혀도 읽기에 지장이 없고, 남는 양옆이 곧 그림 자리다. */
 .rk-page{ position:relative; isolation:isolate; }
+.rk-page .main-inner{ max-width:1080px; }
+
 .rk-sky{
-  position:absolute; left:0; right:0; bottom:0; z-index:-1;
-  /* 상단 바는 고정이라 그 아래부터 깔아야 그림 윗부분이 안 가려진다 */
-  top:var(--topbar-h);
+  position:absolute; left:0; right:0; top:0; bottom:0; z-index:-1;
   overflow:hidden; pointer-events:none;
 }
 .rk-sky-bg{
-  position:absolute; left:0; top:0;
+  position:fixed; left:0; right:0;
+  /* 상단 바는 고정이라 그 아래부터. 화면 높이를 꽉 채워 액자가 끊기지 않는다 */
+  top:var(--topbar-h); height:calc(100vh - var(--topbar-h));
   /* 흔들릴 여유만큼 넘겨 깐다 — 딱 맞게 깔면 움직이는 순간 가장자리에 빈 틈이 보인다 */
-  width:106%; height:min(760px, 100%);
-  margin-left:-3%;
-  object-fit:cover; object-position:center top;
-  -webkit-mask-image:linear-gradient(#000 58%, transparent);
-          mask-image:linear-gradient(#000 58%, transparent);
-  /* 아주 느리게. 22초면 보고 있는 동안 "움직인다" 가 아니라 "살아 있다" 로 읽힌다 */
+  width:106%; margin-left:-3%;
+  object-fit:cover; object-position:center center;
+  /* 아주 느리게. 22초면 "움직인다" 가 아니라 "살아 있다" 로 읽힌다 */
   animation:rk-sway 22s ease-in-out infinite;
   will-change:transform;
 }
-/* 좌우로 흐르며 아주 조금 커졌다 작아진다. 한 축만 움직이면 미끄러지는 것으로 보인다 */
 @keyframes rk-sway{
   0%, 100%{ transform:translate3d(0, 0, 0) scale(1); }
   33%     { transform:translate3d(-1.2%, -6px, 0) scale(1.02); }
@@ -43,14 +43,18 @@
 @media (prefers-reduced-motion: reduce){
   .rk-sky-bg{ animation:none; }
 }
-/* 좁아지면 띠를 낮춘다 — 배경이 화면을 너무 먹으면 목록이 아래로 밀린다 */
-@media (max-width: 1100px){
-  .rk-sky-bg{ height:min(420px, 100%); }
-}
 
-/* 배경 위에 글이 올라온다. 회색 소개 줄은 연보라에 묻히므로 한 단 진하게 */
-.rk-page .page-head{ padding-top:10px; }
+/* 그림 위에 글이 올라온다. 회색 소개 줄은 연보라에 묻히므로 한 단 진하게 */
+.rk-page .page-head{ padding-top:14px; }
 .rk-page .page-head p{ color:var(--body); }
+
+/* 표는 그림 위에 얹힌 카드다. 살짝 띄워야 배경에 눌어붙어 보이지 않는다 */
+.rk-page .rk-table-wrap{ box-shadow:0 14px 34px -24px rgba(60,40,140,.6); }
+
+/* 좁아지면 테두리가 설 자리가 없다. 그림을 흐릿하게 깔아 글만 읽히게 한다 */
+@media (max-width: 1240px){
+  .rk-sky-bg{ opacity:.45; }
+}
 
 /* ── 두 랭킹 오가기 ────────────────────────────
    세그먼트 알약 둘을 나란히 두던 자리다(2026-09-18 교체). 회색 알약 둘은 이벤트 랭킹을
