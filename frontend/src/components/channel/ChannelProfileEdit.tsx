@@ -45,6 +45,8 @@ import '../../styles/profile-edit.css'
 const INTRODUCE_MAX = 200
 const CHANNEL_URL_MAX = 300
 const LABEL_MAX = 30
+/** 외부 채널 수 상한. 서버(UserDtos.MAX_CHANNELS)와 같은 값 — 넘기면 400 이다 */
+const MAX_CHANNELS = 2
 /** 명세 §회원 의 네 가지. 화면 아이콘을 정하는 값이라 서버 enum 과 같은 순서로 둔다 */
 const PLATFORMS = ['YOUTUBE', 'BLOG', 'X', 'ETC'] as const
 /** 고르는 자리에서는 ETC 가 "기타" 가 아니라 할 일이다 — 고르면 이름 칸이 열린다 */
@@ -405,15 +407,17 @@ function Form({ profile, heading, onClose, onSaved }: {
             </li>
           ))}
         </ul>
+        {/* 상한에 닿으면 끈다(2026-09-19, QA 09-18). 전에는 개수 제한이 없어 몇 개든 늘어났다 */}
         <button
           type="button"
           className="ch-edit-add"
+          disabled={rows.length >= MAX_CHANNELS}
           onClick={() => setRows([...rows, { platform: 'YOUTUBE', label: null, url: '' }])}
         >
           채널 추가
         </button>
-        {/* https 만 받는 이유를 미리 말한다 — 저장 눌러 400 을 받고 알게 하지 않는다 */}
-        <p className="ch-name-hint">주소는 https 로 시작해야 합니다.</p>
+        {/* https 만 받는 이유와 개수 제한을 미리 말한다 — 저장 눌러 400 을 받고 알게 하지 않는다 */}
+        <p className="ch-name-hint">{`주소는 https 로 시작해야 합니다. 채널은 ${MAX_CHANNELS}개까지 등록할 수 있습니다.`}</p>
       </fieldset>
 
       <div className="ch-name-row">

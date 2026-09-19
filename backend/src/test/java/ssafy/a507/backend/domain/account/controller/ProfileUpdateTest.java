@@ -165,6 +165,30 @@ class ProfileUpdateTest {
     }
 
     @Test
+    @DisplayName("외부 채널은 2개까지다 — 3개를 보내면 400 이고 아무것도 저장되지 않는다")
+    void rejectsTooManyChannels() throws Exception {
+        patchMe(
+                        """
+                        {"channels":[{"platform":"YOUTUBE","url":"https://example.com/a"},
+                                     {"platform":"BLOG","url":"https://example.com/b"}]}
+                        """)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.channels.length()").value(2));
+
+        patchMe(
+                        """
+                        {"channels":[{"platform":"YOUTUBE","url":"https://example.com/a"},
+                                     {"platform":"BLOG","url":"https://example.com/b"},
+                                     {"platform":"X","url":"https://example.com/c"}]}
+                        """)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.field").value("channels"));
+
+        mockMvc.perform(get("/api/v1/users/me").with(user(String.valueOf(userId))))
+                .andExpect(jsonPath("$.channels.length()").value(2));
+    }
+
+    @Test
     @DisplayName("소개 200자를 넘기면 거절한다")
     void rejectsTooLongIntroduce() throws Exception {
         patchMe("{\"introduce\":\"" + "가".repeat(201) + "\"}")

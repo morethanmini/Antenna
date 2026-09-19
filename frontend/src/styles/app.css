@@ -134,6 +134,12 @@
 }
 
 *{box-sizing:border-box}
+/* 사람이 적은 글이 들어가는 칸은 **끊을 곳이 없어도 넘치지 않는다**(2026-09-19, QA 09-18).
+   소개글 · 작성자의 판단 · 근거 포인트 · 리포트 제목 · 확인창에서 띄어쓰기 없는 긴 글(URL, "ㅋㅋㅋ…")이
+   카드 밖으로 튀어나왔다. 화면마다 따로 고치지 않고 여기서 한 번에 건다 — overflow-wrap 은 넘칠 때만
+   끊으므로 평소 줄바꿈(한국어 keep-all 포함)은 그대로다. 새 칸을 만들면 여기에 더한다. */
+.ch-bio,.pd-note,.pd-points li,.sd-point-body,.sd-picked b,.rd-title,.rp-title,.rp-summary,
+.se-body h2,.se-sub{overflow-wrap:anywhere}
 html,body{height:100%}
 body{
   margin:0;background:var(--ground);color:var(--body);

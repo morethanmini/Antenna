@@ -148,5 +148,6 @@
 }
 .ch-edit-add{ align-self:flex-start; margin-top:4px; color:var(--brand-ink); }
 .ch-edit-drop:hover{ color:var(--danger); }
-.ch-edit-add:hover{ color:var(--brand); }
+.ch-edit-add:hover:not(:disabled){ color:var(--brand); }
+.ch-edit-add:disabled{ color:var(--faint); cursor:default; }
 
