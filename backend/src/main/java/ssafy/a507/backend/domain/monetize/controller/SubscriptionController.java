@@ -48,12 +48,17 @@ public class SubscriptionController {
             @Valid @RequestBody SubscribeRequest request) {
 
         Long subscriberId = currentUserProvider.currentUserId();
+        /* 본문 해시에 서명을 넣지 않는다(2026-09-19). 서명은 nonce 로 만들어 재시도마다 달라진다 —
+           SignatureGuard 가 nonce 를 태우므로 화면은 다시 서명할 수밖에 없다. 서명을 해시에 넣으면
+           "같은 키·같은 채널" 의 정당한 재시도가 전부 IDEMPOTENCY_KEY_REUSED(409) 가 되고, 재생
+           경로는 영영 못 탄다(QA 09-18: "이미 처리된 요청입니다" 뒤 버튼이 그대로 남음).
+           같은 키로 다른 채널을 찍는 것만 막으면 된다 — 이 요청에서 사용자가 고른 값은 그것뿐이다. */
         String operationId =
                 idempotencyStore.execute(
                         subscriberId,
                         CREATE_ENDPOINT,
                         idempotencyKey,
-                        IdempotencyStore.hash(userId + "|" + request.signature()),
+                        IdempotencyStore.hash(String.valueOf(userId)),
                         () -> subscriptionService.subscribe(subscriberId, userId, request).operationId());
 
         return ResponseEntity.status(HttpStatus.ACCEPTED)
