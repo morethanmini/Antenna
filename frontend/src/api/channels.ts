@@ -63,9 +63,10 @@ export type ExternalLink = {
  *
  * status 가 null 이면 구독한 적이 없다. PENDING 은 결제가 체인에서 확정되기를
  * 기다리는 중이라 아직 열람 권한이 없다 — ACTIVE 와 같게 그리면 안 된다.
+ * FAILED 는 결제가 실패해 시작된 적이 없는 것이다 — EXPIRED(있었다가 끝남)와 다른 말을 쓴다.
  */
 export type MySubscription = {
-  status: 'PENDING' | 'ACTIVE' | 'EXPIRED' | null
+  status: 'PENDING' | 'ACTIVE' | 'EXPIRED' | 'FAILED' | null
   /** 개시 +30일. status 가 null 이면 없다 */
   expiresAt: string | null
   /** false 면 만료일에 끝난다(E-03 자동 갱신 해지) */

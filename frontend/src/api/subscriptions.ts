@@ -21,10 +21,12 @@ import { api } from './client'
  *
  * PENDING 은 결제가 블록 확정을 기다리는 중이라 **아직 열람 권한이 없다.**
  * ACTIVE 와 같게 그리면 잠긴 예측을 보고 고장으로 읽는다(E-02 와 같은 판단).
- * EXPIRED 는 만료됐거나 배치 B4 의 갱신 결제가 실패한 상태다 — 명세가 둘을
- * 같은 값으로 내리므로 화면이 사유를 구별해 말하지 않는다.
+ * EXPIRED 는 이용 기간이 끝난 것이다 — 있었다가 끝났다.
+ * FAILED 는 결제가 못 나갔거나 체인에서 되돌아간 것이다 — 시작된 적이 없다. 토큰도
+ * 빠져나가지 않았다. 2026-09-19 전에는 서버가 이 경우도 EXPIRED 로 내려 "만료됨" 으로
+ * 보였다(QA 09-18: 구독한 적 없는데 만료).
  */
-export const SUBSCRIPTION_STATUSES = ['PENDING', 'ACTIVE', 'EXPIRED'] as const
+export const SUBSCRIPTION_STATUSES = ['PENDING', 'ACTIVE', 'EXPIRED', 'FAILED'] as const
 export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number]
 
 /** 구독 대상 채널. 목록에서 채널로 나가는 링크에 쓴다 */
@@ -84,4 +86,5 @@ export const STATUS_LABEL: Record<SubscriptionStatus, string> = {
   PENDING: '결제 확인 중',
   ACTIVE: '구독 중',
   EXPIRED: '만료됨',
+  FAILED: '결제 실패',
 }
