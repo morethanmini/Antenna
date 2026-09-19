@@ -1,7 +1,9 @@
 package ssafy.a507.backend.domain.community.repository;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -9,6 +11,12 @@ import org.springframework.data.repository.query.Param;
 import ssafy.a507.backend.domain.community.entity.PostComment;
 
 public interface PostCommentRepository extends JpaRepository<PostComment, Long> {
+
+    /** 도배 제한 — 이 사람이 since 이후에 쓴 댓글 수(상태 무관). */
+    long countByUser_IdAndCreatedAtAfter(Long userId, Instant since);
+
+    /** 도배 제한 — 이 글에 이 사람이 마지막으로 쓴 댓글. */
+    Optional<PostComment> findFirstByPost_IdAndUser_IdOrderByIdDesc(Long postId, Long userId);
 
     /**
      * 글 여러 건의 댓글 수를 한 쿼리로 센다. BLOCKED 댓글은 세지 않는다 — 목록에서

@@ -98,6 +98,10 @@ const BY_CODE: Record<string, Text> = {
 
   // 댓글 · 좋아요
   [ERROR_CODE.COMMENT_NOT_FOUND]: { title: '댓글을 찾을 수 없습니다', hint: '삭제되었을 수 있습니다' },
+  /* 도배 제한(서버 CommentThrottle — 1분에 5개 · 같은 글에 같은 내용 연속 금지).
+     둘 다 같은 요청을 곧바로 다시 보내면 같은 답이라 재시도 버튼을 붙이지 않는다. */
+  [ERROR_CODE.COMMENT_RATE_LIMITED]: { title: '댓글을 너무 자주 쓰고 있습니다', hint: '1분 뒤에 다시 시도해 주세요' },
+  [ERROR_CODE.COMMENT_DUPLICATED]: { title: '같은 내용을 연달아 올릴 수 없습니다', hint: '내용을 바꿔서 올려 주세요' },
   [ERROR_CODE.DUPLICATE_LIKE]: { title: '이미 좋아요를 눌렀습니다' },
 
   // 첨부 대상
@@ -144,6 +148,12 @@ const BY_STATUS: Record<number, Text> = {
   // 대상·한도가 아직 미정이라 구체 수치를 적지 않는다
   429: { title: '요청이 너무 잦습니다', hint: '잠시 후 다시 시도해 주세요', retryable: true },
   500: { title: '서버에 문제가 생겼습니다', hint: '잠시 후 다시 시도해 주세요', retryable: true },
+  /* 502·503·504 는 서버가 아니라 **그 앞(nginx)** 이 준다 — 배포로 백엔드가 내려가 있거나 응답이
+     늦을 때다. 본문이 HTML 이라 code 가 없어 전에는 FALLBACK("문제가 발생했습니다")으로 떨어졌다.
+     무엇이 잘못됐는지가 아니라 **기다리면 된다**는 것을 말한다(QA 09-18). */
+  502: { title: '서버에 연결하지 못했습니다', hint: '점검 중일 수 있습니다. 잠시 후 다시 시도해 주세요', retryable: true },
+  503: { title: '서버가 잠시 쉬고 있습니다', hint: '잠시 후 다시 시도해 주세요', retryable: true },
+  504: { title: '서버 응답이 늦어지고 있습니다', hint: '잠시 후 다시 시도해 주세요', retryable: true },
 }
 
 const FALLBACK: Text = { title: '문제가 발생했습니다', hint: '잠시 후 다시 시도해 주세요', retryable: true }

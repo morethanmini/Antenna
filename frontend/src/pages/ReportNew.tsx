@@ -32,6 +32,7 @@ import { ERROR_CODE } from '../api/errors'
 import { useAuth } from '../auth/context'
 import { connectAddress, hasWallet, personalSign } from '../wallet/provider'
 import WalletLinkModal from '../components/wallet/WalletLinkModal'
+import ConfirmDialog from '../components/ConfirmDialog'
 import { errorText } from '../components/state/errorText'
 import FieldError from '../components/state/FieldError'
 import ImageUploadModal from '../components/upload/ImageUploadModal'
@@ -66,6 +67,8 @@ export default function ReportNew() {
   const bodyRef = useRef<HTMLTextAreaElement>(null)
 
   const [submitting, setSubmitting] = useState(false)
+  /** 발행 확인 창이 떠 있는가 */
+  const [confirming, setConfirming] = useState(false)
   const [signing, setSigning] = useState(false)
   const [linking, setLinking] = useState(false)
   const [error, setError] = useState<ApiError | null>(null)
@@ -138,7 +141,7 @@ export default function ReportNew() {
    * 미설치와 미연동을 여기서 가르지 않는다 — M-01(WalletLinkModal)이 이미 네 갈래를
    * 각각 다른 안내로 다룬다. 여기서 문구를 또 쓰면 같은 안내가 두 곳에 생긴다.
    */
-  async function submit(event: React.FormEvent) {
+  function submit(event: React.FormEvent) {
     event.preventDefault()
     if (!ready || submitting) return
 
@@ -146,7 +149,15 @@ export default function ReportNew() {
       setLinking(true)
       return
     }
+    /* 서명으로 가기 전에 한 번 묻는다(2026-09-19, QA 09-18). 발행은 되돌릴 수 없는데 버튼 하나로
+       바로 지갑 창이 떴다 — 나가는 쪽(cancel)은 묻고 되돌릴 수 없는 쪽은 안 묻던 것을 바로잡는다. */
+    setConfirming(true)
+  }
 
+  async function publish() {
+    setConfirming(false)
+    // ready 가 이미 보장하지만 이 함수 안에서는 타입이 좁혀지지 않는다
+    if (visibility === null) return
     setSubmitting(true)
     setSigning(true)
     setError(null)
@@ -343,6 +354,16 @@ export default function ReportNew() {
 
       {/* 미설치·미연동·주소 불일치를 한 곳에서 다룬다(M-01). 닫으면 작성 내용은 그대로 남는다 */}
       {linking && <WalletLinkModal onClose={() => setLinking(false)} />}
+
+      {confirming && (
+        <ConfirmDialog
+          title="리포트를 발행할까요?"
+          description="발행하면 수정하거나 지울 수 없습니다. 제목·본문·공개 범위를 다시 확인해 주세요. 확인하면 지갑 서명으로 이어집니다."
+          confirmLabel="서명하고 발행"
+          onCancel={() => setConfirming(false)}
+          onConfirm={() => { void publish() }}
+        />
+      )}
     </main>
   )
 }

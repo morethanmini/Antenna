@@ -80,6 +80,10 @@ public enum ErrorCode {
 
     // 댓글 · 좋아요 (ANT-COMMUNITY-03)
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다."),
+    /** 댓글 도배 제한(CommentThrottle) — 1분에 5개. 리포트 댓글·커뮤니티 댓글 공통. */
+    COMMENT_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "댓글을 너무 자주 쓰고 있습니다. 잠시 후 다시 시도해 주세요."),
+    /** 같은 글에 같은 내용을 연달아 쓰려 했다(CommentThrottle). */
+    COMMENT_DUPLICATED(HttpStatus.CONFLICT, "같은 내용을 연달아 올릴 수 없습니다."),
     /** 이미 누른 좋아요를 다시 눌렀다. 취소는 멱등(204)이지만 등록은 중복을 알려준다. */
     DUPLICATE_LIKE(HttpStatus.CONFLICT, "이미 좋아요를 누른 대상입니다."),
 
