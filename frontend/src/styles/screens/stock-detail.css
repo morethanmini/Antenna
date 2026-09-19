@@ -715,21 +715,21 @@
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
   min-width:64px;height:46px;padding:0 14px;line-height:1.1;
   border:1px solid transparent;border-radius:12px;
-  font-family:inherit;font-size:var(--fs-lg);font-weight:var(--fw-bold);cursor:pointer;
+  font-family:inherit;font-size:var(--fs-lg);font-weight:var(--fw-bold);
+  /* 버튼이 아니라 표시등이다(2026-09-19) — 목표가가 방향을 정한다. 손가락 커서·hover·초점
+     테두리는 "누를 수 있다" 는 말이라 걷었다. */
+  cursor:default;user-select:none;
   /* 아직 목표가가 없을 때. 제 색으로 칠하되 흐려서 "정해지지 않았다" 가 보인다 */
   opacity:.45;
   transition:opacity .14s,border-color .14s,background .14s;
 }
 .stock-detail-page .pf-dir.is-up{background:#ffeae8;border-color:#f6c9c4;color:var(--up)}
 .stock-detail-page .pf-dir.is-down{background:#e5edff;border-color:#c6d6fb;color:var(--down)}
-.stock-detail-page .pf-dir:hover{opacity:.75}
 /* 목표가가 정해져 그쪽으로 확정된 상태. 투명도를 걷고 테두리를 세운다 —
    진하기만으로 전하지 않도록 테두리도 함께 바뀐다 */
 .stock-detail-page .pf-dir.is-on{opacity:1}
 .stock-detail-page .pf-dir.is-up.is-on{border-color:var(--up)}
 .stock-detail-page .pf-dir.is-down.is-on{border-color:var(--down)}
-/* 흐린 상태에서도 초점 테두리는 또렷해야 한다 */
-.stock-detail-page .pf-dir:focus-visible{opacity:1;outline:2px solid var(--brand);outline-offset:2px}
 /* 지금 배당률(대회 전용). 라벨보다 작고 흐리게 둔다 — 고르는 대상은 여전히 방향이고
    배당은 그 방향에 딸린 값이다. 풀이 비어 있으면 컴포넌트가 '—' 를 넣는다. */
 .stock-detail-page .pf-dir-odds{

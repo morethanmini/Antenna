@@ -42,8 +42,7 @@
    **대회에서는 필수다.** 서버가 종목마다 stake 를 받아 풀에 넣으므로 금액 없는
    대회 등록이라는 것이 없다(POST /events/{id}/entries). 돈을 걸지 않고 판단만
    남기고 싶으면 대회 밖에서 같은 종목에 그냥 예측하면 된다 — 그 길은 열려 있다. */
-import { fetchWalletBalance, formatToken } from '../../api/wallet'
-import { useBlock } from '../../api/useBlock'
+import { formatToken, type WalletBalance } from '../../api/wallet'
 import type { Direction } from '../../api/predictions'
 import { payoutIfIBet, type EventPool } from '../../api/events'
 
@@ -72,6 +71,16 @@ export const BET_MAX = 2000
 export function betAmount(raw: string) {
   const n = Number(raw.replace(/[^0-9]/g, ''))
   return Number.isFinite(n) ? Math.floor(n) : 0
+}
+
+/**
+ * 건 돈이 보유 잔액을 넘는가. 잔액을 아직 못 읽었으면 거짓 — 모르는 것으로 막지 않는다.
+ *
+ * 잔액은 정수 ANT 문자열이다(decimals 0). Number 로 좁히지 않고 BigInt 로 견준다 —
+ * numeric(30,0) 은 안전 정수 범위를 넘을 수 있다.
+ */
+export function isOverBalance(amount: number, balance: string | null | undefined) {
+  return amount > 0 && !!balance && /^-?\d+$/.test(balance) && BigInt(amount) > BigInt(balance)
 }
 
 /* ── 대회 배너 ──────────────────────────────────────────────
@@ -113,6 +122,10 @@ type BetProps = {
    * 회차를 못 읽었으면 null — 그때는 예상 금액을 적지 않는다.
    */
   pool?: EventPool | null
+  /** 지갑 잔액. **부모가 읽어 내린다** — 같은 값으로 서명 발판도 잠가야 해서다. 못 읽었으면 null */
+  wallet: WalletBalance | null
+  /** 건 돈이 잔액을 넘는가(isOverBalance). 부모가 계산해 경고와 잠금이 한 값을 본다 */
+  overBalance: boolean
 }
 
 const SIDE_LABEL: Record<Direction, string> = { UP: '상승', DOWN: '하락' }
@@ -128,16 +141,11 @@ const SIDE_LABEL: Record<Direction, string> = { UP: '상승', DOWN: '하락' }
    **선택이다.** 대회 기간이라도 배팅 없이 예측만 등록할 수 있어야 한다 —
    예측은 판단을 남기는 일이고 배팅은 돈을 거는 일이라, 둘을 묶어 강제하면
    대회가 끝난 뒤 남는 기록이 "돈을 걸 수 있는 사람의 판단" 뿐이 된다. */
-export default function EventBet({ value, onChange, direction, contestPath, pool }: BetProps) {
-  const wallet = useBlock(() => fetchWalletBalance(), [])
-
+export default function EventBet({
+  value, onChange, direction, contestPath, pool, wallet, overBalance,
+}: BetProps) {
   const amount = betAmount(value)
   const picked = amount > 0
-
-  /* 잔액은 정수 ANT 문자열이다(decimals 0). Number 로 좁히지 않고 BigInt 로 견준다 —
-     numeric(30,0) 은 안전 정수 범위를 넘을 수 있다. */
-  const raw = wallet.data?.balance
-  const overBalance = picked && !!raw && /^-?\d+$/.test(raw) && BigInt(amount) > BigInt(raw)
 
   const tooSmall = picked && amount < BET_MIN
   const tooBig = picked && amount > BET_MAX
@@ -154,7 +162,7 @@ export default function EventBet({ value, onChange, direction, contestPath, pool
       {/* 어느 쪽에 걸리는지 먼저 못박는다. 금액 칸만 있으면 "방향은 어디서 고르지" 가 된다 */}
       <p className="ev-bet-side">
         {direction
-          ? <>위에서 고른 <b className={`is-${direction.toLowerCase()}`}>{SIDE_LABEL[direction]}</b> 쪽에 걸립니다.</>
+          ? <>목표가에 따라 <b className={`is-${direction.toLowerCase()}`}>{SIDE_LABEL[direction]}</b> 쪽에 걸립니다.</>
           : <>목표가를 정하면 그 방향에 걸립니다.</>}
       </p>
 
@@ -237,10 +245,10 @@ export default function EventBet({ value, onChange, direction, contestPath, pool
 
       {/* 잔액은 고른 뒤에만 말한다. 아무것도 걸지 않았는데 먼저 보이면
           대회가 잔액부터 묻는 화면이 된다 */}
-      {picked && wallet.data && (
+      {picked && wallet && (
         <p className="sd-help">
-          보유 <b className="num">{formatToken(wallet.data.balance)} ANT</b>
-          {wallet.data.syncedAt ? '' : ' · 대사 전'}
+          보유 <b className="num">{formatToken(wallet.balance)} ANT</b>
+          {wallet.syncedAt ? '' : ' · 대사 전'}
           {` · 한 종목에 한 번만 · ${BET_MIN_STOCKS}종목 이상 걸어야 합니다`}
         </p>
       )}

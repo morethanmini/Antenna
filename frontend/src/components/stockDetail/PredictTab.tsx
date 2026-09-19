@@ -39,10 +39,10 @@ import { eventEntrySigningPayload, fetchContestEvent, registerEntries } from '..
 import WalletLinkModal from '../wallet/WalletLinkModal'
 import ConfirmDialog from '../ConfirmDialog'
 import OperationModal from '../operation/OperationModal'
-import { formatToken } from '../../api/wallet'
+import { fetchWalletBalance, formatToken } from '../../api/wallet'
 import CommitProgressModal, { type CommitPhase } from '../prediction/CommitProgressModal'
 import SlideToSign from '../prediction/SlideToSign'
-import EventBet, { EventBanner, betAmount, BET_MIN, BET_MAX } from './EventBet'
+import EventBet, { EventBanner, betAmount, isOverBalance, BET_MIN, BET_MAX } from './EventBet'
 import { CONTEST, CONTEST_HORIZON, CONTEST_PATH, dayStamp, stamp } from '../../event/contest'
 import ErrorState from '../state/ErrorState'
 import { ApiError } from '../../api/errors'
@@ -60,8 +60,6 @@ import { requestNonce } from '../../api/wallet'
 import type { PredictForm } from './predictForm'
 import { connectAddress, hasWallet, personalSign } from '../../wallet/provider'
 import { useAuth } from '../../auth/context'
-
-const DIRECTION_LABEL: Record<Direction, string> = { UP: '오른다', DOWN: '내린다' }
 
 /** 남은 글자를 알리기 시작하는 지점. 이만큼 남았을 때부터 보인다 */
 const NOTE_WARN_LEFT = 500
@@ -130,8 +128,8 @@ export default function PredictTab({
   const points = useBlock(() => getPoints(code), [code])
 
   /* 부모가 들고 있는 값을 그대로 쓴다. 호출부는 지역 state 때와 똑같이
-     setDirection(d) 처럼 값만 넘기면 된다. */
-  const { direction, target, horizon, note } = form
+     setTarget(v) 처럼 값만 넘기면 된다. */
+  const { target, horizon, note } = form
   const setTarget = (v: string) => onForm((f) => ({ ...f, target: v }))
   const setHorizon = (v: Horizon) => onForm((f) => ({ ...f, horizon: v }))
 
@@ -145,9 +143,6 @@ export default function PredictTab({
   }, [eventMode, horizon])
   const setNote = (v: string) => onForm((f) => ({ ...f, note: v }))
   const setBet = (v: string) => onForm((f) => ({ ...f, bet: v }))
-  /* 사람이 직접 고른 방향. 이때부터 목표가가 방향을 바꾸지 않는다 */
-  const setDirection = (v: Direction) =>
-    onForm((f) => ({ ...f, direction: v, directionTouched: true }))
 
   /* ③의 투자 포인트 격자를 펼쳤는가. **기본은 접힘** — 포인트가 많은 종목이면 격자가
      폼을 반으로 갈라 ④ 내 판단이 화면 밖으로 밀린다.
@@ -178,8 +173,7 @@ export default function PredictTab({
   const priceTooPrecise = priceEntered && !targetPriceInScale(targetPrice)
   const validTarget = priceEntered && !priceTooPrecise
 
-  /* 목표가가 전일 종가 대비 몇 %인지. 방향과 어긋나면 미리 알려 준다 —
-     "오른다" 를 고르고 종가보다 낮은 목표가를 넣는 실수가 잦다.
+  /* 목표가가 전일 종가 대비 몇 %인지. 방향도 이 값이 정한다.
 
      자릿수가 넘쳐 등록이 막힌 값(priceTooPrecise)에도 비율은 보여 준다 — 비율이
      깜빡이며 사라지면 자릿수 문제인지 입력이 지워진 건지 알 수 없다. */
@@ -188,22 +182,13 @@ export default function PredictTab({
     return ((targetPrice - summary.prevClose) / summary.prevClose) * 100
   }, [priceEntered, targetPrice, summary?.prevClose])
 
-  /* 방향을 고르지 않고 목표가부터 적는 사람이 있다. 전일 종가보다 높으면 상승,
-     낮으면 하락으로 미리 세워 준다.
-
-     직접 고르기 전까지는 계속 따라간다 — 한 번만 정하면 "9" 까지 친 순간의
-     값으로 하락이 박히고, "90000" 을 마저 쳐도 그대로 남는다.
-     같은 값(gap 0)이면 방향을 정할 수 없으므로 비운다.
-     directionTouched 가 서면 이 효과는 더 이상 손대지 않는다. */
-  useEffect(() => {
-    if (form.directionTouched) return
-    const next: Direction | null = gap === null || gap === 0 ? null : gap > 0 ? 'UP' : 'DOWN'
-    onForm((f) => (f.direction === next ? f : { ...f, direction: next }))
-  }, [form.directionTouched, gap, onForm])
-
-  const directionMismatch =
-    direction !== null && gap !== null &&
-    ((direction === 'UP' && gap < 0) || (direction === 'DOWN' && gap > 0))
+  /* **방향은 목표가가 정한다 — 사람이 고르지 않는다**(2026-09-19, QA 09-18).
+     전에는 버튼으로도 고를 수 있어서 "하락" 을 누르고 종가보다 높은 목표가를 넣은 채
+     서명까지 갈 수 있었고, 서버는 그걸 400 으로 돌려보냈다(requireDirectionMatches).
+     어긋날 수 없게 만드는 쪽이 어긋났다고 알리는 것보다 낫다.
+     같은 값(gap 0)이면 방향을 정할 수 없으므로 비운다 — 서버도 양쪽 다 거절한다.
+     전일 종가가 없는 종목은 어차피 서버가 등록을 받지 않는다(latestClose 400). */
+  const direction: Direction | null = gap === null || gap === 0 ? null : gap > 0 ? 'UP' : 'DOWN'
 
   /* 근거(note)도 필수다 — 서버가 @NotBlank 로 받아 비우면 400 이다(명세: note *).
      커밋의 noteHash 가 봉인의 핵심이라, 근거 없는 예측은 규격상 만들 수 없다. */
@@ -229,9 +214,6 @@ export default function PredictTab({
     const bases = summary?.prevClose
     if (!bases) return
     setTarget(String(Math.round(bases * (1 + pct / 100))))
-    /* 비율로 골랐으면 방향도 그 비율이 정한다. 직접 고른 방향이 있어도 덮는다 —
-       +5% 를 누른 순간 사용자의 뜻은 상승이다. */
-    onForm((f) => ({ ...f, direction: pct > 0 ? 'UP' : 'DOWN', directionTouched: true }))
     setPctOpen(false)
   }
 
@@ -307,6 +289,15 @@ export default function PredictTab({
   const minStake = ev?.rules.minStake ?? BET_MIN
   const maxStake = ev?.rules.maxStake ?? BET_MAX
   const betOutOfRange = bet > 0 && (bet < minStake || bet > maxStake)
+  /* 잔액은 **부모가 읽는다**(2026-09-19, QA 09-18). 전에는 배팅 카드가 혼자 읽어 "보유한 ANT 보다
+     많이 걸었습니다" 를 띄우면서도 발판은 열려 있었다 — 0 ANT 로 500 을 적고 서명까지 갔다.
+     경고와 잠금이 같은 값을 봐야 한다.
+     ponytail: 이 숫자는 원장(token_ledger) 합이라 인덱서만큼 늦다. 서버 판단은 체인 가용잔액
+     (AvailableBalanceService)이라 드물게 어긋난다 — GET /wallet/balance 가 가용잔액을 내리면 그걸로 바꾼다. */
+  const wallet = useBlock(
+    () => (eventMode ? fetchWalletBalance() : Promise.resolve(null)), [eventMode],
+  )
+  const betOverBalance = isOverBalance(bet, wallet.data?.balance)
   /* **대회 종목이면 배팅이 필수다**(2026-09-18 결정 A). 배팅 없이 등록하면 평소 경로로
      가 대회 집계에 안 잡히는데, 대회 페이지에서 들어온 사람에게 그건 설명할 수 없는
      결과다 — 카드에는 "예측함" 이 안 뜨고 순위에도 안 오른다. */
@@ -378,7 +369,12 @@ export default function PredictTab({
     }
   }
 
-  async function submit() {
+  /**
+   * @param justLinked M-01 이 방금 연동을 끝내고 부른 것인가. onLinked 가 부르는 submit 은
+   *   **연동 전 렌더의 것**이라 그 안의 user.walletLinked 는 아직 false 다 — 그대로 두면
+   *   연동 모달이 한 번 더 뜨고 두 번째 연동은 409 WALLET_ALREADY_LINKED 로 끝난다(QA 09-18).
+   */
+  async function submit(justLinked = false) {
     if (!draft) return
     setFailure(null)
     setLocalMsg(null)
@@ -391,7 +387,7 @@ export default function PredictTab({
        여기서 미설치만 따로 걸러 문구를 쓰면 같은 안내가 두 곳에 생기고, 그때는
        모달을 아예 열지 않아 설치 안내로 이어지지도 않는다.
        티켓도 "지갑이 연동되지 않은 상태로 진입하면 M-01 을 먼저 띄운다" 다. */
-    if (!hasWallet() || !user?.walletLinked) {
+    if (!hasWallet() || !(justLinked || user?.walletLinked)) {
       setLinking(true)
       return
     }
@@ -638,22 +634,22 @@ export default function PredictTab({
               </div>
 
               {/* 방향은 가격 **오른쪽**이다. 목표가를 넣으면 이쪽이 저절로 정해지므로,
-                  읽는 순서(값 → 결과)와 놓인 순서가 같아야 한다. */}
-              <div className="pf-dirs">
+                  읽는 순서(값 → 결과)와 놓인 순서가 같아야 한다.
+                  **버튼이 아니라 표시등이다**(2026-09-19) — 누를 수 있으면 목표가와 어긋난
+                  방향을 고를 수 있다. 모양은 그대로 두고 고르는 기능만 뺐다. */}
+              <div className="pf-dirs" role="group" aria-label="예측 방향 — 목표가에 따라 정해집니다">
                 {DIRECTIONS.map((d) => {
-                  /* 대회에서는 방향 버튼이 **배당률까지 말한다**(2026-09-18). 어느 쪽에
+                  /* 대회에서는 방향 표시가 **배당률까지 말한다**(2026-09-18). 어느 쪽에
                      걸지는 곧 얼마를 받을지의 문제라, 고르는 자리에 그 값이 있어야 한다.
                      풀이 0 인 쪽은 서버가 null 을 준다 — 0 배당은 "걸면 못 받는다" 는
                      거짓이라 그때는 적지 않는다. */
                   const odds = !evCard ? null
                     : d === 'UP' ? evCard.pool.oddsUp : evCard.pool.oddsDown
                   return (
-                    <button
+                    <span
                       key={d}
-                      type="button"
                       className={`pf-dir is-${d.toLowerCase()} ${direction === d ? 'is-on' : ''}`}
-                      aria-pressed={direction === d}
-                      onClick={() => setDirection(d)}
+                      aria-current={direction === d ? 'true' : undefined}
                     >
                       {d === 'UP' ? '상승' : '하락'}
                       {eventMode && (
@@ -661,7 +657,7 @@ export default function PredictTab({
                           {odds === null ? '—' : `${odds.toFixed(2)}배`}
                         </span>
                       )}
-                    </button>
+                    </span>
                   )
                 })}
               </div>
@@ -674,16 +670,18 @@ export default function PredictTab({
                 ? <>전일 종가 기준 <b className="num">{summary.prevClose.toLocaleString('ko-KR')}원</b></>
                 : '이 종목은 전일 종가가 없어 대비 비율을 계산할 수 없습니다.'}
             </p>
-            {/* 자릿수는 방향 어긋남보다 먼저 알린다 — 이건 고치지 않으면 등록 자체가 막힌다 */}
+            {/* 자릿수를 먼저 알린다 — 이건 고치지 않으면 등록 자체가 막힌다 */}
             {priceTooPrecise && (
               <p className="sd-warn">
                 목표가는 <b>소수 둘째 자리까지</b> 입력할 수 있습니다. 봉인되는 값이라 서버가
                 임의로 반올림하지 않습니다.
               </p>
             )}
-            {directionMismatch && (
+            {/* 방향을 고를 수 없게 된 뒤로, 방향이 안 서는 경우는 이것 하나다. 말해 주지 않으면
+                목표가를 넣었는데 왜 발판이 잠겨 있는지 알 길이 없다. */}
+            {gap === 0 && (
               <p className="sd-warn">
-                {`방향은 "${DIRECTION_LABEL[direction]}" 인데 목표가가 반대쪽입니다. 다시 확인해 주세요.`}
+                목표가가 전일 종가와 같으면 방향을 정할 수 없습니다. 더 높거나 낮은 값을 넣어 주세요.
               </p>
             )}
 
@@ -698,6 +696,8 @@ export default function PredictTab({
                 direction={direction}
                 contestPath={CONTEST_PATH}
                 pool={evCard?.pool ?? null}
+                wallet={wallet.data}
+                overBalance={betOverBalance}
               />
             )}
 
@@ -948,7 +948,7 @@ export default function PredictTab({
               끝나는지 알 수 없다. 못 누르는 상태로 자리를 지키게 한다. */}
           <SlideToSign
             onConfirm={submit}
-            disabled={!draft || betOutOfRange || betMissing}
+            disabled={!draft || betOutOfRange || betMissing || betOverBalance}
             busy={submitting}
             label={
               eventPath ? '예측하고 배팅하기'
@@ -995,7 +995,7 @@ export default function PredictTab({
           onLinked={() => {
             setWalletLinked(true)
             setLinking(false)
-            void submit()
+            void submit(true)
           }}
         />
       )}
