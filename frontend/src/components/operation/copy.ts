@@ -53,10 +53,8 @@ export const OPERATION_COPY: Record<OperationKind, Copy> = {
      배팅도 결국 예측 한 건으로 남기 때문이다 — 그래서 버튼 이름도 예측 등록
      (PREDICTION_BURN)과 같은 말을 쓴다.
 
-     ⚠ 이 문구는 **지금 화면에 안 뜬다.** OperationModal 을 띄우는 곳이 예측 등록
-     한 군데뿐이고 대회 배팅은 그 창을 쓰지 않는다(2026-09-17 확인). 여기 있는 것은
-     OPERATION_COPY 가 Record<OperationKind, Copy> 라 한 칸이 비면 컴파일이 막히기
-     때문이다. 나중에 배팅에도 이 창을 붙이면 그때 그대로 쓰면 된다. */
+     C-01 대회 경로(PredictTab, eventPath)가 접수 뒤 이 kind 로 OperationModal 을 띄운다
+     (2026-09-19). 그전에는 PREDICTION_BURN 을 넘겨 소각 문구가 떴다. */
   EVENT_BET: {
     waiting: '배팅을 체인에서 확인하고 있습니다',
     done: '배팅이 등록됐습니다',

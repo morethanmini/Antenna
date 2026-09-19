@@ -185,8 +185,10 @@ public class TokenIndexService {
     }
 
     /**
-     * 작업을 FAILED 로 닫고 리소스도 그에 맞게. 구독은 손대지 않는다(enum 에 FAILED 가 없다, TOKEN-01 몫).
-     * 이미 PENDING 이 아니면 아무것도 하지 않는다 — 같은 회차에 이벤트가 먼저 왔을 수 있다.
+     * 작업을 FAILED 로 닫고 리소스도 그에 맞게. 구독은 FAILED 로 닫는다(2026-09-19, {@code Subscription.fail}) —
+     * 전에는 enum 에 FAILED 가 없어 손대지 않았고, 체인에서 되돌아간 결제가 화면에 영원히 "결제 확인 중" 으로 남아
+     * 중복 검사(ALREADY_SUBSCRIBED)까지 막았다. 이미 PENDING 이 아니면 아무것도 하지 않는다 — 같은 회차에 이벤트가
+     * 먼저 왔을 수 있다.
      *
      * <p><b>광고도 이제 손대지 않는다(ANT-ADMIN-03).</b> 승인제 전에는 여기서 배너를 REJECTED 로 닫았다 — 접수가 곧 소각이라
      * 실패한 신청이 자리를 막지 않게. 승인제에서는 소각이 <b>관리자 승인</b>에서 나가고, 그 tx 가 유실·거부돼도 승인 전 상태
@@ -201,6 +203,12 @@ public class TokenIndexService {
         }
         Operation op = found.get();
         op.markFailed(code, message);
+        if (op.getResourceType() == Operation.ResourceType.SUBSCRIPTION && op.getResourceId() != null) {
+            // fail() 은 ACTIVE 면 건드리지 않는다 — 실패로 보였는데 확정 이벤트가 먼저 온 경우를 지킨다.
+            subscriptions.findById(op.getResourceId()).ifPresent(Subscription::fail);
+            log.warn("작업 {} — 구독 {} 의 결제가 체인에서 실패했다({}). 구독을 FAILED 로 닫는다 — 다시 시도할 수 있다",
+                    op.getId(), op.getResourceId(), code);
+        }
         if (op.getResourceType() == Operation.ResourceType.AD) {
             log.warn("작업 {} — 광고 {} 의 게재료 소각이 실패했다({}). 배너는 승인 대기로 남는다 — 관리자가 다시 승인하거나 반려하라",
                     op.getId(), op.getResourceId(), code);

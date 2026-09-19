@@ -36,6 +36,11 @@ ALTER TABLE operations DROP CONSTRAINT IF EXISTS operations_resource_type_check;
 --    옛 목록이 남아 있기 때문이다. 어휘는 JPA enum 이 막으므로 다시 걸지 않는다.
 ALTER TABLE upload_files DROP CONSTRAINT IF EXISTS upload_files_purpose_check;
 
+-- ① Subscription.Status 에 FAILED 추가(ANT-TOKEN-01 · 2026-09-19).
+--    이게 없으면 결제 실패를 FAILED 로 닫는 UPDATE 가 500 으로 깨진다 — PENDING·ACTIVE·EXPIRED 만 든
+--    옛 목록이 남아 있기 때문이다. 어휘는 JPA enum 이 막으므로 다시 걸지 않는다.
+ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS subscriptions_status_check;
+
 -- ② AbuseReport 신고 대상에 리포트·리포트 댓글 추가(ANT-FE-ABUSE-REPORT · AbuseReport @Check).
 --    옛 "셋 중 정확히 하나" 제약이 남은 DB 는 리포트 신고 INSERT 를 거절한다 — 새 칼럼 둘이 합산에 없어
 --    리포트만 채운 행의 합이 0 이 되기 때문이다. 조건은 엔티티의 @Check(ck_abuse_reports_exactly_one_target)와 같다.
