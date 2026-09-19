@@ -65,8 +65,6 @@ const won = (n: number) => `${Math.round(n).toLocaleString('ko-KR')}원`
 /** 시고저는 "원" 을 붙이지 않는다 — 네 칸이 나란히 서는 자리라 단위가 반복되면 시끄럽다 */
 const cut = (n: number) => Math.round(n).toLocaleString('ko-KR')
 const QTY_STEPS = [10, 100, 1000]
-/** 도넛에 이름을 남길 종목 수. 나머지는 "기타" 로 접는다 */
-const PIE_TOP = 4
 /** 캔들 차트 높이. RSI 칸이 붙으면 이 값을, 아니면 여기에 PANE_H 를 더해 쓴다 */
 const CHART_H = 200
 /** IndicatorPane 이 차지하는 총 높이 — 여백·머리줄·그림 */
@@ -180,7 +178,7 @@ function IndicatorHelp() {
 
 /* 서버가 막은 이유를 사람 말로 바꾼다. 훅이 오류 코드를 이 몇 가지로 좁혀 준다 */
 const REJECT_TEXT: Record<string, string> = {
-  CASH: '예수금이 부족합니다',
+  CASH: '남은 모의투자금이 부족합니다',
   QTY: '수량을 확인해 주세요',
   NO_PRICE: '이 게임일의 가격이 아직 없습니다',
   NOT_JOINED: '참가하지 않은 시즌입니다',
@@ -245,7 +243,7 @@ export default function SeasonPlay() {
   const [view, setView] = useState<BarView>(null)
 
   const [side, setSide] = useState<Side>('BUY')
-  const [qty, setQty] = useState(0)
+  const [qtyInput, setQty] = useState(0)
   const [on, setOn] = useState<IndicatorKind[]>(['MA5', 'MA15', 'MA30'])
   const [indOpen, setIndOpen] = useState(false)
   const [filled, setFilled] = useState<string | null>(null)
@@ -442,10 +440,19 @@ export default function SeasonPlay() {
   const diffRate = diff !== null && prev ? (diff / prev) * 100 : null
 
   const held = sim.positions.find((p) => p.tickerId === selected)
-  const amount = price === null ? 0 : orderAmount(price, qty)
   const maxQty =
     price === null ? 0 : side === 'BUY' ? maxBuyQty(sim.cash, price) : held?.qty ?? 0
+  /* 주문 수량은 **살 수 있는·가진 만큼을 넘지 않는다**(2026-09-19, QA 09-18). input 의 max 는 손으로
+     치는 값을 막지 못하고 +N 버튼에도 상한이 없어서, 보유보다 많은 매도가 그대로 서버까지 갔다
+     (409 SEASON_INSUFFICIENT_QTY). 21억을 넘기면 서버 Integer 에 담기지도 않아 엉뚱한 400 이 났다.
+     넣을 때 자르고(changeQty), 그린 뒤에 상한이 줄어드는 경우 — 다음 날로 넘어가 종가가 올랐을 때 —
+     를 위해 쓸 때도 한 번 더 자른다. */
+  const qty = Math.min(qtyInput, maxQty)
+  const changeQty = (n: number) => setQty(Math.min(maxQty, Math.max(0, Math.floor(n) || 0)))
+  const amount = price === null ? 0 : orderAmount(price, qty)
   const percent = s.lengthDays > 0 ? Math.round((sim.day / s.lengthDays) * 100) : 0
+  /** 남은 게임일. 건너뛰고 종료 버튼과 확인창이 같은 수를 말한다 */
+  const left = Math.max(0, s.lengthDays - sim.day)
 
   /* RSI 를 켜면 아래에 칸이 하나 더 붙는다. 그때만 카드가 길어지면 오른쪽 주문
      패널과의 높이 균형이 켤 때마다 달라져 화면이 뛴다. 차트가 그만큼 양보해서
@@ -463,13 +470,14 @@ export default function SeasonPlay() {
     r === null ? <span className="flat">전일 대비 —</span>
       : <span className={signOf(stockDiff)}>전일 대비 {rate(r)}</span>
 
-  /* 도넛 조각. 큰 것부터 넷만 이름을 남기고 나머지는 기타로 접는다.
+  /* 도넛 조각. **가진 종목을 전부 이름으로 넘긴다**(2026-09-19, QA 09-18). 전에는 큰 것 넷만
+     남기고 나머지를 "기타 N종목" 한 줄로 접어서, 다섯째부터는 무엇을 얼마나 들고 있는지 이 화면
+     어디에서도 볼 수 없었다. 원에서는 다섯째부터 같은 색으로 이어 붙어 여전히 한 덩어리로 읽히고
+     (PortfolioDonut 의 colorOf), 목록은 "더 보기" 로 접혀 있어 카드가 길어지지도 않는다.
      현금은 늘 마지막이다 — 종목들 사이에 끼면 종목처럼 읽힌다. */
   const sorted = [...sim.positions].sort((a, b) => b.value - a.value)
-  const top = sorted.slice(0, PIE_TOP)
-  const rest = sorted.slice(PIE_TOP)
   const slices: DonutSlice[] = [
-    ...top.map((p) => ({
+    ...sorted.map((p) => ({
       key: `t${p.tickerId}`,
       label: p.displayName,
       value: p.value,
@@ -477,13 +485,6 @@ export default function SeasonPlay() {
       detail: `${p.qty.toLocaleString('ko-KR')}주 · 평균 ${won(p.avgPrice)}`,
       pnl: p.pnl,
     })),
-    ...(rest.length
-      ? [{
-          key: 'ETC',
-          label: `기타 ${rest.length}종목`,
-          value: rest.reduce((a, p) => a + p.value, 0),
-        }]
-      : []),
     { key: 'CASH', label: '현금', value: sim.cash },
   ]
 
@@ -501,7 +502,8 @@ export default function SeasonPlay() {
   /* 종료가 서버에 박힌 뒤에만 결과로 간다. 서버는 finish 에서 성적표와 AI 복기를 같이
      만들어 저장하고, 실패하면 아무것도 저장하지 않는다 — 그때는 창을 닫고 이유를 보인다. */
   async function finishAndGo() {
-    if (await sim.finish()) navigate(`/sim/${seasonId}/result`)
+    /* 마지막 게임일 전에 이 창이 열렸다면 "건너뛰고 종료" 로 들어온 것이다 */
+    if (await sim.finish(!sim.isLastDay)) navigate(`/sim/${seasonId}/result`)
     else finishDialog.current?.close()
   }
 
@@ -724,29 +726,34 @@ export default function SeasonPlay() {
                 <div className="sp-stepper">
                   <button type="button" aria-label="1주 줄이기"
                           disabled={qty <= 0}
-                          onClick={() => setQty((q) => Math.max(0, q - 1))}>−</button>
+                          onClick={() => changeQty(qty - 1)}>−</button>
                   <input
                     type="number"
                     min={0}
                     max={maxQty}
                     value={qty || ''}
-                    onChange={(e) => setQty(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
+                    onChange={(e) => changeQty(Number(e.target.value))}
                     aria-label="주문 수량"
                   />
                   <i>주</i>
                   <button type="button" aria-label="1주 늘리기"
-                          onClick={() => setQty((q) => q + 1)}>+</button>
+                          disabled={qty >= maxQty}
+                          onClick={() => changeQty(qty + 1)}>+</button>
                 </div>
               </div>
 
               <div className="sp-steps">
                 {QTY_STEPS.map((n) => (
-                  <button key={n} type="button" onClick={() => setQty((q) => q + n)}>
+                  <button key={n} type="button" disabled={qty >= maxQty}
+                          onClick={() => changeQty(qty + n)}>
                     +{n.toLocaleString('ko-KR')}
                   </button>
                 ))}
                 <button type="button" disabled={maxQty <= 0} onClick={() => setQty(maxQty)}>
                   최대
+                </button>
+                <button type="button" disabled={qty <= 0} onClick={() => setQty(0)}>
+                  초기화
                 </button>
               </div>
 
@@ -815,6 +822,20 @@ export default function SeasonPlay() {
                   {sim.pending ? '진행 중…' : '다음 영업일 진행'}
                 </button>
               )}
+              {/* 건너뛰고 종료(2026-09-19, QA 09-18 "30일을 일일이 다 눌러야 함"). 남은 날에 더 할
+                  일이 없는 사람이 "다음 영업일" 을 수십 번 누르지 않고 끝낸다. 바로 끝내지 않고
+                  마지막 날과 **같은 확인창**을 거친다 — 되돌릴 수 없고, 보유분이 어느 날 값으로
+                  평가되는지 알고 눌러야 한다. 대회는 "다음 영업일" 과 마찬가지로 서버가 막는다(409). */}
+              {!sim.isLastDay && (
+                <button
+                  type="button"
+                  className="sp-skip"
+                  disabled={sim.pending}
+                  onClick={() => finishDialog.current?.showModal()}
+                >
+                  남은 {left}일 건너뛰고 종료
+                </button>
+              )}
               <p className="sp-note">
                 {sim.isLastDay
                   ? '마지막 게임일입니다. 진행은 여기까지입니다.'
@@ -830,7 +851,20 @@ export default function SeasonPlay() {
                 aria-labelledby="sp-finish-title"
                 onCancel={(e) => { if (sim.pending) e.preventDefault() }}
               >
-                <h2 id="sp-finish-title">모의투자를 종료하고 결과를 볼까요?</h2>
+                <h2 id="sp-finish-title">
+                  {sim.isLastDay
+                    ? '모의투자를 종료하고 결과를 볼까요?'
+                    : `남은 ${left}일을 건너뛰고 종료할까요?`}
+                </h2>
+                {/* 건너뛸 때만 하는 말. 남은 날이 어떻게 처리되고 보유분이 어느 날 값으로
+                    평가되는지 — 이걸 모르고 누르면 "오늘 값으로 끝나는 줄 알았다" 가 된다. */}
+                {!sim.isLastDay && (
+                  <p>
+                    남은 게임일은 <b>주문 없이 지나간 것으로</b> 처리합니다.
+                    <br />
+                    지금 보유한 종목은 <b>마지막 게임일 종가</b>로 평가됩니다.
+                  </p>
+                )}
                 <p>
                   종료하면 더 이상 주문도 진행도 할 수 없습니다.
                   <br />

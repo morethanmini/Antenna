@@ -2,6 +2,8 @@ package ssafy.a507.backend.domain.season.service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,12 +30,14 @@ import ssafy.a507.backend.domain.season.dto.SeasonResultResponse;
 import ssafy.a507.backend.domain.season.dto.SeasonTradeItemResponse;
 import ssafy.a507.backend.domain.season.dto.SeasonTradeListResponse;
 import ssafy.a507.backend.domain.season.entity.Season;
+import ssafy.a507.backend.domain.season.entity.SeasonNews;
 import ssafy.a507.backend.domain.season.entity.SeasonParticipant;
 import ssafy.a507.backend.domain.season.entity.SeasonPosition;
 import ssafy.a507.backend.domain.season.entity.SeasonPrice;
 import ssafy.a507.backend.domain.season.entity.SeasonResult;
 import ssafy.a507.backend.domain.season.entity.SeasonTicker;
 import ssafy.a507.backend.domain.season.entity.SeasonTrade;
+import ssafy.a507.backend.domain.season.repository.SeasonNewsRepository;
 import ssafy.a507.backend.domain.season.repository.SeasonParticipantRepository;
 import ssafy.a507.backend.domain.season.repository.SeasonPositionRepository;
 import ssafy.a507.backend.domain.season.repository.SeasonPriceRepository;
@@ -67,6 +71,7 @@ public class SeasonPlayService {
     private final SeasonPositionRepository positionRepository;
     private final SeasonTradeRepository tradeRepository;
     private final SeasonResultRepository resultRepository;
+    private final SeasonNewsRepository newsRepository;
     private final UserRepository userRepository;
     private final SeasonReviewService reviewService;
     private final BadgeService badgeService;
@@ -223,9 +228,16 @@ public class SeasonPlayService {
      * 잠그고 다시 검증한 뒤 지표를 다시 계산해 복기와 함께 저장. 복기 생성이 실패하면 아무것도
      * 저장하지 않는다(503 SEASON_REVIEW_FAILED) — 회차는 ONGOING 그대로라 다시 시도할 수 있다.
      * 지표를 ③에서 다시 계산하는 이유는 ①과 ③ 사이에 주문이 끼어들 수 있어서다.
+     *
+     * <p><b>건너뛰고 종료</b>({@code skipRemaining}, 2026-09-19 · QA 09-18 "30일을 일일이 다 눌러야 함").
+     * 마지막 게임일 전이어도 받는다 — 남은 날을 <b>주문 없이 넘긴 것으로 치고</b> 마지막 날 종가로
+     * 정산한다(팀장 결정). "다음 영업일" 을 남은 만큼 누른 것과 결과가 같다: 성과 계산은 원래부터
+     * {@code lengthDays} 까지의 종가를 쓰므로({@link #compute}) 계산은 손대지 않고, 게임일만 ③에서
+     * 마지막 날로 옮긴다. ③에서 옮기는 이유는 복기가 실패하면 아무것도 바뀌지 않아야 해서다 —
+     * ①에서 옮기면 실패한 뒤 회차가 마지막 날에 가 있다. 수동 진행이 없는 대회는 건너뛸 수도 없다.
      */
-    public SeasonFinishResponse finish(Long userId, Long seasonId) {
-        Prepared p = tx.execute(status -> prepare(userId, seasonId));
+    public SeasonFinishResponse finish(Long userId, Long seasonId, boolean skipRemaining) {
+        Prepared p = tx.execute(status -> prepare(userId, seasonId, skipRemaining));
         if (p.done()) {
             return p.response();
         }
@@ -236,13 +248,26 @@ public class SeasonPlayService {
             log.warn("[SEASON-09] 복기 생성 실패 user={} season={} — {}", userId, seasonId, e.getMessage());
             throw new BusinessException(ErrorCode.SEASON_REVIEW_FAILED);
         }
-        return tx.execute(status -> commit(userId, seasonId, review));
+        return tx.execute(status -> commit(userId, seasonId, review, skipRemaining));
+    }
+
+    /** 마지막 게임일 전인데 끝내려는가 — 건너뛰기가 아니면 409, 대회면 건너뛰기도 409. */
+    private static void requireLastDayOrSkip(SeasonParticipant me, Season season, boolean skipRemaining) {
+        if (me.getCurrentDay() >= season.getLengthDays()) {
+            return;
+        }
+        if (!skipRemaining) {
+            throw new BusinessException(ErrorCode.SEASON_NOT_LAST_DAY);
+        }
+        if (season.getMode() == Season.Mode.COMPETITION) {
+            throw new BusinessException(ErrorCode.SEASON_ADVANCE_NOT_ALLOWED);
+        }
     }
 
     /** ①의 결과. done 이면 더 할 일이 없어 response 를 그대로 준다. 아니면 aiInput 이 있다. */
     private record Prepared(boolean done, SeasonFinishResponse response, String aiInput) {}
 
-    private Prepared prepare(Long userId, Long seasonId) {
+    private Prepared prepare(Long userId, Long seasonId, boolean skipRemaining) {
         SeasonParticipant me = myAttempt(userId, seasonId);
         Season season = me.getSeason();
         if (me.getStatus() == SeasonParticipant.Status.DONE) {
@@ -253,19 +278,17 @@ public class SeasonPlayService {
             }
             // 복기만 비어 있는 끝난 회차 — 저장된 지표로 재료를 만들어 채우러 간다
             List<SeasonTrade> trades = tradeRepository.findByParticipant_IdOrderByIdAsc(me.getId());
-            return new Prepared(false, null, SeasonReviewService.input(season, trades, toResult(saved)));
+            return new Prepared(false, null, reviewInput(season, trades, toResult(saved)));
         }
         if (!me.isOngoing()) {
             throw new BusinessException(ErrorCode.SEASON_ATTEMPT_ENDED);
         }
-        if (me.getCurrentDay() < season.getLengthDays()) {
-            throw new BusinessException(ErrorCode.SEASON_NOT_LAST_DAY);
-        }
+        requireLastDayOrSkip(me, season, skipRemaining);
         List<SeasonTrade> trades = tradeRepository.findByParticipant_IdOrderByIdAsc(me.getId());
-        return new Prepared(false, null, SeasonReviewService.input(season, trades, compute(season, trades)));
+        return new Prepared(false, null, reviewInput(season, trades, compute(season, trades)));
     }
 
-    private SeasonFinishResponse commit(Long userId, Long seasonId, String review) {
+    private SeasonFinishResponse commit(Long userId, Long seasonId, String review, boolean skipRemaining) {
         SeasonParticipant me = participantRepository
                 .lockById(myAttempt(userId, seasonId).getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.SEASON_NOT_JOINED));
@@ -282,12 +305,11 @@ public class SeasonPlayService {
             throw new BusinessException(ErrorCode.SEASON_ATTEMPT_ENDED);
         }
         Season season = me.getSeason();
-        if (me.getCurrentDay() < season.getLengthDays()) {
-            throw new BusinessException(ErrorCode.SEASON_NOT_LAST_DAY);
-        }
+        requireLastDayOrSkip(me, season, skipRemaining);
         List<SeasonTrade> trades = tradeRepository.findByParticipant_IdOrderByIdAsc(me.getId());
         SeasonResultCalculator.Result r = compute(season, trades);
 
+        me.skipTo(season.getLengthDays());
         me.finish();
         SeasonResult result = SeasonResult.of(
                 me, r.finalAsset(), r.returnRate(), r.benchmarkReturn(), r.maxDrawdown(),
@@ -302,6 +324,35 @@ public class SeasonPlayService {
         long sells = trades.stream().filter(t -> t.getSide() == SeasonTrade.Side.SELL).count();
         badgeService.award(me.getUser(), season, r, (int) sells);
         return response;
+    }
+
+    /**
+     * 복기 재료 — 성적표·체결에 <b>시장 쪽 재료</b>를 얹는다(2026-09-19). 시즌 전 종목의 종가(게임일 1 ~
+     * 마지막 날)와 게임일별 시장 요약(season_news 의 종목 없는 행)을 읽는다. 200종목 × 40여 일이라
+     * 만 행 안쪽이고 회차당 한 번이다. 끝난 회차의 재료라 진행일 상한을 걸지 않는다.
+     */
+    private String reviewInput(Season season, List<SeasonTrade> trades, SeasonResultCalculator.Result result) {
+        int lastDay = season.getLengthDays();
+        Map<Long, SeasonTicker> tickers = new HashMap<>();
+        for (SeasonTicker t : seasonTickerRepository.findBySeason_IdOrderByDisplayNameAsc(season.getId())) {
+            tickers.put(t.getId(), t);
+        }
+        List<SeasonMarketDigest.Quote> quotes = tickers.isEmpty() ? List.of()
+                : seasonPriceRepository
+                        .findByTicker_IdInAndGameDayBetweenOrderByGameDayAsc(tickers.keySet(), 1, lastDay)
+                        .stream()
+                        .map(p -> {
+                            SeasonTicker t = tickers.get(p.getTicker().getId());
+                            return new SeasonMarketDigest.Quote(
+                                    t.getId(), t.getDisplayName(), t.getSector(), p.getGameDay(), p.getClose());
+                        })
+                        .toList();
+        List<SeasonNews> hints = new ArrayList<>(newsRepository
+                .findBySeason_IdAndTickerIsNullAndGameDayLessThanEqualOrderByGameDayDescIdAsc(
+                        season.getId(), lastDay, Limit.of(SeasonReviewService.MAX_HINTS)));
+        hints.sort(Comparator.comparingInt(SeasonNews::getGameDay));
+        return SeasonReviewService.input(
+                season, trades, result, SeasonMarketDigest.of(quotes, lastDay), hints);
     }
 
     /** 성과 지표 — 체결과 거래한 종목의 종가에서 계산한다. */

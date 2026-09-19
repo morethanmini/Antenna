@@ -310,7 +310,8 @@ export function useSeasonSim({
    * 값이 바뀌지 않는다.
    */
   const finish = useCallback(
-    async (): Promise<SeasonFinishResult | null> => run(() => finishApi(seasonId)),
+    async (skipRemaining = false): Promise<SeasonFinishResult | null> =>
+      run(() => finishApi(seasonId, skipRemaining)),
     [run, seasonId],
   )
 

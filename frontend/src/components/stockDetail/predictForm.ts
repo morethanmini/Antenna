@@ -9,10 +9,11 @@
    탭으로 가면 PredictTab 이 언마운트되므로, 안에 두면 돌아왔을 때 적어 둔 것이
    전부 사라진다 — picked 를 부모가 들고 있는 것과 같은 이유다. */
 import { HORIZON_MIN, newNoteSalt } from '../../api/predictions'
-import type { Direction, Horizon } from '../../api/predictions'
+import type { Horizon } from '../../api/predictions'
 
+/* 방향은 여기 없다(2026-09-19) — 목표가가 전일 종가의 어느 쪽인지로 PredictTab 이 그때그때
+   계산한다. 따로 들고 있던 때에는 방향과 목표가가 어긋난 채 서명까지 갈 수 있었다(QA 09-18). */
 export type PredictForm = {
-  direction: Direction | null
   target: string
   /**
    * 예측 기간. **null 을 두지 않는다** — range 는 값이 없어도 손잡이를 어딘가에
@@ -22,8 +23,6 @@ export type PredictForm = {
    */
   horizon: Horizon
   note: string
-  /** 방향을 사람이 직접 골랐는가. 참이면 목표가로 다시 정하지 않는다 */
-  directionTouched: boolean
   /**
    * 근거를 봉인하는 난수(ANT-PRED-02). 폼과 함께 산다 — 글자를 칠 때마다 새로 뽑으면
    * 미리보기의 noteHash·commitHash 가 매번 바뀌어 "무엇에 서명하는지" 를 볼 수 없고,
@@ -46,6 +45,6 @@ export type PredictForm = {
  * 모든 예측이 같은 난수를 쓰게 되고, 그건 난수가 없는 것과 같다.
  */
 export const emptyPredictForm = (): PredictForm => ({
-  direction: null, target: '', horizon: HORIZON_MIN, note: '', directionTouched: false,
+  target: '', horizon: HORIZON_MIN, note: '',
   noteSalt: newNoteSalt(), bet: '',
 })
