@@ -245,7 +245,7 @@ export default function SeasonPlay() {
   const [view, setView] = useState<BarView>(null)
 
   const [side, setSide] = useState<Side>('BUY')
-  const [qty, setQty] = useState(0)
+  const [qtyInput, setQty] = useState(0)
   const [on, setOn] = useState<IndicatorKind[]>(['MA5', 'MA15', 'MA30'])
   const [indOpen, setIndOpen] = useState(false)
   const [filled, setFilled] = useState<string | null>(null)
@@ -442,9 +442,16 @@ export default function SeasonPlay() {
   const diffRate = diff !== null && prev ? (diff / prev) * 100 : null
 
   const held = sim.positions.find((p) => p.tickerId === selected)
-  const amount = price === null ? 0 : orderAmount(price, qty)
   const maxQty =
     price === null ? 0 : side === 'BUY' ? maxBuyQty(sim.cash, price) : held?.qty ?? 0
+  /* 주문 수량은 **살 수 있는·가진 만큼을 넘지 않는다**(2026-09-19, QA 09-18). input 의 max 는 손으로
+     치는 값을 막지 못하고 +N 버튼에도 상한이 없어서, 보유보다 많은 매도가 그대로 서버까지 갔다
+     (409 SEASON_INSUFFICIENT_QTY). 21억을 넘기면 서버 Integer 에 담기지도 않아 엉뚱한 400 이 났다.
+     넣을 때 자르고(changeQty), 그린 뒤에 상한이 줄어드는 경우 — 다음 날로 넘어가 종가가 올랐을 때 —
+     를 위해 쓸 때도 한 번 더 자른다. */
+  const qty = Math.min(qtyInput, maxQty)
+  const changeQty = (n: number) => setQty(Math.min(maxQty, Math.max(0, Math.floor(n) || 0)))
+  const amount = price === null ? 0 : orderAmount(price, qty)
   const percent = s.lengthDays > 0 ? Math.round((sim.day / s.lengthDays) * 100) : 0
 
   /* RSI 를 켜면 아래에 칸이 하나 더 붙는다. 그때만 카드가 길어지면 오른쪽 주문
@@ -724,29 +731,34 @@ export default function SeasonPlay() {
                 <div className="sp-stepper">
                   <button type="button" aria-label="1주 줄이기"
                           disabled={qty <= 0}
-                          onClick={() => setQty((q) => Math.max(0, q - 1))}>−</button>
+                          onClick={() => changeQty(qty - 1)}>−</button>
                   <input
                     type="number"
                     min={0}
                     max={maxQty}
                     value={qty || ''}
-                    onChange={(e) => setQty(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
+                    onChange={(e) => changeQty(Number(e.target.value))}
                     aria-label="주문 수량"
                   />
                   <i>주</i>
                   <button type="button" aria-label="1주 늘리기"
-                          onClick={() => setQty((q) => q + 1)}>+</button>
+                          disabled={qty >= maxQty}
+                          onClick={() => changeQty(qty + 1)}>+</button>
                 </div>
               </div>
 
               <div className="sp-steps">
                 {QTY_STEPS.map((n) => (
-                  <button key={n} type="button" onClick={() => setQty((q) => q + n)}>
+                  <button key={n} type="button" disabled={qty >= maxQty}
+                          onClick={() => changeQty(qty + n)}>
                     +{n.toLocaleString('ko-KR')}
                   </button>
                 ))}
                 <button type="button" disabled={maxQty <= 0} onClick={() => setQty(maxQty)}>
                   최대
+                </button>
+                <button type="button" disabled={qty <= 0} onClick={() => setQty(0)}>
+                  초기화
                 </button>
               </div>
 

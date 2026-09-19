@@ -324,7 +324,7 @@
 .sp-stepper input[type=number]{-moz-appearance:textfield;appearance:textfield}
 .sp-stepper i{flex:none;padding:0 7px 0 4px;font-style:normal;color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold)}
 
-.sp-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:9px 0 13px}
+.sp-steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:9px 0 13px}
 .sp-steps button{
   height:32px;border:1px solid var(--rule);border-radius:8px;
   color:var(--muted);font-size:var(--fs-sm);font-weight:var(--fw-bold);
