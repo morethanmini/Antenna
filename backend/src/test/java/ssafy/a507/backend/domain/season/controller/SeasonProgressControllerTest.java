@@ -28,6 +28,7 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -246,7 +247,32 @@ class SeasonProgressControllerTest {
                 .andExpect(jsonPath("$.review").value(REVIEW));
         assertThat(em.createNativeQuery(
                         "SELECT prompt_version FROM season_results WHERE participant_id = ?")
-                .setParameter(1, participantId).getSingleResult()).isEqualTo("v1");
+                .setParameter(1, participantId).getSingleResult()).isEqualTo("review-2");
+    }
+
+    @Test
+    @DisplayName("복기 재료 — 시장 흐름 · 업종 · 그날의 요약 · 체결 뒤 마지막 날까지의 등락이 함께 실린다")
+    void 복기_재료에_시장이_실린다() throws Exception {
+        em.createNativeQuery(
+                        """
+                        INSERT INTO season_news (season_id, ticker_id, game_day, kind, title, body)
+                        VALUES (?, NULL, 2, 'AI_HINT', '정책 발표로 시장이 반등했습니다.', '· 부양책이 발표됐습니다.')
+                        """)
+                .setParameter(1, seasonId)
+                .executeUpdate();
+        order("k-1", tickerA, "BUY", 100).andExpect(status().isCreated());
+        setCurrentDay(3);
+
+        mockMvc.perform(post(url("/finish")).with(user(me))).andExpect(status().isOk());
+
+        ArgumentCaptor<String> input = ArgumentCaptor.forClass(String.class);
+        then(aiClient).should(times(1)).complete(eq(SeasonReviewService.INSTRUCTION), input.capture());
+        // A 70,000 → 60,000 · B 10,000 → 9,000 — 등가중 (−14.286 + −10) / 2 = −12.1%, 매수가 대비 −14.3%
+        assertThat(input.getValue())
+                .contains("시장 흐름(시즌 종목 등가중)")
+                .contains("약세 전기·전자 -12.1%")
+                .contains("D+2 정책 발표로 시장이 반등했습니다.")
+                .contains("D+1 매수 종목A 100주 @70000원 → 마지막 날 종가까지 -14.3%");
     }
 
     @Test

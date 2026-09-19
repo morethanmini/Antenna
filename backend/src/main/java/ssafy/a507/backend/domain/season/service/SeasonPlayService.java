@@ -2,6 +2,8 @@ package ssafy.a507.backend.domain.season.service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,12 +30,14 @@ import ssafy.a507.backend.domain.season.dto.SeasonResultResponse;
 import ssafy.a507.backend.domain.season.dto.SeasonTradeItemResponse;
 import ssafy.a507.backend.domain.season.dto.SeasonTradeListResponse;
 import ssafy.a507.backend.domain.season.entity.Season;
+import ssafy.a507.backend.domain.season.entity.SeasonNews;
 import ssafy.a507.backend.domain.season.entity.SeasonParticipant;
 import ssafy.a507.backend.domain.season.entity.SeasonPosition;
 import ssafy.a507.backend.domain.season.entity.SeasonPrice;
 import ssafy.a507.backend.domain.season.entity.SeasonResult;
 import ssafy.a507.backend.domain.season.entity.SeasonTicker;
 import ssafy.a507.backend.domain.season.entity.SeasonTrade;
+import ssafy.a507.backend.domain.season.repository.SeasonNewsRepository;
 import ssafy.a507.backend.domain.season.repository.SeasonParticipantRepository;
 import ssafy.a507.backend.domain.season.repository.SeasonPositionRepository;
 import ssafy.a507.backend.domain.season.repository.SeasonPriceRepository;
@@ -67,6 +71,7 @@ public class SeasonPlayService {
     private final SeasonPositionRepository positionRepository;
     private final SeasonTradeRepository tradeRepository;
     private final SeasonResultRepository resultRepository;
+    private final SeasonNewsRepository newsRepository;
     private final UserRepository userRepository;
     private final SeasonReviewService reviewService;
     private final BadgeService badgeService;
@@ -273,14 +278,14 @@ public class SeasonPlayService {
             }
             // 복기만 비어 있는 끝난 회차 — 저장된 지표로 재료를 만들어 채우러 간다
             List<SeasonTrade> trades = tradeRepository.findByParticipant_IdOrderByIdAsc(me.getId());
-            return new Prepared(false, null, SeasonReviewService.input(season, trades, toResult(saved)));
+            return new Prepared(false, null, reviewInput(season, trades, toResult(saved)));
         }
         if (!me.isOngoing()) {
             throw new BusinessException(ErrorCode.SEASON_ATTEMPT_ENDED);
         }
         requireLastDayOrSkip(me, season, skipRemaining);
         List<SeasonTrade> trades = tradeRepository.findByParticipant_IdOrderByIdAsc(me.getId());
-        return new Prepared(false, null, SeasonReviewService.input(season, trades, compute(season, trades)));
+        return new Prepared(false, null, reviewInput(season, trades, compute(season, trades)));
     }
 
     private SeasonFinishResponse commit(Long userId, Long seasonId, String review, boolean skipRemaining) {
@@ -319,6 +324,35 @@ public class SeasonPlayService {
         long sells = trades.stream().filter(t -> t.getSide() == SeasonTrade.Side.SELL).count();
         badgeService.award(me.getUser(), season, r, (int) sells);
         return response;
+    }
+
+    /**
+     * 복기 재료 — 성적표·체결에 <b>시장 쪽 재료</b>를 얹는다(2026-09-19). 시즌 전 종목의 종가(게임일 1 ~
+     * 마지막 날)와 게임일별 시장 요약(season_news 의 종목 없는 행)을 읽는다. 200종목 × 40여 일이라
+     * 만 행 안쪽이고 회차당 한 번이다. 끝난 회차의 재료라 진행일 상한을 걸지 않는다.
+     */
+    private String reviewInput(Season season, List<SeasonTrade> trades, SeasonResultCalculator.Result result) {
+        int lastDay = season.getLengthDays();
+        Map<Long, SeasonTicker> tickers = new HashMap<>();
+        for (SeasonTicker t : seasonTickerRepository.findBySeason_IdOrderByDisplayNameAsc(season.getId())) {
+            tickers.put(t.getId(), t);
+        }
+        List<SeasonMarketDigest.Quote> quotes = tickers.isEmpty() ? List.of()
+                : seasonPriceRepository
+                        .findByTicker_IdInAndGameDayBetweenOrderByGameDayAsc(tickers.keySet(), 1, lastDay)
+                        .stream()
+                        .map(p -> {
+                            SeasonTicker t = tickers.get(p.getTicker().getId());
+                            return new SeasonMarketDigest.Quote(
+                                    t.getId(), t.getDisplayName(), t.getSector(), p.getGameDay(), p.getClose());
+                        })
+                        .toList();
+        List<SeasonNews> hints = new ArrayList<>(newsRepository
+                .findBySeason_IdAndTickerIsNullAndGameDayLessThanEqualOrderByGameDayDescIdAsc(
+                        season.getId(), lastDay, Limit.of(SeasonReviewService.MAX_HINTS)));
+        hints.sort(Comparator.comparingInt(SeasonNews::getGameDay));
+        return SeasonReviewService.input(
+                season, trades, result, SeasonMarketDigest.of(quotes, lastDay), hints);
     }
 
     /** 성과 지표 — 체결과 거래한 종목의 종가에서 계산한다. */
