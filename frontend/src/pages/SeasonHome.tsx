@@ -169,6 +169,14 @@ function Hero({ run, practice }: { run: MyRun | null; practice: OpenRun[] | unde
           )}
         </p>
 
+        {/* 무엇을 이어서 하는지 먼저 말한다(2026-09-19). 진행률·게임일만 있으면 어느 주제의
+            3% 인지 알 수 없다 — 연습을 여러 개 걸쳐 둔 사람은 눌러 봐야 알았다. */}
+        {run && (
+          <p className="sh-topic">
+            플레이 중인 주제 <b>{run.title}</b>
+          </p>
+        )}
+
         {run && (
           <div className="sh-progress">
             <span
@@ -221,19 +229,31 @@ function Hero({ run, practice }: { run: MyRun | null; practice: OpenRun[] | unde
           )}
         </div>
 
-        {run ? (
-          <Link className="sh-btn solid" to={`/sim/${run.seasonId}/play`}>
-            <PlayIcon />
-            이어서 하기
-            <ChevronIcon />
-          </Link>
-        ) : (
-          <Link className="sh-btn solid" to="/sim/modes">
-            <PlayIcon />
-            연습 모의투자 시작하기
-            <ChevronIcon />
-          </Link>
-        )}
+        {/* 연습으로 가는 길은 연습하기 화면(sim/practice)으로 **바로** 간다(2026-09-19). 배너가 "연습 모의투자" 라고
+            말하고 있어서 모드 선택(/sim/modes)을 한 번 더 거칠 이유가 없다.
+            이어서 하기 옆의 "주제 선택" 은 지금 것 말고 다른 주제를 고르러 가는 길이다 — 전에는
+            상단바 투자하기 → 연습하기로 돌아가야 했다. */}
+        <div className="sh-cta">
+          {run ? (
+            <>
+              <Link className="sh-btn solid" to={`/sim/${run.seasonId}/play`}>
+                <PlayIcon />
+                이어서 하기
+                <ChevronIcon />
+              </Link>
+              <Link className="sh-btn line" to="/sim/practice">
+                주제 선택
+                <ChevronIcon />
+              </Link>
+            </>
+          ) : (
+            <Link className="sh-btn solid" to="/sim/practice">
+              <PlayIcon />
+              연습 모의투자 시작하기
+              <ChevronIcon />
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* 마스코트와 장식이 함께 떠 있는 무대. 장식이 가장자리에서 잘려야 "안에서

@@ -208,7 +208,9 @@ export default function SeasonHistory() {
             <h1>기록</h1>
             <p>내가 참가한 시즌과 성적입니다</p>
           </div>
-          <Link className="sh-go" to="/sim/modes">새로 시작하기</Link>
+          {/* 주제를 고르는 곳으로 바로 간다(2026-09-19, QA 09-18). 전에는 모드 선택(/sim/modes)으로
+              보냈는데 거기서 또 "연습하기" 를 눌러야 해서 새로 시작하는 길로 읽히지 않았다. */}
+          <Link className="sh-go" to="/sim/practice">새로 시작하기</Link>
         </header>
 
         {/* ── 요약 3칸 ─────────────────────────────────── */}

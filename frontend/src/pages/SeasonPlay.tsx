@@ -65,8 +65,6 @@ const won = (n: number) => `${Math.round(n).toLocaleString('ko-KR')}원`
 /** 시고저는 "원" 을 붙이지 않는다 — 네 칸이 나란히 서는 자리라 단위가 반복되면 시끄럽다 */
 const cut = (n: number) => Math.round(n).toLocaleString('ko-KR')
 const QTY_STEPS = [10, 100, 1000]
-/** 도넛에 이름을 남길 종목 수. 나머지는 "기타" 로 접는다 */
-const PIE_TOP = 4
 /** 캔들 차트 높이. RSI 칸이 붙으면 이 값을, 아니면 여기에 PANE_H 를 더해 쓴다 */
 const CHART_H = 200
 /** IndicatorPane 이 차지하는 총 높이 — 여백·머리줄·그림 */
@@ -180,7 +178,7 @@ function IndicatorHelp() {
 
 /* 서버가 막은 이유를 사람 말로 바꾼다. 훅이 오류 코드를 이 몇 가지로 좁혀 준다 */
 const REJECT_TEXT: Record<string, string> = {
-  CASH: '예수금이 부족합니다',
+  CASH: '남은 모의투자금이 부족합니다',
   QTY: '수량을 확인해 주세요',
   NO_PRICE: '이 게임일의 가격이 아직 없습니다',
   NOT_JOINED: '참가하지 않은 시즌입니다',
@@ -470,13 +468,14 @@ export default function SeasonPlay() {
     r === null ? <span className="flat">전일 대비 —</span>
       : <span className={signOf(stockDiff)}>전일 대비 {rate(r)}</span>
 
-  /* 도넛 조각. 큰 것부터 넷만 이름을 남기고 나머지는 기타로 접는다.
+  /* 도넛 조각. **가진 종목을 전부 이름으로 넘긴다**(2026-09-19, QA 09-18). 전에는 큰 것 넷만
+     남기고 나머지를 "기타 N종목" 한 줄로 접어서, 다섯째부터는 무엇을 얼마나 들고 있는지 이 화면
+     어디에서도 볼 수 없었다. 원에서는 다섯째부터 같은 색으로 이어 붙어 여전히 한 덩어리로 읽히고
+     (PortfolioDonut 의 colorOf), 목록은 "더 보기" 로 접혀 있어 카드가 길어지지도 않는다.
      현금은 늘 마지막이다 — 종목들 사이에 끼면 종목처럼 읽힌다. */
   const sorted = [...sim.positions].sort((a, b) => b.value - a.value)
-  const top = sorted.slice(0, PIE_TOP)
-  const rest = sorted.slice(PIE_TOP)
   const slices: DonutSlice[] = [
-    ...top.map((p) => ({
+    ...sorted.map((p) => ({
       key: `t${p.tickerId}`,
       label: p.displayName,
       value: p.value,
@@ -484,13 +483,6 @@ export default function SeasonPlay() {
       detail: `${p.qty.toLocaleString('ko-KR')}주 · 평균 ${won(p.avgPrice)}`,
       pnl: p.pnl,
     })),
-    ...(rest.length
-      ? [{
-          key: 'ETC',
-          label: `기타 ${rest.length}종목`,
-          value: rest.reduce((a, p) => a + p.value, 0),
-        }]
-      : []),
     { key: 'CASH', label: '현금', value: sim.cash },
   ]
 
