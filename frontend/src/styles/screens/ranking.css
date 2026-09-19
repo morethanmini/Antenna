@@ -15,8 +15,11 @@
    **화면에 고정한다(fixed).** 문서에 붙여 두면 스크롤할 때 그림이 위로 흘러가
    테두리가 사라진다. 고정하면 목록이 아무리 길어도 액자가 늘 화면을 두른다.
 
-   **본문을 좁힌다.** 공용 .main-inner 는 1600px 이라 본문이 테두리까지 덮는다.
-   순위표는 열이 여섯뿐이라 좁혀도 읽기에 지장이 없고, 남는 양옆이 곧 그림 자리다. */
+   **본문을 좁힌다. 두 탭 모두.** 공용 .main-inner 는 1600px 이라 본문이 테두리까지
+   덮는다. 순위표는 열이 여섯뿐이라 좁혀도 읽기에 지장이 없고, 남는 양옆이 곧 그림 자리다.
+
+   그림이 없는 이벤트 탭도 같은 폭을 쓴다 — 폭이 다르면 오른쪽 위 전환 버튼이 탭마다
+   다른 자리에 서서, 누르는 순간 버튼이 옆으로 튄다. */
 .rk-page{ position:relative; isolation:isolate; }
 .rk-page .main-inner{ max-width:1080px; }
 
@@ -36,8 +39,6 @@
   background:linear-gradient(180deg,#f2f2fd 0%,#e6eafc 22%,#d8e4fc 48%,#e6eefd 72%,var(--ground) 100%);
 }
 .rk-page.is-event .rk-sky-bg{ display:none; }
-/* 그림이 없으니 본문을 좁힐 이유도 없다 — 공용 폭으로 되돌린다 */
-.rk-page.is-event .main-inner{ max-width:1600px; }
 .rk-sky-bg{
   position:fixed; left:0; right:0;
   /* 상단 바는 고정이라 그 아래부터. 화면 높이를 꽉 채워 액자가 끊기지 않는다 */
@@ -81,6 +82,12 @@
   display:flex; align-items:center; justify-content:space-between;
   gap:16px; flex-wrap:wrap;
 }
+/* 소개 줄 길이가 탭마다 다르다("판정이 끝난…" vs "천하제일 단타대회 참가자의…").
+   글 칸이 줄어들 수 있어야 긴 쪽에서 버튼이 아래로 밀리지 않는다 — min-width 를
+   풀지 않으면 글이 제 폭을 고집해 버튼을 밀어낸다 */
+.rk-head > div:first-child{ flex:1 1 auto; min-width:0; }
+/* 줄바꿈이 일어나도 버튼은 늘 오른쪽 끝이다 */
+.rk-switch{ margin-left:auto; }
 
 /* 그림이 곧 버튼이다. 캐릭터가 테두리 밖으로 나오는 그림이라 배경·테두리를 주지 않는다 —
    주면 캐릭터 둘레에 네모가 생겨 그림이 상자 안에 갇힌다 */
@@ -115,9 +122,12 @@
   .rk-switch img{ animation:none; }
   .rk-switch:hover{ transform:none; }
 }
-/* 좁아지면 제목 아래로 내려온다. 그림이 250px 이라 제목과 한 줄에 못 선다 */
+/* 좁아지면 제목 아래로 내려온다. 그림이 250px 이라 제목과 한 줄에 못 선다.
+   **두 탭이 같이 내려가야 한다** — 한쪽만 내려가면 탭을 옮길 때 버튼이 위아래로 튄다.
+   세로로 쌓아 두면 소개 줄 길이와 무관하게 자리가 같다 */
 @media (max-width: 680px){
-  .rk-head{ align-items:flex-start; }
+  .rk-head{ flex-direction:column; align-items:flex-start; }
+  .rk-switch{ margin-left:0; }
   .rk-switch img{ width:210px; }
 }
 
