@@ -7,6 +7,71 @@
    섹터 칩(.rk-filters · .rk-sectors)도 지웠다 — 필터는 기간 하나만 남았다
    (2026-09-17, Ranking.tsx 머리말). */
 
+/* ── 떠다니는 하늘 배경 ─────────────────────────
+   랭킹 화면만 벽지를 갈아입는다. 배경 한 장을 깔고 그 위에 조각 아홉을 따로 띄운다.
+
+   **조각을 그림에 구워 두지 않는 이유.** 한 장으로 두면 아무리 예뻐도 가만히 있어
+   그냥 벽지가 된다. 낱개로 띄우면 저마다 다른 속도·방향으로 움직여, 화면을 보고
+   있는 동안 조금씩 달라진다.
+
+   **읽는 것이 먼저다.** 순위표가 주인공이라 조각은 전부 가장자리에 두고 가운데는
+   비운다. 표 뒤로는 절대 들어가지 않는다(가운데 40% 는 빈 띠). */
+.rk-page{ position:relative; isolation:isolate; }
+.rk-sky{
+  position:absolute; inset:0; z-index:-1;
+  overflow:hidden; pointer-events:none;
+  /* 배경은 화면 위쪽에만 깔린다. 목록이 길어지면 아래는 앱 바탕색으로 자연스럽게 잇는다 */
+  height:min(720px, 100%);
+  -webkit-mask-image:linear-gradient(#000 62%, transparent);
+          mask-image:linear-gradient(#000 62%, transparent);
+}
+.rk-sky-bg{
+  position:absolute; inset:0; width:100%; height:100%;
+  object-fit:cover; object-position:center top;
+}
+
+/* 조각 — **본문 바깥 여백에만** 둔다.
+   화면 비율로 흩뿌렸더니 제목 위로 올라와 글을 덮었다. 본문은 가운데 1120px 이므로
+   그 바깥으로 밀어 두면 어떤 높이에 있든 글과 겹칠 수 없다.
+
+   그래서 자리도 %가 아니라 calc(50% - 본문절반 - 조각폭) 으로 잡는다. 창을 넓히면
+   조각이 바깥으로 따라 나가고, 좁히면 아래 미디어 쿼리가 통째로 걷는다. */
+.rk-float{
+  position:absolute; display:block;
+  width:74px; opacity:.92;
+  filter:drop-shadow(0 8px 12px rgba(70,50,150,.18));
+  animation:rk-drift 9s ease-in-out infinite;
+}
+/* 위아래로만 흐른다. 좌우로 흔들면 글을 읽는 눈이 따라가 버린다 */
+@keyframes rk-drift{ 50%{ transform:translateY(-14px) } }
+@keyframes rk-drift-turn{ 50%{ transform:translateY(-16px) rotate(6deg) } }
+
+/* 왼쪽 여백 */
+.rk-float.f4{ left:calc(50% - 560px - 96px);  top:120px; width:70px;  animation-duration:11s;   animation-delay:-2s; }
+.rk-float.f7{ left:calc(50% - 560px - 70px);  top:272px; width:46px;  animation-duration:8s;    animation-delay:-5s; }
+.rk-float.f9{ left:calc(50% - 560px - 150px); top:400px; width:128px; opacity:.55; animation-duration:13s; }
+.rk-float.f8{ left:calc(50% - 560px - 62px);  top:36px;  width:40px;  animation-duration:10.5s; animation-delay:-7s; }
+
+/* 오른쪽 여백 — 1·2·3 블록이 주인공이라 가장 크다 */
+.rk-float.f1{ right:calc(50% - 560px - 162px); top:30px;  width:150px; animation:rk-drift-turn 10s ease-in-out infinite; }
+.rk-float.f2{ right:calc(50% - 560px - 66px);  top:196px; width:54px;  animation-duration:7.5s; animation-delay:-3s; }
+.rk-float.f3{ right:calc(50% - 560px - 104px); top:284px; width:82px;  animation-duration:12s;  animation-delay:-6s; }
+.rk-float.f5{ right:calc(50% - 560px - 74px);  top:396px; width:60px;  animation-duration:9.5s; animation-delay:-1s; }
+.rk-float.f6{ right:calc(50% - 560px - 58px);  top:480px; width:44px;  animation-duration:8.5s; animation-delay:-4s; }
+
+@media (prefers-reduced-motion: reduce){
+  .rk-float{ animation:none; }
+}
+/* 본문 1120 + 조각이 설 자리가 양쪽에 170씩은 있어야 한다. 그보다 좁으면 통째로 걷는다 */
+@media (max-width: 1460px){
+  .rk-float{ display:none; }
+  .rk-sky{ height:min(420px, 100%); }
+}
+
+/* 배경 위에 글이 올라온다. 회색 소개 줄은 연보라에 묻히므로 한 단 진하게 */
+.rk-page .page-head{ padding-top:10px; }
+.rk-page .page-head p{ color:var(--body); }
+
 /* ── 두 랭킹 오가기 ────────────────────────────
    세그먼트 알약 둘을 나란히 두던 자리다(2026-09-18 교체). 회색 알약 둘은 이벤트 랭킹을
    "또 하나의 필터" 처럼 보이게 했다. 지금은 보고 있는 쪽 이름을 머리가 말하고,

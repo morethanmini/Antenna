@@ -290,7 +290,27 @@ export default function Ranking() {
   }
 
   return (
-    <main className="main">
+    <main className="main rk-page">
+      {/* ── 떠다니는 배경 ──────────────────────────────────────
+          한 장짜리 배경 그림 위에 조각 아홉을 따로 띄운다. 조각을 그림에 구워 두면
+          가만히 있어 그냥 벽지가 되는데, 낱개로 띄우면 저마다 다른 속도로 떠서
+          화면이 살아 있는 것처럼 보인다.
+
+          **읽는 데 방해가 되면 안 된다.** 순위표가 주인공이라 조각은 전부 가장자리에
+          두고, 가운데는 비워 둔다. aria-hidden 으로 읽어 주는 기기에서는 건너뛴다. */}
+      <div className="rk-sky" aria-hidden="true">
+        <img className="rk-sky-bg" src="/assets/event/rank-bg.webp" alt="" />
+        <img className="rk-float f1" src="/assets/event/deco-123.webp" alt="" />
+        <img className="rk-float f2" src="/assets/event/deco-crown.webp" alt="" />
+        <img className="rk-float f3" src="/assets/event/deco-arrow.webp" alt="" />
+        <img className="rk-float f4" src="/assets/event/deco-line.webp" alt="" />
+        <img className="rk-float f5" src="/assets/event/deco-pie.webp" alt="" />
+        <img className="rk-float f6" src="/assets/event/deco-cube-blue.webp" alt="" />
+        <img className="rk-float f7" src="/assets/event/deco-cube-gray.webp" alt="" />
+        <img className="rk-float f8" src="/assets/event/deco-orb.webp" alt="" />
+        <img className="rk-float f9" src="/assets/event/deco-ring.webp" alt="" />
+      </div>
+
       <div className="main-inner">
         {/* 제목과 전환 버튼이 한 줄이다. 버튼이 오른쪽 위에 서야 제목과 눈높이가 맞고,
             아래 목록과 겹치지 않는다 */}
