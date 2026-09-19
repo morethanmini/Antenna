@@ -236,6 +236,14 @@ function Row({ sub, confirming, busy, error, onAsk, onCancelAsk, onConfirm }: Ro
         </p>
       )}
 
+      {/* 결제 실패. 만료와 갈라 말한다 — 만료는 있었다가 끝난 것, 이건 시작된 적이 없는 것.
+          돈이 빠져나갔는지가 첫 궁금증이라 그것부터 적는다. */}
+      {status === 'FAILED' && (
+        <p className="sb-note">
+          결제가 체인에서 실패해 구독이 시작되지 않았습니다. 토큰은 빠져나가지 않았습니다. 채널에서 다시 시도해 주세요.
+        </p>
+      )}
+
       {status === 'ACTIVE' && !renewEnabled && (
         <div className="sb-renew">
           <p className="sb-note">

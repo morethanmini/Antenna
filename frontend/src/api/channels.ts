@@ -20,7 +20,9 @@
    ⚠️ 이 주석을 반드시 같이 고친다. 09-08 자 옛 주석이 일주일 낡은 채 남아 있어서, 이미
    구현된 {userId}/predictions 를 "백엔드 없음" 으로 오판하게 만들었다. */
 import { api } from './client'
+import { releaseIdempotencyKey } from './idempotency'
 import type { ChannelPlatform } from './account'
+import type { OperationStatus } from './operations'
 import type { CursorList } from './types'
 import type { Direction, PredictionStatus } from './predictions'
 import type { WalletNonce } from './wallet'
@@ -61,9 +63,10 @@ export type ExternalLink = {
  *
  * status 가 null 이면 구독한 적이 없다. PENDING 은 결제가 체인에서 확정되기를
  * 기다리는 중이라 아직 열람 권한이 없다 — ACTIVE 와 같게 그리면 안 된다.
+ * FAILED 는 결제가 실패해 시작된 적이 없는 것이다 — EXPIRED(있었다가 끝남)와 다른 말을 쓴다.
  */
 export type MySubscription = {
-  status: 'PENDING' | 'ACTIVE' | 'EXPIRED' | null
+  status: 'PENDING' | 'ACTIVE' | 'EXPIRED' | 'FAILED' | null
   /** 개시 +30일. status 가 null 이면 없다 */
   expiresAt: string | null
   /** false 면 만료일에 끝난다(E-03 자동 갱신 해지) */
@@ -188,10 +191,26 @@ export type SubscribeBody = {
  * 멱등 키 scope. 채널마다 따로 둔다 — 두 채널을 잇달아 구독할 때 같은 키가 나가면
  * 뒤엣것이 앞엣것의 결과를 그대로 돌려받는다.
  *
- * 성공을 확인한 뒤 releaseIdempotencyKey 로 버린다. 서명을 다시 받아 재시도할 때는
- * 키를 유지해야 결제가 두 번 나가지 않는다(설계서 §1).
+ * 202 를 받은 뒤에 releaseIdempotencyKey 로 버린다(subscribe). 실패한 시도는 같은 키로
+ * 다시 나가야 서버가 중복으로 세지 않는다 — 서명은 nonce 라 재시도마다 새로 받지만,
+ * 서버가 본문 해시에 서명을 넣지 않아(SubscriptionController) 같은 키·같은 채널이면 재생이다.
+ *
+ * 전에는 키를 한 번도 버리지 않았다(2026-09-19 수정). 202 뒤 모달을 닫고 다시 누르면
+ * 같은 키에 새 서명이 나가 409 "이미 처리된 요청입니다" 가 났고, 새로고침 말고는
+ * 빠져나갈 길이 없었다(QA 09-18).
  */
 export const subscribeScope = (userId: string) => `subscription:${userId}`
+
+/**
+ * 202 본문. status 는 접수 시점의 작업 상태다 — 재생(같은 키 재요청)이면 이미 SUCCEEDED 나
+ * FAILED 일 수 있다. 화면은 어차피 operationId 로 폴링하므로 status 를 따로 읽지 않아도
+ * 같은 결론에 닿지만, 첫 응답에서 바로 알 수 있는 값을 버리지 않는다.
+ */
+export type SubscribeResponse = {
+  operationId: string
+  subscriptionId: number
+  status: OperationStatus
+}
 
 /**
  * 서명 대상 문자열. **서버 SubscriptionService.Signed.signingPayload 와 바이트가 같아야 한다.**
@@ -216,9 +235,13 @@ export function subscribeSigningPayload(publisherId: string, fee: string | null,
 }
 
 export function subscribe(userId: string, body: SubscribeBody) {
-  return api.post<{ operationId: string }>(`/channels/${userId}/subscriptions`, body, {
-    idempotencyScope: subscribeScope(userId),
+  const scope = subscribeScope(userId)
+  return api.post<SubscribeResponse>(`/channels/${userId}/subscriptions`, body, {
+    idempotencyScope: scope,
   })
+    /* 접수(202)를 받은 다음에야 키를 버린다. 그 뒤의 구독 시도는 새 요청이다 — 결제가
+       체인에서 실패해 다시 거는 경우가 그것이다. 예측 등록(createPrediction)과 같은 규칙. */
+    .then((r) => { releaseIdempotencyKey(scope); return r })
 }
 
 /* ── 표시 도우미 ───────────────────────────────────────

@@ -275,7 +275,7 @@ class SubscriptionControllerTest {
     // ── 체인 실패 · 서명 ─────────────────────────────────
 
     @Test
-    @DisplayName("체인 잔액이 모자라면 409 — 구독을 EXPIRED 로 닫아 재시도를 막지 않는다")
+    @DisplayName("체인 잔액이 모자라면 409 — 구독을 FAILED 로 닫아 재시도를 막지 않는다. 만료(EXPIRED)가 아니다")
     void 체인_잔액이_모자라면_구독을_닫는다() throws Exception {
         relayer.thenInsufficientBalance();
 
@@ -283,8 +283,9 @@ class SubscriptionControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("INSUFFICIENT_BALANCE"));
 
+        // 시작된 적 없는 구독이라 FAILED 다. EXPIRED 로 닫으면 화면이 "만료됨 · 다시 구독하기" 를 그린다(QA 09-18).
         assertThat(mine()).singleElement()
-                .extracting(Subscription::getStatus).isEqualTo(Subscription.Status.EXPIRED);
+                .extracting(Subscription::getStatus).isEqualTo(Subscription.Status.FAILED);
         // 닫혔으니 다시 시도할 수 있다 — 안 닫으면 PENDING 이 남아 중복 검사에 걸린다.
         mockMvc.perform(subscribe("key-chain-retry")).andExpect(status().isAccepted());
     }
@@ -319,17 +320,18 @@ class SubscriptionControllerTest {
     }
 
     @Test
-    @DisplayName("같은 멱등키로 같은 본문을 다시 보내면 접수를 되풀이하지 않고 같은 202 를 준다")
+    @DisplayName("같은 멱등키로 서명만 새로 받아 다시 보내면 접수를 되풀이하지 않고 같은 202 를 준다")
     void 멱등키가_같으면_한_번만_접수한다() throws Exception {
-        // 본문을 다시 만들면 nonce 가 달라져 서명이 바뀐다 — 그건 "같은 키·다른 본문" 이라 409 다.
-        // 재시도가 실제로 보내는 것은 같은 본문이므로 여기서도 같은 것을 보낸다.
-        String body = signedBody(publisher.getId(), FEE);
-
+        // 재시도는 본문을 다시 만든다 — nonce 가 새로 발급돼 서명이 바뀐다(SignatureGuard 가
+        // 첫 시도의 nonce 를 태워서 같은 서명을 다시 보낼 길이 없다). 그래도 같은 키·같은 채널이면
+        // 재생이어야 한다. 전에는 서명이 해시에 들어가 이 경우가 409 였다(2026-09-19 수정).
         String first = jsonValue(
-                mockMvc.perform(send(body, "key-same")).andExpect(status().isAccepted()).andReturn(),
+                mockMvc.perform(send(signedBody(publisher.getId(), FEE), "key-same"))
+                        .andExpect(status().isAccepted()).andReturn(),
                 "operationId");
         String again = jsonValue(
-                mockMvc.perform(send(body, "key-same")).andExpect(status().isAccepted()).andReturn(),
+                mockMvc.perform(send(signedBody(publisher.getId(), FEE), "key-same"))
+                        .andExpect(status().isAccepted()).andReturn(),
                 "operationId");
 
         assertThat(again).isEqualTo(first);
@@ -339,16 +341,19 @@ class SubscriptionControllerTest {
     }
 
     @Test
-    @DisplayName("같은 키에 다른 본문이면 409 IDEMPOTENCY_KEY_REUSED — 키를 돌려 쓰며 내용만 바꾸는 것을 막는다")
-    void 같은_키_다른_본문은_409() throws Exception {
+    @DisplayName("같은 키로 다른 채널을 찍으면 409 IDEMPOTENCY_KEY_REUSED — 키를 돌려 쓰며 대상만 바꾸는 것을 막는다")
+    void 같은_키_다른_채널은_409() throws Exception {
+        User other = insertUser("다른 예측가", "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC");
+        setFee(other, FEE, Instant.now().minus(1, ChronoUnit.DAYS));
 
-        mockMvc.perform(send(signedBody(publisher.getId(), FEE), "key-reuse"))
+        mockMvc.perform(send(publisher.getId(), signedBody(publisher.getId(), FEE), "key-reuse"))
                 .andExpect(status().isAccepted());
-        mockMvc.perform(send(signedBody(publisher.getId(), FEE), "key-reuse"))
+        mockMvc.perform(send(other.getId(), signedBody(other.getId(), FEE), "key-reuse"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("IDEMPOTENCY_KEY_REUSED"));
 
         assertThat(mine()).hasSize(1);
+        assertThat(relayer.calls()).hasSize(1);
     }
 
     // ── 게이팅 (이 엔드포인트의 존재 이유) ────────────────
@@ -408,7 +413,11 @@ class SubscriptionControllerTest {
     }
 
     private MockHttpServletRequestBuilder send(String body, String key) {
-        return post("/api/v1/channels/{userId}/subscriptions", publisher.getId())
+        return send(publisher.getId(), body, key);
+    }
+
+    private MockHttpServletRequestBuilder send(Long publisherId, String body, String key) {
+        return post("/api/v1/channels/{userId}/subscriptions", publisherId)
                 .with(user(String.valueOf(subscriber.getId()))).with(csrf())
                 .header("Idempotency-Key", key)
                 .contentType(MediaType.APPLICATION_JSON)

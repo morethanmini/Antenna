@@ -41,10 +41,11 @@ import ErrorState from '../components/state/ErrorState'
 import WalletLinkModal from '../components/wallet/WalletLinkModal'
 import '../styles/screens/channel-profile.css'
 
-const SUB_LABEL: Record<'PENDING' | 'ACTIVE' | 'EXPIRED', string> = {
+const SUB_LABEL: Record<'PENDING' | 'ACTIVE' | 'EXPIRED' | 'FAILED', string> = {
   PENDING: '결제 확인 중',
   ACTIVE: '구독 중',
   EXPIRED: '만료됨',
+  FAILED: '결제 실패',
 }
 
 /** 지표가 null 이면 "—" 다. 0 으로 그리면 "한 번도 못 맞혔다" 로 읽힌다 */
@@ -301,9 +302,20 @@ export default function ChannelProfile() {
                     구독하기
                   </button>
                 ) : (
-                  <button type="button" className="ch-sub-cta" onClick={() => setSubscribing(true)}>
-                    {sub?.status === 'EXPIRED' ? '다시 구독하기' : '구독하기'}
-                  </button>
+                  <>
+                    {/* 결제가 실패해 시작된 적 없는 구독. "만료됨" 과 다른 말을 쓴다 — 만료는 있었다가
+                        끝난 것이고 이건 시작된 적이 없다. 돈이 빠져나갔는지가 첫 궁금증이라 그것부터. */}
+                    {sub?.status === 'FAILED' && (
+                      <p className="ch-sub-until">
+                        지난번 결제가 체인에서 실패해 구독이 시작되지 않았습니다. 토큰은 빠져나가지 않았습니다.
+                      </p>
+                    )}
+                    <button type="button" className="ch-sub-cta" onClick={() => setSubscribing(true)}>
+                      {sub?.status === 'EXPIRED' ? '다시 구독하기'
+                        : sub?.status === 'FAILED' ? '다시 시도하기'
+                        : '구독하기'}
+                    </button>
+                  </>
                 )}
               </section>
             )}

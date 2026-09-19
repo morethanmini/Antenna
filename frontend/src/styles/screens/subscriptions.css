@@ -39,6 +39,8 @@
 .sb-badge{ flex:0 0 auto; padding:3px 10px; border-radius:999px; font-size:var(--fs-xs); font-weight:var(--fw-heavy); }
 .sb-badge.is-active{ background:#e7f5ec; color:#15803d; }
 .sb-badge.is-expired{ background:var(--rule); color:var(--muted); }
+/* 결제 실패. 만료와 같은 회색이 아니라 "다시 해 볼 수 있는 일" 로 읽히게 붉은 기를 얹는다 */
+.sb-badge.is-failed{ background:#fdecec; color:#b3202c; }
 
 /* flex:1 로 남는 높이를 먹어 아래 안내·조작이 카드 바닥에 붙는다. align-content 가 없으면 줄이 벌어진다 */
 /* 관심 섹터. 이름 아래 작게 — 금액보다 먼저 '무엇을 보는 사람인가' 가 읽혀야 한다.

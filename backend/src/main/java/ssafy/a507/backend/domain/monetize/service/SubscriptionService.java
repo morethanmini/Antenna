@@ -78,11 +78,11 @@ public class SubscriptionService {
         try {
             tokenOperationService.dispatchSubscribe(accepted.operationId(), publisherId, accepted.fee());
         } catch (RuntimeException e) {
-            // 전송이 못 나갔으면 구독도 닫는다. 안 닫으면 영원히 PENDING 인 행이 남아 중복 구독을
+            // 전송이 못 나갔으면 구독도 FAILED 로 닫는다. 안 닫으면 영원히 PENDING 인 행이 남아 중복 구독을
             // 막는 검사에 걸려, 사용자가 다시 시도할 수 없게 된다. 작업 자체는 TokenOperationService 가
-            // FAILED 로 닫는다.
+            // FAILED 로 닫는다. (2026-09-19 전에는 expire() 로 닫아 화면에 "만료됨" 으로 보였다.)
             tx.executeWithoutResult(
-                    s -> subscriptions.findById(accepted.subscriptionId()).ifPresent(Subscription::expire));
+                    s -> subscriptions.findById(accepted.subscriptionId()).ifPresent(Subscription::fail));
             throw e;
         }
         // 전송 뒤에도 PENDING 이다 — tx 해시만 붙었고 확정은 인덱서 몫이다.
@@ -132,10 +132,12 @@ public class SubscriptionService {
                         .orElseThrow(() -> new BusinessException(ErrorCode.FEE_NOT_SET, "userId"));
 
         // PENDING 도 막는다 — 확정을 기다리는 중에 한 번 더 누르면 같은 채널에 두 번 결제된다.
-        // 만료된 구독은 막지 않는다. 재구독은 정상이고, 그때는 새 행이 생긴다.
+        // 만료(EXPIRED)·실패(FAILED)한 구독은 막지 않는다. 재구독·재시도는 정상이고, 그때는 새 행이 생긴다.
+        // "막는 상태" 를 적는다 — 열린 상태를 빼는 식이면 다음 값을 추가할 때 또 막힌다(FAILED 가 그랬다).
         subscriptions
                 .findLatestBetween(subscriberId, publisherId, Limit.of(1))
-                .filter(s -> s.getStatus() != Subscription.Status.EXPIRED)
+                .filter(s -> s.getStatus() == Subscription.Status.PENDING
+                        || s.getStatus() == Subscription.Status.ACTIVE)
                 .ifPresent(s -> {
                     throw new BusinessException(ErrorCode.ALREADY_SUBSCRIBED, "userId");
                 });
