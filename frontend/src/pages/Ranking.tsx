@@ -212,13 +212,17 @@ function RankingBoard({ track }: { track: Track }) {
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.userId}>
-                <td className="rk-col-rank num">{r.rank}</td>
+              <tr key={r.userId} className={r.rank <= 3 ? 'is-top' : undefined}>
+                {/* 1~3 위만 메달로 세운다 — 표 전체에 색을 뿌리면 위계가 사라진다 */}
+                <td className="rk-col-rank">
+                  <span className={`rk-rank num${r.rank <= 3 ? ` rk-medal is-${r.rank}` : ''}`}>{r.rank}</span>
+                </td>
                 <td>
                   {/* 예측가 이름은 채널 프로필(E-02)로 가는 문이다 */}
                   <Link className="rk-name" to={`/channels/${r.userId}`}>{r.nickname}</Link>
                 </td>
-                <td className="rk-col-num num">{metric(r.score, 1)}</td>
+                {/* 점수가 이 표의 정렬 기준이라 가장 굵다 */}
+                <td className="rk-col-num rk-col-score num">{metric(r.score, 1)}</td>
                 <td className="rk-col-num num">{metric(r.hitRate, 1, '%')}</td>
                 <td className="rk-col-num num">{metric(r.avgError, 2)}</td>
                 <td className="rk-col-num num">{r.doneCount.toLocaleString('ko-KR')}</td>

@@ -15,13 +15,44 @@
    **화면에 고정한다(fixed).** 문서에 붙여 두면 스크롤할 때 그림이 위로 흘러가
    테두리가 사라진다. 고정하면 목록이 아무리 길어도 액자가 늘 화면을 두른다.
 
-   **본문을 좁힌다. 두 탭 모두.** 공용 .main-inner 는 1600px 이라 본문이 테두리까지
-   덮는다. 순위표는 열이 여섯뿐이라 좁혀도 읽기에 지장이 없고, 남는 양옆이 곧 그림 자리다.
+   본문 폭은 그 빈 가운데에 맞춘다 — 바로 아래 .main-inner 를 보라. */
+.rk-page{
+  position:relative; isolation:isolate;
+
+  /* 배경 그림의 실측값. 본문 폭이 여기서 나온다.
+     - 가로세로비 1920/1081 = 1.776
+     - 그림 요소가 없는 가운데 구간이 1920px 중 468~1509px, 곧 24.4%~78.6%
+
+     **빈 구간이 그림 한가운데가 아니다.** 중심이 51.5% 라 오른쪽으로 치우쳐 있고
+     본문은 화면 정가운데에 서므로, 늘 **왼쪽이 먼저 닿는다.** 그래서 54.2%(양끝 차)가
+     아니라 좁은 왼쪽 절반을 두 배 한 51.2% 를 쓴다. 넓은 쪽에 맞추면 캐릭터를 덮는다.
+
+     실제로 쓰는 값은 거기서 조금 더 깎은 49% 다. 딱 51.2% 로 두면 1920px 에서 카드와
+     그림 사이가 9px 밖에 안 남아 닿은 것처럼 보인다. 2% 를 양보해 40px 쯤 띄운다. */
+  --rk-art-ratio:1.776;
+  --rk-art-clear:.49;
+
+  /* 화면에 그려지는 배경의 실제 가로 길이. object-fit:cover 라 가로·세로 중
+     모자란 쪽이 기준이 되므로 둘 중 큰 값이다. width:106% 를 곱한 106vw 가 가로 기준.
+     세로 기준일 때는 그림이 화면보다 넓어져 양옆이 잘린다 — 그만큼 그림이
+     안쪽으로 밀려들어오므로, 이 계산을 빼면 중간 폭(1300~1700px)에서 본문이
+     캐릭터와 1·2·3 블록을 덮는다. 제일 넓은 화면이 아니라 여기가 제일 위험하다. */
+  --rk-art-w:max(106vw, calc((100vh - var(--topbar-h)) * var(--rk-art-ratio)));
+}
+
+/* **본문을 그림의 빈 가운데에 맞춘다. 두 탭 모두.** 공용 .main-inner 는 1600px 이라
+   본문이 테두리까지 덮는다. 순위표는 열이 여섯뿐이라 좁혀도 읽기에 지장이 없고,
+   남는 양옆이 곧 그림 자리다.
+
+   고정 폭이 아니라 clamp 인 이유 — 빈 가운데의 픽셀 폭이 화면 크기에 따라 변한다.
+   위쪽은 1080px 에서 멈춘다(더 벌리면 표가 헐거워진다). 아래쪽 820px 은 여섯 열이
+   가로 스크롤 없이 들어가는 하한이고, 여기까지 내려온 화면은 아래에서 배경을 흐려 둔다.
 
    그림이 없는 이벤트 탭도 같은 폭을 쓴다 — 폭이 다르면 오른쪽 위 전환 버튼이 탭마다
    다른 자리에 서서, 누르는 순간 버튼이 옆으로 튄다. */
-.rk-page{ position:relative; isolation:isolate; }
-.rk-page .main-inner{ max-width:1080px; }
+.rk-page .main-inner{
+  max-width:clamp(820px, calc(var(--rk-art-w) * var(--rk-art-clear)), 1080px);
+}
 
 .rk-sky{
   position:absolute; left:0; right:0; top:0; bottom:0; z-index:-1;
@@ -67,8 +98,12 @@
 /* 표는 그림 위에 얹힌 카드다. 살짝 띄워야 배경에 눌어붙어 보이지 않는다 */
 .rk-page .rk-table-wrap{ box-shadow:0 14px 34px -24px rgba(60,40,140,.6); }
 
-/* 좁아지면 테두리가 설 자리가 없다. 그림을 흐릿하게 깔아 글만 읽히게 한다 */
-@media (max-width: 1240px){
+/* 좁아지면 테두리가 설 자리가 없다. 그림을 흐릿하게 깔아 글만 읽히게 한다.
+
+   1240px 이 아니라 1500px 인 이유 — 배경은 화면을 꽉 채우느라(cover) 좁을수록 확대돼
+   테두리 그림이 안쪽으로 밀려든다. 본문 하한(820px)이 그보다 먼저 걸려 1500px 아래에서는
+   덮는 것을 못 피한다. 부딪히게 두는 대신 그림을 흐려 뒤로 보낸다. */
+@media (max-width: 1500px){
   .rk-sky-bg{ opacity:.45; }
 }
 
@@ -212,11 +247,45 @@
 .rk-table tbody tr:last-child td{ border-bottom:0; }
 .rk-table tbody tr:hover{ background:var(--brand-softer); }
 
-.rk-col-rank{ width:64px; text-align:center; font-weight:var(--fw-bold); color:var(--ink); }
-.rk-col-num{ text-align:right; }
+/* 정렬은 th·td 를 함께 적어야 한다 — 위의 `.rk-table th, .rk-table td` 가
+   (0,2,1) 이라 `.rk-col-num` (0,2,0) 만으로는 왼쪽 정렬에 진다. 숫자가 왼쪽에
+   서면 자릿수가 어긋나 위아래 비교가 되지 않는다. */
+.rk-table th.rk-col-rank,
+.rk-table td.rk-col-rank{ width:72px; text-align:center; }
+.rk-table th.rk-col-num,
+.rk-table td.rk-col-num{ text-align:right; }
 
-.rk-name{ color:var(--ink); font-weight:var(--fw-normal); text-decoration:none; }
+/* 순위 숫자. 1~3 위만 메달을 쓰고 나머지는 같은 자리에 숫자만 선다 —
+   폭·높이가 같아 한 줄로 내려오는 세로선이 흔들리지 않는다. */
+.rk-rank{
+  display:inline-grid; place-items:center;
+  min-width:26px; height:26px; border-radius:999px;
+  font-size:var(--fs-md); font-weight:var(--fw-bold); color:var(--muted);
+}
+.rk-medal{ font-size:var(--fs-sm); font-weight:var(--fw-heavy); }
+/* 이벤트 표(.rke-medal)와 같은 색이다 — 두 탭이 같은 등수를 다른 색으로 부르면 안 된다 */
+.rk-medal.is-1{ background:linear-gradient(180deg,#ffd76a,#e8a91c); color:#4a3a06; }
+.rk-medal.is-2{ background:linear-gradient(180deg,#dfe7f5,#a9bcd6); color:#33415c; }
+.rk-medal.is-3{ background:linear-gradient(180deg,#f6c9ae,#d9946a); color:#5a3620; }
+
+/* 위쪽 세 줄만 아주 옅게 띄운다. hover 는 이보다 진해야 하므로 아래에서 다시 덮는다 */
+.rk-table tbody tr.is-top{ background:linear-gradient(90deg,var(--brand-softer),transparent 62%); }
+.rk-table tbody tr.is-top:hover{ background:var(--brand-softer); }
+
+/* 위계 — 이름과 점수가 1순위, 적중률이 2순위, 나머지는 참고값이다.
+   전부 같은 굵기로 두면 어디를 봐야 할지 알 수 없다. */
+.rk-name{ color:var(--ink); font-weight:var(--fw-bold); text-decoration:none; }
 .rk-name:hover{ color:var(--brand-ink); text-decoration:underline; }
+.rk-table tbody tr.is-top .rk-name{ color:var(--brand-ink); }
+
+.rk-table td.rk-col-score{
+  font-size:var(--fs-xl); font-weight:var(--fw-heavy);
+  color:var(--ink); letter-spacing:-.01em;
+}
+/* 점수 뒤 세 열은 근거다 — 뒤로 물린다 */
+.rk-table td.rk-col-num ~ td.rk-col-num{
+  font-size:var(--fs-md); font-weight:var(--fw-normal); color:var(--body);
+}
 
 /* ── 더 보기 · 로딩 ──────────────────────────── */
 .rk-more{
