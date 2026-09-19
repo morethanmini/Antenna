@@ -24,6 +24,17 @@
   position:absolute; left:0; right:0; top:0; bottom:0; z-index:-1;
   overflow:hidden; pointer-events:none;
 }
+
+/* ── 서비스 랭킹: 바탕색만 ──────────────────────
+   상시 보는 화면이라 조용해야 한다. 그림의 물체(1·2·3 블록·왕관)는 대회의 말이라
+   여기 두면 뜻이 어긋나기도 한다. 색은 **그 그림에서 뽑았다** — 따로 고른 색이 아니라
+   같은 세계의 색이라 이벤트 탭과 이어진다. */
+.rk-page.is-accuracy .rk-sky{
+  background:linear-gradient(180deg,#f2f2fd 0%,#e6eafc 22%,#d8e4fc 48%,#e6eefd 72%,var(--ground) 100%);
+}
+.rk-page.is-accuracy .rk-sky-bg{ display:none; }
+/* 그림이 없으니 본문을 좁힐 이유도 없다 — 공용 폭으로 되돌린다 */
+.rk-page.is-accuracy .main-inner{ max-width:1600px; }
 .rk-sky-bg{
   position:fixed; left:0; right:0;
   /* 상단 바는 고정이라 그 아래부터. 화면 높이를 꽉 채워 액자가 끊기지 않는다 */
@@ -44,9 +55,10 @@
   .rk-sky-bg{ animation:none; }
 }
 
-/* 그림 위에 글이 올라온다. 회색 소개 줄은 연보라에 묻히므로 한 단 진하게 */
+/* 그림 위에 글이 올라온다. 연한 바탕이라 회색 소개 줄이 묻힌다 —
+   --muted 도 --body 도 얇게 뜬다. 본문색에 한 단 굵기를 더해 또렷하게 세운다 */
 .rk-page .page-head{ padding-top:14px; }
-.rk-page .page-head p{ color:var(--body); }
+.rk-page .page-head p{ color:var(--ink); font-weight:var(--fw-normal); }
 
 /* 표는 그림 위에 얹힌 카드다. 살짝 띄워야 배경에 눌어붙어 보이지 않는다 */
 .rk-page .rk-table-wrap{ box-shadow:0 14px 34px -24px rgba(60,40,140,.6); }
