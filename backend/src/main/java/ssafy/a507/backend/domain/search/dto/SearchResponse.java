@@ -10,7 +10,7 @@ import ssafy.a507.backend.domain.market.dto.StockSearchItem;
  */
 public record SearchResponse(List<StockSearchItem> stocks, List<Channel> channels, List<ReportItem> reports) {
 
-    /** @param hitRate 실전 전체 랭킹 스냅샷의 적중률(%, 0~100) — 랭킹 화면과 같은 숫자 */
+    /** @param hitRate 실전 전체 랭킹 스냅샷의 적중률(%, 0~100) — 랭킹 화면과 같은 숫자. 랭킹에 못 든 회원이면 null */
     public record Channel(Long userId, String nickname, BigDecimal hitRate) {}
 
     /** @param author 작성자 닉네임 */

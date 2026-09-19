@@ -6,6 +6,7 @@ import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.common.Track;
 import ssafy.a507.backend.domain.ranking.entity.Ranking;
 
@@ -41,22 +42,31 @@ public interface RankingRepository extends JpaRepository<Ranking, Long> {
             Limit limit);
 
     /**
-     * 통합 검색의 예측가 칸(ANT-DATA-05) — 한 스냅샷(트랙·필터) 안에서 닉네임 부분일치, 순위순.
+     * 통합 검색의 예측가 칸(ANT-DATA-05) — <b>회원</b>에서 닉네임 부분일치로 찾고, 한 스냅샷(트랙·필터)의
+     * 순위·적중률을 곁들인다. 랭킹에 든 사람이 먼저(순위순), 나머지는 닉네임순이다.
+     *
+     * <p>전에는 랭킹 스냅샷 안에서만 찾았다(2026-09-19 까지). 랭킹은 판정 3건이 쌓이고 배치가 돈 뒤에야
+     * 들어가므로 그 전인 사람은 닉네임을 정확히 쳐도 나오지 않았다 — 예측가를 닉네임으로 찾는 길이 통합
+     * 검색뿐인데 "찾아서 구독" 이 대부분의 채널에서 막혀 있었다. 뿌리를 회원으로 옮기고 랭킹은 left join 한다.
+     *
+     * <p>닉네임을 아직 정하지 않은 회원(null·빈 문자열)은 검색어가 비어 있지 않으므로 LIKE 에서 저절로 빠진다.
      *
      * @param contains 소문자 · LIKE 이스케이프('!')를 마친 {@code %q%}
+     * @param status 검색에 나올 회원 상태 — 제재된 회원은 빼려고 ACTIVE 를 넘긴다
      */
     @Query("""
-            select r from Ranking r
-             join fetch r.user u
-             where r.track = :track
-               and r.filterKey = :filterKey
+            select new ssafy.a507.backend.domain.ranking.repository.NicknameHit(u.id, u.nickname, r.hitRate)
+              from User u
+              left join Ranking r on r.user = u and r.track = :track and r.filterKey = :filterKey
+             where u.status = :status
                and lower(u.nickname) like :contains escape '!'
-             order by r.rank asc, u.id asc
+             order by case when r.rank is null then 1 else 0 end, r.rank asc, u.nickname asc, u.id asc
             """)
-    List<Ranking> searchByNickname(
+    List<NicknameHit> searchByNickname(
             @Param("track") Track track,
             @Param("filterKey") String filterKey,
             @Param("contains") String contains,
+            @Param("status") User.Status status,
             Limit limit);
 
     /** 내 순위 한 줄(ANT-RANK-03). 없으면 빈 값 — 배치 전이거나 표본이 모자라 랭킹에 안 든 것이다. */
