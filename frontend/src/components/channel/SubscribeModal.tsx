@@ -44,7 +44,7 @@ type Step = 'confirm' | 'signing' | 'waiting' | 'done'
 type Props = {
   channel: Channel
   onClose: () => void
-  /** ACTIVE 가 되면 호출부가 채널을 다시 읽는다 */
+  /** 접수(202)되거나 ACTIVE 가 되면 호출부가 채널을 다시 읽는다. 두 번 불려도 같은 뜻이다 */
   onSubscribed: () => void
   /** 지갑이 없을 때. 이 모달이 M-01 을 직접 띄우면 모달 2겹이 된다 */
   onNeedWallet: () => void
@@ -112,12 +112,16 @@ export default function SubscribeModal({ channel, onClose, onSubscribed, onNeedW
       const { operationId: id } = await subscribe(channel.userId, { signature })
       setOperationId(id)
       setStep('waiting')
+      /* 접수된 순간부터 뒤 화면은 낡았다. 여기서 알리지 않으면 확정 전에 닫았을 때
+         호출부가 채널을 다시 읽지 않아 "구독하기" 버튼이 그대로 남고, 다시 누르면
+         PENDING 중복으로 409 다(QA 09-18). 다시 읽으면 '결제 확인 중' 배지가 선다. */
+      onSubscribed()
     } catch (e) {
       setError(e as ApiError)
       /* nonce 를 들고 있지 않아 M-01 처럼 payload 를 살려 둘 것이 없다 — 확인 단계로
          돌리면 다음 시도가 nonce 발급부터 다시 한다.
-         멱등 키는 유지된다(api/channels.ts subscribeScope). 서명만 다시 받아
-         재시도해도 결제가 두 번 나가지 않는다. */
+         멱등 키는 202 를 받기 전까지 유지된다(api/channels.ts subscribe). 서명만 다시 받아
+         재시도해도 서버가 같은 키·같은 채널을 재생하므로 결제가 두 번 나가지 않는다. */
       setStep('confirm')
     }
   }
