@@ -7,86 +7,44 @@
    섹터 칩(.rk-filters · .rk-sectors)도 지웠다 — 필터는 기간 하나만 남았다
    (2026-09-17, Ranking.tsx 머리말). */
 
-/* ── 떠다니는 하늘 배경 ─────────────────────────
-   랭킹 화면만 벽지를 갈아입는다. 배경 한 장을 깔고 그 위에 조각 아홉을 따로 띄운다.
+/* ── 하늘 배경 ─────────────────────────────────
+   랭킹 화면만 벽지를 갈아입는다. 완성된 그림 한 장이고, 그림 자체가 아주 느리게
+   흔들린다.
 
-   **조각을 그림에 구워 두지 않는 이유.** 한 장으로 두면 아무리 예뻐도 가만히 있어
-   그냥 벽지가 된다. 낱개로 띄우면 저마다 다른 속도·방향으로 움직여, 화면을 보고
-   있는 동안 조금씩 달라진다.
-
-   **읽는 것이 먼저다.** 순위표가 주인공이라 조각은 전부 가장자리에 두고 가운데는
-   비운다. 표 뒤로는 절대 들어가지 않는다(가운데 40% 는 빈 띠). */
+   **조각을 낱개로 띄우던 것을 걷었다(2026-09-19).** 오려 낸 조각을 본문 바깥에
+   세우려면 자리를 본문 폭에 맞춰 하나씩 잡아야 했는데, 공용 .main-inner 가
+   1600px 이라 넓은 화면에서 조각이 표 위를 덮었다. 그림에 이미 같은 물체가 그려져
+   있어 나란히 놓이면 겹쳐 보이기도 했다. 한 장을 통째로 움직이면 이 둘이 같이 없어진다. */
 .rk-page{ position:relative; isolation:isolate; }
-
-/* **이 화면만 본문을 좁힌다.** 공용 .main-inner 는 max-width:1600px 이라 넓은 화면에서
-   본문이 화면을 거의 다 먹는다. 그러면 조각이 설 여백이 없어 표 위로 올라온다.
-   순위표는 열이 여섯뿐이라 1600px 에서는 값 사이가 휑하기도 하다 — 좁히는 편이
-   읽기에도 낫고, 남은 양옆이 조각 자리가 된다. */
-.rk-page .main-inner{ max-width:1180px; }
-/* **판은 페이지 전체를 덮는다.** 처음엔 위 720px 로 잘라 뒀는데, 목록이 길어지면
-   아래쪽이 텅 빈 흰 바탕으로 남아 조각이 하나도 안 보였다. 판을 끝까지 늘리고
-   그림만 위쪽에 두면, 아래는 앱 바탕색이면서도 조각은 계속 떠 있다. */
 .rk-sky{
   position:absolute; left:0; right:0; bottom:0; z-index:-1;
-  /* 상단 바는 고정이라 그 아래부터 깔아야 그림 윗부분이 안 잘린다 */
+  /* 상단 바는 고정이라 그 아래부터 깔아야 그림 윗부분이 안 가려진다 */
   top:var(--topbar-h);
   overflow:hidden; pointer-events:none;
 }
-/* 그림은 위쪽 띠에만. 아래로 갈수록 사라져 앱 바탕색으로 자연스럽게 이어진다 */
 .rk-sky-bg{
-  position:absolute; left:0; right:0; top:0;
-  width:100%; height:min(720px, 100%);
+  position:absolute; left:0; top:0;
+  /* 흔들릴 여유만큼 넘겨 깐다 — 딱 맞게 깔면 움직이는 순간 가장자리에 빈 틈이 보인다 */
+  width:106%; height:min(760px, 100%);
+  margin-left:-3%;
   object-fit:cover; object-position:center top;
   -webkit-mask-image:linear-gradient(#000 58%, transparent);
           mask-image:linear-gradient(#000 58%, transparent);
+  /* 아주 느리게. 22초면 보고 있는 동안 "움직인다" 가 아니라 "살아 있다" 로 읽힌다 */
+  animation:rk-sway 22s ease-in-out infinite;
+  will-change:transform;
 }
-
-/* 조각 — **본문 바깥 여백에만** 둔다.
-   화면 비율로 흩뿌렸더니 제목 위로 올라와 글을 덮었다. 본문은 가운데 1120px 이므로
-   그 바깥으로 밀어 두면 어떤 높이에 있든 글과 겹칠 수 없다.
-
-   그래서 자리도 %가 아니라 calc(50% - 본문절반 - 조각폭) 으로 잡는다. 창을 넓히면
-   조각이 바깥으로 따라 나가고, 좁히면 아래 미디어 쿼리가 통째로 걷는다. */
-.rk-float{
-  position:absolute; display:block;
-  width:74px; opacity:.92;
-  filter:drop-shadow(0 8px 12px rgba(70,50,150,.18));
-  animation:rk-drift 9s ease-in-out infinite;
+/* 좌우로 흐르며 아주 조금 커졌다 작아진다. 한 축만 움직이면 미끄러지는 것으로 보인다 */
+@keyframes rk-sway{
+  0%, 100%{ transform:translate3d(0, 0, 0) scale(1); }
+  33%     { transform:translate3d(-1.2%, -6px, 0) scale(1.02); }
+  66%     { transform:translate3d(1.2%, 4px, 0) scale(1.01); }
 }
-/* 위아래로만 흐른다. 좌우로 흔들면 글을 읽는 눈이 따라가 버린다 */
-@keyframes rk-drift{ 50%{ transform:translateY(-14px) } }
-@keyframes rk-drift-turn{ 50%{ transform:translateY(-16px) rotate(6deg) } }
-
-/* 왼쪽 여백 */
-.rk-float.f4{ left:calc(50% - 590px - 96px);  top:120px; width:70px;  animation-duration:11s;   animation-delay:-2s; }
-.rk-float.f7{ left:calc(50% - 590px - 70px);  top:272px; width:46px;  animation-duration:8s;    animation-delay:-5s; }
-.rk-float.f9{ left:calc(50% - 590px - 150px); top:400px; width:128px; opacity:.55; animation-duration:13s; }
-.rk-float.f8{ left:calc(50% - 590px - 62px);  top:36px;  width:40px;  animation-duration:10.5s; animation-delay:-7s; }
-
-/* 오른쪽 여백 — 1·2·3 블록이 주인공이라 가장 크다 */
-.rk-float.f1{ right:calc(50% - 590px - 162px); top:30px;  width:150px; animation:rk-drift-turn 10s ease-in-out infinite; }
-.rk-float.f2{ right:calc(50% - 590px - 66px);  top:196px; width:54px;  animation-duration:7.5s; animation-delay:-3s; }
-.rk-float.f3{ right:calc(50% - 590px - 104px); top:284px; width:82px;  animation-duration:12s;  animation-delay:-6s; }
-.rk-float.f5{ right:calc(50% - 590px - 74px);  top:396px; width:60px;  animation-duration:9.5s; animation-delay:-1s; }
-.rk-float.f6{ right:calc(50% - 590px - 58px);  top:480px; width:44px;  animation-duration:8.5s; animation-delay:-4s; }
-
-/* 아래쪽 몫 — 바닥에서 재 올라온다.
-   위에서 px 로만 잡으면 목록 길이와 무관하게 늘 같은 자리라, 스크롤해 내려가면
-   조각이 하나도 없다. bottom 으로 잡아야 목록이 길든 짧든 아래에도 떠 있다. */
-.rk-float.f10{ left:calc(50% - 590px - 84px);  bottom:90px;  width:52px; animation-duration:9s;    animation-delay:-2s; }
-.rk-float.f11{ left:calc(50% - 590px - 60px);  bottom:280px; width:42px; animation-duration:11.5s; animation-delay:-6s; }
-.rk-float.f14{ left:calc(50% - 590px - 108px); bottom:470px; width:64px; animation-duration:10s;   animation-delay:-3s; }
-.rk-float.f12{ right:calc(50% - 590px - 70px);  bottom:140px; width:50px; animation-duration:8s;    animation-delay:-4s; }
-.rk-float.f13{ right:calc(50% - 590px - 96px);  bottom:330px; width:74px; animation-duration:12.5s; animation-delay:-1s; }
-.rk-float.f15{ right:calc(50% - 590px - 58px);  bottom:560px; width:44px; animation-duration:9.5s;  animation-delay:-7s; }
-
 @media (prefers-reduced-motion: reduce){
-  .rk-float{ animation:none; }
+  .rk-sky-bg{ animation:none; }
 }
-/* 본문 1180 + 조각이 설 자리가 양쪽에 170씩은 있어야 한다. 그보다 좁으면 통째로 걷는다 */
-@media (max-width: 1540px){
-  .rk-float{ display:none; }
-  /* 조각이 없으면 그림만 남는다. 띠를 낮춰 배경이 화면을 덜 먹게 한다 */
+/* 좁아지면 띠를 낮춘다 — 배경이 화면을 너무 먹으면 목록이 아래로 밀린다 */
+@media (max-width: 1100px){
   .rk-sky-bg{ height:min(420px, 100%); }
 }
 
