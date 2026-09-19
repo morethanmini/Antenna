@@ -110,6 +110,14 @@ public class SeasonParticipant {
         this.currentDay++;
     }
 
+    /**
+     * 남은 게임일을 주문 없이 넘긴다 — "건너뛰고 종료"(2026-09-19). 하루씩 {@link #advance()} 를
+     * 여러 번 부른 것과 같은 자리에 선다. 뒤로는 가지 않는다.
+     */
+    public void skipTo(int lastDay) {
+        this.currentDay = Math.max(this.currentDay, lastDay);
+    }
+
     /** 마지막 게임일에서 종료. 결과(season_results)는 호출부가 만든다. */
     public void finish() {
         this.status = Status.DONE;

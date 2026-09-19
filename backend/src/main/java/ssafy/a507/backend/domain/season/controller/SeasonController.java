@@ -180,10 +180,15 @@ public class SeasonController {
                 currentUserProvider.currentUserId(), seasonId, request.expectedDay());
     }
 
-    /** 종료 — 마지막 게임일에서 결과를 굳힌다. 이미 끝난 회차면 같은 결과를 다시 준다. */
+    /**
+     * 종료 — 마지막 게임일에서 결과를 굳힌다. 이미 끝난 회차면 같은 결과를 다시 준다.
+     * {@code skipRemaining=true} 면 마지막 게임일 전이어도 남은 날을 주문 없이 넘긴 것으로 치고 끝낸다.
+     */
     @PostMapping("/{seasonId}/finish")
-    public SeasonFinishResponse finish(@PathVariable Long seasonId) {
-        return seasonPlayService.finish(currentUserProvider.currentUserId(), seasonId);
+    public SeasonFinishResponse finish(
+            @PathVariable Long seasonId,
+            @RequestParam(defaultValue = "false") boolean skipRemaining) {
+        return seasonPlayService.finish(currentUserProvider.currentUserId(), seasonId, skipRemaining);
     }
 
     /** 최종 결과. 끝나지 않은 회차면 404. AI 복기는 아직 null 이다(ANT-SEASON-09). */

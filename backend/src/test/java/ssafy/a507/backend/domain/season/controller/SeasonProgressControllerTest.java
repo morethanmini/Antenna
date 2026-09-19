@@ -174,6 +174,44 @@ class SeasonProgressControllerTest {
     }
 
     @Test
+    @DisplayName("건너뛰고 종료 — skipRemaining 이면 남은 게임일을 주문 없이 넘긴 것으로 치고 마지막 날 종가로 정산한다")
+    void 건너뛰고_종료() throws Exception {
+        order("k-1", tickerA, "BUY", 100).andExpect(status().isCreated());
+
+        // 1일차에서 바로 끝낸다. 보유 100주는 마지막 날(3일차) 종가 60,000 으로 평가된다
+        mockMvc.perform(post(url("/finish")).param("skipRemaining", "true").with(user(me)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.finalAsset").value(29000000))
+                .andExpect(jsonPath("$.returnRate").value(-3.333));
+
+        assertThat(participantStatus()).isEqualTo("DONE");
+        assertThat(currentDay()).isEqualTo(3);
+        order("k-2", tickerA, "SELL", 100)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("SEASON_ATTEMPT_ENDED"));
+    }
+
+    @Test
+    @DisplayName("건너뛰기 — 대회는 409 SEASON_ADVANCE_NOT_ALLOWED · 복기가 실패하면 게임일도 그대로다")
+    void 건너뛰기_거절과_실패() throws Exception {
+        Long competition = insertSeason("COMPETITION", "대회", 3);
+        insertParticipant(competition, Long.valueOf(me), 1, 1, "ONGOING");
+        em.flush();
+        em.clear();
+        mockMvc.perform(post("/api/v1/seasons/" + competition + "/finish")
+                        .param("skipRemaining", "true").with(user(me)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("SEASON_ADVANCE_NOT_ALLOWED"));
+
+        willThrow(new AiException("GMS 호출 실패")).given(aiClient).complete(anyString(), anyString());
+        mockMvc.perform(post(url("/finish")).param("skipRemaining", "true").with(user(me)))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("SEASON_REVIEW_FAILED"));
+        assertThat(participantStatus()).isEqualTo("ONGOING");
+        assertThat(currentDay()).isEqualTo(1);
+    }
+
+    @Test
     @DisplayName("종료하면 회차가 DONE 이 되고 성과 지표가 체결·가격에서 계산된다")
     void 종료와_성과_지표() throws Exception {
         order("k-1", tickerA, "BUY", 100).andExpect(status().isCreated());

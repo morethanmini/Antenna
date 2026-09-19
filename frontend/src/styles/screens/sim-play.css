@@ -371,6 +371,14 @@
 .sp-advance.is-done:hover{background:var(--brand-ink)}
 .sp-advance em{font-style:normal;font-size:var(--fs-2xs)}
 
+/* 건너뛰고 종료. 진행 버튼 아래의 글자 버튼 — 늘 쓰는 길이 아니라서 테두리도 칠도 없다 */
+.sp-skip{
+  display:block;width:100%;margin-top:6px;padding:6px 0;
+  color:var(--muted);font-size:var(--fs-sm);font-weight:var(--fw-bold);text-decoration:underline;text-underline-offset:3px;
+}
+.sp-skip:hover:not(:disabled){color:var(--brand-ink)}
+.sp-skip:disabled{color:var(--faint);cursor:default;text-decoration:none}
+
 .sp-note{margin:8px 0 0;color:var(--muted);font-size:var(--fs-xs);font-weight:var(--fw-bold);text-align:center}
 
 /* ── 왼쪽 · 포트폴리오 ──────────────────────────────── */
