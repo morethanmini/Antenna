@@ -36,6 +36,7 @@ class SeasonReviewServiceTest {
                 new SeasonReviewService(client, new AiProperties("k", null, null, "v1"));
 
         assertThat(service.review("재료")).isEqualTo("잘한 판단: …");
-        assertThat(service.promptVersion()).isEqualTo("v1");
+        // 공용 app.ai.prompt-version(v1)을 따르지 않는다 — 올리면 시장 브리핑까지 다시 만든다
+        assertThat(service.promptVersion()).isEqualTo("review-2");
     }
 }
