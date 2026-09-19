@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
 import ssafy.a507.backend.common.security.CurrentUserProvider;
+import ssafy.a507.backend.common.throttle.CommentThrottle;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.account.repository.UserRepository;
 import ssafy.a507.backend.domain.community.dto.AuthorResponse;
@@ -59,6 +60,11 @@ public class CommentService {
         FeedPost post = visiblePost(postId);
         User author = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHENTICATED));
+        CommentThrottle.check(
+                postCommentRepository.countByUser_IdAndCreatedAtAfter(userId, CommentThrottle.windowStart()),
+                postCommentRepository.findFirstByPost_IdAndUser_IdOrderByIdDesc(postId, userId)
+                        .map(PostComment::getBody).orElse(null),
+                request.body());
 
         PostComment comment = PostComment.create(post, author, request.body());
         return postCommentRepository.save(comment).getId();

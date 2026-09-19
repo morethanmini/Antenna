@@ -27,6 +27,9 @@ import '../styles/notification.css'
 /** 두 자리를 넘으면 폭이 들쭉날쭉해진다. 정확한 수보다 "많다" 가 중요한 자리다 */
 const BADGE_MAX = 99
 
+/** 뱃지를 다시 읽는 주기. 알림은 초 단위로 급하지 않고, 짧게 잡으면 탭 수만큼 서버를 두드린다 */
+const POLL_MS = 30_000
+
 export default function NotificationBell() {
   /* Escape 로 닫았을 때 초점을 돌려놓을 자리. 안 돌려놓으면 초점이 body 로
      떨어져, 키보드만 쓰는 사람은 Tab 을 처음부터 다시 눌러야 한다. */
@@ -51,6 +54,21 @@ export default function NotificationBell() {
 
   /* 처음 한 번. 뱃지는 팝업을 열기 전에도 보여야 한다 */
   useEffect(() => { void load() }, [load])
+
+  /* 그 뒤로는 주기적으로 다시 읽는다(2026-09-19, QA 09-18 "알림 개수가 늦게 뜸 · 종이 즉시 갱신되지
+     않음"). 셸은 화면을 옮겨도 다시 마운트되지 않아서, 전에는 팝업을 열기 전까지 뱃지가 처음 값
+     그대로였다. 안 보는 탭에서는 쉬고, 돌아오는 순간 한 번 읽는다. load 는 loading 을 세우지 않아
+     열려 있는 팝업이 깜빡이지 않는다.
+     ponytail: 폴링이다 — 최대 POLL_MS 만큼 늦다. 서버가 STOMP(/user/queue/notifications)로 밀어 주면 걷는다. */
+  useEffect(() => {
+    const tick = () => { if (document.visibilityState === 'visible') void load() }
+    const timer = window.setInterval(tick, POLL_MS)
+    document.addEventListener('visibilitychange', tick)
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', tick)
+    }
+  }, [load])
 
   /* 여기서부터는 사용자 조작이라 loading 을 세워도 된다 */
   const reload = useCallback(() => { setLoading(true); void load() }, [load])

@@ -108,7 +108,9 @@
 }
 .sub-btn:hover{ border-color:var(--brand-soft); background:var(--brand-softer); color:var(--brand-ink); }
 .sub-btn.solid{ border-color:var(--brand); background:var(--brand); color:#fff; }
-.sub-btn.solid:hover{ background:var(--brand-ink); border-color:var(--brand-ink); color:#fff; }
+.sub-btn.solid:hover:not(:disabled){ background:var(--brand-ink); border-color:var(--brand-ink); color:#fff; }
+/* 잔액이 모자라 서명으로 못 가는 상태. 왜 꺼졌는지는 바로 위 안내가 말한다 */
+.sub-btn:disabled{ opacity:.45; cursor:default; }
 
 @media (max-width:520px){
   .sub-actions{ flex-direction:column-reverse; }

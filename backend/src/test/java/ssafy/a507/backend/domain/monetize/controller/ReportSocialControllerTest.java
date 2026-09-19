@@ -204,6 +204,46 @@ class ReportSocialControllerTest {
         }
 
         @Test
+        @DisplayName("같은 리포트에 같은 내용을 연달아 쓰면 409 COMMENT_DUPLICATED — 내용이 다르면 된다")
+        void 같은_내용_연속_거절() throws Exception {
+            Long reportId = insertReport(authorId, "공개 리포트", true);
+            flush();
+
+            writeComment(reportId, readerId, "잘 읽었습니다").andExpect(status().isCreated());
+            // 앞뒤 공백만 다른 것도 같은 내용이다
+            writeComment(reportId, readerId, "  잘 읽었습니다 ")
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value("COMMENT_DUPLICATED"));
+            writeComment(reportId, readerId, "질문이 있습니다").andExpect(status().isCreated());
+            // 다른 사람이 같은 말을 하는 것은 막지 않는다
+            writeComment(reportId, authorId, "질문이 있습니다").andExpect(status().isCreated());
+        }
+
+        @Test
+        @DisplayName("1분에 5개까지 — 여섯 번째는 429 COMMENT_RATE_LIMITED 이고 알림도 늘지 않는다. 1분이 지난 댓글은 세지 않는다")
+        void 도배_제한() throws Exception {
+            Long reportId = insertReport(authorId, "공개 리포트", true);
+            em.createNativeQuery(
+                            "INSERT INTO report_comments (report_id, user_id, body, status, created_at)"
+                                    + " VALUES (?, ?, '오래된 댓글', 'VISIBLE', ?)")
+                    .setParameter(1, reportId)
+                    .setParameter(2, readerId)
+                    .setParameter(3, java.time.Instant.now().minusSeconds(120))
+                    .executeUpdate();
+            flush();
+
+            for (int i = 1; i <= 5; i++) {
+                writeComment(reportId, readerId, "댓글 " + i).andExpect(status().isCreated());
+            }
+            writeComment(reportId, readerId, "댓글 6")
+                    .andExpect(status().isTooManyRequests())
+                    .andExpect(jsonPath("$.code").value("COMMENT_RATE_LIMITED"));
+            flush();
+
+            assertThat(countNotifications(authorId, "REPORT_COMMENT")).isEqualTo(5);
+        }
+
+        @Test
         @DisplayName("작성하면 201 과 id, 목록에 실린다")
         void 댓글_작성() throws Exception {
             Long reportId = insertReport(authorId, "공개 리포트", true);
@@ -537,6 +577,15 @@ class ReportSocialControllerTest {
     }
 
     /** 커뮤니티의 {@code /comments/{id}/like} 와 경로를 나눈 이유는 컨트롤러 주석에 적어 두었다. */
+    private org.springframework.test.web.servlet.ResultActions writeComment(
+            Long reportId, Long userId, String body) throws Exception {
+        return mockMvc.perform(post(commentsUrl(reportId))
+                .with(user(str(userId)))
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(java.util.Map.of("body", body))));
+    }
+
     private static String commentLikeUrl(Long commentId) {
         return "/api/v1/report-comments/" + commentId + "/like";
     }
