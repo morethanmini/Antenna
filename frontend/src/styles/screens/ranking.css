@@ -17,17 +17,20 @@
    **읽는 것이 먼저다.** 순위표가 주인공이라 조각은 전부 가장자리에 두고 가운데는
    비운다. 표 뒤로는 절대 들어가지 않는다(가운데 40% 는 빈 띠). */
 .rk-page{ position:relative; isolation:isolate; }
+/* **판은 페이지 전체를 덮는다.** 처음엔 위 720px 로 잘라 뒀는데, 목록이 길어지면
+   아래쪽이 텅 빈 흰 바탕으로 남아 조각이 하나도 안 보였다. 판을 끝까지 늘리고
+   그림만 위쪽에 두면, 아래는 앱 바탕색이면서도 조각은 계속 떠 있다. */
 .rk-sky{
   position:absolute; inset:0; z-index:-1;
   overflow:hidden; pointer-events:none;
-  /* 배경은 화면 위쪽에만 깔린다. 목록이 길어지면 아래는 앱 바탕색으로 자연스럽게 잇는다 */
-  height:min(720px, 100%);
-  -webkit-mask-image:linear-gradient(#000 62%, transparent);
-          mask-image:linear-gradient(#000 62%, transparent);
 }
+/* 그림은 위쪽 띠에만. 아래로 갈수록 사라져 앱 바탕색으로 자연스럽게 이어진다 */
 .rk-sky-bg{
-  position:absolute; inset:0; width:100%; height:100%;
+  position:absolute; left:0; right:0; top:0;
+  width:100%; height:min(720px, 100%);
   object-fit:cover; object-position:center top;
+  -webkit-mask-image:linear-gradient(#000 58%, transparent);
+          mask-image:linear-gradient(#000 58%, transparent);
 }
 
 /* 조각 — **본문 바깥 여백에만** 둔다.
@@ -59,13 +62,24 @@
 .rk-float.f5{ right:calc(50% - 560px - 74px);  top:396px; width:60px;  animation-duration:9.5s; animation-delay:-1s; }
 .rk-float.f6{ right:calc(50% - 560px - 58px);  top:480px; width:44px;  animation-duration:8.5s; animation-delay:-4s; }
 
+/* 아래쪽 몫 — 바닥에서 재 올라온다.
+   위에서 px 로만 잡으면 목록 길이와 무관하게 늘 같은 자리라, 스크롤해 내려가면
+   조각이 하나도 없다. bottom 으로 잡아야 목록이 길든 짧든 아래에도 떠 있다. */
+.rk-float.f10{ left:calc(50% - 560px - 84px);  bottom:90px;  width:52px; animation-duration:9s;    animation-delay:-2s; }
+.rk-float.f11{ left:calc(50% - 560px - 60px);  bottom:280px; width:42px; animation-duration:11.5s; animation-delay:-6s; }
+.rk-float.f14{ left:calc(50% - 560px - 108px); bottom:470px; width:64px; animation-duration:10s;   animation-delay:-3s; }
+.rk-float.f12{ right:calc(50% - 560px - 70px);  bottom:140px; width:50px; animation-duration:8s;    animation-delay:-4s; }
+.rk-float.f13{ right:calc(50% - 560px - 96px);  bottom:330px; width:74px; animation-duration:12.5s; animation-delay:-1s; }
+.rk-float.f15{ right:calc(50% - 560px - 58px);  bottom:560px; width:44px; animation-duration:9.5s;  animation-delay:-7s; }
+
 @media (prefers-reduced-motion: reduce){
   .rk-float{ animation:none; }
 }
 /* 본문 1120 + 조각이 설 자리가 양쪽에 170씩은 있어야 한다. 그보다 좁으면 통째로 걷는다 */
 @media (max-width: 1460px){
   .rk-float{ display:none; }
-  .rk-sky{ height:min(420px, 100%); }
+  /* 조각이 없으면 그림만 남는다. 띠를 낮춰 배경이 화면을 덜 먹게 한다 */
+  .rk-sky-bg{ height:min(420px, 100%); }
 }
 
 /* 배경 위에 글이 올라온다. 회색 소개 줄은 연보라에 묻히므로 한 단 진하게 */

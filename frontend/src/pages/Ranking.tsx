@@ -309,6 +309,14 @@ export default function Ranking() {
         <img className="rk-float f7" src="/assets/event/deco-cube-gray.webp" alt="" />
         <img className="rk-float f8" src="/assets/event/deco-orb.webp" alt="" />
         <img className="rk-float f9" src="/assets/event/deco-ring.webp" alt="" />
+        {/* 아래쪽 몫. 같은 조각을 크기·속도만 달리해 다시 쓴다 — 파일이 늘지 않고
+            브라우저도 이미 받아 둔 것을 그대로 그린다 */}
+        <img className="rk-float f10" src="/assets/event/deco-cube-blue.webp" alt="" />
+        <img className="rk-float f11" src="/assets/event/deco-orb.webp" alt="" />
+        <img className="rk-float f12" src="/assets/event/deco-crown.webp" alt="" />
+        <img className="rk-float f13" src="/assets/event/deco-arrow.webp" alt="" />
+        <img className="rk-float f14" src="/assets/event/deco-line.webp" alt="" />
+        <img className="rk-float f15" src="/assets/event/deco-cube-gray.webp" alt="" />
       </div>
 
       <div className="main-inner">
