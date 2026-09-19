@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
 import ssafy.a507.backend.common.security.CurrentUserProvider;
+import ssafy.a507.backend.common.throttle.CommentThrottle;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.account.entity.Notification;
 import ssafy.a507.backend.domain.account.repository.NotificationRepository;
@@ -141,6 +142,11 @@ public class ReportSocialService {
         Long userId = currentUserProvider.currentUserId();
         Report report = openReport(reportId, userId);
         User author = currentUser(userId);
+        CommentThrottle.check(
+                reportCommentRepository.countByUser_IdAndCreatedAtAfter(userId, CommentThrottle.windowStart()),
+                reportCommentRepository.findFirstByReport_IdAndUser_IdOrderByIdDesc(reportId, userId)
+                        .map(ReportComment::getBody).orElse(null),
+                request.body());
 
         ReportComment comment = ReportComment.create(report, author, request.body());
         Long id = reportCommentRepository.save(comment).getId();

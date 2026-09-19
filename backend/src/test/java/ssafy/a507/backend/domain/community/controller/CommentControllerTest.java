@@ -72,6 +72,31 @@ class CommentControllerTest {
     }
 
     @Test
+    @DisplayName("도배 제한 — 같은 글에 같은 내용 연속은 409 COMMENT_DUPLICATED, 1분에 5개를 넘기면 429 COMMENT_RATE_LIMITED")
+    void 댓글_도배_제한() throws Exception {
+        for (int i = 1; i <= 5; i++) {
+            String body = "{ \"body\": \"댓글 " + i + "\" }";
+            mockMvc.perform(post(commentsUrl(postId))
+                            .with(user(String.valueOf(viewerId))).with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON).content(body))
+                    .andExpect(status().isCreated());
+            if (i == 1) {
+                mockMvc.perform(post(commentsUrl(postId))
+                                .with(user(String.valueOf(viewerId))).with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON).content(body))
+                        .andExpect(status().isConflict())
+                        .andExpect(jsonPath("$.code").value("COMMENT_DUPLICATED"));
+            }
+        }
+        mockMvc.perform(post(commentsUrl(postId))
+                        .with(user(String.valueOf(viewerId))).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"body\": \"댓글 6\" }"))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("COMMENT_RATE_LIMITED"));
+    }
+
+    @Test
     @DisplayName("댓글이 500자를 넘으면 400 INVALID_REQUEST")
     void 댓글_상한_초과는_400() throws Exception {
         mockMvc.perform(post(commentsUrl(postId))

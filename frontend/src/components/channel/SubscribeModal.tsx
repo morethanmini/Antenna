@@ -28,7 +28,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { subscribe, subscribeSigningPayload, type Channel } from '../../api/channels'
 import { ERROR_CODE, type ApiError } from '../../api/errors'
 import { useOperation } from '../../api/operations'
-import { formatToken, requestNonce } from '../../api/wallet'
+import { fetchWalletBalance, formatToken, requestNonce } from '../../api/wallet'
+import { useBlock } from '../../api/useBlock'
 import { connectAddress, hasWallet, personalSign } from '../../wallet/provider'
 import { useAuth } from '../../auth/context'
 import { errorText } from '../state/errorText'
@@ -57,6 +58,7 @@ export default function SubscribeModal({ channel, onClose, onSubscribed, onNeedW
   const [operationId, setOperationId] = useState<string | null>(null)
 
   const op = useOperation(operationId)
+  const wallet = useBlock(() => fetchWalletBalance(), [])
   const dialogRef = useRef<HTMLDivElement>(null)
 
   const closable = step !== 'signing'
@@ -132,6 +134,15 @@ export default function SubscribeModal({ channel, onClose, onSubscribed, onNeedW
      칸이 비면 얼마가 빠져나가는지 모르는 채로 서명하게 된다. */
   const fee = channel.fee === null ? '금액 미정' : `${formatToken(channel.fee)} ANT`
 
+  /* 잔액이 구독료보다 적으면 서명까지 가지 않는다(2026-09-19, QA 09-18 "0원인데 구독을 누르면 결제 확인 중").
+     서버는 이미 INSUFFICIENT_BALANCE 로 막지만 그건 지갑 서명을 받은 **뒤**다 — 헛서명을 시키지 않는다.
+     잔액을 못 읽었으면 막지 않는다. 모르는 것으로 구독을 막을 수는 없고, 서버가 마지막에 본다.
+     ponytail: 이 숫자는 원장(token_ledger) 합이라 서버가 보는 체인 가용잔액과 드물게 어긋난다 —
+     GET /wallet/balance 가 가용잔액을 내리면 그걸로 바꾼다(PredictTab 의 배팅 잠금과 같은 한계). */
+  const balance = wallet.data?.balance
+  const short = channel.fee !== null && !!balance
+    && /^\d+$/.test(balance) && /^\d+$/.test(channel.fee) && BigInt(balance) < BigInt(channel.fee)
+
   return (
     <div className="sub-backdrop" onClick={close} role="presentation">
       <div
@@ -192,9 +203,16 @@ export default function SubscribeModal({ channel, onClose, onSubscribed, onNeedW
               </p>
             )}
 
+            {short && (
+              <p className="sub-error" role="alert">
+                <b>ANT 잔액이 부족합니다</b>
+                <span>{`보유 ${formatToken(balance)} ANT · 구독료 ${fee}. 지갑에서 잔액을 확인해 주세요.`}</span>
+              </p>
+            )}
+
             <div className="sub-actions">
               <button type="button" className="sub-btn" onClick={close}>취소</button>
-              <button type="button" className="sub-btn solid" onClick={() => void start()}>
+              <button type="button" className="sub-btn solid" disabled={short} onClick={() => void start()}>
                 서명하고 구독하기
               </button>
             </div>
