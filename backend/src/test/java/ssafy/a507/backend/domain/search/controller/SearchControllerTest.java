@@ -126,14 +126,28 @@ class SearchControllerTest {
     }
 
     @Test
-    @DisplayName("예측가는 실전 전체 랭킹에 든 사람만, 순위순으로 적중률(%)과 함께")
-    void 예측가는_랭킹에서_찾는다() throws Exception {
+    @DisplayName("예측가는 닉네임 있는 전 회원에서 찾는다 — 실전 전체 랭킹에 든 사람이 먼저(순위순), 나머지는 닉네임순 · 적중률 null")
+    void 예측가는_전_회원에서_찾는다() throws Exception {
         mockMvc.perform(get(URL).param("q", "삼성").with(viewer()))
-                .andExpect(jsonPath("$.channels.length()").value(2))
+                .andExpect(jsonPath("$.channels.length()").value(3))
                 .andExpect(jsonPath("$.channels[0].nickname").value("삼성고수"))
                 .andExpect(jsonPath("$.channels[0].hitRate").value(78.6))
                 .andExpect(jsonPath("$.channels[1].nickname").value("삼성개미"))
-                .andExpect(jsonPath("$.channels[1].userId").isNumber());
+                .andExpect(jsonPath("$.channels[1].userId").isNumber())
+                // 랭킹에 못 든 회원(모의투자 랭킹만 있는 사람 포함)도 닉네임으로 찾아진다 — 적중률은 없다
+                .andExpect(jsonPath("$.channels[2].nickname").value("삼성초보"))
+                .andExpect(jsonPath("$.channels[2].hitRate").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("제재된 회원은 예측가 검색에 나오지 않는다")
+    void 제재_회원은_빠진다() throws Exception {
+        em.createNativeQuery("UPDATE users SET status = 'BANNED' WHERE nickname = '삼성초보'").executeUpdate();
+        em.flush();
+        em.clear();
+
+        mockMvc.perform(get(URL).param("q", "삼성").with(viewer()))
+                .andExpect(jsonPath("$.channels.length()").value(2));
     }
 
     @Test
