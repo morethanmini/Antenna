@@ -451,6 +451,8 @@ export default function SeasonPlay() {
   const changeQty = (n: number) => setQty(Math.min(maxQty, Math.max(0, Math.floor(n) || 0)))
   const amount = price === null ? 0 : orderAmount(price, qty)
   const percent = s.lengthDays > 0 ? Math.round((sim.day / s.lengthDays) * 100) : 0
+  /** 남은 게임일. 건너뛰고 종료 버튼과 확인창이 같은 수를 말한다 */
+  const left = Math.max(0, s.lengthDays - sim.day)
 
   /* RSI 를 켜면 아래에 칸이 하나 더 붙는다. 그때만 카드가 길어지면 오른쪽 주문
      패널과의 높이 균형이 켤 때마다 달라져 화면이 뛴다. 차트가 그만큼 양보해서
@@ -500,7 +502,8 @@ export default function SeasonPlay() {
   /* 종료가 서버에 박힌 뒤에만 결과로 간다. 서버는 finish 에서 성적표와 AI 복기를 같이
      만들어 저장하고, 실패하면 아무것도 저장하지 않는다 — 그때는 창을 닫고 이유를 보인다. */
   async function finishAndGo() {
-    if (await sim.finish()) navigate(`/sim/${seasonId}/result`)
+    /* 마지막 게임일 전에 이 창이 열렸다면 "건너뛰고 종료" 로 들어온 것이다 */
+    if (await sim.finish(!sim.isLastDay)) navigate(`/sim/${seasonId}/result`)
     else finishDialog.current?.close()
   }
 
@@ -819,6 +822,20 @@ export default function SeasonPlay() {
                   {sim.pending ? '진행 중…' : '다음 영업일 진행'}
                 </button>
               )}
+              {/* 건너뛰고 종료(2026-09-19, QA 09-18 "30일을 일일이 다 눌러야 함"). 남은 날에 더 할
+                  일이 없는 사람이 "다음 영업일" 을 수십 번 누르지 않고 끝낸다. 바로 끝내지 않고
+                  마지막 날과 **같은 확인창**을 거친다 — 되돌릴 수 없고, 보유분이 어느 날 값으로
+                  평가되는지 알고 눌러야 한다. 대회는 "다음 영업일" 과 마찬가지로 서버가 막는다(409). */}
+              {!sim.isLastDay && (
+                <button
+                  type="button"
+                  className="sp-skip"
+                  disabled={sim.pending}
+                  onClick={() => finishDialog.current?.showModal()}
+                >
+                  남은 {left}일 건너뛰고 종료
+                </button>
+              )}
               <p className="sp-note">
                 {sim.isLastDay
                   ? '마지막 게임일입니다. 진행은 여기까지입니다.'
@@ -834,7 +851,20 @@ export default function SeasonPlay() {
                 aria-labelledby="sp-finish-title"
                 onCancel={(e) => { if (sim.pending) e.preventDefault() }}
               >
-                <h2 id="sp-finish-title">모의투자를 종료하고 결과를 볼까요?</h2>
+                <h2 id="sp-finish-title">
+                  {sim.isLastDay
+                    ? '모의투자를 종료하고 결과를 볼까요?'
+                    : `남은 ${left}일을 건너뛰고 종료할까요?`}
+                </h2>
+                {/* 건너뛸 때만 하는 말. 남은 날이 어떻게 처리되고 보유분이 어느 날 값으로
+                    평가되는지 — 이걸 모르고 누르면 "오늘 값으로 끝나는 줄 알았다" 가 된다. */}
+                {!sim.isLastDay && (
+                  <p>
+                    남은 게임일은 <b>주문 없이 지나간 것으로</b> 처리합니다.
+                    <br />
+                    지금 보유한 종목은 <b>마지막 게임일 종가</b>로 평가됩니다.
+                  </p>
+                )}
                 <p>
                   종료하면 더 이상 주문도 진행도 할 수 없습니다.
                   <br />

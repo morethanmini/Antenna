@@ -184,9 +184,15 @@ export type SeasonFinishResult = {
  * 이 회차를 끝낸다. <b>되돌릴 수 없다</b> — 회차가 DONE 이 되어 주문도 진행도 막힌다.
  * 마지막 게임일에서만 부를 수 있고(아니면 409 SEASON_NOT_LAST_DAY), 이미 끝난 회차면
  * 저장해 둔 같은 결과를 다시 준다.
+ *
+ * @param skipRemaining 건너뛰고 종료(v0.82). 마지막 게임일 전이어도 끝낸다 — 서버가 남은 날을
+ *   주문 없이 넘긴 것으로 치고 **마지막 게임일 종가**로 정산한다. 하루씩 끝까지 넘긴 것과 같다.
  */
-export const finish = (seasonId: number) =>
-  api.post<SeasonFinishResult>(`/seasons/${seasonId}/finish`)
+export const finish = (seasonId: number, skipRemaining = false) =>
+  api.post<SeasonFinishResult>(
+    `/seasons/${seasonId}/finish`, undefined,
+    skipRemaining ? { query: { skipRemaining: true } } : undefined,
+  )
 
 /** season_results 전체 — 성적표 + 점수·등급·AI 복기. 점수·등급은 아직 null 이다 */
 export type SeasonResultData = SeasonFinishResult & {

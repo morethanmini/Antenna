@@ -223,9 +223,16 @@ public class SeasonPlayService {
      * 잠그고 다시 검증한 뒤 지표를 다시 계산해 복기와 함께 저장. 복기 생성이 실패하면 아무것도
      * 저장하지 않는다(503 SEASON_REVIEW_FAILED) — 회차는 ONGOING 그대로라 다시 시도할 수 있다.
      * 지표를 ③에서 다시 계산하는 이유는 ①과 ③ 사이에 주문이 끼어들 수 있어서다.
+     *
+     * <p><b>건너뛰고 종료</b>({@code skipRemaining}, 2026-09-19 · QA 09-18 "30일을 일일이 다 눌러야 함").
+     * 마지막 게임일 전이어도 받는다 — 남은 날을 <b>주문 없이 넘긴 것으로 치고</b> 마지막 날 종가로
+     * 정산한다(팀장 결정). "다음 영업일" 을 남은 만큼 누른 것과 결과가 같다: 성과 계산은 원래부터
+     * {@code lengthDays} 까지의 종가를 쓰므로({@link #compute}) 계산은 손대지 않고, 게임일만 ③에서
+     * 마지막 날로 옮긴다. ③에서 옮기는 이유는 복기가 실패하면 아무것도 바뀌지 않아야 해서다 —
+     * ①에서 옮기면 실패한 뒤 회차가 마지막 날에 가 있다. 수동 진행이 없는 대회는 건너뛸 수도 없다.
      */
-    public SeasonFinishResponse finish(Long userId, Long seasonId) {
-        Prepared p = tx.execute(status -> prepare(userId, seasonId));
+    public SeasonFinishResponse finish(Long userId, Long seasonId, boolean skipRemaining) {
+        Prepared p = tx.execute(status -> prepare(userId, seasonId, skipRemaining));
         if (p.done()) {
             return p.response();
         }
@@ -236,13 +243,26 @@ public class SeasonPlayService {
             log.warn("[SEASON-09] 복기 생성 실패 user={} season={} — {}", userId, seasonId, e.getMessage());
             throw new BusinessException(ErrorCode.SEASON_REVIEW_FAILED);
         }
-        return tx.execute(status -> commit(userId, seasonId, review));
+        return tx.execute(status -> commit(userId, seasonId, review, skipRemaining));
+    }
+
+    /** 마지막 게임일 전인데 끝내려는가 — 건너뛰기가 아니면 409, 대회면 건너뛰기도 409. */
+    private static void requireLastDayOrSkip(SeasonParticipant me, Season season, boolean skipRemaining) {
+        if (me.getCurrentDay() >= season.getLengthDays()) {
+            return;
+        }
+        if (!skipRemaining) {
+            throw new BusinessException(ErrorCode.SEASON_NOT_LAST_DAY);
+        }
+        if (season.getMode() == Season.Mode.COMPETITION) {
+            throw new BusinessException(ErrorCode.SEASON_ADVANCE_NOT_ALLOWED);
+        }
     }
 
     /** ①의 결과. done 이면 더 할 일이 없어 response 를 그대로 준다. 아니면 aiInput 이 있다. */
     private record Prepared(boolean done, SeasonFinishResponse response, String aiInput) {}
 
-    private Prepared prepare(Long userId, Long seasonId) {
+    private Prepared prepare(Long userId, Long seasonId, boolean skipRemaining) {
         SeasonParticipant me = myAttempt(userId, seasonId);
         Season season = me.getSeason();
         if (me.getStatus() == SeasonParticipant.Status.DONE) {
@@ -258,14 +278,12 @@ public class SeasonPlayService {
         if (!me.isOngoing()) {
             throw new BusinessException(ErrorCode.SEASON_ATTEMPT_ENDED);
         }
-        if (me.getCurrentDay() < season.getLengthDays()) {
-            throw new BusinessException(ErrorCode.SEASON_NOT_LAST_DAY);
-        }
+        requireLastDayOrSkip(me, season, skipRemaining);
         List<SeasonTrade> trades = tradeRepository.findByParticipant_IdOrderByIdAsc(me.getId());
         return new Prepared(false, null, SeasonReviewService.input(season, trades, compute(season, trades)));
     }
 
-    private SeasonFinishResponse commit(Long userId, Long seasonId, String review) {
+    private SeasonFinishResponse commit(Long userId, Long seasonId, String review, boolean skipRemaining) {
         SeasonParticipant me = participantRepository
                 .lockById(myAttempt(userId, seasonId).getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.SEASON_NOT_JOINED));
@@ -282,12 +300,11 @@ public class SeasonPlayService {
             throw new BusinessException(ErrorCode.SEASON_ATTEMPT_ENDED);
         }
         Season season = me.getSeason();
-        if (me.getCurrentDay() < season.getLengthDays()) {
-            throw new BusinessException(ErrorCode.SEASON_NOT_LAST_DAY);
-        }
+        requireLastDayOrSkip(me, season, skipRemaining);
         List<SeasonTrade> trades = tradeRepository.findByParticipant_IdOrderByIdAsc(me.getId());
         SeasonResultCalculator.Result r = compute(season, trades);
 
+        me.skipTo(season.getLengthDays());
         me.finish();
         SeasonResult result = SeasonResult.of(
                 me, r.finalAsset(), r.returnRate(), r.benchmarkReturn(), r.maxDrawdown(),
