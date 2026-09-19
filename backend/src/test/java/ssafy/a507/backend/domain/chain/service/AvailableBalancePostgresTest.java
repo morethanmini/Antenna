@@ -50,7 +50,7 @@ class AvailableBalancePostgresTest {
     }
 
     @Test
-    @DisplayName("PENDING 광고 + PENDING 구독이 합쳐지고, 닫힌 것(REJECTED·EXPIRED)은 빠진다")
+    @DisplayName("PENDING 광고 + PENDING 구독이 합쳐지고, 닫힌 것(REJECTED·FAILED·EXPIRED)은 빠진다")
     void 홀드_합계() {
         User me = insertUser("홀드있음");
         User publisher = insertUser("예측가");
@@ -64,7 +64,12 @@ class AvailableBalancePostgresTest {
             closed.reject();
             em.persist(closed);
             em.persist(Subscription.request(meRef, pubRef, BigInteger.valueOf(10_000)));
-            Subscription expired = Subscription.request(meRef, pubRef, BigInteger.valueOf(3));
+            // PENDING 을 닫는 길은 fail() 이다 — expire() 는 ACTIVE 에서만 움직인다(ANT-TOKEN-01, 2026-09-19).
+            Subscription failed = Subscription.request(meRef, pubRef, BigInteger.valueOf(3));
+            failed.fail();
+            em.persist(failed);
+            Subscription expired = Subscription.request(meRef, pubRef, BigInteger.valueOf(2));
+            expired.activate("0xexpired", now);
             expired.expire();
             em.persist(expired);
         });
