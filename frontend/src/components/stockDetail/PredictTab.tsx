@@ -94,6 +94,16 @@ function dueLabel(horizon: Horizon) {
   return `${d.getMonth() + 1}.${d.getDate()}`
 }
 
+/**
+ * 대회 배팅 접수(202). 예측은 접수 시점에 저장돼 predictionId 가 오고, 소각 확정은
+ * operationId 로 M-02 가 폴링한다 — PredictionQueued 와 같은 모양이지만 kind 를 따로
+ * 두는 이유는 완료 화면의 말과 갈 곳이 다르기 때문이다(예측 상세가 아니라 대회로 돌아간다).
+ */
+type EventResult = {
+  kind: 'event'
+  data: { predictionId: number; operationId: string }
+}
+
 type Props = {
   code: string
   summary: StockSummary | null
@@ -150,10 +160,10 @@ export default function PredictTab({
   /* 슬롯을 넘긴 등록은 서명 전에 한 번 묻는다 — 서명 문자열에는 금액이 없어(명세 "무료·소각 공통")
      이 확인 창이 곧 소각 동의다. 확인하면 sign() 으로 이어진다. */
   const [confirmingBurn, setConfirmingBurn] = useState(false)
-  /* 202 로 접수된 소각 작업. M-02 가 폴링하고 확정되면 예측 상세로 보낸다 */
+  /* 202 로 접수된 소각·배팅 작업. M-02 가 폴링하고 확정되면 예측 상세로 보낸다 */
   const [burnOp, setBurnOp] = useState<string | null>(null)
   const [failure, setFailure] = useState<ApiError | null>(null)
-  const [result, setResult] = useState<CreateResult | null>(null)
+  const [result, setResult] = useState<CreateResult | EventResult | null>(null)
   /* 지갑 승인 뒤 서버 응답까지 빈 시간이 있다. 그 사이 화면이 그대로면 승인이
      먹혔는지 알 수 없고, 응답이 오는 순간 완료 화면이 튀어나온다.
      null 이면 모달을 띄우지 않는다 — 아직 서명 흐름에 들어가지 않은 상태다. */
@@ -338,8 +348,19 @@ export default function PredictTab({
       /* 202 다. 체인 전송은 뒤에서 돌고 화면은 기다리지 않는다 — 진행은 M-02 가
          operationId 로 맡는다. 예측 등록의 소각 경로와 같은 모양이다. */
       setPhase(null)
-      const op = accepted.entries[0]?.operationId
-      if (op) setBurnOp(op)
+      /* 완료 화면으로 넘어가 폼을 걷는다(2026-09-19). 전에는 폼을 그대로 두고 모달만
+         띄웠는데, contest.reload() 가 돌아오면 mine 이 채워져 eventPath 가 꺼지고 발판이
+         다시 열렸다 — 두 번째로 밀면 **평소 경로(POST /predictions)** 로 가 같은 종목이
+         무료 슬롯으로 한 건 더 등록됐다(QA 09-18: 3일후·6일후 두 건, 차감은 한 번).
+         결과가 서 있으면 폼이 없으므로 같은 종목에 다시 걸 길 자체가 사라진다. */
+      const entry = accepted.entries[0]
+      if (entry) {
+        setResult({
+          kind: 'event',
+          data: { predictionId: entry.predictionId, operationId: entry.operationId },
+        })
+        setBurnOp(entry.operationId)
+      }
       /* 다음 등록은 새 난수로 봉인하고 금액은 비운다 — 한 종목에 두 번은 못 걸어서,
          그대로 두면 다른 종목으로 옮겼을 때 걸 생각이 없던 돈이 남는다. */
       onForm((f) => ({ ...f, noteSalt: newNoteSalt(), bet: '' }))
@@ -444,7 +465,12 @@ export default function PredictTab({
      만들어 둔다. 닫으면 뒤에 있는 완료 화면이 그대로 남는다 — 커밋 해시와
      다음 걸음이 거기 적혀 있어 잃을 것이 없다. */
   const progress = phase && (
-    <CommitProgressModal phase={phase} result={result} onClose={() => setPhase(null)} />
+    <CommitProgressModal
+      phase={phase}
+      /* 대회 접수는 phase 를 null 로 두고 M-02 로 가므로 여기 오지 않는다. 타입만 좁힌다 */
+      result={result && result.kind !== 'event' ? result : null}
+      onClose={() => setPhase(null)}
+    />
   )
 
   /* ── 등록 완료 ────────────────────────────────────────── */
@@ -475,6 +501,21 @@ export default function PredictTab({
                 <Link className="sd-cta" to="/me/predictions">내 예측에서 보기</Link>
               </p>
             </>
+          ) : result.kind === 'event' ? (
+            <>
+              {/* 대회 배팅을 접수했다(202). 갈 곳은 예측 상세가 아니라 **대회**다 — 대회 페이지에서
+                  들어온 사람이고, 남은 종목에 더 걸 곳도 거기다. 예측 상세는 M-02 가 확정 뒤에
+                  안내한다(copy.ts EVENT_BET.go). 커밋 해시는 적지 않는다 — QA 에서 "이 코드는
+                  뭐지, 에러 났나" 로 읽혔고, 상세 화면이 어차피 보여 준다. */}
+              <h2>대회에 배팅을 걸었습니다</h2>
+              <p className="sd-done-sub">
+                배팅이 체인에서 확정되면 대회 종목 카드에 <b>예측함</b>으로 표시됩니다.
+                이 종목에는 다시 걸 수 없습니다.
+              </p>
+              <p className="sd-done-cta">
+                <Link className="sd-cta" to={CONTEST_PATH}>대회로 돌아가기</Link>
+              </p>
+            </>
           ) : (
             <>
               {/* 슬롯을 넘겨 소각으로 접수했다(202). 예측은 이미 저장됐고 소각 tx 확정만 남았다 */}
@@ -491,6 +532,20 @@ export default function PredictTab({
             </>
           )}
         </section>
+
+        {/* 소각·배팅 접수(202) 폴링 — 확정되면 예측 상세로. **완료 화면 위에** 띄운다(2026-09-19).
+            전에는 입력 화면 쪽에 있어 결과가 서는 순간 같이 사라졌다 — 소각 접수는 모달을
+            한 번도 못 보고, 대회 접수는 폼이 남은 채 모달만 떴다. 여기서는 닫아도 뒤에
+            남는 것이 완료 화면이라 같은 종목에 다시 걸 길이 없다.
+            kind 는 서버가 만드는 Operation.Kind 와 맞춘다 — 대회는 EVENT_BET 이다.
+            PREDICTION_BURN 으로 넘기면 "토큰은 소각되지 않았습니다" 같은 소각 문구가 뜬다. */}
+        {burnOp && (
+          <OperationModal
+            operationId={burnOp}
+            kind={result.kind === 'event' ? 'EVENT_BET' : 'PREDICTION_BURN'}
+            onClose={() => setBurnOp(null)}
+          />
+        )}
       </div>
     )
   }
@@ -931,10 +986,7 @@ export default function PredictTab({
         />
       )}
 
-      {/* 소각 접수(202) 폴링 — 확정되면 예측 상세로 */}
-      {burnOp && (
-        <OperationModal operationId={burnOp} kind="PREDICTION_BURN" onClose={() => setBurnOp(null)} />
-      )}
+      {/* 소각·배팅 접수(202) 모달은 완료 화면 쪽에 있다 — result 없이 burnOp 만 서는 길이 없다 */}
 
       {/* 지갑이 없으면 먼저 연동하고, 끝나면 하던 등록을 이어 간다 */}
       {linking && (
