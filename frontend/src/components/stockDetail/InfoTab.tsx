@@ -115,6 +115,16 @@ const money = (n: number | null) => {
 
 const day = (iso: string) => iso.slice(0, 10).replace(/-/g, '.').slice(2)
 
+/* DART 의 hm_url 은 스킴 없이 온다("www.samsung.com/sec"). 그대로 href 에 넣으면 **상대 경로**가 되어
+   /stocks/www.samsung.com/sec 로 간다 — 삼성전자는 메인으로, SK하이닉스는 "종목을 찾을 수 없음" 으로
+   떨어졌다(QA 09-18). 스킴이 없으면 https 를 붙인다. javascript: 같은 다른 스킴은 링크로 쓰지 않는다. */
+const homepageHref = (raw: string) => {
+  const url = raw.trim()
+  if (/^https?:\/\//i.test(url)) return url
+  // 콜론 뒤가 숫자면 스킴이 아니라 포트다(host:8080)
+  return /^[a-z][a-z0-9+.-]*:(?!\d)/i.test(url) ? undefined : `https://${url.replace(/^\/+/, '')}`
+}
+
 /* 종목 정보 카드의 용어 설명.
 
    PER·ROE 는 아는 사람에게는 군더더기라 카드 본문에 풀어 쓸 수 없고, 모르는
@@ -418,7 +428,7 @@ export default function InfoTab({ code, summary, picked, onPick, onGoPredict }: 
                 <dt>홈페이지</dt>
                 <dd>
                   {profile.data.homepage
-                    ? <a href={profile.data.homepage} target="_blank" rel="noreferrer noopener">바로가기</a>
+                    ? <a href={homepageHref(profile.data.homepage)} target="_blank" rel="noreferrer noopener">바로가기</a>
                     : '—'}
                 </dd>
               </div>

@@ -88,6 +88,9 @@ function WalletChip() {
 
    입력과 이동까지만 맡는다. 결과는 A-03(`/search?q=`)이 그린다 — 자동완성 드롭다운도
    그 스토리 몫이라 셸에서 종목 데이터를 들고 있지 않는다. */
+/** 검색어 상한. 서버(SearchService.MAX_QUERY_LENGTH)와 같은 값 — 넘기면 서버가 400 을 준다 */
+const SEARCH_MAX = 50
+
 function NavSearch({ open, onClose, triggerRef }: {
   open: boolean
   onClose: (returnFocus?: boolean) => void
@@ -126,6 +129,7 @@ function NavSearch({ open, onClose, triggerRef }: {
           type="search" id="navbar-search" autoComplete="off"
           aria-label="종목 · 예측가 · 리포트 검색"
           placeholder="종목명 · 종목코드 · 예측가 · 리포트 제목 (예: 삼성전자, 005930)"
+          maxLength={SEARCH_MAX}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />

@@ -12,6 +12,9 @@ public final class UserDtos {
 
     private UserDtos() {}
 
+    /** 프로필에 걸 수 있는 외부 채널 수. 화면(ChannelProfileEdit 의 MAX_CHANNELS)과 같은 값이다. */
+    public static final int MAX_CHANNELS = 2;
+
     /**
      * 닉네임 확정·변경 요청. 온보딩과 프로필 수정이 같은 API 를 쓴다.
      *
@@ -45,7 +48,12 @@ public final class UserDtos {
                     String nickname,
             @Size(max = 200) String introduce,
             List<@NotBlank @Size(max = 30) String> interests,
-            List<@Valid ChannelRequest> channels,
+            /**
+             * 외부 채널은 {@value #MAX_CHANNELS}개까지다(2026-09-19 · QA 09-18). 전에는 개수 제한이 서버에도
+             * 화면에도 없어 몇 개든 담겼다 — 프로필 카드는 두 줄을 넘는 채널 목록을 받을 자리가 없다.
+             */
+            @Size(max = MAX_CHANNELS, message = "외부 채널은 2개까지 등록할 수 있습니다.")
+                    List<@Valid ChannelRequest> channels,
             /**
              * 프로필 사진. POST /uploads 가 준 fileId 다(purpose=PROFILE).
              *
