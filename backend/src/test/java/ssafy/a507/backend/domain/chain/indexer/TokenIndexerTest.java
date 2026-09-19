@@ -142,6 +142,37 @@ class TokenIndexerTest {
     }
 
     @Test
+    @DisplayName("작업이 FAILED 로 닫히면 구독도 FAILED — 만료(EXPIRED)가 아니고, 다시 구독할 수 있는 상태다")
+    void failedOperationClosesSubscription() {
+        User sub = user(WALLET_A);
+        User creator = user(WALLET_B);
+        Long subId = pendingSubscription(sub, creator);
+        Operation op = op(sub, Operation.Kind.SUBSCRIBE, Operation.ResourceType.SUBSCRIPTION, subId, tx("s-fail"));
+
+        service.failOperation(op.getId(), "REVERTED", "insufficient balance");
+
+        assertThat(reload(op).getStatus()).isEqualTo(Operation.Status.FAILED);
+        // 전에는 enum 에 FAILED 가 없어 손대지 않았다 — 되돌아간 결제가 영원히 "결제 확인 중" 이었고,
+        // PENDING 이 중복 검사(ALREADY_SUBSCRIBED)에 걸려 다시 시도도 못 했다.
+        assertThat(em.find(Subscription.class, subId).getStatus()).isEqualTo(Subscription.Status.FAILED);
+    }
+
+    @Test
+    @DisplayName("이미 ACTIVE 인 구독은 작업이 뒤늦게 FAILED 로 닫혀도 건드리지 않는다 — 결제된 구독을 닫지 않는다")
+    void failedOperationKeepsActiveSubscription() {
+        User sub = user(WALLET_A);
+        User creator = user(WALLET_B);
+        Long subId = pendingSubscription(sub, creator);
+        em.find(Subscription.class, subId).activate(tx("s-early"), now);
+        Operation op = op(sub, Operation.Kind.SUBSCRIBE, Operation.ResourceType.SUBSCRIPTION, subId, tx("s-late"));
+
+        service.failOperation(op.getId(), "SEND_LOST", "no receipt");
+
+        assertThat(reload(op).getStatus()).isEqualTo(Operation.Status.FAILED);
+        assertThat(em.find(Subscription.class, subId).getStatus()).isEqualTo(Subscription.Status.ACTIVE);
+    }
+
+    @Test
     @DisplayName("내 채널 반응 알림을 끈 발행자에게는 구독 확정 알림이 가지 않는다(ANT-NOTIFY-02)")
     void subscribed_notification_off() {
         User sub = user(WALLET_A);

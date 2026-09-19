@@ -275,7 +275,7 @@ class SubscriptionControllerTest {
     // ── 체인 실패 · 서명 ─────────────────────────────────
 
     @Test
-    @DisplayName("체인 잔액이 모자라면 409 — 구독을 EXPIRED 로 닫아 재시도를 막지 않는다")
+    @DisplayName("체인 잔액이 모자라면 409 — 구독을 FAILED 로 닫아 재시도를 막지 않는다. 만료(EXPIRED)가 아니다")
     void 체인_잔액이_모자라면_구독을_닫는다() throws Exception {
         relayer.thenInsufficientBalance();
 
@@ -283,8 +283,9 @@ class SubscriptionControllerTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("INSUFFICIENT_BALANCE"));
 
+        // 시작된 적 없는 구독이라 FAILED 다. EXPIRED 로 닫으면 화면이 "만료됨 · 다시 구독하기" 를 그린다(QA 09-18).
         assertThat(mine()).singleElement()
-                .extracting(Subscription::getStatus).isEqualTo(Subscription.Status.EXPIRED);
+                .extracting(Subscription::getStatus).isEqualTo(Subscription.Status.FAILED);
         // 닫혔으니 다시 시도할 수 있다 — 안 닫으면 PENDING 이 남아 중복 검사에 걸린다.
         mockMvc.perform(subscribe("key-chain-retry")).andExpect(status().isAccepted());
     }

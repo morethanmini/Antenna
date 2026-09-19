@@ -35,10 +35,18 @@ import ssafy.a507.backend.domain.account.entity.User;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Subscription {
 
+    /**
+     * PENDING 접수(전송 대기·확정 대기) · ACTIVE 확정 · EXPIRED 기간 만료 · FAILED 결제 실패.
+     *
+     * <p>FAILED 는 2026-09-19 에 갈라냈다. 그전에는 전송 실패도 EXPIRED 로 닫아, 한 번도 구독된 적 없는
+     * 채널이 화면에 "만료됨 · 다시 구독하기" 로 보였다(QA 09-18). 만료는 "있었다가 끝났다", 실패는
+     * "시작된 적이 없다" 라 같은 말로 덮을 수 없다. 게이팅·중복 검사에서는 둘 다 "구독 아님" 으로 같다.
+     */
     public enum Status {
         PENDING,
         ACTIVE,
-        EXPIRED
+        EXPIRED,
+        FAILED
     }
 
     @Id
@@ -126,14 +134,33 @@ public class Subscription {
     }
 
     /**
-     * 접수했는데 전송이 못 나갔다 (ANT-TOKEN-01). 안 닫으면 영원히 PENDING 인 행이 남아 중복 구독
-     * 검사에 걸려 사용자가 다시 시도할 수 없다. {@code AdBanner.reject()} 와 같은 규칙이다.
+     * 결제가 못 나갔거나 체인에서 되돌아갔다 (ANT-TOKEN-01). 안 닫으면 영원히 PENDING 인 행이 남아
+     * 중복 구독 검사에 걸려 사용자가 다시 시도할 수 없다. {@code AdBanner.reject()} 와 같은 규칙이다.
      *
      * <p>이미 ACTIVE 면 건드리지 않는다 — 전송은 실패로 보였는데 인덱서가 먼저 확정을 본 경우,
-     * 여기서 EXPIRED 로 내리면 결제된 구독이 닫힌다.
+     * 여기서 내리면 결제된 구독이 닫힌다. 이미 FAILED 여도 시각을 덮지 않는다(같은 요청을 두 번 받아도
+     * 결과가 같다).
+     *
+     * <p>2026-09-19 전에는 {@link #expire()} 가 이 일을 했다 — 실패가 "만료됨" 으로 보였다.
+     */
+    public void fail() {
+        if (this.status == Status.ACTIVE || this.status == Status.FAILED) {
+            return;
+        }
+        this.status = Status.FAILED;
+        this.canceledAt = Instant.now();
+    }
+
+    /**
+     * 기간 만료 (ANT-TOKEN-06 · 배치 B4 몫). 지금은 호출부가 없다 — 열람 판정은
+     * {@code SubscriptionRepository.findSubscribedPublisherIds} 가 ACTIVE + expires_at 으로 하므로
+     * 이 전이가 없어도 만료된 구독은 닫힌 것으로 읽힌다. 배치가 들어오면 여기서 상태를 맞춘다.
+     *
+     * <p>ACTIVE 가 아니면 건드리지 않는다 — 접수 중(PENDING)이나 실패(FAILED)를 만료로 덮으면
+     * "있었다가 끝났다" 가 된다.
      */
     public void expire() {
-        if (this.status == Status.ACTIVE) {
+        if (this.status != Status.ACTIVE) {
             return;
         }
         this.status = Status.EXPIRED;
