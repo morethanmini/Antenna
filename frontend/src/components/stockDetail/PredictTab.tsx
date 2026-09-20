@@ -37,6 +37,7 @@ import { useBlock } from '../../api/useBlock'
 import { useAsync } from '../../api/useAsync'
 import { eventEntrySigningPayload, fetchContestEvent, registerEntries } from '../../api/events'
 import WalletLinkModal from '../wallet/WalletLinkModal'
+import WalletPrelink from '../wallet/WalletPrelink'
 import ConfirmDialog from '../ConfirmDialog'
 import OperationModal from '../operation/OperationModal'
 import { formatToken } from '../../api/wallet'
@@ -299,11 +300,17 @@ export default function PredictTab({
      어긋나지 않는다. fresh 는 "대회 모드로 들어선 뒤에 읽은 값만" 이라 잠금이 묵은 값으로 서지 않고,
      enabled 는 전처럼 대회 모드일 때만 읽게 한다. */
   const wallet = useWalletBalance({ fresh: true, enabled: eventMode })
-  const betOverBalance = isOverBalance(bet, wallet.data?.balance)
+  /* 미연동이면 잔액을 따지지 않는다(ANT-FE-WALLET-PRELINK). 지갑이 없는 사람의 잔액은 늘 0 이라
+     "보유한 ANT 보다 많이 걸었습니다" 로 발판이 잠기는데, 진짜 이유는 지갑이 없는 것이다 — 그리고
+     발판이 잠기면 연동 창으로 가는 길도 같이 막힌다. 연동이 먼저고, 잔액은 그다음에 본다. */
+  const betOverBalance = Boolean(user?.walletLinked) && isOverBalance(bet, wallet.data?.balance)
   /* **대회 종목이면 배팅이 필수다**(2026-09-18 결정 A). 배팅 없이 등록하면 평소 경로로
      가 대회 집계에 안 잡히는데, 대회 페이지에서 들어온 사람에게 그건 설명할 수 없는
      결과다 — 카드에는 "예측함" 이 안 뜨고 순위에도 안 오른다. */
   const betMissing = eventPath && bet === 0
+  /** 지금 등록할 수 없는가. 발판의 잠금과 submit() 이 **이 값 하나**를 본다 — 둘이 갈리면 잠긴 발판을
+   *  건너뛰는 길이 생긴다(연동 직후의 자동 재등록이 그랬다) */
+  const blocked = !draft || betOutOfRange || betMissing || betOverBalance
 
   /**
    * 대회 등록 — 예측과 배팅이 한 요청으로 간다(POST /events/{eventId}/entries).
@@ -377,7 +384,12 @@ export default function PredictTab({
    *   연동 모달이 한 번 더 뜨고 두 번째 연동은 409 WALLET_ALREADY_LINKED 로 끝난다(QA 09-18).
    */
   async function submit(justLinked = false) {
-    if (!draft) return
+    /* 발판과 **같은 판단**을 여기서도 본다(ANT-FE-WALLET-PRELINK). 전에는 잠금이 발판의 disabled 에만
+       있었는데, 연동 직후의 자동 재등록은 발판을 거치지 않고 이 함수를 바로 부른다 — 방금 연동한
+       사람은 가입 보너스가 오기 전이라 잔액이 0 이고, 그 채로 대회 배팅에 서명해 서버에서 409 를
+       받았다(QA 09-18). 막히면 조용히 돌아간다: 카드가 이유를 이미 말하고 있고, 보너스가 들어오면
+       잠금이 저절로 풀린다(공유 잔액 저장소). */
+    if (!draft || blocked) return
     setFailure(null)
     setLocalMsg(null)
 
@@ -557,6 +569,9 @@ export default function PredictTab({
           절반이라 글이 두 줄로 접히고, 오른쪽 등록 카드만 길어 보인다.
           대회로 들어오면 머리의 "오늘 판정" 자리를 접어(StockDetail) 위가 빈다. */}
       {eventMode && <EventBanner name={CONTEST.name} closesAt={stamp(CONTEST.closesAt)} />}
+
+      {/* 지갑 없이 들어왔으면 적기 **전에** 연동부터 권한다. 격자를 가로질러 선다 — 대회 배너와 같은 이유 */}
+      <WalletPrelink purpose={eventMode ? '대회에 참가하려면' : '예측을 등록하려면'} />
 
       <div className="sd-col" data-span="6">
         <PredictionDepth code={code} />
@@ -950,7 +965,7 @@ export default function PredictTab({
               끝나는지 알 수 없다. 못 누르는 상태로 자리를 지키게 한다. */}
           <SlideToSign
             onConfirm={submit}
-            disabled={!draft || betOutOfRange || betMissing || betOverBalance}
+            disabled={blocked}
             busy={submitting}
             label={
               eventPath ? '예측하고 배팅하기'
