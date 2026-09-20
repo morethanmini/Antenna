@@ -118,11 +118,11 @@ const TrophyIcon = () => (
           stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 )
-const PlusIcon = () => (
+const PenIcon = () => (
   <svg {...ico} className="hm-ico">
-    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
-    <path d="M12 8.4v7.2M8.4 12h7.2" stroke="currentColor" strokeWidth="1.8"
-          strokeLinecap="round" />
+    <path d="M4 20h4.2L19 9.2a2.1 2.1 0 0 0-3-3L5 17.2V20z" stroke="currentColor"
+          strokeWidth="1.8" strokeLinejoin="round" />
+    <path d="M14.3 7.4l2.9 2.9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
   </svg>
 )
 const ChartIcon = () => (
@@ -613,11 +613,19 @@ function ContestBanner() {
 }
 
 /* 배너가 히어로보다 짧게 끝나 남는 자리를 메운다. 데이터를 부르지 않는
-   지름길 모음이라 로딩·실패 상태가 없다. */
+   지름길 모음이라 로딩·실패 상태가 없다.
+
+   ── 첫 칸이 "예측 등록" 이 아닌 이유 (2026-09-18) ──────
+   /predict 는 화면이 아니라 넘겨보내는 자리다(PredictNew). 종목 코드가 없으면
+   /stocks 로 보내므로, 홈에서 누르면 바로 옆 "종목 탐색" 과 **같은 화면**에
+   떨어졌다 — 지름길 셋 중 둘이 한 곳을 가리키고 있었다.
+
+   그 자리를 리포트 작성이 받는다. 예측과 함께 이 서비스의 두 가지 쓰기 행위
+   중 하나인데, 지금은 리포트 피드 안으로 들어가야만 닿는다. */
 function QuickLinks() {
   return (
     <nav className="card hm-quick" aria-label="바로가기">
-      <Link to="/predict"><PlusIcon />예측 등록</Link>
+      <Link to="/reports/new"><PenIcon />리포트 쓰기</Link>
       <Link to="/stocks"><ChartIcon />종목 탐색</Link>
       <Link to="/me/predictions"><ListIcon />내 예측</Link>
     </nav>
