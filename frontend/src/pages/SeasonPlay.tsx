@@ -45,8 +45,10 @@ import MascotSay from '../components/MascotSay'
 import CandleChart from '../components/sim/CandleChart'
 import IndicatorPane, { type PaneKind } from '../components/sim/IndicatorPane'
 import PortfolioDonut, { type DonutSlice } from '../components/sim/PortfolioDonut'
+import PlayCoachMarks from '../components/sim/PlayCoachMarks'
 import TickerPickerModal from '../components/sim/TickerPickerModal'
 import ErrorState from '../components/state/ErrorState'
+import { playCoachMuted } from '../sim/onboardingSeen'
 import { useSeasonSim } from '../sim/useSeasonSim'
 import type { BarView } from '../sim/barView'
 import type { IndicatorKind } from '../sim/indicators'
@@ -135,7 +137,42 @@ const INDICATOR_HELP: { key: string; term: string; body: string }[] = [
   },
 ]
 
-function IndicatorHelp() {
+/* ── 차트가 왜 이렇게 생겼는지 ─────────────────────────────
+   QA 에서 가장 많이 나온 물음 둘이다. "선이 왜 중간부터 그려지냐" 와 "이 가격은 진짜냐".
+   둘 다 고장으로 오해받는 자리라, 지표 뜻 바로 아래에 답을 같이 둔다.
+
+   **연도·실제 날짜는 쓰지 않는다.** "시세를 언제부터 모았다" 를 적으면 워밍업 봉 수와
+   맞물려 이 시즌이 언제인지가 드러난다 — 화면 전체가 지키는 규칙이다(맨 위 주석 1번).
+   대신 "모아 둔 시세의 맨 앞과 가까우면" 까지만 말한다.
+
+   붙어 있는 워밍업 봉 수는 세어서 넣는다. 시즌마다 다르고(모아 둔 구간의 앞쪽일수록
+   짧다), 숫자가 있어야 "왜 하필 내 화면에서 짧은지" 가 설명된다. */
+function chartFacts(warmupBars?: number) {
+  return [
+    {
+      key: 'warmup',
+      term: '선이 중간부터 그려지는 이유',
+      body:
+        '지표는 봉이 일정 개수 모여야 첫 값이 나옵니다 — MA5 는 5개, 볼린저는 20개, MA30 은 30개. '
+        + '그래서 긴 지표일수록 왼쪽이 비어 보입니다. '
+        + (warmupBars
+          ? `시즌은 첫 게임일 앞에 과거 봉을 최대 120개 붙여 두는데, 이 시즌은 ${warmupBars}개가 붙어 있습니다`
+          : '시즌은 첫 게임일 앞에 과거 봉을 최대 120개 붙여 둡니다')
+        + ' — 시작 지점이 모아 둔 시세의 맨 앞과 가까우면 붙일 봉이 그만큼 적어져, 긴 선일수록 늦게 시작합니다.',
+    },
+    {
+      key: 'data',
+      term: '이 가격은 어디서 온 것인가',
+      body:
+        '실제로 있었던 일봉을 그대로 옮긴 것입니다. 지어낸 값이 아니라서 아래 기사·공시와 앞뒤가 맞습니다. '
+        + '종목은 그 구간 첫날 시가총액이 큰 순서로 담았고 이름도 실제 이름입니다. '
+        + '서버는 지금 진행일까지의 봉만 내려줍니다 — 그 뒤 봉은 화면에 아예 오지 않아 앞질러 볼 수 없어요. '
+        + '지표는 받은 종가로 이 화면에서 계산합니다(볼린저 20·2 · RSI 14).',
+    },
+  ]
+}
+
+function IndicatorHelp({ warmupBars }: { warmupBars?: number }) {
   const [open, setOpen] = useState(false)
   return (
     <div className="sp-help">
@@ -161,7 +198,7 @@ function IndicatorHelp() {
           지표 드롭다운(.sp-indpop)과 같은 방식이다. */}
       {open && (
         <dl className="sp-help-pop">
-          {INDICATOR_HELP.map((h) => (
+          {[...INDICATOR_HELP, ...chartFacts(warmupBars)].map((h) => (
             <div key={h.key}>
               <dt>{h.term}</dt>
               <dd>{h.body}</dd>
@@ -367,6 +404,9 @@ export default function SeasonPlay() {
      그때도 이 게이트가 서면 넘길 때마다 화면이 통째로 사라졌다 돌아온다. 한 번 그린
      뒤에는 차트 자리의 "봉을 불러오는 중…" 한 줄로 충분하다. */
   const bars = selected === null ? undefined : candles[selected]
+  /* 첫 게임일 앞에 붙어 있는 봉. 시즌마다 다르고(모아 둔 시세의 앞쪽일수록 짧다),
+     "왜 MA30 이 끝에서야 시작하는지" 가 이 숫자로 설명된다 — 도움말에 그대로 쓴다. */
+  const warmupBars = bars?.filter((c) => c.gameDay <= 0).length
   const pending =
     season.loading
     || !tickersLoaded
@@ -375,6 +415,21 @@ export default function SeasonPlay() {
   if (!booted && !pending) {
     setBooted(true)
   }
+
+  /* ── 화면 안내 ─────────────────────────────────────────
+     처음 이 화면에 온 사람에게 칸마다 구멍을 내어 무엇을 하는 자리인지 알린다.
+     G-00 이 "모의투자가 무엇인지" 라면 이쪽은 "이 화면에서 무엇을 누르는지" 다.
+
+     화면이 다 그려진 **뒤에** 연다(booted). 안내가 자리를 재서 구멍을 뚫는 방식이라,
+     차트가 아직 자리를 안 잡았을 때 열면 엉뚱한 곳에 구멍이 난다.
+     참가 전(joined===false)에는 열지 않는다 — 그 화면에는 밝힐 칸이 없다.
+
+     한 번 닫으면 이 탭을 쓰는 동안은 다시 뜨지 않고, 안내 안에서 "다시 보지 않기" 를
+     체크하고 닫았으면 그때부터 영영 뜨지 않는다(sim/onboardingSeen.ts). */
+  const [coach, setCoach] = useState(false)
+  useEffect(() => {
+    if (booted && sim.joined !== false && !playCoachMuted()) setCoach(true)
+  }, [booted, sim.joined])
 
   if (!booted && pending) {
     return (
@@ -522,12 +577,20 @@ export default function SeasonPlay() {
         <header className="sp-head">
           <div className="sp-title">
             <h1>{s.title}</h1>
-            <p>연습 시즌 · 종목 {s.tickerCount}개</p>
+            {/* 안내는 라우트가 없는 오버레이라 링크로 열 수 없다. 한 번 닫으면
+                자동으로는 다시 뜨지 않으므로 여는 자리를 화면 안에 둔다 */}
+            <p>
+              연습 시즌 · 종목 {s.tickerCount}개
+              {' · '}
+              <button type="button" className="sp-coach-again" onClick={() => setCoach(true)}>
+                화면 안내 보기
+              </button>
+            </p>
           </div>
           {/* 제목과 진행 표시 사이의 빈 칸. 여기가 화면에서 가장 넓게 남는 자리다 —
               차트 카드 머리줄에 뒀더니 종목명·가격·지표 버튼과 폭을 다투다가
               좁은 칸에서 버튼 위로 겹쳤다. */}
-          <IndicatorHelp />
+          <IndicatorHelp warmupBars={warmupBars} />
 
           <div className="sp-day">
             <span className="sp-daychip num">
@@ -989,6 +1052,10 @@ export default function SeasonPlay() {
             onClose={() => setPicking(false)}
           />
         )}
+
+        {/* 화면 안내. 종목 고르기 창이 열려 있으면 띄우지 않는다 —
+            그 창이 화면 절반을 덮어, 밝힐 칸이 그 아래로 숨는다 */}
+        {coach && !picking && <PlayCoachMarks onClose={() => setCoach(false)} lengthDays={s.lengthDays} />}
       </div>
     </main>
   )
