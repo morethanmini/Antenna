@@ -36,10 +36,12 @@ import {
 import type { ApiError } from '../api/errors'
 import { useAsync } from '../api/useAsync'
 import { formatToken, requestNonce } from '../api/wallet'
+import { useWalletBalance } from '../api/walletBalance'
 import { useAuth } from '../auth/context'
 import { connectAddress, hasWallet, personalSign } from '../wallet/provider'
 import ImageUploadModal from '../components/upload/ImageUploadModal'
 import WalletLinkModal from '../components/wallet/WalletLinkModal'
+import WalletPrelink from '../components/wallet/WalletPrelink'
 import ErrorState from '../components/state/ErrorState'
 import ConfirmDialog from '../components/ConfirmDialog'
 import type { UploadedImage } from '../api/uploads'
@@ -80,13 +82,26 @@ export default function Ad() {
   const price = terms ? priceOf(terms, days) : null
   const ready = banner !== null && linkOk && daysOk && price !== null
 
+  /* 잔액이 게재료보다 적으면 서명까지 가지 않는다(ANT-FE-WALLET-PRELINK). 서버는 INSUFFICIENT_BALANCE 로
+     막지만 그건 지갑 서명을 받은 **뒤**다. 방금 연동한 사람이 특히 그렇다 — 가입 보너스가 체인으로 오기
+     전이라 잔액이 0 이고, 연동 뒤 자동으로 이어 가는 submit() 이 그대로 서명을 받았다.
+     구독 모달과 같은 규칙: 이 화면이 열린 뒤에 읽은 값만 쓰고(fresh), 못 읽었으면 막지 않는다.
+     보너스가 들어오면 잠금은 저절로 풀린다.
+     ponytail: 이 숫자는 원장 합이라 서버의 가용잔액(심사 중인 다른 광고 등을 뺀 값)과 어긋날 수 있다 —
+     GET /wallet/balance 가 가용잔액을 내리면 그걸로 바꾼다(ANT-TOKEN-12). */
+  const wallet = useWalletBalance({ fresh: true })
+  const balance = wallet.data?.balance
+  const short = Boolean(user?.walletLinked) && price !== null && !!balance
+    && /^\d+$/.test(balance) && BigInt(balance) < BigInt(price)
+
   const onUploaded = useCallback((image: UploadedImage) => {
     setBanner(image)
     setError(null)
   }, [])
 
   async function submit() {
-    if (!ready || !banner) return
+    // short 도 여기서 본다 — 연동 직후의 자동 submit() 은 버튼을 거치지 않는다
+    if (!ready || !banner || short) return
 
     /* 미설치와 미연동을 가르지 않는다 — M-01 이 네 갈래를 각각 다르게 안내하고,
        늦게 주입되는 확장까지 기다려 준다(ANT-FE-WALLET-GATE). */
@@ -142,6 +157,9 @@ export default function Ad() {
 
         {view === 'form' && (
           <>
+            {/* 지갑 없이 들어왔으면 적기 **전에** 연동부터 권한다(ANT-FE-WALLET-PRELINK) */}
+            <WalletPrelink purpose="광고를 등록하려면" />
+
             {/* ── 배너 ─────────────────────────────────── */}
             <section className="ad-card">
               <h2>배너 이미지</h2>
@@ -242,10 +260,17 @@ export default function Ad() {
               </p>
             )}
 
+            {short && price !== null && balance && (
+              <p className="ad-error" role="alert">
+                <b>ANT 잔액이 부족합니다</b>
+                <span>{`보유 ${formatToken(balance)} ANT · 게재료 ${formatToken(price)} ANT. 방금 지갑을 연동했다면 가입 보너스가 들어오는 중일 수 있습니다 — 들어오면 버튼이 열립니다.`}</span>
+              </p>
+            )}
+
             <div className="ad-actions">
               <button
                 type="button" className="ad-btn solid"
-                disabled={!ready}
+                disabled={!ready || short}
                 onClick={() => void submit()}
               >
                 서명하고 등록하기
