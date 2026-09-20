@@ -45,6 +45,7 @@ import ssafy.a507.backend.common.security.SignatureScope;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.prediction.dto.PredictionCreateRequest;
 import ssafy.a507.backend.domain.prediction.entity.Prediction;
+import ssafy.a507.backend.domain.prediction.service.BusinessDays;
 import ssafy.a507.backend.support.TestNonceStoreConfig;
 import ssafy.a507.backend.support.WalletSignatures;
 import tools.jackson.databind.JsonNode;
@@ -139,7 +140,10 @@ class PredictionControllerTest {
         LocalDate baseDate = LocalDate.parse(json.get("baseDate").asString());
         assertThat(baseDate).isAfter(LocalDate.now(KST));
         assertThat(baseDate.getDayOfWeek()).isNotIn(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY);
-        assertThat(LocalDate.parse(json.get("settleDate").asString())).isEqualTo(baseDate.plusDays(30));
+        // 만기일은 영업일로 센다(ANT-PRED-11) — 달력일로 더하면 주말에 걸린다
+        LocalDate settleDate = LocalDate.parse(json.get("settleDate").asString());
+        assertThat(settleDate).isEqualTo(BusinessDays.plusWeekdays(baseDate, 30));
+        assertThat(settleDate.getDayOfWeek()).isNotIn(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY);
 
         em.flush(); // 서비스 트랜잭션이 테스트 트랜잭션에 얹혀 있어 아직 안 내려간 INSERT 가 있다 — clear 전에 내린다
         em.clear();
