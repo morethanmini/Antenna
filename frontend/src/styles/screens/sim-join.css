@@ -20,7 +20,8 @@
    밖은 브랜드 하나로 간다 — 참여 버튼도 같은 이유로 다섯 장 모두 --brand 다
    (시안은 금색이었다).
 
-   모드별 색(연습 초록 · 대회 보라 · 시연 파랑)은 sim-setup.css 와 같은 값이다. */
+   모드별 색(연습 초록 · 대회 보라 · 시연 파랑)은 원래 sim-setup.css 와 나눠 쓰던 값인데,
+   모드 선택 화면이 없어지면서(2026-09-21) 이 파일이 유일한 주인이 됐다. */
 
 .sim-join{
   display:flex;flex-direction:column;gap:20px;
@@ -30,7 +31,7 @@
   word-break:keep-all;
 }
 
-/* 모드별 색 — sim-setup.css 와 동일한 값 */
+/* 모드별 색 — 이제 여기가 단일 진실이다 */
 .sim-join.learn{--tone:#16a06a;--tone-ink:#17805a;--tone-soft:#e7f6ef}
 .sim-join.contest{--tone:#5457e8;--tone-ink:#5a52d8;--tone-soft:#ebe9fc}
 .sim-join.demo{--tone:#2f7bf6;--tone-ink:#2a6ad8;--tone-soft:#e8f1fe}

@@ -51,7 +51,9 @@ const MODES = {
     label: '모의 투자',
     home: '/sim',
     nav: [
-      { key: 'play', text: '투자하기', href: '/sim/modes' },
+      /* 연습 허브로 바로 간다(2026-09-21). 모드 선택(/sim/modes)은 고를 것이
+         하나뿐이 되어 걷어냈다 — 그 라우트는 이제 여기로 넘겨보내기만 한다. */
+      { key: 'play', text: '투자하기', href: '/sim/practice' },
       { key: 'portfolio', text: '투자 포트폴리오', href: '/sim/history' },
       /* '모의투자 랭킹' 을 내렸다(2026-09-16). 한 시즌 안의 순위는 시즌 리더보드(G-07)가
          이미 보여 준다. 둘을 같이 두면 "내 등수" 가 두 곳에서 다른 값으로 나온다. */
@@ -407,7 +409,7 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
       {simTour && !tour && (
         <SimOnboardingTour
           onClose={() => setSimTour(false)}
-          onStart={() => { setSimTour(false); navigate('/sim/modes') }}
+          onStart={() => { setSimTour(false); navigate('/sim/practice') }}
         />
       )}
 
