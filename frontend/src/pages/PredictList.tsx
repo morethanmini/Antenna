@@ -37,7 +37,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useCursorList } from '../api/useCursorList'
-import { fetchMyPredictions, hitRatePercent, horizonLabel, phaseOf } from '../api/predictions'
+import { fetchMyPredictions, hitRatePercent, horizonLabel, isAwaitingVerdict, phaseOf } from '../api/predictions'
 import type { MyPrediction, MyPredictionMeta } from '../api/predictions'
 import { ANCHOR_BATCH_CYCLE, isAnchored } from '../components/prediction/AnchorStage'
 import EmptyState from '../components/state/EmptyState'
@@ -201,11 +201,20 @@ function NextBatch() {
    dday 는 오늘부터 만기까지의 일수라, 흐른 날은 horizon - dday 다. */
 function elapsed(p: MyPrediction) {
   if (p.dday === null || p.horizon <= 0) return null
+  /* 기준일~만기일의 **달력일**로 잰다(ANT-PRED-11). horizon 은 영업일이고 dday 는 달력일이라
+     둘을 섞으면 주말을 낀 예측의 막대가 0 에 붙는다. 기준일이 없으면(옛 서버) 전처럼 horizon 으로 */
+  const base = baseDateOf(p)
+  if (base && p.settleDate) {
+    const span = (Date.parse(`${p.settleDate}T00:00:00`) - Date.parse(`${base}T00:00:00`)) / 86_400_000
+    if (span > 0) return Math.min(1, Math.max(0, (span - p.dday) / span))
+  }
   return Math.min(1, Math.max(0, (p.horizon - p.dday) / p.horizon))
 }
 
-/** 기준일 = 만기일 - horizon 일. 등록 즉시 확정되는 값이라 되짚어도 정확하다 */
+/** 기준일. 서버가 주면 그것을 쓴다 — horizon 이 영업일이 된 뒤로는 "만기일 - horizon 일" 이
+ *  맞지 않는다(ANT-PRED-11). 아래 뺄셈은 기준일을 안 내리는 옛 서버를 위한 받침이다 */
 function baseDateOf(p: MyPrediction) {
+  if (p.baseDate) return p.baseDate
   if (p.settleDate === null) return null
   const d = new Date(`${p.settleDate}T00:00:00`)
   d.setDate(d.getDate() - p.horizon)
@@ -274,10 +283,14 @@ function Panel({ p, count = 1 }: { p: MyPrediction; count?: number }) {
       )
     }
 
+    /* 만기일은 지났는데 아직 판정 전이다(ANT-PRED-11). 만기일이 휴장이었거나 그날 종가가 아직
+       안 들어왔다 — 서버는 그 이후 첫 거래일 종가로 판정한다. 음수 dday 를 그대로 찍으면 "D--1" 이다 */
+    const awaiting = isAwaitingVerdict(p.dday)
+
     return (
       <div className="mp-panel is-open">
-        <p className="mp-until">{many ? `${count}건 모두 결과까지` : '결과까지'}</p>
-        <p className="mp-dday num">{p.dday === 0 ? '오늘 만기' : `D-${p.dday}`}</p>
+        <p className="mp-until">{awaiting ? '만기 지남' : many ? `${count}건 모두 결과까지` : '결과까지'}</p>
+        <p className="mp-dday num">{awaiting ? '판정 대기' : p.dday === 0 ? '오늘 만기' : `D-${p.dday}`}</p>
         {ratio !== null && (
           <>
             <div className="mp-bar" role="presentation">
@@ -337,7 +350,7 @@ function StageBadge({ p }: { p: MyPrediction }) {
       {stage === 'ANCHOR' ? (
         <><Icon size={13}><circle cx="12" cy="12" r="9" /><path d="M12 7.5V12l3 1.8" /></Icon>블록체인 기록 예정</>
       ) : stage === 'OPEN' ? (
-        <><Icon size={13}><path d="M4 17l5-6 4 3 6-8" /><path d="M15 6h4v4" /></Icon>예측 기간 진행 중</>
+        <><Icon size={13}><path d="M4 17l5-6 4 3 6-8" /><path d="M15 6h4v4" /></Icon>{isAwaitingVerdict(p.dday) ? '판정 대기 중' : '예측 기간 진행 중'}</>
       ) : (
         <><Icon size={13}><circle cx="12" cy="12" r="9" /><path d="m8.5 12.2 2.4 2.4 4.6-4.9" /></Icon>결과 확인 가능</>
       )}

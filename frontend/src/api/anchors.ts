@@ -77,7 +77,7 @@ export type AnchorLeaf = {
    */
   stockCode: string | null
   stockName: string | null
-  /** 예측 기간(캘린더일 3~90). REPORT 면 null */
+  /** 예측 기간(3~90 영업일 — ANT-PRED-11 전의 예측은 캘린더일). REPORT 면 null */
   horizon: Horizon | null
 }
 
