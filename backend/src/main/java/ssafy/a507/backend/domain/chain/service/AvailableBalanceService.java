@@ -29,6 +29,12 @@ import ssafy.a507.backend.domain.monetize.repository.SubscriptionRepository;
  * REJECTED) 홀드가 저절로 풀린다. 별도 표를 두면 해제 시점 세 곳과 TTL 배치가 따라오고 좀비 홀드가 생긴다.
  * 원장 선차감도 안 된다 — 원장은 append-only 이고 "체인 이벤트의 사본" 이라 서버가 행을 넣으면 이중 차감으로 보인다.
  *
+ * <p><b>슬롯 초과 소각(PREDICTION_BURN)은 홀드에 없다 — 빠뜨린 게 아니다</b>(ANT-TOKEN-13, 2026-09-20 결정).
+ * 소각도 이 값으로 판단하지만({@code PredictionRegisterService}), 자기 PENDING 은 여기 안 더한다. 작업 행에 금액 칸이 없어
+ * 넣으려면 "PENDING 개수 × 설정값" 이 되고, 이 클래스가 예측 도메인의 금액을 알아야 한다. 비는 창은 소각 tx 가 나간 뒤
+ * 인덱서가 읽기까지 7초 안팎이고, 그 사이 같은 돈으로 다른 결제가 통과해도 <b>돈은 안 샌다</b> — 뒤엣것이 채굴에서
+ * revert 되고 FAILED 로 닫힌다. 잃는 것은 서명 한 번이라 얹는 것에 비해 막는 것이 작다.
+ *
  * <p>합계는 짧은 트랜잭션에서 읽고 체인 조회는 그 밖에서 한다 — {@code balanceOf} 는 네트워크 호출이라 DB 커넥션을
  * 잡은 채로 기다리지 않는다({@code EventEntryService.retryFailedBets} 와 같은 판단). 호출자가 이미 트랜잭션 안이면
  * 그 안에 얹힌다.

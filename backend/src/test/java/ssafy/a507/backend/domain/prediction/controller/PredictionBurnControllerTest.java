@@ -18,8 +18,10 @@ import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,10 +45,12 @@ import org.web3j.crypto.Credentials;
 import ssafy.a507.backend.common.security.SignatureGuard;
 import ssafy.a507.backend.common.security.SignatureNonceStore;
 import ssafy.a507.backend.common.security.SignatureScope;
+import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.chain.entity.Operation;
 import ssafy.a507.backend.domain.chain.relay.TokenReason;
 import ssafy.a507.backend.domain.chain.repository.OperationRepository;
 import ssafy.a507.backend.domain.chain.service.FakeTokenRelayer;
+import ssafy.a507.backend.domain.monetize.entity.AdBanner;
 import ssafy.a507.backend.domain.prediction.dto.PredictionCreateRequest;
 import ssafy.a507.backend.domain.prediction.entity.Prediction;
 import ssafy.a507.backend.support.TestNonceStoreConfig;
@@ -114,6 +118,7 @@ class PredictionBurnControllerTest {
             for (String sql : List.of(
                     "DELETE FROM notifications WHERE user_id = :u",
                     "DELETE FROM operations WHERE user_id = :u",
+                    "DELETE FROM ad_banners WHERE advertiser_id = :u",
                     "DELETE FROM prediction_commits WHERE prediction_id IN (SELECT id FROM predictions WHERE user_id = :u)",
                     "DELETE FROM prediction_evidences WHERE prediction_id IN (SELECT id FROM predictions WHERE user_id = :u)",
                     "DELETE FROM prediction_notes WHERE prediction_id IN (SELECT id FROM predictions WHERE user_id = :u)",
@@ -185,8 +190,8 @@ class PredictionBurnControllerTest {
     }
 
     @Test
-    @DisplayName("원장 잔액이 소각액보다 적으면 409 INSUFFICIENT_BALANCE — 서명 앞에서 끊겨 nonce 가 남고 예측도 없다")
-    void 원장_잔액_부족() throws Exception {
+    @DisplayName("가용잔액이 소각액보다 적으면 409 INSUFFICIENT_BALANCE — 서명 앞에서 끊겨 nonce 가 남고 예측도 없다")
+    void 가용잔액_부족() throws Exception {
         credit(BigInteger.valueOf(499));
         useFreeSlots();
 
@@ -195,6 +200,58 @@ class PredictionBurnControllerTest {
                 .andExpect(jsonPath("$.code").value("INSUFFICIENT_BALANCE"));
 
         assertThat(count("SELECT count(*) FROM predictions WHERE user_id = " + userId)).isEqualTo(3);
+        assertThat(relayer.calls()).isEmpty();
+        assertThat(nonceStore.consume(userId, SignatureScope.PREDICTION)).isNotNull();
+    }
+
+    @Test
+    @DisplayName("광고 심사로 묶인 돈으로는 소각이 안 된다 — 체인에 10,000 이 있어도 PENDING 광고 9,800 을 빼면 200 이다")
+    void 광고_심사로_묶인_돈() throws Exception {
+        credit(BigInteger.valueOf(10_000));
+        useFreeSlots();
+        Instant now = Instant.now();
+        tx.executeWithoutResult(s -> em.persist(AdBanner.request(
+                em.getReference(User.class, userId), "/x", "https://a.example.com",
+                now, now.plus(7, ChronoUnit.DAYS), BigInteger.valueOf(9_800))));
+
+        perform(signed(request("85000")), UUID.randomUUID().toString())
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("INSUFFICIENT_BALANCE"));
+
+        assertThat(count("SELECT count(*) FROM predictions WHERE user_id = " + userId)).isEqualTo(3);
+        assertThat(relayer.calls()).isEmpty();
+        assertThat(nonceStore.consume(userId, SignatureScope.PREDICTION)).isNotNull();
+    }
+
+    @Test
+    @DisplayName("원장은 더 이상 보지 않는다 — 원장에 30,000 이 찍혀 있어도 체인 잔액이 0 이면 409")
+    void 원장이_아니라_체인을_본다() throws Exception {
+        // 인덱서가 늦어 원장이 앞서 있는 상황. 전에는 이 검사를 통과하고 서명까지 받은 뒤 체인 시뮬레이션에서 막혔다.
+        tx.executeWithoutResult(s -> em.createNativeQuery(
+                        "INSERT INTO token_ledger (user_id, delta, reason, created_at) VALUES (?, ?, 'TEST', CURRENT_TIMESTAMP)")
+                .setParameter(1, userId).setParameter(2, RICH).executeUpdate());
+        useFreeSlots();
+
+        perform(signed(request("85000")), UUID.randomUUID().toString())
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("INSUFFICIENT_BALANCE"));
+
+        assertThat(relayer.calls()).isEmpty();
+        assertThat(nonceStore.consume(userId, SignatureScope.PREDICTION)).isNotNull();
+    }
+
+    @Test
+    @DisplayName("지갑이 없는 채로 슬롯을 넘기면 400 WALLET_NOT_LINKED — 전에는 원장이 0 이라 '잔액 부족' 으로 나갔다")
+    void 지갑_미연동() throws Exception {
+        credit(RICH);
+        useFreeSlots();
+        tx.executeWithoutResult(s -> em.createNativeQuery("UPDATE users SET wallet_address = NULL WHERE id = ?")
+                .setParameter(1, userId).executeUpdate());
+
+        perform(signed(request("85000")), UUID.randomUUID().toString())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("WALLET_NOT_LINKED"));
+
         assertThat(relayer.calls()).isEmpty();
         assertThat(nonceStore.consume(userId, SignatureScope.PREDICTION)).isNotNull();
     }
@@ -274,10 +331,9 @@ class PredictionBurnControllerTest {
         return JSON.readTree(actions.andReturn().getResponse().getContentAsString()).get(field).asString();
     }
 
+    /** 체인 잔액을 심는다. 소각 판단은 가용잔액(체인 잔액 − PENDING 홀드)을 본다(ANT-TOKEN-13) — 원장이 아니다. */
     private void credit(BigInteger amount) {
-        tx.executeWithoutResult(s -> em.createNativeQuery(
-                        "INSERT INTO token_ledger (user_id, delta, reason, created_at) VALUES (?, ?, 'TEST', CURRENT_TIMESTAMP)")
-                .setParameter(1, userId).setParameter(2, amount).executeUpdate());
+        relayer.withBalance(amount);
     }
 
     private long count(String sql) {
