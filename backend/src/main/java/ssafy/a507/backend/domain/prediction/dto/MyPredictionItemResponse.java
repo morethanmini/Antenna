@@ -30,6 +30,11 @@ public record MyPredictionItemResponse(
         Prediction.Status status,
         Integer dday,
         BigDecimal errorRate,
+        /**
+         * 기준일 (ANT-PRED-11). 화면의 진행 막대가 시작일을 {@code settleDate - horizon 일} 로 되짚어 그렸는데,
+         * horizon 이 영업일이 되면서 그 뺄셈이 틀어진다 — 화요일 만기 · 3일이 토요일 시작으로 나온다. 되짚지 말고 준다.
+         */
+        LocalDate baseDate,
         LocalDate settleDate,
         ProofResponse.AnchorStatus anchorStatus) {
 
@@ -45,6 +50,7 @@ public record MyPredictionItemResponse(
                 p.getStatus(),
                 dday(p, today),
                 p.getErrorRate(),
+                p.getBaseDate(),
                 p.getSettleDate(),
                 ProofResponse.AnchorStatus.of(batch));
     }

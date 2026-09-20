@@ -276,7 +276,7 @@ public class PredictionRegisterService {
                 refClose,
                 req.horizon(),
                 baseDate,
-                baseDate.plusDays(req.horizon())));
+                BusinessDays.plusWeekdays(baseDate, req.horizon())));
         notes.save(PredictionNote.of(prediction, req.note()));
         evidences.saveAll(points.stream().map(p -> PredictionEvidence.of(prediction, p)).toList());
         commits.save(commitFactory.seal(

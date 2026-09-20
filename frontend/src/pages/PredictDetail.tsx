@@ -26,7 +26,7 @@ import SubscriptionGate from '../components/state/SubscriptionGate'
 import { isSubscriptionGated } from '../api/errors'
 import { PROOF_STATUS_LABEL, fetchProof } from '../api/proof'
 import { useBlock } from '../api/useBlock'
-import { getPredictionDetail, targetProgress, phaseOf, horizonLabel } from '../api/predictions'
+import { getPredictionDetail, targetProgress, phaseOf, horizonLabel, isAwaitingVerdict } from '../api/predictions'
 import { getProfile } from '../api/stockDetail'
 import '../styles/screens/predict-detail.css'
 
@@ -239,7 +239,10 @@ export default function PredictDetail() {
             )}
 
             {d.dday !== null && (
-              <p className="pd-dday num">{d.dday === 0 ? '오늘 만기' : `만기까지 D-${d.dday}`}</p>
+              <p className="pd-dday num">
+                {isAwaitingVerdict(d.dday) ? '만기 지남 · 다음 거래일 종가로 판정합니다'
+                  : d.dday === 0 ? '오늘 만기' : `만기까지 D-${d.dday}`}
+              </p>
             )}
           </section>
 

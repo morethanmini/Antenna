@@ -18,6 +18,7 @@
    (§4 C-03). 잠긴 카드도 종목·방향·작성자·적중률까지는 보여준다 — 존재를 감추면
    구독 유인이 사라진다(§5). */
 import { Link } from 'react-router-dom'
+import { isAwaitingVerdict } from '../../api/predictions'
 import type { Direction, PredictionStatus as Status } from '../../api/predictions'
 import LockedCard from '../state/LockedCard'
 import PredictionStatus from './PredictionStatus'
@@ -113,7 +114,8 @@ export default function PredictionCard({ data }: { data: PredictionCardData }) {
         {dday !== null && dday !== undefined && (
           <div>
             <dt>남은 기간</dt>
-            <dd className="num">{`D-${dday}`}</dd>
+            {/* 만기일이 지나면 dday 가 음수다 — "D--1" 로 찍히던 것(ANT-PRED-11) */}
+            <dd className="num">{isAwaitingVerdict(dday) ? '판정 대기' : `D-${dday}`}</dd>
           </div>
         )}
         {errorRate !== null && errorRate !== undefined && (

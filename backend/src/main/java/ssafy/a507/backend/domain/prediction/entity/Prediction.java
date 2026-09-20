@@ -201,7 +201,7 @@ public class Prediction {
      * 배팅 이벤트 예측 등록 (ANT-EVENT-05). {@link #register} 와 <b>같은 행을 만든다</b> — 컬럼 추가 없음.
      *
      * <p>다른 점은 날짜를 <b>이벤트가 준다</b>는 것뿐이다. 일반 등록은 {@code baseDate} 를 다음 영업일로
-     * 잡고 {@code settleDate = baseDate + horizon} 을 계산하는데, 이벤트는 회차가 목·월로 못박혀 있어
+     * 잡고 {@code settleDate = baseDate + horizon 영업일} 을 계산하는데(ANT-PRED-11), 이벤트는 회차가 목·월로 못박혀 있어
      * 그 값을 그대로 복사한다. 그래야 기존 판정 배치가 코드 한 줄 안 바꾸고 이벤트 예측을 판정한다 —
      * 배치는 "base_date 도래분" 을 찾을 뿐 그 예측이 이벤트인지 모른다.
      *
@@ -227,7 +227,7 @@ public class Prediction {
      * 기준가 확정 BASE → OPEN (ANT-PRED-03). 대상 선별은 호출 쪽이 한다.
      *
      * <p>{@code baseDate} 는 건드리지 않는다. 휴장이라 다음 거래일 종가를 썼더라도 등록 때 약속한 날짜는 그대로 둔다 —
-     * settle_date 가 base_date + horizon 이라 여기서 옮기면 이미 사용자에게 나간 만기일까지 밀린다.
+     * settle_date 가 base_date 에서 horizon 영업일을 센 날이라 여기서 옮기면 이미 사용자에게 나간 만기일까지 밀린다.
      * 대신 실제로 어느 날 종가를 썼는지는 {@code basedOn} 에 남긴다(ANT-PRED-09) — {@link #settle} 의 settledOn 과 같은 이유.
      *
      * @param basedOn 실제로 종가를 가져온 거래일. base_date 와 다를 수 있다
