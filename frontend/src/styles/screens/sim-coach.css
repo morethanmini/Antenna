@@ -1,0 +1,125 @@
+/* G-04 진행 화면 안내 — 음영과 구멍
+   [ANT-FE-SEASON-PLAY]
+
+   덮개 색·모서리·버튼은 G-00(sim-onboarding.css)과 같은 값을 쓴다. 같은 제품의
+   안내가 화면마다 다른 생김새면 다른 기능으로 읽힌다. 선택자만 spc- 로 나눈다.
+
+   음영은 덮개 한 장이 아니라 **구멍의 그림자**다. 덮개에 구멍을 내려면 clip-path 로
+   사각형 네 장을 오려 붙여야 하는데, 구멍이 매 프레임 움직이는 화면이라 네 장의
+   좌표가 한 프레임씩 어긋나면 이음새에 실선이 보인다. 그림자는 한 값이라 그럴 일이
+   없다 — 구멍 하나에 box-shadow 로 화면을 통째로 덮는다. */
+
+.spc{position:fixed;inset:0;z-index:70}  /* G-00 덮개(60)보다 위 */
+
+/* 뒤 화면을 눌리지 않게 막는 판. 그림자는 클릭을 받지 않으므로 이 판이 따로 맡는다.
+   스크롤은 막지 않는다 — 걸음마다 그 칸을 화면 가운데로 끌어오고, 사람이 직접
+   굴려 둘러보는 것도 안내를 방해하지 않는다(구멍이 따라간다). */
+.spc-block{position:absolute;inset:0;cursor:default}
+
+.spc-hole{
+  position:fixed;
+  border-radius:14px;
+  pointer-events:none;              /* 구멍 안은 보기만 한다. 누르는 것은 안내가 끝난 뒤다 */
+  box-shadow:0 0 0 9999px rgba(20,20,27,.58), 0 0 0 2px var(--brand) inset;
+  animation:spc-in .18s ease both;
+  /* 자리가 바뀔 때 미끄러지듯 옮긴다. 툭툭 끊기면 같은 화면인데 다른 곳으로
+     순간이동한 것처럼 보여 어디를 봤는지 놓친다 */
+  transition:top .22s cubic-bezier(.2,.8,.3,1),left .22s cubic-bezier(.2,.8,.3,1),
+             width .22s cubic-bezier(.2,.8,.3,1),height .22s cubic-bezier(.2,.8,.3,1);
+}
+@keyframes spc-in{from{opacity:0}to{opacity:1}}
+
+/* ── 말풍선 ───────────────────────────────────────────
+   폭은 PlayCoachMarks 의 CARD_W 가 인라인으로 준다(자리 계산이 그 값을 쓴다).
+   여기서는 생김새만 정한다. */
+.spc-card{
+  position:fixed;
+  padding:16px 18px 14px;
+  border-radius:16px;
+  background:var(--surface);
+  box-shadow:0 24px 50px -18px rgba(20,20,27,.45),0 0 0 1px var(--card-line);
+  outline:none;
+  word-break:keep-all;
+  animation:spc-rise .2s cubic-bezier(.2,.8,.3,1) both;
+  transition:top .22s cubic-bezier(.2,.8,.3,1),left .22s cubic-bezier(.2,.8,.3,1);
+}
+@keyframes spc-rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){
+  .spc-hole,.spc-card{animation:none;transition:none}
+}
+
+/* 꼬리. 구멍 쪽을 향한다 — 말풍선이 화면 가장자리에 밀려도 방향은 남는다 */
+.spc-card::before{
+  content:'';position:absolute;width:12px;height:12px;
+  background:var(--surface);transform:rotate(45deg);
+}
+.spc-card.at-bottom::before{top:-6px;left:28px;box-shadow:-1px -1px 0 0 var(--card-line)}
+.spc-card.at-top::before{bottom:-6px;left:28px;box-shadow:1px 1px 0 0 var(--card-line)}
+.spc-card.at-right::before{left:-6px;top:calc(50% - 6px);box-shadow:-1px 1px 0 0 var(--card-line)}
+.spc-card.at-left::before{right:-6px;top:calc(50% - 6px);box-shadow:1px -1px 0 0 var(--card-line)}
+
+/* ── 걸음 표시 ───────────────────────────────────── */
+.spc-rail{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.spc-dots{list-style:none;display:flex;align-items:center;gap:5px;margin:0;padding:0}
+.spc-dots li{
+  width:7px;height:7px;border-radius:999px;background:var(--surface-2);
+  transition:width .22s ease,background .22s ease;
+}
+.spc-dots li.is-done{background:var(--brand-softer);box-shadow:inset 0 0 0 1px #ddd8fb}
+.spc-dots li.is-on{width:22px;background:var(--brand)}
+.spc-count{margin-left:auto;color:var(--faint);font-size:var(--fs-2xs);font-weight:var(--fw-heavy)}
+
+/* ── 글 ───────────────────────────────────────────── */
+.spc-title{
+  margin:0 0 6px;color:var(--ink);
+  font-size:var(--fs-xl);font-weight:var(--fw-heavy);letter-spacing:-.01em;
+}
+.spc-body{margin:0;color:var(--body);font-size:var(--fs-base);line-height:1.62}
+
+/* ── 다시 보지 않기 ───────────────────────────────
+   버튼 줄 위에 따로 한 줄로 둔다. 건너뛰기 옆에 붙이면 320px 안에서 "건너뛰기 ·
+   다시 보지 않기 · 이전 · 다음" 넷이 다투다가 글자가 줄바꿈된다.
+   눈에 띄지 않게 작고 흐리게 — 안내를 끄는 스위치가 다음 버튼만큼 크면 안 된다. */
+.spc-never{
+  display:flex;align-items:center;gap:6px;margin-top:12px;cursor:pointer;
+  color:var(--faint);font-size:var(--fs-2xs);font-weight:var(--fw-normal);
+  user-select:none;
+}
+.spc-never:hover{color:var(--muted)}
+.spc-never input{width:13px;height:13px;margin:0;accent-color:var(--brand);cursor:pointer}
+
+/* ── 버튼 ─────────────────────────────────────────── */
+.spc-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
+.spc-skip{
+  border:0;background:none;padding:6px 2px;cursor:pointer;
+  color:var(--faint);font-size:var(--fs-md);font-weight:var(--fw-normal);
+}
+.spc-skip:hover{color:var(--muted);text-decoration:underline}
+.spc-nav{display:flex;align-items:center;gap:6px}
+.spc-btn{
+  height:32px;padding:0 14px;border-radius:9px;cursor:pointer;
+  font-size:var(--fs-md);font-weight:var(--fw-bold);
+  transition:background .15s ease,border-color .15s ease;
+}
+.spc-btn.ghost{border:1px solid var(--rule);background:var(--surface);color:var(--muted)}
+.spc-btn.ghost:hover:not(:disabled){border-color:var(--card-line);background:var(--brand-softer)}
+/* 첫 걸음에서는 자리만 지키고 보이지 않는다(마크업 주석 참고) */
+.spc-btn.ghost:disabled{opacity:0;pointer-events:none}
+.spc-btn.solid{border:1px solid var(--brand);background:var(--brand);color:#fff}
+.spc-btn.solid:hover{background:var(--brand-ink);border-color:var(--brand-ink)}
+
+/* ── 좁은 화면 ─────────────────────────────────────
+   말풍선이 화면 폭을 넘지 않게만 막는다. 자리 계산은 CARD_W(320)로 하므로
+   360 보다 좁은 창에서는 가장자리에 밀려 붙는다 — 구멍은 그대로 보인다. */
+@media (max-width:420px){
+  .spc-card{max-width:calc(100vw - 24px)}
+}
+
+/* ── 화면 안쪽의 "안내 다시 보기" ──────────────────
+   안내는 라우트가 없어 링크로 열 수 없다. 머리줄 소제목 옆에 글자 버튼 하나로 둔다 —
+   한 번 닫으면 자동으로는 다시 뜨지 않으므로 여는 자리가 화면 안에 있어야 한다. */
+.sp-coach-again{
+  border:0;background:none;padding:0;cursor:pointer;
+  color:var(--brand);font-size:inherit;font-weight:var(--fw-bold);
+}
+.sp-coach-again:hover{text-decoration:underline}
