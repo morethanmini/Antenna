@@ -12,11 +12,13 @@
    - 연동 후 원래 하려던 동작으로 이어져야 한다. 그래서 성공을 onLinked 로 올려
      호출부(주로 C-01 예측 등록)가 하던 일을 마저 하게 한다.
    - 가입 보너스는 완료 화면 한 줄이 전부다(ANT-TOKEN-07). 수령 버튼을 두지 않는다 —
-     사용자가 할 일이 없다. 전송이 실패해도 응답 모양이 성공과 같아 과거형으로 쓰지 않는다.
+     사용자가 할 일이 없다. 연동 응답만으로는 전송이 됐는지 알 수 없어서, 그 줄이 작업을
+     직접 조회해 확정됐을 때만 과거형으로 쓴다(ANT-FE-WALLET-SYNC).
 
    두지 않는 것: 연동 해제 · 다중 지갑 관리. 해당 API 가 없다. */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, ERROR_CODE } from '../../api/errors'
+import { useOperation } from '../../api/operations'
 import type { WalletLinkResult } from '../../api/wallet'
 import { formatToken, linkWallet, requestNonce, shortAddress, signingPayload } from '../../api/wallet'
 import { WALLET_INSTALL_URL, connectAddress, hasWallet, onWalletReady, personalSign } from '../../wallet/provider'
@@ -60,6 +62,12 @@ export default function WalletLinkModal({
   /* 연동과 함께 접수된 가입 보너스. 완료 화면의 한 줄이 이것만 보고 그릴지 말지 정한다.
      서버 체인이 꺼져 있으면 null 로 와서 줄이 아예 나오지 않는다. */
   const [bonus, setBonus] = useState<WalletLinkResult['bonus']>(null)
+  /* 보너스가 실제로 들어왔는지 묻는다(2026-09-20, QA 09-18 "가입 시 ANT 가 들어오지 않음").
+     전에는 "곧 지급됩니다" 만 남기고 끝이라, 0 ANT 를 본 사람은 안 준 것으로 읽었다.
+     **창은 잠그지 않는다** — 확정까지 붙잡는 안은 연동 뒤에 하려던 일(예측 등록)을 막아서 버렸다.
+     확정을 못 보고 닫으면 useOperation 이 정리하면서 잔액 저장소에 넘긴다(1분간 자주 확인).
+     서버는 작업 조회에 종류를 가리지 않아 보너스 작업도 그대로 읽힌다. */
+  const bonusStatus = useOperation(bonus?.operationId ?? null).operation?.status
   const [error, setError] = useState<ApiError | null>(null)
 
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -163,14 +171,28 @@ export default function WalletLinkModal({
             <p className="wl-done-title">지갑을 연동했습니다</p>
             <code className="wl-address">{linked}</code>
 
-            {/* 보너스를 알 수 있는 화면은 여기뿐이다. 다만 mint 전송이 실패해도 응답은 이 모양
-                그대로라, 성공했다고 단정하는 과거형은 그때 거짓이 된다. 실패분은 서버 재시도
-                배치가 결국 보내므로 "곧 지급됩니다" 만 두 경우 모두에서 참이다.
+            {/* 보너스를 알 수 있는 화면은 여기뿐이다. 세 가지로 갈린다.
+                · 확정(SUCCEEDED)  — 그때만 과거형이다. 보통 연동 뒤 4~8초.
+                · 전송 실패(FAILED) — 서버 재시도 배치가 10분 안팎에 다시 보낸다. "최대 1분" 이
+                  거짓이 되는 유일한 경우라 문구를 바꾼다.
+                · 그 밖(확인 중 · 조회 실패) — 입금 중. 정상이면 블록 2초 + 인덱서 5초 안쪽이다.
                 금액은 서버 설정(app.token.amounts.signup-bonus)이라 응답값을 그대로 쓴다. */}
             {bonus && (
-              <p className="wl-done-bonus">
-                가입 보너스 {formatToken(bonus.amount)} ANT 가 곧 지급됩니다
-              </p>
+              bonusStatus === 'SUCCEEDED' ? (
+                <p className="wl-done-bonus is-paid">
+                  가입 보너스 {formatToken(bonus.amount)} ANT 가 지급됐습니다
+                </p>
+              ) : bonusStatus === 'FAILED' ? (
+                <p className="wl-done-bonus">
+                  가입 보너스 입금이 늦어지고 있습니다. 잠시 뒤 자동으로 들어옵니다.
+                  <small>창을 닫아도 괜찮습니다.</small>
+                </p>
+              ) : (
+                <p className="wl-done-bonus">
+                  가입 보너스 {formatToken(bonus.amount)} ANT 가 입금 중입니다. (최대 1분 소요됩니다.)
+                  <small>창을 닫아도 괜찮습니다.</small>
+                </p>
+              )
             )}
 
             {/* 연동은 끝났지만 지갑 목록에는 아직 ANT 가 없다. 이 칸이 스스로 지갑에 넣는다 —
