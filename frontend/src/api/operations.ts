@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from './client'
 import { ERROR_CODE, type ApiError } from './errors'
+import { expectWalletChange, refreshWalletBalance } from './walletBalance'
 
 /**
  * 202 를 쓰는 곳. POST /wallet/nonce 의 scope 어휘와 같다(WALLET_LINK 만 빠진다).
@@ -110,6 +111,8 @@ export function useOperation(operationId: string | null) {
     let timer: ReturnType<typeof setTimeout> | undefined
     let attempts = 0
     let stopped = false
+    /* 마지막으로 본 상태가 PENDING 인가. 확정 전에 창을 닫으면 아래 정리에서 쓴다 */
+    let pending = false
 
     async function ask(id: string) {
       try {
@@ -117,6 +120,7 @@ export function useOperation(operationId: string | null) {
         if (stopped || mine !== gen.current) return
 
         if (operation.status === 'PENDING') {
+          pending = true
           attempts += 1
           if (attempts >= MAX_ATTEMPTS) {
             setState({ ...IDLE, operation, timedOut: true })
@@ -127,7 +131,12 @@ export function useOperation(operationId: string | null) {
           return
         }
         // SUCCEEDED · FAILED 는 종착이다. 더 묻지 않는다.
+        pending = false
         setState({ ...IDLE, operation })
+        /* 온체인 작업은 전부 ANT 를 움직인다 — 끝난 순간 잔액을 다시 읽는다(ANT-FE-WALLET-SYNC).
+           서버 인덱서가 원장 행과 작업 SUCCEEDED 를 한 트랜잭션에 쓰므로, 여기서 읽으면 이미
+           바뀐 값이 온다. FAILED 는 잔액이 그대로지만 가려서 얻는 것이 없어 같이 읽는다. */
+        void refreshWalletBalance()
       } catch (e) {
         if (stopped || mine !== gen.current) return
         const err = e as ApiError
@@ -155,6 +164,9 @@ export function useOperation(operationId: string | null) {
     return () => {
       stopped = true
       clearTimeout(timer)
+      /* 확정을 못 보고 창이 닫혔다. 작업은 체인에서 계속 가므로 잔액은 곧 바뀐다 —
+         이 폴링이 멈췄으니 저장소가 대신 잠깐 자주 본다. 안 그러면 방금 쓴 돈이 최대 30초 늦다. */
+      if (pending) expectWalletChange()
     }
   }, [operationId, round])
 
