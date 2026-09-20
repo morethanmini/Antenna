@@ -13,7 +13,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getMarketIndices, getWatchlist } from '../api/insight'
 import { fetchActiveAds } from '../api/ads'
-import { fetchWalletBalance, formatToken } from '../api/wallet'
+import { formatToken } from '../api/wallet'
+import { useWalletBalance } from '../api/walletBalance'
 import { fetchRankings, formatComputedAt, metric } from '../api/rankings'
 import { getBriefings } from '../api/briefings'
 import { useBriefingParam } from '../components/briefingParam'
@@ -303,10 +304,12 @@ function MarketOverview() {
 /* 지갑 화면(H-01)과 같은 응답을 읽는다 — api/wallet.ts 한 벌을 쓴다.
    전에는 api/insight.ts 가 같은 이름으로 다른 모양을 선언하고 있었다(balance 를 number 로,
    서버에 없는 30일 증감·원화 환산까지). 목업일 때는 드러나지 않다가 ANT-TOKEN-04 로 경로가
-   생기자 undefined.toLocaleString() 에서 터져 홈 전체가 오류 화면이 됐다. */
+   생기자 undefined.toLocaleString() 에서 터져 홈 전체가 오류 화면이 됐다.
+
+   **상단 칩과 같은 저장소를 읽는다**(2026-09-20, ANT-FE-WALLET-SYNC). 전에는 이 카드가 들어올
+   때마다 따로 읽어서, 구독 직후 홈에 오면 여기는 새 값이고 칩은 옛 값이었다. */
 function MyAssets() {
-  const load = useCallback(() => fetchWalletBalance(), [])
-  const { data, loading, error, reload } = useAsync(load)
+  const { data, loading, error, reload } = useWalletBalance()
 
   return (
     <section className="card hm-card hm-wallet" aria-labelledby="hm-assets">
