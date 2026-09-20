@@ -4,6 +4,11 @@
    화면설계서 §3 에 없는 화면이다. G-02 모드 선택에서 PRACTICE 를 고른 사람이 머무는
    허브라 화면 ID 는 G-02 를 그대로 쓴다 — A-01 의 OAuth 복귀 경로와 같은 처리다.
 
+   **2026-09-21 부터 여기가 모의투자의 시작점이다.** 모드 선택을 걷어내면서(연습 하나로
+   가기로 정해짐) 사이드바 '투자하기' · 안내 투어 · 시즌 상세가 전부 이 주소로 온다.
+   화면 ID 를 G-02 로 둔 것은 그대로다 — 부모가 없어졌다고 번호를 새로 매기면
+   설계서와 어긋난다.
+
    구조·클래스 이름(pr-*)은 프로토타입 screens/sim-practice.html 을 따른다.
    셸(사이드바·상단바)은 프로토타입 것을 쓰지 않고 현재 Layout 을 그대로 쓴다.
 
@@ -167,7 +172,8 @@ function Summary({ going, done, open, openFailed }: {
    할 수 있는 것, 즉 진행 중인 연습을 카드로 세운다. */
 function Going({ runs, loading, failure, onRetry, startAt }: {
   runs: MyRun[]; loading: boolean; failure: ApiError | null
-  onRetry: () => void; startAt: string
+  /** 바로 들어갈 연습이 없으면 null — 그때는 권하지 않는다(아래 빈 상태 참고) */
+  onRetry: () => void; startAt: string | null
 }) {
   const cards = [...runs].sort(recentFirst).slice(0, GOING_CARDS)
 
@@ -184,7 +190,12 @@ function Going({ runs, loading, failure, onRetry, startAt }: {
       {!loading && !failure && cards.length === 0 && (
         <p className="pr-empty">
           진행 중인 연습이 없습니다.
-          <Link to={startAt}>연습 시작하기 ›</Link>
+          {/* 갈 곳이 없으면 링크를 걸지 않는다(2026-09-21). 전에는 모드 선택으로
+              보냈는데 그 화면을 걷어냈고, 이 화면으로 도로 걸면 제자리걸음이다.
+              고를 주제는 바로 옆 칸에 이미 펼쳐져 있다. */}
+          {startAt
+            ? <Link to={startAt}>연습 시작하기 ›</Link>
+            : <span> 옆에서 주제를 고르세요.</span>}
         </p>
       )}
 
@@ -279,17 +290,18 @@ export default function SeasonPractice() {
   const mine = useAsync(getMyRuns)
   const openList = useAsync(getPracticeRuns)
 
-  /* 이 화면은 연습만 다룬다. 대회·시연은 G-02 모드 선택에서 고른다. */
+  /* 이 화면은 연습만 다룬다. 대회·시연은 화면에서 가는 길이 없다(2026-09-21 모드 선택 폐기). */
   const going = (mine.data?.ongoing ?? []).filter((r) => r.mode === 'PRACTICE')
   const done = (mine.data?.done ?? []).filter((r) => r.mode === 'PRACTICE')
   /* 모드는 서버가 걸러 준다(?mode=PRACTICE) — DEMO 가 관리자 전용이라
      응답 자체에 실려 오지 않아야 한다. 여기서는 참가 가능 여부만 본다. */
   const open = (openList.data?.items ?? []).filter(isJoinable).sort(joinableFirst)
 
-  /* 바로 들어갈 수 있는 연습이 있으면 그 상세로, 없으면 모드 선택으로 보낸다.
+  /* 바로 들어갈 수 있는 연습이 있으면 그 상세로. 없으면 null 이다 — 모드 선택을
+     걷어내(2026-09-21) 보낼 곳이 없어졌고, 이 화면으로 도로 보내면 제자리걸음이다.
      주제로 시즌을 고르는 길은 아직 서버에 없어 주제 카드도 같은 곳을 가리킨다. */
   const first = open[0]
-  const startAt = first ? `/sim/seasons/${first.id}` : '/sim/modes'
+  const startAt = first ? `/sim/seasons/${first.id}` : null
 
   /* AI 가이드의 복기 버튼이 가리킬 판. 복기는 결과 화면(G-08)에만 있고
      기록 목록(G-09)에는 없다 — 가장 최근에 끝낸 판으로 곧장 보낸다. */
