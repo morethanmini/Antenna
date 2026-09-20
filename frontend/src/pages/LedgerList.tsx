@@ -61,7 +61,7 @@ import {
   formatAnchorAgo, formatBusinessDate,
   type Anchor, type AnchorStatus, type LedgerCommit,
 } from '../api/anchors'
-import { horizonLabel } from '../api/predictions'
+import { horizonLabel, phaseOf } from '../api/predictions'
 import type { CursorList } from '../api/types'
 import AnchorBadge from '../components/AnchorBadge'
 import { ANCHOR_BATCH_CYCLE } from '../components/prediction/AnchorStage'
@@ -277,7 +277,19 @@ function GroupHead({ group, anchor }: { group: Group; anchor?: Anchor }) {
 }
 
 /* 예측 줄 — 무엇을 봉인했나.
-   검산 링크를 줄 끝에 붙인다. 아래 따로 줄을 두면 목록이 성기게 보인다. */
+   검산 링크를 줄 끝에 붙인다. 아래 따로 줄을 두면 목록이 성기게 보인다.
+
+   **판정 전에는 링크를 걸지 않는다.** GET /predictions/{id}/proof 는 미판정 예측을
+   작성자·유효 구독자에게만 내리고 그 밖에는 403 이다(ProofService: !settled && !own &&
+   !subscriber). 원장은 회원 전원이 보는 화면이라 "기준가 대기" 줄에 검산을 걸어 두면
+   대부분에게 눌리는 즉시 403 인 문이 된다 — 증명을 내세우는 화면에서 가장 나쁜 실패다.
+
+   /commits 응답에는 뷰어가 작성자·구독자인지가 없어 그 둘만 남기는 길은 없다. 작성자도
+   원장에서는 링크를 잃지만 자기 예측 상세(C-03)에 같은 링크가 있어 길이 끊기지는 않는다 —
+   누를 수 있는데 안 보이는 쪽이, 보이는데 막히는 쪽보다 낫다.
+
+   경계는 phaseOf 를 쓴다. 상태 넷 중 무엇이 공개인지의 정의가 거기 한 벌로 있고
+   (api/predictions.ts), 서버 게이팅이 갈리는 자리와 정확히 같다. */
 function PredictionRow({ c }: { c: Extract<LedgerCommit, { kind: 'PREDICTION' }> }) {
   return (
     <div className="lg-what">
@@ -294,9 +306,11 @@ function PredictionRow({ c }: { c: Extract<LedgerCommit, { kind: 'PREDICTION' }>
       <span className="lg-horizon">{horizonLabel(c.horizon)}</span>
       <PredictionStatus status={c.status} />
 
-      <Link className="lg-go" to={`/ledger/verify/${c.predictionId}`}>
-        검산<em aria-hidden="true">›</em>
-      </Link>
+      {phaseOf(c.status) === 'JUDGED' && (
+        <Link className="lg-go" to={`/ledger/verify/${c.predictionId}`}>
+          검산<em aria-hidden="true">›</em>
+        </Link>
+      )}
     </div>
   )
 }

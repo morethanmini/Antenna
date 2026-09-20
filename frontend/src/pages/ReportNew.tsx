@@ -32,6 +32,7 @@ import { ERROR_CODE } from '../api/errors'
 import { useAuth } from '../auth/context'
 import { connectAddress, hasWallet, personalSign } from '../wallet/provider'
 import WalletLinkModal from '../components/wallet/WalletLinkModal'
+import WalletPrelink from '../components/wallet/WalletPrelink'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { errorText } from '../components/state/errorText'
 import FieldError from '../components/state/FieldError'
@@ -203,6 +204,10 @@ export default function ReportNew() {
           <h1>리포트 작성</h1>
           <p>지갑으로 서명해 발행합니다. 발행하면 수정하거나 지울 수 없습니다</p>
         </div>
+
+        {/* 지갑 없이 들어왔으면 쓰기 **전에** 연동부터 권한다(ANT-FE-WALLET-PRELINK). 긴 글을 다 쓰고
+            발행을 눌렀는데 지갑 확장이 없으면, 연동 창이 시키는 새로고침에 글이 통째로 사라진다 */}
+        <WalletPrelink purpose="리포트를 발행하려면" />
 
         <form className="rn" onSubmit={submit}>
           <div className="rn-field">

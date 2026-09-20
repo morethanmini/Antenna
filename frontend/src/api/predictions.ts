@@ -34,8 +34,10 @@ export type Direction = (typeof DIRECTIONS)[number]
  * 3~90 사이 정수 일수. 눈금 네 개(7·14·30·90) 고정이었는데 2026-09-14 에 연속 구간으로
  * 넓혔다 — "2주쯤" 처럼 눈금 사이를 노리는 예측을 눈금에 맞춰 반올림하게 만들 이유가 없다.
  *
- * **거래일이 아니라 캘린더일이다**(결정 B5, 명세 v0.38). 만기일 = 기준일 + horizon 일로
- * 등록 즉시 확정된다 — 휴장일을 세지 않으므로 클라이언트가 그대로 계산할 수 있다.
+ * **영업일이다 — 주말을 빼고 센다**(ANT-PRED-11, 명세 v0.85. 전에는 캘린더일이라 수요일 + 3 이
+ * 토요일 만기로 잡혔다). 만기일 = 기준일에서 평일만 horizon 번 센 날로 등록 즉시 확정된다.
+ * 공휴일은 세지 않는다 — 클라이언트가 달력 없이 그대로 계산할 수 있어야 하고, 걸리면 서버가
+ * 그 이후 첫 거래일 종가로 판정한다.
  * DB CHECK(DB-01)·서버 검증이 같은 구간이라, 밖의 값을 보내면
  * 400 INVALID_REQUEST(horizon) 이다.
  */
@@ -47,6 +49,16 @@ export type Horizon = number
 export const HORIZON_TICKS = [3, 30, 60, 90] as const
 
 export const horizonLabel = (h: Horizon) => `${h}일`
+
+/**
+ * 만기일이 지났는데 아직 판정 전인가 (ANT-PRED-11).
+ *
+ * 서버의 dday 는 "오늘 → 만기일" 의 날수라 만기일이 지나면 **음수**다. 그대로 찍으면 "D--1" 이 된다.
+ * 이 상태는 정상이다 — 판정은 만기일 종가가 들어온 다음 날 13:30 배치가 하고, 만기일이 휴장(공휴일)이면
+ * 그 이후 첫 거래일 종가를 기다린다(서버 PredictionSettlementService).
+ */
+export const isAwaitingVerdict = (dday: number | null | undefined): dday is number =>
+  typeof dday === 'number' && dday < 0
 
 /** 근거 본문 상한. 구독자 전용이며 만기 리빌 후에도 공개되지 않는다. */
 export const NOTE_MAX = 5000
@@ -90,7 +102,7 @@ export type PredictionCreated = {
   status: 'BASE'
   /** 등록 시점의 다음 평일. 기준가는 이 날 종가로 배치가 채운다 */
   baseDate: string
-  /** baseDate + horizon 캘린더일 — 등록 즉시 확정된다 */
+  /** baseDate 에서 평일만 horizon 번 센 날 — 등록 즉시 확정된다(ANT-PRED-11 전의 예측은 캘린더일) */
   settleDate: string
 }
 
@@ -189,6 +201,9 @@ export type MyPrediction = {
   dday: number | null
   /** 목표가 대비 오차 %. 판정 완료만 채워진다 */
   errorRate: number | null
+  /** 기준일. 진행 막대의 시작점이다 — horizon 으로 되짚지 않는다(영업일이라 뺄셈이 안 맞는다, ANT-PRED-11).
+   *  서버가 이 칸을 내리기 전의 응답도 받도록 `?` 로 둔다 */
+  baseDate?: string | null
   /** 만기 영업일 YYYY-MM-DD. 기준가 배치가 채우기 전에는 null 이다 */
   settleDate: string | null
   /* 이 예측이 블록에 올라갔는가. 서버가 행마다 함께 내린다
@@ -304,7 +319,7 @@ export type PredictionDetail = {
   stockCode: string | null
   stockName: string | null
   status: PredictionStatus
-  /** 3~90 캘린더일 */
+  /** 3~90 영업일(ANT-PRED-11 전의 예측은 캘린더일) */
   horizon: number
   createdAt: string
 

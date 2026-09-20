@@ -13,7 +13,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getMarketIndices, getWatchlist } from '../api/insight'
 import { fetchActiveAds } from '../api/ads'
-import { fetchWalletBalance, formatToken } from '../api/wallet'
+import { formatToken } from '../api/wallet'
+import { useWalletBalance } from '../api/walletBalance'
 import { fetchRankings, formatComputedAt, metric } from '../api/rankings'
 import { getBriefings } from '../api/briefings'
 import { useBriefingParam } from '../components/briefingParam'
@@ -118,11 +119,11 @@ const TrophyIcon = () => (
           stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 )
-const PlusIcon = () => (
+const PenIcon = () => (
   <svg {...ico} className="hm-ico">
-    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
-    <path d="M12 8.4v7.2M8.4 12h7.2" stroke="currentColor" strokeWidth="1.8"
-          strokeLinecap="round" />
+    <path d="M4 20h4.2L19 9.2a2.1 2.1 0 0 0-3-3L5 17.2V20z" stroke="currentColor"
+          strokeWidth="1.8" strokeLinejoin="round" />
+    <path d="M14.3 7.4l2.9 2.9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
   </svg>
 )
 const ChartIcon = () => (
@@ -303,10 +304,12 @@ function MarketOverview() {
 /* 지갑 화면(H-01)과 같은 응답을 읽는다 — api/wallet.ts 한 벌을 쓴다.
    전에는 api/insight.ts 가 같은 이름으로 다른 모양을 선언하고 있었다(balance 를 number 로,
    서버에 없는 30일 증감·원화 환산까지). 목업일 때는 드러나지 않다가 ANT-TOKEN-04 로 경로가
-   생기자 undefined.toLocaleString() 에서 터져 홈 전체가 오류 화면이 됐다. */
+   생기자 undefined.toLocaleString() 에서 터져 홈 전체가 오류 화면이 됐다.
+
+   **상단 칩과 같은 저장소를 읽는다**(2026-09-20, ANT-FE-WALLET-SYNC). 전에는 이 카드가 들어올
+   때마다 따로 읽어서, 구독 직후 홈에 오면 여기는 새 값이고 칩은 옛 값이었다. */
 function MyAssets() {
-  const load = useCallback(() => fetchWalletBalance(), [])
-  const { data, loading, error, reload } = useAsync(load)
+  const { data, loading, error, reload } = useWalletBalance()
 
   return (
     <section className="card hm-card hm-wallet" aria-labelledby="hm-assets">
@@ -613,11 +616,19 @@ function ContestBanner() {
 }
 
 /* 배너가 히어로보다 짧게 끝나 남는 자리를 메운다. 데이터를 부르지 않는
-   지름길 모음이라 로딩·실패 상태가 없다. */
+   지름길 모음이라 로딩·실패 상태가 없다.
+
+   ── 첫 칸이 "예측 등록" 이 아닌 이유 (2026-09-18) ──────
+   /predict 는 화면이 아니라 넘겨보내는 자리다(PredictNew). 종목 코드가 없으면
+   /stocks 로 보내므로, 홈에서 누르면 바로 옆 "종목 탐색" 과 **같은 화면**에
+   떨어졌다 — 지름길 셋 중 둘이 한 곳을 가리키고 있었다.
+
+   그 자리를 리포트 작성이 받는다. 예측과 함께 이 서비스의 두 가지 쓰기 행위
+   중 하나인데, 지금은 리포트 피드 안으로 들어가야만 닿는다. */
 function QuickLinks() {
   return (
     <nav className="card hm-quick" aria-label="바로가기">
-      <Link to="/predict"><PlusIcon />예측 등록</Link>
+      <Link to="/reports/new"><PenIcon />리포트 쓰기</Link>
       <Link to="/stocks"><ChartIcon />종목 탐색</Link>
       <Link to="/me/predictions"><ListIcon />내 예측</Link>
     </nav>

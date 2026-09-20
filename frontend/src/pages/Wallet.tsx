@@ -13,8 +13,9 @@ import { useApiQuery } from '../api/useApiQuery'
 import { useCursorList } from '../api/useCursorList'
 import {
   LEDGER_REASONS, REASON_LABEL, formatDateTime, formatToken, reasonLabel,
-  type LedgerEntry, type LedgerReason, type WalletBalance, type WalletStatus,
+  type LedgerEntry, type LedgerReason, type WalletStatus,
 } from '../api/wallet'
+import { useWalletBalance } from '../api/walletBalance'
 import EmptyState from '../components/state/EmptyState'
 import ErrorState from '../components/state/ErrorState'
 import WalletLinkModal from '../components/wallet/WalletLinkModal'
@@ -26,7 +27,8 @@ export default function Wallet() {
   const [linking, setLinking] = useState(false)
 
   const status = useApiQuery<WalletStatus>('/wallet')
-  const balance = useApiQuery<WalletBalance>('/wallet/balance')
+  /* 상단 칩 · 홈 카드와 같은 저장소다(ANT-FE-WALLET-SYNC) — 이 화면의 잔액과 칩이 어긋나지 않는다 */
+  const balance = useWalletBalance()
   const ledger = useCursorList<LedgerEntry>('/wallet/ledger', { reason: reason ?? undefined })
 
   return (

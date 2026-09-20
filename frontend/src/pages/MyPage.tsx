@@ -30,7 +30,7 @@ import { useApiQuery } from '../api/useApiQuery'
 import { type BadgeList as BadgeListResponse, type MyProfile } from '../api/account'
 import { type Portfolio } from '../api/predictions'
 import { type MyRank } from '../api/rankings'
-import { type WalletBalance } from '../api/wallet'
+import { useWalletBalance } from '../api/walletBalance'
 import BadgeList from '../components/BadgeList'
 import ChannelProfileEdit from '../components/channel/ChannelProfileEdit'
 import ProfileAvatar from '../components/channel/ProfileAvatar'
@@ -99,7 +99,7 @@ export default function MyPage() {
      랭킹에 없으면 204 라 data 가 undefined 로 온다 — 404 가 아니다(명세 v0.28). */
   const rank = useApiQuery<MyRank>('/rankings/me', { track: 'REAL' })
   const port = useApiQuery<Portfolio>('/predictions/me/portfolio')
-  const wallet = useApiQuery<WalletBalance>('/wallet/balance')
+  const wallet = useWalletBalance()
   const badges = useApiQuery<BadgeListResponse>('/users/me/badges')
 
   /* 서버가 빈 배열로 내려주므로(ANT-AUTH-05) null 가드는 필요 없다.

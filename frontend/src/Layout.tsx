@@ -23,8 +23,8 @@ import WalletLinkModal from './components/wallet/WalletLinkModal'
 import { useBriefingParam } from './components/briefingParam'
 import { useDismiss } from './components/useDismiss'
 import { onSimOnboardingOpen, simOnboardingSeen } from './sim/onboardingSeen'
-import { useApiQuery } from './api/useApiQuery'
-import { formatToken, type WalletBalance } from './api/wallet'
+import { formatToken } from './api/wallet'
+import { useWalletBalance } from './api/walletBalance'
 
 export type Mode = 'insight' | 'sim'
 
@@ -61,17 +61,20 @@ const MODES = {
 
 /* 네비바 잔액.
    조건부로 그려지는 자리라 훅을 바깥에 둘 수 없어 작은 컴포넌트로 감쌌다 —
-   로그인했을 때만 마운트되고, 그때 한 번만 부른다(셸은 라우트가 바뀌어도 살아 있다).
+   로그인했을 때만 마운트된다.
 
-   홈 카드(B-01)와 **같은 함수**를 쓴다. 전에는 여기가 0 을, 홈이 목업 값을 띄워 같은
-   화면에서 두 숫자가 어긋났다.
+   **공유 잔액 저장소를 읽는다**(2026-09-20, QA 09-18 "상단 보유잔액과 지갑 잔액의 싱크가
+   맞지 않음"). 전에는 여기서 직접 한 번 읽었는데, 셸은 라우트가 바뀌어도 다시 마운트되지
+   않아서 그 값이 새로고침 전까지 그대로였다 — 구독하고 홈에 가면 카드는 5,000, 여기는
+   10,000 이었다. 이제 홈 카드 · 지갑 화면 · 결제 창과 같은 값을 같은 순간에 본다. 언제 다시
+   읽는지는 api/walletBalance.ts 머리말.
 
    못 받았을 때도 — 다. 0 은 "잔액이 없다" 는 주장이라, 못 불러온 것과 구분돼야 한다.
 
    눌러서 H-01 지갑·토큰으로 간다 — 잔액을 본 사람이 다음에 궁금한 것은 "어디서 늘고
    줄었나" 이고, 그 답이 그 화면의 원장이다. 못 불러왔을 때(—)도 링크는 살려 둔다. */
 function WalletChip() {
-  const { data } = useApiQuery<WalletBalance>('/wallet/balance')
+  const { data } = useWalletBalance()
 
   return (
     <Link className="wallet" to="/me/wallet" aria-label="보유 ANT · 지갑으로">

@@ -28,7 +28,7 @@ import ssafy.a507.backend.domain.chain.config.TokenAmountProperties;
 import ssafy.a507.backend.domain.chain.entity.Operation;
 import ssafy.a507.backend.domain.chain.relay.TokenReason;
 import ssafy.a507.backend.domain.chain.repository.OperationRepository;
-import ssafy.a507.backend.domain.chain.repository.TokenLedgerRepository;
+import ssafy.a507.backend.domain.chain.service.AvailableBalanceService;
 import ssafy.a507.backend.domain.chain.service.OperationService;
 import ssafy.a507.backend.domain.chain.service.TokenOperationService;
 import ssafy.a507.backend.domain.prediction.dto.PredictionQueuedResponse;
@@ -101,7 +101,7 @@ public class PredictionRegisterService {
     private final TokenOperationService tokenOperationService;
     private final OperationService operationService;
     private final OperationRepository operations;
-    private final TokenLedgerRepository ledger;
+    private final AvailableBalanceService availableBalance;
     private final TransactionTemplate tx;
 
     public PredictionRegisterService(
@@ -124,7 +124,7 @@ public class PredictionRegisterService {
             TokenOperationService tokenOperationService,
             OperationService operationService,
             OperationRepository operations,
-            TokenLedgerRepository ledger,
+            AvailableBalanceService availableBalance,
             TransactionTemplate tx) {
         this.em = em;
         this.predictions = predictions;
@@ -145,7 +145,7 @@ public class PredictionRegisterService {
         this.tokenOperationService = tokenOperationService;
         this.operationService = operationService;
         this.operations = operations;
-        this.ledger = ledger;
+        this.availableBalance = availableBalance;
         this.tx = tx;
     }
 
@@ -226,13 +226,17 @@ public class PredictionRegisterService {
         List<ResearchPoint> points = loadEvidences(req.evidencePointIdsOrEmpty(), stock);
         CommitHashes.requireNoteSalt(req.noteSalt());
 
-        /* ③ 슬롯 — 잠금 안에서 센다. 넘겼으면 소각 경로(ANT-PRED-10): 체인이 켜져 있고 원장 잔액이 소각액 이상이어야
+        /* ③ 슬롯 — 잠금 안에서 센다. 넘겼으면 소각 경로(ANT-PRED-10): 체인이 켜져 있고 가용잔액이 소각액 이상이어야
            한다. 둘 다 서명(nonce 소비) 앞이다 — 어차피 못 보낼 요청이 지갑 팝업을 한 번 더 겪게 하지 않는다.
-           원장은 1차 거름이고 체인 잔액은 전송 시뮬레이션이 한 번 더 본다(SubscriptionService·AdService 와 같다). */
+           가용잔액 = 체인 잔액 − 전송 중인 내 돈(PENDING 배팅·구독·광고). 구독·배팅·광고와 같은 숫자다(ANT-TOKEN-13).
+           전에는 여기만 원장(token_ledger) 합을 봐서, 광고 심사로 묶인 돈으로 소각이 나갔다 — 그러면 관리자가 승인하는
+           순간 잔액이 모자란다. 원장은 인덱서만큼 늦기도 해서, 방금 다 쓴 사람이 이 검사를 통과하고 서명한 뒤에야
+           체인 시뮬레이션에서 409 를 받았다. 체인 잔액은 전송 시뮬레이션이 한 번 더 본다.
+           지갑이 없으면 헬퍼가 WALLET_NOT_LINKED 를 던진다 — 전에는 원장이 0 이라 "잔액 부족" 으로 나갔다. */
         boolean overSlot = usedToday(userId, today) >= freePerDay;
         if (overSlot) {
             tokenOperationService.requireEnabled();
-            if (ledger.balanceOf(userId).compareTo(amounts.slotOver()) < 0) {
+            if (availableBalance.of(user).compareTo(amounts.slotOver()) < 0) {
                 throw new BusinessException(ErrorCode.INSUFFICIENT_BALANCE);
             }
         }
@@ -272,7 +276,7 @@ public class PredictionRegisterService {
                 refClose,
                 req.horizon(),
                 baseDate,
-                baseDate.plusDays(req.horizon())));
+                BusinessDays.plusWeekdays(baseDate, req.horizon())));
         notes.save(PredictionNote.of(prediction, req.note()));
         evidences.saveAll(points.stream().map(p -> PredictionEvidence.of(prediction, p)).toList());
         commits.save(commitFactory.seal(
