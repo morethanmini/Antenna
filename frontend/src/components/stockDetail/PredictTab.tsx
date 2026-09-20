@@ -39,7 +39,8 @@ import { eventEntrySigningPayload, fetchContestEvent, registerEntries } from '..
 import WalletLinkModal from '../wallet/WalletLinkModal'
 import ConfirmDialog from '../ConfirmDialog'
 import OperationModal from '../operation/OperationModal'
-import { fetchWalletBalance, formatToken } from '../../api/wallet'
+import { formatToken } from '../../api/wallet'
+import { useWalletBalance } from '../../api/walletBalance'
 import CommitProgressModal, { type CommitPhase } from '../prediction/CommitProgressModal'
 import SlideToSign from '../prediction/SlideToSign'
 import EventBet, { EventBanner, betAmount, isOverBalance, BET_MIN, BET_MAX } from './EventBet'
@@ -294,9 +295,10 @@ export default function PredictTab({
      경고와 잠금이 같은 값을 봐야 한다.
      ponytail: 이 숫자는 원장(token_ledger) 합이라 인덱서만큼 늦다. 서버 판단은 체인 가용잔액
      (AvailableBalanceService)이라 드물게 어긋난다 — GET /wallet/balance 가 가용잔액을 내리면 그걸로 바꾼다. */
-  const wallet = useBlock(
-    () => (eventMode ? fetchWalletBalance() : Promise.resolve(null)), [eventMode],
-  )
+  /* 상단 칩과 같은 저장소를 읽는다(2026-09-20, ANT-FE-WALLET-SYNC) — 배팅 칸의 "보유 N ANT" 와 칩이
+     어긋나지 않는다. fresh 는 "대회 모드로 들어선 뒤에 읽은 값만" 이라 잠금이 묵은 값으로 서지 않고,
+     enabled 는 전처럼 대회 모드일 때만 읽게 한다. */
+  const wallet = useWalletBalance({ fresh: true, enabled: eventMode })
   const betOverBalance = isOverBalance(bet, wallet.data?.balance)
   /* **대회 종목이면 배팅이 필수다**(2026-09-18 결정 A). 배팅 없이 등록하면 평소 경로로
      가 대회 집계에 안 잡히는데, 대회 페이지에서 들어온 사람에게 그건 설명할 수 없는

@@ -28,8 +28,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { subscribe, subscribeSigningPayload, type Channel } from '../../api/channels'
 import { ERROR_CODE, type ApiError } from '../../api/errors'
 import { useOperation } from '../../api/operations'
-import { fetchWalletBalance, formatToken, requestNonce } from '../../api/wallet'
-import { useBlock } from '../../api/useBlock'
+import { formatToken, requestNonce } from '../../api/wallet'
+import { useWalletBalance } from '../../api/walletBalance'
 import { connectAddress, hasWallet, personalSign } from '../../wallet/provider'
 import { useAuth } from '../../auth/context'
 import { errorText } from '../state/errorText'
@@ -58,7 +58,10 @@ export default function SubscribeModal({ channel, onClose, onSubscribed, onNeedW
   const [operationId, setOperationId] = useState<string | null>(null)
 
   const op = useOperation(operationId)
-  const wallet = useBlock(() => fetchWalletBalance(), [])
+  /* 상단 칩과 같은 저장소를 읽는다(ANT-FE-WALLET-SYNC) — 이 창의 "보유 N ANT" 와 칩이 어긋나지 않는다.
+     fresh: 이 창이 열린 뒤에 읽은 값만 받는다. 그 전에는 data 가 없어 아래 short 가 서지 않는다 —
+     "열 때 새로 읽고, 못 읽었으면 막지 않는다" 는 전의 규칙 그대로다. */
+  const wallet = useWalletBalance({ fresh: true })
   const dialogRef = useRef<HTMLDivElement>(null)
 
   const closable = step !== 'signing'
