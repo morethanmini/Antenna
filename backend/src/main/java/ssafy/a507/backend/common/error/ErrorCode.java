@@ -248,6 +248,12 @@ public enum ErrorCode {
      */
     SUBSCRIPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "구독을 찾을 수 없습니다."),
 
+    /**
+     * 자동 갱신을 다시 켤 수 없는 구독이다 — 기간이 끝났거나(EXPIRED · 만료일 지남) 아직 결제 중이거나
+     * (PENDING) 실패했다(FAILED). 다시 켤 것이 아니라 새로 구독해야 한다(09-21 QA).
+     */
+    SUBSCRIPTION_NOT_RENEWABLE(HttpStatus.CONFLICT, "끝났거나 결제가 끝나지 않은 구독은 자동 갱신을 다시 켤 수 없습니다."),
+
     // ── 배팅 이벤트 (ANT-EVENT) — REST 작업명세 v1.2 §7 ──────────────────────────
     EVENT_NOT_FOUND(HttpStatus.NOT_FOUND, "이벤트를 찾을 수 없습니다."),
     EVENT_NOT_OPEN(HttpStatus.CONFLICT, "접수 중인 이벤트가 아닙니다."),

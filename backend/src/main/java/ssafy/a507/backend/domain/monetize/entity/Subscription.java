@@ -181,4 +181,25 @@ public class Subscription {
         this.autoRenew = false;
         this.canceledAt = now;
     }
+
+    /**
+     * 자동 갱신 다시 켜기 — 해지를 번복한다(09-21 QA). 해지가 DB 값만 바꾸고 체인에는 아무것도
+     * 하지 않으므로 되돌리기도 값만 되돌린다. 위임 승인이 실제로 체인에 걸리게 되면(ANT-TOKEN-06)
+     * 해지는 철회가 되고 여기서 다시 서명을 받아야 한다.
+     *
+     * <p><b>ACTIVE 이고 만료 전일 때만.</b> {@code canceledAt} 은 {@link #fail()} · {@link #expire()}
+     * 도 쓰는 칸이라, 끝난 구독에서 지우면 언제 끝났는지가 사라진다. 이미 켜져 있으면 그대로다.
+     *
+     * @return 켜져 있게 됐으면 true, 끝났거나 결제가 끝나지 않은 구독이면 false
+     */
+    public boolean resumeRenewal(Instant now) {
+        if (this.status != Status.ACTIVE || this.expiresAt == null || !this.expiresAt.isAfter(now)) {
+            return false;
+        }
+        if (!this.autoRenew) {
+            this.autoRenew = true;
+            this.canceledAt = null;
+        }
+        return true;
+    }
 }

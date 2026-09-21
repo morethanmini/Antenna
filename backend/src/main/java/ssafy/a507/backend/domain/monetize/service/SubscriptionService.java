@@ -235,7 +235,7 @@ public class SubscriptionService {
      * 자동 갱신 해지 — ANT-TOKEN-05, 화면 E-03.
      *
      * <p><b>구독을 끊지 않는다.</b> 만료일까지는 ACTIVE 그대로고 다음 주기 결제만 멈춘다
-     * (설계서 §4 E-03). 명세에 되살리는 경로가 없어 화면이 확인 단계를 둔다.
+     * (설계서 §4 E-03). 되살리기는 {@link #resumeRenewal} — 만료 전이면 언제든 다시 켤 수 있다.
      *
      * <p>남의 구독과 없는 구독을 같은 404 로 묶는다 — 403 을 주면 "그 id 의 구독은 있다" 가
      * 새 나간다.
@@ -247,6 +247,21 @@ public class SubscriptionService {
                 .filter(s -> s.getSubscriber().getId().equals(subscriberId))
                 .orElseThrow(() -> new BusinessException(ErrorCode.SUBSCRIPTION_NOT_FOUND, "id"))
                 .cancelRenewal(Instant.now());
+    }
+
+    /**
+     * 자동 갱신 다시 켜기 — 해지 번복(09-21 QA). 남의 구독·없는 구독은 해지와 같은 404 로 묶는다.
+     * 끝났거나 결제가 끝나지 않은 구독은 409 — 다시 켤 것이 아니라 새로 구독해야 한다.
+     */
+    @Transactional
+    public void resumeRenewal(Long subscriberId, Long subscriptionId) {
+        Subscription subscription = subscriptions
+                .findById(subscriptionId)
+                .filter(s -> s.getSubscriber().getId().equals(subscriberId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.SUBSCRIPTION_NOT_FOUND, "id"));
+        if (!subscription.resumeRenewal(Instant.now())) {
+            throw new BusinessException(ErrorCode.SUBSCRIPTION_NOT_RENEWABLE, "id");
+        }
     }
 
     private record Accepted(String operationId, Long subscriptionId, BigInteger fee) {}

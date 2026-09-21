@@ -30,7 +30,7 @@ pre code{background:none;padding:0;color:inherit}.callout{background:var(--soft)
 footer{margin-top:50px;padding-top:14px;border-top:1px solid var(--line);color:var(--sub);font-size:12px}.small{font-size:12.3px;color:var(--sub)}
 @media(max-width:880px){.layout{grid-template-columns:1fr}nav{display:none}}
 </style></head>
-<body><div class=layout><nav><div class=brand>엔테나 API 명세서</div><div class=ver>v0.87 · 2026-09-21</div>
+<body><div class=layout><nav><div class=brand>엔테나 API 명세서</div><div class=ver>v0.88 · 2026-09-21</div>
 <a href="#map">0. 큰그림(인터페이스 맵)</a><a href="#common">1. 공통 규약</a>
 <div class=grp>2. REST API</div>
 <a href="#tag-async">비동기 작업</a><a href="#tag-auth">인증</a><a href="#tag-users">회원</a><a href="#tag-wallet">지갑·토큰</a>
@@ -67,6 +67,7 @@ footer{margin-top:50px;padding-top:14px;border-top:1px solid var(--line);color:v
 <tr><td><b>시스템</b></td><td>—</td><td>—</td><td>이벤트 인덱싱</td><td>—</td><td>B1~B6</td></tr>
 </table>
 <div class="changelog" style="margin:0 0 20px;padding:12px 16px;border-left:5px solid #e8a13c;background:#fff8e6;border-radius:0 8px 8px 0;font-size:12.5px;line-height:1.7;font-family:system-ui,-apple-system,"Malgun Gothic",sans-serif;color:#3a3730;"><b style="display:block;margin-bottom:6px;font-size:13px;">변경 로그 (최신이 위)</b>
+<div><b>v0.88</b> · 2026-09-21 · 임대연(DY) · <code>DY_ANT-QA-0921-FEATURE</code> — <b><code>PUT /subscriptions/{id}/renewal</code> 신설 — 자동 갱신 다시 켜기(해지 번복).</b> 해지는 되돌릴 경로가 없어 실수로 누르면 만료 뒤 재구독밖에 없었다(QA 09-21). 만료 전 ACTIVE 구독만 되고, 끝난 구독은 409 <code>SUBSCRIPTION_NOT_RENEWABLE</code>. 체인 동작·재서명 없음(해지도 DB 값만 바꾼다).</div>
 <div><b>v0.87</b> · 2026-09-21 · 임대연(DY) · <code>DY_ANT-REPORT-SOCIAL-COMMENT-DELETE</code> — <b><code>DELETE /report-comments/{commentId}</code> 신설 — 내 리포트 댓글 삭제.</b> 도배 제한(1분 5개 · 같은 내용 연속 금지)은 생겼지만 이미 올라간 댓글을 지울 방법이 없었다(QA 09-21). <b>작성자만</b> 지운다 — 리포트 작성자도 남의 댓글은 못 지운다(가리는 것은 신고·관리자 몫). 남의 댓글·없는 댓글·가려진(<code>BLOCKED</code>) 댓글은 같은 404 <code>COMMENT_NOT_FOUND</code>. 이미 지운 내 댓글은 204(멱등). <b>행은 지우지 않는다</b> — <code>report_comments.status</code> 에 <code>DELETED</code> 를 더해 상태만 바꾼다. 신고(<code>abuse_reports.target_report_comment_id</code>)·좋아요가 행을 물고 있고, 신고당한 댓글을 지워 증거를 없앨 수 없어야 한다. <code>DELETED</code> 는 <code>BLOCKED</code> 와 같이 목록·개수(<code>commentCount</code>)에서 빠지고, 좋아요는 404, 새 신고는 404 <code>TARGET_NOT_FOUND</code>. 같은 내용 연속 검사(409 <code>COMMENT_DUPLICATED</code>)는 지운 댓글을 세지 않는다 — 1분 5개 개수는 상태 무관 그대로. 옛 DB 의 <code>report_comments_status_check</code> 는 부팅 때 <code>db/enum-checks.sql</code> 이 지운다.</div>
 <div><b>v0.86</b> · 2026-09-21 · 임대연(DY) · <code>DY_ANT-FE-SEASON-PLAY-DONE-LOCK</code> — <b><code>GET /seasons/{id}/me</code> 에 <code>status</code> 추가</b>(기존 칸은 그대로). 내 마지막 회차의 상태 <code>ONGOING</code> · <code>DONE</code> · <code>ABANDONED</code>. 주문·진행은 <code>ONGOING</code> 에서만 받는다(아니면 409 <code>SEASON_ATTEMPT_ENDED</code>) — <b>진행일로는 끝났는지 알 수 없다</b>: 건너뛰고 종료(<code>skipRemaining</code>)한 회차는 진행일이 마지막 날로 옮겨져 있고, 마지막 날에 아직 종료하지 않은 회차도 진행일이 같다. 화면(G-04)이 이 값으로 주문 패널을 잠그고 "결과 보기" 로 보낸다(QA 09-21 — 끝난 시즌에서 "매수 주문" 이 켜져 있었다).</div>
 <div><b>v0.85</b> · 2026-09-20 · 김성령(KSR) · <code>KSR_ANT-PRED-11</code> — <b>예측 기간(<code>horizon</code>)을 캘린더일에서 영업일로.</b> 만기일 = 기준일에서 <b>평일만 horizon 번 센 날</b>(주말 제외). 전에는 달력일로 더해 수요일 + 3 이 토요일로 잡혔다 — 운영에서 만기 9/19(토)인 예측이 "D--1" 로 보였다. <b>판정 규칙은 그대로다</b> — 만기일 또는 그 이후 첫 거래일 종가로 판정한다(ANT-PRED-04). 그래서 공휴일은 계산에 넣지 않았다: 걸리면 그날 시세가 없을 뿐이고 다음 거래일로 밀린다. 값의 범위(3~90)와 요청·응답 모양, 봉인 문자열(<code>horizon=N</code>)은 그대로다. <b>이미 등록된 예측의 만기일은 바뀌지 않는다.</b> 대회(이벤트) 예측은 회차가 정한 날짜를 그대로 쓴다. 응답의 <code>dday</code> 는 만기일이 지난 미판정 예측에서 <b>음수</b>다 — 화면은 "판정 대기" 로 그린다. <code>GET /predictions/me</code> 의 항목에 <b><code>baseDate</code> 추가</b>(기존 칸은 그대로) — 화면이 진행 막대의 시작일을 <code>settleDate − horizon 일</code> 로 되짚어 그렸는데 영업일에서는 그 뺄셈이 틀어진다. ANT-PRED-08(3~90 캘린더일)의 단위 결정을 바꾼다 — 근거: 지라 S15P21A507-296. 같은 줄의 "7 | 14 | 30 | 90" 표기도 PRED-08 이후 실제 값(3~90)으로 정정.</div>
@@ -768,6 +769,11 @@ nonce=&lt;POST /wallet/nonce 로 발급받은 값&gt;</pre>
 <div class=body><div class=desc><b>구독 자체가 아니라 갱신 예약을 지운다</b> — <code>renew_enabled=false</code> — 만료일까지 ACTIVE 유지 후 갱신 안 함.</div>
 <h4>응답</h4>
 <div class=resp><span class="rc ok"><b>204</b> 해지 예약</span></div></div>
+</details>
+<details class=ep><summary><span class="m u">PUT</span><span class=path>/subscriptions/{id}/renewal</span><span class=sm>자동 갱신 다시 켜기 · 🔐</span></summary>
+<div class=body><div class=desc><b>해지 번복</b>(v0.88, QA 09-21) — <code>auto_renew=true</code>, <code>canceled_at=null</code>. 해지가 DB 값만 바꾸고 체인에는 아무것도 하지 않으므로 되돌리기도 값만 되돌린다(재서명 없음). <b>ACTIVE 이고 만료 전일 때만</b> — <code>canceled_at</code> 은 실패·만료 시각도 담는 칸이라 끝난 구독에서 지우면 언제 끝났는지가 사라진다. 이미 켜져 있으면 그대로 204. 남의 구독·없는 구독은 해지와 같은 404.</div>
+<h4>응답</h4>
+<div class=resp><span class="rc ok"><b>204</b> 다시 켬</span><span class="rc er"><b>404</b> <code>SUBSCRIPTION_NOT_FOUND</code></span><span class="rc er"><b>409</b> <code>SUBSCRIPTION_NOT_RENEWABLE</code> — EXPIRED · FAILED · PENDING · 만료일 지남. 새로 구독해야 한다</span></div></div>
 </details>
 <details class=ep><summary><span class="m g">GET</span><span class=path>/subscriptions/me</span><span class=sm>내 구독 목록 · 🔐</span></summary>
 <div class=body><div class=desc>채널·상태(PENDING/ACTIVE/EXPIRED/FAILED)·만료일·자동 갱신 여부. 설정 "구독 정보 변경" 진입점.</div>
