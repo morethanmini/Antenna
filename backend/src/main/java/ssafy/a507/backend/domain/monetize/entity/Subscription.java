@@ -102,6 +102,7 @@ public class Subscription {
     /**
      * 인덱서 ②(ANT-CHAIN-11)가 {@code Subscribed} 이벤트를 보고 부른다. PENDING → ACTIVE, 개시는 확정 시각.
      * 이미 ACTIVE 면 그대로 둔다 — 재훑기·수동 재처리에서 개시 시각이 뒤로 밀리면 안 된다.
+     * 무료 채널(구독료 0)은 접수가 {@code txHash} null 로 부른다 — 보낼 tx 가 없다(SubscriptionService).
      */
     public void activate(String txHash, Instant now) {
         if (this.status == Status.ACTIVE) {

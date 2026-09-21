@@ -187,7 +187,7 @@ public class Operation {
         this.txHash = txHash;
     }
 
-    /** 인덱서 전용. {@code chain_events} 기입과 같은 트랜잭션에서 부른다. */
+    /** 인덱서가 {@code chain_events} 기입과 같은 트랜잭션에서 부른다. 예외는 무료 구독 — tx 없이 접수에서 닫는다(txHash null, SubscriptionService). */
     public void markSucceeded(String txHash) {
         this.txHash = txHash;
         this.status = Status.SUCCEEDED;

@@ -175,6 +175,27 @@ class SubscriptionControllerTest {
         });
     }
 
+    @Test
+    @DisplayName("구독료 0 인 무료 채널은 체인을 타지 않고 바로 ACTIVE 다 — 컨트랙트가 0 을 ZeroAmount 로 거절한다")
+    void 무료_채널은_바로_ACTIVE() throws Exception {
+        setFee(publisher, BigInteger.ZERO, Instant.now().minus(1, ChronoUnit.HOURS));
+
+        String operationId = jsonValue(
+                mockMvc.perform(send(signedBody(publisher.getId(), BigInteger.ZERO), "key-free"))
+                        .andExpect(status().isAccepted())
+                        .andExpect(jsonPath("$.status").value("SUCCEEDED"))
+                        .andReturn(),
+                "operationId");
+
+        assertThat(relayer.calls()).isEmpty();
+        assertThat(operations.findById(operationId).orElseThrow().getStatus())
+                .isEqualTo(Operation.Status.SUCCEEDED);
+        assertThat(mine()).singleElement().satisfies(s -> {
+            assertThat(s.getStatus()).isEqualTo(Subscription.Status.ACTIVE);
+            assertThat(s.getExpiresAt()).isEqualTo(s.getStartedAt().plus(30, ChronoUnit.DAYS));
+        });
+    }
+
     // ── 거절 ────────────────────────────────────────────
 
     @Test
