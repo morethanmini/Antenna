@@ -18,7 +18,7 @@
    (§4 C-03). 잠긴 카드도 종목·방향·작성자·적중률까지는 보여준다 — 존재를 감추면
    구독 유인이 사라진다(§5). */
 import { Link } from 'react-router-dom'
-import { horizonLabel, isAwaitingVerdict } from '../../api/predictions'
+import { isAwaitingVerdict, revealLabel } from '../../api/predictions'
 import type { Direction, PredictionStatus as Status } from '../../api/predictions'
 import LockedCard from '../state/LockedCard'
 import PredictionStatus from './PredictionStatus'
@@ -44,6 +44,8 @@ export type PredictionCardData = {
   /** 판정 완료만 */
   errorRate?: number | null
   horizon?: number
+  /** 결과 공개 예정일 YYYY-MM-DD (ANT-PRED-12). 없으면 기간을 그린다 */
+  revealDate?: string | null
   /** 만기 영업일 YYYY-MM-DD */
   dueDate?: string | null
   /** 만기까지 남은 일수. 판정이 끝났으면 null — 0 으로 그리지 않는다 */
@@ -60,7 +62,7 @@ const day = (iso: string) => iso.slice(2, 10).replace(/-/g, '.')
 export default function PredictionCard({ data }: { data: PredictionCardData }) {
   const {
     stockCode, stockName, direction, status, locked, channelId,
-    author, accuracy, targetPrice, errorRate, horizon, dueDate, dday, to,
+    author, accuracy, targetPrice, errorRate, horizon, revealDate, dueDate, dday, to,
   } = data
 
   /* 종목이 지워졌으면 서버가 코드·이름 둘 다 null 로 내린다. 이름이 없으면 코드로,
@@ -100,8 +102,9 @@ export default function PredictionCard({ data }: { data: PredictionCardData }) {
         </div>
         {horizon !== undefined && (
           <div>
-            <dt>기간</dt>
-            <dd className="num">{horizonLabel(horizon)}</dd>
+            {/* "3일" 대신 공개일(ANT-PRED-12). 기간만 적으면 만기가 주말일 때 "지났는데 안 열린다" 로 읽힌다 */}
+            <dt>{revealDate ? '공개일' : '기간'}</dt>
+            <dd className="num">{revealLabel(revealDate, horizon)}</dd>
           </div>
         )}
         {dueDate && (

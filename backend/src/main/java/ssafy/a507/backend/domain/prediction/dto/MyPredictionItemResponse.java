@@ -7,6 +7,7 @@ import ssafy.a507.backend.domain.chain.dto.ProofResponse;
 import ssafy.a507.backend.domain.chain.entity.AnchorBatch;
 import ssafy.a507.backend.domain.market.entity.Stock;
 import ssafy.a507.backend.domain.prediction.entity.Prediction;
+import ssafy.a507.backend.domain.prediction.service.BusinessDays;
 
 /**
  * GET /api/v1/predictions/me 의 목록 항목 (ANT-PRED-06, 화면 C-02).
@@ -36,7 +37,12 @@ public record MyPredictionItemResponse(
          */
         LocalDate baseDate,
         LocalDate settleDate,
-        ProofResponse.AnchorStatus anchorStatus) {
+        ProofResponse.AnchorStatus anchorStatus,
+        /**
+         * 결과 공개 예정일 (ANT-PRED-12). 화면이 "3일" 대신 이 날짜를 적는다 — 기간만 보여 주면 만기가 주말일 때
+         * "3일이 지났는데 안 열린다" 로 읽힌다. 계산은 {@link BusinessDays#revealDate}. 만기일이 없으면(REPLAY) null.
+         */
+        LocalDate revealDate) {
 
     public static MyPredictionItemResponse of(Prediction p, LocalDate today, AnchorBatch batch) {
         Stock stock = p.getStock();
@@ -52,7 +58,8 @@ public record MyPredictionItemResponse(
                 p.getErrorRate(),
                 p.getBaseDate(),
                 p.getSettleDate(),
-                ProofResponse.AnchorStatus.of(batch));
+                ProofResponse.AnchorStatus.of(batch),
+                BusinessDays.revealDate(p.getSettleDate(), p.getSettledOn()));
     }
 
     /**

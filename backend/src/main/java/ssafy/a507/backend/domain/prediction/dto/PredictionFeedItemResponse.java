@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import ssafy.a507.backend.domain.community.dto.AuthorResponse;
 import ssafy.a507.backend.domain.market.entity.Stock;
 import ssafy.a507.backend.domain.prediction.entity.Prediction;
+import ssafy.a507.backend.domain.prediction.service.BusinessDays;
 
 /**
  * GET /api/v1/predictions/feed 목록 한 줄 (ANT-PRED-05, 화면 F-01 예측 탭).
@@ -35,7 +36,12 @@ public record PredictionFeedItemResponse(
         BigDecimal errorRate,
         LocalDate settleDate,
         Instant createdAt,
-        boolean locked) {
+        boolean locked,
+        /**
+         * 결과 공개 예정일 (ANT-PRED-12). 화면이 "3일" 대신 이 날짜를 적는다 — 기간만 보여 주면 만기가 주말일 때
+         * "3일이 지났는데 안 열린다" 로 읽힌다. 계산은 {@link BusinessDays#revealDate}. 만기일이 없으면(REPLAY) null.
+         */
+        LocalDate revealDate) {
 
     public static PredictionFeedItemResponse of(Prediction p, LocalDate today, boolean locked) {
         Stock stock = p.getStock();
@@ -52,6 +58,7 @@ public record PredictionFeedItemResponse(
                 p.getErrorRate(),
                 p.getSettleDate(),
                 p.getCreatedAt(),
-                locked);
+                locked,
+                BusinessDays.revealDate(p.getSettleDate(), p.getSettledOn()));
     }
 }

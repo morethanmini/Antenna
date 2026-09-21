@@ -259,6 +259,7 @@ function PredictionFeed({ scope }: { scope: ReportScope }) {
                   targetPrice: p.targetPrice,
                   errorRate: p.errorRate,
                   horizon: p.horizon,
+                  revealDate: p.revealDate,
                   dueDate: p.settleDate,
                   dday: p.dday,
                   to: `/predictions/${p.id}`,

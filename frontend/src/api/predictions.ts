@@ -55,6 +55,23 @@ export const HORIZON_TICKS = [3, 30, 60, 90] as const
  */
 export const horizonLabel = (h: Horizon) => `${h}일`
 
+/**
+ * 결과 공개 예정일 (ANT-PRED-12). 목록·카드·상세가 기간("3일") 대신 이것을 적는다.
+ *
+ * 기간만 적으면 만기가 주말일 때 "3일이 지났는데 안 열린다" 로 읽힌다 — 판정은 만기일 이후 첫 거래일의
+ * 종가로 하고, 그 종가는 다음 거래일 13:00 에 들어와 13:30 에 공개된다. 그 셈을 사용자에게 시키지 않고
+ * 서버가 날짜로 내린다(BusinessDays.revealDate). 옛 예측·새 예측·대회 예측을 가리지 않는다.
+ *
+ * 값이 없으면(옛 서버 응답 · 만기일이 없는 예측) 기간으로 물러난다.
+ */
+const WEEKDAY = ['일', '월', '화', '수', '목', '금', '토'] as const
+export function revealLabel(revealDate: string | null | undefined, horizon: Horizon) {
+  if (!revealDate) return horizonLabel(horizon)
+  const [y, m, d] = revealDate.split('-').map(Number)
+  // 문자열을 그대로 Date 에 넣으면 UTC 자정으로 읽혀 요일이 하루 밀릴 수 있다
+  return `${m}.${d}(${WEEKDAY[new Date(y, m - 1, d).getDay()]})`
+}
+
 /** 지금 고르는 기간. 새로 등록하는 예측은 영업일로 센다(ANT-PRED-11) — 고르개·안내에만 쓴다. */
 export const horizonPickLabel = (h: Horizon) => `${h}영업일`
 
@@ -214,6 +231,8 @@ export type MyPrediction = {
   baseDate?: string | null
   /** 만기 영업일 YYYY-MM-DD. 기준가 배치가 채우기 전에는 null 이다 */
   settleDate: string | null
+  /** 결과 공개 예정일 YYYY-MM-DD (ANT-PRED-12). 만기일이 없으면 null. 화면은 revealLabel 로 그린다 */
+  revealDate?: string | null
   /* 이 예측이 블록에 올라갔는가. 서버가 행마다 함께 내린다
      (MyPredictionItemResponse.anchorStatus, 2026-09-09). 어휘는 proof 와 같은
      넷이라 C-03 과 같은 말로 그린다 — 커밋이 아직 없으면 WAITING 이다.
@@ -296,6 +315,8 @@ export type PredictionFeedItem = {
   errorRate: number | null
   /** 기준가 확정 전에는 null — 만기일 = 기준일 + horizon 이라서다 */
   settleDate: string | null
+  /** 결과 공개 예정일 YYYY-MM-DD (ANT-PRED-12). 만기일이 없으면 null. 화면은 revealLabel 로 그린다 */
+  revealDate?: string | null
   createdAt: string
   locked: boolean
 }
@@ -348,6 +369,8 @@ export type PredictionDetail = {
   basePrice: number | null
   /** 만기일 = baseDate + horizon. 기준일이 없으면 이것도 없다 */
   settleDate: string | null
+  /** 결과 공개 예정일 YYYY-MM-DD (ANT-PRED-12). 만기일이 없으면 null. 화면은 revealLabel 로 그린다 */
+  revealDate?: string | null
   /** 만기 종가. 판정 완료만 채워진다 */
   settlePrice: number | null
   /** 목표가 대비 오차 %. 판정 완료만 */
