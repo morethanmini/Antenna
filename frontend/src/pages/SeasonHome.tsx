@@ -2,7 +2,7 @@
    담당 스토리 [ANT-FE-SEASON-HOME]
    설계서 docs/화면설계서.md §3 G-01 — "진행 중 시즌(이어하기) · 완료 기록 요약 · 시즌 목록"
 
-   **2026-09-21 시안으로 갈아엎었다.** 어두운 한 판 위에 왼쪽은 카피와 시작 버튼, 가운데는
+   **2026-09-21 시안으로 갈아엎었다.** 본문 전체가 밤 도시다(상단바는 그대로 밝다). 왼쪽은 카피와 시작 버튼, 가운데는
    책상에 앉은 개미, 오른쪽은 "가상 투자 자금 · 진행 중인 연습" 두 칸이다. 그 아래로
    연습 주제 다섯 장이 가로로 늘어서고, 맨 밑은 연습이 어떤 것인지 말하는 사실 띠다.
    상단바·사이드바는 그대로 Layout 것을 쓴다.
@@ -12,10 +12,12 @@
       값이 아니고, 숫자를 박아 두면 가짜 시세가 된다. 장식으로도 두지 않는다.
    2. 가상 투자 자금 옆의 연필(수정). 시작 자산은 시즌 속성이라 사용자가 바꾸는 값이 아니다.
    3. 주제 카드의 날짜·연도. 시대를 특정하는 말은 모의투자 전체에서 쓰지 않는다 — 카드에는
-      서버가 준 제목(title)과 한 줄 설명(note)만 쓴다. 제목 자체가 사건을 말하는 것은
-      시더(PracticeSeasonSeeder)가 정한 일이라 여기서 손대지 않는다.
+      서버가 준 제목(title)만 쓴다. 제목 자체가 사건을 말하는 것은 시더
+      (PracticeSeasonSeeder)가 정한 일이라 여기서 손대지 않는다.
    4. 최근 연습 기록 목록. 이 시안은 그 자리를 주제 카드가 받았다. 기록은 "진행 중인 연습"
       칸의 링크로 G-09 기록 화면에서 본다.
+   5. 제목 아래 소개 두 줄("실제와 닮은 시장에서…"). 손글씨 줄과 제목이 이미 같은 말을
+      하고 있어 세 번째 줄은 읽히지 않고 자리만 먹었다(2026-09-21).
 
    ── 서버에서 받는 것 ────────────────────────────────────
      GET /seasons?mode=PRACTICE     → 주제 카드 · 시작 자산 · 주제 수
@@ -95,9 +97,9 @@ function Hero({ lead, practice, ongoing, myError, myLoading, onRetry }: {
 
   return (
     <section className="sh-hero is-dark" aria-labelledby="sh-hero-h">
-      {/* 배경 — 밤하늘 그라데이션 위에 빛줄기·별·촛대. 전부 장식이라 레이어째 aria-hidden 이다. */}
+      {/* 히어로 장식 — 빛줄기·별·촛대. 도시 야경은 페이지 바탕(sim-home.css 의 .main::before)이 깐다.
+          전부 장식이라 레이어째 aria-hidden 이다. */}
       <div className="sh-backdrop" aria-hidden="true">
-        <span className="sh-bd-city" />
         <img className="sh-bd-wave" src="/assets/pageset/wave-thin.webp" alt="" />
         <img className="sh-bd-spark" src="/assets/pageset/sparks.webp" alt="" />
         <img className="sh-bd-candles" src="/assets/pageset/candles.webp" alt="" />
@@ -106,17 +108,16 @@ function Hero({ lead, practice, ongoing, myError, myLoading, onRetry }: {
       <div className="sh-hero-copy">
         <span className="sh-hand">가상으로 시작하는<br />진짜 투자 감각</span>
 
+        {/* 연습 주제가 전부 사건 이름(코로나 · 전쟁 · 재당선 · 계엄)이다. 제목도 그
+            말을 그대로 쓴다 — "투자 감각을 깨워보세요" 같은 문구는 어느 서비스에나
+            붙일 수 있어 이 화면이 무엇을 하는 곳인지 말해 주지 못했다.
+            어느 시장인지는 아래 카드 다섯 장이 이미 말하고 있어 제목에서 뺀다.
+            강조는 "순간" 에 건다 — 이 화면이 파는 것은 기간이 아니라 그 며칠이다. */}
         <h1 className="sh-title" id="sh-hero-h">
-          지금, 당신의
+          역사적인 <em>순간</em>을
           <br />
-          <em>투자 감각</em>을 깨워보세요
+          연습해보세요
         </h1>
-
-        <p className="sh-lead">
-          실제와 닮은 시장에서, 가상의 자금으로.
-          <br />
-          다양한 상황을 경험하며 스스로의 투자 감각을 키워보세요.
-        </p>
 
         <div className="sh-cta">
           {lead ? (
@@ -186,7 +187,12 @@ function Hero({ lead, practice, ongoing, myError, myLoading, onRetry }: {
 }
 
 /* ── 연습 주제 카드 ────────────────────────────────────────
-   제목·설명은 서버가 준다(seasons.title·note). 사진은 seasonArt 표에서 제목으로 찾는다.
+   제목은 서버가 준다(seasons.title). 사진은 seasonArt 표에서 제목으로 찾는다.
+
+   **한 줄 설명(note)은 그리지 않는다(2026-09-21).** 사진 위에 얹힌 13px 세 줄이라
+   읽히지 않았다 — 어두운 막을 더 진하게 깔면 사진이 죽고, 글자를 키우면 카드가
+   제목보다 설명이 큰 덩어리가 된다. 카드는 "어떤 장이었나" 만 말하고, 설명은
+   들어간 뒤(G-03 시즌 상세)에 제 크기로 읽는다.
    이미 진행 중인 주제는 테두리를 밝히고 버튼이 "이어서 하기" 로 바뀐다.
 
    한 줄에 다 안 들어가는 폭에서는 가로로 넘겨 본다(scroll-snap). 양옆 화살표는 그
@@ -234,7 +240,6 @@ function Topics({ practice, ongoing, loading, error, onRetry }: {
               >
                 <span className="sh-topic-no num">{String(i + 1).padStart(2, '0')}</span>
                 <h2>{s.title}</h2>
-                {s.note && <p>{s.note}</p>}
                 {live ? (
                   <Link className="sh-topic-go" to={`/sim/${live.seasonId}/play`}>
                     이어서 하기<ArrowIcon />
