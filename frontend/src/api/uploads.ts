@@ -180,6 +180,39 @@ export type CroppedImage = {
   did: { cropped: boolean; shrank: boolean }
 }
 
+/**
+ * 잘라 낼 원본 영역(원본 픽셀 기준). 자르기 UI 가 만들고 {@link cropToAspect} 가 받는다.
+ *
+ * 화면 좌표가 아니라 원본 좌표인 이유 — 미리보기는 모달 너비에 따라 크기가 달라지는데,
+ * 그 배율을 여기까지 들고 오면 창 크기가 바뀔 때마다 자른 자리가 흔들린다.
+ */
+export type CropRect = { sx: number; sy: number; sw: number; sh: number }
+
+/** 손대지 않았을 때의 자리. 넓으면 좌우를, 높으면 위아래를 덜어 낸다 — 남는 변은 그대로 둔다 */
+export function centerRect(size: { width: number; height: number }, aspect?: AspectRule): CropRect {
+  const { width, height } = size
+  if (!aspect) return { sx: 0, sy: 0, sw: width, sh: height }
+  const wide = width / height > aspect.ratio
+  const sw = wide ? Math.round(height * aspect.ratio) : width
+  const sh = wide ? height : Math.round(width / aspect.ratio)
+  return { sx: Math.round((width - sw) / 2), sy: Math.round((height - sh) / 2), sw, sh }
+}
+
+/**
+ * 원본 밖을 가리키지 않게 민다. 드래그·확대 계산에 반올림이 섞이면 1~2px 이 밖으로
+ * 나가는데, 그대로 drawImage 에 넘기면 가장자리가 투명하게 비어 나온다.
+ */
+function clampRect(rect: CropRect, size: { width: number; height: number }): CropRect {
+  const sw = Math.max(1, Math.min(Math.round(rect.sw), size.width))
+  const sh = Math.max(1, Math.min(Math.round(rect.sh), size.height))
+  return {
+    sw,
+    sh,
+    sx: Math.min(Math.max(0, Math.round(rect.sx)), size.width - sw),
+    sy: Math.min(Math.max(0, Math.round(rect.sy)), size.height - sh),
+  }
+}
+
 /** 캔버스가 다시 뽑아낼 수 있는 형식. 그 외(그리고 형식 없음)는 png 로 떨어뜨린다 */
 const ENCODABLE = ['image/png', 'image/jpeg', 'image/webp']
 
@@ -195,22 +228,18 @@ const ENCODABLE = ['image/png', 'image/jpeg', 'image/webp']
  *
  * @param aspect 없으면 자르지 않는다
  * @param maxEdge 없으면 줄이지 않는다. **늘리지는 않는다** — 작은 그림을 키우면 뭉갠다
+ * @param rect 사용자가 고른 자리. 없으면 가운데를 잡는다 — 자르기 UI 를 열지 않는 화면과
+ *   손대지 않고 넘긴 경우가 예전과 똑같이 동작해야 한다
  */
 export async function cropToAspect(
   file: File,
   size: { width: number; height: number },
   aspect?: AspectRule,
   maxEdge?: number,
+  rect?: CropRect,
 ): Promise<CroppedImage> {
   const { width, height } = size
-  const wide = aspect ? width / height > aspect.ratio : false
-
-  /* 넓으면 좌우를, 높으면 위아래를 덜어 낸다. 어느 쪽이든 남는 변은 건드리지 않는다 —
-     양쪽을 다 줄이면 원본보다 작아져 화질을 공짜로 버린다. */
-  const w = !aspect ? width : wide ? Math.round(height * aspect.ratio) : width
-  const h = !aspect ? height : wide ? height : Math.round(width / aspect.ratio)
-  const sx = Math.round((width - w) / 2)
-  const sy = Math.round((height - h) / 2)
+  const { sx, sy, sw: w, sh: h } = clampRect(rect ?? centerRect(size, aspect), size)
 
   /* 자른 뒤의 크기를 기준으로 줄인다. 긴 변을 maxEdge 에 맞추고 짧은 변은 비례로 —
      따로 정하면 비율이 틀어져 방금 맞춘 aspect 가 깨진다. */

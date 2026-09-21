@@ -54,6 +54,41 @@
 /* 비율 제약은 다른 줄보다 눈에 띄어야 한다 — 이걸 놓치면 올린 뒤 거절당한다 */
 .iu-rule{ color:var(--brand-ink) !important; font-weight:var(--fw-normal); }
 
+/* ── 자르기 ─────────────────────────────────────────
+   그림은 전부 보이고, 그 위의 네모가 남길 자리다. 네모 밖을 어둡게 덮어 무엇이 잘려
+   나가는지 눈으로 보이게 한다 — box-shadow 로 덮으면 요소를 더 만들지 않아도 된다. */
+.iu-crop{ display:flex; flex-direction:column; gap:12px; }
+.iu-crop-view{
+  position:relative;
+  display:flex; justify-content:center;
+  border:1px solid var(--rule); border-radius:10px;
+  background:var(--surface-2);
+  overflow:hidden;
+  touch-action:none;                     /* 끌기를 브라우저 스크롤에 뺏기지 않는다 */
+  user-select:none;
+}
+.iu-crop-view img{ display:block; max-width:none; }
+
+.iu-crop-box{
+  position:absolute;
+  border:2px solid #fff;
+  box-shadow:0 0 0 1px rgba(0,0,0,.35), 0 0 0 9999px rgba(0,0,0,.45);
+  cursor:move;
+}
+.iu-crop-handle{
+  position:absolute; width:14px; height:14px;
+  background:#fff; border:1px solid rgba(0,0,0,.35); border-radius:3px;
+}
+/* 손가락으로도 잡히게 실제 크기보다 넓은 판정 범위를 준다 */
+.iu-crop-handle::after{ content:''; position:absolute; inset:-8px; }
+.iu-crop-handle.is-nw{ left:-8px; top:-8px; cursor:nwse-resize; }
+.iu-crop-handle.is-ne{ right:-8px; top:-8px; cursor:nesw-resize; }
+.iu-crop-handle.is-sw{ left:-8px; bottom:-8px; cursor:nesw-resize; }
+.iu-crop-handle.is-se{ right:-8px; bottom:-8px; cursor:nwse-resize; }
+
+.iu-crop-hint{ margin:0; font-size:var(--fs-sm); color:var(--muted); }
+.iu-crop-actions{ display:flex; justify-content:flex-end; gap:8px; }
+
 /* ── 미리보기 ───────────────────────────────────────── */
 .iu-preview{ display:flex; flex-direction:column; gap:11px; }
 .iu-preview img{
@@ -124,5 +159,6 @@
 
 @media (max-width:520px){
   .iu-actions{ flex-direction:column-reverse; }
+  .iu-crop-actions{ flex-direction:column-reverse; }
   .iu-btn{ width:100%; }
 }

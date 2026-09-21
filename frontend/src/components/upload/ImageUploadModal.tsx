@@ -25,18 +25,20 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, CLIENT_ERROR_CODE } from '../../api/errors'
 import {
   ACCEPT_ATTR, ASPECT_BY_PURPOSE, MAX_BYTES, MAX_EDGE_BY_PURPOSE,
-  checkPixels, checkSize, cropToAspect, fitsAspect, formatAspect, formatBytes,
+  checkPixels, checkSize, cropToAspect, formatAspect, formatBytes,
   measure, precheck, uploadImage,
-  type AspectRule, type UploadPurpose, type UploadedImage,
+  type AspectRule, type CropRect, type UploadPurpose, type UploadedImage,
 } from '../../api/uploads'
+import CropStage from './CropStage'
 import { errorText } from '../state/errorText'
 import '../../styles/screens/image-upload.css'
 
 /* pick     파일을 고르기 전
+   crop     비율이 정해진 화면에서 어디를 남길지 고르는 중
    ready    골랐고 로컬 검증을 통과했다. 미리보기가 보인다
    sending  전송 중. 진행률이 돈다
    done     서버가 fileId 를 줬다 */
-type Step = 'pick' | 'ready' | 'sending' | 'done'
+type Step = 'pick' | 'crop' | 'ready' | 'sending' | 'done'
 
 type Picked = {
   file: File
@@ -65,6 +67,8 @@ export default function ImageUploadModal({ purpose, onClose, onUploaded, aspect 
   const maxEdge = MAX_EDGE_BY_PURPOSE[purpose]
 
   const [step, setStep] = useState<Step>('pick')
+  /* 자르기 단계가 쥐고 있는 원본. 자르고 나면 picked 가 결과를 들고 이 값은 버린다 */
+  const [source, setSource] = useState<{ file: File; size: { width: number; height: number } } | null>(null)
   const [picked, setPicked] = useState<Picked | null>(null)
   const [error, setError] = useState<ApiError | null>(null)
   const [progress, setProgress] = useState(0)
@@ -129,37 +133,71 @@ export default function ImageUploadModal({ purpose, onClose, onUploaded, aspect 
       return
     }
 
-    /* ④ 비율이 어긋나면 거절하지 않고 가운데를 기준으로 잘라 맞추고, 쓰는 자리보다 크면
-       줄인다(api/uploads.ts cropToAspect). 올리는 것은 그렇게 만든 파일이고, 미리보기도
-       같은 그림이어야 한다 — 원본을 보여 주면 사용자는 고른 그림이 그대로 올라가는 줄 안다. */
-    const needsCrop = rule != null && !fitsAspect(measured.width, measured.height, rule)
-    const needsShrink = maxEdge != null && Math.max(measured.width, measured.height) > maxEdge
+    /* ④ 어디를 남길지 사용자가 고른다(CropStage). 비율이 정해진 화면(광고 4:1 · 프로필 1:1)은
+       네모가 그 비율로 잠기고, 리포트 본문처럼 비율이 없는 화면은 자유롭게 잡는다.
+       손대지 않고 넘기면 — 비율이 있으면 예전처럼 가운데, 없으면 원본 그대로다. */
+    URL.revokeObjectURL(measured.previewUrl)
+    releasePreview()
+    setSource({ file, size: { width: measured.width, height: measured.height } })
+    setStep('crop')
+  }
 
+  /**
+   * 자르지 않고 넘긴다. 비율이 없는 화면에서만 열어 준다 — 자르면 캔버스로 다시 뽑는 셈이라
+   * PNG 는 오히려 용량이 늘 수 있고, 리포트 본문 그림은 원본 화질이 그대로여야 한다.
+   *
+   * 쓰는 자리보다 큰 경우(용도별 maxEdge)는 여기서도 줄인다 — 그건 자르기가 아니다.
+   */
+  async function skipCrop() {
+    if (!source) return
+    setError(null)
+    const { file, size } = source
     let next: Picked
-    if (needsCrop || needsShrink) {
+    if (maxEdge != null && Math.max(size.width, size.height) > maxEdge) {
       try {
-        const cut = await cropToAspect(file, measured, needsCrop ? rule : undefined, maxEdge)
-        // 만든 결과가 정말 규격 안인지 마지막으로 본다. 아주 작은 그림은 반올림이 오차를 넘는다
-        const stillBad = checkSize(cut.width, cut.height, rule)
-        if (stillBad) throw stillBad
-        URL.revokeObjectURL(measured.previewUrl)
+        const cut = await cropToAspect(file, size, undefined, maxEdge)
         next = {
           file: cut.file, width: cut.width, height: cut.height,
           previewUrl: URL.createObjectURL(cut.file), croppedFrom: cut.from, did: cut.did,
         }
       } catch (e) {
-        URL.revokeObjectURL(measured.previewUrl)
         setError(e as ApiError)
         return
       }
     } else {
-      next = { file, width: measured.width, height: measured.height, previewUrl: measured.previewUrl }
+      next = { file, width: size.width, height: size.height, previewUrl: URL.createObjectURL(file) }
     }
 
     releasePreview()
     previewRef.current = next.previewUrl
     setPicked(next)
+    setSource(null)
     setStep('ready')
+  }
+
+  /**
+   * 고른 자리로 자른다. 결과가 규격 안인지 여기서 마지막으로 본다 — 자르기 UI 는 화면
+   * 좌표로 놀고 실제 판정은 원본 좌표로 하므로, 반올림이 오차를 넘는 경우가 남는다.
+   */
+  async function applyCrop(rect: CropRect) {
+    if (!source) return
+    setError(null)
+    try {
+      const cut = await cropToAspect(source.file, source.size, rule, maxEdge, rect)
+      const stillBad = checkSize(cut.width, cut.height, rule)
+      if (stillBad) throw stillBad
+      releasePreview()
+      const url = URL.createObjectURL(cut.file)
+      previewRef.current = url
+      setPicked({
+        file: cut.file, width: cut.width, height: cut.height,
+        previewUrl: url, croppedFrom: cut.from, did: cut.did,
+      })
+      setSource(null)
+      setStep('ready')
+    } catch (e) {
+      setError(e as ApiError)
+    }
   }
 
   async function start() {
@@ -209,7 +247,9 @@ export default function ImageUploadModal({ purpose, onClose, onUploaded, aspect 
         tabIndex={-1} ref={dialogRef} onClick={(e) => e.stopPropagation()}
       >
         <div className="iu-head">
-          <h2 id="iu-title">{step === 'done' ? '이미지를 올렸습니다' : '이미지 올리기'}</h2>
+          <h2 id="iu-title">
+            {step === 'done' ? '이미지를 올렸습니다' : step === 'crop' ? '자를 자리 고르기' : '이미지 올리기'}
+          </h2>
           {closable && (
             <button type="button" className="iu-x" aria-label="닫기" onClick={close}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -240,7 +280,11 @@ export default function ImageUploadModal({ purpose, onClose, onUploaded, aspect 
                 <span>{`PNG · JPG · WebP · ${formatBytes(MAX_BYTES)} 이하`}</span>
                 {/* 비율 제약은 있을 때만 알린다. 없는 화면에 규칙을 만들어 보이지 않는다.
                     거절이 아니라 자른다는 것을 고르기 전에 말해 둔다 — 결과가 놀랍지 않게 */}
-                {rule && <span className="iu-rule">{`${formatAspect(rule)} 이 아니면 가운데를 기준으로 잘라 넣습니다`}</span>}
+                <span className="iu-rule">
+                  {rule
+                    ? `${formatAspect(rule)} 로 자릅니다 — 어디를 남길지 다음 화면에서 고릅니다`
+                    : '다음 화면에서 자를 자리를 고르거나, 원본 그대로 올릴 수 있습니다'}
+                </span>
               </button>
 
               <input
@@ -254,6 +298,19 @@ export default function ImageUploadModal({ purpose, onClose, onUploaded, aspect 
                 }}
               />
             </>
+          )}
+
+          {/* ── 자르기 ───────────────────────────────── */}
+          {step === 'crop' && source && (
+            <CropStage
+              file={source.file}
+              size={source.size}
+              aspect={rule}
+              onCancel={() => { setSource(null); setError(null); setStep('pick') }}
+              onDone={(rect) => void applyCrop(rect)}
+              /* 비율이 잠긴 화면은 자르지 않고 넘어갈 수 없다 — 규격이 곧 게재 조건이다 */
+              onSkip={rule ? undefined : () => void skipCrop()}
+            />
           )}
 
           {/* ── 고른 뒤 · 전송 중 ─────────────────────── */}
@@ -279,7 +336,9 @@ export default function ImageUploadModal({ purpose, onClose, onUploaded, aspect 
                   밖으로 나간 부분이 없어지고, 줄이기는 크게 볼 때만 차이가 난다. */}
               {picked.croppedFrom && picked.did && (
                 <p className="iu-cropped">
-                  {picked.did.cropped && rule && `${formatAspect(rule)} 에 맞춰 가운데를 잘랐습니다`}
+                  {picked.did.cropped && (rule
+                    ? `${formatAspect(rule)} 에 맞춰 고른 자리로 잘랐습니다`
+                    : '고른 자리로 잘랐습니다')}
                   {picked.did.cropped && picked.did.shrank && ' · '}
                   {picked.did.shrank && '화면에 쓰는 크기로 줄였습니다'}
                   <span className="num">
@@ -318,6 +377,7 @@ export default function ImageUploadModal({ purpose, onClose, onUploaded, aspect 
         </div>
 
         <div className="iu-actions">
+          {/* 자르기 단계의 버튼은 CropStage 안에 있다 — 확대 슬라이더 바로 밑이라야 손이 덜 간다 */}
           {step === 'pick' && (
             <button type="button" className="iu-btn" onClick={close}>취소</button>
           )}
