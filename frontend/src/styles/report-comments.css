@@ -75,8 +75,13 @@
 .rc-author{ color:var(--body); font-weight:var(--fw-bold); text-decoration:none; }
 .rc-author:hover{ color:var(--brand-ink); text-decoration:underline; }
 .rc-dot{ color:var(--faint); }
-/* 신고 ⋯ (AbuseMenu). 머리 줄 오른쪽 끝 */
+/* 신고 ⋯ (AbuseMenu) · 내 댓글이면 삭제. 머리 줄 오른쪽 끝 */
 .rc-menu{ margin-left:auto; }
+.rc-delete{
+  padding:2px 6px; border:0; border-radius:6px; background:none;
+  color:var(--muted); font-family:inherit; font-size:var(--fs-sm); cursor:pointer;
+}
+.rc-delete:hover{ background:var(--surface-2); color:var(--ink); }
 
 /* 작성자가 넣은 줄바꿈을 살린다. 공백 없는 긴 URL 이 카드를 밀어내지 않게 끊는다 */
 .rc-body{

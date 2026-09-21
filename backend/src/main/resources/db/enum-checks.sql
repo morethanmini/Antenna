@@ -72,3 +72,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_abuse_reports_pending_report
     ON abuse_reports (reporter_id, target_report_id) WHERE status = 'PENDING';
 CREATE UNIQUE INDEX IF NOT EXISTS uq_abuse_reports_pending_report_comment
     ON abuse_reports (reporter_id, target_report_comment_id) WHERE status = 'PENDING';
+
+-- ① ReportComment.Status 에 DELETED 추가(작성자 댓글 삭제, QA 09-21). 옛 DB 에는 Hibernate 가 테이블을 만들 때 박은
+--    "status IN ('VISIBLE','BLOCKED')" 가 남아, 이게 없으면 삭제가 UPDATE 에서 500 으로 깨진다.
+ALTER TABLE report_comments DROP CONSTRAINT IF EXISTS report_comments_status_check;

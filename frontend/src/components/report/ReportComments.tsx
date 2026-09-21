@@ -11,6 +11,8 @@
    - 대댓글은 없다. 서버가 부모 id 를 받지 않는다.
    - 신고(M-06)는 줄마다 오른쪽 끝 ⋯ 에 접어 둔다. 내 댓글에는 그리지 않는다.
      승인되면 서버가 BLOCKED 로 내려 목록에서 빠진다 — 화면이 따로 지우지 않는다.
+   - 내 댓글에는 그 자리에 "삭제" 를 둔다(QA 09-21 — 도배는 막았지만 올라간 댓글을 지울 방법이 없었다).
+     되돌릴 수 없으니 확인창을 거친다. 지운 뒤에는 작성 때처럼 목록을 다시 읽고 개수에서 1을 뺀다.
 
    개수는 서버 commentCount 로 그린다 — items.length 가 아니다
    목록은 커서 페이징이라 items 에는 불러온 만큼만 있다. 20건 넘는 리포트에서
@@ -23,7 +25,7 @@ import { Link } from 'react-router-dom'
 import { ApiError } from '../../api/client'
 import { useCursorList } from '../../api/useCursorList'
 import {
-  COMMENT_MAX, createComment, formatDateTime, likeComment, unlikeComment,
+  COMMENT_MAX, createComment, deleteComment, formatDateTime, likeComment, unlikeComment,
   type ReportComment,
 } from '../../api/reports'
 import { ERROR_CODE } from '../../api/errors'
@@ -31,12 +33,13 @@ import ErrorState from '../state/ErrorState'
 import { errorText } from '../state/errorText'
 import LikeButton from './LikeButton'
 import AbuseMenu from './AbuseMenu'
+import ConfirmDialog from '../ConfirmDialog'
 import { useAuth } from '../../auth/context'
 import '../../styles/report-comments.css'
 
 type Props = {
   reportId: number
-  /** 서버가 센 총 개수. BLOCKED 는 빠진 값이다 */
+  /** 서버가 센 총 개수. BLOCKED·DELETED 는 빠진 값이다 */
   commentCount: number
   /** 이 리포트에 댓글을 달 수 있는가. 잠긴 리포트면 false */
   canWrite: boolean
@@ -50,11 +53,27 @@ export default function ReportComments({ reportId, commentCount, canWrite, chann
   const list = useCursorList<ReportComment>(`/reports/${reportId}/comments`)
   const { user } = useAuth()
   const [count, setCount] = useState(commentCount)
+  /** 삭제 확인창을 띄운 댓글 */
+  const [deleting, setDeleting] = useState<ReportComment | null>(null)
+  const [deleteError, setDeleteError] = useState<ApiError | null>(null)
 
   function afterCreate() {
     setCount((c) => c + 1)
     list.reload()
   }
+
+  async function confirmDelete(id: number) {
+    setDeleting(null)
+    setDeleteError(null)
+    try {
+      await deleteComment(id)
+      setCount((c) => Math.max(0, c - 1))
+      list.reload()
+    } catch (err) {
+      setDeleteError(err as ApiError)
+    }
+  }
+  const deleteErrorText = deleteError ? errorText(deleteError) : null
 
   return (
     <section className="rc" aria-labelledby="rc-heading">
@@ -76,6 +95,11 @@ export default function ReportComments({ reportId, commentCount, canWrite, chann
         )}
 
       {list.error && <ErrorState error={list.error} onRetry={list.reload} />}
+      {deleteErrorText && (
+        <p className="rc-form-error" role="alert">
+          댓글을 지우지 못했습니다. {deleteErrorText.title}
+        </p>
+      )}
 
       {!list.error && list.items.length === 0 && !list.loading && (
         <p className="rc-empty">아직 댓글이 없습니다.</p>
@@ -91,7 +115,11 @@ export default function ReportComments({ reportId, commentCount, canWrite, chann
                 </Link>
                 <span className="rc-dot" aria-hidden="true">·</span>
                 <span className="rc-when">{formatDateTime(c.createdAt)}</span>
-                {user?.id !== c.author.userId && (
+                {user?.id === c.author.userId ? (
+                  <button type="button" className="rc-menu rc-delete" onClick={() => setDeleting(c)}>
+                    삭제
+                  </button>
+                ) : (
                   <AbuseMenu
                     small
                     className="rc-menu"
@@ -118,6 +146,17 @@ export default function ReportComments({ reportId, commentCount, canWrite, chann
             </li>
           ))}
         </ul>
+      )}
+
+      {deleting && (
+        <ConfirmDialog
+          title="댓글을 지울까요?"
+          description="지운 댓글은 되돌릴 수 없습니다."
+          confirmLabel="삭제"
+          tone="danger"
+          onConfirm={() => void confirmDelete(deleting.id)}
+          onCancel={() => setDeleting(null)}
+        />
       )}
 
       {list.loading && list.items.length > 0 && <p className="rc-more-hint">불러오는 중…</p>}
