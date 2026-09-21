@@ -88,6 +88,14 @@ export default function Wallet() {
                     ? `온체인 대사 ${formatDateTime(balance.data.syncedAt)} 기준`
                     : '온체인 대사 전'}
                 </p>
+                {/* 심사 중 광고. 승인 때 소각되므로 그 전엔 아래 내역에 줄이 없다 — 여기서 알린다.
+                    서버가 "0" 을 주면(옛 서버라 칸이 없어도) 그리지 않는다 */}
+                {Number(balance.data.adHeld ?? 0) > 0 && (
+                  <p className="wallet-held">
+                    광고 심사 중 <b className="num">{formatToken(balance.data.adHeld)} ANT</b> —
+                    승인되면 빠져나가고, 반려되면 그대로 남습니다.
+                  </p>
+                )}
               </div>
             ) : (
               <div className="wallet-balance"><span className="wallet-label">잔액을 불러오는 중…</span></div>

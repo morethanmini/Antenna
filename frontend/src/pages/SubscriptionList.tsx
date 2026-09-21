@@ -19,14 +19,14 @@
    그린다. 서버가 동의 여부를 따로 내려 주게 되면 이 자리에 한 줄을 더한다.
 
    해지에 확인 단계를 두는 이유
-   **다시 켜는 API 가 없다.** 명세에 DELETE 만 있고 되살리는 경로가 없어, 실수로 누르면
-   이 화면에서 되돌릴 방법이 없다. 토글처럼 보이게 만들지 않는다. */
+   다음 결제가 멈추는 일이라 한 번 더 묻는다. 해지한 뒤에도 만료 전이면 "다시 켜기" 로
+   되돌릴 수 있다(PUT .../renewal, 09-21 QA — 전에는 되살리는 경로가 없었다). */
 import { useCallback, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { formatExpiry } from '../api/channels'
 import type { ApiError } from '../api/errors'
 import {
-  STATUS_LABEL, cancelRenewal, fetchMySubscriptions, type Subscription,
+  STATUS_LABEL, cancelRenewal, fetchMySubscriptions, resumeRenewal, type Subscription,
 } from '../api/subscriptions'
 import { useAsync } from '../api/useAsync'
 import { formatDateTime, formatToken } from '../api/wallet'
@@ -45,6 +45,9 @@ export default function SubscriptionList() {
   /** 해지 요청 중인 구독. 버튼을 두 번 누르지 못하게 한다 */
   const [canceling, setCanceling] = useState<number | null>(null)
   const [cancelError, setCancelError] = useState<ApiError | null>(null)
+  /** 다시 켜는 중인 구독과, 실패한 구독 */
+  const [resuming, setResuming] = useState<number | null>(null)
+  const [resumeFailed, setResumeFailed] = useState<number | null>(null)
 
   async function confirmCancel(id: number) {
     setCancelError(null)
@@ -60,6 +63,19 @@ export default function SubscriptionList() {
       setCancelError(e as ApiError)
     } finally {
       setCanceling(null)
+    }
+  }
+
+  async function resume(id: number) {
+    setResumeFailed(null)
+    setResuming(id)
+    try {
+      await resumeRenewal(id)
+      list.reload()   // 해지와 같은 이유로 지역 상태를 뒤집지 않고 다시 읽는다
+    } catch {
+      setResumeFailed(id)
+    } finally {
+      setResuming(null)
     }
   }
 
@@ -95,6 +111,9 @@ export default function SubscriptionList() {
                   onAsk={() => { setCancelError(null); setConfirming(s.id) }}
                   onCancelAsk={() => { setCancelError(null); setConfirming(null) }}
                   onConfirm={() => void confirmCancel(s.id)}
+                  resuming={resuming === s.id}
+                  resumeFailed={resumeFailed === s.id}
+                  onResume={() => void resume(s.id)}
                 />
               </li>
             ))}
@@ -113,9 +132,14 @@ type RowProps = {
   onAsk: () => void
   onCancelAsk: () => void
   onConfirm: () => void
+  resuming: boolean
+  resumeFailed: boolean
+  onResume: () => void
 }
 
-function Row({ sub, confirming, busy, error, onAsk, onCancelAsk, onConfirm }: RowProps) {
+function Row({
+  sub, confirming, busy, error, onAsk, onCancelAsk, onConfirm, resuming, resumeFailed, onResume,
+}: RowProps) {
   const { publisher, fee, status, startedAt, expiresAt, renewEnabled, txHash } = sub
   const navigate = useNavigate()
 
@@ -250,6 +274,13 @@ function Row({ sub, confirming, busy, error, onAsk, onCancelAsk, onConfirm }: Ro
             <b className="sb-renew-state is-off">자동 갱신 꺼짐</b>
             {expiresAt ? ` · ${formatExpiry(expiresAt)}까지 이용하고 종료됩니다.` : ' · 만료일까지 이용하고 종료됩니다.'}
           </p>
+          {/* 해지 번복. 잘못 눌렀거나 마음이 바뀐 사람이 만료 전에 되돌린다 */}
+          <button type="button" className="sb-btn" onClick={onResume} disabled={resuming}>
+            {resuming ? '켜는 중…' : '자동 갱신 다시 켜기'}
+          </button>
+          {resumeFailed && (
+            <p className="sb-error" role="alert">다시 켜지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+          )}
         </div>
       )}
 
@@ -275,11 +306,7 @@ function Row({ sub, confirming, busy, error, onAsk, onCancelAsk, onConfirm }: Ro
               ? `구독은 지금 끊기지 않습니다. ${formatExpiry(expiresAt)}까지 그대로 이용하고, 그 뒤로 결제되지 않습니다.`
               : '구독은 지금 끊기지 않습니다. 만료일까지 그대로 이용하고, 그 뒤로 결제되지 않습니다.'}
           </p>
-          {/* 되돌리는 API 가 없다. 토글처럼 보이지 않게 미리 알린다 */}
-          <p className="sb-confirm-warn">
-            해지하면 이 화면에서 다시 켤 수 없습니다. 계속 이용하시려면 만료 후 채널에서
-            새로 구독해야 합니다.
-          </p>
+          <p className="sb-confirm-warn">만료 전이면 이 화면에서 언제든 다시 켤 수 있습니다.</p>
 
           {error && (
             <p className="sb-error" role="alert">해지하지 못했습니다. 잠시 후 다시 시도해 주세요.</p>

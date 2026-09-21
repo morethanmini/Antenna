@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -40,5 +41,12 @@ public class MySubscriptionController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancelRenewal(@PathVariable Long id) {
         subscriptionService.cancelRenewal(currentUserProvider.currentUserId(), id);
+    }
+
+    /** 자동 갱신 다시 켜기(해지 번복). 이미 켜져 있어도 204 다. 끝난 구독은 409. */
+    @PutMapping("/{id}/renewal")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resumeRenewal(@PathVariable Long id) {
+        subscriptionService.resumeRenewal(currentUserProvider.currentUserId(), id);
     }
 }

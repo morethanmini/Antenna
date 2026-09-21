@@ -1,7 +1,10 @@
 package ssafy.a507.backend.domain.market.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,11 +39,15 @@ public class StockController {
      * 탐색 목록. 명세의 sentiment 는 아직 받지 않는다 — 모르는
      * 파라미터는 스프링이 무시하므로 화면은 그대로 보내도 된다. sort · perMin/perMax 는 어휘 밖
      * 값이면 400 이다(타입 변환 실패는 GlobalExceptionHandler 가 field 와 함께 400 으로 낸다).
+     *
+     * <p>{@code sector} 는 여러 번 올 수 있다({@code ?sector=반도체&sector=인터넷} — 그중 하나라도).
+     * {@code @RequestParam List<String>} 으로 받지 않는다 — 값이 하나일 때 스프링이 쉼표로 쪼개서
+     * "농업, 임업 및 어업" 같은 업종명이 둘로 갈린다. 요청의 원본 값 배열을 그대로 읽는다.
      */
     @GetMapping
     public StockListResponse list(
+            HttpServletRequest request,
             @RequestParam(required = false) String q,
-            @RequestParam(required = false) String sector,
             @RequestParam(required = false) Stock.Market market,
             @RequestParam(required = false) BigDecimal perMin,
             @RequestParam(required = false) BigDecimal perMax,
@@ -54,7 +61,7 @@ public class StockController {
         return stockService.list(
                 currentUserProvider.currentUserId(),
                 q,
-                sector,
+                sectors(request),
                 market,
                 perMin,
                 perMax,
@@ -65,6 +72,12 @@ public class StockController {
                 sort,
                 cursor,
                 size);
+    }
+
+    /** 빈 값은 버린다. 하나도 없으면 빈 목록 = 전체. */
+    private static List<String> sectors(HttpServletRequest request) {
+        String[] values = request.getParameterValues("sector");
+        return values == null ? List.of() : Arrays.stream(values).filter(v -> !v.isBlank()).toList();
     }
 
     /** 섹터 요약 칩 — 전체 + 섹터별 종목 수·평균 등락률. */

@@ -31,6 +31,11 @@ export type WalletBalance = {
   earned30d: string
   /** 최근 30일에 나간 ANT. **양수로 온다** — "-" 를 붙일지는 화면이 정한다 */
   spent30d: string
+  /**
+   * 심사 중 광고 게재료 합. 없으면 "0". 승인 때 소각되므로 그 전엔 원장(내역)에 줄이 없다 —
+   * 그래서 "광고 지불 내역이 사라졌다" 로 보였다(09-21 QA). balance 에서 빼지 않은 값이다.
+   */
+  adHeld: string
 }
 
 /* 필터로 고를 수 있는 사유는 서버 TokenReason 어휘 그대로다. 임의 사유를 만들지 않는다.
