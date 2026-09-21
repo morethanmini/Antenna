@@ -28,8 +28,8 @@
      수 있게 됐다. 규격·이유는 api/predictions.ts "커밋 봉인" 절.
    - 서명 대상이 지갑 연동용 문자열이 아니라 예측 내용이다(결정 B3). 연동용에 서명하면
      서버가 SIGNER_MISMATCH 로 거절한다. */
-import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { Panel } from './Block'
 import PredictionDepth from './PredictionDepth'
 import PointPicker from './PointPicker'
@@ -56,10 +56,10 @@ import {
   formatTargetPrice, predictionSigningPayload, targetPriceInRange, targetPriceInScale,
 } from '../../api/predictions'
 import type {
-  CommitFields, CreateResult, Direction, Horizon, PredictionDraft,
+  CommitFields, Direction, Horizon, PredictionDraft,
 } from '../../api/predictions'
 import { requestNonce } from '../../api/wallet'
-import type { PredictForm } from './predictForm'
+import { emptyPredictForm, type PredictForm, type PredictResult } from './predictForm'
 import { connectAddress, hasWallet, personalSign } from '../../wallet/provider'
 import { useAuth } from '../../auth/context'
 
@@ -98,16 +98,6 @@ function dueLabel(horizon: Horizon) {
   return `${d.getMonth() + 1}.${d.getDate()}`
 }
 
-/**
- * 대회 배팅 접수(202). 예측은 접수 시점에 저장돼 predictionId 가 오고, 소각 확정은
- * operationId 로 M-02 가 폴링한다 — PredictionQueued 와 같은 모양이지만 kind 를 따로
- * 두는 이유는 완료 화면의 말과 갈 곳이 다르기 때문이다(예측 상세가 아니라 대회로 돌아간다).
- */
-type EventResult = {
-  kind: 'event'
-  data: { predictionId: number; operationId: string }
-}
-
 type Props = {
   code: string
   summary: StockSummary | null
@@ -118,6 +108,12 @@ type Props = {
   form: PredictForm
   onForm: (next: (prev: PredictForm) => PredictForm) => void
   /**
+   * 등록 완료 결과. 폼과 같은 이유로 부모가 든다 — 탭을 오가도 완료 화면이 남아야
+   * 같은 예측을 두 번 등록할 길이 없다(predictForm.ts PredictResult).
+   */
+  result: PredictResult | null
+  onResult: (next: PredictResult) => void
+  /**
    * 대회(J-01)로 들어왔는가. 참일 때만 배너와 배팅 카드가 붙는다 — 회차 id·등록
    * 창·대회 종목 셋을 부모가 이미 확인했다(StockDetail). 평소 경로로 온 사람에게는
    * 이 화면에 배팅이라는 말 자체가 없다.
@@ -126,9 +122,10 @@ type Props = {
 }
 
 export default function PredictTab({
-  code, summary, picked, onPick, onGoInfo, form, onForm, eventMode = false,
+  code, summary, picked, onPick, onGoInfo, form, onForm, result, onResult, eventMode = false,
 }: Props) {
   const { user, setWalletLinked } = useAuth()
+  const navigate = useNavigate()
 
   const slots = useBlock(() => getSlots(), [])
   const points = useBlock(() => getPoints(code), [code])
@@ -164,7 +161,6 @@ export default function PredictTab({
   /* 202 로 접수된 소각·배팅 작업. M-02 가 폴링하고 확정되면 예측 상세로 보낸다 */
   const [burnOp, setBurnOp] = useState<string | null>(null)
   const [failure, setFailure] = useState<ApiError | null>(null)
-  const [result, setResult] = useState<CreateResult | EventResult | null>(null)
   /* 지갑 승인 뒤 서버 응답까지 빈 시간이 있다. 그 사이 화면이 그대로면 승인이
      먹혔는지 알 수 없고, 응답이 오는 순간 완료 화면이 튀어나온다.
      null 이면 모달을 띄우지 않는다 — 아직 서명 흐름에 들어가지 않은 상태다. */
@@ -360,7 +356,7 @@ export default function PredictTab({
          결과가 서 있으면 폼이 없으므로 같은 종목에 다시 걸 길 자체가 사라진다. */
       const entry = accepted.entries[0]
       if (entry) {
-        setResult({
+        onResult({
           kind: 'event',
           data: { predictionId: entry.predictionId, operationId: entry.operationId },
         })
@@ -448,7 +444,7 @@ export default function PredictTab({
          지금 얹으면 400 이고, 커밋·서명 문자열에는 애초에 들어가지 않는다
          (EventBet.tsx 머리말). 서버가 칸을 열면 draft 옆에 나란히 넘긴다. */
       const created = await createPrediction(draft, signature)
-      setResult(created)
+      onResult(created)
       if (created.kind === 'queued') {
         /* 소각으로 접수됐다(202). 커밋 진행 창 대신 M-02 로 넘긴다 — 여기서 기다리는 것은
            앵커가 아니라 소각 tx 확정이고, 그 폴링·문구·실패 처리는 M-02 가 이미 갖고 있다 */
@@ -457,9 +453,12 @@ export default function PredictTab({
       } else {
         setPhase('settled')
       }
-      /* 다음 예측은 새 난수로 봉인한다. 같은 noteSalt 를 두 번 쓰면 같은 근거가 같은
-         noteHash 로 남아, 원장만 보고도 "같은 말을 두 번 했다" 를 알 수 있다. */
-      onForm((f) => ({ ...f, noteSalt: newNoteSalt() }))
+      /* 폼을 통째로 비운다(2026-09-21). 전에는 noteSalt 만 갈고 목표가·근거를 남겼는데,
+         결과가 부모로 올라간 지금은 이 화면으로 되돌아올 길이 없어 남겨 둘 이유가 없고,
+         남기면 어딘가로 새어 나갈 때 값이 그대로 쓰인다. 새 난수도 함께 뽑힌다 — 같은
+         noteSalt 를 두 번 쓰면 같은 근거가 같은 noteHash 로 남아 원장만 보고도
+         "같은 말을 두 번 했다" 를 알 수 있기 때문이다. */
+      onForm(() => emptyPredictForm())
     } catch (e) {
       /* 실패하면 모달을 걷는다. 오류는 폼 쪽에서 보여 준다 — 진행 모달에
          오류까지 담으면 "무엇이 어디까지 갔나" 와 "무엇이 잘못됐나" 가 한 창에
@@ -476,15 +475,29 @@ export default function PredictTab({
     }
   }
 
+  /* 등록이 끝난 뒤 갈 곳 — 내 예측(C-02). QA-0918 #330: 등록 뒤에도 종목 상세에
+     머물러 "등록이 된 건가" 를 되묻게 했다. 방금 건 예측이 목록 맨 위에 서는 곳으로
+     보낸다. replace 다 — 뒤로가기가 등록 화면으로 되돌아오면 같은 값을 다시 걸 것처럼
+     보인다. **대회 배팅은 보내지 않는다** — 갈 곳이 대회이고 완료 화면의 링크가 그 길이다. */
+  const goMine = useCallback(
+    () => navigate('/me/predictions', { replace: true }),
+    [navigate],
+  )
+
   /* 진행 모달. 완료 화면과 입력 화면 두 갈래가 같은 것을 띄우므로 한 번만
-     만들어 둔다. 닫으면 뒤에 있는 완료 화면이 그대로 남는다 — 커밋 해시와
-     다음 걸음이 거기 적혀 있어 잃을 것이 없다. */
+     만들어 둔다. 닫히는 길은 셋이다 — 닫기·Esc, 봉인 장면 뒤 스스로 비켜서기,
+     "예측 현황 보러가기" 링크. 어느 길이든 내 예측으로 간다(goMine). 진행 중에는
+     모달이 닫히지 않으므로(CommitProgressModal) 여기 오면 등록은 이미 끝난 것이다. */
+  const closeProgress = useCallback(() => {
+    setPhase(null)
+    goMine()
+  }, [goMine])
   const progress = phase && (
     <CommitProgressModal
       phase={phase}
       /* 대회 접수는 phase 를 null 로 두고 M-02 로 가므로 여기 오지 않는다. 타입만 좁힌다 */
       result={result && result.kind !== 'event' ? result : null}
-      onClose={() => setPhase(null)}
+      onClose={closeProgress}
     />
   )
 
@@ -558,7 +571,12 @@ export default function PredictTab({
           <OperationModal
             operationId={burnOp}
             kind={result.kind === 'event' ? 'EVENT_BET' : 'PREDICTION_BURN'}
-            onClose={() => setBurnOp(null)}
+            /* 소각 접수(202)는 닫으면 내 예측으로 — 확정 전이라도 예측은 이미 저장돼
+               목록에 선다. 대회는 완료 화면에 남는다(goMine 주석). */
+            onClose={() => {
+              setBurnOp(null)
+              if (result.kind !== 'event') goMine()
+            }}
           />
         )}
       </div>

@@ -19,7 +19,9 @@ import { Link, useParams, useSearchParams } from 'react-router-dom'
 import InfoTab from '../components/stockDetail/InfoTab'
 import PredictTab from '../components/stockDetail/PredictTab'
 import SettledToday from '../components/stockDetail/SettledToday'
-import { emptyPredictForm, type PredictForm } from '../components/stockDetail/predictForm'
+import {
+  emptyPredictForm, type PredictForm, type PredictResult,
+} from '../components/stockDetail/predictForm'
 import { useBlock } from '../api/useBlock'
 import ErrorState from '../components/state/ErrorState'
 import { addWatch, removeWatch, MARKET_LABEL } from '../api/stocks'
@@ -71,6 +73,17 @@ export default function StockDetail() {
   /* 함수를 그대로 넘긴다(호출하지 않는다) — useState 의 지연 초기화라 noteSalt 를
      한 번만 뽑는다. emptyPredictForm() 로 부르면 다시 그릴 때마다 새 난수가 나온다. */
   const [form, setForm] = useState<PredictForm>(emptyPredictForm)
+  /* 등록 완료 결과도 여기다(2026-09-21, QA-0918 #330). PredictTab 안에 두었을 때는
+     완료 화면에서 종목 정보 탭을 다녀오면 결과가 사라지고 값이 남은 폼이 되살아나
+     같은 예측을 두 번 등록할 수 있었다.
+
+     어느 종목의 결과인지를 함께 든다. 이 페이지는 /stocks/:code 의 code 만 바뀔 때
+     다시 마운트되지 않아(App.tsx 의 key 는 경로 패턴이다) 그냥 두면 다른 종목에
+     "등록했습니다" 가 서 있게 된다 — 코드가 다르면 렌더에서 없는 것으로 읽는다.
+     effect 로 지우면 한 렌더 동안 옛 결과가 보이고 린트도 그걸 짚는다. */
+  const [done, setDone] = useState<{ code: string; result: PredictResult } | null>(null)
+  const result = done?.code === code ? done.result : null
+  const onResult = useCallback((r: PredictResult) => setDone({ code, result: r }), [code])
   const onPick = useCallback((id: number) => {
     setPicked((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   }, [])
@@ -221,6 +234,8 @@ export default function StockDetail() {
                   onGoInfo={() => goTab('info')}
                   form={form}
                   onForm={setForm}
+                  result={result}
+                  onResult={onResult}
                   eventMode={eventMode}
                 />
               )}
