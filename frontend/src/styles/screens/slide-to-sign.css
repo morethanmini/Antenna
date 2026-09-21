@@ -15,12 +15,14 @@
   background-image:linear-gradient(#cdc9f7,#cdc9f7);
   background-repeat:no-repeat;
   background-size:calc(var(--sts-at,0) * 100%) 100%;
-  transition:background-size .18s ease-out;
+  transition:background-size .22s cubic-bezier(.22,.9,.3,1);
 }
-/* 끄는 동안은 전환을 끈다 — 켜 두면 손잡이·채움이 손가락보다 늦게 따라온다.
-   놓거나 넘기면 다시 켜져 끝·제자리로 미끄러진다(SNAP_MS 와 같은 .18s). */
-.sts.is-dragging,
-.sts.is-dragging .sts-knob{transition:none}
+
+/* 끄는 동안에는 전환을 끈다. 손가락을 따라가야 하는데 0.22s 를 걸면 물감과
+   손잡이가 손끝보다 늦게 도착해 미끄덩거린다(코치 QA 2026-09-21).
+   손을 떼는 순간 다시 켜져서, 되돌아가는 길만 부드럽게 미끄러진다. */
+.sts.is-held,
+.sts.is-held .sts-knob{transition:none}
 
 .sts-label{
   position:absolute;left:0;right:0;text-align:center;
@@ -33,7 +35,9 @@
   display:grid;place-items:center;width:64px;height:38px;
   border:0;border-radius:10px;background:var(--brand);color:#fff;
   cursor:grab;touch-action:none;   /* 세로 스크롤에 끌기를 뺏기지 않는다 */
-  transition:background .14s,transform .18s ease-out;
+  /* 놓았을 때 되돌아가는 길, 끝까지 밀었을 때 남은 10% 를 미끄러져 들어가는 길.
+     끄는 동안에는 .sts.is-held 가 이걸 끈다. */
+  transition:background .14s,transform .22s cubic-bezier(.22,.9,.3,1);
 }
 .sts-knob:active{cursor:grabbing}
 .sts-knob:hover:not(:disabled){background:var(--brand-ink,#4a43e8)}

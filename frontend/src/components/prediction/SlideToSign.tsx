@@ -26,10 +26,6 @@ type Props = {
 
 /** 이만큼 밀면 넘어간다. 1 로 두면 끝을 정확히 맞춰야 해서 잘 안 넘어간다 */
 const THRESHOLD = 0.9
-/** 넘긴 뒤 손잡이가 끝까지 미끄러져 닿는 시간. CSS transform 전환과 같다 */
-const SNAP_MS = 180
-/** 끝에 닿은 손잡이를 제자리로 돌려놓기까지. busy 화면이 안 덮는 경우(지갑 연동 창 등)에 쓰인다 */
-const RETURN_MS = 700
 
 export default function SlideToSign({
   onConfirm, disabled = false, busy = false,
@@ -39,70 +35,93 @@ export default function SlideToSign({
   const knobRef = useRef<HTMLButtonElement>(null)
   /** 0~1. 손잡이가 얼마나 갔나 */
   const [at, setAt] = useState(0)
-  /** 끄는 중이면 누른 자리. 끄는 동안은 전환을 꺼 손잡이가 손가락에 붙어 다닌다 */
-  const [grab, setGrab] = useState<number | null>(null)
-  const timers = useRef<number[]>([])
-  useEffect(() => () => timers.current.forEach((id) => window.clearTimeout(id)), [])
+  const dragging = useRef(false)
+  /** 끌고 있는 동안만 참. 참일 때는 전환을 끈다 — 손가락을 그대로 따라가야 한다 */
+  const [held, setHeld] = useState(false)
+  /** 손잡이 왼쪽 끝에서 얼마나 안쪽을 잡았나(px). 이걸 빼야 잡은 지점이 손가락
+      밑에 그대로 머문다. 없으면 누르는 순간 손잡이가 커서 가운데로 튄다. */
+  const grabDx = useRef(0)
+  /** 다 민 뒤 제자리로 돌려놓는 타이머 */
+  const homeTimer = useRef<number | undefined>(undefined)
   /** 이번 끌기에서 이미 넘겼나 — 한 번의 끌기로 두 번 부르지 않게. 끌기마다 풀린다 */
   const fired = useRef(false)
   /** 방금 끌어서 넘겼나 — 그 직후 따라오는 합성 click 하나만 막는다.
       이 값을 안 두고 fired 로 막으면, 서명이 실패해 돌아온 뒤 키보드로 다시
       누를 때도 막힌다(fired 는 다음 끌기 전까지 서 있으므로). */
   const afterDrag = useRef(false)
-  /** 넘긴 뒤 잠시 잠근다. 부모의 busy 는 onConfirm 안에서 지갑 확인 등을 거친 뒤에야 서므로
-      그 사이 손잡이를 다시 밀거나 누르면(연타 포함) onConfirm 이 두 번 불린다 — 예측 이중 등록·
-      이중 소각·서명 창 두 개. ref 라 다시 그려지기 전에도 바로 막힌다. */
-  const settling = useRef(false)
-  const lockFor = (ms: number) => {
-    settling.current = true
-    timers.current.push(window.setTimeout(() => { settling.current = false }, ms))
-  }
 
   const locked = disabled || busy
 
-  /* 이동 거리는 CSS 와 같은 식으로 잰다 — 손잡이는 translateX(at × (100cqw − 100%))
-     로 움직이고 cqw 는 padding 을 뺀 트랙 안쪽 폭이다. 테두리 상자 폭으로 재면
-     padding 만큼 손가락과 손잡이가 어긋난다. 누른 자리에서 얼마나 움직였나로 셈해
-     첫 움직임에 손잡이 가운데가 손가락으로 튀지 않게 한다. */
-  const move = useCallback((clientX: number, from: number) => {
+  /**
+   * 손잡이가 실제로 움직이는 거리. **CSS 와 같은 수여야 한다.**
+   *
+   * 손잡이는 translateX(at * (100cqw - 100%)) 로 움직인다. cqw 는 컨테이너의
+   * **콘텐츠 상자** 기준이라 트랙의 padding 이 빠진 폭이다. 그런데 여기서
+   * getBoundingClientRect().width 는 padding 을 포함한 테두리 상자라, 그대로
+   * 쓰면 둘이 어긋난다 — 실측 408 - 64 = 344 인데 CSS 는 336 만 민다.
+   * 8px 차이만큼 손잡이가 손가락보다 뒤처졌다(코치 QA 2026-09-21).
+   */
+  const geom = () => {
     const track = trackRef.current, knob = knobRef.current
-    if (!track || !knob) return
+    if (!track || !knob) return null
+    const t = track.getBoundingClientRect()
     const cs = getComputedStyle(track)
-    const inner = track.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
-    const span = Math.max(1, inner - knob.offsetWidth)
-    const next = Math.min(1, Math.max(0, (clientX - from) / span))
+    const padL = parseFloat(cs.paddingLeft) || 0
+    const padR = parseFloat(cs.paddingRight) || 0
+    const w = knob.getBoundingClientRect().width
+    return { left: t.left + padL, span: Math.max(1, t.width - padL - padR - w) }
+  }
+
+  const move = useCallback((clientX: number) => {
+    const g = geom()
+    if (!g) return
+    /* 잡은 지점을 손가락 밑에 붙들어 둔다 */
+    const next = Math.min(1, Math.max(0, (clientX - g.left - grabDx.current) / g.span))
     setAt(next)
     if (next >= THRESHOLD && !fired.current) {
       fired.current = true
       afterDrag.current = true
-      lockFor(SNAP_MS + RETURN_MS)
-      setGrab(null)
-      /* 끝까지 미끄러져 닿은 뒤 넘긴다. 넘어가면 대개 busy 화면이 덮지만, 지갑 연동
-         창처럼 안 덮는 경우엔 잠시 뒤 제자리로 미끄러져 돌아온다 — 다 밀린 채로
-         남으면 이미 등록된 것처럼 보인다. */
+      dragging.current = false
+      setHeld(false)
+      /* 끝까지 밀어 붙인다. 0.9 에서 넘어가므로 남은 만큼은 스스로 미끄러져
+         들어가야 "끝까지 갔다" 로 읽힌다 — 여기서 0 으로 되돌리면 다 민 순간
+         손잡이가 튕겨 나가 동작이 취소된 것처럼 보인다.
+         실패해 돌아왔을 때 다 밀린 채 남지 않게 하는 것은 아래 effect 가 맡는다. */
       setAt(1)
-      timers.current.push(
-        window.setTimeout(onConfirm, SNAP_MS),
-        window.setTimeout(() => setAt(0), SNAP_MS + RETURN_MS),
-      )
+      onConfirm()
+      /* 붙은 것을 보여 준 뒤 제자리로 돌린다.
+
+         바로 busy 로 넘어가면 발판 자리를 진행 문구가 덮으므로 이 타이머는 보이지
+         않는다. 문제는 **넘어가지 않는 갈래**다 — 슬롯을 넘겼을 때 submit 은 소각
+         동의 창만 띄우고 돌아온다(PredictTab). 그때 손잡이가 끝에 붙은 채 남으면,
+         창을 닫은 사람은 이미 등록된 것처럼 읽는다. */
+      window.clearTimeout(homeTimer.current)
+      homeTimer.current = window.setTimeout(() => setAt(0), 380)
     }
   }, [onConfirm])
 
+  useEffect(() => () => window.clearTimeout(homeTimer.current), [])
+
   const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (locked || settling.current) return
+    if (locked) return
+    dragging.current = true
     fired.current = false
-    setGrab(e.clientX)
+    grabDx.current = e.clientX - e.currentTarget.getBoundingClientRect().left
+    window.clearTimeout(homeTimer.current)
+    setHeld(true)
     e.currentTarget.setPointerCapture(e.pointerId)
   }
   const onPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (grab === null || locked || fired.current) return
-    move(e.clientX, grab)
+    if (!dragging.current || locked) return
+    move(e.clientX)
   }
   const endDrag = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (grab === null) return
-    setGrab(null)
+    if (!dragging.current) return
+    dragging.current = false
+    setHeld(false)
     try { e.currentTarget.releasePointerCapture(e.pointerId) } catch { /* 이미 놓였다 */ }
-    // 끝까지 못 밀었으면 되돌아온다(전환이 다시 켜져 미끄러져 돌아온다)
+    /* 끝까지 못 밀었으면 되돌아온다. held 가 풀린 뒤라 CSS 전환을 타고 미끄러져
+       돌아간다 — 예전에는 그 자리에서 사라지듯 튀었다. */
     if (!fired.current) setAt(0)
   }
 
@@ -117,7 +136,7 @@ export default function SlideToSign({
 
   return (
     <div
-      className={`sts${disabled ? ' is-off' : ''}${grab !== null ? ' is-dragging' : ''}`}
+      className={`sts${disabled ? ' is-off' : ''}${held ? ' is-held' : ''}`}
       ref={trackRef}
       /* 채워진 만큼 배경을 물들인다. 손잡이만 움직이면 얼마나 갔는지 잘 안 보인다 */
       style={{ ['--sts-at' as string]: String(at) }}
@@ -138,9 +157,7 @@ export default function SlideToSign({
           /* 끌어서 넘긴 직후에 click 이 한 번 더 온다 — 그 하나만 삼킨다.
              끌지 않고 그냥 누른 것(키보드·탭)은 그대로 통과시킨다. */
           if (afterDrag.current) { afterDrag.current = false; e.preventDefault(); return }
-          if (locked || settling.current) return
-          lockFor(RETURN_MS)
-          onConfirm()
+          if (!locked) onConfirm()
         }}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"

@@ -11,14 +11,23 @@
    같은 종류의 창이라 스타일시트를 한 벌 더 두면 둘이 조금씩 어긋나기 시작한다.
    (그래서 그 파일은 M-08 전용이 아니다 — 확인 창 공용이다.)
 
+   ── body 로 포털한다 ────────────────────────────────────
+   **상단바가 유리라서다.** .navbar 에 backdrop-filter 가 걸려 있는데(app.css),
+   filter 계열이 붙은 상자는 그 안의 position:fixed 자손에게 컨테이닝 블록이
+   된다 — 화면이 아니라 **그 상자**에 맞춰진다는 뜻이다. 알림 종처럼 바 안에서
+   이 창을 띄우면 se-backdrop 의 inset:0 이 뷰포트가 아니라 72px 짜리 바를
+   가리켜, 창이 바 안에 갇힌 채 잘려 보였다(코치 QA 2026-09-21).
+
+   재현해 실측한 값 — 같은 마크업에서 filter 하나로 갈린다.
+     backdrop-filter 있음  배경막 295 x 72
+     backdrop-filter 없음  배경막 295 x 734   (뷰포트 310 x 734)
+
+   호출부마다 "바 밖에서 띄워라" 를 지키게 하는 대신 창이 스스로 body 로
+   나간다. 어디서 부르든 화면 한가운데에 뜬다.
+
    ── 포커스 가둠(focus trap)은 없다 ───────────────────────
    SessionExpiredModal 과 같다. 버튼 둘뿐이라 Tab 이 새어 나가도 바로 돌아오고,
-   Escape 로 언제나 닫힌다.
-
-   ── body 로 portal 한다 ──────────────────────────────────
-   부르는 자리 안에서 그리면 조상의 transform · filter · backdrop-filter 가
-   position:fixed 의 기준 상자가 된다. 상단바(backdrop-filter)의 알림 "모두 삭제"
-   확인창이 화면이 아니라 72px 띠에 맞춰져 위가 잘렸다(09-21 QA). */
+   Escape 로 언제나 닫힌다. */
 import { useCallback, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import '../styles/session-expired.css'
