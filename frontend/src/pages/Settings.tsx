@@ -3,42 +3,44 @@
    설계서 docs/화면설계서.md §3 H · §4 H-03 · §9.2
 
    설계 제약
-   - 설정 항목은 notifyVerdict · notifySeason · notifySocial · chartView 4개뿐이다.
-     임의 토글을 늘리지 않는다. AI 힌트·난이도 설정은 두지 않는다.
+   - 설정 항목은 notifyVerdict · notifySeason · notifySocial 셋뿐이다. 임의 토글을
+     늘리지 않는다. AI 힌트·난이도 설정은 두지 않는다.
+   - chartView(트레이딩 기본 뷰)는 **화면에서 뺐다**(코치 QA 2026-09-21). 값을 읽는
+     화면이 없어 잠긴 카드로만 서 있었고, 설정이 있다는 착각만 줬다. 서버 필드와
+     api/settings.ts 는 그대로다 — 쓸 자리가 생기면 탭을 되살리면 된다.
    - M-09 온보딩은 최초 1회만 뜬다. 건너뛴 사용자를 위한 보완 안내를 이 화면에 둔다.
 
    프로필은 여기 없다 — E-02 내 채널에서 고친다
    닉네임·소개·관심 섹터·외부 채널은 **남에게 보이는 값**이라, 남이 보는 그 화면에서
    고치는 편이 맞다. 설정에 두면 내가 어떻게 보이는지 확인하러 화면을 한 번 더 옮겨야
-   했다. 이 화면에는 구독료(E-04)와 알림·차트 뷰, 로그아웃만 남는다.
+   했다. 이 화면에는 구독료(E-04)와 알림만 남는다.
 
    한 화면 안에서 탭으로 오간다
    설정 항목이 넷이라 세로로 쌓으면 아래 것이 스크롤 밖으로 나간다 — 무엇이 있는지
    자체를 모른다. B-03 종목 상세와 같은 탭 패턴을 쓴다(role=tablist · 쿼리스트링).
-   탭 밖에 남기는 둘이 있다.
+   탭 밖에 남기는 것들
    - 온보딩 보완: 지금 해야 할 일을 알리는 자리라 탭 안에 숨기면 안 보인다.
-   - 로그아웃: 설정 패널이 아니라 행동이다. 탭 하나를 버튼 한 개로 채우게 된다.
+   - 안내 다시 보기 · 로그아웃: 설정 패널이 아니라 **행동**이다. 둘 다 제목과
+     설명을 단 섹션이었는데 맨 아래 작은 버튼 두 개로 줄였다(코치 QA 2026-09-21)
+     — 버튼 글자만으로 무슨 일이 일어나는지 다 읽힌다.
 
    백엔드 준비 상태
    GET·PUT /users/me/settings 가 열렸다(ANT-NOTIFY-02, 2026-09-16). 알림 토글은
-   NotifySettingsSection 이 그린다. 차트 뷰는 아직 잠긴 카드다 — 값을 읽는 화면이 없어
-   토글만 두면 아무 데도 안 닿는 설정이 된다. */
+   NotifySettingsSection 이 그린다. */
 import { useCallback, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/context'
 import { openOnboardingTour } from '../auth/onboarding'
 import ConfirmDialog from '../components/ConfirmDialog'
-import LockedCard from '../components/state/LockedCard'
 import ChannelFeeSection from '../components/settings/ChannelFeeSection'
 import NotifySettingsSection from '../components/settings/NotifySettingsSection'
 import WalletLinkModal from '../components/wallet/WalletLinkModal'
 import '../styles/screens/settings.css'
 
-/* 탭 셋. 첫 탭이 기본이라 쿼리가 붙지 않는다 — 나머지는 ?tab=notify 처럼 실린다. */
+/* 탭 둘. 첫 탭이 기본이라 쿼리가 붙지 않는다 — 나머지는 ?tab=notify 처럼 실린다. */
 const TABS = [
   { key: 'fee', label: '구독료' },
   { key: 'notify', label: '알림' },
-  { key: 'chart', label: '트레이딩 뷰' },
 ] as const
 
 type TabKey = (typeof TABS)[number]['key']
@@ -106,24 +108,7 @@ export default function Settings() {
           </section>
         )}
 
-        {/* ── 안내 다시 보기 ────────────────────────────
-            위 "아직 마치지 않은 설정" 은 남은 할 일이 있을 때만 나온다. 다 마친
-            사람에게도 안내를 다시 볼 자리는 있어야 한다 — M-09 는 가입 직후
-            한 번뿐이라, 건너뛰었거나 그 기능이 생기기 전에 가입한 회원은 아예
-            본 적이 없다.
-            라우트가 없는 오버레이라 링크로는 못 열고 셸에 신호를 올린다. */}
-        <section className="st-block st-replay">
-          <h2>서비스 안내</h2>
-          <p>예측 기록·봉인·모의투자·지갑 연동을 네 걸음으로 다시 봅니다.</p>
-          <button type="button" className="st-btn" onClick={openOnboardingTour}>
-            안내 다시 보기
-          </button>
-        </section>
-
-        {/* ── 탭 ────────────────────────────────────────
-            잠긴 둘(알림·트레이딩 뷰)도 탭으로 남긴다. 빼면 그런 설정이 있다는 것
-            자체를 모르게 되고, 서버가 열렸을 때 "없던 게 생겼다" 로 읽힌다.
-            대신 무엇이 준비 중인지는 각 패널 안에서 말한다. */}
+        {/* ── 탭 ──────────────────────────────────────── */}
         <div className="st-tabs" role="tablist" aria-label="환경 설정 항목">
           {TABS.map((t) => (
             <button
@@ -158,36 +143,26 @@ export default function Settings() {
         {/* ── 알림 — 토글 넷, 바꾸면 바로 저장 ─────────── */}
         {tab === 'notify' && <NotifySettingsSection />}
 
-        {/* ── 트레이딩 기본 뷰 ──────────────────────── */}
-        {tab === 'chart' && (
-        <section className="st-block">
-          <h2>트레이딩 기본 뷰</h2>
-          {/* 기본 문구는 구독 잠금용이라 title 로 갈아끼운다 — 구독으로 풀리는 잠금이 아니다 */}
-          <LockedCard label="차트 뷰 설정" title="차트 뷰 설정은 준비 중입니다">
-            <p className="st-pending-note">
-              모의투자 차트를 초급(BEGINNER) 또는 고급(ADVANCED) 중 어느 쪽으로 열지 정합니다.
-            </p>
-          </LockedCard>
-        </section>
-        )}
-
         </div>
 
-        {/* ── 로그아웃 — 탭 밖에 둔다 ──────────────────
-            설정 패널이 아니라 행동이다. 탭 하나를 버튼 한 개로 채우게 되고,
-            어느 탭에 있든 여기서 나갈 수 있는 편이 낫다. */}
-        <section className="st-block">
-          <h2>로그아웃</h2>
-          <p className="st-note">
-            이 브라우저에서 세션을 종료합니다. 다시 이용하려면 로그인해야 합니다.
-          </p>
+        {/* ── 맨 아래 행동 줄 ───────────────────────────
+            둘 다 설정이 아니라 행동이다. 제목·설명을 단 섹션 두 개였는데 버튼
+            둘로 줄였다(코치 QA 2026-09-21) — 글자만으로 다 읽힌다.
+
+            "안내 다시 보기" 는 라우트가 없는 오버레이라 링크로 못 열고 셸에
+            신호를 올린다. 위 "아직 마치지 않은 설정" 은 할 일이 남았을 때만
+            나오므로, 다 마친 사람에게는 여기가 안내로 가는 유일한 길이다. */}
+        <div className="st-foot">
+          <button type="button" className="st-btn st-foot-btn" onClick={openOnboardingTour}>
+            서비스 안내 다시 보기
+          </button>
           <button
-            type="button" className="st-btn danger"
+            type="button" className="st-btn st-foot-btn danger"
             onClick={() => setConfirmingSignOut(true)}
           >
             로그아웃
           </button>
-        </section>
+        </div>
 
         {linking && (
           <WalletLinkModal

@@ -163,7 +163,7 @@ export default function NotificationBell() {
       {confirmingClear && (
         <ConfirmDialog
           title="알림을 모두 지울까요?"
-          description="지운 알림은 되돌릴 수 없습니다. 새로 오는 알림은 그대로 쌓입니다."
+          description="지운 알림은 되돌릴 수 없습니다."
           confirmLabel="모두 삭제"
           tone="danger"
           onCancel={() => setConfirmingClear(false)}
