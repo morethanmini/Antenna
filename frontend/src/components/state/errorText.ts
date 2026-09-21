@@ -159,6 +159,14 @@ const BY_STATUS: Record<number, Text> = {
 const FALLBACK: Text = { title: '문제가 발생했습니다', hint: '잠시 후 다시 시도해 주세요', retryable: true }
 
 export function errorText(error: ApiError): Text {
+  /* CLIENT_NOT_JSON 은 사유가 아니라 **code 를 못 읽었다**는 말이다. nginx 가 주는 502·503·504·413 은
+     본문이 HTML 이라 전부 여기로 오는데(client.ts 가 status 를 보기 전에 던진다), 그때 남은 단서는
+     상태 코드뿐이다. code 를 먼저 보면 BY_STATUS 의 그 줄들이 영영 안 닿는다.
+     status 를 모르는 경우 — 백엔드 없이 SPA fallback 이 index.html 을 200 으로 주는 원래 상황 — 는
+     BY_STATUS 에 200 이 없어 그대로 아래 BY_CODE 로 떨어진다. */
+  if (error.code === CLIENT_ERROR_CODE.CLIENT_NOT_JSON) {
+    return BY_STATUS[error.status] ?? BY_CODE[error.code] ?? FALLBACK
+  }
   return BY_CODE[error.code] ?? BY_STATUS[error.status] ?? FALLBACK
 }
 
