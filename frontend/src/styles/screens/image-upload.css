@@ -140,6 +140,15 @@
 }
 .iu-error span{ color:var(--body); }
 
+/* 경고 — 막지 않고 알린다(QA 09-21). 오류와 같은 모양에 색만 달리한다. 빨강이면 "안 올라간다" 로
+   읽히는데 이건 올라간다. 호박색 토큰이 없어 .iu-error 처럼 값을 직접 적는다. */
+.iu-warn{
+  display:flex; flex-direction:column; gap:3px;
+  margin:0; padding:9px 12px 9px 28px;
+  border:1px solid #f0d9a8; border-radius:9px; background:#fff8e8;
+  font-size:var(--fs-sm); line-height:1.6; color:#8a5a00;
+}
+
 /* ── 버튼 ───────────────────────────────────────────── */
 .iu-actions{
   display:flex; justify-content:flex-end; gap:8px;

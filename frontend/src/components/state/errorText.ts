@@ -82,7 +82,7 @@ const BY_CODE: Record<string, Text> = {
   // 업로드
   [ERROR_CODE.FILE_TOO_LARGE]: { title: '파일이 너무 큽니다', hint: '더 작은 이미지를 올려 주세요' },
   [ERROR_CODE.IMAGE_TOO_LARGE]: { title: '이미지 크기가 너무 큽니다', hint: '가로·세로가 더 작은 이미지를 올려 주세요' },
-  [ERROR_CODE.UNSUPPORTED_IMAGE_TYPE]: { title: '지원하지 않는 이미지 형식입니다' },
+  [ERROR_CODE.UNSUPPORTED_IMAGE_TYPE]: { title: '지원하지 않는 이미지 형식입니다', hint: 'JPG · PNG 로 바꿔서 올려 주세요' },
   [ERROR_CODE.INVALID_IMAGE_RATIO]: { title: '이미지 비율이 맞지 않습니다' },
   [ERROR_CODE.UPLOAD_FILE_NOT_FOUND]: { title: '올린 파일을 찾을 수 없습니다', hint: '다시 올려 주세요' },
 
@@ -132,6 +132,9 @@ const BY_CODE: Record<string, Text> = {
   [CLIENT_ERROR_CODE.CLIENT_UPLOAD_FAILED]: { title: '올리는 중에 연결이 끊겼습니다', hint: '같은 파일로 다시 시도할 수 있습니다', retryable: true },
   // 사용자가 스스로 멈춘 것이라 화면에 오류로 띄우지 않는다. 호출부가 이 code 를 보고 조용히 넘긴다
   [CLIENT_ERROR_CODE.CLIENT_UPLOAD_ABORTED]: { title: '업로드를 취소했습니다' },
+  /* retryable 을 붙이지 않는다 — 전에는 DOMException 이 그대로 올라와 FALLBACK("잠시 후 다시 시도")이
+     떴는데, 같은 파일은 몇 번을 해도 같은 답이다. 아이폰 HEIC 가 가장 흔해 무엇을 하면 되는지를 적는다 */
+  [CLIENT_ERROR_CODE.CLIENT_IMAGE_UNREADABLE]: { title: '이 파일을 그림으로 읽지 못했습니다', hint: '파일이 손상됐거나 브라우저가 읽지 못하는 형식입니다. HEIC · TIFF · SVG 는 JPG · PNG 로 바꿔서 올려 주세요' },
 }
 
 /* code 를 못 찾으면 status 로 떨어진다. 명세에 없는 사유가 와도 화면이 비지 않게. */
