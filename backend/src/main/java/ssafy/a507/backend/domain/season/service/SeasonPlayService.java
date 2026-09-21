@@ -116,7 +116,7 @@ public class SeasonPlayService {
 
         return new MySeasonStatusResponse(
                 me.getCash(), totalAsset, stockValue, pnl, percent(pnl, initialCash),
-                me.getCurrentDay(), positions);
+                me.getCurrentDay(), me.getStatus(), positions);
     }
 
     /**

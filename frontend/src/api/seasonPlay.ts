@@ -104,6 +104,11 @@ export type MyStatus = {
   pnl: number
   pnlRate: number
   currentDay: number
+  /**
+   * 내 회차 상태. 주문·진행은 ONGOING 에서만 받는다(아니면 409). 진행일로는 끝났는지 알 수 없다 —
+   * 건너뛰고 종료한 회차도, 마지막 날에 아직 종료하지 않은 회차도 진행일이 마지막 날이다.
+   */
+  status: 'ONGOING' | 'DONE' | 'ABANDONED'
   positions: Position[]
 }
 
