@@ -168,6 +168,9 @@ export const CLIENT_ERROR_CODE = {
   CLIENT_UPLOAD_FAILED: 'CLIENT_UPLOAD_FAILED',
   /** 사용자가 취소했다. 오류 문구를 띄우지 않는다 */
   CLIENT_UPLOAD_ABORTED: 'CLIENT_UPLOAD_ABORTED',
+  /** 브라우저가 그림으로 읽지 못했다 — 깨진 파일이거나 못 읽는 형식(HEIC·TIFF·SVG)이다.
+      서버에 가기 전의 일이고, 같은 파일은 다시 해도 같다(QA 09-21) */
+  CLIENT_IMAGE_UNREADABLE: 'CLIENT_IMAGE_UNREADABLE',
 } as const
 
 /**

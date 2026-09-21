@@ -51,13 +51,19 @@ export const MAX_PIXELS = 80_000_000
 /**
  * 서버 ImageProbe 가 매직 바이트로 알아보는 세 가지.
  *
- * 브라우저는 확장자로 MIME 을 붙이므로 이 목록과 실제 내용이 다를 수 있다. 그래도 미리 거르는
- * 값은 있다 — .pdf 를 고른 사람에게 업로드를 다 시킨 뒤 거절할 이유가 없다.
+ * **이 목록으로 거절하지 않는다**(QA 09-21). GIF·BMP·AVIF 는 서버가 안 받지만 브라우저는 읽는다 —
+ * 읽히면 캔버스로 다시 뽑아 이 셋 중 하나로 바꿔 보낸다. 목록의 쓸모는 "그대로 보내도 되나" 를
+ * 가르는 것이다({@link needsRedraw}).
  */
 export const ACCEPTED_MIME = ['image/png', 'image/jpeg', 'image/webp'] as const
 
-/** 파일 선택 창에 넘길 값 */
-export const ACCEPT_ATTR = ACCEPTED_MIME.join(',')
+/** 파일 선택 창에 넘길 값. 읽히는지는 골라 봐야 안다 — 여기서 좁히면 GIF 를 고를 길이 없다 */
+export const ACCEPT_ATTR = 'image/*'
+
+/** 서버가 그대로 받는 형식인가 */
+export function isServerFormat(file: File) {
+  return ACCEPTED_MIME.includes(file.type as (typeof ACCEPTED_MIME)[number])
+}
 
 /**
  * 배너 가로세로비 제약. 서버 adAspectRatio · adAspectTolerance 와 같다.
@@ -95,46 +101,71 @@ export const MAX_EDGE_BY_PURPOSE: Partial<Record<UploadPurpose, number>> = {
 /* ── 로컬 검증 ─────────────────────────────────────────── */
 
 /**
- * 올리기 전에 알 수 있는 것만 본다. 통과했다고 서버가 받는다는 뜻은 아니다 —
- * 서버는 매직 바이트로 형식을 다시 보고, 실제 화소도 자기가 읽는다.
+ * 디코딩 전에 알 수 있는 것. **이제 SVG 하나만 막는다**(QA 09-21).
  *
- * 서버와 같은 code 를 쓴다. 화면이 로컬·서버 오류를 같은 문구로 그릴 수 있어야 하고,
- * 그러면 나중에 검사를 서버로만 몰아도 화면이 안 바뀐다.
+ * 전에는 형식 목록과 용량으로 여기서 거절했다. 지금은 읽히는 그림이면 어떻게든 넣는다 —
+ * 형식이 다르면 바꾸고, 크면 줄인다({@link cropToAspect}). 그래서 관문이 "목록에 있나" 에서
+ * "브라우저가 읽나"({@link measure})로 옮겨 갔다.
+ *
+ * SVG 만 남긴 이유 — `<img>` 는 SVG 도 읽지만 고유 크기가 없는 SVG 는 0×0 이나 300×150 으로
+ * 나온다. 무엇이 올라갈지 사용자도 우리도 모른다.
  */
-/**
- * @param willShrink 줄여서 올릴 것이라면 용량은 여기서 보지 않는다. 8MB 짜리 휴대폰 사진이
- *   256px·130KB 로 줄어 올라갈 텐데, 원본 용량만 보고 미리 거절하면 올릴 수 있는 사진을
- *   막는 셈이다. 줄인 뒤의 용량은 cropToAspect 가 다시 보고, 서버가 최종 판정자다.
- *   화소 수(MAX_PIXELS)는 그대로 본다 — 디코딩 자체가 실패하는 크기는 줄일 수도 없다.
- */
-export function precheck(file: File, aspect?: AspectRule, willShrink = false): ApiError | null {
-  if (!willShrink && file.size > MAX_BYTES) {
-    return new ApiError({ code: 'FILE_TOO_LARGE', message: 'local', field: 'file' }, 400)
+export function precheck(file: File): ApiError | null {
+  if (file.type === 'image/svg+xml' || /\.svgz?$/i.test(file.name)) {
+    return new ApiError({ code: CLIENT_ERROR_CODE.CLIENT_IMAGE_UNREADABLE, message: 'svg' }, 0)
   }
-  /* type 이 빈 문자열로 오는 경우가 있다(확장자 없는 파일). 그때는 막지 않고 서버에 맡긴다
-     — 매직 바이트를 보는 쪽이 정확하고, 여기서 막으면 멀쩡한 png 를 거절할 수 있다. */
-  if (file.type && !ACCEPTED_MIME.includes(file.type as (typeof ACCEPTED_MIME)[number])) {
-    return new ApiError({ code: 'UNSUPPORTED_IMAGE_TYPE', message: 'local', field: 'file' }, 400)
-  }
-  void aspect // 비율은 이미지를 디코딩해야 알 수 있다 — measure() 가 맡는다
   return null
 }
 
-/** 디코딩해야 알 수 있는 것. 실패하면 이미지가 아니거나 깨진 파일이다. */
+/**
+ * 디코딩해야 알 수 있는 것. 실패하면 이미지가 아니거나, 깨졌거나, 이 브라우저가 못 읽는 형식이다
+ * (HEIC·TIFF). 셋을 구분할 방법이 없어 문구 하나로 모은다.
+ */
 export function measure(file: File): Promise<{ width: number; height: number; previewUrl: string }> {
   return new Promise((resolve, reject) => {
     const previewUrl = URL.createObjectURL(file)
     const img = new Image()
-    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight, previewUrl })
-    img.onerror = () => {
+    const fail = () => {
       URL.revokeObjectURL(previewUrl)
-      reject(new ApiError({ code: 'UNSUPPORTED_IMAGE_TYPE', message: 'decode failed', field: 'file' }, 400))
+      reject(new ApiError({ code: CLIENT_ERROR_CODE.CLIENT_IMAGE_UNREADABLE, message: 'decode failed' }, 0))
     }
+    img.onload = () => {
+      if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+        resolve({ width: img.naturalWidth, height: img.naturalHeight, previewUrl })
+      } else {
+        fail()
+      }
+    }
+    img.onerror = fail
     img.src = previewUrl
   })
 }
 
-/** 화소 수. 자르기 전에 본다 — 8천만 화소를 넘기면 캔버스에 올리는 것부터 실패한다. */
+/**
+ * 원본을 그대로 보내면 안 되는 경우 — 서버가 거절할 것을 알고 있을 때다.
+ *
+ * 형식이 다르거나, 10MB·8천만 화소를 넘거나, 쓰는 자리보다 크다. 전에는 앞의 셋을 거절했다.
+ * 사용자가 할 수 있는 일이 "다른 앱에서 바꿔 오기" 뿐인데 그건 캔버스가 대신 할 수 있다.
+ */
+export function needsRedraw(file: File, size: { width: number; height: number }, maxEdge?: number) {
+  return !isServerFormat(file)
+    || file.size > MAX_BYTES
+    || size.width * size.height > MAX_PIXELS
+    || (maxEdge != null && Math.max(size.width, size.height) > maxEdge)
+}
+
+/**
+ * 자르기 UI 로 다룰 수 없을 만큼 가늘다. 50×100000 은 미리보기에서 0.16px 폭이 된다 —
+ * 네모를 잡을 수가 없다. 이런 그림은 자르기 단계를 건너뛰고 가운데를 잡는다.
+ *
+ * 값의 근거: 미리보기는 너비 430 안팎 · 높이 320 이고 네모의 최소 변이 48px 이다(CropStage).
+ * 짧은 변이 48px 아래로 그려지는 경계가 가로 9:1 · 세로 1:6.5 쯤이다.
+ */
+export function tooThinToCrop(size: { width: number; height: number }) {
+  return size.width / size.height > 9 || size.height / size.width > 6.5
+}
+
+/** 화소 수. 다시 그린 **결과**를 잰다 — 원본이 넘는 것은 거절하지 않고 줄인다(needsRedraw). */
 export function checkPixels(width: number, height: number): ApiError | null {
   if (width * height > MAX_PIXELS) {
     return new ApiError({ code: 'IMAGE_TOO_LARGE', message: 'local', field: 'file' }, 400)
@@ -176,8 +207,11 @@ export type CroppedImage = {
   height: number
   /** 손대기 전 크기. 화면이 "1600×900 → 1200×300" 을 보여줄 수 있게 */
   from: { width: number; height: number }
-  /** 무엇을 했는지. 화면 문구가 갈린다 */
-  did: { cropped: boolean; shrank: boolean }
+  /**
+   * 무엇을 했는지. 화면 문구가 갈린다.
+   * converted 는 형식을 바꿨다는 뜻(GIF → WebP), stretched 는 너무 작아 **늘려** 넣었다는 뜻이다.
+   */
+  did: { cropped: boolean; shrank: boolean; converted: boolean; stretched: boolean }
 }
 
 /**
@@ -213,8 +247,20 @@ function clampRect(rect: CropRect, size: { width: number; height: number }): Cro
   }
 }
 
-/** 캔버스가 다시 뽑아낼 수 있는 형식. 그 외(그리고 형식 없음)는 png 로 떨어뜨린다 */
+/**
+ * 캔버스가 다시 뽑아낼 수 있는 형식. 그 외(GIF·BMP·AVIF, 형식 없음)는 **webp** 로 바꾼다 —
+ * 알파를 지키면서 png 보다 훨씬 작다(12MP 사진을 png 로 뽑으면 20MB 가 넘는다).
+ * webp 인코더가 없는 브라우저(Safari)는 toBlob 이 조용히 png 를 준다. 그래서 요청한 형식이
+ * 아니라 **나온 blob.type 을 믿는다.**
+ */
 const ENCODABLE = ['image/png', 'image/jpeg', 'image/webp']
+
+/**
+ * 용량이 넘칠 때 긴 변을 이 순서로 줄여 가며 다시 뽑는다. 첫 칸(Infinity)은 "줄이지 않고".
+ * 품질을 떨어뜨리지 않고 크기를 줄이는 이유 — 흐려진 큰 그림보다 선명한 작은 그림이 낫고,
+ * 본문·배너 어디에도 4096px 넘게 그리는 자리가 없다.
+ */
+const EDGE_STEPS = [Infinity, 4096, 2560, 1600]
 
 /**
  * 올리기 좋게 다시 그린다 — 가운데를 기준으로 자르고, 너무 크면 줄인다.
@@ -239,54 +285,152 @@ export async function cropToAspect(
   rect?: CropRect,
 ): Promise<CroppedImage> {
   const { width, height } = size
-  const { sx, sy, sw: w, sh: h } = clampRect(rect ?? centerRect(size, aspect), size)
+  const clamped = clampRect(rect ?? centerRect(size, aspect), size)
 
-  /* 자른 뒤의 크기를 기준으로 줄인다. 긴 변을 maxEdge 에 맞추고 짧은 변은 비례로 —
-     따로 정하면 비율이 틀어져 방금 맞춘 aspect 가 깨진다. */
-  const scale = maxEdge ? Math.min(1, maxEdge / Math.max(w, h)) : 1
-  const outW = Math.max(1, Math.round(w * scale))
-  const outH = Math.max(1, Math.round(h * scale))
+  /* 비율이 있으면 **원본에서 뜨는 자리부터 정확한 비율로** 다시 잡는다(QA 09-21).
+     clampRect 는 가로·세로를 따로 반올림한다. 큰 그림에서는 티가 안 나지만 50px 폭이면
+     50×13 = 3.85:1 이 되어 허용 오차(0.05)를 넘고, 우리가 자른 결과를 우리가 거절했다.
+     drawImage 는 소수 좌표를 받으므로 자리는 소수로 두고, 정수여야 하는 것은 출력 크기뿐이다. */
+  const w = aspect ? Math.min(clamped.sw, clamped.sh * aspect.ratio) : clamped.sw
+  const h = aspect ? w / aspect.ratio : clamped.sh
+  const sx = clamped.sx + (clamped.sw - w) / 2
+  const sy = clamped.sy + (clamped.sh - h) / 2
 
-  const mime = ENCODABLE.includes(file.type) ? file.type : 'image/png'
+  /** 긴 변 상한을 받아 출력 크기를 낸다. 비율이 있으면 세로를 먼저 정하고 가로는 그 배수다 —
+      그래야 결과가 **언제나 정확히 r:1** 이라 서버의 오차 검사와 다툴 일이 없다. */
+  const sizeFor = (edge: number) => {
+    const byEdge = Math.min(1, edge / Math.max(w, h))
+    const byPixels = Math.min(1, Math.sqrt(MAX_PIXELS / (w * h)))
+    const scale = Math.min(byEdge, byPixels)
+    if (!aspect) return { outW: Math.max(1, Math.round(w * scale)), outH: Math.max(1, Math.round(h * scale)), scale }
+    /* 1e-6 은 부동소수 오차 몫이다. 6120 × (256/6120) 이 255.9999… 로 나와 내림하면 255 가 된다 */
+    const outH = Math.max(1, Math.floor(h * scale + 1e-6))
+    return { outW: Math.round(outH * aspect.ratio), outH, scale }
+  }
+
+  const wanted = ENCODABLE.includes(file.type) ? file.type : 'image/webp'
+
   /* from-image 를 명시한다. measure() 의 <img> 는 EXIF 회전을 적용해 크기를 재는데
      createImageBitmap 의 기본값은 브라우저마다 달라, 세워 찍은 휴대폰 사진에서 가로·세로가
      뒤바뀌어 엉뚱한 자리를 자를 수 있다. */
-  const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
+  let bitmap: ImageBitmap
+  try {
+    bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
+  } catch {
+    /* <img> 는 읽었는데 여기서 못 읽는 경우가 둘이다. 잘린 파일(앞부분만 그려진다)과,
+       메모리에 다 펼칠 수 없을 만큼 큰 그림. DOMException 을 그대로 올리면 화면이
+       "잠시 후 다시 시도" 를 띄우는데 같은 파일은 몇 번을 해도 같다. */
+    const tooBig = width * height > MAX_PIXELS
+    throw tooBig
+      ? new ApiError({ code: 'IMAGE_TOO_LARGE', message: 'decode failed', field: 'file' }, 400)
+      : new ApiError({ code: CLIENT_ERROR_CODE.CLIENT_IMAGE_UNREADABLE, message: 'bitmap failed' }, 0)
+  }
+
   try {
     const canvas = document.createElement('canvas')
-    canvas.width = outW
-    canvas.height = outH
     const ctx = canvas.getContext('2d')
     if (!ctx) throw new ApiError({ code: CLIENT_ERROR_CODE.CLIENT_UPLOAD_FAILED, message: 'no 2d context' }, 0)
-    /* 크게 줄일 때 기본 보간은 계단이 진다. 브라우저의 고품질 축소를 켠다 */
-    ctx.imageSmoothingEnabled = true
-    ctx.imageSmoothingQuality = 'high'
-    ctx.drawImage(bitmap, sx, sy, w, h, 0, 0, outW, outH)
 
-    /* jpeg·webp 는 품질을 정해 주지 않으면 브라우저마다 다르다. 0.92 는 눈으로 구분이
-       거의 안 되면서 용량이 크게 붇지 않는 선이다. png 는 무손실이라 이 값을 무시한다. */
-    const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, mime, 0.92))
-    if (!blob) {
-      throw new ApiError({ code: CLIENT_ERROR_CODE.CLIENT_UPLOAD_FAILED, message: 'encode failed' }, 0)
+    const draw = async (outW: number, outH: number, mime: string) => {
+      canvas.width = outW
+      canvas.height = outH
+      /* 크기를 바꾸면 컨텍스트 상태가 초기화된다. 매번 다시 켠다.
+         크게 줄일 때 기본 보간은 계단이 진다. 브라우저의 고품질 축소를 켠다 */
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
+      ctx.drawImage(bitmap, sx, sy, w, h, 0, 0, outW, outH)
+      /* jpeg·webp 는 품질을 정해 주지 않으면 브라우저마다 다르다. 0.92 는 눈으로 구분이
+         거의 안 되면서 용량이 크게 붇지 않는 선이다. png 는 무손실이라 이 값을 무시한다. */
+      const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, mime, 0.92))
+      if (!blob) {
+        throw new ApiError({ code: CLIENT_ERROR_CODE.CLIENT_UPLOAD_FAILED, message: 'encode failed' }, 0)
+      }
+      return blob
     }
-    if (blob.size > MAX_BYTES) {
-      // 자르고 줄이고도 10MB 를 넘겼다. 여기서 품질을 더 떨어뜨리면 사용자가 모르는 사이에 흐려진다.
-      throw new ApiError({ code: 'FILE_TOO_LARGE', message: 'after crop', field: 'file' }, 400)
+
+    /* 10MB 를 넘으면 거절하지 않고 줄여 본다(QA 09-21). 용도가 정한 maxEdge 가 있으면 거기서
+       시작한다. 같은 크기가 또 나오는 단계는 건너뛴다 — 256px 프로필을 네 번 뽑을 이유가 없다. */
+    let out = sizeFor(maxEdge ?? Infinity)
+    let blob: Blob | null = null
+    let tried = ''
+    for (const step of EDGE_STEPS) {
+      const next = sizeFor(Math.min(maxEdge ?? Infinity, step))
+      const key = `${next.outW}x${next.outH}`
+      if (key === tried) continue
+      tried = key
+      out = next
+      blob = await draw(out.outW, out.outH, wanted)
+      if (blob.size <= MAX_BYTES) break
+    }
+    /* 끝까지 줄여도 넘는 것은 잡음 많은 png 뿐이다. 마지막으로 webp 로 바꿔 본다 */
+    if (blob && blob.size > MAX_BYTES && wanted !== 'image/webp') {
+      blob = await draw(out.outW, out.outH, 'image/webp')
+    }
+    if (!blob || blob.size > MAX_BYTES) {
+      throw new ApiError({ code: 'FILE_TOO_LARGE', message: 'after shrink', field: 'file' }, 400)
     }
 
     /* 이름과 lastModified 를 원본 그대로 둔다 — 사용자가 자기 파일로 알아보고,
-       멱등 키 scope 가 이 둘을 쓰기 때문이다(같은 파일을 다시 골라도 같은 키가 나간다). */
-    const cropped = new File([blob], file.name, { type: mime, lastModified: file.lastModified })
+       멱등 키 scope 가 이 둘을 쓰기 때문이다(같은 파일을 다시 골라도 같은 키가 나간다).
+       형식을 바꿔도 이름은 그대로다(a.gif 안에 webp). 서버는 이름을 쓰지 않는다. */
+    const cropped = new File([blob], file.name, { type: blob.type, lastModified: file.lastModified })
     return {
       file: cropped,
-      width: outW,
-      height: outH,
+      width: out.outW,
+      height: out.outH,
       from: { width, height },
-      did: { cropped: w !== width || h !== height, shrank: scale < 1 },
+      did: {
+        cropped: Math.round(w) !== width || Math.round(h) !== height,
+        /* 크기가 아니라 배율로 가른다. 50px 폭을 4:1 정수에 맞추느라 48 이 된 것은 줄인 게 아니다 */
+        shrank: out.scale < 1,
+        converted: blob.type !== file.type,
+        stretched: out.outW > w,
+      },
     }
   } finally {
     bitmap.close()
   }
+}
+
+/* ── 경고 ──────────────────────────────────────────────
+   막지 않고 **말해 준다**(QA 09-21). 거절하면 사용자는 왜 안 올라가는지 모른 채 멈춘다.
+   넣어 주되 어떻게 보일지를 올리기 전에 알려 주면, 그대로 갈지 다른 그림을 고를지는
+   사용자가 정한다. 문구는 화면(모달)이 갖는다 — 여기는 조건만 안다. */
+
+export type UploadWarning = 'CROP_LOSS' | 'AD_SMALL' | 'STRETCHED' | 'TALL' | 'FLAT' | 'GIF_STILL'
+
+/** 광고 배너가 이보다 낮으면 자리(홈 배너 max-height 178px)에서 늘어나 흐려진다 */
+const AD_MIN_HEIGHT = 120
+
+export function warningsFor(
+  purpose: UploadPurpose,
+  original: File,
+  result: { width: number; height: number },
+  cut?: CroppedImage,
+  /** 자르기 UI 를 거치지 않고 가운데를 잡았다. 사용자가 고른 자리가 아니므로 잃는 양을 알린다 */
+  autoCropped = false,
+): UploadWarning[] {
+  const out: UploadWarning[] = []
+  if (cut?.did.stretched) out.push('STRETCHED')
+  if (autoCropped && cut?.did.cropped) {
+    /* 줄인 것은 빼고 자르기로 잃은 면적만 본다 — 원본에서 뜬 자리의 넓이로 잰다 */
+    const r = ASPECT_BY_PURPOSE[purpose]?.ratio
+    if (r) {
+      const keptW = Math.min(cut.from.width, cut.from.height * r)
+      const kept = (keptW * (keptW / r)) / (cut.from.width * cut.from.height)
+      if (kept < 0.5) out.push('CROP_LOSS')
+    }
+  }
+  if (purpose === 'AD' && !cut?.did.stretched && result.height < AD_MIN_HEIGHT) out.push('AD_SMALL')
+  if (purpose === 'REPORT' || purpose === 'POST') {
+    /* 본문 그림은 max-width:100% · height:auto 로 그린다(markdown.css .md-img). 세로로 긴 그림은
+       그 길이 그대로 본문을 밀어내고, 납작한 그림은 가는 줄이 된다. CSS 로 높이를 자르지 않는
+       이유 — 세로로 긴 카드뉴스(800×5000)까지 손톱만 해진다. */
+    if (result.height / result.width > 4 && result.height > 3000) out.push('TALL')
+    if (result.width / result.height > 10) out.push('FLAT')
+  }
+  if (original.type === 'image/gif' && cut?.did.converted) out.push('GIF_STILL')
+  return out
 }
 
 /* ── 업로드 ────────────────────────────────────────────── */
@@ -339,7 +483,11 @@ function send(
 ): Promise<UploadedImage> {
   return new Promise((resolve, reject) => {
     const form = new FormData()
-    form.append('file', file)
+    /* 세 번째 인자가 전송되는 파일명이다. 줄여 보낸다(QA 09-21) — 톰캣은 파트 헤더가 512바이트를
+       넘으면 끊는데, 스프링이 그걸 용량 초과로 올려 535바이트짜리 그림에 "파일이 너무 큽니다" 가
+       떴다. 한글 140자쯤이면 닿는다. 서버는 이름을 쓰지 않으므로(UUID 로 저장) 잃는 것이 없고,
+       화면의 파일명과 멱등 키 scope 는 원래 이름 그대로다. */
+    form.append('file', file, wireName(file.name))
     form.append('purpose', purpose)
 
     const xhr = new XMLHttpRequest()
@@ -403,6 +551,15 @@ function send(
 
     xhr.send(form)
   })
+}
+
+/** 전송용 이름. 확장자는 지키고 몸통을 80자로 자른다 — 한글 80자가 240바이트라 512 안에 든다 */
+export function wireName(name: string) {
+  const dot = name.lastIndexOf('.')
+  const ext = dot > 0 && name.length - dot <= 10 ? name.slice(dot) : ''
+  // 코드 포인트로 자른다. length 로 자르면 이모지가 반으로 갈려 깨진 글자가 나간다
+  const base = Array.from(ext ? name.slice(0, dot) : name)
+  return base.length <= 80 ? name : base.slice(0, 80).join('') + ext
 }
 
 /** 오류 응답이 JSON 이 아닐 수 있다(서블릿이 먼저 끊은 413 등). 그때는 null 로 넘긴다. */
