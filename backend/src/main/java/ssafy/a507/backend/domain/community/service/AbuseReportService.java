@@ -100,7 +100,7 @@ public class AbuseReportService {
     /** 리포트 댓글 신고. 가려진 댓글은 리포트와 같은 이유로 없는 것으로 다룬다. */
     private AbuseReport againstReportComment(User reporter, AbuseReportCreateRequest request) {
         ReportComment comment = reportCommentRepository.findById(request.targetId())
-                .filter(c -> !c.isBlocked())
+                .filter(ReportComment::isVisible)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TARGET_NOT_FOUND, "targetId"));
         rejectSelf(reporter.getId(), comment.getUser().getId());
         rejectDuplicate(abuseReportRepository.existsByReporterIdAndTargetReportCommentIdAndStatus(

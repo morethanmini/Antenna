@@ -15,8 +15,12 @@ public interface ReportCommentRepository extends JpaRepository<ReportComment, Lo
     /** 도배 제한 — 이 사람이 since 이후에 쓴 댓글 수(상태 무관). */
     long countByUser_IdAndCreatedAtAfter(Long userId, Instant since);
 
-    /** 도배 제한 — 이 리포트에 이 사람이 마지막으로 쓴 댓글. */
-    Optional<ReportComment> findFirstByReport_IdAndUser_IdOrderByIdDesc(Long reportId, Long userId);
+    /**
+     * 도배 제한 — 이 리포트에 이 사람이 마지막으로 쓴 댓글. 지운 댓글은 빼고 본다(오타를 지우고 같은 말을 다시 쓰는 것은
+     * 도배가 아니다). 지웠다 쓰기를 되풀이하는 것은 1분 5개 제한이 막는다 — 그쪽 개수는 상태 무관이다.
+     */
+    Optional<ReportComment> findFirstByReport_IdAndUser_IdAndStatusNotOrderByIdDesc(
+            Long reportId, Long userId, ReportComment.Status status);
 
     /**
      * 리포트 여러 건의 댓글 수를 한 쿼리로 센다. BLOCKED 댓글은 세지 않는다 — 목록에서

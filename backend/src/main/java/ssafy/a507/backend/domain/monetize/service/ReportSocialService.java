@@ -144,7 +144,9 @@ public class ReportSocialService {
         User author = currentUser(userId);
         CommentThrottle.check(
                 reportCommentRepository.countByUser_IdAndCreatedAtAfter(userId, CommentThrottle.windowStart()),
-                reportCommentRepository.findFirstByReport_IdAndUser_IdOrderByIdDesc(reportId, userId)
+                reportCommentRepository
+                        .findFirstByReport_IdAndUser_IdAndStatusNotOrderByIdDesc(
+                                reportId, userId, ReportComment.Status.DELETED)
                         .map(ReportComment::getBody).orElse(null),
                 request.body());
 
@@ -196,6 +198,24 @@ public class ReportSocialService {
         // 오래된 순이라 다음 커서는 마지막(가장 최근) 항목이다.
         Long nextCursor = hasNext ? comments.get(comments.size() - 1).getId() : null;
         return new ReportCommentListResponse(items, nextCursor, hasNext);
+    }
+
+    /**
+     * 댓글 삭제 — <b>작성자만</b>. 리포트 작성자도 남의 댓글은 못 지운다(가리는 것은 신고·관리자 몫이다).
+     *
+     * <p>남의 댓글·없는 댓글·가려진(BLOCKED) 댓글은 같은 404 로 묶는다 — 403 을 주면 "그 id 의 댓글은 있다" 가 새 나가고,
+     * 가려진 댓글을 지워 가림 기록을 DELETED 로 덮을 수 있으면 안 된다. 이미 지운 내 댓글은 204 — 같은 요청을 다시
+     * 보내도 결과가 같다. 리포트 잠금(구독 만료)은 보지 않는다: 자기가 쓴 글을 지우는 일이다.
+     */
+    @Transactional
+    public void deleteComment(Long commentId) {
+        Long userId = currentUserProvider.currentUserId();
+        ReportComment comment = reportCommentRepository
+                .findById(commentId)
+                .filter(c -> c.getUser().getId().equals(userId))
+                .filter(c -> !c.isBlocked())
+                .orElseThrow(() -> new BusinessException(ErrorCode.COMMENT_NOT_FOUND, "commentId"));
+        comment.delete();
     }
 
     @Transactional
@@ -257,7 +277,7 @@ public class ReportSocialService {
     /**
      * 좋아요를 누를 수 있는 댓글인가.
      *
-     * <p>BLOCKED 댓글은 없는 것처럼 다룬다 — 가려진 댓글에 좋아요를 눌러 존재를 확인할 수
+     * <p>BLOCKED·DELETED 댓글은 없는 것처럼 다룬다 — 가려진 댓글에 좋아요를 눌러 존재를 확인할 수
      * 있으면 안 되므로 403 이 아니라 404 다. 딸린 리포트의 잠금도 함께 본다: 본문을 못 보는
      * 사람이 그 댓글에는 반응할 수 있으면 리포트 쪽 규칙을 우회하는 길이 된다.
      */
@@ -265,7 +285,7 @@ public class ReportSocialService {
         ReportComment comment = reportCommentRepository
                 .findWithReportById(commentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.COMMENT_NOT_FOUND, "commentId"));
-        if (comment.isBlocked()) {
+        if (!comment.isVisible()) {
             throw new BusinessException(ErrorCode.COMMENT_NOT_FOUND, "commentId");
         }
         if (comment.getReport().isBlocked()) {
