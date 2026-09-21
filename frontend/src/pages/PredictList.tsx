@@ -549,11 +549,19 @@ export default function PredictList() {
   const list = useCursorList<MyPrediction, MyPredictionMeta>(fetcher)
 
   /* 커서 끝까지 이어서 받는다. 세 칸의 건수가 정확하려면 전량이 있어야 한다.
-     loadMore 가 loading·hasNext 를 스스로 막으므로 여기서 겹쳐 부를 일은 없다. */
+     loadMore 가 loading·hasNext 를 스스로 막으므로 여기서 겹쳐 부를 일은 없다.
+
+     **의존성에 list 를 통째로 넣지 않는다.** 훅이 돌려주는 객체는 매 렌더 새로
+     만들어지므로, 그걸 넣으면 이 effect 가 렌더마다 다시 돈다(QA 09-21 메모리 누수).
+     요청이 곱절로 나가던 것은 아니다 — loadMore 가 hasNext·loading 으로 막아,
+     29건 계정 실측으로 고치기 전후 모두 3회였다. 문제는 헛도는 effect 가 매 렌더
+     새 클로저를 만들어 붙드는 쪽이다. 실제로 쓰는 네 값만 본다 —
+     loadMore 는 훅에서 useCallback 으로 굳혀 두었다. */
   const capped = list.items.length >= LOAD_CAP
+  const { hasNext, loading, error, loadMore } = list
   useEffect(() => {
-    if (list.hasNext && !list.loading && !list.error && !capped) list.loadMore()
-  }, [list, capped])
+    if (hasNext && !loading && !error && !capped) loadMore()
+  }, [hasNext, loading, error, capped, loadMore])
 
   /* 다 받기 전에는 목록을 그리지 않는다. 반쯤 받은 상태로 칸을 그리면 건수가
      늘어나는 것이 보이고, 그 숫자를 믿을 수 없게 된다. */
