@@ -9,18 +9,24 @@
 
 /* 한 줄에 담기는 값이 다섯 개뿐이라 C-02(1000px)보다 좁게 묶는다. 넓히면
    종목명과 종가 사이가 손바닥만큼 벌어져 같은 줄로 읽히지 않는다 — 특히
-   수집이 하루치뿐일 때는 미니차트 칸이 비어 그 구멍이 더 넓어진다. */
+   수집이 하루치뿐일 때는 미니차트 칸이 비어 그 구멍이 더 넓어진다.
+
+   **좁힌 만큼 가운데로 보낸다**(코치 QA 2026-09-21). 다른 화면은 전부 안쪽 폭을
+   꽉 채우는데(32~1408) 여기만 860 이라, 가운데로 모으지 않으면 1440 에서 오른쪽에
+   548px 이 비어 화면이 왼쪽으로 쏠린 것처럼 보였다. 폭을 넓히는 대신 자리를
+   옮긴다 — 좁게 둔 이유는 위 그대로 살아 있다. */
 .watchlist-page .wl-head,
 .watchlist-page .wl-list,
 .watchlist-page .wl-skel,
 /* 빈 화면·오류 카드도 같은 폭을 지킨다. 목록만 좁히면 비었을 때 카드가
    화면을 가로질러 같은 화면으로 보이지 않는다 */
-.watchlist-page .state{max-width:860px}
+.watchlist-page .state{max-width:860px;margin-inline:auto}
 
 /* ── 머리 ────────────────────────────────────────────────── */
 .watchlist-page .wl-head{
   display:flex;align-items:flex-start;justify-content:space-between;gap:20px;
-  margin:0 0 18px;
+  /* 단축 margin 이라 위 margin-inline:auto 를 덮는다 — 가운데 정렬을 여기서 다시 준다 */
+  margin:0 auto 18px;
 }
 .watchlist-page .wl-head h1{
   margin:0 0 5px;line-height:1.2;color:var(--ink);
@@ -46,7 +52,7 @@
    계산되고, "삼성전자" 가 든 줄과 "LG에너지솔루션" 이 든 줄의 숫자 칸이
    어긋난다. 숫자를 위아래로 훑는 화면이라 칸이 밀리면 비교가 안 된다 —
    그래서 늘어나는 칸(종목) 하나만 fr 로 두고 나머지는 폭을 못 박는다. */
-.watchlist-page .wl-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.watchlist-page .wl-list{list-style:none;margin:0 auto;padding:0;display:grid;gap:8px}
 
 .watchlist-page .wl-row{
   display:grid;align-items:center;gap:14px;
