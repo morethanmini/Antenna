@@ -39,14 +39,14 @@ export type UploadedImage = {
 }
 
 /* ── 서버가 거절하는 조건. 같은 값을 여기서도 재 두어 헛업로드를 막는다 ──
-   서버 검사를 대신하는 것이 아니다 — 5MB 를 다 올린 뒤 400 을 받으면 사용자는 기다린 만큼을
+   서버 검사를 대신하는 것이 아니다 — 10MB 를 다 올린 뒤 400 을 받으면 사용자는 기다린 만큼을
    잃는다. 서버 UploadProperties 의 기본값과 같은 수를 쓰고, 어긋나면 서버가 최종 판정한다. */
 
-/** 5MB. 서버 app.uploads.max-bytes 와 같다 */
-export const MAX_BYTES = 5 * 1024 * 1024
+/** 10MB. 서버 app.uploads.max-bytes 와 같다 */
+export const MAX_BYTES = 10 * 1024 * 1024
 
-/** 4천만 화소. 서버 maxPixels 와 같다 — 용량이 작아도 픽셀이 크면 디코딩에서 터진다 */
-export const MAX_PIXELS = 40_000_000
+/** 8천만 화소. 서버 maxPixels 와 같다 — 용량이 작아도 픽셀이 크면 디코딩에서 터진다 */
+export const MAX_PIXELS = 80_000_000
 
 /**
  * 서버 ImageProbe 가 매직 바이트로 알아보는 세 가지.
@@ -134,7 +134,7 @@ export function measure(file: File): Promise<{ width: number; height: number; pr
   })
 }
 
-/** 화소 수. 자르기 전에 본다 — 4천만 화소짜리는 캔버스에 올리는 것부터 실패한다. */
+/** 화소 수. 자르기 전에 본다 — 8천만 화소를 넘기면 캔버스에 올리는 것부터 실패한다. */
 export function checkPixels(width: number, height: number): ApiError | null {
   if (width * height > MAX_PIXELS) {
     return new ApiError({ code: 'IMAGE_TOO_LARGE', message: 'local', field: 'file' }, 400)
@@ -180,6 +180,39 @@ export type CroppedImage = {
   did: { cropped: boolean; shrank: boolean }
 }
 
+/**
+ * 잘라 낼 원본 영역(원본 픽셀 기준). 자르기 UI 가 만들고 {@link cropToAspect} 가 받는다.
+ *
+ * 화면 좌표가 아니라 원본 좌표인 이유 — 미리보기는 모달 너비에 따라 크기가 달라지는데,
+ * 그 배율을 여기까지 들고 오면 창 크기가 바뀔 때마다 자른 자리가 흔들린다.
+ */
+export type CropRect = { sx: number; sy: number; sw: number; sh: number }
+
+/** 손대지 않았을 때의 자리. 넓으면 좌우를, 높으면 위아래를 덜어 낸다 — 남는 변은 그대로 둔다 */
+export function centerRect(size: { width: number; height: number }, aspect?: AspectRule): CropRect {
+  const { width, height } = size
+  if (!aspect) return { sx: 0, sy: 0, sw: width, sh: height }
+  const wide = width / height > aspect.ratio
+  const sw = wide ? Math.round(height * aspect.ratio) : width
+  const sh = wide ? height : Math.round(width / aspect.ratio)
+  return { sx: Math.round((width - sw) / 2), sy: Math.round((height - sh) / 2), sw, sh }
+}
+
+/**
+ * 원본 밖을 가리키지 않게 민다. 드래그·확대 계산에 반올림이 섞이면 1~2px 이 밖으로
+ * 나가는데, 그대로 drawImage 에 넘기면 가장자리가 투명하게 비어 나온다.
+ */
+function clampRect(rect: CropRect, size: { width: number; height: number }): CropRect {
+  const sw = Math.max(1, Math.min(Math.round(rect.sw), size.width))
+  const sh = Math.max(1, Math.min(Math.round(rect.sh), size.height))
+  return {
+    sw,
+    sh,
+    sx: Math.min(Math.max(0, Math.round(rect.sx)), size.width - sw),
+    sy: Math.min(Math.max(0, Math.round(rect.sy)), size.height - sh),
+  }
+}
+
 /** 캔버스가 다시 뽑아낼 수 있는 형식. 그 외(그리고 형식 없음)는 png 로 떨어뜨린다 */
 const ENCODABLE = ['image/png', 'image/jpeg', 'image/webp']
 
@@ -195,22 +228,18 @@ const ENCODABLE = ['image/png', 'image/jpeg', 'image/webp']
  *
  * @param aspect 없으면 자르지 않는다
  * @param maxEdge 없으면 줄이지 않는다. **늘리지는 않는다** — 작은 그림을 키우면 뭉갠다
+ * @param rect 사용자가 고른 자리. 없으면 가운데를 잡는다 — 자르기 UI 를 열지 않는 화면과
+ *   손대지 않고 넘긴 경우가 예전과 똑같이 동작해야 한다
  */
 export async function cropToAspect(
   file: File,
   size: { width: number; height: number },
   aspect?: AspectRule,
   maxEdge?: number,
+  rect?: CropRect,
 ): Promise<CroppedImage> {
   const { width, height } = size
-  const wide = aspect ? width / height > aspect.ratio : false
-
-  /* 넓으면 좌우를, 높으면 위아래를 덜어 낸다. 어느 쪽이든 남는 변은 건드리지 않는다 —
-     양쪽을 다 줄이면 원본보다 작아져 화질을 공짜로 버린다. */
-  const w = !aspect ? width : wide ? Math.round(height * aspect.ratio) : width
-  const h = !aspect ? height : wide ? height : Math.round(width / aspect.ratio)
-  const sx = Math.round((width - w) / 2)
-  const sy = Math.round((height - h) / 2)
+  const { sx, sy, sw: w, sh: h } = clampRect(rect ?? centerRect(size, aspect), size)
 
   /* 자른 뒤의 크기를 기준으로 줄인다. 긴 변을 maxEdge 에 맞추고 짧은 변은 비례로 —
      따로 정하면 비율이 틀어져 방금 맞춘 aspect 가 깨진다. */
@@ -241,7 +270,7 @@ export async function cropToAspect(
       throw new ApiError({ code: CLIENT_ERROR_CODE.CLIENT_UPLOAD_FAILED, message: 'encode failed' }, 0)
     }
     if (blob.size > MAX_BYTES) {
-      // 자르고 줄이고도 5MB 를 넘겼다. 여기서 품질을 더 떨어뜨리면 사용자가 모르는 사이에 흐려진다.
+      // 자르고 줄이고도 10MB 를 넘겼다. 여기서 품질을 더 떨어뜨리면 사용자가 모르는 사이에 흐려진다.
       throw new ApiError({ code: 'FILE_TOO_LARGE', message: 'after crop', field: 'file' }, 400)
     }
 
