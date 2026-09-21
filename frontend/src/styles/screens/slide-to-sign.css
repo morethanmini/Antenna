@@ -15,8 +15,12 @@
   background-image:linear-gradient(#cdc9f7,#cdc9f7);
   background-repeat:no-repeat;
   background-size:calc(var(--sts-at,0) * 100%) 100%;
-  transition:background-size .12s linear;
+  transition:background-size .18s ease-out;
 }
+/* 끄는 동안은 전환을 끈다 — 켜 두면 손잡이·채움이 손가락보다 늦게 따라온다.
+   놓거나 넘기면 다시 켜져 끝·제자리로 미끄러진다(SNAP_MS 와 같은 .18s). */
+.sts.is-dragging,
+.sts.is-dragging .sts-knob{transition:none}
 
 .sts-label{
   position:absolute;left:0;right:0;text-align:center;
@@ -29,7 +33,7 @@
   display:grid;place-items:center;width:64px;height:38px;
   border:0;border-radius:10px;background:var(--brand);color:#fff;
   cursor:grab;touch-action:none;   /* 세로 스크롤에 끌기를 뺏기지 않는다 */
-  transition:background .14s;
+  transition:background .14s,transform .18s ease-out;
 }
 .sts-knob:active{cursor:grabbing}
 .sts-knob:hover:not(:disabled){background:var(--brand-ink,#4a43e8)}
@@ -59,6 +63,6 @@
 @keyframes sts-spin{ to{ transform:rotate(360deg) } }
 
 @media (prefers-reduced-motion:reduce){
-  .sts{transition:none}
+  .sts,.sts-knob{transition:none}
   .sts-spin{animation:none}
 }

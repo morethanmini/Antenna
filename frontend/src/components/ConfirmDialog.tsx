@@ -13,8 +13,14 @@
 
    ── 포커스 가둠(focus trap)은 없다 ───────────────────────
    SessionExpiredModal 과 같다. 버튼 둘뿐이라 Tab 이 새어 나가도 바로 돌아오고,
-   Escape 로 언제나 닫힌다. */
+   Escape 로 언제나 닫힌다.
+
+   ── body 로 portal 한다 ──────────────────────────────────
+   부르는 자리 안에서 그리면 조상의 transform · filter · backdrop-filter 가
+   position:fixed 의 기준 상자가 된다. 상단바(backdrop-filter)의 알림 "모두 삭제"
+   확인창이 화면이 아니라 72px 띠에 맞춰져 위가 잘렸다(09-21 QA). */
 import { useCallback, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import '../styles/session-expired.css'
 
 type Props = {
@@ -46,7 +52,7 @@ export default function ConfirmDialog({
      뒤 화면을 계속 조작한다(SessionExpiredModal 과 같은 이유). */
   useEffect(() => { dialogRef.current?.focus() }, [])
 
-  return (
+  return createPortal(
     <div className="se-backdrop" onClick={cancel} role="presentation">
       <div
         className="se-modal" role="alertdialog" aria-modal="true"
@@ -68,6 +74,7 @@ export default function ConfirmDialog({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

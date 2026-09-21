@@ -247,7 +247,7 @@ class SeasonProgressControllerTest {
                 .andExpect(jsonPath("$.review").value(REVIEW));
         assertThat(em.createNativeQuery(
                         "SELECT prompt_version FROM season_results WHERE participant_id = ?")
-                .setParameter(1, participantId).getSingleResult()).isEqualTo("review-2");
+                .setParameter(1, participantId).getSingleResult()).isEqualTo("review-3");
     }
 
     @Test
