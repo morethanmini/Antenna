@@ -67,7 +67,7 @@ const BY_CODE: Record<string, Text> = {
   [ERROR_CODE.PROVIDER_NOT_SUPPORTED]: { title: '아직 지원하지 않는 로그인 방식입니다' },
 
   // 온체인 (ANT-CHAIN)
-  [ERROR_CODE.ANCHOR_NOT_FOUND]: { title: '앵커 배치를 찾을 수 없습니다', hint: '아직 만들어지지 않았거나 지워진 배치입니다' },
+  [ERROR_CODE.ANCHOR_NOT_FOUND]: { title: '체인 기록을 찾을 수 없습니다', hint: '아직 만들어지지 않았거나 지워진 배치입니다' },
   [ERROR_CODE.PREDICTION_FORBIDDEN]: { title: '아직 공개되지 않은 예측입니다', hint: '판정 전에는 작성자와 구독자만 근거를 볼 수 있습니다' },
   /* 구독하면 풀린다. 재시도로는 안 풀리므로 retryable 을 주지 않는다 — 화면이 구독 CTA 를 띄운다 */
   [ERROR_CODE.REPORT_FORBIDDEN]: { title: '구독자 전용 리포트입니다', hint: '구독하면 본문을 읽고 좋아요·댓글을 남길 수 있습니다' },

@@ -60,7 +60,7 @@ export default function Anchor() {
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M15 18l-6-6 6-6" />
           </svg>
-          커밋 원장
+          확정 기록
         </Link>
 
         {/* 없는 배치는 404 ANCHOR_NOT_FOUND 다 */}
@@ -72,7 +72,7 @@ export default function Anchor() {
           <>
             <header className="ac-head">
               <div className="ac-title">
-                <h1><span className="num">{`#${anchor.data.id}`}</span> 앵커 배치</h1>
+                <h1><span className="num">{`#${anchor.data.id}`}</span> 체인 기록</h1>
                 <AnchorBadge status={anchor.data.status} />
               </div>
               <p className="ac-sub">{`${formatBusinessDate(anchor.data.businessDate)} 영업일 · 커밋 ${anchor.data.commitCount.toLocaleString('ko-KR')}건`}</p>

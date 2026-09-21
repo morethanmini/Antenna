@@ -8,8 +8,9 @@ import ssafy.a507.backend.domain.market.entity.Stock;
 /**
  * GET /api/v1/stocks/{code}/peers 200 응답 — 같은 KRX 섹터의 활성 종목, 자기 자신은 뺀다.
  *
- * <p>{@code marketCap}·{@code per}·{@code pbr} 는 지금 항상 null 이다(상장주식수 미수집 —
- * {@link ValuationResponse} 와 같은 사정). 키는 화면 분기 때문에 남긴다.
+ * <p>{@code per}·{@code pbr} 는 종목 목록(GET /stocks)과 같은 {@link Stock} 값이다 — 없으면 null.
+ * 전에는 둘 다 null 로 박아 같은 업종 표가 전부 "—" 였다(QA 09-21). {@code marketCap} 은 여전히 null 이다
+ * (상장주식수 미수집 — {@link ValuationResponse} 와 같은 사정). 키는 화면 분기 때문에 남긴다.
  *
  * @param priceDate 종가 기준일. 시세가 한 건도 없으면 null 이고 items 도 빈 목록이다
  */
@@ -20,7 +21,7 @@ public record PeerListResponse(LocalDate priceDate, List<Item> items) {
             String code, String name, BigDecimal prevClose, BigDecimal marketCap, BigDecimal per, BigDecimal pbr) {
 
         public static Item of(Stock stock, BigDecimal prevClose) {
-            return new Item(stock.getCode(), stock.getName(), prevClose, null, null, null);
+            return new Item(stock.getCode(), stock.getName(), prevClose, null, stock.getPer(), stock.getPbr());
         }
     }
 }

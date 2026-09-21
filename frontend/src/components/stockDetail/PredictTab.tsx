@@ -52,8 +52,8 @@ import { POINT_KINDS, POINT_LABEL, getPoints } from '../../api/stockDetail'
 import type { InvestPoint, PointKind, StockSummary } from '../../api/stockDetail'
 import {
   DIRECTIONS, HORIZON_MAX, HORIZON_MIN, HORIZON_TICKS, NOTE_MAX,
-  commitHash, commitPayload, createPrediction, getSlots, horizonLabel, newNoteSalt, noteHash,
-  formatTargetPrice, predictionSigningPayload, targetPriceInScale,
+  commitHash, commitPayload, createPrediction, getSlots, horizonLabel, horizonPickLabel, newNoteSalt, noteHash,
+  formatTargetPrice, predictionSigningPayload, targetPriceInRange, targetPriceInScale,
 } from '../../api/predictions'
 import type {
   CommitFields, CreateResult, Direction, Horizon, PredictionDraft,
@@ -177,7 +177,8 @@ export default function PredictTab({
   /* 소수 셋째 자리 이하는 서버가 반올림하지 않고 400 으로 거절한다(numeric(14,2)).
      여기서 조용히 잘라 서명하면 서명한 값과 서버가 해시한 값이 달라진다. */
   const priceTooPrecise = priceEntered && !targetPriceInScale(targetPrice)
-  const validTarget = priceEntered && !priceTooPrecise
+  const priceTooLarge = priceEntered && !targetPriceInRange(targetPrice)
+  const validTarget = priceEntered && !priceTooPrecise && !priceTooLarge
 
   /* 목표가가 전일 종가 대비 몇 %인지. 방향도 이 값이 정한다.
 
@@ -698,6 +699,11 @@ export default function PredictTab({
                 임의로 반올림하지 않습니다.
               </p>
             )}
+            {priceTooLarge && (
+              <p className="sd-warn">
+                목표가는 <b>1조 원 미만</b>으로 입력할 수 있습니다.
+              </p>
+            )}
             {/* 방향을 고를 수 없게 된 뒤로, 방향이 안 서는 경우는 이것 하나다. 말해 주지 않으면
                 목표가를 넣었는데 왜 발판이 잠겨 있는지 알 길이 없다. */}
             {gap === 0 && (
@@ -774,7 +780,7 @@ export default function PredictTab({
                 step={1}
                 value={horizon}
                 aria-label="예측 기간"
-                aria-valuetext={`${horizonLabel(horizon)} · ${dueLabel(horizon)} 만기`}
+                aria-valuetext={`${horizonPickLabel(horizon)} · ${dueLabel(horizon)} 만기`}
                 onChange={(e) => setHorizon(Number(e.target.value))}
               />
               <div className="pf-line-ticks" aria-hidden="true">
@@ -785,7 +791,7 @@ export default function PredictTab({
                     style={{ left: `${((h - HORIZON_MIN) / (HORIZON_MAX - HORIZON_MIN)) * 100}%` }}
                   >
                     <i />
-                    <b>{horizonLabel(h)}</b>
+                    <b>{horizonPickLabel(h)}</b>
                   </span>
                 ))}
               </div>
@@ -796,7 +802,7 @@ export default function PredictTab({
                 이미 말하고 있어, 같은 말을 한 번 더 길게 적는 셈이다 */}
             {!eventMode && (
               <p className="sd-help">
-                <b className="num">{horizonLabel(horizon)}</b> · 만기 <b className="num">{dueLabel(horizon)}</b> · 기준일(다음 평일)부터 <b>영업일</b>로 셉니다(주말 제외). 공휴일에 걸리면 그다음 거래일 종가로 판정합니다. 기준가는 기준일 종가로 확정됩니다.
+                <b className="num">{horizonPickLabel(horizon)}</b> · 만기 <b className="num">{dueLabel(horizon)}</b> · 기준일(다음 평일)부터 셉니다(주말 제외). 공휴일에 걸리면 그다음 거래일 종가로 판정합니다. 기준가는 기준일 종가로 확정됩니다.
               </p>
             )}
           </li>
@@ -920,41 +926,71 @@ export default function PredictTab({
         <div className="pf-sign">
           {draft ? (
             <>
-              {/* 커밋 문자열을 그대로 펼쳐 보여 준다(SignConfirm, §7). 커밋 salt 가 없어져
-                  (09-09) 이 브라우저가 원장에 남을 commitHash 를 직접 계산할 수 있다 —
-                  값이 서로 다르면 등록 전에 알아챌 수 있어야 하므로 둘 다 적는다.
+              {/* ── 발판 위에서는 낱말로 말한다 (2026-09-20) ──────────
 
-                  **대회 등록은 다르다**(2026-09-18). 이벤트 온체인 커밋은
-                  keccak(eventId, idx, direction, noteHash) 이라 아래 antenna:commit:v1
-                  해시와 **다른 값**이고, 브라우저가 재현하려면 abi.encodePacked 를 흉내내야
-                  한다 — 서버가 일부러 그 일을 떠맡았다(EventEntryService.Signed 주석).
-                  그래서 그 경우에는 "원장에 남는 값과 같다" 고 말하지 않는다. 대신 실제로
-                  서명할 줄을 보여 주고, 커밋은 서버가 만든다고 적는다. */}
-              <p className="sd-help">
-                {eventPath
-                  ? '아래 줄에 서명합니다. 배팅 금액이 줄 안에 함께 봉인되고, 원장에 남을 커밋은 서버가 같은 재료로 만듭니다.'
-                  : '아래 내용에 서명합니다. 커밋 해시는 이 브라우저가 계산한 값이며, 등록 뒤 원장에 남는 값과 같습니다.'}
-              </p>
-              <pre className="sd-payload num">
-                {eventPath
-                  ? (shown
-                    ? `${draft.stockCode}/${draft.direction}/${formatTargetPrice(draft.targetPrice)}/${shown.noteHash}/${bet}`
-                    : '서명 문자열을 만드는 중…')
-                  : (shown ? shown.payload : '커밋 문자열을 만드는 중…')}
-              </pre>
-              <dl className="sd-commit">
-                <div>
-                  <dt>근거 본문 해시</dt>
-                  <dd className="num">{shown?.noteHash ?? '계산 중…'}</dd>
-                </div>
-                <div>
-                  <dt>커밋 해시</dt>
-                  <dd className="num">
-                    {/* 모르는 값을 채우지 않는다 — 지어낸 해시를 보여 주느니 모른다고 적는다 */}
-                    {eventPath ? '등록 뒤 서버가 만듭니다' : (shown?.commitHash ?? '계산 중…')}
-                  </dd>
-                </div>
-              </dl>
+                  전에는 여기에 antenna:commit:v1 원문과 66자 해시 둘이 그대로 펼쳐져
+                  있었다(SignConfirm, §7). 코치 피드백 — 블록체인을 모르는 사람에게 그
+                  덩어리는 "오류가 났나 · 해킹인가" 로 읽힌다. 등록 직전, 되돌릴 수 없는
+                  버튼 바로 위라서 더 그렇다. 같은 진단이 대회 배팅 완료 화면에도 한 번
+                  내려져 있다(lilac, ff13c4b6 — "QA 에서 이 코드는 뭐지, 에러 났나 로 읽혔고").
+
+                  **지우지 않고 접었다.** 값이 서로 다르면 등록 전에 알아챌 수 있어야
+                  한다는 원래 의도가 아직 유효하고(커밋 salt 가 없어져 이 브라우저가
+                  commitHash 를 직접 계산한다), 설계서가 C-01 에 "커밋 미리보기" 를
+                  적어 두었다. 펼치면 예전 그대로다.
+
+                  **메타마스크가 어차피 이 원문을 보여 준다.** 그래서 "숨긴다" 가 아니라
+                  "곧 지갑에 이런 것이 뜬다" 고 미리 알려 주는 쪽으로 적었다 — 준비되지
+                  않은 채로 서명 창에서 처음 만나는 것이 제일 무섭다. */}
+              {/* 한 줄이다. 무엇이 묶이는지 풀어 적었다가 뺐다(2026-09-21) — 바로 아래
+                  "수정하거나 삭제할 수 없습니다" 가 같은 말을 이미 하고, 세 줄이 겹쳐
+                  쌓이면 발판 위가 다시 시끄러워진다. 대회·일반이 갈리던 것도 그 문장
+                  하나뿐이라 분기째 없앴다. */}
+              <p className="sd-seal"><b>예측이 봉인됩니다.</b></p>
+              <p className="sd-seal-sub">지갑 창이 열리면 서명을 눌러 주세요.</p>
+
+              {/* 접힌 채로 시작한다. 궁금한 사람만 펼친다 — SeasonPractice 의 .pr-fold 와
+                  같은 방식이다(summary 의 기본 삼각형을 지우고 직접 그린다) */}
+              <details className="sd-fold">
+                <summary>
+                  봉인되는 내용 보기
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="2"
+                          strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </summary>
+
+                {/* 대회 등록은 커밋이 다르다. 이벤트 온체인 커밋은
+                    keccak(eventId, idx, direction, noteHash) 이라 antenna:commit:v1 해시와
+                    **다른 값**이고, 브라우저가 재현하려면 abi.encodePacked 를 흉내내야
+                    한다 — 서버가 일부러 그 일을 떠맡았다(EventEntryService.Signed 주석).
+                    그래서 그 경우에는 "원장에 남는 값과 같다" 고 말하지 않는다. */}
+                <p className="sd-help">
+                  {eventPath
+                    ? '아래 줄에 서명합니다. 배팅 금액이 줄 안에 함께 봉인되고, 원장에 남을 커밋은 서버가 같은 재료로 만듭니다.'
+                    : '아래 내용에 서명합니다. 커밋 해시는 이 브라우저가 계산한 값이며, 등록 뒤 원장에 남는 값과 같습니다.'}
+                </p>
+                <pre className="sd-payload num">
+                  {eventPath
+                    ? (shown
+                      ? `${draft.stockCode}/${draft.direction}/${formatTargetPrice(draft.targetPrice)}/${shown.noteHash}/${bet}`
+                      : '서명 문자열을 만드는 중…')
+                    : (shown ? shown.payload : '커밋 문자열을 만드는 중…')}
+                </pre>
+                <dl className="sd-commit">
+                  <div>
+                    <dt>근거 본문 해시</dt>
+                    <dd className="num">{shown?.noteHash ?? '계산 중…'}</dd>
+                  </div>
+                  <div>
+                    <dt>커밋 해시</dt>
+                    <dd className="num">
+                      {/* 모르는 값을 채우지 않는다 — 지어낸 해시를 보여 주느니 모른다고 적는다 */}
+                      {eventPath ? '등록 뒤 서버가 만듭니다' : (shown?.commitHash ?? '계산 중…')}
+                    </dd>
+                  </div>
+                </dl>
+              </details>
 
               {/* 되돌릴 수 없는 동작이라 반드시 고지한다 */}
               <p className="sd-irreversible">

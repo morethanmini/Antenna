@@ -301,8 +301,13 @@ class CorpInfoServiceTest {
     class Peers {
 
         @Test
-        @DisplayName("같은 섹터 · 자기 제외 · 창 안 시세 있는 종목만 · 거래정지는 종가 null 로 남는다")
+        @DisplayName("같은 섹터 · 자기 제외 · 창 안 시세 있는 종목만 · 거래정지는 종가 null 로 남는다 · PER·PBR 은 종목 값")
         void 정상() {
+            em.createNativeQuery("UPDATE stocks SET per = 12.34, pbr = 1.50 WHERE code = ?")
+                    .setParameter(1, HYNIX)
+                    .executeUpdate();
+            em.clear();
+
             PeerListResponse response = corpInfoService.peers(SAMSUNG);
 
             assertThat(response.priceDate()).isEqualTo(BASE);
@@ -312,7 +317,9 @@ class CorpInfoServiceTest {
             assertThat(response.items().get(0).prevClose()).isNull();
             assertThat(response.items().get(1).prevClose()).isEqualByComparingTo(new BigDecimal("250000"));
             assertThat(response.items().get(1).marketCap()).isNull();
-            assertThat(response.items().get(1).per()).isNull();
+            assertThat(response.items().get(1).per()).as("목록과 같은 값 — 전에는 null 로 박혀 있었다").isEqualByComparingTo("12.34");
+            assertThat(response.items().get(1).pbr()).isEqualByComparingTo("1.50");
+            assertThat(response.items().get(0).per()).as("값이 없는 종목은 그대로 null").isNull();
         }
 
         @Test
