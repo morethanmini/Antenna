@@ -120,6 +120,25 @@ class SeasonPlayControllerTest {
                 .andExpect(jsonPath("$.positions[0].weight").value(2.66));
     }
 
+    @Test
+    @DisplayName("현황에 내 회차 상태가 실린다 — 끝난 회차는 DONE. 화면이 주문 패널을 잠그는 근거다(주문은 서버가 409)")
+    void 현황에_회차_상태가_실린다() throws Exception {
+        mockMvc.perform(get(url("/me")).with(user(me)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ONGOING"));
+
+        // 건너뛰고 종료(skipRemaining)로 끝낸 회차 — 진행일은 마지막 날이라 진행일만으로는 끝났는지 모른다
+        em.createNativeQuery("UPDATE season_participants SET status = 'DONE', current_day = 3 WHERE id = ?")
+                .setParameter(1, participantId)
+                .executeUpdate();
+        em.flush();
+        em.clear();
+
+        mockMvc.perform(get(url("/me")).with(user(me)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DONE"));
+    }
+
     // ── POST /orders ─────────────────────────────────────────
 
     @Test

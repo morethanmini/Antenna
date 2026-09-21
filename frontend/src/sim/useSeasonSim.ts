@@ -157,6 +157,8 @@ export function useSeasonSim({
   const pnl = status?.pnl ?? 0
   const pnlRate = status?.pnlRate ?? 0
   const isLastDay = day > 0 && day >= lengthDays
+  /** 끝난(또는 버린) 회차. 주문·진행을 서버가 409 로 막으므로 화면도 닫는다(QA 09-21) */
+  const isDone = status !== null && status.status !== 'ONGOING'
 
   const positions = useMemo<SimPosition[]>(
     () =>
@@ -318,6 +320,7 @@ export function useSeasonSim({
   return {
     day,
     isLastDay,
+    isDone,
     cash,
     stockValue,
     totalAsset,

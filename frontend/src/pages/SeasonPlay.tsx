@@ -495,8 +495,10 @@ export default function SeasonPlay() {
   const diffRate = diff !== null && prev ? (diff / prev) * 100 : null
 
   const held = sim.positions.find((p) => p.tickerId === selected)
+  /* 끝난 회차는 0 — 수량 칸·단계 버튼·주문 버튼이 이 값 하나로 같이 잠긴다(QA 09-21: 건너뛰고 종료한
+     회차에서 "매수 주문" 이 켜져 있었다. 서버는 409 로 막지만 누르기 전에 막아야 한다). */
   const maxQty =
-    price === null ? 0 : side === 'BUY' ? maxBuyQty(sim.cash, price) : held?.qty ?? 0
+    sim.isDone || price === null ? 0 : side === 'BUY' ? maxBuyQty(sim.cash, price) : held?.qty ?? 0
   /* 주문 수량은 **살 수 있는·가진 만큼을 넘지 않는다**(2026-09-19, QA 09-18). input 의 max 는 손으로
      치는 값을 막지 못하고 +N 버튼에도 상한이 없어서, 보유보다 많은 매도가 그대로 서버까지 갔다
      (409 SEASON_INSUFFICIENT_QTY). 21억을 넘기면 서버 Integer 에 담기지도 않아 엉뚱한 400 이 났다.
@@ -851,7 +853,9 @@ export default function SeasonPlay() {
               >
                 {/* 꺼진 버튼은 왜 꺼졌는지 말해야 한다. "매수 주문" 이 회색으로 있으면
                     누를 수 없는 이유가 수량인지 가격인지 서버인지 알 수 없다. */}
-                {sim.pending
+                {sim.isDone
+                  ? '끝난 시즌입니다'
+                  : sim.pending
                   ? '주문 중…'
                   : price === null
                     ? '가격을 불러오는 중…'
@@ -865,7 +869,13 @@ export default function SeasonPlay() {
                   없으면 얼마 벌었는지도 못 본다.
                   링크가 아니라 확인창이다(2026-09-09). 결과를 보는 것은 곧 종료이고, 종료가
                   성적표와 AI 복기를 만들어 저장하는 순간이라 사람이 한 번 확인한다. */}
-              {sim.isLastDay ? (
+              {/* 이미 끝난 회차는 확인창을 거칠 것이 없다 — 성적표는 저장돼 있다 */}
+              {sim.isDone ? (
+                <Link className="sp-advance is-done" to={`/sim/${seasonId}/result`}>
+                  결과 보기
+                  <em aria-hidden="true">›</em>
+                </Link>
+              ) : sim.isLastDay ? (
                 <button
                   type="button"
                   className="sp-advance is-done"
@@ -889,7 +899,7 @@ export default function SeasonPlay() {
                   일이 없는 사람이 "다음 영업일" 을 수십 번 누르지 않고 끝낸다. 바로 끝내지 않고
                   마지막 날과 **같은 확인창**을 거친다 — 되돌릴 수 없고, 보유분이 어느 날 값으로
                   평가되는지 알고 눌러야 한다. 대회는 "다음 영업일" 과 마찬가지로 서버가 막는다(409). */}
-              {!sim.isLastDay && (
+              {!sim.isLastDay && !sim.isDone && (
                 <button
                   type="button"
                   className="sp-skip"
@@ -900,7 +910,9 @@ export default function SeasonPlay() {
                 </button>
               )}
               <p className="sp-note">
-                {sim.isLastDay
+                {sim.isDone
+                  ? '끝난 시즌입니다. 주문과 진행은 닫혔습니다.'
+                  : sim.isLastDay
                   ? '마지막 게임일입니다. 진행은 여기까지입니다.'
                   : '주문은 그 게임일 종가로 한 번에 체결됩니다.'}
               </p>
