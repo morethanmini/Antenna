@@ -87,7 +87,11 @@ const BY_CODE: Record<string, Text> = {
   [ERROR_CODE.UPLOAD_FILE_NOT_FOUND]: { title: '올린 파일을 찾을 수 없습니다', hint: '다시 올려 주세요' },
 
   // 광고 · 비동기 작업
-  [ERROR_CODE.AD_SLOT_SOLD_OUT]: { title: '해당 기간의 광고 자리가 찼습니다', hint: '다른 기간을 선택해 주세요' },
+  /* "다른 기간을 선택해 주세요" 였는데 **고를 기간이 없다** — 광고가 승인제로 바뀌면서 시작일이
+     사라졌다(화면: "시작일은 고를 수 없고, 관리자가 승인하는 시점부터 시작합니다"). 서버도 시작을
+     늘 now 로 잡아(AdService) 자리를 점유한 광고가 있으면 노출 일수를 1일로 줄여도 구간이 겹친다.
+     안내대로 해도 통과할 수 없으니, 할 수 있는 일(기다리기)을 말한다. */
+  [ERROR_CODE.AD_SLOT_SOLD_OUT]: { title: '광고 자리가 이미 차 있습니다', hint: '게재 중인 광고가 끝난 뒤에 다시 시도해 주세요' },
   [ERROR_CODE.OPERATION_NOT_FOUND]: { title: '처리 내역을 찾을 수 없습니다' },
   [ERROR_CODE.OPERATION_FORBIDDEN]: { title: '이 처리 내역을 볼 수 없습니다' },
 
