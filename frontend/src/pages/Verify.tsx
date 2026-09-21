@@ -314,8 +314,8 @@ export default function Verify() {
 
               {!anchor ? (
                 <ul className="vf-checks">
-                  <CheckLine verdict="locked" label="아직 앵커 배치에 담기지 않았습니다">
-                    앵커 배치는 10분마다 돕니다. 방금 등록한 예측은 다음 회차에 담깁니다.
+                  <CheckLine verdict="locked" label="아직 배치에 담기지 않았습니다">
+                    체인 기록 배치는 10분마다 돕니다. 방금 등록한 예측은 다음 회차에 담깁니다.
                   </CheckLine>
                 </ul>
               ) : (

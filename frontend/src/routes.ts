@@ -98,8 +98,8 @@ export const ROUTES: PageMeta[] = [
   { screen: 'C-04', element: Portfolio, path: '/me/portfolio', title: '예측 포트폴리오', access: 'user', mode: 'insight', nav: 'portfolio', bodyClass: 'forecast-page', story: 'ANT-FE-PORTFOLIO' },
 
   // ── D. 온체인 검증 ───────────────────────────────────
-  { screen: 'D-01', element: LedgerList, path: '/ledger', title: '커밋 원장', access: 'user', mode: 'insight', nav: 'ledger', story: 'ANT-FE-LEDGER-LIST' },
-  { screen: 'D-02', element: Anchor, path: '/ledger/anchors/:id', title: '앵커 배치 상세', access: 'user', mode: 'insight', nav: 'ledger', story: 'ANT-FE-ANCHOR' },
+  { screen: 'D-01', element: LedgerList, path: '/ledger', title: '확정 기록', access: 'user', mode: 'insight', nav: 'ledger', story: 'ANT-FE-LEDGER-LIST' },
+  { screen: 'D-02', element: Anchor, path: '/ledger/anchors/:id', title: '체인 기록 상세', access: 'user', mode: 'insight', nav: 'ledger', story: 'ANT-FE-ANCHOR' },
   { screen: 'D-03', element: Verify, path: '/ledger/verify/:predictionId', title: '4단계 검산', access: 'user', mode: 'insight', nav: 'ledger', story: 'ANT-FE-VERIFY' },
   /* 리포트 검산. 예측 검산과 경로를 나눈 이유는 id 가 다른 시퀀스라서다 —
      /ledger/verify/:id 하나로 두면 12 가 예측인지 리포트인지 알 수 없다. */
