@@ -2,62 +2,49 @@
    담당 스토리 [ANT-FE-SEASON-HOME]
    설계서 docs/화면설계서.md §3 G-01 — "진행 중 시즌(이어하기) · 완료 기록 요약 · 시즌 목록"
 
-   화면은 2026-09-12 시안을 따른다. 히어로 오른쪽이 마스코트와 장식이 떠다니는
-   무대(sh-stage)이고, 아래는 "최근 연습 기록 · 처음이라면 이렇게 시작해요" 두 칸이다.
+   **2026-09-21 시안으로 갈아엎었다.** 어두운 한 판 위에 왼쪽은 카피와 시작 버튼, 가운데는
+   책상에 앉은 개미, 오른쪽은 "가상 투자 자금 · 진행 중인 연습" 두 칸이다. 그 아래로
+   연습 주제 다섯 장이 가로로 늘어서고, 맨 밑은 연습이 어떤 것인지 말하는 사실 띠다.
+   상단바·사이드바는 그대로 Layout 것을 쓴다.
 
    ── 시안에서 그리지 않은 것 ────────────────────────────
-   1. 기록 줄의 날짜 범위("2025. 07. 01 - 2025. 08. 13"). 시즌이 언제의 장이었는지가
-      곧 시대 단서다. 어느 응답에도 오지 않고, 와도 그리지 않는다.
-      대신 endedAt(내가 그 회차를 끝낸 실제 시각)만 쓴다 — 시즌의 시기가 아니다.
-   2. "시장 수익률 +3.1%". /seasons/me 응답에 벤치마크가 없다. 내 수익률(returnRate)만 쓴다.
-   3. "연습 모의투자 #02" 의 회차 번호. 응답에 순번이 없다(recentFirst 도 seasonId 로
-      대신한다). 자리에는 시즌 제목(title, v0.39)을 넣는다.
-   4. 보상 카드. 시안이 그 자리를 "처음이라면 이렇게 시작해요" 로 바꿨다.
-      금액을 쓰지 않는다는 §1 규칙 3 은 그대로다 — 보상 규모는 지갑(H-01)에서 본다.
+   1. 상단의 지수 전광판(KOSPI · NASDAQ · S&P 500 과 등락률). 실시간 시세는 이 화면이 받는
+      값이 아니고, 숫자를 박아 두면 가짜 시세가 된다. 장식으로도 두지 않는다.
+   2. 가상 투자 자금 옆의 연필(수정). 시작 자산은 시즌 속성이라 사용자가 바꾸는 값이 아니다.
+   3. 주제 카드의 날짜·연도. 시대를 특정하는 말은 모의투자 전체에서 쓰지 않는다 — 카드에는
+      서버가 준 제목(title)과 한 줄 설명(note)만 쓴다. 제목 자체가 사건을 말하는 것은
+      시더(PracticeSeasonSeeder)가 정한 일이라 여기서 손대지 않는다.
+   4. 최근 연습 기록 목록. 이 시안은 그 자리를 주제 카드가 받았다. 기록은 "진행 중인 연습"
+      칸의 링크로 G-09 기록 화면에서 본다.
 
    ── 서버에서 받는 것 ────────────────────────────────────
-     GET /seasons/me?status=ONGOING → { items: [{ seasonId, mode, title, currentDay,
-                                                  lengthDays, progress, endedAt, returnRate }] }
-     GET /seasons/me?status=DONE    → 같은 스키마
-     GET /seasons?mode=PRACTICE     → 히어로 칩의 시작 자산·진행 기간
-   셋 다 커서 페이징이 없는 목록이라(§1 규칙 6 의 예외) useCursorList 를 쓰지 않는다. */
-import { useState } from 'react'
+     GET /seasons?mode=PRACTICE     → 주제 카드 · 시작 자산 · 주제 수
+     GET /seasons/me?status=ONGOING → 진행 중인 연습 수 · 카드의 "이어서 하기"
+   둘 다 커서 페이징이 없는 목록이라(§1 규칙 6 의 예외) useCursorList 를 쓰지 않는다.
+
+   ── 그림은 어디서 오나 ──────────────────────────────────
+   주제 카드의 배경 사진은 sim/seasonArt.ts 의 표(제목 → 그림)에서 온다. 표에 없는 주제는
+   사진 없이 어두운 판만 깔린다. 개미 그림(ant-desk.webp)은 page_train 에 받은 시안 원본을
+   여백만 잘라 webp 로 구운 것이다. */
+import { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import type { ApiError } from '../api/errors'
 import {
-  agreed, getMyRuns, getPracticeRuns, manwon, MODE_LABEL, progressOf, recentFirst,
+  agreed, getMyRuns, getPracticeRuns, isJoinable, joinableFirst, manwon, recentFirst,
   type MyRun, type OpenRun,
 } from '../api/seasons'
 import { useAsync } from '../api/useAsync'
-import SpriteAnimation from '../components/SpriteAnimation'
 import ErrorState from '../components/state/ErrorState'
+import { seasonArt } from '../sim/seasonArt'
 import { openSimOnboarding } from '../sim/onboardingSeen'
 import '../styles/screens/sim-home.css'
 
-/* 홈은 요약이라 접힌 상태로는 두 줄만 보여준다. 더 있으면 토글로 편다.
-   편 상태에도 상한을 두는 이유는 /seasons/me 가 커서 페이징이 없는 목록이어서다 —
-   회차가 쌓이면 응답이 통째로 오고, 그대로 그리면 홈이 기록 화면이 된다.
-   상한을 넘는 것은 지금처럼 "전체 보기"(G-09)가 맡는다. */
-const COLLAPSED_ROWS = 2
-const EXPANDED_ROWS = 6
-
 /* 401 을 그대로 보여준다.
    전에는 빈 상태로 뭉갰다 — 이 화면이 부르는 /seasons·/seasons/me 가 없던 때라 401 이
-   "그 API 가 아직 없다"(Spring Security 가 라우팅보다 먼저 걸러 없는 경로도 401 을 준다)
-   는 뜻이었기 때문이다. 이제 둘 다 붙었으므로 401 은 로그인이 안 됐다는 뜻이고, 그걸
-   빈 상태로 그리면 서버가 거부한 것을 참가한 것이 없는 것으로 읽게 된다.
-   errorText 가 UNAUTHENTICATED 를 "로그인이 필요합니다" 로 풀어 준다. */
+   "그 API 가 아직 없다" 는 뜻이었기 때문이다. 이제 둘 다 붙었으므로 401 은 로그인이
+   안 됐다는 뜻이고, 그걸 빈 상태로 그리면 서버가 거부한 것을 참가한 것이 없는 것으로
+   읽게 된다. errorText 가 UNAUTHENTICATED 를 "로그인이 필요합니다" 로 풀어 준다. */
 const shown = (error: ApiError | null) => error
-
-/* 내가 끝낸 시각. 시즌의 시기가 아니라 내 기록이라 그려도 된다(api/seasons.ts 주석).
-   값이 없거나 파싱이 안 되면 아무것도 그리지 않는다 — 빈 칸이 틀린 날짜보다 낫다. */
-function endedOn(iso?: string | null) {
-  if (!iso) return null
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return null
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}. ${pad(d.getMonth() + 1)}. ${pad(d.getDate())} 완료`
-}
 
 const Ico = ({ size = 22, children }: { size?: number; children: React.ReactNode }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -66,305 +53,196 @@ const Ico = ({ size = 22, children }: { size?: number; children: React.ReactNode
   </svg>
 )
 
-const CalendarIcon = () => (
-  <Ico><rect x="3" y="5" width="18" height="16" rx="2.5" /><path d="M8 3v4M16 3v4M3 10h18" /></Ico>
-)
-const CoinsIcon = () => (
-  <Ico><ellipse cx="12" cy="6" rx="7.5" ry="3" /><path d="M4.5 6v5c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V6" />
-    <path d="M4.5 11v5c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-5" /></Ico>
-)
-const BarsIcon = () => <Ico><path d="M6 20v-6M12 20V7M18 20v-9" /></Ico>
-const RulerIcon = () => <Ico><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></Ico>
-const FlagIcon = () => <Ico><path d="M5 21V4M5 4h11l-2 3.5L16 11H5" /></Ico>
 const PlayIcon = () => (
   <Ico size={24}><circle cx="12" cy="12" r="9" /><path d="m10 8.2 6 3.8-6 3.8z" fill="currentColor" /></Ico>
 )
-const HistoryIcon = () => (
-  <Ico><path d="M3 12a9 9 0 1 0 2.6-6.4" /><path d="M3 4v5h5" /><path d="M12 8v4.5l3 1.8" /></Ico>
-)
-const BookIcon = () => (
-  <Ico><path d="M12 6.5C10.5 5 8.5 4.4 4 4.6v13C8.5 17.4 10.5 18 12 19.5" />
-    <path d="M12 6.5C13.5 5 15.5 4.4 20 4.6v13c-4.5-.2-6.5.4-8 1.9z" /><path d="M12 6.5v13" /></Ico>
-)
-const NoteIcon = () => (
-  <Ico><rect x="5" y="3" width="14" height="18" rx="2.5" /><path d="M9 8h6M9 12h6M9 16h3.5" /></Ico>
-)
-const BulbIcon = () => (
-  <Ico size={20}><path d="M9 18h6M10 21h4" />
-    <path d="M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z" /></Ico>
-)
 const ChevronIcon = () => <Ico size={18}><path d="m9 5 7 7-7 7" /></Ico>
-const CaretIcon = () => <Ico size={16}><path d="m6 9 6 6 6-6" /></Ico>
-
-/* ── 히어로 장식 ───────────────────────────────────────────
-   무대 안에서 각자 다른 주기로 떠다니는 오브젝트다. 위치·크기·흔들림의 폭은
-   전부 CSS 가 정한다(.d1~.d7) — 좌표를 마크업과 CSS 두 곳에 나눠 두면 시안과
-   맞출 때마다 두 파일을 오간다.
-
-   일곱 장 모두 뜻이 없는 장식이라 alt 를 비우고 레이어째 aria-hidden 으로 덮는다.
-   BUY · SELL 은 글래스 버튼 그림이지만 여기서는 장식이다 — 누를 수 있는 것으로 보이지
-   않게 작게(--art 의 29%) 쓰고, 레이어 전체가 pointer-events 를 받지 않는다.
-   실제 매매는 G-04 시즌 진행 화면에서 한다. */
-const DRIFT = ['bubble', 'buy', 'card-market', 'script', 'arrow', 'card-practice', 'sell']
+const ArrowIcon = () => <Ico size={16}><path d="M5 12h14M13 6l6 6-6 6" /></Ico>
+const CoinIcon = () => (
+  <Ico size={18}><circle cx="12" cy="12" r="9" /><path d="M12 7v10M9.5 9.5h3.75a1.75 1.75 0 0 1 0 3.5H9.5m0 0h4a1.75 1.75 0 0 1 0 3.5H9.5" /></Ico>
+)
+const CheckRingIcon = () => (
+  <Ico size={18}><circle cx="12" cy="12" r="9" /><path d="m8.5 12 2.5 2.5 4.5-5" /></Ico>
+)
+const GridIcon = () => (
+  <Ico size={22}><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" /><rect x="13.5" y="3.5" width="7" height="7" rx="1.5" />
+    <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" /><rect x="13.5" y="13.5" width="7" height="7" rx="1.5" /></Ico>
+)
+const ClockIcon = () => (
+  <Ico size={22}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.5 2" /></Ico>
+)
+const CoinsIcon = () => (
+  <Ico size={22}><ellipse cx="12" cy="6" rx="7.5" ry="3" /><path d="M4.5 6v5c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V6" />
+    <path d="M4.5 11v5c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-5" /></Ico>
+)
+const BarsIcon = () => <Ico size={22}><path d="M6 20v-6M12 20V7M18 20v-9" /></Ico>
 
 /* ── 히어로 ───────────────────────────────────────────────
-   진행 중인 것이 있으면 이어하기, 없으면 시작을 권한다.
-   여러 개 진행 중이면 가장 최근 것을 세우고 나머지는 아래 목록에서 본다. */
-function Hero({ run, practice }: { run: MyRun | null; practice: OpenRun[] | undefined }) {
-  const percent = run ? progressOf(run.currentDay, run.lengthDays) : 0
-  const left = run ? Math.max(0, run.lengthDays - run.currentDay) : 0
-
+   진행 중인 것이 있으면 시작 버튼이 그 회차로 이어진다 — 없으면 연습하기(주제 고르기)로. */
+function Hero({ lead, practice, ongoing, myError, myLoading, onRetry }: {
+  lead: MyRun | null
+  practice: OpenRun[] | undefined
+  ongoing: MyRun[]
+  myError: ApiError | null
+  myLoading: boolean
+  onRetry: () => void
+}) {
   const cash = agreed(practice, 'initialCash')
-  const days = agreed(practice, 'lengthDays')
+  const total = practice?.length ?? 0
+  const going = ongoing.length
+  const percent = total > 0 ? Math.min(100, Math.round((going / total) * 100)) : 0
+  const failure = shown(myError)
 
   return (
-    /* is-dark: 모의투자 히어로만 어두운 판을 쓴다. 딸려 오는 색 한 벌은 sim-home.css 에 있다 */
     <section className="sh-hero is-dark" aria-labelledby="sh-hero-h">
-      {/* 배경 요소 — 글과 개미 사이 빈자리를 채운다. 어두운 판에서만 쓴다.
-          무엇을 왜 까는지는 sim-home.css 의 .sh-backdrop 머리말에 있다. */}
+      {/* 배경 — 밤하늘 그라데이션 위에 빛줄기·별·촛대. 전부 장식이라 레이어째 aria-hidden 이다. */}
       <div className="sh-backdrop" aria-hidden="true">
-        {/* 빛줄기만 카드를 통째로 가로지르고, 나머지 넷은 "글 끝 ~ 개미" 띠 안에 앉는다 */}
+        <span className="sh-bd-city" />
         <img className="sh-bd-wave" src="/assets/pageset/wave-thin.webp" alt="" />
-        <div className="sh-bd-band">
-          <img className="sh-bd-candles" src="/assets/pageset/candles.webp" alt="" />
-          <img className="sh-bd-spark" src="/assets/pageset/sparks.webp" alt="" />
-          <img className="sh-bd-panel sh-bd-panel1" src="/assets/pageset/panel-line.webp" alt="" />
-          <img className="sh-bd-panel sh-bd-panel2" src="/assets/pageset/panel-pie.webp" alt="" />
-        </div>
+        <img className="sh-bd-spark" src="/assets/pageset/sparks.webp" alt="" />
+        <img className="sh-bd-candles" src="/assets/pageset/candles.webp" alt="" />
       </div>
 
       <div className="sh-hero-copy">
-        <span className="sh-flag">{run ? '진행 중' : '모의투자'}</span>
+        <span className="sh-hand">가상으로 시작하는<br />진짜 투자 감각</span>
 
-        {/* 페이지 제목 자리다. 위에 따로 머리글을 두지 않으므로 h1 이다. */}
         <h1 className="sh-title" id="sh-hero-h">
-          {run ? (
-            <>
-              {MODE_LABEL[run.mode]} 모의투자를
-              <br />
-              <em>이어서</em> 해보세요
-            </>
-          ) : (
-            <>
-              실제 시장 흐름으로
-              <br />
-              <em>투자 연습</em>을 시작해보세요
-            </>
-          )}
+          지금, 당신의
+          <br />
+          <em>투자 감각</em>을 깨워보세요
         </h1>
 
         <p className="sh-lead">
-          {run ? (
-            <>
-              지난 시장을 그대로 되짚으며,
-              <br />
-              투자 전략을 다듬을 수 있어요.
-            </>
-          ) : (
-            <>
-              과거의 시장을 다시 경험하며,
-              <br />
-              부담 없이 투자 전략을 연습할 수 있어요.
-            </>
-          )}
+          실제와 닮은 시장에서, 가상의 자금으로.
+          <br />
+          다양한 상황을 경험하며 스스로의 투자 감각을 키워보세요.
         </p>
 
-        {/* 무엇을 이어서 하는지 먼저 말한다(2026-09-19). 진행률·게임일만 있으면 어느 주제의
-            3% 인지 알 수 없다 — 연습을 여러 개 걸쳐 둔 사람은 눌러 봐야 알았다. */}
-        {run && (
-          <p className="sh-topic">
-            플레이 중인 주제 <b>{run.title}</b>
-          </p>
-        )}
-
-        {run && (
-          <div className="sh-progress">
-            <span
-              className="sh-bar" role="progressbar" aria-label="진행률"
-              aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}
-            >
-              <i style={{ width: `${percent}%` }} />
-            </span>
-            <b className="num">{percent}%</b>
-          </div>
-        )}
-
-        {/* 진행 중이면 내 회차 상태, 아니면 연습이 어떤 것인지를 알린다.
-            게임일은 남기고 달력 날짜는 쓰지 않는다 — 날짜가 곧 시대 단서다. */}
-        <div className="sh-stats">
-          {run ? (
-            <>
-              <dl className="sh-stat">
-                <CalendarIcon />
-                <div><dt>현재 게임일</dt><dd className="num">D+{run.currentDay}</dd></div>
-              </dl>
-              <dl className="sh-stat">
-                <FlagIcon />
-                <div><dt>남은 게임일</dt><dd className="num">{left}일</dd></div>
-              </dl>
-              <dl className="sh-stat">
-                <RulerIcon />
-                <div><dt>총 기간</dt><dd className="num">{run.lengthDays}일</dd></div>
-              </dl>
-            </>
-          ) : (
-            <>
-              {cash !== undefined && (
-                <dl className="sh-stat">
-                  <CoinsIcon />
-                  <div><dt>시작 자산</dt><dd className="num">{manwon(cash)}</dd></div>
-                </dl>
-              )}
-              {days !== undefined && (
-                <dl className="sh-stat">
-                  <CalendarIcon />
-                  <div><dt>진행 기간</dt><dd className="num">{days}일</dd></div>
-                </dl>
-              )}
-              <dl className="sh-stat">
-                <BarsIcon />
-                <div><dt>투자 방식</dt><dd>자유 투자</dd></div>
-              </dl>
-            </>
-          )}
-        </div>
-
-        {/* 연습으로 가는 길은 연습하기 화면(sim/practice)으로 **바로** 간다(2026-09-19). 배너가 "연습 모의투자" 라고
-            말하고 있어서 모드 선택(/sim/modes)을 한 번 더 거칠 이유가 없다.
-            이어서 하기 옆의 "주제 선택" 은 지금 것 말고 다른 주제를 고르러 가는 길이다 — 전에는
-            상단바 투자하기 → 연습하기로 돌아가야 했다. */}
         <div className="sh-cta">
-          {run ? (
-            <>
-              <Link className="sh-btn solid" to={`/sim/${run.seasonId}/play`}>
-                <PlayIcon />
-                이어서 하기
-                <ChevronIcon />
-              </Link>
-              <Link className="sh-btn line" to="/sim/practice">
-                주제 선택
-                <ChevronIcon />
-              </Link>
-            </>
+          {lead ? (
+            <Link className="sh-btn solid" to={`/sim/${lead.seasonId}/play`}>
+              <PlayIcon />
+              이어서 하기
+            </Link>
           ) : (
             <Link className="sh-btn solid" to="/sim/practice">
               <PlayIcon />
-              연습 모의투자 시작하기
-              <ChevronIcon />
+              지금 시작하기
             </Link>
           )}
+          {/* G-00 안내는 처음 열었을 때 한 번만 자동으로 뜬다. 건너뛴 사람이 다시 볼 자리다.
+              라우트가 없는 오버레이라 링크가 아니라 셸에 신호를 보낸다. */}
+          <button type="button" className="sh-btn line" onClick={openSimOnboarding}>
+            서비스 소개
+            <ChevronIcon />
+          </button>
         </div>
+
+        {/* 무엇을 이어서 하는지 말한다(2026-09-19). 연습을 여러 개 걸쳐 둔 사람은
+            눌러 봐야 알았다. */}
+        {lead && (
+          <p className="sh-topic">
+            플레이 중인 주제 <b>{lead.title}</b>
+          </p>
+        )}
       </div>
 
-      {/* 마스코트와 장식이 함께 떠 있는 무대. 장식이 가장자리에서 잘려야 "안에서
-          떠다니는" 것으로 읽혀 여기에만 overflow:hidden 을 건다 — 카드(.sh-hero)에
-          걸면 마스코트 더듬이가 잘린다. 무대 높이는 마스코트가 들어가게 잡는다.
-
-          모의투자 캐릭터는 검정 개미다. 인사이트 쪽 흰 개미와 다른 이미지이며,
-          모의투자 화면에는 이쪽만 쓴다. */}
-      {/* has-sprite — 스프라이트가 차트판을 함께 들고 와서 겹치는 장식을 내린다.
-          어느 것을 왜 내리는지는 sim-home.css 의 같은 이름 규칙에 적어 뒀다. */}
-      <div className="sh-stage has-sprite" aria-hidden="true">
-        {DRIFT.map((name, i) => (
-          <img key={name} className={`sh-drift d${i + 1}`} src={`/assets/pageset/${name}.webp`} alt="" />
-        ))}
-        {/* 정지 그림(ant-chart.webp)에서 스프라이트로 바꿨다 — 같은 개미가 차트판을
-            가리키는 37 프레임짜리 시트다. 원본 시트는 27MB 라 그대로 쓰면 첫 화면이
-            한참 비어 있어, 0.6 배로 줄이고 WebP 로 다시 구운 1.2MB 짜리를 쓴다
-            (원본은 assets/kingsparaid_sprite_assets_v7/ 에 그대로 있다).
-
-            **프레임 크기는 시트를 구운 배율을 그대로 적는다.** 여기 숫자가 어긋나면
-            엉뚱한 자리를 잘라 그린다 — scripts/build-ant-sprite.py 의 SCALE 을 바꾸면
-            이 두 값도 같이 바꿔야 한다.
-
-            시트를 다시 구우면서 오른쪽 아래 생성기 워터마크(KlingAI)도 지웠다.
-            원본 프레임에서 알파로 깎이다 만 글자 조각이 남아 있었다.
-
-            **비율이 달라 폭을 따로 잡는다.** 옛 그림은 460×611 로 세로가 길었고
-            이 시트는 1048×876 으로 가로가 길다 — --art 를 그대로 주면 개미가 반쪽만
-            차지해 작아 보인다. 그래서 CSS 에 .is-sprite 로 폭을 따로 뒀다.
-
-            **왕복으로 돌린다.** 1 번은 웃는 얼굴이고 37 번은 SELL 을 가리키는
-            시무룩한 얼굴이라, 정방향으로만 돌리면 37 → 1 에서 표정이 툭 튄다.
-            되감으면 표정이 이어져 한 동작으로 읽힌다. 대신 한 바퀴가 72 프레임이라
-            fps 를 12 → 16 으로 올려 길이를 맞췄다. */}
-        <SpriteAnimation
-          className="sh-hero-art is-sprite"
-          src="/assets/pageset/ant-play-sprite.webp"
-          frameCount={37} columns={6} frameWidth={629} frameHeight={526}
-          fps={16} pingpong
-        />
+      {/* 책상에 앉은 개미. 시안 원본(page_train)을 여백만 잘라 webp 로 구웠다.
+          말풍선("오늘도 조금 더 성장!") 이 그림 안에 있어 따로 얹지 않는다. */}
+      <div className="sh-stage" aria-hidden="true">
+        <img className="sh-bubble" src="/assets/pageset/bubble.webp" alt="" />
+        <img className="sh-hero-art" src="/assets/page_train/ant-desk.webp" alt="" />
       </div>
+
+      {/* 오른쪽 두 칸. 시작 자산은 연습 목록이 한 값으로 모일 때만 그린다(agreed) —
+          시즌마다 다르면 아무 값이나 대표로 세우는 셈이라 칸을 통째로 감춘다. */}
+      <aside className="sh-side" aria-label="연습 요약">
+        {cash !== undefined && (
+          <dl className="sh-glass">
+            <dt><CoinIcon />가상 투자 자금</dt>
+            <dd className="num">{cash.toLocaleString('ko-KR')}<small>원</small></dd>
+          </dl>
+        )}
+        <dl className="sh-glass">
+          <dt><CheckRingIcon />진행 중인 연습</dt>
+          {failure ? (
+            <dd className="sh-glass-err"><ErrorState error={failure} onRetry={onRetry} inline /></dd>
+          ) : (
+            <>
+              <dd className="num">
+                {myLoading ? '…' : going}<small> / {total}</small>
+              </dd>
+              <span className="sh-bar" role="progressbar" aria-label="진행 중인 연습 비율"
+                    aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
+                <i style={{ width: `${percent}%` }} />
+              </span>
+              <Link className="sh-glass-link" to="/sim/history">기록 보기 ›</Link>
+            </>
+          )}
+        </dl>
+      </aside>
     </section>
   )
 }
 
-/* ── 최근 연습 기록 ────────────────────────────────────────
-   설계서 §3 G-01 의 "완료 기록 요약". 목록에서 온 것만 쓴다 —
-   벤치마크(시장 수익률)와 날짜 범위는 응답에 없어 그리지 않는다. */
-function RecentRuns({ ongoing, done, loading, error, onRetry }: {
-  ongoing: MyRun[]; done: MyRun[]; loading: boolean
-  error: ApiError | null
-  onRetry: () => void
-}) {
-  const [open, setOpen] = useState(false)
+/* ── 연습 주제 카드 ────────────────────────────────────────
+   제목·설명은 서버가 준다(seasons.title·note). 사진은 seasonArt 표에서 제목으로 찾는다.
+   이미 진행 중인 주제는 테두리를 밝히고 버튼이 "이어서 하기" 로 바뀐다.
 
-  /* 진행 중인 것이 먼저다 — 바로 들어갈 수 있는 것이 위에 있어야 한다. */
-  const all = [
-    ...[...ongoing].sort(recentFirst).map((r) => ({ run: r, live: true })),
-    ...[...done].sort(recentFirst).map((r) => ({ run: r, live: false })),
-  ]
-  const rows = all.slice(0, open ? EXPANDED_ROWS : COLLAPSED_ROWS)
-  /* 펼쳤을 때 실제로 더 보이는 줄 수. 상한에 걸리면 그만큼만 약속한다 */
-  const more = Math.min(all.length, EXPANDED_ROWS) - COLLAPSED_ROWS
+   한 줄에 다 안 들어가는 폭에서는 가로로 넘겨 본다(scroll-snap). 양옆 화살표는 그
+   스크롤을 한 카드씩 옮기는 버튼이다 — 카드가 다 보이는 폭에서는 CSS 가 감춘다. */
+function Topics({ practice, ongoing, loading, error, onRetry }: {
+  practice: OpenRun[]; ongoing: MyRun[]; loading: boolean
+  error: ApiError | null; onRetry: () => void
+}) {
+  const track = useRef<HTMLUListElement>(null)
   const failure = shown(error)
+  const items = practice.filter(isJoinable).sort(joinableFirst)
+  const liveById = new Map(ongoing.map((r) => [r.seasonId, r]))
+
+  const slide = (dir: 1 | -1) => {
+    const el = track.current
+    if (!el) return
+    const card = el.querySelector<HTMLElement>('.sh-topic-card')
+    const step = card ? card.offsetWidth + 16 : el.clientWidth * 0.8
+    el.scrollBy({ left: dir * step, behavior: 'smooth' })
+  }
 
   return (
-    <article className="sh-panel">
-      <div className="sh-panel-head">
-        <h2><HistoryIcon />최근 연습 기록</h2>
-        <Link to="/sim/history">전체 보기 ›</Link>
-      </div>
+    <section className="sh-topics" aria-label="연습 주제">
+      <button type="button" className="sh-nav prev" onClick={() => slide(-1)} aria-label="이전 주제">
+        <Ico size={20}><path d="m15 5-7 7 7 7" /></Ico>
+      </button>
 
-      {loading && <p className="sh-state">불러오는 중…</p>}
-      {failure && <ErrorState error={failure} onRetry={onRetry} inline />}
-      {!loading && !failure && rows.length === 0 && (
-        <p className="sh-state">아직 참가한 모의투자가 없습니다.</p>
+      {loading && <p className="sh-state">주제를 불러오는 중…</p>}
+      {failure && <div className="sh-state"><ErrorState error={failure} onRetry={onRetry} inline /></div>}
+      {!loading && !failure && items.length === 0 && (
+        <p className="sh-state">지금 참가할 수 있는 연습 주제가 없습니다.</p>
       )}
 
-      {rows.length > 0 && (
-        <ul className="sh-runs" id="sh-recent-runs">
-          {rows.map(({ run, live }) => {
-            const when = live ? null : endedOn(run.endedAt)
-            /* 0 도 그려야 해서 null·undefined 만 걸러 낸다 */
-            const rate = run.returnRate
+      {items.length > 0 && (
+        <ul className="sh-topic-track" ref={track}>
+          {items.map((s, i) => {
+            const art = seasonArt(s.title)
+            const live = liveById.get(s.id)
             return (
-              <li className="sh-run" key={run.seasonId}>
-                <span className={`sh-state-tag ${live ? 'live' : 'done'}`}>
-                  {live ? '진행중' : '완료'}
-                </span>
-
-                <div className="sh-run-main">
-                  <b>{run.title || `${MODE_LABEL[run.mode]} 모의투자`}</b>
-                  <small className="num">
-                    {live ? `D+${run.currentDay} / ${run.lengthDays}일` : `${run.lengthDays}일 완주`}
-                    {when && <><span className="sh-dot" />{when}</>}
-                  </small>
-                </div>
-
-                {!live && rate != null && (
-                  <dl className="sh-rate">
-                    <dt>내 수익률</dt>
-                    <dd className={`num ${rate >= 0 ? 'up' : 'down'}`}>
-                      {rate >= 0 ? '+' : '−'}{Math.abs(rate).toFixed(1)}%
-                    </dd>
-                  </dl>
-                )}
-
+              <li
+                key={s.id}
+                className={`sh-topic-card${live ? ' is-live' : ''}`}
+                data-season={art?.key}
+                style={art ? { backgroundImage: `url(${art.art})`, backgroundPosition: art.position } : undefined}
+              >
+                <span className="sh-topic-no num">{String(i + 1).padStart(2, '0')}</span>
+                <h2>{s.title}</h2>
+                {s.note && <p>{s.note}</p>}
                 {live ? (
-                  <Link className="sh-replay" to={`/sim/${run.seasonId}/play`}>이어서 하기</Link>
+                  <Link className="sh-topic-go" to={`/sim/${live.seasonId}/play`}>
+                    이어서 하기<ArrowIcon />
+                  </Link>
                 ) : (
-                  <Link className="sh-replay" to={`/sim/${run.seasonId}/result`}>결과 보기</Link>
+                  <Link className="sh-topic-go" to={`/sim/seasons/${s.id}`}>
+                    시작하기<ArrowIcon />
+                  </Link>
                 )}
               </li>
             )
@@ -372,73 +250,45 @@ function RecentRuns({ ongoing, done, loading, error, onRetry }: {
         </ul>
       )}
 
-      {/* 접힌 줄이 있을 때만 나온다. margin-top:auto 로 카드 바닥에 붙어(sim-home.css)
-          옆 칸 팁 상자와 같은 높이에 선다. */}
-      {more > 0 && (
-        <button
-          type="button" className="sh-more" onClick={() => setOpen((v) => !v)}
-          aria-expanded={open} aria-controls="sh-recent-runs"
-        >
-          {open ? '접기' : `${more}개 더 보기`}
-          <CaretIcon />
-        </button>
-      )}
-    </article>
+      <button type="button" className="sh-nav next" onClick={() => slide(1)} aria-label="다음 주제">
+        <Ico size={20}><path d="m9 5 7 7-7 7" /></Ico>
+      </button>
+    </section>
   )
 }
 
-/* ── 처음이라면 이렇게 시작해요 ────────────────────────────
-   전부 정적이다. 서버에서 오는 값이 없으므로 실패할 것도 없다. */
-const STEPS: { title: string; note: React.ReactNode; icon: React.ReactNode }[] = [
-  { title: '연습 시작', note: <>버튼을 눌러<br />모의투자를 시작하세요.</>, icon: <PlayIcon /> },
-  { title: '매매 기록', note: <>관심 종목을 사고팔며<br />나의 판단을 기록하세요.</>, icon: <NoteIcon /> },
-  { title: '결과 비교', note: <>연습이 끝나면<br />결과를 돌아보세요.</>, icon: <BarsIcon /> },
-]
-
-function HowTo() {
+/* ── 사실 띠 ──────────────────────────────────────────────
+   연습이 어떤 것인지 네 가지로 말한다. 주제 수와 시작 자산은 목록에서 나오는 값이라
+   하드코딩하지 않는다 — 시작 자산이 한 값으로 모이지 않으면 그 칸은 빠진다. */
+function Facts({ practice }: { practice: OpenRun[] | undefined }) {
+  const total = practice?.length ?? 0
+  const cash = agreed(practice, 'initialCash')
   return (
-    <article className="sh-panel">
-      <div className="sh-panel-head">
-        <h2><BookIcon />처음이라면 이렇게 시작해요</h2>
-        {/* G-00 안내는 모의투자를 처음 열었을 때 한 번만 자동으로 뜬다. 건너뛴 사람이
-            다시 볼 자리가 없으면 그 안내는 사실상 없는 것이라 여기에 입구를 남긴다.
-            라우트가 없는 오버레이라 링크가 아니라 셸에 신호를 보낸다. */}
-        <button type="button" className="sh-relink" onClick={openSimOnboarding}>
-          안내 다시 보기 ›
-        </button>
-      </div>
-
-      <ol className="sh-steps">
-        {STEPS.map((s, i) => (
-          <li className="sh-step" key={s.title}>
-            <span className="sh-step-no">{i + 1}</span>
-            <span className="sh-step-ico">{s.icon}</span>
-            <b>{s.title}</b>
-            <em>{s.note}</em>
-          </li>
-        ))}
-      </ol>
-
-      <p className="sh-tip">
-        <BulbIcon />
-        <span>
-          <b>실제 과거 데이터로 연습하고, 내 판단을 기록하며, 결과를 돌아보세요.</b>
-          연습이 쌓일수록 더 나은 투자로 가까워질 거예요.
-        </span>
+    <footer className="sh-facts is-dark" aria-label="연습 안내">
+      <ul>
+        {total > 0 && (
+          <li><GridIcon /><span>총 <b className="num">{total}개</b>의 연습 주제</span></li>
+        )}
+        <li><ClockIcon /><span>각기 다른 시기와 시장 상황</span></li>
+        {cash !== undefined && (
+          <li><CoinsIcon /><span>가상의 <b className="num">{manwon(cash)}</b>으로 진행</span></li>
+        )}
+        <li><BarsIcon /><span>실제 데이터 기반 시뮬레이션</span></li>
+      </ul>
+      <p className="sh-quote">
+        <span className="sh-hand">"연습이 더 나은 투자를 만든다."</span>
+        <small>— ANTENNA</small>
       </p>
-    </article>
+    </footer>
   )
 }
 
 export default function SeasonHome() {
   const { data, loading, error, reload } = useAsync(getMyRuns)
-  /* 히어로 칩의 근거. 실패해도 칩만 빠지므로 오류를 따로 그리지 않는다 —
-     이 화면의 본문은 내 기록이지 참가 가능한 목록이 아니다. */
-  const { data: open } = useAsync(getPracticeRuns)
+  const { data: open, loading: openLoading, error: openError, reload: reloadOpen } = useAsync(getPracticeRuns)
 
   const ongoing = data?.ongoing ?? []
-  const done = data?.done ?? []
-  /* 여러 개가 진행 중이면 가장 최근 것을 히어로에 세운다. 나머지는 아래 목록에 남는다. */
+  /* 여러 개가 진행 중이면 가장 최근 것을 시작 버튼에 건다. 나머지는 카드에서 이어간다. */
   const lead = [...ongoing].sort(recentFirst)[0] ?? null
 
   return (
@@ -446,12 +296,15 @@ export default function SeasonHome() {
       <div className="main-inner sim-home">
         {/* 목록이 실패해도 화면 전체를 오류로 덮지 않는다 — 실패한 칸만 안내를
             띄우고 나머지는 그대로 읽힌다. 판단은 shown() 이 한다. */}
-        <Hero run={lead} practice={open?.items} />
-
-        <section className="sh-panels" aria-label="내 모의투자 요약">
-          <RecentRuns ongoing={ongoing} done={done} loading={loading} error={error} onRetry={reload} />
-          <HowTo />
-        </section>
+        <Hero
+          lead={lead} practice={open?.items} ongoing={ongoing}
+          myError={error} myLoading={loading} onRetry={reload}
+        />
+        <Topics
+          practice={open?.items ?? []} ongoing={ongoing}
+          loading={openLoading} error={openError} onRetry={reloadOpen}
+        />
+        <Facts practice={open?.items} />
       </div>
     </main>
   )
