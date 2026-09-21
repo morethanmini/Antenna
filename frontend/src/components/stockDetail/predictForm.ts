@@ -9,7 +9,7 @@
    탭으로 가면 PredictTab 이 언마운트되므로, 안에 두면 돌아왔을 때 적어 둔 것이
    전부 사라진다 — picked 를 부모가 들고 있는 것과 같은 이유다. */
 import { HORIZON_MIN, newNoteSalt } from '../../api/predictions'
-import type { Horizon } from '../../api/predictions'
+import type { CreateResult, Horizon } from '../../api/predictions'
 
 /* 방향은 여기 없다(2026-09-19) — 목표가가 전일 종가의 어느 쪽인지로 PredictTab 이 그때그때
    계산한다. 따로 들고 있던 때에는 방향과 목표가가 어긋난 채 서명까지 갈 수 있었다(QA 09-18). */
@@ -48,3 +48,22 @@ export const emptyPredictForm = (): PredictForm => ({
   target: '', horizon: HORIZON_MIN, note: '',
   noteSalt: newNoteSalt(), bet: '',
 })
+
+/**
+ * 대회 배팅 접수(202). 예측은 접수 시점에 저장돼 predictionId 가 오고, 소각 확정은
+ * operationId 로 M-02 가 폴링한다 — PredictionQueued 와 같은 모양이지만 kind 를 따로
+ * 두는 이유는 완료 화면의 말과 갈 곳이 다르기 때문이다(예측 상세가 아니라 대회로 돌아간다).
+ */
+export type EventResult = {
+  kind: 'event'
+  data: { predictionId: number; operationId: string }
+}
+
+/**
+ * 등록이 끝났다는 사실. 이 값이 서 있으면 PredictTab 은 폼 대신 완료 화면을 그린다.
+ *
+ * **폼과 같은 이유로 부모(StockDetail)가 든다(2026-09-21, QA-0918 #330).** PredictTab 안에
+ * 두었을 때는 완료 화면에서 종목 정보 탭을 한 번 다녀오면 result 가 사라지고 값이 남은
+ * 폼이 되살아나 같은 예측을 두 번 등록할 수 있었다.
+ */
+export type PredictResult = CreateResult | EventResult
