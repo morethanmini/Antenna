@@ -37,14 +37,15 @@ const MODES = {
       { key: 'stocks', text: '종목 탐색', href: '/stocks' },
       { key: 'market', text: '주가 예측 랭킹', href: '/rankings' },
       { key: 'report', text: '리포트', href: '/reports' },
-      /* 원장은 개인 기록이 아니라 **서비스 전체**의 기록이다(GET /anchors 에 사용자
-         필터가 없다). 랭킹이 "누가 잘하나", 원장이 "그 기록이 조작은 아닌가" 다. */
-      { key: 'ledger', text: '원장 내역', href: '/ledger' },
+      /* 원장 내역이 있던 자리다(2026-09-21). 원장은 서비스 전체의 기록이라 둘러보는
+         줄에 어울렸지만, 매일 들어와 보는 것은 내가 건 예측이 어디까지 왔나다.
+         원장으로 가는 길은 없애지 않고 상단바 오른쪽 아이콘으로 옮겼다. */
+      { key: 'portfolio', text: '내 예측', href: '/me/predictions' },
       /* 커뮤니티(F-04~F-06)는 개발 범위에서 뺐다(2026-09-14).
-         예측 포트폴리오(C-04)는 마이페이지의 '내 활동' 에 있다 — 이 줄은 서비스를
-         둘러보는 길이고, 포트폴리오는 계정 안쪽 화면이라 거기가 맞다.
-         routes.ts 의 nav:'portfolio' 는 그대로 둔다 — 짝이 없으면 아무것도 활성이
-         아니고, 계정 안쪽 화면에서는 그게 맞다(/me 가 nav:'me' 로 같은 상태다). */
+
+         이 줄의 nav 키가 'portfolio' 라 예측 상세(C-03)와 예측 포트폴리오(C-04)에서도
+         이 메뉴가 켜진다 — routes.ts 가 셋에 같은 키를 달아 두었고, 셋 다 "내가 건
+         예측" 갈래라 그대로 둔다. */
     ],
   },
   sim: {
@@ -85,85 +86,30 @@ function WalletChip() {
   )
 }
 
-/* 네비바 아래로 내려오는 검색줄.
+/* 통합 검색(A-03)으로 내려오던 검색줄이 여기 있었다 — 2026-09-21 에 걷었다.
 
-   **아이콘 하나로 접어 뒀다.** 전에는 상단바 한가운데를 검색창이 차지했는데, 이
-   서비스에서 검색은 첫 동작이 아니다 — 종목은 종목 탐색(B-04)의 필터가 받고, 여기서만
-   되는 것은 채널·리포트까지 한 번에 훑는 것이다. 그만큼의 자리를 늘 내줄 일은 아니다.
+   상단바 오른쪽 아이콘 자리를 원장 내역이 가져가면서 검색 버튼이 사라졌고, 버튼이
+   없으니 이 줄을 열 길도 없어졌다. 셸에서 /search 로 가는 문은 이제 없다.
 
-   입력과 이동까지만 맡는다. 결과는 A-03(`/search?q=`)이 그린다 — 자동완성 드롭다운도
-   그 스토리 몫이라 셸에서 종목 데이터를 들고 있지 않는다. */
-/** 검색어 상한. 서버(SearchService.MAX_QUERY_LENGTH)와 같은 값 — 넘기면 서버가 400 을 준다 */
-const SEARCH_MAX = 50
-
-function NavSearch({ open, onClose, triggerRef }: {
-  open: boolean
-  onClose: (returnFocus?: boolean) => void
-  triggerRef: React.RefObject<HTMLButtonElement | null>
-}) {
-  const navigate = useNavigate()
-  const boxRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [query, setQuery] = useState('')
-
-  useDismiss({ open, panel: boxRef, trigger: triggerRef, onClose })
-
-  /* 열면 곧바로 칠 수 있어야 한다 — 열어 놓고 한 번 더 눌러야 하면 아이콘으로 접은
-     값이 사라진다 */
-  useEffect(() => { if (open) inputRef.current?.focus() }, [open])
-
-  if (!open) return null
-
-  return (
-    <div className="navsearch" ref={boxRef}>
-      <form
-        className="navsearch-form" role="search"
-        onSubmit={(e) => {
-          e.preventDefault()
-          const q = query.trim()
-          if (!q) return
-          onClose()
-          navigate(`/search?q=${encodeURIComponent(q)}`)
-        }}
-      >
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
-        </svg>
-        <input
-          ref={inputRef}
-          type="search" id="navbar-search" autoComplete="off"
-          aria-label="종목 · 예측가 · 리포트 검색"
-          placeholder="종목명 · 종목코드 · 예측가 · 리포트 제목 (예: 삼성전자, 005930)"
-          maxLength={SEARCH_MAX}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-      </form>
-    </div>
-  )
-}
+   되살릴 때는 git 역사에서 이 블록(NavSearch · SEARCH_MAX)과 상단바의 버튼을 함께
+   꺼내면 된다. 화면(A-03)과 API(GET /search)는 그대로 살아 있다. */
 
 export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode; nav: string; bodyClass: string; children: React.ReactNode }) {
   const { authed, user, signOut } = useAuth()
   const navigate = useNavigate()
   const [confirmingSignOut, setConfirmingSignOut] = useState(false)
 
-  /* 곁창 셋. 하나를 열면 나머지는 닫는다 — 네비바 아래 같은 자리에 겹쳐 뜬다 */
-  const [searchOpen, setSearchOpen] = useState(false)
+  /* 곁창 둘. 하나를 열면 나머지는 닫는다 — 네비바 아래 같은 자리에 겹쳐 뜬다.
+     검색줄이 셋째였는데 2026-09-21 에 걷었다(위 주석). */
   const [menuOpen, setMenuOpen] = useState(false)
   /* 좁은 화면에서 메뉴 줄(.navmenu)이 햄버거로 접힐 때 그 안을 여는 곁창이다.
      넓을 때는 CSS 가 버튼을 숨기므로 이 상태는 쓰이지 않는다. */
   const [navOpen, setNavOpen] = useState(false)
-  const searchBtn = useRef<HTMLButtonElement>(null)
   const menuBtn = useRef<HTMLButtonElement>(null)
   const menuBox = useRef<HTMLDivElement>(null)
   const navBtn = useRef<HTMLButtonElement>(null)
   const navBox = useRef<HTMLDivElement>(null)
 
-  const closeSearch = useCallback((returnFocus?: boolean) => {
-    setSearchOpen(false)
-    if (returnFocus) searchBtn.current?.focus()
-  }, [])
   const closeMenu = useCallback((returnFocus?: boolean) => {
     setMenuOpen(false)
     if (returnFocus) menuBtn.current?.focus()
@@ -289,7 +235,7 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
               ref={navBtn}
               className="iconbtn" type="button"
               aria-label="메뉴" aria-haspopup="menu" aria-expanded={navOpen}
-              onClick={() => { setSearchOpen(false); setMenuOpen(false); setNavOpen((v) => !v) }}
+              onClick={() => { setMenuOpen(false); setNavOpen((v) => !v) }}
             >
               <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M4 7h16M4 12h16M4 17h16" />
@@ -316,16 +262,23 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
             <>
               <WalletChip />
 
-              <button
-                ref={searchBtn}
-                className="iconbtn" type="button"
-                aria-label="검색" aria-expanded={searchOpen} aria-controls="navbar-search"
-                onClick={() => { setMenuOpen(false); setNavOpen(false); setSearchOpen((v) => !v) }}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
-                  <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
+              {/* 검색 아이콘이 있던 자리다(2026-09-21). 원장 내역이 메뉴에서 내려오면서
+                  이리로 왔다 — 원장은 하루에 여러 번 여는 곳은 아니지만, 이 서비스가
+                  "기록이 조작되지 않았음" 을 파는 이상 길이 끊기면 안 된다.
+
+                  ⚠ 통합 검색(A-03)으로 가는 길이 이 버튼 하나뿐이었다. 지금은 주소를
+                  직접 치는 것 말고는 닿을 데가 없다 — 검색을 되살릴 자리를 정할 때
+                  이 주석을 같이 본다. */}
+              {/* 자물쇠. 장부(줄 그은 노트)와 사슬도 그려 봤는데, 원장(D-01)이 말하는
+                  것은 "기록을 적어 둔 책" 이 아니라 **봉인** 이다 — 한 번 올라가면 못
+                  바꾼다는 것. 예측 등록 발판 위에서도 같은 말을 쓴다("예측이 봉인됩니다"). */}
+              <Link className="iconbtn" to="/ledger" aria-label="원장 내역">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="4.6" y="10.4" width="14.8" height="9.4" rx="2.4" />
+                  <path d="M8.3 10.4V7.7a3.7 3.7 0 0 1 7.4 0v2.7" />
                 </svg>
-              </button>
+              </Link>
 
               {/* 알림은 페이지가 아니라 이 자리에서 여는 팝업이다(H-02).
                   data-bell 은 팝업이 "바깥을 눌렀나" 를 가릴 때 이 버튼을 알아보는
@@ -351,7 +304,7 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
                   ref={menuBtn}
                   className="avatarbtn" type="button"
                   aria-label="계정 메뉴" aria-haspopup="menu" aria-expanded={menuOpen}
-                  onClick={() => { setSearchOpen(false); setNavOpen(false); setMenuOpen((v) => !v) }}
+                  onClick={() => { setNavOpen(false); setMenuOpen((v) => !v) }}
                 >
                   <img src={user?.avatarUrl} alt="" />
                 </button>
@@ -391,7 +344,6 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
         </div>
       </header>
 
-      <NavSearch open={searchOpen} onClose={closeSearch} triggerRef={searchBtn} />
 
       {children}
 
