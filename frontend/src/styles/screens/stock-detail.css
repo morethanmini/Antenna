@@ -1015,7 +1015,35 @@
   outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(88,80,244,.14);
 }
 
-/* 서명 대상 payload 를 접지 않고 펼쳐 보여준다(SignConfirm, §7) */
+/* ── 봉인 안내 (2026-09-20) ──────────────────────────────
+   발판 바로 위는 낱말이 서는 자리다. 원문·해시는 아래 .sd-fold 안으로 접었다 —
+   이유는 PredictTab 의 같은 자리 주석에 적었다. */
+.stock-detail-page .sd-seal{
+  margin:0 0 4px;color:var(--body);font-size:var(--fs-base);line-height:1.65;
+}
+.stock-detail-page .sd-seal b{color:var(--ink);font-weight:var(--fw-heavy)}
+.stock-detail-page .sd-seal-sub{
+  margin:0 0 12px;color:var(--muted);font-size:var(--fs-sm);line-height:1.6;
+}
+
+/* 접는 칸. SeasonPractice 의 .pr-fold 와 같은 방식이다 — summary 의 기본 삼각형을
+   지우고 화살표를 직접 그려 열림 상태에 맞춰 돌린다. */
+.stock-detail-page .sd-fold{margin:0 0 14px}
+.stock-detail-page .sd-fold summary{
+  display:inline-flex;align-items:center;gap:5px;
+  list-style:none;cursor:pointer;user-select:none;
+  color:var(--muted);font-size:var(--fs-sm);font-weight:var(--fw-bold);
+}
+.stock-detail-page .sd-fold summary::-webkit-details-marker{display:none}
+.stock-detail-page .sd-fold summary:hover{color:var(--brand-ink)}
+.stock-detail-page .sd-fold summary:focus-visible{
+  outline:2px solid var(--brand);outline-offset:4px;border-radius:7px;
+}
+.stock-detail-page .sd-fold summary svg{transition:transform .15s}
+.stock-detail-page .sd-fold[open] summary{margin-bottom:10px}
+.stock-detail-page .sd-fold[open] summary svg{transform:rotate(180deg)}
+
+/* 서명 대상 payload. 펼쳤을 때의 모습은 예전 그대로다(SignConfirm, §7) */
 .stock-detail-page .sd-payload{
   margin:10px 0 12px;padding:14px 16px;overflow-x:auto;
   /* 연보라. 모의투자 쪽이 쓰는 --brand-soft(#ece9fd)·#cdc9f7 과 같은 값이다 —
