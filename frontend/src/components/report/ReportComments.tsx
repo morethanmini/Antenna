@@ -49,8 +49,18 @@ type Props = {
   blocked?: boolean
 }
 
+/* 기본은 오래된 순이다 — 댓글은 위에서 아래로 읽는 대화라, 답글이 질문보다
+   먼저 오면 맥락이 끊긴다. 최신 순은 댓글이 많이 쌓인 글에서 새 이야기부터
+   보고 싶을 때를 위한 것이다(QA 09-21). */
+const SORTS = [
+  { key: 'OLDEST', label: '오래된순' },
+  { key: 'LATEST', label: '최신순' },
+] as const
+type Sort = (typeof SORTS)[number]['key']
+
 export default function ReportComments({ reportId, commentCount, canWrite, channelId, blocked = false }: Props) {
-  const list = useCursorList<ReportComment>(`/reports/${reportId}/comments`)
+  const [sort, setSort] = useState<Sort>('OLDEST')
+  const list = useCursorList<ReportComment>(`/reports/${reportId}/comments`, { sort })
   const { user } = useAuth()
   const [count, setCount] = useState(commentCount)
   /** 삭제 확인창을 띄운 댓글 */
@@ -77,10 +87,28 @@ export default function ReportComments({ reportId, commentCount, canWrite, chann
 
   return (
     <section className="rc" aria-labelledby="rc-heading">
-      <h2 className="rc-heading" id="rc-heading">
-        댓글
-        {count > 0 && <span className="rc-count num">{count.toLocaleString('ko-KR')}</span>}
-      </h2>
+      <div className="rc-bar">
+        <h2 className="rc-heading" id="rc-heading">
+          댓글
+          {count > 0 && <span className="rc-count num">{count.toLocaleString('ko-KR')}</span>}
+        </h2>
+        {/* 댓글이 한 건도 없으면 고를 것이 없다 */}
+        {count > 0 && (
+          <div className="rc-sort" role="group" aria-label="댓글 정렬">
+            {SORTS.map((s) => (
+              <button
+                key={s.key}
+                type="button"
+                className={s.key === sort ? 'on' : ''}
+                aria-pressed={s.key === sort}
+                onClick={() => setSort(s.key)}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {canWrite
         ? <CommentForm reportId={reportId} onDone={afterCreate} />

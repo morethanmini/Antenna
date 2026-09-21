@@ -44,8 +44,18 @@ import ssafy.a507.backend.domain.prediction.entity.Prediction;
 @Component
 public class EventSettlementRunner {
 
-    /** receipt 폴링 간격. 블록이 2~10초라 더 촘촘할 이유가 없다. */
-    static final long RECEIPT_POLL_MILLIS = 1000L;
+    /**
+     * receipt 폴링 간격.
+     *
+     * <p>1초였다. "블록이 2~10초라 더 촘촘할 이유가 없다" 는 전제였는데, 그 전제는 <b>tx 하나</b>를 볼 때만 맞다.
+     * 정산은 reveal · resolve ×10 · settle · sweep 을 순서대로 보내고 명령마다 receipt 를 기다리므로, 한 번에
+     * 평균 0.5초씩 늦는 것이 tx 수만큼 곱해진다 — 배팅 300건이면 tx 가 20개를 넘어 10초 이상이 폴링 간격에서만 샌다
+     * (QA 09-21 "돈이 제일 늦게 들어온다").
+     *
+     * <p>250ms 로 줄인다. 늘어나는 것은 {@code eth_getTransactionReceipt} 호출 수뿐이고, 그건 상태를 바꾸지 않는
+     * 가장 가벼운 RPC 다. 블록이 2초여도 tx 하나당 조회가 8번을 넘지 않는다.
+     */
+    static final long RECEIPT_POLL_MILLIS = 250L;
 
     private final PoolRelayer relayer;
     private final ChainLogSource chain;
@@ -279,11 +289,15 @@ public class EventSettlementRunner {
     }
 
     private void awaitReceipt(String what, String txHash) {
-        long deadline = System.currentTimeMillis() + settings.receiptTimeoutSeconds() * 1000L;
+        long startedAt = System.currentTimeMillis();
+        long deadline = startedAt + settings.receiptTimeoutSeconds() * 1000L;
         while (true) {
             Optional<Boolean> status = chain.receiptStatus(txHash);
             if (status.isPresent()) {
                 if (status.get()) {
+                    /* 명령마다 채굴에 얼마나 걸렸는지 남긴다. 정산 전체가 늦다는 말은 들었는데
+                       어느 명령이 끄는지는 로그에 없었다 — 이 줄이 그 답을 준다(QA 09-21). */
+                    log.info("정산 {} tx {} — 채굴 {}ms", what, txHash, System.currentTimeMillis() - startedAt);
                     return;
                 }
                 log.error("정산 {} tx {} — 채굴에서 revert. 시뮬레이션 뒤 상태가 바뀌었다(다른 전송자?)", what, txHash);

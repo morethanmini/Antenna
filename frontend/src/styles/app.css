@@ -255,10 +255,15 @@ button{border:0;background:none;cursor:pointer}
   /* 글자도 같이 도드라진다 — 꺼진 쪽은 눌린 듯 아래에 빛이 깔리고, 켜진 쪽은
      떠 있는 듯 아래에 그늘이 진다. 색만 바꾸면 알만 입체이고 글자는 평평하다. */
   text-shadow:0 1px 0 rgba(255,255,255,.85);
-  transition:color 240ms ease;
+  transition:color 240ms ease, transform 120ms ease;
 }
 .modeswitch a:hover{color:var(--ink)}
 .modeswitch a.on{color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.22)}
+/* 이미 켜진 쪽을 다시 눌러도 알이 움직이지 않아 먹통으로 읽혔다(QA 09-21).
+   모드는 둘 중 하나라 끌 수 없으므로, 끄는 동작을 만드는 대신 **눌렸다는 것만**
+   글자로 알린다. 화살표 대신 기본 커서를 세워 갈 곳이 없다는 것도 함께 말한다. */
+.modeswitch a.on{cursor:default}
+.modeswitch a.on:active{transform:scale(.93)}
 
 /* 메뉴 — 글자만. 아이콘을 뺐다: 한 줄에 늘어놓으면 아이콘이 글자 사이를 벌려
    덩어리로 읽히지 않는다(세로로 쌓던 사이드바와 다른 점이다).

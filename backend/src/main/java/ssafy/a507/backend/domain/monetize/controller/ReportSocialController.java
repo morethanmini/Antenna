@@ -56,12 +56,14 @@ public class ReportSocialController {
         return ResponseEntity.noContent().build();
     }
 
+    /** {@code sort=LATEST} 면 최신 순, 없거나 그 밖의 값이면 오래된 순(기존 동작). */
     @GetMapping("/reports/{reportId}/comments")
     public ReportCommentListResponse listComments(
             @PathVariable Long reportId,
             @RequestParam(required = false) Long cursor,
-            @RequestParam(required = false) Integer size) {
-        return reportSocialService.listComments(reportId, cursor, size);
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String sort) {
+        return reportSocialService.listComments(reportId, cursor, size, sort);
     }
 
     /**
