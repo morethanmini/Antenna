@@ -653,9 +653,12 @@ export default function Home() {
           </div>
           {/* 두 칸을 가로지른다 — 아래 카드 줄을 밀지 않고 한 줄만 쓴다 */}
           <ContestBanner />
-          <MarketOverview />
-          <MyAssets />
+          {/* 관심 종목을 시장 Overview 보다 위에 둔다 — 홈에 들어와 가장 먼저
+              보는 것이 "내가 담은 것" 이라는 코치 QA(2026-09-21). 시장 지표는
+              누구에게나 같은 값이라 한 줄 아래여도 손해가 없다. */}
           <Watchlist />
+          <MyAssets />
+          <MarketOverview />
           <TopPredictor />
         </div>
       </div>

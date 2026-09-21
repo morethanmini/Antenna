@@ -193,6 +193,30 @@ function SectorChips({ current, onPick }: {
     setGrabbing(false)
   }
 
+  /* 가로 휠·트랙패드 가로 밀기를 띠에 연결한다.
+
+     **세로 휠은 가로채지 않는다.** 가로 줄이 세로 휠을 먹으면 띠 위에 커서가
+     있을 때 페이지가 안 내려가 갇힌 것처럼 된다 — 다른 코치가 지적한 "스크롤이
+     잘 안 움직인다" 가 바로 그 증상이라, 고치려다 만들 수는 없다.
+     shift+휠은 브라우저가 이미 deltaX 로 바꿔 주므로 여기로 들어온다.
+
+     React 의 onWheel 은 수동(passive) 리스너라 preventDefault 가 안 먹는다.
+     그래서 직접 붙인다. */
+  useEffect(() => {
+    const el = trackRef.current
+    if (!el) return
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || !e.deltaX) return   // ctrl+휠은 확대/축소다
+      const max = el.scrollWidth - el.clientWidth
+      /* 끝에 닿았으면 넘기지 않는다 — 브라우저의 뒤로가기 제스처를 막지 않는다 */
+      if ((e.deltaX < 0 && el.scrollLeft <= 0) || (e.deltaX > 0 && el.scrollLeft >= max)) return
+      e.preventDefault()
+      el.scrollLeft = Math.max(0, Math.min(max, el.scrollLeft + e.deltaX))
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [data])
+
   const page = useCallback((dir: -1 | 1) => {
     const el = trackRef.current
     if (!el) return

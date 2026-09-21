@@ -155,10 +155,6 @@
 @media (prefers-reduced-motion:reduce){ .st-switch, .st-switch i{ transition:none; } }
 .st-note.is-error{ color:var(--down); }
 
-.st-pending-note{
-  margin:8px 0 0;
-  font-size:var(--fs-sm); line-height:1.6; color:var(--muted);
-}
 
 /* ── 버튼 ────────────────────────────────────── */
 .st-btn{
@@ -177,19 +173,25 @@
 /* 온보딩 보완 안내 안의 버튼은 줄 높이에 맞춰 조금 낮춘다 */
 .st-onboarding .st-btn{ height:34px; padding:0 13px; font-size:var(--fs-md); }
 
-/* ── 안내 다시 보기 ───────────────────────────────
-   위 "아직 마치지 않은 설정" 과 달리 할 일이 없어도 늘 있는 자리다. 그래서
-   브랜드 색을 쓰지 않는다 — 재촉하는 안내가 아니라 언제든 열어 보는 서랍이다. */
-.st-replay p{
-  margin:0 0 12px;
-  color:var(--muted); font-size:var(--fs-base); line-height:1.6;
+/* ── 맨 아래 행동 줄 ──────────────────────────────
+   설정이 아니라 행동 둘(안내 다시 보기 · 로그아웃). 제목·설명을 단 섹션이었는데
+   버튼만 남겼다(코치 QA 2026-09-21) — 글자만으로 무슨 일이 일어나는지 읽힌다.
+   재촉하는 자리가 아니라 브랜드 색을 쓰지 않고, 카드 테두리도 두르지 않는다. */
+.st-foot{
+  display:flex; flex-wrap:wrap; gap:8px;
+  margin:26px 0 0; padding-top:18px; border-top:1px solid var(--rule);
 }
-.st-replay .st-btn{
+.st-foot-btn{
+  height:34px; padding:0 13px; font-size:var(--fs-md);
   border:1px solid var(--rule); background:var(--surface); color:var(--body);
 }
-.st-replay .st-btn:hover{ background:var(--surface-2); }
+.st-foot-btn:hover{ background:var(--surface-2); }
+/* danger 의 테두리·색은 .st-btn.danger 가 이미 준다. 높이만 여기서 맞춘다 */
+.st-foot-btn.danger:hover{ background:#fdeeee; border-color:#f6d5d5; }
 
 @media (max-width: 560px){
   .st-row{ flex-wrap:wrap; }
   .st-row .st-btn{ width:100%; }
+  /* 맨 아래 줄은 좁아져도 버튼 둘이 나란히 선다 — 한 줄에 다 들어간다 */
+  .st-foot .st-btn{ width:auto; }
 }
