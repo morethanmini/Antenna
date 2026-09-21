@@ -52,8 +52,8 @@ import { POINT_KINDS, POINT_LABEL, getPoints } from '../../api/stockDetail'
 import type { InvestPoint, PointKind, StockSummary } from '../../api/stockDetail'
 import {
   DIRECTIONS, HORIZON_MAX, HORIZON_MIN, HORIZON_TICKS, NOTE_MAX,
-  commitHash, commitPayload, createPrediction, getSlots, horizonLabel, newNoteSalt, noteHash,
-  formatTargetPrice, predictionSigningPayload, targetPriceInScale,
+  commitHash, commitPayload, createPrediction, getSlots, horizonLabel, horizonPickLabel, newNoteSalt, noteHash,
+  formatTargetPrice, predictionSigningPayload, targetPriceInRange, targetPriceInScale,
 } from '../../api/predictions'
 import type {
   CommitFields, CreateResult, Direction, Horizon, PredictionDraft,
@@ -177,7 +177,8 @@ export default function PredictTab({
   /* 소수 셋째 자리 이하는 서버가 반올림하지 않고 400 으로 거절한다(numeric(14,2)).
      여기서 조용히 잘라 서명하면 서명한 값과 서버가 해시한 값이 달라진다. */
   const priceTooPrecise = priceEntered && !targetPriceInScale(targetPrice)
-  const validTarget = priceEntered && !priceTooPrecise
+  const priceTooLarge = priceEntered && !targetPriceInRange(targetPrice)
+  const validTarget = priceEntered && !priceTooPrecise && !priceTooLarge
 
   /* 목표가가 전일 종가 대비 몇 %인지. 방향도 이 값이 정한다.
 
@@ -698,6 +699,11 @@ export default function PredictTab({
                 임의로 반올림하지 않습니다.
               </p>
             )}
+            {priceTooLarge && (
+              <p className="sd-warn">
+                목표가는 <b>1조 원 미만</b>으로 입력할 수 있습니다.
+              </p>
+            )}
             {/* 방향을 고를 수 없게 된 뒤로, 방향이 안 서는 경우는 이것 하나다. 말해 주지 않으면
                 목표가를 넣었는데 왜 발판이 잠겨 있는지 알 길이 없다. */}
             {gap === 0 && (
@@ -774,7 +780,7 @@ export default function PredictTab({
                 step={1}
                 value={horizon}
                 aria-label="예측 기간"
-                aria-valuetext={`${horizonLabel(horizon)} · ${dueLabel(horizon)} 만기`}
+                aria-valuetext={`${horizonPickLabel(horizon)} · ${dueLabel(horizon)} 만기`}
                 onChange={(e) => setHorizon(Number(e.target.value))}
               />
               <div className="pf-line-ticks" aria-hidden="true">
@@ -785,7 +791,7 @@ export default function PredictTab({
                     style={{ left: `${((h - HORIZON_MIN) / (HORIZON_MAX - HORIZON_MIN)) * 100}%` }}
                   >
                     <i />
-                    <b>{horizonLabel(h)}</b>
+                    <b>{horizonPickLabel(h)}</b>
                   </span>
                 ))}
               </div>
@@ -796,7 +802,7 @@ export default function PredictTab({
                 이미 말하고 있어, 같은 말을 한 번 더 길게 적는 셈이다 */}
             {!eventMode && (
               <p className="sd-help">
-                <b className="num">{horizonLabel(horizon)}</b> · 만기 <b className="num">{dueLabel(horizon)}</b> · 기준일(다음 평일)부터 <b>영업일</b>로 셉니다(주말 제외). 공휴일에 걸리면 그다음 거래일 종가로 판정합니다. 기준가는 기준일 종가로 확정됩니다.
+                <b className="num">{horizonPickLabel(horizon)}</b> · 만기 <b className="num">{dueLabel(horizon)}</b> · 기준일(다음 평일)부터 셉니다(주말 제외). 공휴일에 걸리면 그다음 거래일 종가로 판정합니다. 기준가는 기준일 종가로 확정됩니다.
               </p>
             )}
           </li>
