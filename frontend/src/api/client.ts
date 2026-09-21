@@ -63,8 +63,8 @@ export function refreshAccessToken(): Promise<boolean> {
 
 export type RequestOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
-  /** 쿼리 파라미터. undefined 인 값은 빠진다 */
-  query?: Record<string, string | number | boolean | undefined>
+  /** 쿼리 파라미터. undefined 인 값은 빠진다. 배열은 같은 키로 여러 번 싣는다(?sector=a&sector=b) */
+  query?: Record<string, string | number | boolean | readonly string[] | undefined>
   body?: unknown
   /**
    * Idempotency-Key 를 붙일 scope.
@@ -78,7 +78,8 @@ function buildUrl(path: string, query?: RequestOptions['query']) {
   const url = new URL(BASE + path, window.location.origin)
   if (query) {
     for (const [k, v] of Object.entries(query)) {
-      if (v !== undefined) url.searchParams.set(k, String(v))
+      if (Array.isArray(v)) v.forEach((one) => url.searchParams.append(k, one))
+      else if (v !== undefined) url.searchParams.set(k, String(v))
     }
   }
   return url.pathname + url.search

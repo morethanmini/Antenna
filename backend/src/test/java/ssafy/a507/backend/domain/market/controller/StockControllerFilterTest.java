@@ -131,6 +131,27 @@ class StockControllerFilterTest {
     }
 
     @Test
+    @DisplayName("sector 를 여러 번 보내면 그중 하나라도 맞는 종목 — 섹터 여러 개 고르기(09-21 QA)")
+    void 섹터_여러_개() throws Exception {
+        mockMvc.perform(get(URL).param("sector", "반도체", "인터넷").with(user(me)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(3))
+                .andExpect(jsonPath("$.total").value(3));
+    }
+
+    @Test
+    @DisplayName("쉼표가 든 업종명도 하나로 받는다 — List<String> 바인딩이면 스프링이 쉼표로 쪼갠다")
+    void 쉼표_든_섹터() throws Exception {
+        insertStock("222222", "농업회사", "농업, 임업 및 어업", "KOSDAQ", true);
+        insertQuote("222222", LATEST, "5000");
+
+        mockMvc.perform(get(URL).param("sector", "농업, 임업 및 어업").with(user(me)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].code").value("222222"));
+    }
+
+    @Test
     @DisplayName("watchedOnly 는 내 관심 종목만 — 남의 목록에는 아무것도 없다")
     void 관심_종목만_거른다() throws Exception {
         mockMvc.perform(get(URL).param("watchedOnly", "true").with(user(me)))

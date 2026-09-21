@@ -112,8 +112,9 @@ const SKELETON_CHIPS = 8
  * 스크롤 위치·끝 판정·키보드 이동이 전부 그대로다. 손가락 입력은 건드리지 않는다 —
  * 브라우저가 이미 그 방향으로 스크롤해 준다.
  */
-function SectorChips({ current, onPick }: {
-  current: string | undefined
+function SectorChips({ current = [], onPick }: {
+  /** 고른 섹터들. 비면 "전체 종목" 이 켜진다 */
+  current: string[] | undefined
   onPick: (sector: string | undefined) => void
 }) {
   const load = useCallback(() => getSectorSummary(), [])
@@ -153,6 +154,27 @@ function SectorChips({ current, onPick }: {
     return () => ro.disconnect()
   }, [measure, data])
 
+  /* 마우스 휠(세로)로도 넘긴다(09-21 QA — "섹터 선택 스크롤이 쉽지 않다"). 스크롤바를
+     숨긴 가로 줄이라 휠을 굴려도 꿈쩍 않았다. 세로 휠만 가로로 돌리고, 트랙패드의 가로
+     밀기(deltaX 가 큰 것)는 브라우저에 맡긴다. 끝에 닿아 더 갈 데가 없으면 가로채지 않는다 —
+     페이지 스크롤이 칩 줄에서 멈추면 안 된다. React onWheel 은 passive 라 preventDefault 가
+     안 먹어 직접 붙인다. 부드러운 스크롤을 끄고(instant) 옮긴다 — 켜 두면 휠 한 칸마다
+     애니메이션이 쌓여 늦게 따라온다. */
+  useEffect(() => {
+    const el = trackRef.current
+    if (!el) return
+    const onWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return
+      const max = el.scrollWidth - el.clientWidth
+      const canMove = e.deltaY > 0 ? el.scrollLeft < max - 1 : el.scrollLeft > 1
+      if (!canMove) return
+      e.preventDefault()
+      el.scrollBy({ left: e.deltaY, behavior: 'instant' })
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [data])
+
   /* 마우스만 받는다. 손가락은 브라우저가 이미 스크롤해 주는데 여기서 한 번 더
      scrollLeft 를 쓰면 관성 스크롤과 싸워 끊긴다. 왼쪽 버튼이 아니면(가운데·오른쪽)
      붙잡지 않는다 — 가운데 버튼은 브라우저의 자동 스크롤 자리다. */
@@ -178,6 +200,10 @@ function SectorChips({ current, onPick }: {
       d.captured = true
       afterDrag.current = true
       el.setPointerCapture(e.pointerId)
+      /* 부드러운 스크롤·스냅은 여기서 바로 끈다. .is-dragging 클래스는 state 라 다시
+         그려질 때까지 한두 번의 scrollLeft 가 smooth 로 처리돼 끌기 첫머리가 굼떴다 */
+      el.style.scrollBehavior = 'auto'
+      el.style.scrollSnapType = 'none'
       setGrabbing(true)
     }
     el.scrollLeft = d.scroll - dx
@@ -189,6 +215,8 @@ function SectorChips({ current, onPick }: {
     d.active = false
     if (d.captured) {
       try { trackRef.current?.releasePointerCapture(e.pointerId) } catch { /* 이미 놓였다 */ }
+      trackRef.current?.style.removeProperty('scroll-behavior')
+      trackRef.current?.style.removeProperty('scroll-snap-type')
     }
     setGrabbing(false)
   }
@@ -243,7 +271,7 @@ function SectorChips({ current, onPick }: {
         }}
       >
         {data.items.map((s: SectorSummary) => {
-          const on = (s.sector ?? undefined) === current
+          const on = s.sector === null ? current.length === 0 : current.includes(s.sector)
           return (
             <button key={s.sector ?? 'ALL'} type="button"
                     className={`st-sector-chip${on ? ' on' : ''}`}
@@ -382,7 +410,14 @@ export default function StockTable({ filter, setFilter }: Props) {
   const baseDate = list.meta?.baseDate ?? null
   const isEmpty = !list.loading && !list.error && list.items.length === 0
 
-  const pickSector = (sector: string | undefined) => apply({ ...draft, sector })
+  /* 섹터는 여러 개 고른다(09-21 QA). 누르면 켜고 다시 누르면 끈다. "전체 종목" 은 전부 푼다 */
+  const pickSector = (sector: string | undefined) => {
+    const cur = draft.sector ?? []
+    const next = sector === undefined ? []
+      : cur.includes(sector) ? cur.filter((s) => s !== sector)
+      : [...cur, sector]
+    apply({ ...draft, sector: next.length > 0 ? next : undefined })
+  }
 
   /** 같은 필터에 얹혀 있던 보정만 이어받아 한 종목을 덮어쓴다 */
   const putFix = (code: string, on: boolean) =>

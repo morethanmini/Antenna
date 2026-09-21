@@ -108,7 +108,7 @@ public class StockService {
      * 관심 해제 등으로 커서 종목이 필터 밖으로 나가도 다음 페이지가 처음으로 돌아가지 않는다.
      *
      * @param q 종목명·종목코드 부분 일치 · null 이거나 공백이면 안 거른다. 대소문자는 가리지 않는다
-     * @param sector 섹터 필터 · null 이면 전체
+     * @param sectors 섹터 필터 · 그중 하나라도 맞으면 든다. 비었으면 전체
      * @param market 시장 필터 · null 이면 전체
      * @param perMin PER 하한(포함) · null 이면 없음. PER 없는 종목은 어느 범위에도 들지 않는다
      * @param perMax PER 상한(포함) · null 이면 없음
@@ -121,7 +121,7 @@ public class StockService {
     public StockListResponse list(
             Long userId,
             String q,
-            String sector,
+            List<String> sectors,
             Stock.Market market,
             BigDecimal perMin,
             BigDecimal perMax,
@@ -169,8 +169,8 @@ public class StockService {
                         cb.like(cb.lower(root.get("name")), like),
                         cb.like(cb.lower(root.get("code")), like)));
             }
-            if (sector != null) {
-                where.add(cb.equal(root.get("sector"), sector));
+            if (!sectors.isEmpty()) {
+                where.add(root.get("sector").in(sectors));
             }
             if (market != null) {
                 where.add(cb.equal(root.get("market"), market));
