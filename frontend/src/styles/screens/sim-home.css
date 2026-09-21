@@ -111,7 +111,10 @@ body.sim-home-page{
   --nav-glass-hi:linear-gradient(180deg, rgba(255,255,255,.2) 0%, rgba(255,255,255,.1) 55%, rgba(255,255,255,.16) 100%);
   --nav-raise:0 0 0 1px rgba(255,255,255,.1), inset 0 1px 0 rgba(255,255,255,.22);
   --nav-raise-hi:0 0 0 1px rgba(255,255,255,.18), inset 0 1px 0 rgba(255,255,255,.34);
-  --nav-inset:inset 0 0 0 1px rgba(255,255,255,.07), inset 0 2px 5px rgba(0,0,0,.35);
+  /* 파임. **안쪽 위의 그늘 + 아래 모서리의 빛** 이 만든다 — app.css 의 --glass-inset
+     과 같은 방향이고 값만 어두운 판에 맞게 키웠다. 흰 테를 한 바퀴 두르면 사방이
+     밝아져 파인 것이 아니라 떠 있는 것으로 읽힌다(2026-09-21 에 한 번 그렇게 만들었다). */
+  --nav-inset:inset 0 3px 7px rgba(0,0,0,.55), inset 0 -1px 0 rgba(255,255,255,.16);
 }
 /* **뒤가 비쳐야 한다(2026-09-21).** .82 로 깔았더니 바와 본문이 서로 다른 검정
    두 판으로 갈려 경계에 가로 줄이 생겼다. 본문의 그러데이션·도시가 바 밑으로
@@ -147,11 +150,17 @@ body.sim-home-page .navmenu a{color:var(--night-body)}
 body.sim-home-page .navmenu a:hover{
   color:#fff;background-image:var(--nav-glass);box-shadow:var(--nav-raise);
 }
+/* 지금 있는 자리. **app.css 가 걸어 둔 유리 블러를 끈다** — 바가 이미 블러라 그 위에
+   한 겹 더 얹으면 saturate(180%)가 이 칸만 밝히고 채도를 올려, 눌린 자리가 도로
+   떠 보인다(밝은 판에서는 흰 바 위 은은한 서리였지만 여기서는 반대로 작동한다).
+   대신 바보다 확실히 어두운 채움으로 판다 — 어두운 바탕에서 검은 그림자만으로는
+   파임이 보이지 않아, 파였다고 말하는 것은 결국 색의 깊이다. */
 body.sim-home-page .navmenu a.on{
-  color:#fff;background-color:rgba(0,0,0,.18);box-shadow:var(--nav-inset);
+  color:#fff;background-color:rgba(0,0,0,.34);box-shadow:var(--nav-inset);
+  -webkit-backdrop-filter:none;backdrop-filter:none;
 }
 body.sim-home-page .navmenu a.on:hover{
-  background-image:none;background-color:rgba(0,0,0,.26);box-shadow:var(--nav-inset);
+  background-image:none;background-color:rgba(0,0,0,.42);box-shadow:var(--nav-inset);
 }
 
 /* 잔액 칩 · 아이콘 버튼 · 프로필 — 유리 한 벌을 어두운 쪽으로 갈아 끼운다 */
@@ -317,8 +326,14 @@ body.sim-home-page .navbar-auth a:hover{border-color:var(--glow)!important;color
   display:block;height:6px;margin-top:12px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden;
 }
 .sim-home .sh-bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#a99cff,#5457e8);transition:width .4s}
+/* 완료 횟수와 복기 링크가 한 줄에 마주 선다. 둘 다 연습 허브(G-02)에서 옮겨 온
+   것이라, 칸을 새로 만들지 않고 진행률 아래 한 줄로 받는다 — 칸을 더하면 히어로가
+   길어져 낮은 화면에서 한 화면에 안 들어간다. */
+.sh-glass-foot{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:11px}
+.sh-done{font-size:var(--fs-lg);font-weight:var(--fw-bold);color:var(--night-body);white-space:nowrap}
+.sh-done b{color:#fff;font-weight:var(--fw-heavy)}
 .sh-glass-link{
-  display:inline-block;margin-top:10px;font-size:var(--fs-lg);font-weight:var(--fw-bold);color:var(--night-body);
+  font-size:var(--fs-lg);font-weight:var(--fw-bold);color:var(--night-body);white-space:nowrap;
 }
 .sh-glass-link:hover{color:#fff}
 

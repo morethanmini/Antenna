@@ -248,9 +248,8 @@ export default function SeasonResult() {
     <main className="main">
       <div className="main-inner sim-result">
         <nav className="rs-crumb" aria-label="위치">
+          {/* "연습" 칸을 뺐다(2026-09-21) — 연습 허브를 홈에 합쳐 같은 곳이 됐다. */}
           <Link to="/sim">모의투자 홈</Link>
-          <i aria-hidden="true">›</i>
-          <Link to="/sim/practice">연습</Link>
           <i aria-hidden="true">›</i>
           <span>결과</span>
         </nav>
@@ -268,7 +267,7 @@ export default function SeasonResult() {
               <Link className="rs-go" to={`/sim/${seasonId}/play`}>이어서 하기</Link>
             )}
             <Link className="rs-back" to={`/sim/${seasonId}/trades`}>매매일지</Link>
-            <Link className="rs-back" to="/sim/practice">다른 연습 고르기</Link>
+            <Link className="rs-back" to="/sim">다른 연습 고르기</Link>
           </div>
         </header>
 

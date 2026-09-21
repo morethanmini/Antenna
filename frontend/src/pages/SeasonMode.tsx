@@ -13,11 +13,11 @@
 
    **대회(COMPETITION) 시즌으로 들어가는 입구가 이 화면뿐이었다.** 시즌 상세
    (/sim/seasons/:id)는 그대로 있으니 주소를 알면 닿지만, 화면에서 가는 길은 없다.
-   대회를 되살리려면 이 파일이 아니라 연습 허브(G-02 /sim/practice)에 자리를
-   내는 편이 맞다 — 지금은 거기가 모의투자의 시작점이다.
+   대회를 되살리려면 이 파일이 아니라 모의투자 홈(G-01 /sim)에 자리를 내는 편이
+   맞다 — 2026-09-21 연습 허브를 홈에 합치면서 거기가 모의투자의 시작점이 됐다.
    (천하제일 단타대회(J-01 /events/scalping)는 별개다. 그쪽은 인사이트 홈 배너로 간다.) */
 import { Navigate } from 'react-router-dom'
 
 export default function SeasonMode() {
-  return <Navigate to="/sim/practice" replace />
+  return <Navigate to="/sim" replace />
 }

@@ -132,16 +132,16 @@ export const ROUTES: PageMeta[] = [
   // ── G. 모의투자 ──────────────────────────────────────
   /* G-00 모의투자 온보딩은 라우트가 없다 — M-09 와 같이 셸 위 오버레이다
      (components/SimOnboardingTour.tsx, Layout 이 띄운다). */
-  { screen: 'G-01', element: SeasonHome, path: '/sim', title: '모의투자 홈', access: 'user', mode: 'sim', nav: 'home', bodyClass: 'sim-home-page', story: 'ANT-FE-SEASON-HOME' },
+  { screen: 'G-01', element: SeasonHome, path: '/sim', title: '모의투자 홈', access: 'user', mode: 'sim', nav: 'play', bodyClass: 'sim-home-page', story: 'ANT-FE-SEASON-HOME' },
   /* **G-02 모드 선택을 걷어냈다(2026-09-21).** 모의투자를 연습 하나로 가기로 정해져
      고를 것이 없어졌다. 라우트는 넘겨보내는 자리로 남긴다(C-01 과 같은 처리) —
      사이드바·안내 투어가 여기를 가리키던 동안 즐겨찾기에 들어갔을 수 있고, 없는
      경로면 App.tsx 가 인사이트 홈으로 보내 모의투자에서 아예 떨어진다. */
   { screen: 'G-02', element: SeasonMode, path: '/sim/modes', title: '연습하기', access: 'user', mode: 'sim', nav: 'play', story: 'ANT-FE-SEASON-MODE' },
-  /* 모의투자의 시작점. 화면설계서 §3 에는 없는 경로라 A-01 의 OAuth 복귀 구간과
-     같이 부모 화면 ID(G-02)를 그대로 쓴다.
-     프로토타입 screens/sim-practice.html 이 원본이다. */
-  { screen: 'G-02', element: SeasonPractice, path: '/sim/practice', title: '연습하기', access: 'user', mode: 'sim', nav: 'play', bodyClass: 'sim-practice-page', story: 'ANT-FE-SEASON-PRACTICE' },
+  /* **연습 허브도 걷어내 홈(G-01)에 합쳤다(2026-09-21).** 홈과 같은 두 응답으로 같은
+     질문에 답하고 있었다 — 자세한 사정은 pages/SeasonPractice.tsx 머리말에 있다.
+     모드 선택과 같이 넘겨보내는 자리로만 남긴다. */
+  { screen: 'G-02', element: SeasonPractice, path: '/sim/practice', title: '연습하기', access: 'user', mode: 'sim', nav: 'play', story: 'ANT-FE-SEASON-PRACTICE' },
   { screen: 'G-03', element: SeasonJoin, path: '/sim/seasons/:id', title: '시즌 상세 · 참가', access: 'user', mode: 'sim', nav: 'play', story: 'ANT-FE-SEASON-JOIN' },
   { screen: 'G-04', element: SeasonPlay, path: '/sim/:id/play', title: '시즌 진행', access: 'user', mode: 'sim', nav: 'play', bodyClass: 'sim-play-page', story: 'ANT-FE-SEASON-PLAY' },
   /* **G-05 시즌 리서치를 지웠다(2026-09-17).** 프로토타입에서 빠진 뒤로 "결론 나면

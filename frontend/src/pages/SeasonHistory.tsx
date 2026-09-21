@@ -209,8 +209,9 @@ export default function SeasonHistory() {
             <p>내가 참가한 시즌과 성적입니다</p>
           </div>
           {/* 주제를 고르는 곳으로 바로 간다(2026-09-19, QA 09-18). 전에는 모드 선택(/sim/modes)으로
-              보냈는데 거기서 또 "연습하기" 를 눌러야 해서 새로 시작하는 길로 읽히지 않았다. */}
-          <Link className="sh-go" to="/sim/practice">새로 시작하기</Link>
+              보냈는데 거기서 또 "연습하기" 를 눌러야 해서 새로 시작하는 길로 읽히지 않았다.
+              2026-09-21 연습 허브를 홈에 합치면서 주제 카드가 홈으로 옮겨 갔다. */}
+          <Link className="sh-go" to="/sim">새로 시작하기</Link>
         </header>
 
         {/* ── 요약 3칸 ─────────────────────────────────── */}
@@ -283,7 +284,7 @@ export default function SeasonHistory() {
                     ? '연습을 시작하면 마지막으로 본 게임일에서 이어집니다.'
                     : '마지막 게임일까지 가면 성적표와 함께 여기에 쌓입니다.'}
                 </small>
-                <Link className="sh-go" to="/sim/practice">연습 고르러 가기</Link>
+                <Link className="sh-go" to="/sim">연습 고르러 가기</Link>
               </p>
             ) : (
               <ul className="sh-list">
