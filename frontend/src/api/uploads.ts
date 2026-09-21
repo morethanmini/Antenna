@@ -39,14 +39,14 @@ export type UploadedImage = {
 }
 
 /* ── 서버가 거절하는 조건. 같은 값을 여기서도 재 두어 헛업로드를 막는다 ──
-   서버 검사를 대신하는 것이 아니다 — 5MB 를 다 올린 뒤 400 을 받으면 사용자는 기다린 만큼을
+   서버 검사를 대신하는 것이 아니다 — 10MB 를 다 올린 뒤 400 을 받으면 사용자는 기다린 만큼을
    잃는다. 서버 UploadProperties 의 기본값과 같은 수를 쓰고, 어긋나면 서버가 최종 판정한다. */
 
-/** 5MB. 서버 app.uploads.max-bytes 와 같다 */
-export const MAX_BYTES = 5 * 1024 * 1024
+/** 10MB. 서버 app.uploads.max-bytes 와 같다 */
+export const MAX_BYTES = 10 * 1024 * 1024
 
-/** 4천만 화소. 서버 maxPixels 와 같다 — 용량이 작아도 픽셀이 크면 디코딩에서 터진다 */
-export const MAX_PIXELS = 40_000_000
+/** 8천만 화소. 서버 maxPixels 와 같다 — 용량이 작아도 픽셀이 크면 디코딩에서 터진다 */
+export const MAX_PIXELS = 80_000_000
 
 /**
  * 서버 ImageProbe 가 매직 바이트로 알아보는 세 가지.
@@ -134,7 +134,7 @@ export function measure(file: File): Promise<{ width: number; height: number; pr
   })
 }
 
-/** 화소 수. 자르기 전에 본다 — 4천만 화소짜리는 캔버스에 올리는 것부터 실패한다. */
+/** 화소 수. 자르기 전에 본다 — 8천만 화소를 넘기면 캔버스에 올리는 것부터 실패한다. */
 export function checkPixels(width: number, height: number): ApiError | null {
   if (width * height > MAX_PIXELS) {
     return new ApiError({ code: 'IMAGE_TOO_LARGE', message: 'local', field: 'file' }, 400)
@@ -241,7 +241,7 @@ export async function cropToAspect(
       throw new ApiError({ code: CLIENT_ERROR_CODE.CLIENT_UPLOAD_FAILED, message: 'encode failed' }, 0)
     }
     if (blob.size > MAX_BYTES) {
-      // 자르고 줄이고도 5MB 를 넘겼다. 여기서 품질을 더 떨어뜨리면 사용자가 모르는 사이에 흐려진다.
+      // 자르고 줄이고도 10MB 를 넘겼다. 여기서 품질을 더 떨어뜨리면 사용자가 모르는 사이에 흐려진다.
       throw new ApiError({ code: 'FILE_TOO_LARGE', message: 'after crop', field: 'file' }, 400)
     }
 

@@ -95,7 +95,7 @@ public class UploadController {
 
     /**
      * 파일 바이트를 한 번만 읽는다. 멱등 지문과 저장이 같은 배열을 쓴다 — Part 스트림을 두 번
-     * 여는 것은 컨테이너 구현에 기대는 짓이고, 5MB 를 두 번 읽을 이유도 없다.
+     * 여는 것은 컨테이너 구현에 기대는 짓이고, 10MB 를 두 번 읽을 이유도 없다.
      */
     private byte[] read(MultipartFile file) {
         if (file == null || file.isEmpty()) {

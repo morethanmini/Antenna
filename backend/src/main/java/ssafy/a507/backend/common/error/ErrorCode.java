@@ -93,7 +93,7 @@ public enum ErrorCode {
     UNSUPPORTED_IMAGE_TYPE(HttpStatus.BAD_REQUEST, "png · jpeg · webp 이미지만 올릴 수 있습니다."),
     /** 배너는 노출 자리가 고정이라 비율이 어긋나면 잘리거나 늘어난다. 올리는 시점에 막는다. */
     INVALID_IMAGE_RATIO(HttpStatus.BAD_REQUEST, "배너 이미지 비율이 규격과 다릅니다."),
-    FILE_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "파일 용량이 5MB 를 넘습니다."),
+    FILE_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "파일 용량이 10MB 를 넘습니다."),
     /** 용량과 별개다 — 헤더만 큰 크기를 선언한 작은 파일이 렌더 시점에 클라이언트를 마비시킨다. */
     IMAGE_TOO_LARGE(HttpStatus.BAD_REQUEST, "이미지 크기가 너무 큽니다."),
 

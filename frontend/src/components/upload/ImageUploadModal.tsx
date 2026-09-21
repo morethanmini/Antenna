@@ -19,7 +19,7 @@
      서버가 규격 위반으로 거절   → 다른 파일을 골라야 한다
 
    ── 왜 로컬에서 미리 거르는가 ───────────────────────────────
-   서버가 최종 판정자다. 그래도 5MB 를 다 올린 뒤 400 을 받으면 사용자는 기다린 만큼을
+   서버가 최종 판정자다. 그래도 10MB 를 다 올린 뒤 400 을 받으면 사용자는 기다린 만큼을
    잃는다. 같은 code 를 쓰므로 로컬에서 걸리든 서버에서 걸리든 문구가 같다. */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, CLIENT_ERROR_CODE } from '../../api/errors'
@@ -121,7 +121,7 @@ export default function ImageUploadModal({ purpose, onClose, onUploaded, aspect 
       return
     }
 
-    // ③ 화소 수는 자르기 전에 본다 — 4천만 화소짜리는 캔버스에 올리는 것부터 실패한다
+    // ③ 화소 수는 자르기 전에 본다 — 8천만 화소를 넘기면 캔버스에 올리는 것부터 실패한다
     const tooBig = checkPixels(measured.width, measured.height)
     if (tooBig) {
       URL.revokeObjectURL(measured.previewUrl)
