@@ -1095,10 +1095,6 @@
   margin:0 auto 20px;max-width:460px;color:var(--muted);font-size:var(--fs-lg);line-height:1.7;
 }
 .stock-detail-page .sd-done-sub b{color:var(--ink);font-weight:var(--fw-bold)}
-.stock-detail-page .sd-done .sd-commit{
-  max-width:560px;margin:0 auto;padding:14px 16px;
-  border-radius:12px;background:var(--surface-2);text-align:left;
-}
 .stock-detail-page .sd-done-cta{margin:20px 0 0}
 
 /* ── 좁은 화면 ──────────────────────────────────────────
