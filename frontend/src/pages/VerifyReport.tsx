@@ -144,7 +144,7 @@ export default function VerifyReport() {
               {!proof.data.anchor ? (
                 <ul className="vf-checks">
                   <CheckLine verdict="wait" label="아직 배치에 담기지 않았습니다">
-                    앵커 배치는 10분마다 돕니다. 다음 회차가 이 리포트를 묶습니다.
+                    체인 기록 배치는 10분마다 돕니다. 다음 회차가 이 리포트를 묶습니다.
                   </CheckLine>
                 </ul>
               ) : (

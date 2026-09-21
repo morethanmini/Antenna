@@ -95,7 +95,7 @@ export default function Portfolio() {
               <p className="fc-note">
                 봉인된 예측은 10분마다 도는 배치로 묶여 체인에 올라갑니다. 대기는 실패가 아닙니다.
               </p>
-              <Link className="fc-more" to="/ledger">커밋 원장에서 확인 ›</Link>
+              <Link className="fc-more" to="/ledger">확정 기록에서 확인 ›</Link>
             </section>
           </>
         )}

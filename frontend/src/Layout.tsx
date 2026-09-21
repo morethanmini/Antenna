@@ -272,7 +272,7 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
               {/* 자물쇠. 장부(줄 그은 노트)와 사슬도 그려 봤는데, 원장(D-01)이 말하는
                   것은 "기록을 적어 둔 책" 이 아니라 **봉인** 이다 — 한 번 올라가면 못
                   바꾼다는 것. 예측 등록 발판 위에서도 같은 말을 쓴다("예측이 봉인됩니다"). */}
-              <Link className="iconbtn" to="/ledger" aria-label="원장 내역">
+              <Link className="iconbtn" to="/ledger" aria-label="확정 기록">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                      strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="4.6" y="10.4" width="14.8" height="9.4" rx="2.4" />
