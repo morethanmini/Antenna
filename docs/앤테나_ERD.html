@@ -658,7 +658,7 @@ UNIQUE 넷(<code>uq_event_bets_user_stock</code> · <code>uq_event_bets_index</c
       <li><div class="row"><span class="k no">·</span><span class="c">mime</span><span class="t">varchar(20)</span></div><div class="note">image/png · image/jpeg · image/webp 만 허용</div></li>
       <li><div class="row"><span class="k no">·</span><span class="c">width</span><span class="t">int</span></div><div class="note">응답 필드</div></li>
       <li><div class="row"><span class="k no">·</span><span class="c">height</span><span class="t">int</span></div><div class="note">응답 필드</div></li>
-      <li><div class="row"><span class="k no">·</span><span class="c">bytes</span><span class="t">int</span></div><div class="note">5MB 상한 · 초과 시 413</div></li>
+      <li><div class="row"><span class="k no">·</span><span class="c">bytes</span><span class="t">int</span></div><div class="note">10MB 상한 · 초과 시 413</div></li>
       <li><div class="row"><span class="k fk">FK</span><span class="c">post_id <em>→feed_posts</em></span><span class="t">int</span></div><div class="note">피드 글 첨부 · 업로드 시점엔 NULL, POST /posts 의 imageFileIds 로 연결 · 글당 4장 상한은 앱에서 검증</div></li>
       <li><div class="row"><span class="k no">·</span><span class="c">created_at</span><span class="t">timestamptz</span></div><div class="note">업로드 시각</div></li>
     </ul>
