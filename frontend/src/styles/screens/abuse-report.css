@@ -98,6 +98,16 @@
 }
 .ab-error span{ color:var(--body); }
 
+/* 이미 신고한 건 — 실패가 아니라 "이미 들어가 있다" 는 알림이다. 상자 모양은
+   오류와 같게 두고 색만 중립으로 바꾼다(코치 QA 2026-09-21). */
+.ab-notice{
+  display:flex; flex-direction:column; align-items:flex-start; gap:4px;
+  margin:12px 0 0; padding:10px 12px;
+  border:1px solid var(--rule); border-radius:9px; background:var(--surface-2);
+  font-size:var(--fs-md); line-height:1.6; font-weight:var(--fw-bold); color:var(--ink);
+}
+.ab-notice span{ font-weight:var(--fw-normal); color:var(--muted); }
+
 /* ── 버튼 ────────────────────────────────────────────── */
 .ab-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:16px; }
 

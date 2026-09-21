@@ -81,6 +81,8 @@ export default function AbuseReportModal({
   }
 
   const text = error ? reportErrorText(error, targetType) : null
+  /* 이미 신고한 건이면 빨강이 아니라 알림으로 그린다 — 실패가 아니다 */
+  const duplicated = error?.code === ERROR_CODE.DUPLICATE_REPORT
 
   return (
     <div className="ab-backdrop" onClick={close} role="presentation">
@@ -147,8 +149,10 @@ export default function AbuseReportModal({
               {detailMissing ? '기타를 고르면 상세 내용을 적어야 합니다.' : undefined}
             </FieldError>
 
+            {/* 중복은 빨강이 아니다 — 신고는 이미 들어가 있고 잘못한 것이 없다.
+                읽어 주는 것은 둘 다 role=alert 로 같다(눌러서 생긴 결과다) */}
             {text && (
-              <p className="ab-error" role="alert">
+              <p className={duplicated ? 'ab-notice' : 'ab-error'} role="alert">
                 {text.title}
                 {text.hint && <span className="ab-sub">{text.hint}</span>}
               </p>
@@ -172,18 +176,28 @@ export default function AbuseReportModal({
 
 /* 중복 신고는 "무엇을" 이미 신고했는지까지 말한다. 공용 문구(errorText)는
    "이미 신고한 대상입니다" 로 대상 종류를 모르고 쓰인다 — 그쪽을 고치면 글·댓글
-   신고가 붙었을 때 틀린 말이 되므로, 대상을 아는 이 창에서만 바꿔 쓴다. */
+   신고가 붙었을 때 틀린 말이 되므로, 대상을 아는 이 창에서만 바꿔 쓴다.
+
+   **여기서 일어난 일은 실패가 아니다**(코치 QA 2026-09-21). 먼저 넣은 신고가
+   살아 있어서 한 번 더 받지 않는 것뿐이다. 그런데 사유를 고르고 상세까지 적은
+   끝에 빨간 글씨가 뜨니, 제 신고가 잘못됐다는 말로 읽혔다. 말은 지금 상태를
+   알려 주는 쪽으로, 색은 알림(notice)으로 바꾼다.
+
+   그 전에 막지 못하는 이유는 위 submit 머리말에 적어 뒀다 — 이미 신고했는지
+   물어볼 API 가 없어 화면이 먼저 알 길이 없다. */
 const DUPLICATE_TITLE: Record<AbuseTargetType, string> = {
-  USER: '이미 신고한 유저입니다',
-  POST: '이미 신고한 글입니다',
-  COMMENT: '이미 신고한 댓글입니다',
-  REPORT: '이미 신고한 리포트입니다',
-  REPORT_COMMENT: '이미 신고한 댓글입니다',
+  USER: '이 사용자는 이미 신고하셨습니다',
+  POST: '이 글은 이미 신고하셨습니다',
+  COMMENT: '이 댓글은 이미 신고하셨습니다',
+  REPORT: '이 리포트는 이미 신고하셨습니다',
+  REPORT_COMMENT: '이 댓글은 이미 신고하셨습니다',
 }
+
+const DUPLICATE_HINT = '먼저 넣으신 신고를 관리자가 확인하고 있습니다. 처리가 끝나면 다시 신고할 수 있습니다.'
 
 function reportErrorText(error: ApiError, targetType: AbuseTargetType) {
   const text = errorText(error)
   return error.code === ERROR_CODE.DUPLICATE_REPORT
-    ? { ...text, title: DUPLICATE_TITLE[targetType] }
+    ? { ...text, title: DUPLICATE_TITLE[targetType], hint: DUPLICATE_HINT }
     : text
 }
