@@ -95,8 +95,8 @@
 .watchlist-page .wl-predict:hover{background:var(--brand-soft)}
 .watchlist-page .wl-predict:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 
-/* 관심 해제. 담긴 상태만 있는 자리라 별은 늘 채워져 있다 —
-   B-02 의 토글과 달리 여기서는 빼는 일만 한다 */
+/* 관심 별 토글. 들어올 때는 다 담긴 상태라 별이 채워져 있고, 누르면
+   빈 별이 된다 — B-02 의 토글과 같다 */
 .watchlist-page .wl-drop{
   display:inline-flex;align-items:center;justify-content:center;
   width:22px;height:22px;padding:0;border:0;border-radius:6px;background:none;
@@ -104,6 +104,11 @@
   transition:color .14s,transform .12s;
 }
 .watchlist-page .wl-drop:hover{color:var(--muted);transform:scale(1.1)}
+/* 관심을 끈 줄 — **행은 그대로 두고 별만 비운다**(코치 QA 2026-09-21).
+   잘못 눌렀으면 같은 자리를 한 번 더 누르면 된다. 그래서 꺼진 별의 hover 는
+   다시 금색이다 — 누르면 무엇이 되는지를 미리 보여 준다. */
+.watchlist-page .wl-drop.is-off{color:var(--faint)}
+.watchlist-page .wl-drop.is-off:hover{color:var(--gold)}
 .watchlist-page .wl-drop:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 
 /* 좁은 화면 — 미니차트와 지름길을 먼저 접는다. 종목·종가·등락률이 남으면
