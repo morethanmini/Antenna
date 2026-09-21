@@ -154,27 +154,6 @@ function SectorChips({ current = [], onPick }: {
     return () => ro.disconnect()
   }, [measure, data])
 
-  /* 마우스 휠(세로)로도 넘긴다(09-21 QA — "섹터 선택 스크롤이 쉽지 않다"). 스크롤바를
-     숨긴 가로 줄이라 휠을 굴려도 꿈쩍 않았다. 세로 휠만 가로로 돌리고, 트랙패드의 가로
-     밀기(deltaX 가 큰 것)는 브라우저에 맡긴다. 끝에 닿아 더 갈 데가 없으면 가로채지 않는다 —
-     페이지 스크롤이 칩 줄에서 멈추면 안 된다. React onWheel 은 passive 라 preventDefault 가
-     안 먹어 직접 붙인다. 부드러운 스크롤을 끄고(instant) 옮긴다 — 켜 두면 휠 한 칸마다
-     애니메이션이 쌓여 늦게 따라온다. */
-  useEffect(() => {
-    const el = trackRef.current
-    if (!el) return
-    const onWheel = (e: WheelEvent) => {
-      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return
-      const max = el.scrollWidth - el.clientWidth
-      const canMove = e.deltaY > 0 ? el.scrollLeft < max - 1 : el.scrollLeft > 1
-      if (!canMove) return
-      e.preventDefault()
-      el.scrollBy({ left: e.deltaY, behavior: 'instant' })
-    }
-    el.addEventListener('wheel', onWheel, { passive: false })
-    return () => el.removeEventListener('wheel', onWheel)
-  }, [data])
-
   /* 마우스만 받는다. 손가락은 브라우저가 이미 스크롤해 주는데 여기서 한 번 더
      scrollLeft 를 쓰면 관성 스크롤과 싸워 끊긴다. 왼쪽 버튼이 아니면(가운데·오른쪽)
      붙잡지 않는다 — 가운데 버튼은 브라우저의 자동 스크롤 자리다. */
