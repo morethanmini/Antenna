@@ -18,7 +18,7 @@
    (§4 C-03). 잠긴 카드도 종목·방향·작성자·적중률까지는 보여준다 — 존재를 감추면
    구독 유인이 사라진다(§5). */
 import { Link } from 'react-router-dom'
-import { isAwaitingVerdict } from '../../api/predictions'
+import { horizonLabel, isAwaitingVerdict } from '../../api/predictions'
 import type { Direction, PredictionStatus as Status } from '../../api/predictions'
 import LockedCard from '../state/LockedCard'
 import PredictionStatus from './PredictionStatus'
@@ -101,7 +101,7 @@ export default function PredictionCard({ data }: { data: PredictionCardData }) {
         {horizon !== undefined && (
           <div>
             <dt>기간</dt>
-            <dd className="num">{`${horizon}영업일`}</dd>
+            <dd className="num">{horizonLabel(horizon)}</dd>
           </div>
         )}
         {dueDate && (

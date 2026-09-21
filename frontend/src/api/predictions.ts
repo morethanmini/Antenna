@@ -48,7 +48,15 @@ export type Horizon = number
 /** 고르개 눈금에만 쓰는 참조값. 값 자체는 이 넷에 묶이지 않는다. */
 export const HORIZON_TICKS = [3, 30, 60, 90] as const
 
+/**
+ * 등록된 예측의 기간. **단위를 영업일이라 적지 않는다** — 09-20(ANT-PRED-11) 전에 등록된 예측은 달력일로
+ * 만기를 잡았고, 대회 예측은 회차가 정한 날짜다. 응답에 어느 규칙인지 구분 값이 없어 "3영업일 · 만기 9/20(일)"
+ * 처럼 옆의 만기일과 어긋난다(QA 09-21). 정확한 날은 곁에 적는 만기일이 말한다.
+ */
 export const horizonLabel = (h: Horizon) => `${h}일`
+
+/** 지금 고르는 기간. 새로 등록하는 예측은 영업일로 센다(ANT-PRED-11) — 고르개·안내에만 쓴다. */
+export const horizonPickLabel = (h: Horizon) => `${h}영업일`
 
 /**
  * 만기일이 지났는데 아직 판정 전인가 (ANT-PRED-11).
@@ -565,6 +573,13 @@ export const formatTargetPrice = (price: number) => price.toFixed(2)
  * 조용히 반올림하면 서명한 값과 서버가 해시한 값이 달라진다.
  */
 export const targetPriceInScale = (price: number) => Number(price.toFixed(2)) === price
+
+/**
+ * 정수부 12자리까지. 서버 PredictionCreateRequest 의 @Digits(integer = 12) · DB numeric(14,2) 와 같다.
+ * 넘는 값은 서명까지 받은 뒤 400 으로 떨어지므로(QA 09-21 — 18자리가 들어가 서명 발판이 열렸다) 폼에서 막는다.
+ */
+export const TARGET_PRICE_LIMIT = 1_000_000_000_000
+export const targetPriceInRange = (price: number) => price < TARGET_PRICE_LIMIT
 
 /**
  * 커밋 문자열의 필드 줄 다섯 개. 서버 CommitPayload.lines() 와 같다.

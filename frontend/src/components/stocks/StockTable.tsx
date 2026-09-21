@@ -586,10 +586,10 @@ export default function StockTable({ filter, setFilter }: Props) {
                           {s.changeRate === null ? DASH : signed(s.changeRate)}
                         </span>
                         <span className="st-per num">
-                          {s.per === null ? DASH : `${s.per.toFixed(1)}x`}
+                          {s.per === null ? DASH : `${s.per.toFixed(1)}배`}
                         </span>
                         <span className="st-per num">
-                          {s.pbr === null ? DASH : `${s.pbr.toFixed(2)}x`}
+                          {s.pbr === null ? DASH : `${s.pbr.toFixed(2)}배`}
                         </span>
                         <SentimentBar upRatio={s.upRatio} count={s.predictionCount} />
                       </Link>
