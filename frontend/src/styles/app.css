@@ -546,24 +546,9 @@ button{border:0;background:none;cursor:pointer}
 .accountmenu-pop .is-danger{color:var(--danger)}
 .accountmenu-pop .is-danger:hover{background:#fdf1f1;color:var(--danger)}
 
-/* ── 검색줄 ───────────────────────────────────────────
-   아이콘을 누르면 네비바 바로 아래로 내려온다. 화면을 덮지 않는다 —
-   덮으면 "잠깐 찾아보고 닫는다" 는 성격이 사라진다. */
-.navsearch{
-  position:fixed;top:var(--topbar-h);left:0;right:0;z-index:29;
-  padding:12px 20px;
-  background:var(--surface);border-bottom:1px solid var(--rule);
-  box-shadow:0 12px 24px -18px rgba(20,20,27,.35);
-}
-.navsearch-form{position:relative;max-width:640px;margin-inline:auto}
-.navsearch-form svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--faint)}
-.navsearch-form input{
-  width:100%;height:38px;padding:0 14px 0 40px;
-  border:1px solid var(--rule);border-radius:999px;background:var(--surface);
-  color:var(--ink);
-}
-.navsearch-form input::placeholder{color:var(--faint)}
-.navsearch-form input:focus{border-color:var(--brand);outline:none}
+/* 검색줄(.navsearch)이 여기 있었다 — 2026-09-21 에 걷었다. 상단바의 검색 버튼이
+   원장 내역으로 바뀌면서 이 줄을 열 길이 없어졌다. 되살리려면 git 역사에서
+   Layout 의 NavSearch 와 함께 꺼낸다. */
 
 @media(prefers-reduced-motion:reduce){
   .navbar a,.navmenu a,.modeswitch a,.modeswitch-thumb,.wallet,.iconbtn,.avatarbtn{transition:none}
