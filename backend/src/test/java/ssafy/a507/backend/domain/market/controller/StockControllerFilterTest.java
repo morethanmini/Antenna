@@ -152,6 +152,18 @@ class StockControllerFilterTest {
     }
 
     @Test
+    @DisplayName("검색어는 50자까지 — 넘으면 400 INVALID_REQUEST field=q. 통합 검색과 같은 상한이다")
+    void 검색어_길이_상한() throws Exception {
+        mockMvc.perform(get(URL).param("q", "가".repeat(50)).with(user(me)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get(URL).param("q", "가".repeat(51)).with(user(me)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.field").value("q"));
+    }
+
+    @Test
     @DisplayName("watchedOnly 는 내 관심 종목만 — 남의 목록에는 아무것도 없다")
     void 관심_종목만_거른다() throws Exception {
         mockMvc.perform(get(URL).param("watchedOnly", "true").with(user(me)))

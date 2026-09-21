@@ -468,6 +468,8 @@ export default function StockTable({ filter, setFilter }: Props) {
             <input
               type="search" className="st-search" placeholder="종목명 또는 코드"
               aria-label="종목명 또는 종목코드로 찾기"
+              // 서버 StockService.MAX_QUERY_LENGTH 와 같은 값이다 — 넘기면 400 이다
+              maxLength={50}
               value={draft.q ?? ''}
               onChange={(e) => {
                 const v = e.target.value
