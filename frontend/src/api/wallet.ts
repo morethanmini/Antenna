@@ -33,7 +33,8 @@ export type WalletBalance = {
   spent30d: string
 }
 
-/* 필터로 고를 수 있는 사유는 명세에 적힌 7종이 전부다. 임의 사유를 만들지 않는다. */
+/* 필터로 고를 수 있는 사유는 서버 TokenReason 어휘 그대로다. 임의 사유를 만들지 않는다.
+   대회 배팅 세 가지(EVENT_*)가 빠져 있어 단타대회 내역이 전부 "기타" 로 보였다(QA 09-21). */
 export const LEDGER_REASONS = [
   'SIGNUP_BONUS',
   'SLOT_OVER',
@@ -42,6 +43,9 @@ export const LEDGER_REASONS = [
   'AD_PAY',
   'SEASON_ENTRY',
   'SEASON_REWARD',
+  'EVENT_STAKE',
+  'EVENT_PAYOUT',
+  'EVENT_REFUND',
 ] as const
 
 export type LedgerReason = (typeof LEDGER_REASONS)[number]
@@ -50,7 +54,7 @@ export type LedgerEntry = {
   /** 부호 있는 증감. 양수 획득 · 음수 사용 */
   delta: string
   /**
-   * 보통은 LedgerReason 7종이다. 필터 없이 받으면 옛 테스트·수동 tx 의 원문(예: MIGRATION)도 온다 —
+   * 보통은 LedgerReason 중 하나다. 필터 없이 받으면 옛 테스트·수동 tx 의 원문(예: MIGRATION)도 온다 —
    * 서버가 잔액 합과 목록을 맞추려고 숨기지 않는다(ANT-TOKEN-04). 그래서 string 으로 받고 reasonLabel 로 그린다.
    */
   reason: string
@@ -67,9 +71,12 @@ export const REASON_LABEL: Record<LedgerReason, string> = {
   // 대회 모드는 접었다(09-11 팀 결정). 서버 사유 이름(SEASON_*)대로 시즌으로 부른다
   SEASON_ENTRY: '시즌 참가비',
   SEASON_REWARD: '시즌 보상',
+  EVENT_STAKE: '대회 배팅',
+  EVENT_PAYOUT: '대회 배당',
+  EVENT_REFUND: '대회 환불',
 }
 
-/** 원장 한 줄의 사유 라벨. 7종 밖의 원문이면 "기타" — 빈 칸으로 두면 무엇이 오갔는지 읽을 수 없다. */
+/** 원장 한 줄의 사유 라벨. 어휘 밖의 원문이면 "기타" — 빈 칸으로 두면 무엇이 오갔는지 읽을 수 없다. */
 export function reasonLabel(reason: string) {
   return (REASON_LABEL as Record<string, string>)[reason] ?? '기타'
 }
