@@ -58,6 +58,7 @@ import {
 import type {
   CommitFields, Direction, Horizon, PredictionDraft,
 } from '../../api/predictions'
+import { isTradingDay } from '../../api/marketHolidays'
 import { requestNonce } from '../../api/wallet'
 import { emptyPredictForm, type PredictForm, type PredictResult } from './predictForm'
 import { connectAddress, hasWallet, personalSign } from '../../wallet/provider'
@@ -86,13 +87,13 @@ const commitFields = (d: PredictionDraft, hash: string): CommitFields => ({
    horizon 은 **캘린더일**이다(결정 B5). 서버가 만기일 = 기준일 + horizon 일로 잡고,
    기준일은 등록 시점의 "다음 평일" 이다. 휴장일을 세지 않으므로 클라이언트가 서버와
    똑같이 계산할 수 있다 — 예전처럼 어긋나지 않는다. */
-/* 서버 BusinessDays 와 같은 규칙이다 — 기준일은 다음 평일, 만기일은 거기서 평일만 horizon 번 센 날
-   (ANT-PRED-11). 전에는 달력일로 더해 수요일 + 3 이 토요일로 찍혔다. 공휴일은 모른다 — 걸리면
-   서버가 그 이후 첫 거래일 종가로 판정한다. 여기와 서버가 어긋나면 등록 전에 본 만기와 등록 뒤의
-   만기가 달라지므로 **둘을 같이 고친다.** */
+/* 서버 BusinessDays 와 같은 규칙이다 — 기준일은 다음 거래일, 만기일은 거기서 거래일만 horizon 번 센 날
+   (ANT-PRED-11). 전에는 달력일로 더해 수요일 + 3 이 토요일로 찍혔다. 휴장일도 건너뛴다(ANT-PRED-12) —
+   추석 전날 등록하면 기준일이 연휴 뒤다. 여기와 서버가 어긋나면 등록 전에 본 만기와 등록 뒤의
+   만기가 달라지므로 **둘을 같이 고친다**(휴장일 목록은 api/marketHolidays.ts ↔ MarketHolidays.java). */
 function dueLabel(horizon: Horizon) {
   const d = new Date()
-  const nextWeekday = () => { do { d.setDate(d.getDate() + 1) } while (d.getDay() === 0 || d.getDay() === 6) }
+  const nextWeekday = () => { do { d.setDate(d.getDate() + 1) } while (!isTradingDay(d)) }
   nextWeekday() // 기준일. 토·일에 등록하면 월요일이다
   for (let i = 0; i < horizon; i++) nextWeekday()
   return `${d.getMonth() + 1}.${d.getDate()}`
@@ -833,7 +834,7 @@ export default function PredictTab({
                 이미 말하고 있어, 같은 말을 한 번 더 길게 적는 셈이다 */}
             {!eventMode && (
               <p className="sd-help">
-                <b className="num">{horizonPickLabel(horizon)}</b> · 만기 <b className="num">{dueLabel(horizon)}</b> · 기준일(다음 평일)부터 셉니다(주말 제외). 공휴일에 걸리면 그다음 거래일 종가로 판정합니다. 기준가는 기준일 종가로 확정됩니다.
+                <b className="num">{horizonPickLabel(horizon)}</b> · 만기 <b className="num">{dueLabel(horizon)}</b> · 기준일(다음 거래일)부터 셉니다(주말·휴장일 제외). 기준가는 기준일 종가로 확정됩니다.
               </p>
             )}
           </li>

@@ -61,7 +61,7 @@ import {
   formatAnchorAgo, formatBusinessDate,
   type Anchor, type AnchorStatus, type LedgerCommit,
 } from '../api/anchors'
-import { horizonLabel, phaseOf } from '../api/predictions'
+import { phaseOf, revealLabel } from '../api/predictions'
 import type { CursorList } from '../api/types'
 import AnchorBadge from '../components/AnchorBadge'
 import { ANCHOR_BATCH_CYCLE } from '../components/prediction/AnchorStage'
@@ -306,7 +306,8 @@ function PredictionRow({ c }: { c: Extract<LedgerCommit, { kind: 'PREDICTION' }>
         /* 종목이 지워진 예측. 빈칸으로 두면 데이터가 깨진 것처럼 읽힌다 */
         <b className="lg-stock is-none">종목 없음</b>
       )}
-      <span className="lg-horizon">{horizonLabel(c.horizon)}</span>
+      {/* "3일" 대신 공개일(ANT-PRED-12). 이 줄에는 만기일도 없어서 언제 열리는지 알 길이 없었다 */}
+      <span className="lg-horizon">{c.revealDate ? `공개일 ${revealLabel(c.revealDate, c.horizon)}` : revealLabel(null, c.horizon)}</span>
       <PredictionStatus status={c.status} />
 
       {phaseOf(c.status) === 'JUDGED' && (

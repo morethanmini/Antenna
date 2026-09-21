@@ -67,6 +67,7 @@ function toCard(p: ChannelPrediction) {
     targetPrice: p.targetPrice,
     errorRate: p.errorRate,
     horizon: p.horizon,
+    revealDate: p.revealDate,
     dueDate: p.dueDate,
   }
 }

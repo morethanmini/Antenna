@@ -37,7 +37,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useCursorList } from '../api/useCursorList'
-import { fetchMyPredictions, hitRatePercent, horizonLabel, isAwaitingVerdict, phaseOf } from '../api/predictions'
+import { fetchMyPredictions, hitRatePercent, isAwaitingVerdict, phaseOf, revealLabel } from '../api/predictions'
 import type { MyPrediction, MyPredictionMeta } from '../api/predictions'
 import { ANCHOR_BATCH_CYCLE, isAnchored } from '../components/prediction/AnchorStage'
 import EmptyState from '../components/state/EmptyState'
@@ -392,8 +392,9 @@ function Figures({ p }: { p: MyPrediction }) {
         <dd className="num">{won(p.targetPrice)}</dd>
       </div>
       <div>
-        <dt>예측 기간</dt>
-        <dd className="num">{horizonLabel(p.horizon)}</dd>
+        {/* "3일" 대신 공개일(ANT-PRED-12) */}
+        <dt>{p.revealDate ? '공개일' : '예측 기간'}</dt>
+        <dd className="num">{revealLabel(p.revealDate, p.horizon)}</dd>
       </div>
       <div>
         <dt>만기일</dt>
