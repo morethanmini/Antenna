@@ -14,6 +14,7 @@ import ssafy.a507.backend.domain.chain.entity.TokenLedger;
 import ssafy.a507.backend.domain.chain.indexer.TokenIndexer;
 import ssafy.a507.backend.domain.chain.relay.TokenReason;
 import ssafy.a507.backend.domain.chain.repository.TokenLedgerRepository;
+import ssafy.a507.backend.domain.monetize.repository.AdBannerRepository;
 
 /**
  * 지갑 잔액·원장 조회 (ANT-TOKEN-04, 화면 H-01).
@@ -44,6 +45,7 @@ public class WalletTokenQueryService {
 
     private final TokenLedgerRepository ledger;
     private final TokenIndexer indexer;
+    private final AdBannerRepository banners;
 
     @Transactional(readOnly = true)
     public WalletBalanceResponse balance(Long userId) {
@@ -58,7 +60,8 @@ public class WalletTokenQueryService {
                 SYMBOL,
                 indexer.lastSyncedAt().orElse(null),
                 earned.toString(),
-                spent.toString());
+                spent.toString(),
+                banners.sumPendingPrice(userId).toString());
     }
 
     /**

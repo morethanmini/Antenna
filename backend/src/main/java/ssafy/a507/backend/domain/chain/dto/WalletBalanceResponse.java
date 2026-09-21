@@ -21,6 +21,10 @@ import java.time.Instant;
  *     아직이면 null
  * @param earned30d 최근 30일에 들어온 ANT 합(양수 delta 의 합). 없으면 "0"
  * @param spent30d 최근 30일에 나간 ANT 합. <b>양수로 내린다</b> — 부호를 붙일지는 화면이 정한다
+ * @param adHeld 심사 중(PENDING) 광고 게재료 합. 없으면 "0". 승인제(ANT-ADMIN-03)에서는 신청 때 돈이 안 나가고
+ *     승인 때 소각되므로 그 사이엔 원장에 아무 줄도 없다 — 그래서 "광고 지불 내역이 사라졌다" 로 보였다(09-21 QA).
+ *     {@code balance} 에서 빼지 않은 값이다: 원장 합이 잔액이라는 규칙을 지키고, 묶여 있다는 사실만 따로 알린다.
+ *     가용잔액({@code AvailableBalanceService})은 이 돈을 이미 뺀다
  */
 public record WalletBalanceResponse(
-        String balance, String symbol, Instant syncedAt, String earned30d, String spent30d) {}
+        String balance, String symbol, Instant syncedAt, String earned30d, String spent30d, String adHeld) {}

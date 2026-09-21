@@ -21,6 +21,9 @@
 .wallet-amount small{color:var(--muted);font-size:var(--fs-xl);font-weight:var(--fw-heavy)}
 /* 대사 시각 — 실시간 잔액이 아니라는 걸 숫자 바로 아래에서 알린다 */
 .wallet-synced{margin:2px 0 0;color:var(--faint);font-size:var(--fs-sm);font-weight:var(--fw-bold)}
+/* 심사 중 광고 게재료 — 잔액에서 빠지진 않았지만 쓸 수 없는 돈이라 한 줄로 알린다 */
+.wallet-held{margin:8px 0 0;color:var(--muted);font-size:var(--fs-sm);line-height:1.6}
+.wallet-held b{color:var(--ink)}
 
 /* ── 미연동 안내 ─────────────────────────────────────── */
 /* EmptyState 를 쓰지 않는다 — M-01 은 라우트 없는 모달이라 링크가 아니라 버튼이다 */
