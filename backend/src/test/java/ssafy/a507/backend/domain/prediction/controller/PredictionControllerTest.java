@@ -172,6 +172,21 @@ class PredictionControllerTest {
     }
 
     @Test
+    @DisplayName("같은 키·같은 예측이면 서명이 달라도 재생한다 — 화면은 재시도마다 nonce 를 새로 받아 다시 서명한다")
+    void 멱등_재서명_재시도() throws Exception {
+        /* 위 테스트는 같은 DTO 를 두 번 보내 서명까지 같았다. 실제 화면의 재시도는 서명이 반드시 다르다 —
+           서명이 해시에 들어가 있던 동안 이 경로는 409 IDEMPOTENCY_KEY_REUSED 였다(QA 09-21). */
+        PredictionCreateRequest draft = request(SAMSUNG, "UP", "82000", 30, List.of());
+        String key = UUID.randomUUID().toString();
+
+        long first = idOf(perform(signed(draft, wallet), key).andExpect(status().isCreated()));
+        long second = idOf(perform(signed(draft, wallet), key).andExpect(status().isCreated()));
+
+        assertThat(second).isEqualTo(first);
+        assertThat(count("SELECT count(*) FROM predictions")).isEqualTo(1);
+    }
+
+    @Test
     @DisplayName("같은 키로 다른 본문을 보내면 409 IDEMPOTENCY_KEY_REUSED · 키가 없으면 400")
     void 멱등키_오용() throws Exception {
         String key = UUID.randomUUID().toString();

@@ -408,6 +408,33 @@ class EventEntryControllerTest {
         assertThat(poolRelayer.callsOf("placeBet")).hasSize(5);
     }
 
+    @Test
+    @DisplayName("같은 멱등키·같은 항목이면 서명이 달라도 재생한다 — 화면은 재시도마다 nonce 를 새로 받아 다시 서명한다")
+    void 멱등_재서명_재요청() throws Exception {
+        /* 위 테스트는 같은 body 문자열을 두 번 보내 서명까지 같았다. 실제 화면의 재시도는 서명이 반드시
+           다르다 — 해시가 서명이던 동안 이 경로는 409 IDEMPOTENCY_KEY_REUSED 였다(QA 09-21).
+           items(5) 는 부를 때마다 nonce 를 새로 받아 서명하므로 두 본문은 서명만 다르다. */
+        mockMvc.perform(entries(items(5), "key-1")).andExpect(status().isAccepted());
+
+        mockMvc.perform(entries(items(5), "key-1"))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.entries.length()").value(5));
+
+        assertThat(count("SELECT count(*) FROM predictions")).isEqualTo(5);
+        assertThat(poolRelayer.callsOf("placeBet")).hasSize(5);
+    }
+
+    @Test
+    @DisplayName("같은 멱등키로 다른 항목을 보내면 409 IDEMPOTENCY_KEY_REUSED — 서명을 뺀 뒤에도 내용은 본다")
+    void 멱등키_다른_항목() throws Exception {
+        mockMvc.perform(entries(items(5), "key-1")).andExpect(status().isAccepted());
+
+        mockMvc.perform(entries(itemsFrom(5, 1), "key-1"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("IDEMPOTENCY_KEY_REUSED"));
+        assertThat(count("SELECT count(*) FROM predictions")).isEqualTo(5);
+    }
+
     // ── 전송 실패 ────────────────────────────────────────
 
     @Test

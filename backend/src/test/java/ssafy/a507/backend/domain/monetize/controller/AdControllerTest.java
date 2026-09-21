@@ -311,6 +311,57 @@ class AdControllerTest {
     }
 
     @Test
+    @DisplayName("같은 키·같은 신청이면 서명이 달라도 재생한다 — 화면은 재시도마다 nonce 를 새로 받아 다시 서명한다")
+    void 멱등_재서명_재요청() throws Exception {
+        /* 위 테스트는 같은 body 문자열을 두 번 보내 서명까지 같았다. 실제 화면에는 그런 재시도가 없다 —
+           nonce 는 한 번 쓰면 타 버려서 다시 누르면 서명이 반드시 달라진다. 서명이 해시에 들어가 있던 동안
+           이 경로는 409 IDEMPOTENCY_KEY_REUSED 였다(QA 09-21). */
+        String first = jsonValue(
+                mockMvc.perform(create(imageFileId, "https://ad.example.com", 7, "key-resign"))
+                        .andExpect(status().isCreated()).andReturn(), "adId");
+        String second = jsonValue(
+                mockMvc.perform(create(imageFileId, "https://ad.example.com", 7, "key-resign"))
+                        .andExpect(status().isCreated()).andReturn(), "adId");
+
+        assertThat(second).isEqualTo(first);
+        assertThat(bannersOf(advertiser)).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("같은 키로 다른 광고를 보내면 409 IDEMPOTENCY_KEY_REUSED — 서명을 뺀 뒤에도 내용은 본다")
+    void 멱등키_다른_신청() throws Exception {
+        mockMvc.perform(create(imageFileId, "https://ad.example.com", 7, "key-other"))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(create(imageFileId, "https://ad.example.com", 3, "key-other"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("IDEMPOTENCY_KEY_REUSED"));
+        assertThat(bannersOf(advertiser)).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("신청 → 취소 → 새 키로 같은 내용 재신청은 새 신청으로 접수된다 — 화면이 접수 뒤 키를 버린다")
+    void 취소_뒤_재신청() throws Exception {
+        relayer.withBalance(BigInteger.valueOf(7_000));
+        String first = jsonValue(
+                mockMvc.perform(create(imageFileId, "https://ad.example.com", 7, "key-before-cancel"))
+                        .andExpect(status().isCreated()).andReturn(), "adId");
+        mockMvc.perform(delete(URL + "/" + first)
+                        .with(user(String.valueOf(advertiser.getId()))).with(csrf()))
+                .andExpect(status().isNoContent());
+
+        String second = jsonValue(
+                mockMvc.perform(create(imageFileId, "https://ad.example.com", 7, "key-after-cancel"))
+                        .andExpect(status().isCreated()).andReturn(), "adId");
+
+        assertThat(second).isNotEqualTo(first);
+        // 취소된 것 하나 · 심사 대기 하나. 홀드는 새 신청 몫만 잡힌다
+        assertThat(bannersOf(advertiser)).extracting(AdBanner::getStatus)
+                .containsExactlyInAnyOrder(AdBanner.Status.REJECTED, AdBanner.Status.PENDING);
+        assertThat(availableBalance.of(advertiser)).isEqualTo(BigInteger.ZERO);
+    }
+
+    @Test
     @DisplayName("노출 목록은 ACTIVE 이면서 기간 안인 배너만 담는다")
     void 활성_목록() throws Exception {
         Instant now = Instant.now();

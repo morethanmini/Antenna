@@ -54,8 +54,12 @@ public class ReportController {
                 userId,
                 CREATE_ENDPOINT,
                 idempotencyKey,
-                // record 의 toString 은 모든 구성요소를 순서대로 담아 같은 입력에 같은 문자열을 준다.
-                IdempotencyStore.hash(request.toString()),
+                /* 서명은 해시에 넣지 않는다(2026-09-21). 전에는 request.toString() 이라 서명까지 들어갔다 — 화면은
+                   재시도마다 nonce 를 새로 받아 다시 서명하므로, 발행은 됐는데 응답만 잃은 재시도가 409 로 막혔다.
+                   막힌 사용자가 제목을 한 글자 고치면 화면이 새 키를 내어(ReportNew edited) 같은 리포트가 두 번
+                   발행된다 — 위에 적은 바로 그 사고다. 사용자가 쓴 값만 본다. */
+                IdempotencyStore.hash(
+                        request.title() + "|" + request.body() + "|" + request.visibility()),
                 () -> String.valueOf(reportService.create(request)));
 
         return ResponseEntity.status(HttpStatus.CREATED)
