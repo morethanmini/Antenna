@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /** 모든 오류 응답을 API 명세 §1 형식 하나로 모은다. */
@@ -108,6 +109,23 @@ public class GlobalExceptionHandler {
         log.debug("업로드 용량 초과", e);
         return ResponseEntity.status(ErrorCode.FILE_TOO_LARGE.getStatus())
                 .body(ErrorResponse.of(ErrorCode.FILE_TOO_LARGE, "file"));
+    }
+
+    /**
+     * 깨진 multipart — 닫는 경계가 없거나, 본문이 중간에 끊겼거나, {@code boundary} 가 빠졌다.
+     *
+     * <p>없으면 마지막 그물로 떨어져 <b>500 이 나간다</b>(QA 09-21 실측). 사용자가 올리다 취소하거나
+     * 망이 끊기기만 해도 생기는 일이라 그때마다 {@code ERROR} 스택이 쌓였다. 본문을 못 읽은 것이므로
+     * 위 {@code HttpMessageNotReadableException} 과 같은 400 이다.
+     *
+     * <p>용량 초과({@code MaxUploadSizeExceededException})는 이 예외의 하위 타입이지만 바로 위
+     * 핸들러가 더 구체적이라 그쪽이 먼저 잡는다 — 413 은 그대로다.
+     */
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ErrorResponse> handleBrokenMultipart(MultipartException e) {
+        log.debug("multipart 본문 파싱 실패", e);
+        return ResponseEntity.status(ErrorCode.INVALID_REQUEST.getStatus())
+                .body(ErrorResponse.of(ErrorCode.INVALID_REQUEST));
     }
 
     /**
