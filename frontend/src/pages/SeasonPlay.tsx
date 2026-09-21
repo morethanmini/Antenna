@@ -466,9 +466,9 @@ export default function SeasonPlay() {
       <main className="main">
         <div className="main-inner sim-play">
           <nav className="sp-crumb" aria-label="위치">
+            {/* "연습" 칸이 있었다(2026-09-21 제거). 연습 허브를 홈에 합치면서 둘이
+                같은 곳이 되어, 같은 링크가 나란히 두 번 서 있었다. */}
             <Link to="/sim">모의투자 홈</Link>
-            <i aria-hidden="true">›</i>
-            <Link to="/sim/practice">연습</Link>
             <i aria-hidden="true">›</i>
             <span>진행</span>
           </nav>
@@ -572,8 +572,6 @@ export default function SeasonPlay() {
       <div className="main-inner sim-play">
         <nav className="sp-crumb" aria-label="위치">
           <Link to="/sim">모의투자 홈</Link>
-          <i aria-hidden="true">›</i>
-          <Link to="/sim/practice">연습</Link>
           <i aria-hidden="true">›</i>
           <span>진행</span>
         </nav>

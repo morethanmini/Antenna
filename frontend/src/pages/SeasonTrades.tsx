@@ -159,9 +159,8 @@ export default function SeasonTrades() {
     <main className="main">
       <div className="main-inner sim-trades">
         <nav className="st-crumb" aria-label="위치">
+          {/* "연습" 칸을 뺐다(2026-09-21) — 연습 허브를 홈에 합쳐 같은 곳이 됐다. */}
           <Link to="/sim">모의투자 홈</Link>
-          <i aria-hidden="true">›</i>
-          <Link to="/sim/practice">연습</Link>
           <i aria-hidden="true">›</i>
           <span>매매일지</span>
         </nav>

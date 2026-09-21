@@ -145,6 +145,14 @@
    이름을 말줄임하지 않고 줄을 바꾼다: 자기 이름이 잘려 보이면 안 된다. */
 .mp-who h1,.ch-id h1,.ch-links a,.ch-report-title,.hm-hello,.rd-author,.rc-author{overflow-wrap:anywhere}
 html,body{height:100%}
+/* **스크롤바 자리를 늘 비워 둔다(2026-09-21).** 상단바가 position:fixed 라 화면 폭을
+   따라가는데, 스크롤이 생기는 화면과 없는 화면을 오가면 그 폭이 스크롤바만큼(윈도우
+   크롬 기준 15px) 달라진다. 그래서 메뉴·잔액·프로필이 화면을 바꿀 때마다 좌우로
+   튀었다 — 모의투자 홈은 한 화면에 들어가 스크롤바가 없고, 기록·종목 같은 화면은
+   있다.
+   overflow-y:scroll 로도 막을 수 있지만 그쪽은 필요 없을 때도 빈 트랙을 그려서,
+   어두운 화면(모의투자 홈)에 밝은 띠가 한 줄 선다. gutter 는 자리만 비운다. */
+html{scrollbar-gutter:stable}
 body{
   margin:0;background:var(--ground);color:var(--body);
   font:var(--fs-lg)/1.6 var(--sans);-webkit-font-smoothing:antialiased;

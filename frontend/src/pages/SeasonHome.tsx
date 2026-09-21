@@ -81,10 +81,13 @@ const BarsIcon = () => <Ico size={22}><path d="M6 20v-6M12 20V7M18 20v-9" /></Ic
 
 /* ── 히어로 ───────────────────────────────────────────────
    진행 중인 것이 있으면 시작 버튼이 그 회차로 이어진다 — 없으면 연습하기(주제 고르기)로. */
-function Hero({ lead, practice, ongoing, myError, myLoading, onRetry }: {
+function Hero({ lead, practice, ongoing, done, startAt, myError, myLoading, onRetry }: {
   lead: MyRun | null
   practice: OpenRun[] | undefined
   ongoing: MyRun[]
+  done: MyRun[]
+  /** 바로 들어갈 수 있는 첫 주제. 목록이 비었으면 null — 그때는 권하지 않는다 */
+  startAt: string | null
   myError: ApiError | null
   myLoading: boolean
   onRetry: () => void
@@ -94,6 +97,9 @@ function Hero({ lead, practice, ongoing, myError, myLoading, onRetry }: {
   const going = ongoing.length
   const percent = total > 0 ? Math.min(100, Math.round((going / total) * 100)) : 0
   const failure = shown(myError)
+  /* 복기는 결과 화면(G-08)에만 있고 기록 목록(G-09)에는 없다 — 가장 최근에 끝낸
+     판으로 곧장 보낸다. 끝낸 것이 없으면 볼 복기도 없어 기록으로 보낸다. */
+  const lastDone = [...done].sort(recentFirst)[0]
 
   return (
     <section className="sh-hero is-dark" aria-labelledby="sh-hero-h">
@@ -120,17 +126,22 @@ function Hero({ lead, practice, ongoing, myError, myLoading, onRetry }: {
         </h1>
 
         <div className="sh-cta">
+          {/* 시작 버튼은 **첫 주제로 바로 들어간다**(2026-09-21). 전에는 연습 허브
+              (/sim/practice)로 보냈는데 그 화면을 이 화면에 합쳐서, 그대로 두면
+              자기 자신을 가리키는 버튼이 된다. 고를 주제는 바로 아래 카드에 있으므로
+              여기서는 "맨 앞 것부터" 로 연결한다.
+              열린 주제가 하나도 없으면 버튼을 내린다 — 눌러도 갈 곳이 없다. */}
           {lead ? (
             <Link className="sh-btn solid" to={`/sim/${lead.seasonId}/play`}>
               <PlayIcon />
               이어서 하기
             </Link>
-          ) : (
-            <Link className="sh-btn solid" to="/sim/practice">
+          ) : startAt ? (
+            <Link className="sh-btn solid" to={startAt}>
               <PlayIcon />
               지금 시작하기
             </Link>
-          )}
+          ) : null}
           {/* G-00 안내는 처음 열었을 때 한 번만 자동으로 뜬다. 건너뛴 사람이 다시 볼 자리다.
               라우트가 없는 오버레이라 링크가 아니라 셸에 신호를 보낸다. */}
           <button type="button" className="sh-btn line" onClick={openSimOnboarding}>
@@ -177,7 +188,19 @@ function Hero({ lead, practice, ongoing, myError, myLoading, onRetry }: {
                     aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
                 <i style={{ width: `${percent}%` }} />
               </span>
-              <Link className="sh-glass-link" to="/sim/history">기록 보기 ›</Link>
+              {/* 연습 허브(G-02)에서 옮겨 온 둘이다(2026-09-21). 완료 횟수는 거기 요약
+                  스트립에만 있던 값이고, 복기 링크는 AI 가이드 카드가 하던 일이다 —
+                  "끝나면 만들어집니다" 라는 안내문보다 만들어진 것을 여는 길이 낫다. */}
+              <div className="sh-glass-foot">
+                <span className="sh-done">완료 <b className="num">{done.length}</b>회</span>
+                {lastDone ? (
+                  <Link className="sh-glass-link" to={`/sim/${lastDone.seasonId}/result`}>
+                    최근 복기 보기 ›
+                  </Link>
+                ) : (
+                  <Link className="sh-glass-link" to="/sim/history">기록 보기 ›</Link>
+                )}
+              </div>
             </>
           )}
         </dl>
@@ -293,8 +316,13 @@ export default function SeasonHome() {
   const { data: open, loading: openLoading, error: openError, reload: reloadOpen } = useAsync(getPracticeRuns)
 
   const ongoing = data?.ongoing ?? []
+  const done = data?.done ?? []
   /* 여러 개가 진행 중이면 가장 최근 것을 시작 버튼에 건다. 나머지는 카드에서 이어간다. */
   const lead = [...ongoing].sort(recentFirst)[0] ?? null
+  /* 히어로의 "지금 시작하기" 가 갈 곳. 카드와 같은 규칙으로 고른 맨 앞 주제다 —
+     목록이 비었거나 아직 안 왔으면 null 이고, 그때는 버튼을 내린다. */
+  const firstOpen = (open?.items ?? []).filter(isJoinable).sort(joinableFirst)[0]
+  const startAt = firstOpen ? `/sim/seasons/${firstOpen.id}` : null
 
   return (
     <main className="main">
@@ -302,7 +330,7 @@ export default function SeasonHome() {
         {/* 목록이 실패해도 화면 전체를 오류로 덮지 않는다 — 실패한 칸만 안내를
             띄우고 나머지는 그대로 읽힌다. 판단은 shown() 이 한다. */}
         <Hero
-          lead={lead} practice={open?.items} ongoing={ongoing}
+          lead={lead} practice={open?.items} ongoing={ongoing} done={done} startAt={startAt}
           myError={error} myLoading={loading} onRetry={reload}
         />
         <Topics
