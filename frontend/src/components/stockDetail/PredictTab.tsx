@@ -509,9 +509,9 @@ export default function PredictTab({
               <p className="sd-done-sub">
                 기준가는 다음 영업일 종가로 확정됩니다. 그때까지 상태는 <b>BASE</b> 입니다.
               </p>
-              <dl className="sd-commit">
-                <div><dt>커밋 해시</dt><dd className="num">{result.data.commitHash}</dd></div>
-              </dl>
+              {/* 커밋 해시는 적지 않는다 — 대회 완료와 같은 이유다(QA 09-18 권수 "이 코드는 뭐지, 에러
+                  났나"). 발판 위의 원문·해시는 접었는데(c508578) 여기만 0x… 가 그대로 남아 있었다(QA 09-21).
+                  값은 "내 예측에서 보기" → 예측 상세가 보여 준다. */}
               <p className="sd-done-cta">
                 <Link className="sd-cta" to="/me/predictions">내 예측에서 보기</Link>
               </p>
