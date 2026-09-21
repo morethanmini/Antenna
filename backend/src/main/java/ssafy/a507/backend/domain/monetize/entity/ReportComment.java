@@ -44,7 +44,9 @@ public class ReportComment {
 
     public enum Status {
         VISIBLE,
-        BLOCKED
+        BLOCKED,
+        /** 작성자가 지웠다. 행은 남긴다 — 신고(abuse_reports)·좋아요가 물고 있고, 신고당한 댓글을 지워 증거를 없앨 수 없어야 한다 */
+        DELETED
     }
 
     @Id
@@ -81,6 +83,16 @@ public class ReportComment {
 
     public boolean isBlocked() {
         return status == Status.BLOCKED;
+    }
+
+    /** 목록에 나오고 반응할 수 있는가. BLOCKED 도 DELETED 도 없는 것처럼 다룬다 */
+    public boolean isVisible() {
+        return status == Status.VISIBLE;
+    }
+
+    /** 작성자 삭제(QA 09-21 — 도배는 막았지만 올라간 댓글을 지울 방법이 없었다). 목록·개수 쿼리는 VISIBLE 만 센다 */
+    public void delete() {
+        this.status = Status.DELETED;
     }
 
     /** 관리자 처리. 신고 승인(ACCEPT) 때 BLOCKED 로 내린다 — 목록·개수 쿼리가 이미 BLOCKED 를 뺀다. */

@@ -13,8 +13,51 @@
    ── 상태를 들지 않는다 ───────────────────────────────────
    무엇을 골랐는지는 부모(StockDetail)가 든다. 탭을 옮겨도 선택이 살아 있어야 하고,
    그 인계에는 API 가 없어 상태로만 이어지기 때문이다(InfoTab 머리말). */
+import { useCallback, useLayoutEffect, useRef } from 'react'
 import { POINT_KINDS, POINT_LABEL, SOURCE_LABEL } from '../../api/stockDetail'
 import type { PointGroups, PointKind } from '../../api/stockDetail'
+
+/* ── 고를 때 화면이 튀지 않게 (QA 09-18) ──────────────────────
+   "긍정요인·부정요인을 선택하면 화면이 아래로 내려간다"(도훈), "클릭하면 화면이
+   위로 올라간다"(컨설). 서로 반대 방향이지만 원인은 하나다 — **이 격자 위에 있는
+   것의 높이가 선택 때문에 바뀐다.**
+
+   예측 탭(C-01) ③ 이 그렇다. 아무것도 안 골랐을 때는 안내 한 줄이고, 하나 고르면
+   그 자리가 고른 근거 목록으로 바뀐다. 첫 선택에서는 안내보다 목록이 짧아 격자가
+   위로 올라오고, 두 번째부터는 줄이 쌓여 아래로 밀린다. 눌러야 할 칸이 손가락
+   밑에서 도망가는 것은 어느 쪽이든 같다.
+
+   그래서 위를 건드리지 않고 **격자가 화면에서 있던 자리에 그대로 있게** 만든다.
+   누르기 직전에 격자 위쪽 좌표를 재 두고, 다시 그린 직후 같은 좌표를 다시 재
+   차이만큼 창을 굴린다. 사용자 눈에는 아무 일도 일어나지 않는다.
+
+   - useLayoutEffect 다. useEffect 로 하면 브라우저가 밀린 화면을 한 번 그린 뒤에
+     되돌려 깜빡인다.
+   - 브라우저의 스크롤 앵커링(overflow-anchor)에 기대지 않는다. 그것은 화면 **밖**
+     에서 생긴 변화만 보정하는데, 여기서 늘고 주는 것은 눈앞에 보이는 자리다.
+   - 페이지가 이미 끝까지 내려가 있으면 굴릴 여지가 없어 완전히는 못 지킨다.
+     그때도 지금보다는 덜 튄다. */
+function useKeepInPlace(picked: number[]) {
+  const ref = useRef<HTMLDivElement>(null)
+  /** 누르기 직전의 격자 위쪽 좌표(뷰포트 기준). 보정할 것이 없으면 null */
+  const before = useRef<number | null>(null)
+
+  const capture = useCallback(() => {
+    before.current = ref.current?.getBoundingClientRect().top ?? null
+  }, [])
+
+  useLayoutEffect(() => {
+    const was = before.current
+    before.current = null
+    // 첫 그림이거나 우리가 일으킨 변화가 아니면 아무것도 하지 않는다
+    if (was === null || !ref.current) return
+    const delta = ref.current.getBoundingClientRect().top - was
+    // 소수점 떨림까지 쫓아다니면 스크롤이 미세하게 덜덜거린다
+    if (Math.abs(delta) >= 1) window.scrollBy(0, delta)
+  }, [picked])
+
+  return { ref, capture }
+}
 
 /* 열 제목 앞에 서는 개미 얼굴(2026-09-17). 글자만 세 줄 늘어놓으면 세 열이 한
    덩어리로 읽혀 어디가 긍정이고 어디가 위험인지 훑어서는 안 잡힌다.
@@ -40,8 +83,10 @@ type Props = {
 }
 
 export default function PointPicker({ points, picked, onPick }: Props) {
+  const { ref, capture } = useKeepInPlace(picked)
+
   return (
-    <div className="sd-points">
+    <div className="sd-points" ref={ref}>
       {POINT_KINDS.map((kind) => {
         const list = points?.[kind] ?? []
         return (
@@ -65,7 +110,13 @@ export default function PointPicker({ points, picked, onPick }: Props) {
                       {/* 체크박스로 두는 이유 — 여러 개를 고르는 조작이고,
                           키보드·보조기술이 선택 상태를 그대로 읽는다 */}
                       <label className={on ? 'sd-point is-on' : 'sd-point'}>
-                        <input type="checkbox" checked={on} onChange={() => onPick(p.id)} />
+                        {/* 자리를 재는 것이 먼저다 — onPick 이 부모 상태를 바꾸면
+                            그 뒤로는 바뀌기 전 좌표를 다시 잴 수 없다 */}
+                        <input
+                          type="checkbox"
+                          checked={on}
+                          onChange={() => { capture(); onPick(p.id) }}
+                        />
                         <span className="sd-point-text">
                           {/* 제목이 따로 없다. 본문 한 덩어리가 포인트 전체다 */}
                           <span className="sd-point-body">{p.body}</span>

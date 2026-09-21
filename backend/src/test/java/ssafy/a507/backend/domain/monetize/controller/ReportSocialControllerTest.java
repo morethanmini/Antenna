@@ -342,6 +342,116 @@ class ReportSocialControllerTest {
     }
 
     @Nested
+    @DisplayName("댓글 삭제")
+    class CommentDelete {
+
+        @Test
+        @DisplayName("작성자가 지우면 204 — 목록에서 빠지고, 지운 댓글에는 좋아요도 404 다")
+        void 작성자_삭제() throws Exception {
+            Long reportId = insertReport(authorId, "공개 리포트", true);
+            flush();
+            Long commentId = insertComment(reportId, readerId, "지울 댓글", "VISIBLE");
+            insertComment(reportId, authorId, "남는 댓글", "VISIBLE");
+            flush();
+
+            mockMvc.perform(delete(commentUrl(commentId)).with(user(str(readerId))).with(csrf()))
+                    .andExpect(status().isNoContent());
+
+            mockMvc.perform(get(commentsUrl(reportId)).with(user(str(readerId))))
+                    .andExpect(jsonPath("$.items.length()").value(1))
+                    .andExpect(jsonPath("$.items[0].body").value("남는 댓글"));
+            mockMvc.perform(post(commentLikeUrl(commentId)).with(user(str(authorId))).with(csrf()))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"));
+        }
+
+        @Test
+        @DisplayName("행은 지우지 않는다 — 신고·좋아요가 물고 있어 상태만 DELETED 로 바꾼다")
+        void 소프트_삭제() throws Exception {
+            Long reportId = insertReport(authorId, "공개 리포트", true);
+            flush();
+            Long commentId = insertComment(reportId, readerId, "지울 댓글", "VISIBLE");
+            flush();
+
+            mockMvc.perform(delete(commentUrl(commentId)).with(user(str(readerId))).with(csrf()))
+                    .andExpect(status().isNoContent());
+            flush();
+
+            Object status = em.createNativeQuery("SELECT status FROM report_comments WHERE id = ?")
+                    .setParameter(1, commentId)
+                    .getSingleResult();
+            assertThat(status).hasToString("DELETED");
+        }
+
+        @Test
+        @DisplayName("남의 댓글은 404 COMMENT_NOT_FOUND — 리포트 작성자여도 못 지운다(가리는 것은 신고·관리자 몫)")
+        void 남의_댓글() throws Exception {
+            Long reportId = insertReport(authorId, "공개 리포트", true);
+            flush();
+            Long commentId = insertComment(reportId, readerId, "독자 댓글", "VISIBLE");
+            flush();
+
+            mockMvc.perform(delete(commentUrl(commentId)).with(user(str(authorId))).with(csrf()))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"));
+            mockMvc.perform(get(commentsUrl(reportId)).with(user(str(readerId))))
+                    .andExpect(jsonPath("$.items.length()").value(1));
+        }
+
+        @Test
+        @DisplayName("두 번 지워도 204 — 같은 요청을 다시 보내도 결과가 같다")
+        void 삭제_멱등() throws Exception {
+            Long reportId = insertReport(authorId, "공개 리포트", true);
+            flush();
+            Long commentId = insertComment(reportId, readerId, "지울 댓글", "VISIBLE");
+            flush();
+
+            mockMvc.perform(delete(commentUrl(commentId)).with(user(str(readerId))).with(csrf()))
+                    .andExpect(status().isNoContent());
+            mockMvc.perform(delete(commentUrl(commentId)).with(user(str(readerId))).with(csrf()))
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("가려진(BLOCKED) 댓글은 작성자도 404 — 지워서 가림 기록을 덮지 못한다")
+        void 가려진_댓글() throws Exception {
+            Long reportId = insertReport(authorId, "공개 리포트", true);
+            flush();
+            Long commentId = insertComment(reportId, readerId, "가려진 댓글", "BLOCKED");
+            flush();
+
+            mockMvc.perform(delete(commentUrl(commentId)).with(user(str(readerId))).with(csrf()))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"));
+        }
+
+        @Test
+        @DisplayName("지운 댓글과 같은 내용은 다시 쓸 수 있다 — 연속 같은 내용 검사는 지운 댓글을 세지 않는다")
+        void 지운_뒤_같은_내용() throws Exception {
+            Long reportId = insertReport(authorId, "공개 리포트", true);
+            flush();
+            writeComment(reportId, readerId, "오타 있는 댓글").andExpect(status().isCreated());
+            Long commentId = ((Number) em.createNativeQuery(
+                            "SELECT id FROM report_comments WHERE report_id = ? AND user_id = ?")
+                    .setParameter(1, reportId)
+                    .setParameter(2, readerId)
+                    .getSingleResult()).longValue();
+
+            mockMvc.perform(delete(commentUrl(commentId)).with(user(str(readerId))).with(csrf()))
+                    .andExpect(status().isNoContent());
+            writeComment(reportId, readerId, "오타 있는 댓글").andExpect(status().isCreated());
+        }
+
+        @Test
+        @DisplayName("없는 댓글은 404 COMMENT_NOT_FOUND")
+        void 없는_댓글() throws Exception {
+            mockMvc.perform(delete(commentUrl(987_654_321L)).with(user(str(readerId))).with(csrf()))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"));
+        }
+    }
+
+    @Nested
     @DisplayName("댓글 좋아요")
     class CommentLikes {
 
@@ -584,6 +694,10 @@ class ReportSocialControllerTest {
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(java.util.Map.of("body", body))));
+    }
+
+    private static String commentUrl(Long commentId) {
+        return "/api/v1/report-comments/" + commentId;
     }
 
     private static String commentLikeUrl(Long commentId) {

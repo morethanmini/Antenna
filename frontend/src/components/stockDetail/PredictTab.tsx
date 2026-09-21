@@ -28,8 +28,8 @@
      수 있게 됐다. 규격·이유는 api/predictions.ts "커밋 봉인" 절.
    - 서명 대상이 지갑 연동용 문자열이 아니라 예측 내용이다(결정 B3). 연동용에 서명하면
      서버가 SIGNER_MISMATCH 로 거절한다. */
-import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { Panel } from './Block'
 import PredictionDepth from './PredictionDepth'
 import PointPicker from './PointPicker'
@@ -52,14 +52,14 @@ import { POINT_KINDS, POINT_LABEL, getPoints } from '../../api/stockDetail'
 import type { InvestPoint, PointKind, StockSummary } from '../../api/stockDetail'
 import {
   DIRECTIONS, HORIZON_MAX, HORIZON_MIN, HORIZON_TICKS, NOTE_MAX,
-  commitHash, commitPayload, createPrediction, getSlots, horizonLabel, newNoteSalt, noteHash,
-  formatTargetPrice, predictionSigningPayload, targetPriceInScale,
+  commitHash, commitPayload, createPrediction, getSlots, horizonLabel, horizonPickLabel, newNoteSalt, noteHash,
+  formatTargetPrice, predictionSigningPayload, targetPriceInRange, targetPriceInScale,
 } from '../../api/predictions'
 import type {
-  CommitFields, CreateResult, Direction, Horizon, PredictionDraft,
+  CommitFields, Direction, Horizon, PredictionDraft,
 } from '../../api/predictions'
 import { requestNonce } from '../../api/wallet'
-import type { PredictForm } from './predictForm'
+import { emptyPredictForm, type PredictForm, type PredictResult } from './predictForm'
 import { connectAddress, hasWallet, personalSign } from '../../wallet/provider'
 import { useAuth } from '../../auth/context'
 
@@ -98,16 +98,6 @@ function dueLabel(horizon: Horizon) {
   return `${d.getMonth() + 1}.${d.getDate()}`
 }
 
-/**
- * 대회 배팅 접수(202). 예측은 접수 시점에 저장돼 predictionId 가 오고, 소각 확정은
- * operationId 로 M-02 가 폴링한다 — PredictionQueued 와 같은 모양이지만 kind 를 따로
- * 두는 이유는 완료 화면의 말과 갈 곳이 다르기 때문이다(예측 상세가 아니라 대회로 돌아간다).
- */
-type EventResult = {
-  kind: 'event'
-  data: { predictionId: number; operationId: string }
-}
-
 type Props = {
   code: string
   summary: StockSummary | null
@@ -118,6 +108,12 @@ type Props = {
   form: PredictForm
   onForm: (next: (prev: PredictForm) => PredictForm) => void
   /**
+   * 등록 완료 결과. 폼과 같은 이유로 부모가 든다 — 탭을 오가도 완료 화면이 남아야
+   * 같은 예측을 두 번 등록할 길이 없다(predictForm.ts PredictResult).
+   */
+  result: PredictResult | null
+  onResult: (next: PredictResult) => void
+  /**
    * 대회(J-01)로 들어왔는가. 참일 때만 배너와 배팅 카드가 붙는다 — 회차 id·등록
    * 창·대회 종목 셋을 부모가 이미 확인했다(StockDetail). 평소 경로로 온 사람에게는
    * 이 화면에 배팅이라는 말 자체가 없다.
@@ -126,9 +122,10 @@ type Props = {
 }
 
 export default function PredictTab({
-  code, summary, picked, onPick, onGoInfo, form, onForm, eventMode = false,
+  code, summary, picked, onPick, onGoInfo, form, onForm, result, onResult, eventMode = false,
 }: Props) {
   const { user, setWalletLinked } = useAuth()
+  const navigate = useNavigate()
 
   const slots = useBlock(() => getSlots(), [])
   const points = useBlock(() => getPoints(code), [code])
@@ -164,7 +161,6 @@ export default function PredictTab({
   /* 202 로 접수된 소각·배팅 작업. M-02 가 폴링하고 확정되면 예측 상세로 보낸다 */
   const [burnOp, setBurnOp] = useState<string | null>(null)
   const [failure, setFailure] = useState<ApiError | null>(null)
-  const [result, setResult] = useState<CreateResult | EventResult | null>(null)
   /* 지갑 승인 뒤 서버 응답까지 빈 시간이 있다. 그 사이 화면이 그대로면 승인이
      먹혔는지 알 수 없고, 응답이 오는 순간 완료 화면이 튀어나온다.
      null 이면 모달을 띄우지 않는다 — 아직 서명 흐름에 들어가지 않은 상태다. */
@@ -177,7 +173,8 @@ export default function PredictTab({
   /* 소수 셋째 자리 이하는 서버가 반올림하지 않고 400 으로 거절한다(numeric(14,2)).
      여기서 조용히 잘라 서명하면 서명한 값과 서버가 해시한 값이 달라진다. */
   const priceTooPrecise = priceEntered && !targetPriceInScale(targetPrice)
-  const validTarget = priceEntered && !priceTooPrecise
+  const priceTooLarge = priceEntered && !targetPriceInRange(targetPrice)
+  const validTarget = priceEntered && !priceTooPrecise && !priceTooLarge
 
   /* 목표가가 전일 종가 대비 몇 %인지. 방향도 이 값이 정한다.
 
@@ -359,7 +356,7 @@ export default function PredictTab({
          결과가 서 있으면 폼이 없으므로 같은 종목에 다시 걸 길 자체가 사라진다. */
       const entry = accepted.entries[0]
       if (entry) {
-        setResult({
+        onResult({
           kind: 'event',
           data: { predictionId: entry.predictionId, operationId: entry.operationId },
         })
@@ -447,7 +444,7 @@ export default function PredictTab({
          지금 얹으면 400 이고, 커밋·서명 문자열에는 애초에 들어가지 않는다
          (EventBet.tsx 머리말). 서버가 칸을 열면 draft 옆에 나란히 넘긴다. */
       const created = await createPrediction(draft, signature)
-      setResult(created)
+      onResult(created)
       if (created.kind === 'queued') {
         /* 소각으로 접수됐다(202). 커밋 진행 창 대신 M-02 로 넘긴다 — 여기서 기다리는 것은
            앵커가 아니라 소각 tx 확정이고, 그 폴링·문구·실패 처리는 M-02 가 이미 갖고 있다 */
@@ -456,9 +453,12 @@ export default function PredictTab({
       } else {
         setPhase('settled')
       }
-      /* 다음 예측은 새 난수로 봉인한다. 같은 noteSalt 를 두 번 쓰면 같은 근거가 같은
-         noteHash 로 남아, 원장만 보고도 "같은 말을 두 번 했다" 를 알 수 있다. */
-      onForm((f) => ({ ...f, noteSalt: newNoteSalt() }))
+      /* 폼을 통째로 비운다(2026-09-21). 전에는 noteSalt 만 갈고 목표가·근거를 남겼는데,
+         결과가 부모로 올라간 지금은 이 화면으로 되돌아올 길이 없어 남겨 둘 이유가 없고,
+         남기면 어딘가로 새어 나갈 때 값이 그대로 쓰인다. 새 난수도 함께 뽑힌다 — 같은
+         noteSalt 를 두 번 쓰면 같은 근거가 같은 noteHash 로 남아 원장만 보고도
+         "같은 말을 두 번 했다" 를 알 수 있기 때문이다. */
+      onForm(() => emptyPredictForm())
     } catch (e) {
       /* 실패하면 모달을 걷는다. 오류는 폼 쪽에서 보여 준다 — 진행 모달에
          오류까지 담으면 "무엇이 어디까지 갔나" 와 "무엇이 잘못됐나" 가 한 창에
@@ -475,15 +475,29 @@ export default function PredictTab({
     }
   }
 
+  /* 등록이 끝난 뒤 갈 곳 — 내 예측(C-02). QA-0918 #330: 등록 뒤에도 종목 상세에
+     머물러 "등록이 된 건가" 를 되묻게 했다. 방금 건 예측이 목록 맨 위에 서는 곳으로
+     보낸다. replace 다 — 뒤로가기가 등록 화면으로 되돌아오면 같은 값을 다시 걸 것처럼
+     보인다. **대회 배팅은 보내지 않는다** — 갈 곳이 대회이고 완료 화면의 링크가 그 길이다. */
+  const goMine = useCallback(
+    () => navigate('/me/predictions', { replace: true }),
+    [navigate],
+  )
+
   /* 진행 모달. 완료 화면과 입력 화면 두 갈래가 같은 것을 띄우므로 한 번만
-     만들어 둔다. 닫으면 뒤에 있는 완료 화면이 그대로 남는다 — 커밋 해시와
-     다음 걸음이 거기 적혀 있어 잃을 것이 없다. */
+     만들어 둔다. 닫히는 길은 셋이다 — 닫기·Esc, 봉인 장면 뒤 스스로 비켜서기,
+     "예측 현황 보러가기" 링크. 어느 길이든 내 예측으로 간다(goMine). 진행 중에는
+     모달이 닫히지 않으므로(CommitProgressModal) 여기 오면 등록은 이미 끝난 것이다. */
+  const closeProgress = useCallback(() => {
+    setPhase(null)
+    goMine()
+  }, [goMine])
   const progress = phase && (
     <CommitProgressModal
       phase={phase}
       /* 대회 접수는 phase 를 null 로 두고 M-02 로 가므로 여기 오지 않는다. 타입만 좁힌다 */
       result={result && result.kind !== 'event' ? result : null}
-      onClose={() => setPhase(null)}
+      onClose={closeProgress}
     />
   )
 
@@ -508,9 +522,9 @@ export default function PredictTab({
               <p className="sd-done-sub">
                 기준가는 다음 영업일 종가로 확정됩니다. 그때까지 상태는 <b>BASE</b> 입니다.
               </p>
-              <dl className="sd-commit">
-                <div><dt>커밋 해시</dt><dd className="num">{result.data.commitHash}</dd></div>
-              </dl>
+              {/* 커밋 해시는 적지 않는다 — 대회 완료와 같은 이유다(QA 09-18 권수 "이 코드는 뭐지, 에러
+                  났나"). 발판 위의 원문·해시는 접었는데(c508578) 여기만 0x… 가 그대로 남아 있었다(QA 09-21).
+                  값은 "내 예측에서 보기" → 예측 상세가 보여 준다. */}
               <p className="sd-done-cta">
                 <Link className="sd-cta" to="/me/predictions">내 예측에서 보기</Link>
               </p>
@@ -557,7 +571,12 @@ export default function PredictTab({
           <OperationModal
             operationId={burnOp}
             kind={result.kind === 'event' ? 'EVENT_BET' : 'PREDICTION_BURN'}
-            onClose={() => setBurnOp(null)}
+            /* 소각 접수(202)는 닫으면 내 예측으로 — 확정 전이라도 예측은 이미 저장돼
+               목록에 선다. 대회는 완료 화면에 남는다(goMine 주석). */
+            onClose={() => {
+              setBurnOp(null)
+              if (result.kind !== 'event') goMine()
+            }}
           />
         )}
       </div>
@@ -698,6 +717,11 @@ export default function PredictTab({
                 임의로 반올림하지 않습니다.
               </p>
             )}
+            {priceTooLarge && (
+              <p className="sd-warn">
+                목표가는 <b>1조 원 미만</b>으로 입력할 수 있습니다.
+              </p>
+            )}
             {/* 방향을 고를 수 없게 된 뒤로, 방향이 안 서는 경우는 이것 하나다. 말해 주지 않으면
                 목표가를 넣었는데 왜 발판이 잠겨 있는지 알 길이 없다. */}
             {gap === 0 && (
@@ -774,7 +798,7 @@ export default function PredictTab({
                 step={1}
                 value={horizon}
                 aria-label="예측 기간"
-                aria-valuetext={`${horizonLabel(horizon)} · ${dueLabel(horizon)} 만기`}
+                aria-valuetext={`${horizonPickLabel(horizon)} · ${dueLabel(horizon)} 만기`}
                 onChange={(e) => setHorizon(Number(e.target.value))}
               />
               <div className="pf-line-ticks" aria-hidden="true">
@@ -785,7 +809,7 @@ export default function PredictTab({
                     style={{ left: `${((h - HORIZON_MIN) / (HORIZON_MAX - HORIZON_MIN)) * 100}%` }}
                   >
                     <i />
-                    <b>{horizonLabel(h)}</b>
+                    <b>{horizonPickLabel(h)}</b>
                   </span>
                 ))}
               </div>
@@ -796,7 +820,7 @@ export default function PredictTab({
                 이미 말하고 있어, 같은 말을 한 번 더 길게 적는 셈이다 */}
             {!eventMode && (
               <p className="sd-help">
-                <b className="num">{horizonLabel(horizon)}</b> · 만기 <b className="num">{dueLabel(horizon)}</b> · 기준일(다음 평일)부터 <b>영업일</b>로 셉니다(주말 제외). 공휴일에 걸리면 그다음 거래일 종가로 판정합니다. 기준가는 기준일 종가로 확정됩니다.
+                <b className="num">{horizonPickLabel(horizon)}</b> · 만기 <b className="num">{dueLabel(horizon)}</b> · 기준일(다음 평일)부터 셉니다(주말 제외). 공휴일에 걸리면 그다음 거래일 종가로 판정합니다. 기준가는 기준일 종가로 확정됩니다.
               </p>
             )}
           </li>
@@ -920,41 +944,71 @@ export default function PredictTab({
         <div className="pf-sign">
           {draft ? (
             <>
-              {/* 커밋 문자열을 그대로 펼쳐 보여 준다(SignConfirm, §7). 커밋 salt 가 없어져
-                  (09-09) 이 브라우저가 원장에 남을 commitHash 를 직접 계산할 수 있다 —
-                  값이 서로 다르면 등록 전에 알아챌 수 있어야 하므로 둘 다 적는다.
+              {/* ── 발판 위에서는 낱말로 말한다 (2026-09-20) ──────────
 
-                  **대회 등록은 다르다**(2026-09-18). 이벤트 온체인 커밋은
-                  keccak(eventId, idx, direction, noteHash) 이라 아래 antenna:commit:v1
-                  해시와 **다른 값**이고, 브라우저가 재현하려면 abi.encodePacked 를 흉내내야
-                  한다 — 서버가 일부러 그 일을 떠맡았다(EventEntryService.Signed 주석).
-                  그래서 그 경우에는 "원장에 남는 값과 같다" 고 말하지 않는다. 대신 실제로
-                  서명할 줄을 보여 주고, 커밋은 서버가 만든다고 적는다. */}
-              <p className="sd-help">
-                {eventPath
-                  ? '아래 줄에 서명합니다. 배팅 금액이 줄 안에 함께 봉인되고, 원장에 남을 커밋은 서버가 같은 재료로 만듭니다.'
-                  : '아래 내용에 서명합니다. 커밋 해시는 이 브라우저가 계산한 값이며, 등록 뒤 원장에 남는 값과 같습니다.'}
-              </p>
-              <pre className="sd-payload num">
-                {eventPath
-                  ? (shown
-                    ? `${draft.stockCode}/${draft.direction}/${formatTargetPrice(draft.targetPrice)}/${shown.noteHash}/${bet}`
-                    : '서명 문자열을 만드는 중…')
-                  : (shown ? shown.payload : '커밋 문자열을 만드는 중…')}
-              </pre>
-              <dl className="sd-commit">
-                <div>
-                  <dt>근거 본문 해시</dt>
-                  <dd className="num">{shown?.noteHash ?? '계산 중…'}</dd>
-                </div>
-                <div>
-                  <dt>커밋 해시</dt>
-                  <dd className="num">
-                    {/* 모르는 값을 채우지 않는다 — 지어낸 해시를 보여 주느니 모른다고 적는다 */}
-                    {eventPath ? '등록 뒤 서버가 만듭니다' : (shown?.commitHash ?? '계산 중…')}
-                  </dd>
-                </div>
-              </dl>
+                  전에는 여기에 antenna:commit:v1 원문과 66자 해시 둘이 그대로 펼쳐져
+                  있었다(SignConfirm, §7). 코치 피드백 — 블록체인을 모르는 사람에게 그
+                  덩어리는 "오류가 났나 · 해킹인가" 로 읽힌다. 등록 직전, 되돌릴 수 없는
+                  버튼 바로 위라서 더 그렇다. 같은 진단이 대회 배팅 완료 화면에도 한 번
+                  내려져 있다(lilac, ff13c4b6 — "QA 에서 이 코드는 뭐지, 에러 났나 로 읽혔고").
+
+                  **지우지 않고 접었다.** 값이 서로 다르면 등록 전에 알아챌 수 있어야
+                  한다는 원래 의도가 아직 유효하고(커밋 salt 가 없어져 이 브라우저가
+                  commitHash 를 직접 계산한다), 설계서가 C-01 에 "커밋 미리보기" 를
+                  적어 두었다. 펼치면 예전 그대로다.
+
+                  **메타마스크가 어차피 이 원문을 보여 준다.** 그래서 "숨긴다" 가 아니라
+                  "곧 지갑에 이런 것이 뜬다" 고 미리 알려 주는 쪽으로 적었다 — 준비되지
+                  않은 채로 서명 창에서 처음 만나는 것이 제일 무섭다. */}
+              {/* 한 줄이다. 무엇이 묶이는지 풀어 적었다가 뺐다(2026-09-21) — 바로 아래
+                  "수정하거나 삭제할 수 없습니다" 가 같은 말을 이미 하고, 세 줄이 겹쳐
+                  쌓이면 발판 위가 다시 시끄러워진다. 대회·일반이 갈리던 것도 그 문장
+                  하나뿐이라 분기째 없앴다. */}
+              <p className="sd-seal"><b>예측이 봉인됩니다.</b></p>
+              <p className="sd-seal-sub">지갑 창이 열리면 서명을 눌러 주세요.</p>
+
+              {/* 접힌 채로 시작한다. 궁금한 사람만 펼친다 — SeasonPractice 의 .pr-fold 와
+                  같은 방식이다(summary 의 기본 삼각형을 지우고 직접 그린다) */}
+              <details className="sd-fold">
+                <summary>
+                  봉인되는 내용 보기
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="2"
+                          strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </summary>
+
+                {/* 대회 등록은 커밋이 다르다. 이벤트 온체인 커밋은
+                    keccak(eventId, idx, direction, noteHash) 이라 antenna:commit:v1 해시와
+                    **다른 값**이고, 브라우저가 재현하려면 abi.encodePacked 를 흉내내야
+                    한다 — 서버가 일부러 그 일을 떠맡았다(EventEntryService.Signed 주석).
+                    그래서 그 경우에는 "원장에 남는 값과 같다" 고 말하지 않는다. */}
+                <p className="sd-help">
+                  {eventPath
+                    ? '아래 줄에 서명합니다. 배팅 금액이 줄 안에 함께 봉인되고, 원장에 남을 커밋은 서버가 같은 재료로 만듭니다.'
+                    : '아래 내용에 서명합니다. 커밋 해시는 이 브라우저가 계산한 값이며, 등록 뒤 원장에 남는 값과 같습니다.'}
+                </p>
+                <pre className="sd-payload num">
+                  {eventPath
+                    ? (shown
+                      ? `${draft.stockCode}/${draft.direction}/${formatTargetPrice(draft.targetPrice)}/${shown.noteHash}/${bet}`
+                      : '서명 문자열을 만드는 중…')
+                    : (shown ? shown.payload : '커밋 문자열을 만드는 중…')}
+                </pre>
+                <dl className="sd-commit">
+                  <div>
+                    <dt>근거 본문 해시</dt>
+                    <dd className="num">{shown?.noteHash ?? '계산 중…'}</dd>
+                  </div>
+                  <div>
+                    <dt>커밋 해시</dt>
+                    <dd className="num">
+                      {/* 모르는 값을 채우지 않는다 — 지어낸 해시를 보여 주느니 모른다고 적는다 */}
+                      {eventPath ? '등록 뒤 서버가 만듭니다' : (shown?.commitHash ?? '계산 중…')}
+                    </dd>
+                  </div>
+                </dl>
+              </details>
 
               {/* 되돌릴 수 없는 동작이라 반드시 고지한다 */}
               <p className="sd-irreversible">

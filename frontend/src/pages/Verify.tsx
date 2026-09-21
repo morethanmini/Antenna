@@ -31,6 +31,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { formatConfirmedAt } from '../api/anchors'
+import { horizonLabel } from '../api/predictions'
 import type { ApiError } from '../api/errors'
 import {
   DIRECTION_LABEL, SETTLE_LABEL, commitPreimage, fetchProof, recomputeCommitHash,
@@ -217,7 +218,7 @@ export default function Verify() {
                   {DIRECTION_LABEL[data.payload.direction]}
                 </span>
                 <span className="vf-subject-target num">{won(data.payload.targetPrice)}</span>
-                <span className="vf-subject-h">{`${data.payload.horizon}영업일`}</span>
+                <span className="vf-subject-h">{horizonLabel(data.payload.horizon)}</span>
               </div>
               <p className="vf-subject-sub">
                 {`예측 #${data.predictionId} · 등록 ${formatConfirmedAt(data.payload.createdAt)}`}
@@ -314,8 +315,8 @@ export default function Verify() {
 
               {!anchor ? (
                 <ul className="vf-checks">
-                  <CheckLine verdict="locked" label="아직 앵커 배치에 담기지 않았습니다">
-                    앵커 배치는 10분마다 돕니다. 방금 등록한 예측은 다음 회차에 담깁니다.
+                  <CheckLine verdict="locked" label="아직 배치에 담기지 않았습니다">
+                    체인 기록 배치는 10분마다 돕니다. 방금 등록한 예측은 다음 회차에 담깁니다.
                   </CheckLine>
                 </ul>
               ) : (

@@ -198,7 +198,7 @@ export default function CommitProgressModal({ phase, result, onClose }: Props) {
         ? '블록 확정 대기'
         : anchor === 'CONFIRMED' || anchor === 'FAILED'
           ? PROOF_STATUS_LABEL[anchor]
-          : '블록체인 앵커 — 배치가 묶습니다',
+          : '블록체인 기록 — 배치가 묶습니다',
       state: !settled
         ? 'wait'
         : anchor === 'FAILED'
@@ -262,13 +262,13 @@ export default function CommitProgressModal({ phase, result, onClose }: Props) {
         {settled && queued && (
           <p className="cp-note">
             블록이 확정되면 예측 목록에 나타납니다 — <b>창을 닫아도 그대로 진행되고</b>,
-            진행 상황은 커밋 원장에서 확인할 수 있습니다.
+            진행 상황은 확정 기록에서 확인할 수 있습니다.
           </p>
         )}
         {settled && !queued && anchor !== 'CONFIRMED' && anchor !== 'FAILED' && (
           <p className="cp-note">
             이 예측은 이제 누구도, 나조차도 바꿀 수 없습니다.
-            앵커는 잠시 뒤 배치가 묶어요 — <b>창을 닫아도 그대로 진행되고</b>,
+            체인 기록은 잠시 뒤 배치가 묶어요 — <b>창을 닫아도 그대로 진행되고</b>,
             결과는 내 예측 내역에서 확인할 수 있습니다.
           </p>
         )}
@@ -283,7 +283,7 @@ export default function CommitProgressModal({ phase, result, onClose }: Props) {
             <rect x="4" y="10" width="16" height="11" rx="2" />
             <path d="M8 10V7a4 4 0 0 1 8 0v3" />
           </svg>
-          앵커가 끝나면 이 예측은 누구도, 나조차도 수정할 수 없습니다.
+          체인 기록이 끝나면 이 예측은 누구도, 나조차도 수정할 수 없습니다.
         </p>
         )}
 
@@ -292,9 +292,9 @@ export default function CommitProgressModal({ phase, result, onClose }: Props) {
           <div className="cp-actions">
             <button type="button" className="cp-btn ghost" onClick={onClose}>닫기</button>
             {queued ? (
-              <Link className="cp-btn solid" to="/ledger" onClick={onClose}>커밋 원장으로</Link>
+              <Link className="cp-btn solid" to="/ledger" onClick={onClose}>확정 기록 보기</Link>
             ) : (
-              <Link className="cp-btn solid" to="/me/predictions" onClick={onClose}>예측 현황 보러가기</Link>
+              <Link className="cp-btn solid" to="/me/predictions" replace onClick={onClose}>예측 현황 보러가기</Link>
             )}
           </div>
         )}

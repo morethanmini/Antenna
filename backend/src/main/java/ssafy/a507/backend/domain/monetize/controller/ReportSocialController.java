@@ -75,6 +75,13 @@ public class ReportSocialController {
         return ResponseEntity.status(HttpStatus.CREATED).body(new ReportCommentCreateResponse(id));
     }
 
+    /** 내 댓글 삭제. 행은 남기고 상태만 DELETED — 서비스 주석 참고 */
+    @DeleteMapping("/report-comments/{commentId}")
+    public ResponseEntity<Void> deleteComment(@PathVariable Long commentId) {
+        reportSocialService.deleteComment(commentId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/report-comments/{commentId}/like")
     public ResponseEntity<ReportLikeResponse> likeComment(@PathVariable Long commentId) {
         long likeCount = reportSocialService.likeComment(commentId);

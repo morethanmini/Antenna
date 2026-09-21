@@ -67,7 +67,7 @@ const BY_CODE: Record<string, Text> = {
   [ERROR_CODE.PROVIDER_NOT_SUPPORTED]: { title: '아직 지원하지 않는 로그인 방식입니다' },
 
   // 온체인 (ANT-CHAIN)
-  [ERROR_CODE.ANCHOR_NOT_FOUND]: { title: '앵커 배치를 찾을 수 없습니다', hint: '아직 만들어지지 않았거나 지워진 배치입니다' },
+  [ERROR_CODE.ANCHOR_NOT_FOUND]: { title: '체인 기록을 찾을 수 없습니다', hint: '아직 만들어지지 않았거나 지워진 배치입니다' },
   [ERROR_CODE.PREDICTION_FORBIDDEN]: { title: '아직 공개되지 않은 예측입니다', hint: '판정 전에는 작성자와 구독자만 근거를 볼 수 있습니다' },
   /* 구독하면 풀린다. 재시도로는 안 풀리므로 retryable 을 주지 않는다 — 화면이 구독 CTA 를 띄운다 */
   [ERROR_CODE.REPORT_FORBIDDEN]: { title: '구독자 전용 리포트입니다', hint: '구독하면 본문을 읽고 좋아요·댓글을 남길 수 있습니다' },
@@ -87,7 +87,11 @@ const BY_CODE: Record<string, Text> = {
   [ERROR_CODE.UPLOAD_FILE_NOT_FOUND]: { title: '올린 파일을 찾을 수 없습니다', hint: '다시 올려 주세요' },
 
   // 광고 · 비동기 작업
-  [ERROR_CODE.AD_SLOT_SOLD_OUT]: { title: '해당 기간의 광고 자리가 찼습니다', hint: '다른 기간을 선택해 주세요' },
+  /* "다른 기간을 선택해 주세요" 였는데 **고를 기간이 없다** — 광고가 승인제로 바뀌면서 시작일이
+     사라졌다(화면: "시작일은 고를 수 없고, 관리자가 승인하는 시점부터 시작합니다"). 서버도 시작을
+     늘 now 로 잡아(AdService) 자리를 점유한 광고가 있으면 노출 일수를 1일로 줄여도 구간이 겹친다.
+     안내대로 해도 통과할 수 없으니, 할 수 있는 일(기다리기)을 말한다. */
+  [ERROR_CODE.AD_SLOT_SOLD_OUT]: { title: '광고 자리가 이미 차 있습니다', hint: '게재 중인 광고가 끝난 뒤에 다시 시도해 주세요' },
   [ERROR_CODE.OPERATION_NOT_FOUND]: { title: '처리 내역을 찾을 수 없습니다' },
   [ERROR_CODE.OPERATION_FORBIDDEN]: { title: '이 처리 내역을 볼 수 없습니다' },
 
@@ -159,6 +163,14 @@ const BY_STATUS: Record<number, Text> = {
 const FALLBACK: Text = { title: '문제가 발생했습니다', hint: '잠시 후 다시 시도해 주세요', retryable: true }
 
 export function errorText(error: ApiError): Text {
+  /* CLIENT_NOT_JSON 은 사유가 아니라 **code 를 못 읽었다**는 말이다. nginx 가 주는 502·503·504·413 은
+     본문이 HTML 이라 전부 여기로 오는데(client.ts 가 status 를 보기 전에 던진다), 그때 남은 단서는
+     상태 코드뿐이다. code 를 먼저 보면 BY_STATUS 의 그 줄들이 영영 안 닿는다.
+     status 를 모르는 경우 — 백엔드 없이 SPA fallback 이 index.html 을 200 으로 주는 원래 상황 — 는
+     BY_STATUS 에 200 이 없어 그대로 아래 BY_CODE 로 떨어진다. */
+  if (error.code === CLIENT_ERROR_CODE.CLIENT_NOT_JSON) {
+    return BY_STATUS[error.status] ?? BY_CODE[error.code] ?? FALLBACK
+  }
   return BY_CODE[error.code] ?? BY_STATUS[error.status] ?? FALLBACK
 }
 

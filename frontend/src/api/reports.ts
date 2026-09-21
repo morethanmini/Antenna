@@ -260,6 +260,11 @@ export function unlikeComment(commentId: number) {
   return api.delete<void>(`/report-comments/${commentId}/like`)
 }
 
+/** 내 댓글 삭제. 204 — 서버는 행을 남기고 상태만 DELETED 로 바꾼다. 남의 댓글·가려진 댓글은 404 COMMENT_NOT_FOUND */
+export function deleteComment(commentId: number) {
+  return api.delete<void>(`/report-comments/${commentId}`)
+}
+
 export function createComment(reportId: number, body: string) {
   return api.post<{ id: number }>(`/reports/${reportId}/comments`, { body })
 }

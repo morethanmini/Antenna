@@ -160,6 +160,9 @@
   min-width:172px;padding:7px;
   border:1px solid var(--rule);border-radius:12px;background:var(--surface);
   box-shadow:0 14px 34px -14px rgba(20,20,27,.34);
+  /* 항목이 다섯이라 작은 화면에서는 아래가 화면 밖으로 나간다. 안에서 굴린다 —
+     머리줄에 붙은 팝오버라 키를 늘리면 차트를 통째로 덮는다 */
+  max-height:min(56vh,440px);overflow:auto;overscroll-behavior:contain;
 }
 .sp-indpop button{
   display:flex;align-items:center;gap:9px;

@@ -252,8 +252,8 @@ export default function PredictDetail() {
           <section className="pd-card">
             <h2>조작 불가 근거</h2>
             <p className="pd-hint">
-              등록 시점에 남긴 값입니다. 커밋 해시는 서버 salt 와 결합해 만들어지며, 앵커가
-              확정되면 블록체인에 올라가 뒤에서 바꿀 수 없습니다.
+              등록 시점에 남긴 값입니다. 커밋 해시는 서버 salt 와 결합해 만들어지며,
+              체인 기록이 확정되면 블록체인에 올라가 뒤에서 바꿀 수 없습니다.
             </p>
 
             <dl className="pd-proof">
@@ -271,7 +271,7 @@ export default function PredictDetail() {
                 </dd>
               </div>
               <div>
-                <dt>앵커</dt>
+                <dt>체인 기록</dt>
                 <dd>
                   {/* 배치 번호는 검산 응답에만 있다. 그것으로 배치 상세(D-02) 링크를
                       만들고, 못 받았으면 상세가 준 상태값만 말한다 — 없는 배치

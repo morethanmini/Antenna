@@ -51,3 +51,43 @@ export function onSimOnboardingOpen(fn: () => void) {
   window.addEventListener(OPEN, fn)
   return () => window.removeEventListener(OPEN, fn)
 }
+
+/* ── G-04 진행 화면 안내(PlayCoachMarks) ──────────────────
+   G-00 과 달리 **두 군데에 적는다.**
+
+   G-00 은 "모의투자가 무엇인지" 라 한 번 보면 끝이지만, 이쪽은 어느 버튼이 무슨 일을
+   하는지라 한 번에 외워지지 않는다. 닫았다고 영영 감추면 실수로 닫은 사람이 되돌릴
+   길이 화면 안 글자 버튼뿐이고, 그렇다고 들어올 때마다 띄우면 하루 넘기다 목록을
+   오가는 동안 화면이 계속 어두워진다. 그래서 둘로 나눈다.
+
+   sessionStorage  그냥 닫았다. 이 탭을 쓰는 동안만 조용하고, 다음에 새로 열면 또 뜬다.
+   localStorage    "다시 보지 않기" 를 체크하고 닫았다. 그때부터 영영 뜨지 않는다.
+
+   회원별로 나누지 않는 것은 G-00 과 같다 — 이 값을 읽는 시점에 user 가 아직 안 올 수
+   있어서, id 를 키에 섞으면 오히려 더 자주 어긋난다.
+
+   ⚠ 예전 버전은 닫기만 해도 localStorage 에 '1' 을 적었다. 그때 닫은 사람은 이미
+   "다시 보지 않기" 로 남아 있으므로 자동으로는 뜨지 않는다 — 화면 안 "화면 안내 보기"
+   로 열 수 있고, 지우려면 이 키를 지우면 된다. */
+const PLAY_KEY = 'antena.sim.play.coach'
+
+/**
+ * 안내를 닫았다.
+ *
+ * @param forever "다시 보지 않기" 를 체크했는가. 아니면 이 탭 세션 동안만 조용하다.
+ */
+export function markPlayCoachClosed(forever: boolean) {
+  try {
+    sessionStorage.setItem(PLAY_KEY, '1')
+    if (forever) localStorage.setItem(PLAY_KEY, '1')
+  } catch { /* 저장이 막혀 있으면 그냥 다시 본다 */ }
+}
+
+/** G-04 가 화면을 다 그린 뒤 읽는다. 둘 중 하나라도 서 있으면 저절로 뜨지 않는다. */
+export function playCoachMuted(): boolean {
+  try {
+    return localStorage.getItem(PLAY_KEY) === '1' || sessionStorage.getItem(PLAY_KEY) === '1'
+  } catch {
+    return false
+  }
+}

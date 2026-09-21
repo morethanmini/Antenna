@@ -214,7 +214,9 @@ export default function Ad() {
                 <input
                   type="number" className="ad-input is-num"
                   value={days} min={terms?.minDays} max={terms?.maxDays}
-                  onChange={(e) => setDays(Number(e.target.value))}
+                  /* 위로만 자른다 — 아래까지 자르면 칸을 비우고 새로 칠 수가 없다. 모자란 값은 daysOk 가 막는다.
+                     안 자르면 99999999일 → 99,999,999,000 ANT 가 그대로 그려졌다(QA 09-21, 서버는 maxDays 로 막는다). */
+                  onChange={(e) => setDays(Math.min(Number(e.target.value), terms?.maxDays ?? Infinity))}
                 />
                 <span>일</span>
               </div>
