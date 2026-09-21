@@ -140,6 +140,10 @@
    끊으므로 평소 줄바꿈(한국어 keep-all 포함)은 그대로다. 새 칸을 만들면 여기에 더한다. */
 .ch-bio,.pd-note,.pd-points li,.sd-point-body,.sd-picked b,.rd-title,.rp-title,.rp-summary,
 .se-body h2,.se-sub{overflow-wrap:anywhere}
+/* 2026-09-21 전수 점검에서 더 나온 칸. 한글은 글자마다 끊겨 멀쩡해 보였고, 끊을 곳이 없는 영문·숫자
+   30자 닉네임("WWWW…")에서만 터졌다 — 마이페이지 이름이 옆의 성적 카드 위로 넘어갔다.
+   이름을 말줄임하지 않고 줄을 바꾼다: 자기 이름이 잘려 보이면 안 된다. */
+.mp-who h1,.ch-id h1,.ch-links a,.ch-report-title,.hm-hello,.rd-author,.rc-author{overflow-wrap:anywhere}
 html,body{height:100%}
 body{
   margin:0;background:var(--ground);color:var(--body);

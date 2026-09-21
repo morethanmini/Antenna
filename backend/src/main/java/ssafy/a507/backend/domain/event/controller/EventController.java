@@ -76,7 +76,11 @@ public class EventController {
                         userId,
                         ENTRY_ENDPOINT,
                         idempotencyKey,
-                        IdempotencyStore.hash(eventId + "|" + request.signature()),
+                        /* 서명이 아니라 항목을 해시한다(2026-09-21). 전에는 서명이 항목 전부를 덮으므로 서명 하나로
+                           본문을 대신했다 — 그런데 화면은 재시도마다 nonce 를 새로 받아 다시 서명하므로, 접수는 됐는데
+                           응답만 잃은 재시도가 저장된 예측을 돌려받지 못하고 IDEMPOTENCY_KEY_REUSED(409) 였다.
+                           record 의 toString 은 구성요소를 순서대로 담아 같은 항목이면 같은 문자열이다. */
+                        IdempotencyStore.hash(eventId + "|" + request.items()),
                         () ->
                                 eventEntryService.register(userId, eventId, request).entries().stream()
                                         .map(e -> String.valueOf(e.predictionId()))

@@ -170,6 +170,59 @@ class ReportControllerTest {
     }
 
     @Test
+    @DisplayName("같은 키·같은 글이면 서명이 달라도 재생한다 — 화면은 재시도마다 nonce 를 새로 받아 다시 서명한다")
+    void 발행_멱등_재서명() throws Exception {
+        /* 위 테스트는 서명까지 같은 문자열을 두 번 보낸다. 실제 화면에는 그런 재시도가 없다 — nonce 가 한 번 쓰면
+           타 버려 다시 누르면 서명이 반드시 달라진다. 서명이 해시에 들어가 있던 동안 이 경로는 409 였고, 막힌
+           사용자가 제목을 고치면 새 키가 나가 같은 리포트가 두 번 발행됐다(QA 09-21). */
+        String first = mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(authorId)))
+                        .with(csrf())
+                        .header("Idempotency-Key", "key-resign")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signedBody("재서명 리포트", "본문", true)))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String second = mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(authorId)))
+                        .with(csrf())
+                        .header("Idempotency-Key", "key-resign")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signedBody("재서명 리포트", "본문", true)))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertThat(second).isEqualTo(first);
+        assertThat(countReports("재서명 리포트")).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("같은 키로 다른 글을 보내면 409 IDEMPOTENCY_KEY_REUSED — 서명을 뺀 뒤에도 내용은 본다")
+    void 발행_멱등키_다른_글() throws Exception {
+        mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(authorId)))
+                        .with(csrf())
+                        .header("Idempotency-Key", "key-other")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signedBody("첫 글", "본문", true)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(authorId)))
+                        .with(csrf())
+                        .header("Idempotency-Key", "key-other")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signedBody("둘째 글", "본문", true)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("IDEMPOTENCY_KEY_REUSED"));
+    }
+
+    @Test
     @DisplayName("Idempotency-Key 가 없으면 400 IDEMPOTENCY_KEY_REQUIRED")
     void 발행_키_누락() throws Exception {
         mockMvc.perform(post(URL)

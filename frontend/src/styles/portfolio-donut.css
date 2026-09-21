@@ -5,7 +5,8 @@
 
 .pd{display:flex;flex-direction:column;gap:14px}
 
-.pd-ring{position:relative;width:132px;margin:0 auto}
+/* container-type — 가운데 금액이 고리 폭(cqw)을 기준으로 줄어든다. 아래 .pd-center b 참고 */
+.pd-ring{position:relative;width:132px;margin:0 auto;container-type:inline-size}
 .pd-ring svg{display:block;width:100%;height:auto}
 .pd-ring circle{fill:none;stroke-width:15}
 .pd-track{stroke:var(--surface-2)}
@@ -17,6 +18,12 @@
 }
 .pd-center span{color:var(--muted);font-size:var(--fs-3xs);font-weight:var(--fw-bold)}
 .pd-center b{color:#0e1330;font-size:var(--fs-md);font-weight:var(--fw-black);letter-spacing:-.02em}
+/* 자릿수가 늘면 글자를 줄인다. 고리 안지름은 폭의 64%(선 두께 15 를 뺀 값)이고 이 글꼴은
+   글자당 0.6em 쯤이다(실측) — 고리에 닿지 않게 폭의 58% 안에 들게 하면 96cqw / 글자수 가 된다.
+   150px 고리(시즌 진행)는 1억(12자)까지 지금 크기 그대로고, 132px 고리(결과)는 3천만원대(11자)부터
+   조금 줄어든다 — 전에는 82.9px 글자가 84.7px 안지름에 거의 닿아 있었다. 100억(15자)까지 고리 안에 머문다.
+   cqw 를 모르는 브라우저는 이 줄을 통째로 버려 윗줄 크기로 남는다. */
+.pd-center b{font-size:min(var(--fs-md), calc(96cqw / var(--pd-n, 11)))}
 
 .pd-legend{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
 .pd-legend li > *{

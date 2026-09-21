@@ -663,6 +663,8 @@ export default function PredictTab({
                   placeholder={summary?.prevClose ? String(summary.prevClose) : '0'}
                   aria-label="목표가"
                   aria-describedby="pf-target-help"
+                  // 서버가 받는 가장 긴 값(정수 12자리 + 소수 2자리)에 쉼표를 친 길이다. 값 검증은 따로 한다
+                  maxLength={19}
                   onChange={(e) => setTarget(e.target.value)}
                 />
                 <span className="sd-unit">원</span>

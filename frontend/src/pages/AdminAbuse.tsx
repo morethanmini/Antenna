@@ -172,7 +172,7 @@ export default function AdminAbuse() {
                   </td>
                   <td>
                     {REASON_LABEL[r.reason] ?? r.reason}
-                    {r.detail && <div className="admin-dim">{r.detail}</div>}
+                    {r.detail && <div className="admin-dim admin-detail">{r.detail}</div>}
                   </td>
                   <td>{r.reporterNickname ?? `#${r.reporterId}`}</td>
                   <td className="admin-dim">{when(r.createdAt)}</td>

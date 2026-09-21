@@ -265,6 +265,11 @@
   display:grid;grid-template-columns:minmax(0,168px) minmax(0,118px) minmax(0,150px);
   justify-content:start;gap:0;
 }
+/* 칸 폭을 못 박았으므로 넘치는 값은 칸 안에서 자른다(2026-09-21). 목표가는 정수 12자리까지 받는데
+   "999,999,999,999.99원" 은 168px 을 넘어 옆 칸의 "예측 기간" 라벨 위에 겹쳤다. 주가로는 나올 수 없는
+   길이라 줄을 바꿔 표의 정렬을 깨는 대신 말줄임한다 — 온전한 값은 상세에서 본다. */
+.my-predictions-page .mp-row.is-shared .mp-figures > div{min-width:0}
+.my-predictions-page .mp-row.is-shared .mp-figures dd{min-width:0;overflow:hidden;text-overflow:ellipsis}
 /* 오른쪽 칸이 두 줄을 다 차지하게 두고, 링크는 왼쪽 칸 아래로 붙인다.
    자동 배치에 맡기면 링크가 왼쪽 칸의 오른쪽 끝에 걸려 어느 쪽에 속한
    버튼인지 흐려진다. */

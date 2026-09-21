@@ -120,6 +120,7 @@ export default function TickerPickerModal({
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              maxLength={50}
               placeholder="종목명으로 검색 (예: 삼성전자)"
               aria-label="종목명 검색"
             />

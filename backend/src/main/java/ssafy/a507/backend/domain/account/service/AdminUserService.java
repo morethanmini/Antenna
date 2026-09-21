@@ -29,6 +29,9 @@ public class AdminUserService {
     /** 한 번에 돌려주는 최대 인원. 운영자가 눈으로 훑는 목록이라 페이지네이션 대신 상한만 둔다. */
     private static final int LIST_LIMIT = 50;
 
+    /** 통합 검색(SearchService)과 같은 값이다. 닉네임이 30자라 이보다 긴 검색어는 맞을 것이 없다. */
+    private static final int MAX_QUERY_LENGTH = 50;
+
     private final UserRepository userRepository;
     private final CurrentUserProvider currentUserProvider;
 
@@ -42,8 +45,12 @@ public class AdminUserService {
     @Transactional(readOnly = true)
     public AdminUserListResponse search(String q) {
         requireAdmin();
+        String keyword = q == null ? "" : q.trim();
+        if (keyword.length() > MAX_QUERY_LENGTH) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST, "q");
+        }
         List<AdminUserItem> items =
-                userRepository.searchForAdmin(q == null ? "" : q.trim(), Limit.of(LIST_LIMIT)).stream()
+                userRepository.searchForAdmin(keyword, Limit.of(LIST_LIMIT)).stream()
                         .map(AdminUserItem::of)
                         .toList();
         return new AdminUserListResponse(items);

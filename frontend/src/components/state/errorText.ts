@@ -92,6 +92,9 @@ const BY_CODE: Record<string, Text> = {
      늘 now 로 잡아(AdService) 자리를 점유한 광고가 있으면 노출 일수를 1일로 줄여도 구간이 겹친다.
      안내대로 해도 통과할 수 없으니, 할 수 있는 일(기다리기)을 말한다. */
   [ERROR_CODE.AD_SLOT_SOLD_OUT]: { title: '광고 자리가 이미 차 있습니다', hint: '게재 중인 광고가 끝난 뒤에 다시 시도해 주세요' },
+  /* 취소를 누르는 사이 관리자가 승인·반려한 경우다. 매핑이 없어 "요청을 처리할 수 없습니다" 로
+     뭉개졌다 — 승인됐다면 게재료가 이미 나가는 중이라 그 사실을 말해야 한다. */
+  [ERROR_CODE.AD_ALREADY_HANDLED]: { title: '이미 처리된 광고 신청입니다', hint: '관리자가 먼저 승인하거나 반려했습니다. 승인된 신청은 취소할 수 없습니다' },
   [ERROR_CODE.OPERATION_NOT_FOUND]: { title: '처리 내역을 찾을 수 없습니다' },
   [ERROR_CODE.OPERATION_FORBIDDEN]: { title: '이 처리 내역을 볼 수 없습니다' },
 

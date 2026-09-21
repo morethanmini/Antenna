@@ -57,6 +57,8 @@ public class StockService {
 
     private static final int DEFAULT_PAGE_SIZE = 20;
     private static final int MAX_PAGE_SIZE = 100;
+    /** 통합 검색(SearchService)과 같은 값이다. 제한이 없어 아무 길이나 LIKE 질의로 갔다(QA 09-21). */
+    private static final int MAX_QUERY_LENGTH = 50;
     private static final int RATE_SCALE = 2;
 
     /** from 을 주지 않았을 때의 기본 구간. 관심 종목 미니차트가 최근 30일을 쓴다. */
@@ -139,6 +141,9 @@ public class StockService {
             throw new BusinessException(ErrorCode.INVALID_REQUEST, "pbrMin");
         }
         String keyword = q == null || q.isBlank() ? null : q.trim().toLowerCase();
+        if (keyword != null && keyword.length() > MAX_QUERY_LENGTH) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST, "q");
+        }
         int pageSize = pageSize(size);
         String after = cursor == null || cursor.isBlank() ? null : cursor;
         LocalDate baseDate = dailyQuoteRepository.findLatestTradeDate().orElse(null);

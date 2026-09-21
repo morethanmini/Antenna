@@ -154,6 +154,20 @@ class AdminUserControllerTest {
                 .andExpect(jsonPath("$.items[0].nickname").value("말썽꾼"));
     }
 
+    @Test
+    @DisplayName("검색어는 50자까지 — 넘으면 400 INVALID_REQUEST field=q. 통합 검색과 같은 상한이다")
+    void 검색어_길이_상한() throws Exception {
+        mockMvc.perform(get(URL).param("q", "가".repeat(50))
+                        .with(user(String.valueOf(adminId))).with(csrf()))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get(URL).param("q", "가".repeat(51))
+                        .with(user(String.valueOf(adminId))).with(csrf()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.field").value("q"));
+    }
+
     // ── 도우미 ──────────────────────────────────────────────
 
     private void 상태변경(Long userId, String status) throws Exception {
