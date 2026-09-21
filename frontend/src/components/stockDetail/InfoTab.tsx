@@ -488,8 +488,8 @@ export default function InfoTab({ code, summary, picked, onPick, onGoPredict }: 
                     <Link to={`/stocks/${p.code}`}>{p.name}</Link>
                   </th>
                   <td className="num">{p.prevClose === null ? '—' : `${p.prevClose.toLocaleString('ko-KR')}원`}</td>
-                  <td className="num">{num(p.per, '', 1)}</td>
-                  <td className="num">{num(p.pbr, '', 2)}</td>
+                  <td className="num">{num(p.per, '배', 1)}</td>
+                  <td className="num">{num(p.pbr, '배', 2)}</td>
                 </tr>
               ))}
             </tbody>
