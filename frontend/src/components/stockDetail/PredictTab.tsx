@@ -193,6 +193,17 @@ export default function PredictTab({
      전일 종가가 없는 종목은 어차피 서버가 등록을 받지 않는다(latestClose 400). */
   const direction: Direction | null = gap === null || gap === 0 ? null : gap > 0 ? 'UP' : 'DOWN'
 
+  /* 버튼에 적을 등락률 글자(2026-09-21, QA). 목표가를 길게 치면 비율이 커지는데,
+     toFixed(2) 는 1e21 부터 지수 표기(`2.15e+22`)를 내놓아 버튼이 고장난 것처럼 보이고
+     그 전에도 자릿수가 늘어 입력칸을 폼 밖으로 밀어낸다. 1조 원 미만만 등록되므로
+     이만한 비율은 어차피 못 넣는 값이다 — 읽을 수 있는 선에서 자른다. */
+  const GAP_CAP = 9999
+  const gapText = (g: number) => (
+    Math.abs(g) > GAP_CAP
+      ? `${g > 0 ? '+' : '-'}${GAP_CAP.toLocaleString('ko-KR')}% 초과`
+      : `${g > 0 ? '+' : ''}${g.toFixed(2)}%`
+  )
+
   /* 근거(note)도 필수다 — 서버가 @NotBlank 로 받아 비우면 400 이다(명세: note *).
      커밋의 noteHash 가 봉인의 핵심이라, 근거 없는 예측은 규격상 만들 수 없다. */
   const draft: PredictionDraft | null = useMemo(() => {
@@ -636,7 +647,7 @@ export default function PredictTab({
                   onClick={() => setPctOpen((v) => !v)}
                 >
                   <b className={gap === null ? '' : `num ${gap >= 0 ? 'up' : 'down'}`}>
-                    {gap === null ? '등락률(%)' : `${gap > 0 ? '+' : ''}${gap.toFixed(2)}%`}
+                    {gap === null ? '등락률(%)' : gapText(gap)}
                   </b>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                        strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

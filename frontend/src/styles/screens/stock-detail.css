@@ -740,7 +740,9 @@
 
 /* 등락률 고르개 — 목표가 칸 왼쪽에 붙는다 */
 .stock-detail-page .pf-pct-btn{
-  display:flex;align-items:center;gap:5px;flex:none;
+  /* 글자가 길어져도 **입력칸을 밀지 않는다**(2026-09-21) — 등락률은 잘려도 읽을 수
+     있지만 목표가 칸이 좁아지면 지금 치는 값이 안 보인다 */
+  display:flex;align-items:center;gap:5px;flex:0 1 auto;min-width:0;max-width:45%;
   height:46px;padding:0 11px;
   border:1px solid var(--rule);border-right:0;border-radius:12px 0 0 12px;
   background:var(--surface-2);color:var(--muted);
@@ -750,7 +752,11 @@
 .stock-detail-page .pf-pct-btn:hover:not(:disabled){background:#eceefb}
 .stock-detail-page .pf-pct-btn:disabled{opacity:.5;cursor:not-allowed}
 .stock-detail-page .pf-pct-btn:focus-visible{outline:2px solid var(--brand);outline-offset:-2px}
-.stock-detail-page .pf-pct-btn b{font-weight:var(--fw-bold);white-space:nowrap}
+.stock-detail-page .pf-pct-btn b{
+  font-weight:var(--fw-bold);white-space:nowrap;
+  min-width:0;overflow:hidden;text-overflow:ellipsis;
+}
+.stock-detail-page .pf-pct-btn svg{flex:none}
 .stock-detail-page .pf-pct-btn.is-open svg{transform:rotate(180deg)}
 
 /* 고르개 목록. 칸 아래에 떠서 다음 단계를 밀지 않는다 */

@@ -29,13 +29,22 @@ body.sim-home-page{
   --hero-py:34px;
   --hero-px:44px;
   --hero-min:440px;      /* 히어로 최소 높이. 개미 그림이 이 안에 들어간다 */
-  --title:var(--fs-title-hero);
-  --lead:var(--fs-xl);
+  /* 34px(--fs-title-hero)보다 크다. 이 화면은 제목 아래 설명 줄이 없어 제목 혼자
+     첫 화면을 들고 있어야 해서, 토큰 밖의 값을 여기서만 쓴다. */
+  --title:44px;
   --btn-h:56px;
   --art:400px;           /* 개미 그림 폭 */
 
-  --card-h:270px;        /* 주제 카드 높이 */
+  /* 주제 카드 높이. 설명 줄이 있던 때는 270 이었는데, 글을 걷어내고 나니 사진만
+     남은 빈 판이 됐다. 설명 두 줄짜리 카드와 같은 높이(212)로 내린다. */
+  --card-h:212px;
   --card-min:236px;      /* 주제 카드 최소 폭 — 다섯 장이 1600 안에 서는 값 */
+  --card-pt:20px;        /* 카드 위 여백. 번호 배지가 이 값만큼 끌어올려져 윗변에 붙는다 */
+  /* 사실 띠 글자·항목 사이. 넷이 한 줄에 서야 해서 폭이 좁아지면 같이 내려간다 —
+     접히면 띠가 두 줄이 되고 그만큼 화면이 넘친다. */
+  --fact:var(--fs-2xl);
+  --fact-gap:26px;
+  --quote:28px;
 
   /* 어두운 판의 색 한 벌 */
   --night-0:#0d0c22;
@@ -53,17 +62,157 @@ body.sim-home-page{
 
 body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--page-pb)}
 
+/* ── 페이지 전체가 밤이다(2026-09-21) ──────────────────────
+   시안은 히어로만 어두운 카드가 아니라 본문 전체가 밤 도시다. 상단바는 그대로 밝게 두고
+   .main 만 어둡게 칠한다 — bodyClass 로 한정되므로 다른 화면은 영향이 없다.
+   도시 실루엣(city-night.webp)은 scripts/build-city-night.py 가 그린 것이다. 사진이
+   아니라 사각형과 창문 점으로 만든 그림이어서 시대·지역 단서가 없다.
+   body 도 같은 색으로 칠해 스크롤 끝에서 밝은 바탕이 새지 않게 한다. */
+body.sim-home-page{background:var(--night-0)}
+body.sim-home-page .main{
+  position:relative;isolation:isolate;
+  color:var(--night-ink);
+  background:
+    radial-gradient(60% 45% at 72% 12%, rgba(139,125,255,.30) 0%, transparent 60%),
+    radial-gradient(45% 40% at 12% 30%, rgba(84,87,232,.22) 0%, transparent 60%),
+    radial-gradient(50% 35% at 50% 100%, rgba(120,100,255,.25) 0%, transparent 70%),
+    linear-gradient(180deg, #100e2b 0%, var(--night-1) 45%, var(--night-0) 100%);
+}
+/* 도시는 별도 레이어에 깐다. 배경 이미지로 같이 넣으면 그라데이션과 크기 기준이 달라
+   화면 폭에 따라 끊긴다. 아래에 붙여 두고 위쪽은 하늘로 흐려진다. */
+body.sim-home-page .main::before{
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  /* 건물 꼭대기가 주제 카드 뒤 어깨쯤(화면 55%)에 오게 위에서부터 자리를 잡는다 */
+  background:url("/assets/page_train/city-night.webp") center 100% / max(1920px,100%) auto no-repeat;
+  background-position-y:min(100%, calc(100% - 4vh));
+  opacity:.85;
+  mask:linear-gradient(180deg, transparent 20%, #000 60%, #000 100%);
+  -webkit-mask:linear-gradient(180deg, transparent 20%, #000 60%, #000 100%);
+}
+
+/* ── 상단바도 밤이다(2026-09-21) ────────────────────────
+   시안은 바까지 어두운 한 덩어리다. 셸(app.css)의 상단바는 흰 유리 한 벌로 맞춰져
+   있어서, 그 위에 어두운 배경만 깔면 **아무것도 안 보인다** — 유리 버튼의 형태는
+   흰 테와 어두운 그림자가 만드는데, 어두운 바탕에서는 흰 테가 과하게 튀고 그림자는
+   통째로 사라진다. 그래서 색 한 벌을 여기서 뒤집는다.
+   1. 채움은 흰색을 아주 옅게(.06~.12). 밝은 판에서 쓰던 청회색 그러데이션은 어두운
+      바탕에서 때 낀 것처럼 보인다.
+   2. 형태는 **안쪽 위의 흰 줄 하나**가 잡는다. 바깥 헤어라인은 어두운 선 대신
+      옅은 흰 선이다 — 어두운 선은 어두운 바탕에서 경계가 되지 못한다.
+   3. 바깥 그림자는 뺀다. 어두운 바탕 위의 검은 그림자는 보이지 않으면서 색만 탁하게
+      만든다.
+   메뉴 **항목은 손대지 않는다** — 바뀌는 것은 색뿐이다.
+   곁창(검색 · 알림 · 계정 · 햄버거)은 바에 매달린 별개의 판이라 그대로 밝게 둔다.
+
+   로고는 CSS 로 못 바꾼다(img src). Layout.tsx 의 NIGHT_PAGES 가 밝은 글자
+   버전으로 갈아 끼운다 — 기본 워드마크는 글자가 짙은 남색이라 여기서 사라진다. */
+body.sim-home-page{
+  --nav-glass:linear-gradient(180deg, rgba(255,255,255,.12) 0%, rgba(255,255,255,.05) 55%, rgba(255,255,255,.09) 100%);
+  --nav-glass-hi:linear-gradient(180deg, rgba(255,255,255,.2) 0%, rgba(255,255,255,.1) 55%, rgba(255,255,255,.16) 100%);
+  --nav-raise:0 0 0 1px rgba(255,255,255,.1), inset 0 1px 0 rgba(255,255,255,.22);
+  --nav-raise-hi:0 0 0 1px rgba(255,255,255,.18), inset 0 1px 0 rgba(255,255,255,.34);
+  --nav-inset:inset 0 0 0 1px rgba(255,255,255,.07), inset 0 2px 5px rgba(0,0,0,.35);
+}
+/* **뒤가 비쳐야 한다(2026-09-21).** .82 로 깔았더니 바와 본문이 서로 다른 검정
+   두 판으로 갈려 경계에 가로 줄이 생겼다. 본문의 그러데이션·도시가 바 밑으로
+   그대로 지나가므로(.main 은 top:0 에서 시작하고 padding-top 으로 밀린다) 알파를
+   내리면 그 그림이 비쳐 한 덩어리가 된다.
+   아래 실선도 뺀다 — 비치는 바에 선을 그으면 그 선만 남아 다시 두 판이 된다.
+   대신 아주 옅은 흰 줄 하나로 바닥을 표시한다. */
+body.sim-home-page .navbar{
+  background:rgba(18,16,44,.55);
+  border-bottom-color:rgba(255,255,255,.07);
+}
+@supports (backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px)){
+  body.sim-home-page .navbar{
+    background:rgba(18,16,44,.34);
+    -webkit-backdrop-filter:blur(16px) saturate(150%);
+    backdrop-filter:blur(16px) saturate(150%);
+  }
+}
+
+/* 모드 전환 — 파인 트랙은 어두운 바탕에서 반대로 읽힌다. 안쪽 위를 더 어둡게 두고
+   아래 밝은 줄을 지운다(흰 줄이 어두운 바에서 혼자 빛난다). 켜진 알은 그대로 브랜드색. */
+body.sim-home-page .modeswitch{
+  --ms-track:rgba(255,255,255,.08);
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.4), inset 0 -1px 0 rgba(255,255,255,.08), 0 0 0 1px rgba(255,255,255,.07);
+}
+body.sim-home-page .modeswitch a{color:var(--night-faint);text-shadow:none}
+body.sim-home-page .modeswitch a:hover{color:var(--night-ink)}
+body.sim-home-page .modeswitch a.on{color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.3)}
+
+/* 메뉴 글자. 밝은 판에서는 검정이었다 — 여기서는 그 반대로 간다.
+   짚으면 뜨고 지금 있는 자리는 들어가 있다는 규칙(app.css)은 그대로 살린다. */
+body.sim-home-page .navmenu a{color:var(--night-body)}
+body.sim-home-page .navmenu a:hover{
+  color:#fff;background-image:var(--nav-glass);box-shadow:var(--nav-raise);
+}
+body.sim-home-page .navmenu a.on{
+  color:#fff;background-color:rgba(0,0,0,.18);box-shadow:var(--nav-inset);
+}
+body.sim-home-page .navmenu a.on:hover{
+  background-image:none;background-color:rgba(0,0,0,.26);box-shadow:var(--nav-inset);
+}
+
+/* 잔액 칩 · 아이콘 버튼 · 프로필 — 유리 한 벌을 어두운 쪽으로 갈아 끼운다 */
+body.sim-home-page .wallet,
+body.sim-home-page .iconbtn{background-image:var(--nav-glass);box-shadow:var(--nav-raise)}
+body.sim-home-page .wallet{color:#fff}
+body.sim-home-page .iconbtn{color:var(--night-body)}
+body.sim-home-page .wallet:hover,
+body.sim-home-page .iconbtn:hover{background-image:var(--nav-glass-hi);box-shadow:var(--nav-raise-hi);color:#fff}
+body.sim-home-page .wallet:active,
+body.sim-home-page .iconbtn:active{box-shadow:var(--nav-inset)}
+/* 곁창을 열어 둔 버튼은 눌린 채로. 밝은 판의 연보라 채움은 어두운 바에서 탁해
+   보여, 브랜드색을 좀 더 진하게 깐다. */
+body.sim-home-page .iconbtn[aria-expanded="true"]{
+  background-image:linear-gradient(180deg,
+    color-mix(in oklab, var(--brand) 55%, transparent) 0%,
+    color-mix(in oklab, var(--brand) 72%, transparent) 100%);
+  color:#fff;box-shadow:inset 0 2px 6px rgba(0,0,0,.3), 0 0 0 1px color-mix(in oklab, var(--brand) 60%, transparent);
+}
+body.sim-home-page .avatarbtn{box-shadow:var(--nav-raise)}
+body.sim-home-page .avatarbtn:hover{box-shadow:var(--nav-raise-hi)}
+
+/* 바에 매달린 작은 메뉴 둘(햄버거 · 계정). 흰 판 그대로 두면 어두운 바 아래로
+   밝은 카드가 튀어나와, 바와 한 몸인 메뉴가 아니라 남의 창처럼 보인다.
+   알림 곁창은 건드리지 않는다 — 그쪽은 메뉴가 아니라 읽을거리가 담긴 판이다. */
+body.sim-home-page .navburger-pop,
+body.sim-home-page .accountmenu-pop{
+  background:rgba(24,21,58,.96);border-color:rgba(255,255,255,.12);
+  box-shadow:0 18px 44px -18px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.08);
+}
+body.sim-home-page .navburger-pop a,
+body.sim-home-page .accountmenu-pop a,
+body.sim-home-page .accountmenu-pop button{color:var(--night-body)}
+body.sim-home-page .navburger-pop a:hover,
+body.sim-home-page .accountmenu-pop a:hover,
+body.sim-home-page .accountmenu-pop button:hover{background:rgba(255,255,255,.09);color:#fff}
+/* 지금 있는 자리는 한 줄일 때(.navmenu a.on)와 같은 음각이다 */
+body.sim-home-page .navburger-pop a.on{
+  background-color:rgba(0,0,0,.3);color:#fff;box-shadow:var(--nav-inset);
+}
+body.sim-home-page .navburger-pop a.on:hover{background-color:rgba(0,0,0,.36);box-shadow:var(--nav-inset)}
+/* 로그아웃은 색으로 구분한다는 규칙을 어두운 판에서도 지킨다 — 기본 --danger 는
+   어두운 바탕에서 가라앉아 한 단계 밝힌다. */
+body.sim-home-page .accountmenu-pop .is-danger{color:#ff8b8b}
+body.sim-home-page .accountmenu-pop .is-danger:hover{background:rgba(255,107,107,.14);color:#ffa3a3}
+
+/* 비로그인 상태의 두 버튼. 로그인 쪽이 흰 판(#fff)이라 어두운 바에서 혼자 튄다. */
+body.sim-home-page .navbar-login{
+  background:rgba(255,255,255,.08);color:var(--night-ink);border-color:rgba(255,255,255,.16)!important;
+}
+body.sim-home-page .navbar-auth a:hover{border-color:var(--glow)!important;color:#fff}
+
 .sim-home{display:flex;flex-direction:column;gap:var(--block-gap);word-break:keep-all}
 
-/* 어두운 판 공통. 히어로와 사실 띠가 같은 색을 쓴다. */
-.sim-home .is-dark{
-  position:relative;color:var(--night-ink);
-  background:
-    radial-gradient(120% 90% at 78% 0%, rgba(139,125,255,.28) 0%, transparent 55%),
-    radial-gradient(70% 70% at 10% 100%, rgba(84,87,232,.30) 0%, transparent 60%),
-    linear-gradient(160deg, var(--night-1) 0%, var(--night-0) 100%);
-  border:1px solid var(--night-line);
-  box-shadow:0 22px 50px -30px rgba(20,16,60,.7);
+/* 밤 위에 놓이는 판. 히어로는 판이 아니라 바닥에 바로 앉고(아래 .sh-hero 참고),
+   사실 띠만 유리판으로 뜬다. */
+.sim-home .is-dark{position:relative;color:var(--night-ink)}
+.sim-home .sh-facts{
+  background:rgba(255,255,255,.06);border:1px solid var(--night-line);
+  backdrop-filter:blur(12px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 22px 50px -30px rgba(0,0,0,.8);
 }
 
 /* ── 히어로 ─────────────────────────────────────────── */
@@ -71,22 +220,13 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
   display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr) 260px;
   align-items:center;gap:20px;
   min-height:var(--hero-min);padding:var(--hero-py) var(--hero-px);
-  border-radius:24px;overflow:hidden;isolation:isolate;
+  isolation:isolate;
 }
 
-/* 배경. 도시 실루엣은 그라데이션 띠로 흉내 내고(사진이 없다), 빛줄기·별·촛대는
-   pageset 의 장식을 깐다. 전부 pointer-events:none 이라 글과 버튼을 가리지 않는다. */
-.sh-backdrop{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+/* 히어로 안쪽 장식. 도시는 페이지(.main::before)가 깔고, 여기는 빛줄기·별·촛대만
+   얹는다. 전부 pointer-events:none 이라 글과 버튼을 가리지 않는다. */
+.sh-backdrop{position:absolute;inset:-40px 0 0;z-index:-1;pointer-events:none;overflow:hidden}
 .sh-backdrop img{position:absolute;display:block;user-select:none}
-.sh-bd-city{
-  position:absolute;left:0;right:0;bottom:0;height:46%;
-  background:
-    repeating-linear-gradient(90deg,
-      rgba(255,255,255,.035) 0 22px, transparent 22px 34px, rgba(255,255,255,.02) 34px 70px, transparent 70px 92px),
-    linear-gradient(180deg, transparent 0%, rgba(84,87,232,.10) 40%, rgba(13,12,34,.9) 100%);
-  mask:linear-gradient(180deg, transparent 0%, #000 35%, #000 100%);
-  -webkit-mask:linear-gradient(180deg, transparent 0%, #000 35%, #000 100%);
-}
 .sh-bd-wave{left:-6%;top:6%;width:112%;opacity:.55;animation:sh-sway 12s ease-in-out infinite alternate}
 .sh-bd-spark{right:24%;top:2%;width:240px;opacity:.75;animation:sh-twinkle 5s ease-in-out infinite alternate}
 .sh-bd-candles{left:38%;bottom:-6%;width:200px;opacity:.28;filter:blur(.4px)}
@@ -108,16 +248,16 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
   content:"";display:block;width:70%;height:2px;margin-top:2px;border-radius:2px;
   background:linear-gradient(90deg, var(--glow), transparent);
 }
+/* 아래 여백이 큰 것은 제목과 버튼 사이에 아무것도 없어서다 — 설명 줄을 걷어낸
+   뒤로 둘이 바로 붙어 한 덩어리로 읽혔다(2026-09-21). */
 .sh-title{
-  margin:0 0 14px;font-size:var(--title);line-height:1.2;color:#fff;text-wrap:balance;
+  margin:0 0 34px;font-size:var(--title);line-height:1.25;color:#fff;text-wrap:balance;
 }
 .sh-title em{
   font-style:normal;
   background:linear-gradient(90deg,#a99cff 0%,#7c8cff 100%);
   -webkit-background-clip:text;background-clip:text;color:transparent;
 }
-.sh-lead{margin:0 0 22px;font-size:var(--lead);line-height:1.65;color:var(--night-body);font-weight:var(--fw-normal)}
-
 .sh-cta{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .sh-btn{
   display:inline-flex;align-items:center;gap:10px;height:var(--btn-h);padding:0 26px;
@@ -138,8 +278,8 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
 .sh-btn.line:hover{background:var(--night-glass-hi)}
 .sh-btn svg:last-child{margin-right:-4px}
 
-.sh-topic{margin:14px 0 0;font-size:var(--fs-base);color:var(--night-faint);font-weight:var(--fw-normal)}
-.sh-topic b{color:var(--night-ink);font-weight:var(--fw-bold)}
+.sh-topic{margin:16px 0 0;font-size:var(--fs-xl);color:var(--night-body);font-weight:var(--fw-bold)}
+.sh-topic b{color:#fff;font-weight:var(--fw-heavy)}
 
 /* 개미 무대. 그림이 판 아래로 살짝 내려가 책상에 앉은 것처럼 보인다. */
 .sh-stage{
@@ -167,18 +307,18 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
 }
 .sh-glass dt{
   display:flex;align-items:center;gap:7px;margin:0 0 8px;
-  font-size:var(--fs-md);font-weight:var(--fw-bold);color:var(--night-body);
+  font-size:var(--fs-xl);font-weight:var(--fw-bold);color:var(--night-body);
 }
 .sh-glass dt svg{color:var(--glow)}
 .sh-glass dd{margin:0;font-size:var(--fs-6xl);font-weight:var(--fw-black);color:#fff;letter-spacing:-.02em;line-height:1.1}
-.sh-glass dd small{font-size:var(--fs-xl);font-weight:var(--fw-bold);color:var(--night-body);margin-left:4px}
+.sh-glass dd small{font-size:var(--fs-2xl);font-weight:var(--fw-bold);color:var(--night-body);margin-left:4px}
 .sh-glass-err{font-size:var(--fs-base)!important;font-weight:var(--fw-normal)!important;letter-spacing:0!important}
 .sim-home .sh-bar{
   display:block;height:6px;margin-top:12px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden;
 }
 .sim-home .sh-bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#a99cff,#5457e8);transition:width .4s}
 .sh-glass-link{
-  display:inline-block;margin-top:10px;font-size:var(--fs-md);font-weight:var(--fw-bold);color:var(--night-faint);
+  display:inline-block;margin-top:10px;font-size:var(--fs-lg);font-weight:var(--fw-bold);color:var(--night-body);
 }
 .sh-glass-link:hover{color:#fff}
 
@@ -193,7 +333,7 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
 
 .sh-topic-card{
   position:relative;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;
-  height:var(--card-h);padding:20px 20px 18px;border-radius:20px;scroll-snap-align:start;
+  height:var(--card-h);padding:var(--card-pt) 20px 18px;border-radius:20px;scroll-snap-align:start;
   color:var(--night-ink);background-color:var(--night-1);background-size:cover;background-position:center;
   border:1px solid var(--night-line);overflow:hidden;isolation:isolate;
   box-shadow:0 18px 40px -28px rgba(20,16,60,.8);
@@ -206,31 +346,42 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
   background:linear-gradient(180deg, rgba(13,12,34,.10) 0%, rgba(13,12,34,.55) 45%, rgba(13,12,34,.94) 100%);
 }
 .sh-topic-card.is-live{border-color:var(--glow);box-shadow:0 0 0 1px var(--glow), 0 18px 40px -22px rgba(139,125,255,.9)}
+/* 번호 배지는 **흐름 안에** 둔다(2026-09-21).
+   전에는 position:absolute 로 카드 윗변에 얹었는데, 절대 위치는 자리를 차지하지 않아
+   아무도 비켜 주지 않는다. 카드가 낮아지거나(짧은 뷰포트의 --card-h) 제목이 두 줄이
+   되면 글이 위로 밀려 올라와 배지 아래로 파고들었다.
+   흐름에 두고 margin-bottom:auto 로 위에 붙이면 나머지는 그만큼 내려가 겹칠 수가 없다.
+   윗변에 매달린 모양은 음수 margin-top(카드 위 여백만큼)으로 그대로 살린다. */
 .sh-topic-no{
-  position:absolute;top:0;left:18px;padding:9px 12px 12px;border-radius:0 0 10px 10px;
+  align-self:flex-start;margin:calc(var(--card-pt) * -1) 0 auto;
+  padding:9px 12px 12px;border-radius:0 0 10px 10px;
   background:var(--night-glass);border:1px solid var(--night-line);border-top:0;backdrop-filter:blur(8px);
   font-size:var(--fs-base);font-weight:var(--fw-heavy);color:#fff;
 }
 .sh-topic-card.is-live .sh-topic-no{background:var(--brand);border-color:var(--brand)}
-.sh-topic-card h2{margin:0;font-size:var(--fs-4xl);font-weight:var(--fw-black);line-height:1.25;letter-spacing:-.02em;color:#fff;text-wrap:balance}
-.sh-topic-card p{margin:0 0 8px;font-size:var(--fs-base);line-height:1.55;color:var(--night-body);font-weight:var(--fw-normal)}
+/* 아래 여백 8px 은 걷어낸 설명 줄(p)이 들고 있던 값이다 — 그것만 물려받고 글자
+   크기·카드 높이는 설명이 있던 때 그대로다. 지운 것은 글이지 카드가 아니다. */
+.sh-topic-card h2{
+  margin:0 0 8px;font-size:var(--fs-4xl);font-weight:var(--fw-black);line-height:1.25;
+  letter-spacing:-.02em;color:#fff;text-wrap:balance;
+}
 .sh-topic-go{
   display:inline-flex;align-items:center;gap:8px;align-self:flex-start;
   height:38px;padding:0 18px;border-radius:999px;
   background:var(--night-glass);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(8px);
-  color:#fff;font-size:var(--fs-base);font-weight:var(--fw-bold);transition:background .15s,gap .15s;
+  color:#fff;font-size:var(--fs-lg);font-weight:var(--fw-bold);transition:background .15s,gap .15s;
 }
 .sh-topic-go:hover{background:var(--night-glass-hi);gap:12px}
 .sh-topic-card.is-live .sh-topic-go{background:var(--brand);border-color:var(--brand)}
 
 .sh-nav{
   display:none;flex:none;width:40px;height:40px;border-radius:50%;
-  border:1px solid var(--rule);background:var(--surface);color:var(--ink);
-  place-items:center;cursor:pointer;box-shadow:var(--shadow);
+  border:1px solid var(--night-line);background:var(--night-glass);color:#fff;
+  place-items:center;cursor:pointer;backdrop-filter:blur(8px);
 }
-.sh-nav:hover{color:var(--brand);border-color:var(--brand)}
+.sh-nav:hover{background:var(--night-glass-hi);border-color:var(--glow)}
 
-.sh-state{flex:1;margin:0;padding:28px;text-align:center;color:var(--muted);font-weight:var(--fw-normal)}
+.sh-state{flex:1;margin:0;padding:28px;text-align:center;color:var(--night-body);font-weight:var(--fw-normal)}
 
 /* ── 사실 띠 ───────────────────────────────────────── */
 .sh-facts{
@@ -239,19 +390,23 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
 }
 .sh-facts ul{display:flex;align-items:center;gap:0;margin:0;padding:0;list-style:none;flex-wrap:wrap}
 .sh-facts li{
-  display:flex;align-items:center;gap:10px;padding:4px 26px;
-  font-size:var(--fs-lg);font-weight:var(--fw-bold);color:var(--night-body);white-space:nowrap;
+  display:flex;align-items:center;gap:10px;padding:4px var(--fact-gap);
+  font-size:var(--fact);font-weight:var(--fw-bold);color:var(--night-body);white-space:nowrap;
 }
 .sh-facts li + li{border-left:1px solid var(--night-line)}
 .sh-facts li:first-child{padding-left:0}
-.sh-facts li svg{color:var(--glow);flex:none}
+.sh-facts li svg{color:var(--glow);flex:none;width:24px;height:24px}
 .sh-facts li b{color:#fff;font-weight:var(--fw-heavy)}
 .sh-quote{display:flex;align-items:baseline;gap:12px;margin:0;white-space:nowrap}
-.sh-quote .sh-hand{font-size:24px;color:#e6e2ff}
-.sh-quote small{font-size:var(--fs-md);color:var(--night-faint);font-weight:var(--fw-bold)}
+.sh-quote .sh-hand{font-size:var(--quote);color:#e6e2ff}
+.sh-quote small{font-size:var(--fs-xl);color:var(--night-body);font-weight:var(--fw-bold)}
 
 /* ── 반응형 ───────────────────────────────────────── */
 /* 카드가 한 줄에 안 서면 넘겨 보기로 바꾸고 화살표를 낸다 */
+@media (max-width:1460px){
+  body.sim-home-page{--fact:var(--fs-xl);--fact-gap:17px;--quote:24px}
+  .sh-facts li svg{width:21px;height:21px}
+}
 @media (max-width:1400px){
   .sh-topic-track{grid-auto-columns:minmax(260px,32%)}
   .sh-nav{display:grid}
@@ -271,8 +426,8 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
   .sh-topic-track{grid-auto-columns:minmax(260px,48%)}
 }
 @media (max-width:760px){
-  body.sim-home-page{--hero-px:22px;--hero-py:26px;--title:var(--fs-7xl);--btn-h:50px;--art:240px;--hero-min:0}
-  .sh-hero{grid-template-columns:1fr;border-radius:18px}
+  body.sim-home-page{--hero-px:22px;--hero-py:26px;--title:34px;--btn-h:50px;--art:240px;--hero-min:0}
+  .sh-hero{grid-template-columns:1fr}
   .sh-stage{order:2;min-height:0}
   .sh-side{order:3;flex-direction:column}
   .sh-hero-copy > .sh-hand{font-size:26px}
@@ -286,17 +441,19 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
 /* ── 낮은 뷰포트(표시 배율 125%·노트북) ──────────────── */
 @media (min-width:1041px) and (max-height:860px){
   body.sim-home-page{
-    --page-pt:16px;--page-pb:18px;--block-gap:12px;
+    --page-pt:16px;--page-pb:18px;--block-gap:10px;
     --hero-py:24px;--hero-min:364px;--art:330px;--btn-h:50px;
-    --title:var(--fs-7xl);--card-h:206px;
+    --title:38px;--card-h:196px;--card-pt:16px;
   }
-  .sh-lead{margin-bottom:16px}
-  .sh-facts{padding:12px 24px}
+  /* 카드가 낮아진 만큼 배지도 줄인다 — 흐름에 있으므로 배지 크기가 곧 글 자리다 */
+  .sh-topic-no{padding:6px 10px 8px;font-size:var(--fs-sm)}
+  .sh-topic-card{padding-bottom:14px}
+    .sh-facts{padding:12px 24px}
 }
 @media (min-width:1041px) and (max-height:740px){
-  body.sim-home-page{--hero-min:330px;--art:290px;--card-h:200px;--block-gap:10px}
+  body.sim-home-page{--hero-min:330px;--art:290px;--card-h:184px;--block-gap:10px}
   .sh-hero-copy > .sh-hand{font-size:24px;margin-bottom:8px}
-  .sh-title{margin-bottom:8px}
+  .sh-title{margin-bottom:22px}
   .sh-topic-card h2{font-size:var(--fs-3xl)}
 }
 
