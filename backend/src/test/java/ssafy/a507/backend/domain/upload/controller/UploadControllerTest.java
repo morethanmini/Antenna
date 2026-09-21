@@ -10,6 +10,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -102,6 +103,8 @@ class UploadControllerTest {
         byte[] fetched =
                 mockMvc.perform(get(URL + "/" + fileId).with(user(String.valueOf(userId))))
                         .andExpect(status().isOk())
+                        // 없으면 시큐리티 기본값 no-store 가 붙어 아바타를 볼 때마다 다시 받는다
+                        .andExpect(header().string("Cache-Control", "max-age=31536000, public, immutable"))
                         .andReturn()
                         .getResponse()
                         .getContentAsByteArray();
