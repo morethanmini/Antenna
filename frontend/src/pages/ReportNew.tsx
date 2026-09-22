@@ -296,10 +296,6 @@ export default function ReportNew() {
               </div>
             )}
 
-            <p className="rn-hint">
-              마크다운으로 씁니다. <code>## 제목</code> · <code>**굵게**</code> · <code>- 목록</code> · <code>&gt; 인용</code> 이 그대로 먹습니다.
-            </p>
-
             {tooLong && <FieldError>본문이 상한에 닿아 이미지를 넣지 못했습니다.</FieldError>}
             {fieldError === 'body' && <FieldError>본문을 다시 확인해 주세요.</FieldError>}
             {profanityField === 'body' && <FieldError>{PROFANITY_MESSAGE}</FieldError>}
@@ -353,7 +349,7 @@ export default function ReportNew() {
           )}
           {ready && !submitting && (
             <p className="rn-hint">
-              발행하면 본문 해시가 블록체인에 기록됩니다. 서명은 그 기록이 내 지갑에서 나왔음을 남깁니다.
+              근거 조작 방지 — 발행하면 이 글은 블록체인에 남아 지울 수 없습니다. 지갑 서명이 내가 썼다는 증거가 됩니다.
             </p>
           )}
         </form>
