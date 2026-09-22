@@ -293,7 +293,3 @@ body.stocks-page.is-night .st-check,
 body.stocks-page.is-night .mm-legend-label,
 body.stocks-page.is-night .mm-foot{color:var(--night-ink)}
 
-/* 화면 제목 굵기를 850 -> 600(세미볼드)으로 내린다(2026-09-22). 어두운 바탕에서는
-   흰 글자가 이미 도드라져 850 까지 주면 획이 서로 붙어 뭉쳐 보인다. 400 까지
-   내려 보았지만 제목의 무게가 사라져 본문과 구분이 안 됐다 — 그 사이가 세미볼드다. */
-body.is-night .main-inner h1{font-weight:var(--fw-normal)}
