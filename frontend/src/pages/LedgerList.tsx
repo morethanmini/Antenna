@@ -166,26 +166,34 @@ export default function LedgerList() {
           />
         )}
 
-        {groups.map((g, i) => (
-          /* 같은 배치가 떨어져 두 번 나올 수 있어(위 groupByAnchor 주석) anchorId 만으로는
-             키가 겹친다. 자리(i)를 함께 쓴다 — 목록은 이어 붙기만 하고 순서가 바뀌지 않는다. */
-          <section className="lg-group" key={`${g.anchorId ?? 'wait'}-${i}`}>
-            <GroupHead group={g} anchor={g.anchorId === null ? undefined : byId.get(g.anchorId)} />
-            <ul className="lg-rows">
-              {g.rows.map((c) => (
-                <li key={`${c.kind}-${c.kind === 'PREDICTION' ? c.predictionId : c.reportId}`} className="lg-row">
-                  {c.kind === 'PREDICTION' ? <PredictionRow c={c} /> : <ReportRow c={c} />}
-                  <code className="lg-hash" title={c.commitHash}>{shortHash(c.commitHash)}</code>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
+        {/* 목록은 판 위에 올린다(2026-09-23). 판이 없을 때는 줄이 도시 사진에 바로 얹혀,
+            해시·검산 링크(브랜드색)와 종목코드·공개일(--faint·--muted)이 밝은 구름·물빛
+            구간에서 안 읽혔다. 판 안에서 토큰을 밤 값으로 바꿔치우므로 줄 안의 글자는
+            전부 따라온다 — 종목 상세 머리(.sd-head)가 쓰는 방법과 같다(ledger.css). */}
+        {(groups.length > 0 || loading) && (
+          <div className="lg-board">
+            {groups.map((g, i) => (
+              /* 같은 배치가 떨어져 두 번 나올 수 있어(위 groupByAnchor 주석) anchorId 만으로는
+                 키가 겹친다. 자리(i)를 함께 쓴다 — 목록은 이어 붙기만 하고 순서가 바뀌지 않는다. */
+              <section className="lg-group" key={`${g.anchorId ?? 'wait'}-${i}`}>
+                <GroupHead group={g} anchor={g.anchorId === null ? undefined : byId.get(g.anchorId)} />
+                <ul className="lg-rows">
+                  {g.rows.map((c) => (
+                    <li key={`${c.kind}-${c.kind === 'PREDICTION' ? c.predictionId : c.reportId}`} className="lg-row">
+                      {c.kind === 'PREDICTION' ? <PredictionRow c={c} /> : <ReportRow c={c} />}
+                      <code className="lg-hash" title={c.commitHash}>{shortHash(c.commitHash)}</code>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
 
-        {loading && <p className="lg-loading">불러오는 중…</p>}
+            {loading && <p className="lg-loading">불러오는 중…</p>}
 
-        {hasNext && !loading && (
-          <button type="button" className="lg-more" onClick={loadMore}>더 보기</button>
+            {hasNext && !loading && (
+              <button type="button" className="lg-more" onClick={loadMore}>더 보기</button>
+            )}
+          </div>
         )}
       </div>
     </main>
