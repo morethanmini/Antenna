@@ -712,6 +712,21 @@ button{border:0;background:none;cursor:pointer}
    있는 종목만 그 위를 채운다. 파일이 없으면 img 가 빠져 글자가 그대로 드러난다.
    모서리를 inherit 로 받는 것은 화면마다 radius 가 달라서다. */
 .stock-logo{position:relative;overflow:hidden}
+
+/* 돌아가는 고리 (2026-09-23). 몇 초 이상 기다리는 자리에 붙인다 — 글자만 서 있으면
+   멈춘 것처럼 보인다. 색은 currentColor 라 흰 글씨 버튼에도 옅은 판에도 그대로 쓴다.
+   화면마다 따로 그려 둔 고리(op-spinner·cp-spinner 등)는 건드리지 않는다. */
+.spinner{
+  display:inline-block;flex:none;width:1em;height:1em;
+  border:2px solid transparent;border-top-color:currentColor;border-radius:999px;
+  animation:spinner-turn .8s linear infinite;
+}
+@keyframes spinner-turn{to{transform:rotate(360deg)}}
+/* 계속 도는 것이라 멀미를 부른다. 끄면 정지한 고리가 남아 자리는 그대로다 */
+@media (prefers-reduced-motion:reduce){.spinner{animation:none}}
+
+/* 버튼·문장 안에서 고리와 글자를 나란히 */
+.waiting{display:inline-flex;align-items:center;gap:8px}
 /* 흰 바탕을 까는 까닭 — 로고 파일이 두 종류다. 대부분은 네 귀퉁이까지 색이 찬
    정사각이라 바탕이 안 보이지만, 일부는 **원형에 바깥이 투명**하다. 그대로 두면
    그 모서리로 밑에 깔린 글자 배지의 색(종목코드에서 뽑은 파스텔)이 배어 나와
