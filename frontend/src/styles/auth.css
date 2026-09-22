@@ -30,6 +30,14 @@
   align-items:center;gap:44px;
 }
 
+/* 온보딩(닉네임·구독료)은 이 껍데기를 쓰면서 카드 하나만 넣는다. 그러면 카드가 왼쪽
+   1fr 칸에 들어가고 오른쪽 404px 칸이 빈 채로 남아, 화면 가운데가 아니라 왼쪽으로 밀린다
+   (1120 − 404 − 44 = 672px 자리). 카드만 있을 때는 한 칸짜리로 두고 가운데에 세운다. */
+.auth .auth-shell:has(> .sso:only-child){
+  grid-template-columns:minmax(320px,404px);
+  justify-content:center;
+}
+
 .auth .auth-intro{
   display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.62fr);
   align-items:center;gap:14px;min-width:0;
