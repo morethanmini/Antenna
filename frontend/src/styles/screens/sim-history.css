@@ -22,7 +22,6 @@ body.sim-record-page{
   --rc-band:260px;        /* 머리 위 도시 띠 높이 */
   --rc-thumb:62px;        /* 줄 썸네일 */
   --rc-title:34px;        /* 제목 */
-  --rc-quote:21px;        /* 머리 오른쪽 손글씨 */
   --rc-fig-pad:14px;      /* 요약 칸 위아래 */
   --rc-fig-ico:40px;
   --rc-fig-val:var(--fs-6xl);
@@ -77,11 +76,7 @@ body.sim-record-page .main::before{
 }
 .rc-head > div > p{margin:0;font-size:var(--fs-xl);font-weight:var(--fw-bold);color:#cdc8e6;text-shadow:0 1px 10px rgba(6,5,24,.8)}
 
-.rc-hand{font-family:var(--hand);font-weight:400;line-height:1.15;color:#e6e2ff}
 .rc-head-side{display:flex;flex-direction:column;align-items:flex-end;gap:10px;flex:none}
-.rc-quote{margin:0;text-align:right;white-space:nowrap}
-.rc-quote .rc-hand{display:block;font-size:var(--rc-quote);text-shadow:0 2px 14px rgba(6,5,24,.85)}
-.rc-quote small{display:block;margin-top:4px;font-size:var(--fs-lg);font-weight:var(--fw-bold);color:#a49ecb;text-shadow:0 1px 10px rgba(6,5,24,.8)}
 
 /* ── 요약 4칸 ─────────────────────────────────────── */
 .rc-figs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--rc-gap)}
@@ -217,7 +212,10 @@ body.sim-record-page .main::before{
   /* 지나온 칸 수(--reached)에서 첫 칸을 빼고, 남은 세 구간 중 몇 구간인지로 센다 */
   width:calc((100% - 25%) * (max(var(--reached) - 1, 0) / 3));
 }
-.rc-steps li{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:3px}
+/* 점이 선보다 앞에 온다. z-index 를 빼면 ::after(지나온 구간)가 li 뒤에 그려지는
+   것이 아니라 **앞에** 그려진다 — 위치 잡힌 형제끼리는 DOM 순서대로 칠해지는데
+   ::after 가 li 다음이라서다. 보라 선이 동그라미 위를 가로질러 체크가 잘렸다. */
+.rc-steps li{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:3px}
 .rc-step-dot{
   display:grid;place-items:center;width:25px;height:25px;border-radius:50%;
   background:var(--surface-2);border:2px solid var(--rule);color:var(--faint);
@@ -255,7 +253,6 @@ body.sim-record-page .main::before{
   /* 머리가 세로로 쌓이면 오른쪽 묶음도 왼쪽 줄에 맞춘다 — 글은 왼쪽인데 상자만
      오른쪽 끝에 붙어 있으면 버튼이 혼자 떨어져 보인다. */
   .rc-head-side{align-items:flex-start}
-  .rc-quote{text-align:left;white-space:normal}
   .rc-side{flex-direction:column}
   /* 끝낸 날짜(.rc-when)를 감춘다 — 좁은 폭에서 다섯 칸은 서로를 민다.
      **칸 수는 감춘 것을 빼고 남는 것과 정확히 맞춘다.** 남는 것이 칸보다 많으면
@@ -276,7 +273,7 @@ body.sim-record-page .main::before{
    줄 높이부터 줄인다 — 줄이 여섯이면 1px 이 6px 이다. */
 @media (min-width:1281px) and (max-height:900px){
   body.sim-record-page{
-    --rc-gap:11px;--rc-band:230px;--rc-title:30px;--rc-quote:19px;
+    --rc-gap:11px;--rc-band:230px;--rc-title:30px;
     --rc-fig-pad:11px;--rc-fig-ico:36px;--rc-fig-val:var(--fs-5xl);
     --rc-row-py:6px;--rc-side-pad:12px;--page-pb:6px;
     /* 기둥을 좁혀 격려 카드 그림을 같이 줄인다. 이 단계는 표시 배율이 125% 인
