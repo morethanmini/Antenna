@@ -810,14 +810,24 @@ body.sim-play-page .sp-title h1{color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.7)
 /* 소제목은 흰색을 조금만 낮춘다. --night-body(#bdb8dc)는 어두운 판 위에서는
    맞는 값이지만 사진 위에서는 밝은 구간을 만나면 그대로 묻힌다. */
 body.sim-play-page .sp-title p{color:rgba(255,255,255,.92);text-shadow:0 1px 10px rgba(0,0,0,.7)}
-body.sim-play-page .sp-dayof{color:var(--night-body)}
 
 /* DAY 알약과 진행 바. 밝은 화면에서는 옅은 보라 판이었는데 어두운 바닥에서는
    그 판이 너무 밝아 제목보다 먼저 눈에 든다 — 유리 한 겹으로 낮춘다. */
-body.sim-play-page .sp-daychip{
-  border-color:var(--night-line);background:var(--night-glass);color:#fff;
+/* DAY · 진행 바 · 남은 날. 왼쪽 그늘은 제목 자리까지만 내려온다(사진을 다 덮으면
+   띠를 깐 뜻이 없다). 그래서 이쪽은 **자기 판**을 하나 갖는다 — 뒤 사진을 흐리고
+   어둡게 눌러, 건물 불빛이 지나가도 숫자가 늘 같은 바닥 위에 선다. */
+body.sim-play-page .sp-day{
+  padding:4px 14px 4px 4px;border-radius:999px;
+  border:1px solid rgba(255,255,255,.16);
+  background:rgba(10,9,28,.52);
+  -webkit-backdrop-filter:blur(10px) saturate(130%);
+  backdrop-filter:blur(10px) saturate(130%);
 }
-body.sim-play-page .sp-bar{background:rgba(255,255,255,.14)}
+body.sim-play-page .sp-daychip{
+  border-color:rgba(255,255,255,.22);background:rgba(255,255,255,.12);color:#fff;
+}
+body.sim-play-page .sp-bar{background:rgba(255,255,255,.2)}
+body.sim-play-page .sp-dayof{color:rgba(255,255,255,.92)}
 
 /* ── 한 화면에 담는다(2026-09-22) ──────────────────────────
    배율 100% 에서 제목부터 아래 두 접이 카드까지가 한 화면에 들어와야 한다.
