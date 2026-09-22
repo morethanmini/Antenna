@@ -469,22 +469,16 @@
   color:var(--faint);font-size:var(--fs-md);font-weight:var(--fw-bold);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-/* 접고 펴는 자리라는 것이 모양으로 드러나야 한다 — 글리프 하나만 있으면 장식으로
-   읽힌다. 동그란 칸에 담아 누르는 것처럼 보이게 하고, 펴지면 뒤집는다. */
+/* 꺾쇠 하나로 둔다. 한때 동그란 칸에 담았는데(2026-09-22) 줄 전체가 이미 누르는
+   자리라 그 안에 또 버튼이 있는 것처럼 보였다 — 접이 줄에서 누를 곳은 줄 하나다.
+   접고 펴는 자리라는 것은 꺾쇠의 방향과 색이 말한다. */
 .sp-fold > summary i:not(.sp-dot){
-  flex:none;width:26px;height:26px;border-radius:50%;
-  border:1px solid var(--rule);background:var(--surface);color:var(--muted);
-  transition:transform .15s, background .12s, border-color .12s, color .12s;
+  flex:none;width:22px;height:22px;color:var(--muted);
+  transition:transform .15s, color .12s;
 }
-.sp-fold > summary:hover i:not(.sp-dot){
-  border-color:var(--brand);background:var(--brand-softer);color:var(--brand);
-}
-/* 펴진 동안에는 칸도 켜 둔다 — 짚었을 때만 색이 들어오면 지금 펴져 있는지는
-   꺾쇠 방향 하나로만 말해야 한다. 방향과 색 둘로 말한다. */
-.sp-fold[open] > summary i:not(.sp-dot){
-  transform:rotate(180deg);
-  border-color:var(--brand);background:var(--brand-softer);color:var(--brand);
-}
+.sp-fold > summary:hover i:not(.sp-dot){color:var(--brand)}
+/* 펴진 동안에는 색도 켜 둔다 — 방향 하나로만 말하면 화면을 훑을 때 잘 안 보인다 */
+.sp-fold[open] > summary i:not(.sp-dot){transform:rotate(180deg);color:var(--brand)}
 .sp-fold[open] > summary{border-radius:16px 16px 0 0;border-bottom:1px solid #eef0f6}
 .sp-fold-body{padding:16px 18px 18px}
 
@@ -1016,6 +1010,8 @@ body.sim-play-page .tp-modal{
 }
 .sp-tpick i{width:16px;height:16px}
 .sp-indbtn i{width:14px;height:14px}
+/* 접이 줄의 꺾쇠만 한 단 크다. 줄이 54px 이라 작으면 줄 오른쪽 끝이 비어 보인다 */
+.sp-fold > summary i:not(.sp-dot)::before{width:9px;height:9px;border-width:2px}
 .sp-tpick i::before,
 .sp-indbtn i::before,
 .sp-fold > summary i:not(.sp-dot)::before{
