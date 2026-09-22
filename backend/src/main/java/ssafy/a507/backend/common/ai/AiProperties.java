@@ -17,22 +17,33 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param model 모델 ID · 게이트웨이가 날짜 붙은 실제 버전으로 해석해 응답에 실어 준다
  * @param promptVersion 생성물에 남기는 세대 태그 · 프롬프트를 고치면 이 값을 올리고, 옛 값
  *     행만 골라 다시 생성한다
+ * @param temperature 표집 온도 · 비어 있으면 요청에 싣지 않는다(모델 기본값). 모델마다 받는 값이
+ *     달라 설정으로 뺐다 — GPT-5.6 계열은 기본값(1) 말고는 400 으로 거부하고, 자체 서빙 양자화
+ *     모델은 0 이 아니면 답이 흔들린다({@link GpuAiProperties} 가 0 으로 고정한다)
  */
 @ConfigurationProperties(prefix = "app.ai")
 public record AiProperties(
         String apiKey,
         String baseUrl,
         String model,
-        String promptVersion) {
+        String promptVersion,
+        Double temperature) {
 
     private static final String DEFAULT_BASE_URL = "https://gms.ssafy.io/gmsapi/api.openai.com/v1";
     private static final String DEFAULT_MODEL = "gpt-5.4-mini";
     private static final String DEFAULT_PROMPT_VERSION = "v1";
 
     public AiProperties {
+        // .env 를 윈도우에서 편집하면 캐리지리턴이 붙고, 값 뒤에 공백이 남기도 한다. 그대로 헤더나
+        // 본문에 실으면 요청이 깨진다 — 모델 ID 뒤 공백 하나로 "invalid model ID" 가 난다(2026-09-23).
         if (apiKey != null) {
-            // .env 를 윈도우에서 편집하면 캐리지리턴이 붙는다. 그대로 헤더에 실으면 요청이 깨진다.
             apiKey = apiKey.trim();
+        }
+        if (baseUrl != null) {
+            baseUrl = baseUrl.trim();
+        }
+        if (model != null) {
+            model = model.trim();
         }
         if (baseUrl == null || baseUrl.isBlank()) {
             baseUrl = DEFAULT_BASE_URL;

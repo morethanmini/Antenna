@@ -44,8 +44,14 @@ public record GpuAiProperties(
         return apiKey != null && !apiKey.isBlank() && baseUrl != null && !baseUrl.isBlank();
     }
 
-    /** {@link AiClient} 가 읽는 모양. 키가 없을 때는 부르지 않으므로 base-url 기본값은 그쪽에 맡긴다. */
+    /**
+     * {@link AiClient} 가 읽는 모양. 키가 없을 때는 부르지 않으므로 base-url 기본값은 그쪽에 맡긴다.
+     *
+     * <p>온도는 0 으로 고정한다. 판정은 "관련"/"무관" 한 낱말이라 표집이 필요 없고, 양자화 모델을
+     * 기본값으로 뽑으면 그 밖의 말을 섞는다. {@code app.ai} 쪽과 달리 설정으로 열지 않는다 — vLLM 은
+     * 0 을 받는다.
+     */
     AiProperties asAiProperties() {
-        return new AiProperties(apiKey, baseUrl, model, promptVersion);
+        return new AiProperties(apiKey, baseUrl, model, promptVersion, 0.0);
     }
 }

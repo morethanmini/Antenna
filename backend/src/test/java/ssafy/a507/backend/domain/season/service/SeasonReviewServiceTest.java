@@ -20,7 +20,7 @@ class SeasonReviewServiceTest {
     void 키_없으면_null() {
         AiClient client = mock(AiClient.class);
         SeasonReviewService service =
-                new SeasonReviewService(client, new AiProperties("  ", null, null, null));
+                new SeasonReviewService(client, new AiProperties("  ", null, null, null, null));
 
         assertThat(service.hasKey()).isFalse();
         assertThat(service.review("재료")).isNull();
@@ -33,7 +33,7 @@ class SeasonReviewServiceTest {
         AiClient client = mock(AiClient.class);
         given(client.complete(SeasonReviewService.INSTRUCTION, "재료")).willReturn("잘한 판단: …");
         SeasonReviewService service =
-                new SeasonReviewService(client, new AiProperties("k", null, null, "v1"));
+                new SeasonReviewService(client, new AiProperties("k", null, null, "v1", null));
 
         assertThat(service.review("재료")).isEqualTo("잘한 판단: …");
         // 공용 app.ai.prompt-version(v1)을 따르지 않는다 — 올리면 시장 브리핑까지 다시 만든다
