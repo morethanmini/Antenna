@@ -133,18 +133,25 @@ export default function ChannelFeeSection() {
               <label className="cf-field">
                 <span className="cf-label">새 구독료</span>
                 <span className="cf-input-wrap">
+                  {/* type=number 를 쓰지 않는다. 온보딩(OnboardingFee)이 먼저 같은 길을 갔다 —
+                      위아래 화살표와 휠로 값이 바뀌고, 소수점·지수(1e5)까지 들어온다.
+                      여기서 더 나쁜 것은 **잘못된 입력을 감춘다**는 점이다. '3-4-3' 처럼 숫자가
+                      아닌 것을 치면 브라우저는 그 글자를 화면에 그대로 둔 채 value 로는 빈
+                      문자열을 준다. 그래서 아래 손질이 한 번도 돌지 않고 글자가 끝없이 쌓였다
+                      (maxLength 도 숫자 칸에는 안 먹어 6자리 자르기까지 같이 죽는다).
+                      text + inputMode=numeric 이면 친 글자가 그대로 와서 전부 여기서 걸린다. */}
                   <input
-                    type="number" className="cf-input num"
-                    value={draft} min={0} max={FEE_MAX}
+                    type="text" inputMode="numeric" className="cf-input num"
+                    value={draft}
+                    maxLength={6}
                     placeholder={latest ?? '0'}
                     disabled={step === 'saving'}
                     aria-invalid={draft !== '' && !valid}
-                    /* type=number 에는 maxLength 가 안 먹는다. 온보딩(OnboardingFee)과 같이 6자리에서 자른다 —
-                       상한(FEE_MAX)이 6자리라 그보다 긴 값은 어차피 저장되지 않고 칸만 넘친다. */
-                    /* 앞자리 0 은 값에 뜻이 없다 — 0 을 계속 치면 '000000' 이 그대로 남았다.
-                       0 하나는 남긴다(무료 채널이 실제 선택지다). '0500' 은 '500' 이 된다. */
+                    /* 숫자만 남기고 앞자리 0 을 지운다. 0 하나는 남긴다 — 무료 채널이 실제
+                       선택지다. '0500' 은 '500' 이 된다. 여섯 자리에서 자르는 것은 상한
+                       (FEE_MAX)이 여섯 자리라 그보다 길면 저장되지 않고 칸만 넘쳐서다. */
                     onChange={(e) => {
-                      setDraft(e.target.value.slice(0, 6).replace(/^0+(?=\d)/, ''))
+                      setDraft(e.target.value.replace(/[^0-9]/g, '').slice(0, 6).replace(/^0+(?=\d)/, ''))
                       setStep('idle'); setError(null)
                     }}
                   />

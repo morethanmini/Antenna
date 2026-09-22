@@ -156,9 +156,9 @@ export default function OnboardingFee() {
                 type="text"
                 inputMode="numeric"
                 value={value}
-                /* 앞자리 0 은 값에 뜻이 없다. 설정 화면(ChannelFeeSection)과 같은 규칙이다 */
+                /* 숫자만 남기고 앞자리 0 을 지운다. 설정 화면(ChannelFeeSection)과 같은 규칙이다 */
                 onChange={(e) => {
-                  setValue(e.target.value.trim().replace(/^0+(?=\d)/, ''))
+                  setValue(e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, ''))
                   setError(null)
                 }}
                 /* 다시 눌러 들어올 때도 0 을 덮어쓸 수 있게. 마우스로 누르는

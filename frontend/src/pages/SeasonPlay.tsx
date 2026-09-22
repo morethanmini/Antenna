@@ -836,12 +836,15 @@ export default function SeasonPlay() {
                   <button type="button" aria-label="1주 줄이기"
                           disabled={qty <= 0}
                           onClick={() => changeQty(qty - 1)}>−</button>
+                  {/* type=number 를 쓰지 않는다 — 숫자가 아닌 글자를 치면 브라우저가 그것을
+                      화면에 둔 채 value 로는 빈 문자열을 줘서, changeQty 가 한 번도 돌지
+                      않고 글자가 쌓인다(환경 설정 구독료에서 실제로 나왔다). */}
                   <input
-                    type="number"
-                    min={0}
-                    max={maxQty}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={9}
                     value={qty || ''}
-                    onChange={(e) => changeQty(Number(e.target.value))}
+                    onChange={(e) => changeQty(Number(e.target.value.replace(/[^0-9]/g, '')))}
                     aria-label="주문 수량"
                   />
                   <i>주</i>
