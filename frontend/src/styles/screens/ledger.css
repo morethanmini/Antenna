@@ -107,9 +107,6 @@
 /* 대기 묶음. 실패가 아니므로 경고색을 쓰지 않는다 — 배지도 안 단다 */
 .lg-head.is-waiting .lg-head-text b{ color:var(--body); }
 
-/* 머클루트. 머리줄 오른쪽 끝에 붙는다 */
-.lg-head-hash{ margin-left:auto; }
-
 /* ── 줄 ───────────────────────────────────────────────── */
 .lg-rows{ margin:0; padding:0; list-style:none; }
 
@@ -132,7 +129,7 @@
    나머지가 보조다. 조사한 여섯 곳이 예외 없이 같았다.
 
    그래서 종목명은 굵기를 800 → 700 으로 내리고, 해시는 브랜드색 700 으로 올렸다
-   (아래 .lg-row .copy-hash). 크기는 종목 15 · 해시 14 로 한 칸 차이인데, 색이
+   (아래 .lg-hash). 크기는 종목 15 · 해시 14 로 한 칸 차이인데, 색이
    그 차이를 뒤집는다 — 먹색 15 보다 브랜드색 14 에 눈이 먼저 간다. */
 .lg-what{
   display:flex; align-items:center; flex-wrap:wrap;
@@ -156,14 +153,13 @@
 .lg-title:hover{ color:var(--brand-ink); text-decoration:underline; }
 
 /* ── 증거 — 이 줄의 주인공 ─────────────────────────────
-   공용 CopyHash(copy-hash.css)는 D-02 · D-03 도 함께 쓰므로 건드리지 않는다.
-   원장 줄 안에서만 덮어쓴다 — 저기서는 해시가 여러 값 중 하나지만
-   여기서는 줄이 존재하는 이유다. */
-.lg-row .copy-hash{ margin-left:-6px; }
-.lg-row .copy-hash code{
-  font-size:var(--fs-lg); font-weight:var(--fw-bold); color:var(--brand-ink);
+   복사 버튼(CopyHash)을 뺐다(2026-09-23). 이 목록에서 해시를 복사해 갈 곳이 없고,
+   줄마다 아이콘이 붙어 어수선했다. 전체 값·복사는 배치 상세(D-02)·검산(D-03)에
+   남아 있다. title 에 전체 값을 두어 마우스로는 확인할 수 있다. */
+.lg-hash{
+  display:block;
+  font-family:var(--mono); font-size:var(--fs-lg); font-weight:var(--fw-bold); color:var(--brand-ink);
 }
-.lg-row .copy-hash .copy-hash-icon{ color:var(--brand); }
 
 /* ── 공용 칩 두 개 ─────────────────────────────────────
    이 화면의 글자를 전체적으로 한 단계 키우면서(2026-09-18) 공용 칩만 제자리에
@@ -201,8 +197,6 @@
   .lg-group{ padding-left:30px; }
   .lg-group::before{ left:9px; }
   .lg-node{ width:20px; height:20px; top:10px; }
-  /* 머클루트가 머리줄을 밀어내지 않게 아래로 내린다 */
-  .lg-head-hash{ margin-left:0; flex-basis:100%; }
   .lg-row:hover{ box-shadow:none; }
 }
 
