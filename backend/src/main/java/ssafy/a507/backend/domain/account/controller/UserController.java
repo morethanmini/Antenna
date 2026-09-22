@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import ssafy.a507.backend.common.security.CurrentUserProvider;
+import ssafy.a507.backend.common.validation.NicknameFormat;
+import ssafy.a507.backend.common.validation.NoProfanity;
 import ssafy.a507.backend.domain.account.dto.UserDtos.MeResponse;
 import ssafy.a507.backend.domain.account.dto.UserDtos.NicknameAvailability;
 import ssafy.a507.backend.domain.account.dto.UserDtos.ProfileUpdateRequest;
@@ -35,7 +37,7 @@ public class UserController {
     /** 온보딩 입력 중 실시간 중복 검사. */
     @GetMapping("/nickname/availability")
     public NicknameAvailability availability(
-            @RequestParam @NotBlank @Size(min = 2, max = 30) String nickname) {
+            @RequestParam @NotBlank @Size(min = 2, max = 30) @NicknameFormat @NoProfanity String nickname) {
         return new NicknameAvailability(
                 userService.isNicknameAvailable(currentUser.currentUserId(), nickname));
     }

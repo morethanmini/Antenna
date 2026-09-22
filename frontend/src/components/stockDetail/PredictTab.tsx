@@ -66,6 +66,7 @@ import { requestNonce } from '../../api/wallet'
 import { emptyPredictForm, type PredictForm, type PredictResult } from './predictForm'
 import { connectAddress, hasWallet, personalSign } from '../../wallet/provider'
 import { useAuth } from '../../auth/context'
+import { containsProfanity, PROFANITY_MESSAGE } from '../../text/profanity'
 
 /** 남은 글자를 알리기 시작하는 지점. 이만큼 남았을 때부터 보인다 */
 const NOTE_WARN_LEFT = 500
@@ -421,6 +422,14 @@ export default function PredictTab({
     if (!draft || blocked) return
     setFailure(null)
     setLocalMsg(null)
+
+    /* 근거의 비속어는 지갑 서명 **전에** 거른다 (ANT-COMMUNITY-09). 근거는 noteHash 로 봉인되는 재료라
+       서버가 글자를 고쳐 줄 수 없고, 400 을 받으면 서명부터 다시 해야 한다. 대회 경로(submitEventEntry)도
+       이 함수를 거쳐서만 들어오므로 여기 한 번이면 둘 다 덮는다 */
+    if (containsProfanity(draft.note)) {
+      setLocalMsg(PROFANITY_MESSAGE)
+      return
+    }
 
     /* 지갑이 준비되지 않았으면 M-01 을 띄운다. 모달이 성공을 올려 주면 이 함수를
        다시 부른다 — 사용자가 같은 버튼을 두 번 누르지 않게 한다.

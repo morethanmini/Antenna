@@ -249,6 +249,29 @@ class ReportControllerTest {
     }
 
     @Test
+    @DisplayName("제목·본문에 비속어가 있으면 400 — 서명·봉인 재료라 마스킹 대신 거절이고, 서명 검증 앞에서 끝난다 (ANT-COMMUNITY-09)")
+    void 발행_비속어_400() throws Exception {
+        String bad = new String(java.util.Base64.getDecoder().decode("7Iuc67Cc"), java.nio.charset.StandardCharsets.UTF_8);
+        mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(authorId)))
+                        .with(csrf())
+                        .header("Idempotency-Key", "key-profanity-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json("아 " + bad + " 진짜", "본문", "true", DUMMY_SIGNATURE)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.field").value("title"));
+        mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(authorId)))
+                        .with(csrf())
+                        .header("Idempotency-Key", "key-profanity-2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json("제목", "본문에 " + bad + " 한 번", "true", DUMMY_SIGNATURE)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.field").value("body"));
+    }
+
+    @Test
     @DisplayName("제목이 100자를 넘으면 400")
     void 발행_제목_초과() throws Exception {
         mockMvc.perform(post(URL)

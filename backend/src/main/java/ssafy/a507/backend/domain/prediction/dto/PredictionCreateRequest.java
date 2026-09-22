@@ -11,6 +11,7 @@ import java.util.List;
 import ssafy.a507.backend.common.security.SignatureScope;
 import ssafy.a507.backend.common.security.WalletSigned;
 import ssafy.a507.backend.domain.prediction.commit.CommitHashes;
+import ssafy.a507.backend.common.validation.NoProfanity;
 import ssafy.a507.backend.domain.prediction.commit.CommitPayload;
 import ssafy.a507.backend.domain.prediction.entity.Prediction;
 
@@ -34,6 +35,7 @@ public record PredictionCreateRequest(
         @NotNull(message = "예측 기간을 선택해주세요.") Short horizon,
         @NotBlank(message = "근거를 입력해주세요.")
                 @Size(max = 5000, message = "근거는 5000자까지 입력할 수 있습니다.")
+                @NoProfanity
                 String note,
         @NotBlank(message = "noteSalt 가 필요합니다.")
                 @Pattern(regexp = "^[0-9a-f]{64}$", message = "noteSalt 는 소문자 64자리 hex 여야 합니다.")

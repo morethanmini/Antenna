@@ -274,6 +274,18 @@ class EventEntryControllerTest {
     }
 
     @Test
+    @DisplayName("근거에 비속어가 있으면 400 items[n].note — 커밋 해시 재료라 거절뿐이고, 서명 검증 앞에서 끝난다 (ANT-COMMUNITY-09)")
+    void 근거_비속어는_400() throws Exception {
+        String bad = new String(java.util.Base64.getDecoder().decode("7Iuc67Cc"), java.nio.charset.StandardCharsets.UTF_8);
+        List<String> five = new ArrayList<>(itemList(4));
+        five.add(item("051910", 1000).replace("오를 것 같다", "아 " + bad + " 진짜"));
+        mockMvc.perform(entries(body(five), "key-1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.field").value("items[4].note"));
+    }
+
+    @Test
     @DisplayName("한 요청 안에 같은 종목이 두 줄이면 400 — 그러면 '이미 건 종목' 검사를 둘 다 빠져나간다")
     void 요청_안_중복은_400() throws Exception {
         String dup = body(List.of(item("005930", 1000), item("005930", 1000),

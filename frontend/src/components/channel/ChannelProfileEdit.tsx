@@ -34,6 +34,7 @@ import { useCallback, useState } from 'react'
 import { api, ApiError } from '../../api/client'
 import { ERROR_CODE } from '../../api/errors'
 import { NICKNAME_MAX, useNicknameCheck, validateNickname } from '../../api/useNicknameCheck'
+import { profanityError } from '../../text/profanity'
 import { getSectorSummary } from '../../api/stocks'
 import { useAsync } from '../../api/useAsync'
 import {
@@ -244,6 +245,16 @@ function Form({ profile, heading, onClose, onSaved }: {
         setError(reason)
         return
       }
+    }
+    /* 소개·채널 이름도 남에게 보이는 글자다 — 서버 @NoProfanity 가 400 을 주기 전에 여기서 튕긴다.
+       바꾼 필드만 본다: 예전에 저장된 값 때문에 다른 항목 저장까지 막히면 안 된다 (ANT-COMMUNITY-09) */
+    const badText =
+      (introduceChanged && profanityError(introduce)) ||
+      (channelsChanged && rows.map((r) => profanityError(r.label)).find(Boolean)) ||
+      null
+    if (badText) {
+      setError(badText)
+      return
     }
     /* https 가 아니면 서버가 400 을 준다. 눌러 보고 알게 하지 않는다 */
     if (rows.some((r) => !r.url.startsWith('https://'))) {
