@@ -9,8 +9,9 @@ import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ssafy.a507.backend.domain.account.entity.User;
+import ssafy.a507.backend.common.text.KoreanText;
 import ssafy.a507.backend.domain.account.entity.Notification;
+import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.account.repository.NotificationRepository;
 import ssafy.a507.backend.domain.account.repository.UserRepository;
 import ssafy.a507.backend.domain.account.service.NotificationGate;
@@ -21,8 +22,8 @@ import ssafy.a507.backend.domain.chain.relay.TokenReason;
 import ssafy.a507.backend.domain.chain.repository.ChainEventRepository;
 import ssafy.a507.backend.domain.chain.repository.OperationRepository;
 import ssafy.a507.backend.domain.chain.repository.TokenLedgerRepository;
-import ssafy.a507.backend.domain.monetize.repository.AdBannerRepository;
 import ssafy.a507.backend.domain.monetize.entity.Subscription;
+import ssafy.a507.backend.domain.monetize.repository.AdBannerRepository;
 import ssafy.a507.backend.domain.monetize.repository.SubscriptionRepository;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -255,7 +256,8 @@ public class TokenIndexService {
                 s.getSubscriber(),
                 "SUBSCRIBE",
                 "새 구독자가 생겼습니다",
-                (nickname == null ? "누군가" : nickname) + " 님이 내 채널을 구독했습니다",
+                KoreanText.josa(KoreanText.honorific(nickname, "누군가"), "이", "가")
+                        + " 내 채널을 구독했습니다.",
                 "/channels/" + s.getPublisher().getId()));
     }
 

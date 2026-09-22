@@ -14,9 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
 import ssafy.a507.backend.common.security.CurrentUserProvider;
+import ssafy.a507.backend.common.text.KoreanText;
 import ssafy.a507.backend.common.throttle.CommentThrottle;
-import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.account.entity.Notification;
+import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.account.repository.NotificationRepository;
 import ssafy.a507.backend.domain.account.repository.UserRepository;
 import ssafy.a507.backend.domain.account.service.NotificationGate;
@@ -105,7 +106,10 @@ public class ReportSocialService {
                 liker,
                 LIKE_NOTIFICATION,
                 "리포트에 좋아요가 달렸습니다",
-                actorName(liker) + " 님이 \"" + report.getTitle() + "\" 을 좋아합니다",
+                KoreanText.josa(actorName(liker), "이", "가")
+                        + " \"" + report.getTitle() + "\""
+                        + KoreanText.particle(report.getTitle(), "을", "를")
+                        + " 좋아합니다.",
                 linkPath));
     }
 
@@ -126,7 +130,7 @@ public class ReportSocialService {
 
     /** 닉네임은 nullable 이다(온보딩 미완료). "null 님이" 로 나가지 않게. */
     private static String actorName(User user) {
-        return user.getNickname() == null ? "누군가" : user.getNickname();
+        return KoreanText.honorific(user.getNickname(), "누군가");
     }
 
     /** 없던 좋아요의 취소도 204 다. 두 번 눌러도 결과가 같은 쪽이 화면에 맞다. */

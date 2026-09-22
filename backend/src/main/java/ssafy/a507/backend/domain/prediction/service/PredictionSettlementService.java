@@ -102,7 +102,7 @@ public class PredictionSettlementService {
         notifications.save(Notification.create(
                 p.getUser(),
                 "VERDICT",
-                "예측이 판정되었습니다",
+                "예측이 판정됐습니다",
                 p.getStock().getName() + " " + direction + " 예측 · " + (verdict.hit() ? "적중" : "미적중")
                         + " · 오차 " + verdict.errorRate().toPlainString() + "%",
                 "/predictions/" + p.getId()));

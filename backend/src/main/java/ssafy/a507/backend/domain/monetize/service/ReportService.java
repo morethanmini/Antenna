@@ -17,6 +17,7 @@ import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
 import ssafy.a507.backend.common.security.CurrentUserProvider;
 import ssafy.a507.backend.common.security.SignatureGuard;
+import ssafy.a507.backend.common.text.KoreanText;
 import ssafy.a507.backend.domain.account.entity.Notification;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.account.repository.NotificationRepository;
@@ -264,7 +265,8 @@ public class ReportService {
         // 알림 한 줄이 "null · 제목" 으로 나간다. 발행을 막을 근거는 명세에 없으므로 제목만 남긴다.
         String nickname = author.getNickname();
         // 구독자는 어느 쪽이든 받지만, 여는 것이 구독자만 볼 수 있는 글인지는 알아야 한다.
-        String body = (nickname == null ? report.getTitle() : nickname + " · " + report.getTitle())
+        String who = KoreanText.honorific(nickname, null);
+        String body = (who == null ? report.getTitle() : who + " · " + report.getTitle())
                 + (report.isPublic() ? " · 공개" : " · 구독자 전용");
         String linkPath = "/reports/" + report.getId();
         List<Notification> notifications = subscriberIds.stream()
@@ -273,7 +275,7 @@ public class ReportService {
                 .map(subscriberId -> Notification.create(
                         userRepository.getReferenceById(subscriberId),
                         NOTIFICATION_TYPE,
-                        "새 리포트가 발행되었습니다",
+                        "새 리포트가 발행됐습니다",
                         body,
                         linkPath))
                 .toList();

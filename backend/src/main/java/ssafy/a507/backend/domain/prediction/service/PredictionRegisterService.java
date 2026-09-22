@@ -17,13 +17,12 @@ import org.springframework.transaction.support.TransactionTemplate;
 import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
 import ssafy.a507.backend.common.security.SignatureGuard;
+import ssafy.a507.backend.common.text.KoreanText;
 import ssafy.a507.backend.domain.account.entity.Notification;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.account.repository.NotificationRepository;
 import ssafy.a507.backend.domain.account.repository.UserRepository;
 import ssafy.a507.backend.domain.account.service.NotificationGate;
-import ssafy.a507.backend.domain.monetize.entity.Subscription;
-import ssafy.a507.backend.domain.monetize.repository.SubscriptionRepository;
 import ssafy.a507.backend.domain.chain.config.TokenAmountProperties;
 import ssafy.a507.backend.domain.chain.entity.Operation;
 import ssafy.a507.backend.domain.chain.relay.TokenReason;
@@ -31,15 +30,17 @@ import ssafy.a507.backend.domain.chain.repository.OperationRepository;
 import ssafy.a507.backend.domain.chain.service.AvailableBalanceService;
 import ssafy.a507.backend.domain.chain.service.OperationService;
 import ssafy.a507.backend.domain.chain.service.TokenOperationService;
-import ssafy.a507.backend.domain.prediction.dto.PredictionQueuedResponse;
 import ssafy.a507.backend.domain.market.entity.DailyQuote;
 import ssafy.a507.backend.domain.market.entity.Stock;
 import ssafy.a507.backend.domain.market.repository.DailyQuoteRepository;
 import ssafy.a507.backend.domain.market.repository.StockRepository;
+import ssafy.a507.backend.domain.monetize.entity.Subscription;
+import ssafy.a507.backend.domain.monetize.repository.SubscriptionRepository;
 import ssafy.a507.backend.domain.prediction.commit.CommitHashes;
 import ssafy.a507.backend.domain.prediction.commit.PredictionCommitFactory;
 import ssafy.a507.backend.domain.prediction.dto.PredictionCreateRequest;
 import ssafy.a507.backend.domain.prediction.dto.PredictionCreateResponse;
+import ssafy.a507.backend.domain.prediction.dto.PredictionQueuedResponse;
 import ssafy.a507.backend.domain.prediction.dto.PredictionSlotResponse;
 import ssafy.a507.backend.domain.prediction.entity.Prediction;
 import ssafy.a507.backend.domain.prediction.entity.PredictionCommit;
@@ -303,7 +304,7 @@ public class PredictionRegisterService {
             return;
         }
         String nickname = author.getNickname();
-        String body = (nickname == null ? "구독 중인 채널" : nickname) + " · " + stock.getName() + " "
+        String body = KoreanText.honorific(nickname, "구독 중인 채널") + " · " + stock.getName() + " "
                 + (prediction.getDirection() == Prediction.Direction.UP ? "상승" : "하락")
                 + " · 목표가 " + prediction.getTargetPrice().toPlainString() + "원";
         String linkPath = "/predictions/" + prediction.getId();
@@ -311,7 +312,7 @@ public class PredictionRegisterService {
                 .map(id -> Notification.create(
                         users.getReferenceById(id),
                         "PREDICTION_REGISTERED",
-                        "구독 채널에 새 예측이 등록되었습니다",
+                        "새 예측이 등록됐습니다",
                         body,
                         linkPath))
                 .toList());
