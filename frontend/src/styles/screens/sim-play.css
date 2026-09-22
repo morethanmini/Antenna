@@ -725,3 +725,158 @@
   50%{transform:scale(1.55);opacity:.55}
 }
 @media (prefers-reduced-motion:reduce){ .sp-fold > summary i.sp-dot{animation:none} }
+
+/* ── 밤 (2026-09-22) ──────────────────────────────────────
+   모의투자 쪽이 홈 · 시즌 상세 · 포트폴리오까지 밤으로 넘어왔는데 여기만 밝아서
+   참여하기를 누르면 화면이 툭 갈렸다. **바꾸는 것은 바닥뿐이다 — 카드는 흰 판
+   그대로 둔다.** 인사이트의 종목 탐색이 이미 같은 방식이다(어두운 바닥 + 흰 판).
+
+   바닥색 · 상단바 · 로고는 routes 의 bodyClass 에 붙인 is-night 가 가져온다.
+   다만 night.css 는 색 토큰 한 벌(--surface · --ink · --up …)까지 어둡게 갈아
+   끼운다 — 홈과 기록은 카드까지 유리판이라 그게 맞지만 여기서는 카드가 하얘야 한다.
+   그래서 **카드 뿌리에서 토큰을 밝은 값으로 되돌린다.** body 에 되돌리면 바닥 위
+   제목까지 검은 글자가 되므로, 되돌리는 자리는 반드시 카드 안쪽이다.
+   여기 적힌 값은 app.css :root 의 원래 값 그대로다 — 저기가 바뀌면 여기도 같이 본다.
+
+   **바닥에 직접 앉는 판은 빠짐없이 적어야 한다.** 처음에 .sp-card 만 적었더니
+   차트 · AI 한줄 요약 · 당시 주요 이슈가 어두운 판으로 남아 화면이 반반이 됐다.
+   판 이름이 하나가 아니다 — 요약 칸 · 일반 카드 · 차트 · 접히는 상자 · 확인창 ·
+   코치 말풍선 · 도움말 팝오버. 카드 **안쪽** 상자들(.sp-stepper · .sp-indpop ·
+   주문 패널 …)은 이 판들의 자손이라 저절로 따라온다.
+   판을 새로 만들면 여기에 이름을 더한다. */
+body.sim-play-page .sp-stat,
+body.sim-play-page .sp-card,
+body.sim-play-page .sp-chart-card,
+body.sim-play-page .sp-fold,
+body.sim-play-page .sp-dialog,
+body.sim-play-page .sp-help .ms-say,
+body.sim-play-page .sp-help-pop{
+  --ground:#fff;
+  --surface:#fff;
+  --surface-2:#f0f2f7;
+  --ink:#14141b;
+  --body:#3b3f4a;
+  --muted:#6b7280;
+  --faint:#9ca3af;
+  --rule:#e5e7ef;
+  --card-line:#dfe2ed;
+  --brand-soft:#ece9fd;
+  --brand-softer:#f4f3fe;
+  --ok:#15803d;
+  --ok-soft:#e7f5ec;
+  --hit:#0a7f3d;
+  --danger:#e04343;
+  --up:#ee0000;
+  --up-vivid:#ff2020;
+  --up-soft:#fdeceb;
+  --down:#0066ff;
+  --down-vivid:#0066ff;
+  --down-soft:#e9f0ff;
+  --wash:linear-gradient(118deg,#f2f0ff 0%,#ebe8fd 44%,#e6e2fc 74%,#f1ecff 100%);
+  --wash-line:#e4e1fa;
+  --glass-ink:#3b4150;
+  /* 흰 판이 어두운 바닥 위에 뜬다. 원래 그림자는 어두운 바닥에서 안 보이므로
+     한 단 깊게 준다 — 안 그러면 판이 바닥에 붙어 오려 붙인 것처럼 보인다. */
+  --shadow:0 1px 2px rgba(0,0,0,.18), 0 22px 44px -28px rgba(0,0,0,.7);
+  color:var(--body);
+}
+
+/* 머리 위 도시 띠. 기록 화면과 같은 사진 · 같은 방식이다. 제목 줄 뒤에만 서고
+   아래로 녹아 사라진다 — 요약 칸 아래까지 내려가면 흰 판 뒤에 가려 낭비다. */
+body.sim-play-page .main::before{
+  content:"";position:absolute;inset:0 0 auto;height:300px;z-index:-1;pointer-events:none;
+  background:
+    linear-gradient(180deg, rgba(13,12,34,.52) 0%, rgba(13,12,34,.38) 45%, rgba(13,12,34,.9) 100%),
+    url("/assets/page_train2/city-skyline.webp") center top / cover no-repeat;
+  mask:linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
+  -webkit-mask:linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
+}
+
+/* 바닥에 직접 앉은 글자들 — 여기만 밤의 글자색을 쓴다 */
+body.sim-play-page .sp-crumb{color:var(--night-body)}
+body.sim-play-page .sp-crumb a:hover{color:#fff}
+body.sim-play-page .sp-crumb i{color:var(--night-faint)}
+body.sim-play-page .sp-title h1{color:var(--night-ink);text-shadow:0 2px 14px rgba(0,0,0,.45)}
+body.sim-play-page .sp-title p{color:var(--night-body)}
+body.sim-play-page .sp-dayof{color:var(--night-body)}
+
+/* DAY 알약과 진행 바. 밝은 화면에서는 옅은 보라 판이었는데 어두운 바닥에서는
+   그 판이 너무 밝아 제목보다 먼저 눈에 든다 — 유리 한 겹으로 낮춘다. */
+body.sim-play-page .sp-daychip{
+  border-color:var(--night-line);background:var(--night-glass);color:#fff;
+}
+body.sim-play-page .sp-bar{background:rgba(255,255,255,.14)}
+
+/* ── 한 화면에 담는다(2026-09-22) ──────────────────────────
+   배율 100% 에서 제목부터 아래 두 접이 카드까지가 한 화면에 들어와야 한다.
+   실측(1410x712)으로 전체가 1016px 이었다 — 304px 을 걷어야 했다.
+   **글자 크기는 꼭 필요한 곳만 내린다.** 값(숫자)은 이 화면에서 제일 먼저 읽는
+   것이라 한 단만 내리고, 나머지는 여백과 줄 사이에서 걷는다. */
+body.sim-play-page .main-inner{padding-top:14px;padding-bottom:14px}
+body.sim-play-page .sim-play{gap:10px}
+
+/* 요약 네 칸 */
+body.sim-play-page .sp-stat{padding:10px 14px}
+body.sim-play-page .sp-stat-val{font-size:var(--fs-2xl)}
+body.sim-play-page .sp-stat-ico{width:32px;height:32px}
+
+/* 머리줄 */
+body.sim-play-page .sp-title h1{font-size:var(--fs-2xl)}
+body.sim-play-page .sp-title p{margin-top:1px}
+body.sim-play-page .sp-help .ms-say{padding:5px 11px}
+
+/* 차트 카드 — 빈 자리만 줄인다. 봉 그림 높이는 화면 높이를 보고 컴포넌트가 정한다 */
+body.sim-play-page .sp-chart-card{padding:10px 16px 4px}
+body.sim-play-page .sp-ticker{margin-bottom:3px}
+
+/* 아래 접이 카드 둘 */
+body.sim-play-page .sp-fold > summary{padding-top:11px;padding-bottom:11px}
+body.sim-play-page .sp-fold-body{padding:10px 18px 12px}
+
+/* 낮은 화면에서만 더 걷는다. 화면이 넉넉하면 원래 배치가 낫다 — 여기서 줄이는 것은
+   전부 "있으면 좋은" 줄이라, 자리가 있을 때까지 남겨 둔다. */
+@media (max-height:900px){
+  /* 차트 아래 안내 한 줄. 마우스를 올려 보면 바로 아는 것이라 낮은 화면에서는 뺀다 */
+  body.sim-play-page .sp-hint{display:none}
+  body.sim-play-page .sp-stat{padding:8px 13px}
+  body.sim-play-page .sp-stat-ico{width:28px;height:28px}
+
+  /* 가운데 줄의 높이는 **주문 패널**이 정한다 — 차트와 포트폴리오는 그 높이에
+     맞춰 늘어난다(align-self:stretch). 그래서 줄을 낮추려면 여기를 줄여야 한다.
+     누르는 것들의 높이는 44 아래로 내리지 않는다(손가락·포인터 과녁). */
+  body.sim-play-page .sp-order{padding:12px 16px}
+  body.sim-play-page .sp-sides{margin-bottom:9px}
+  body.sim-play-page .sp-fixed{margin-bottom:8px}
+  body.sim-play-page .sp-amount{gap:6px;margin-bottom:8px;padding-top:9px}
+  body.sim-play-page .sp-amount .sp-total{padding-top:7px}
+  body.sim-play-page .sp-submit{height:44px}
+  body.sim-play-page .sp-advance{height:44px;margin-top:6px}
+  body.sim-play-page .sp-note{margin-top:6px}
+
+  /* 포트폴리오 고리도 한 단 작게 — 줄 높이가 낮아지면 고리가 카드를 꽉 채운다 */
+  body.sim-play-page .sp-pie .pd-ring{width:124px}
+}
+
+@media (max-height:900px){
+  body.sim-play-page .main-inner{padding-top:10px;padding-bottom:10px}
+  body.sim-play-page .sp-stat-val{font-size:var(--fs-xl)}
+  /* 접이 카드 본문은 읽을거리라 줄 수가 날마다 다르다. 낮은 화면에서는 높이를
+     묶고 안에서 굴린다 — 이 카드 하나 때문에 아래 전부가 화면 밖으로 밀리느니 낫다 */
+  body.sim-play-page .sp-fold-body{max-height:76px;overflow:auto}
+}
+@media (max-height:820px){
+  /* 말머리("모의투자 홈 › 진행"). 여기서는 가장 덜 중요한 줄이다 — 상단바의
+     투자하기가 같은 곳으로 가고, 바로 아래 제목이 어느 시즌인지 말해 준다. */
+  body.sim-play-page .sp-crumb{display:none}
+}
+
+@media (max-height:820px){
+  body.sim-play-page .sim-play{gap:8px}
+  body.sim-play-page .main-inner{padding-top:8px;padding-bottom:8px}
+  /* 주문 패널의 줄 사이. 누르는 것들의 높이(44)는 그대로 두고 사이만 좁힌다 */
+  body.sim-play-page .sp-sides{margin-bottom:7px}
+  body.sim-play-page .sp-fixed{margin-bottom:6px}
+  body.sim-play-page .sp-qty-row{height:40px}
+  body.sim-play-page .sp-steps{margin-top:6px;margin-bottom:8px}
+  body.sim-play-page .sp-amount .sp-total dd{font-size:var(--fs-2xl)}
+}
