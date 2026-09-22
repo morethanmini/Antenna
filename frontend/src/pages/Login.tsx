@@ -69,7 +69,7 @@ export default function Login() {
           <div className="intro-copy">
             <Link className="auth-brand" to="/">
               <BrandMark />
-              <span className="name">ANTENA</span>
+              <span className="name">ANTENNA</span>
             </Link>
             <h1>근거를 보고 예측하는<br />AI 투자 플랫폼</h1>
             <p className="lead">AI 리서치와 블록체인 검증, 예측 포트폴리오로<br />더 똑똑한 투자 결정을 경험하세요.</p>
