@@ -40,7 +40,9 @@ export default function StockDetail() {
   const { code = '' } = useParams<{ code: string }>()
   const [params, setParams] = useSearchParams()
 
-  const tab: TabKey = params.get('tab') === 'predict' ? 'predict' : 'info'
+  /* 기본 탭은 예측하기다(2026-09-22 확정) — 종목을 보러 들어오는 사람보다
+     예측하러 들어오는 사람이 우선이다. ?tab=info 일 때만 종목 정보를 편다. */
+  const tab: TabKey = params.get('tab') === 'info' ? 'info' : 'predict'
 
   /* 대회(J-01)로 들어왔는가. 대회 종목 카드가 `?tab=predict&event=scalping` 으로
      데려온다(EventStocks). 탭과 같이 **주소에** 둔다 — 상태로만 들고 있으면
@@ -54,7 +56,9 @@ export default function StockDetail() {
   const eventMode = params.get('event') === CONTEST.id
   const goTab = useCallback((next: TabKey) => {
     const p = new URLSearchParams(params)
-    if (next === 'info') p.delete('tab')
+    /* 기본값이 predict 로 바뀌었으니, 주소를 짧게 두는 쪽(파라미터 생략)도
+       predict 다 — info 로 갈 때만 ?tab=info 를 남긴다. */
+    if (next === 'predict') p.delete('tab')
     else p.set('tab', next)
     /* 탭 전환은 히스토리를 쌓지 않는다. 탭을 다섯 번 오간 뒤 뒤로가기를
        다섯 번 눌러야 목록으로 돌아가면 답답하다. */
@@ -145,29 +149,27 @@ export default function StockDetail() {
                     {s?.market && <span className="sd-chip">{MARKET_LABEL[s.market]}</span>}
                     {s?.sector && <span className="sd-chip is-soft">{s.sector}</span>}
 
-                    {/* 오른쪽 끝 묶음. 오늘 판정 카드와 관심 종목을 한 상자에 넣어
-                        오른쪽으로 민다 — 둘에 각각 margin-left:auto 를 주면 남는
-                        폭을 반씩 나눠 가져 카드가 가운데로 떠 버린다. */}
-                    <div className="sd-ident-right">
-                      {/* 오늘 판정된 예측. 없으면 스스로 아무것도 그리지 않는다.
-                          **대회로 들어왔으면 접는다** — 이 문으로 온 사람은 대회 종목에
-                          예측을 걸러 온 것이라, 오늘 끝난 남의 예측이 할 말이 없다. */}
-                      {!eventMode && <SettledToday code={code} />}
+                    {/* 별만 있는 토글이다(2026-09-22, 시안 확정). 섹터 칩 바로 옆에 둔다 —
+                        글씨·네모 테두리를 걷어 종목명 줄 안에서 눈에 거슬리지 않게 한다. */}
+                    <button
+                      type="button"
+                      className={watched ? 'sd-watch is-on' : 'sd-watch'}
+                      aria-pressed={watched}
+                      aria-label={watched ? '관심 종목에서 빼기' : '관심 종목에 담기'}
+                      onClick={toggleWatch}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24"
+                           fill={watched ? 'currentColor' : 'none'} stroke="currentColor"
+                           strokeWidth="2" strokeLinejoin="round" aria-hidden="true">
+                        <path d="m12 3.6 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.8l5.9-.9z" />
+                      </svg>
+                    </button>
 
-                      <button
-                        type="button"
-                        className={watched ? 'sd-watch is-on' : 'sd-watch'}
-                        aria-pressed={watched}
-                        onClick={toggleWatch}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24"
-                             fill={watched ? 'currentColor' : 'none'} stroke="currentColor"
-                             strokeWidth="2" strokeLinejoin="round" aria-hidden="true">
-                          <path d="m12 3.6 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.8l5.9-.9z" />
-                        </svg>
-                        {watched ? '관심 종목' : '관심 담기'}
-                      </button>
-                    </div>
+                    {/* 오늘 판정된 예측. 없으면 스스로 아무것도 그리지 않는다.
+                        **대회로 들어왔으면 접는다** — 이 문으로 온 사람은 대회 종목에
+                        예측을 걸러 온 것이라, 오늘 끝난 남의 예측이 할 말이 없다.
+                        margin-left:auto 로 혼자 오른쪽 끝까지 민다(css). */}
+                    {!eventMode && <SettledToday code={code} />}
                   </>
                 )}
               </div>

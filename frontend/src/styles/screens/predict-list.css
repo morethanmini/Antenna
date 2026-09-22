@@ -114,16 +114,13 @@
 .my-predictions-page .mp-stat > svg{flex:none;color:var(--faint)}
 
 /* ── 머리 ────────────────────────────────────────────────
-   적중률은 곁칸(.mp-stat)으로 갔다. 여기 남는 건 제목과 한 줄 설명뿐이다.
+   적중률은 곁칸(.mp-stat)으로 갔다. 여기 남는 건 제목뿐이다(부제목은 2026-09-22 걷음).
 
    아래 여백은 **여기 한 곳에서만** 준다(2026-09-18). 위 격자 절에도 같은 규칙이
-   있어서 뒤엣것인 margin:0 이 이겼고, 설명 줄과 거르개가 붙어 있었다. */
+   있어서 뒤엣것인 margin:0 이 이겼고, 목록과 거르개가 붙어 있었다. */
 .my-predictions-page .mp-head{margin:0 0 22px}
 .my-predictions-page .mp-head h1{
-  margin:0 0 6px;line-height:1.15;color:var(--ink);
-}
-.my-predictions-page .mp-head p{
-  margin:0;color:var(--muted);font-size:var(--fs-lg);line-height:1.6;word-break:keep-all;
+  margin:0;line-height:1.15;color:var(--ink);
 }
 
 /* ── 세 걸음 안내 ────────────────────────────────────────

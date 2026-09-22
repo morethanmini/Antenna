@@ -88,7 +88,7 @@ const PANE_H = 130
    조금 남는다 — 봉을 더 뭉개느니 그 편이 낫다.
    천장은 원래 값(330)에서 한 뼘 내린 320 이다. 330 이면 820~900 구간에서 차트가
    주문 패널보다 높아져 줄을 밀고, 그만큼 아래가 3px 넘쳤다. */
-const CHART_REST = 460
+const CHART_REST = 440
 const CHART_MIN = 170
 const CHART_MAX = 320
 
@@ -134,7 +134,10 @@ type Override = { day: number; open: boolean }
 function useDayPanel(day: number, hasContent: boolean) {
   const [override, setOverride] = useState<Override | null>(null)
   const mine = override?.day === day ? override : null
-  const open = mine ? mine.open : hasContent
+  /* **처음에는 접혀 있다(2026-09-22).** 한때 그날 읽을 것이 있으면 저절로 폈는데,
+     두 상자가 펴진 채로 열리면 첫 화면이 그만큼 길어져 아래가 잘렸다. 알리는 일은
+     아래 dot 이 한다 — 새 것이 있는데 접혀 있을 때만 켜진다. */
+  const open = mine ? mine.open : false
   return {
     open,
     dot: hasContent && !open,
@@ -431,6 +434,11 @@ export default function SeasonPlay() {
     [sim],
   )
 
+  /* 봉 그림이 쓸 세로. **훅이라 아래 조기 return(로딩 · 오류 · 미참가)보다 위에 둔다** —
+     한 번 아래에 뒀다가 화면이 통째로 죽었다. 어떤 렌더에서는 호출되고 어떤 렌더에서는
+     안 되어 훅 순서가 어긋난다(2026-09-22). */
+  const chartTotal = useChartTotal()
+
   /* 들어오자마자 다섯을 부른다 — 시즌 · 종목 · 내 상태 · 봉 · 뉴스. 그중 봉이 가장
      크다(워밍업 120 + 진행분). 시즌만 왔을 때 화면을 열면 지표 네 칸과 차트 자리가
      빈 채로 서서 "고장 났나" 로 읽히므로, 그릴 것이 다 올 때까지 한 장으로 붙잡는다.
@@ -551,8 +559,8 @@ export default function SeasonPlay() {
      카드 높이를 같게 둔다 — 껐을 때는 봉이 커지므로 손해도 아니다. */
   const paneOn = PANES.some((k) => on.includes(k))
   /* 보조지표 칸을 켜면 그 몫을 봉 그림에서 뗀다 — 둘이 합쳐 같은 세로를 쓴다.
-     칸을 켠 채로 화면이 낮으면 봉이 너무 얇아지므로 거기서는 바닥을 하나 더 둔다. */
-  const chartTotal = useChartTotal()
+     칸을 켠 채로 화면이 낮으면 봉이 너무 얇아지므로 거기서는 바닥을 하나 더 둔다.
+     (높이 자체는 위쪽 chartTotal 이 갖는다 — 훅이라 조기 return 보다 위에 있어야 한다.) */
   const chartH = paneOn ? Math.max(CHART_H * 0.7, chartTotal - PANE_H) : chartTotal
 
   const stockDiff = sim.stockValue - prevStock
@@ -619,7 +627,7 @@ export default function SeasonPlay() {
                 자동으로는 다시 뜨지 않으므로 여는 자리를 화면 안에 둔다 */}
             <p>
               연습 시즌 · 종목 {s.tickerCount}개
-              {' · '}
+              {' '}
               <button type="button" className="sp-coach-again" onClick={() => setCoach(true)}>
                 화면 안내 보기
               </button>

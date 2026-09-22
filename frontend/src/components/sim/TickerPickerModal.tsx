@@ -16,9 +16,19 @@
    동안 결과가 200 → 3 → 0 으로 바뀌는데 그때마다 높이가 따라 변하면 읽을 수가 없다.
    그래서 높이를 먼저 정하고 목록만 안에서 구른다.
 
-   ── 업종을 탭이 아니라 드롭다운으로 둔다 ──────────────────
-   업종이 스무 개가 넘는다. 칩으로 늘어놓으면 가로 스크롤이 생기고, 스크롤바가 검색칸
-   바로 아래에 걸려 지저분하다. 접어 두면 한 줄이면 되고 개수도 같이 보여줄 수 있다.
+   ── 업종을 드롭다운에서 칩으로 되돌렸다(2026-09-22) ───────
+   한때 드롭다운이었다. 업종이 스무 개가 넘어 칩으로 늘어놓으면 가로 스크롤이 생기는
+   것이 싫어서였는데, 그러면 **어떤 업종이 있는지 열어 봐야만 안다**. 200종목 중에서
+   고르는 화면의 첫 물음이 "무슨 업종들이 있나" 인데 그걸 접어 둔 셈이다.
+
+   가로로 흘리지 않고 **줄바꿈**으로 깐다. 기본은 두 줄까지만 보이고 나머지는 접는다 —
+   펴는 버튼에 남은 개수를 적어 두면 접힌 것이 있다는 사실 자체가 드러난다.
+
+   ── 업종별로 묶어서 본다 ─────────────────────────────────
+   업종을 고르지 않고 검색도 하지 않은 첫 화면에서는 목록을 업종별로 묶고 머리글을
+   붙인다(보유 종목이 있으면 그 묶음이 맨 위). 머리글은 구르는 동안 위에 붙어 있어
+   지금 어느 업종을 보고 있는지 잃지 않는다. 업종을 고르거나 검색하면 묶지 않는다 —
+   그때는 이미 한 덩어리라 머리글이 군더더기다.
 
    모달 규칙은 M-01 지갑 연동(WalletLinkModal)과 같다 — Escape 로 닫고, 열리면 초점을
    안으로 들인다. 없으면 탭이 뒤 화면을 돌아다닌다. */
@@ -51,6 +61,8 @@ export default function TickerPickerModal({
 }: Props) {
   const [query, setQuery] = useState('')
   const [sector, setSector] = useState(ALL)
+  /** 업종 칩을 다 펴 놓았나. 기본은 두 줄까지만 보인다 */
+  const [allSectors, setAllSectors] = useState(false)
   const dialogRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
@@ -92,6 +104,46 @@ export default function TickerPickerModal({
 
   const heldCount = Object.values(heldQty).filter((q) => q > 0).length
 
+  /* 첫 화면(업종 전체 · 검색 없음)에서만 업종별로 묶는다. 보유 종목이 있으면 그
+     묶음을 맨 위에 따로 세운다 — 묶어 놓으면 보유가 업종마다 흩어져 찾기 어렵다.
+     묶음 순서는 업종 칩과 같다(종목 수가 많은 쪽부터). 묶음 안은 서버가 준 순서다. */
+  const grouped = sector === ALL && query.trim() === ''
+  const groups = useMemo(() => {
+    if (!grouped) return null
+    const held = rows.filter((t) => (heldQty[t.tickerId] ?? 0) > 0)
+    const out: { key: string; items: Ticker[] }[] = []
+    if (held.length) out.push({ key: '보유 중', items: held })
+    sectors.forEach((x) => {
+      if (x.name === ALL) return
+      const items = rows.filter((t) => t.sector === x.name && !(heldQty[t.tickerId] ?? 0))
+      if (items.length) out.push({ key: x.name, items })
+    })
+    const rest = rows.filter((t) => !t.sector && !(heldQty[t.tickerId] ?? 0))
+    if (rest.length) out.push({ key: '업종 없음', items: rest })
+    return out
+  }, [grouped, rows, sectors, heldQty])
+
+  /* 한 줄. 묶어서 그릴 때와 아닐 때가 같은 모양이어야 해서 함수로 뺀다 */
+  function row(t: Ticker) {
+    const qty = heldQty[t.tickerId] ?? 0
+    const price = priceOf(t.tickerId)
+    return (
+      <li key={t.tickerId}>
+        <button
+          type="button"
+          className={t.tickerId === selectedId ? 'tp-row on' : 'tp-row'}
+          onClick={() => { onPick(t.tickerId); close() }}
+        >
+          <b>{t.displayName}</b>
+          {t.sector && <span className="tp-sector">{t.sector}</span>}
+          {qty > 0 && <span className="tp-held num">{qty.toLocaleString('ko-KR')}주</span>}
+          {/* 이미 받아 둔 종목만 가격이 있다. 없으면 칸을 비운다 */}
+          <span className="tp-price num">{price === null ? '' : `${won(price)}원`}</span>
+        </button>
+      </li>
+    )
+  }
+
   return (
     <div className="tp-backdrop" onClick={close}>
       <div
@@ -126,52 +178,55 @@ export default function TickerPickerModal({
             />
           </label>
 
+          {/* 업종 칩. 두 줄까지만 두고 나머지는 접는다 — 높이는 CSS 가 잰다 */}
+          <div className={allSectors ? 'tp-sectors is-open' : 'tp-sectors'} role="group" aria-label="업종 고르기">
+            {sectors.map((x) => (
+              <button
+                key={x.name}
+                type="button"
+                className={x.name === sector ? 'tp-chip on' : 'tp-chip'}
+                aria-pressed={x.name === sector}
+                onClick={() => setSector(x.name)}
+              >
+                {x.name}
+                <em className="num">{x.count}</em>
+              </button>
+            ))}
+          </div>
+
           <div className="tp-filter">
-            <label className="tp-pick">
-              <span>업종</span>
-              <select value={sector} onChange={(e) => setSector(e.target.value)}>
-                {sectors.map((x) => (
-                  <option key={x.name} value={x.name}>
-                    {x.name} ({x.count})
-                  </option>
-                ))}
-              </select>
-              <i aria-hidden="true">⌄</i>
-            </label>
+            {sectors.length > 1 && (
+              <button type="button" className="tp-more" onClick={() => setAllSectors((v) => !v)}>
+                {allSectors ? '업종 접기' : `업종 전체 보기 (${sectors.length - 1})`}
+              </button>
+            )}
             <p className="tp-count num">
               {rows.length}종목
-              {heldCount > 0 && <span> · 보유 {heldCount}종목 위</span>}
+              {heldCount > 0 && <span> · 보유 {heldCount}</span>}
             </p>
           </div>
         </div>
 
         {/* 목록이 이 칸 안에서만 구른다. 비어도 칸 높이가 그대로라 상자가 안 뛴다 */}
-        <ul className="tp-list">
+        <div className="tp-list">
           {rows.length === 0 && (
-            <li className="tp-empty">
+            <p className="tp-empty">
               {query.trim() ? `"${query.trim()}" 에 맞는 종목이 없습니다` : '종목이 없습니다'}
-            </li>
+            </p>
           )}
-          {rows.map((t) => {
-            const qty = heldQty[t.tickerId] ?? 0
-            const price = priceOf(t.tickerId)
-            return (
-              <li key={t.tickerId}>
-                <button
-                  type="button"
-                  className={t.tickerId === selectedId ? 'tp-row on' : 'tp-row'}
-                  onClick={() => { onPick(t.tickerId); close() }}
-                >
-                  <b>{t.displayName}</b>
-                  {t.sector && <span className="tp-sector">{t.sector}</span>}
-                  {qty > 0 && <span className="tp-held num">{qty.toLocaleString('ko-KR')}주</span>}
-                  {/* 이미 받아 둔 종목만 가격이 있다. 없으면 칸을 비운다 */}
-                  <span className="tp-price num">{price === null ? '' : `${won(price)}원`}</span>
-                </button>
-              </li>
-            )
-          })}
-        </ul>
+
+          {groups
+            ? groups.map((g) => (
+                <section key={g.key} className="tp-group">
+                  <h3 className="tp-gh">
+                    {g.key}
+                    <em className="num">{g.items.length}</em>
+                  </h3>
+                  <ul>{g.items.map(row)}</ul>
+                </section>
+              ))
+            : rows.length > 0 && <ul>{rows.map(row)}</ul>}
+        </div>
       </div>
     </div>
   )

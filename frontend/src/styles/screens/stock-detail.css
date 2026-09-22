@@ -27,24 +27,115 @@
   background:var(--ground);
 }
 
-/* 헤더가 끝나는 자리에서만 부드럽게 흐린다 — 잘린 듯 보이지 않게 */
+/* 밤에는 흰 판이 아니라 유리다(2026-09-22, 사용자 확인). 처음엔 다른 읽는 화면처럼
+   불투명 흰 판으로 뒀는데, 도시 사진 위에 막 잘린 흰 사각형이 얹혀 안 어우러진다는
+   지적을 받았다 — 여기는 표 한 칸짜리 머리라 텍스트 밀도가 낮아 홈처럼 유리로
+   가도 읽기에 지장이 없다(다른 셋은 표·글이 빽빽해 불투명을 그대로 둔다).
+
+   **토큰을 여기서 바꿔치기한다.** --ink · --surface 같은 토큰을 이 판 위에서
+   다시 정의하면, 안의 h1 · sd-chip · sd-watch · 예측 미니카드(.st-card 등)가
+   전부 var() 로 그 값을 참조하고 있어 따로 하나씩 고치지 않아도 전부 따라온다
+   (body.is-night.is-glass 가 같은 방식을 쓴다 — 그 값을 그대로 옮겨 왔다).
+
+   아래쪽은 그대로 각지게 둔다 — 스크롤되는 본문이 그 밑으로 지나가는데, 아래를
+   둥글리면 모서리 틈으로 지나가는 글자가 비친다. */
+.stock-detail-page.is-night .sd-head{
+  /* **흰 유리가 아니라 짙은 유리다**(2026-09-22 정정). 처음엔 홈 화면의 is-glass
+     처럼 rgba(255,255,255,.07) 흰 틴트를 썼는데, 이 판은 sticky 라 스크롤하면
+     그 뒤로 흰 카드(종가 추이 등)가 지나간다 — 블러가 그 흰빛을 그대로 실어
+     날라 판이 하얗게 뜨고, 흰 글자가 흰 바탕 위에서 사라졌다(실측). 상단바
+     (app.css 의 .navbar::before)가 이미 쓰는 방법을 그대로 가져온다 — 짙은
+     남색을 틴트로 써서, 뒤에 무엇이 지나가든 판은 늘 어둡게 남는다. */
+  --ground:rgba(16,14,40,.62);
+  /* --surface 계열·--brand-soft 계열은 판(.sd-head) 배경과 같은 반투명이었다
+     — 칩·적중 캡슐·예측 미니카드·관심 담기 버튼이 다 이걸 쓰다 보니 이 판
+     자체와 안의 작은 캡슐들이 구분 없이 다 비쳐 보였다(2026-09-22 지적).
+     **판만 유리고, 그 위의 캡슐은 불투명하다** — 밤 팔레트의 짙은 보라
+     (--night-1 · --night-2)를 섞어 판보다 한 단 또렷한 고체색으로 준다. */
+  --surface:var(--night-2);
+  --surface-2:#2f2860;
+  --ink:var(--night-ink);
+  --body:#cfcbe8;
+  --muted:#a9a4cc;
+  --faint:var(--night-faint);
+  --rule:var(--night-line);
+  --brand-soft:#362d6e;
+  --brand-softer:#2b2557;
+  /* --brand·--brand-ink 는 다른 밤 화면에서는 안 바꾸는 값이다(위 파일 머리말) —
+     버튼 채움처럼 제 색 판 위에 놓일 때는 그대로 읽힌다. 그런데 KOSPI 칩은 진한
+     텍스트(#4144c9)를 옅은 유리 배경에 바로 얹는 자리라 이 판 위에서는 안
+     읽혔다(실측, 2026-09-22) — 이 판 안에서만 밤에 쓰는 밝은 보라로 바꿔치기한다.
+     --brand 는 선택된 탭 글자·밑줄·(3) 배지 배경에 쓰이는데, --glow(#8b7dff) →
+     #a78bfa → #b39dff 로 세 번 올렸다 — 매번 "조금 더 밝게" 요청을 받았다. */
+  --brand:#c4b5fd;
+  --brand-ink:var(--glow);
+  --up:#ff6b6b;
+  --up-vivid:#ff8080;
+  --down:#7aa7ff;
+  --down-vivid:#7aa7ff;
+  --gold:#ffd464;
+
+  background:var(--ground);
+  -webkit-backdrop-filter:blur(14px) saturate(140%);
+  backdrop-filter:blur(14px) saturate(140%);
+  /* 네 모서리 다 깎는다(2026-09-22 — 아래만 각져 있어 안 어우러진다는 지적).
+     밑이 뾰족했던 이유(스크롤 본문이 그 밑을 지나가며 둥근 모서리 틈으로
+     비칠까 봐)는 실제로 스크롤해 보면 안 걸린다 — 유리판이라 지나가는 글도
+     흐려 보이고, 카드 padding 이 넉넉해 모서리 틈에 아무것도 안 걸린다. */
+  border-radius:16px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 16px 32px -20px rgba(8,6,28,.65);
+  /* 낮에는 옆 여백이 0 이어도 된다 — 판이 페이지 바탕과 같은 색이라 경계가 안
+     보이고, 글이 main-inner 왼쪽 끝에 그대로 맞아야 아래 카드들과 줄이 맞는다.
+     밤에는 이 판에 테두리(둥근 모서리·그림자·불투명 캡슐)가 생겨 경계가 뚜렷한데
+     옆 여백이 여전히 0 이면 글자가 그 경계에 바로 눌어붙는다(2026-09-22 지적) —
+     밤에서만 옆·위를 띄운다. */
+  padding:22px 22px 0;
+}
+/* "오늘 판정된 예측" 띠(.st, settled-today.css)는 밤에도 **낮 버전 그대로**
+   둔다(2026-09-22, 사용자 확인) — 위 판 토큰 바꿔치기를 물려받지 않게 토큰을
+   다시 낮 값으로 되돌린다. 스티커처럼 바탕색이 있는 뱃지라, 판이 유리든
+   아니든 제 색을 그대로 들고 다니는 쪽이 더 또렷하다.
+
+   관심 담기 별은 이제 배경·테두리가 없어 --faint(빈 별)·--muted(hover) 만
+   쓴다 — 담은 상태(.is-on)는 색을 직접 박아 토큰을 아예 안 쓴다. */
+.stock-detail-page.is-night .sd-watch{--faint:#8c86b3;--muted:#a9a4cc}
+/* 예측가 미니카드 한 벌 — 적중 캡슐 포함. .st 에서 되돌리면 안의 .st-card ·
+   .st-tag.is-hit · .st-who · .st-target · .st-err 가 전부 var() 로 따라온다. */
+.stock-detail-page.is-night .st{
+  --surface:#ffffff;--surface-2:#f0f2f7;--ink:#14141b;--body:#3b3f4a;
+  --muted:#6b7280;--faint:#9ca3af;--rule:#e5e7ef;
+  --brand-soft:#ece9fd;--brand-softer:#f4f3fe;--brand-ink:#4144c9;
+  --up:#ee0000;--down:#0066ff;
+}
+
+/* 헤더가 끝나는 자리에서만 부드럽게 흐린다 — 잘린 듯 보이지 않게.
+   낮 전용이다 — 낮엔 헤더가 모서리 없는 통짜 막대라 이 조각이 자연스럽게
+   붙지만, 밤엔 헤더 자체가 둥근 모서리 카드라 이 네모난 조각이 둥근 아래
+   모서리 밖으로 각지게 삐져나와 보였다(2026-09-22 지적). 밤에는 카드 자신의
+   그림자·블러가 이미 그 일을 하므로 이 조각이 필요 없다. */
 .stock-detail-page .sd-head::after{
   content:"";position:absolute;left:0;right:0;top:100%;height:10px;
   background:linear-gradient(var(--ground),transparent);
   pointer-events:none;
 }
+.stock-detail-page.is-night .sd-head::after{content:none}
 
 /* 줄 간격을 글꼴이 정하게 두면 26px 제목이 39px 짜리 줄을 차지한다.
    헤더는 네 줄이 붙어 있는 자리라 그 여유가 그대로 빈 공간으로 쌓인다.
    그래서 줄 높이를 글자 크기에 맞춰 직접 못 박는다. */
-/* sticky 헤더 밖이다(스크롤하면 사라진다). 헤더가 바로 아래 붙으므로 여백만 준다 */
-.stock-detail-page .sd-head-top{margin-bottom:0;line-height:1.2}
+/* sticky 헤더 밖이다(스크롤하면 사라진다). 헤더가 바로 아래 붙으므로 여백만 준다.
+   0 이면 뒤로가기 글자가 카드 위 모서리에 바로 눌어붙는다(2026-09-22 지적) —
+   살짝만 띄운다. */
+.stock-detail-page .sd-head-top{margin-bottom:10px;line-height:1.2}
 .stock-detail-page .sd-back{
   display:inline-flex;align-items:center;gap:5px;
   color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-normal);border-radius:8px;
 }
 .stock-detail-page .sd-back:hover{color:var(--ink)}
 .stock-detail-page .sd-back:focus-visible{outline:2px solid var(--brand);outline-offset:3px}
+/* 밤에는 색을 night.css 가 준다(카드 밖 글자). hover 도 그 톤 위에서 밝아져야 한다 —
+   --ink 로 가면 밤에도 어두운 색이라 눌러도 그대로 안 보인다. */
+.stock-detail-page.is-night .sd-back:hover{color:#fff}
 
 .stock-detail-page .sd-ident{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 /* 회사 로고(2026-09-15). 목록·홈과 같은 StockLogo 를 쓰고 크기만 여기서 정한다 —
@@ -69,29 +160,22 @@
 }
 .stock-detail-page .sd-chip.is-soft{background:var(--surface-2);color:var(--muted)}
 
-/* 오른쪽 끝 묶음 — 오늘 판정 카드 + 관심 담기.
-
-   카드가 두 칸이라 종목명 줄보다 높다. 그대로 두면 줄이 카드 높이만큼 부풀어
-   종목명과 종가 사이가 벌어진다. **높이를 0 으로 잡아 줄 높이에 기여하지 않게**
-   하고 아래로 흘려보낸다 — 폭은 그대로 차지하므로 긴 종목명이 카드 밑으로
-   파고들지도 않는다.
-
-   align-items:flex-start 로 카드와 관심 담기의 **윗변을 맞춘다**. */
-.stock-detail-page .sd-ident-right{
-  margin-left:auto;align-self:flex-start;height:0;
-  display:flex;align-items:flex-start;gap:12px;min-width:0;
-}
-
-/* 관심 담기. 미는 일은 위 묶음이 한다 */
+/* 관심 담기 — 별 아이콘 하나뿐이다(2026-09-22, 글씨·네모 테두리를 걷어냄).
+   섹터 칩 바로 옆, 종목명 줄 안에 선다 — 더는 오른쪽으로 안 민다(JSX 에서
+   .sd-ident-right 를 걷었다. 오늘 판정 카드가 이제 혼자 오른쪽 끝을 맡는다,
+   settled-today.css 의 .st 참고). */
 .stock-detail-page .sd-watch{
-  flex:none;display:inline-flex;align-items:center;gap:6px;
-  height:31px;padding:0 13px;border:1px solid var(--rule);border-radius:9px;
-  background:var(--surface);color:var(--muted);
-  font-family:inherit;font-size:var(--fs-md);font-weight:var(--fw-bold);cursor:pointer;
-  transition:color .14s,border-color .14s,background .14s;
+  flex:none;display:inline-flex;align-items:center;justify-content:center;
+  width:28px;height:28px;padding:0;border:0;border-radius:8px;background:none;
+  color:var(--faint);cursor:pointer;
+  transition:color .14s;
 }
-.stock-detail-page .sd-watch:hover{color:var(--ink);border-color:#c8ccdd}
-.stock-detail-page .sd-watch.is-on{color:var(--gold);border-color:var(--gold);background:#fffaf0}
+.stock-detail-page .sd-watch:hover{color:var(--muted)}
+/* 담은 상태는 채워진 밝은 노랑 별이다 — 색을 토큰이 아니라 직접 박는다.
+   --ink 는 밤 헤더 안에서 밝은 색으로 바뀌어 있어(위 유리 판 참고), 토큰을
+   쓰면 밤에서 값이 또 달라진다. 이 별은 어느 화면에서도 늘 같은 색이어야 한다. */
+.stock-detail-page .sd-watch.is-on{color:#f0b429}
+.stock-detail-page .sd-watch.is-on:hover{color:#f5c455}
 .stock-detail-page .sd-watch:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 
 /* 전일 종가. "현재가" 를 만들지 않는다 — 기준일을 항상 붙인다 */
@@ -104,6 +188,11 @@
 .stock-detail-page .sd-change{font-size:var(--fs-xl);font-weight:var(--fw-bold)}
 .stock-detail-page .sd-asof{color:var(--faint);font-size:var(--fs-sm)}
 .stock-detail-page .sd-halted{margin:0;color:var(--muted);font-size:var(--fs-lg);line-height:1.4}
+/* 종목명·종가·기준일은 밤에 그냥 흰색이다(2026-09-22 확정) — 토큰(--ink·--faint)이
+   주던 은은한 톤 차이를 걷고 셋 다 순백으로 맞춘다. */
+.stock-detail-page.is-night .sd-ident h1,
+.stock-detail-page.is-night .sd-price > b,
+.stock-detail-page.is-night .sd-asof{color:#fff}
 
 .stock-detail-page .up{color:var(--up)}
 .stock-detail-page .down{color:var(--down)}
@@ -131,6 +220,10 @@
   color:var(--faint);font-size:var(--fs-2xs);font-weight:var(--fw-bold);
 }
 .stock-detail-page .sd-tabs button.is-on .sd-tab-count{background:var(--brand-softer);color:var(--brand-ink)}
+/* 밤에는 배경을 선택된 탭 글자와 같은 보라(--brand, #b39dff)로 맞춘다
+   (2026-09-22 재조정 — 처음엔 적중 캡슐처럼 옅은 배경으로 갔었다). 글씨는
+   그대로 짙은 인디고라 이 배경 위에서도 대비가 넉넉하다. */
+.stock-detail-page.is-night .sd-tabs button.is-on .sd-tab-count{background:var(--brand);color:#4144c9}
 
 .stock-detail-page [role="tabpanel"]:focus{outline:none}
 
@@ -1257,7 +1350,6 @@
   /* 제목이 줄어든 만큼 로고도 줄인다 — 안 줄이면 로고가 이름보다 커 보인다 */
   .stock-detail-page .sd-logo{width:30px;height:30px;border-radius:9px;font-size:var(--fs-md)}
   .stock-detail-page .sd-price > b{font-size:var(--fs-5xl)}
-  .stock-detail-page .sd-watch{margin-left:0;order:9}
 }
 
 /* ── 이벤트 (ANT-FE-EVENT-BET) ─────────────────────────────

@@ -72,8 +72,11 @@
 .rk-page.is-event .rk-sky-bg{ display:none; }
 .rk-sky-bg{
   position:fixed; left:0; right:0;
-  /* 상단 바는 고정이라 그 아래부터. 화면 높이를 꽉 채워 액자가 끊기지 않는다 */
-  top:var(--topbar-h); height:calc(100vh - var(--topbar-h));
+  /* **상단 바 밑까지 끌어올린다**(2026-09-22). 전에는 바 아래(top:--topbar-h)부터
+     깔았는데, 바가 반투명 유리라 그 띠만 흰 판으로 남아 그림이 바 높이에서 뚝
+     끊겼다. 화면 꼭대기부터 깔면 바 너머로 그림이 은은히 비쳐 한 덩어리가 된다.
+     .main 이 padding-top 으로 본문을 이미 내려 두어 글이 바에 가리지는 않는다. */
+  top:0; height:100vh;
   /* 흔들릴 여유만큼 넘겨 깐다 — 딱 맞게 깔면 움직이는 순간 가장자리에 빈 틈이 보인다 */
   width:106%; margin-left:-3%;
   object-fit:cover; object-position:center center;
@@ -90,10 +93,17 @@
   .rk-sky-bg{ animation:none; }
 }
 
-/* 그림 위에 글이 올라온다. 연한 바탕이라 회색 소개 줄이 묻힌다 —
-   --muted 도 --body 도 얇게 뜬다. 본문색에 한 단 굵기를 더해 또렷하게 세운다 */
-.rk-page .page-head{ padding-top:14px; }
-.rk-page .page-head p{ color:var(--ink); font-weight:var(--fw-normal); }
+/* 종목 탐색·내 예측·리포트와 같은 목록 화면 크기로 맞춘다(2026-09-22) —
+   여기만 .page-head 기본값(24px)에 남아 나란히 오갈 때 제목이 들쭉날쭉했다.
+
+   line-height 도 함께 준다 — 안 주면 body 의 1.6 비율을 물려받아(30px 기준
+   48px) 제목 상자가 커져 다른 세 화면(1.15, 34.5px)과 높이가 달라진다.
+   padding-top:14px 도 걷었다 — 다른 세 화면은 본문 여백(28px)뿐인데 여기만
+   더해 제목이 한 단 아래에서 시작했다. */
+.rk-page .page-head h1{
+  font-size:var(--fs-title-lg); font-weight:var(--fw-black); letter-spacing:-.03em;
+  line-height:1.15;
+}
 
 /* 표는 그림 위에 얹힌 카드다. 살짝 띄워야 배경에 눌어붙어 보이지 않는다 */
 .rk-page .rk-table-wrap{ box-shadow:0 14px 34px -24px rgba(60,40,140,.6); }

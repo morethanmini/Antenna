@@ -24,8 +24,12 @@ type Props = {
   busyLabel?: string
 }
 
-/** 이만큼 밀면 넘어간다. 1 로 두면 끝을 정확히 맞춰야 해서 잘 안 넘어간다 */
-const THRESHOLD = 0.9
+/** 이만큼 밀어야 넘어간다. **끌던 중이 아니라 손을 뗀 자리를 본다**(2026-09-22
+    정정) — 끌던 중에 이 문턱을 넘기자마자 확정했더니, 맨 끝까지 가지 않고
+    근처에서 멈춰도(심지어 계속 끄는 중이어도) 서명으로 넘어가 버렸다. 1 로
+    두면 손을 뗀 지점이 트랙 폭 1px 오차로도 어긋나 거의 안 넘어가므로, 0.97 로
+    "거의 끝" 을 표시하되 판정은 항상 손을 뗀 순간에만 한다. */
+const THRESHOLD = 0.97
 
 export default function SlideToSign({
   onConfirm, disabled = false, busy = false,
@@ -35,6 +39,10 @@ export default function SlideToSign({
   const knobRef = useRef<HTMLButtonElement>(null)
   /** 0~1. 손잡이가 얼마나 갔나 */
   const [at, setAt] = useState(0)
+  /** at 의 최신값을 손을 뗀 그 순간 그대로 읽으려는 참조다 — pointerup 핸들러가
+      클로저로 쥔 상태값에 의존하면, 리렌더가 그 사이 못 따라왔을 때 한 틱 전
+      값을 볼 수 있다(끌기처럼 이벤트가 빠르게 겹치는 곳에서는 실제로 발생했다). */
+  const atRef = useRef(0)
   const dragging = useRef(false)
   /** 끌고 있는 동안만 참. 참일 때는 전환을 끈다 — 손가락을 그대로 따라가야 한다 */
   const [held, setHeld] = useState(false)
@@ -72,32 +80,30 @@ export default function SlideToSign({
     return { left: t.left + padL, span: Math.max(1, t.width - padL - padR - w) }
   }
 
+  /* 끌던 중에는 위치만 따라간다 — 확정은 하지 않는다(아래 endDrag 가 한다) */
   const move = useCallback((clientX: number) => {
     const g = geom()
     if (!g) return
     /* 잡은 지점을 손가락 밑에 붙들어 둔다 */
     const next = Math.min(1, Math.max(0, (clientX - g.left - grabDx.current) / g.span))
+    atRef.current = next
     setAt(next)
-    if (next >= THRESHOLD && !fired.current) {
-      fired.current = true
-      afterDrag.current = true
-      dragging.current = false
-      setHeld(false)
-      /* 끝까지 밀어 붙인다. 0.9 에서 넘어가므로 남은 만큼은 스스로 미끄러져
-         들어가야 "끝까지 갔다" 로 읽힌다 — 여기서 0 으로 되돌리면 다 민 순간
-         손잡이가 튕겨 나가 동작이 취소된 것처럼 보인다.
-         실패해 돌아왔을 때 다 밀린 채 남지 않게 하는 것은 아래 effect 가 맡는다. */
-      setAt(1)
-      onConfirm()
-      /* 붙은 것을 보여 준 뒤 제자리로 돌린다.
+  }, [])
 
-         바로 busy 로 넘어가면 발판 자리를 진행 문구가 덮으므로 이 타이머는 보이지
-         않는다. 문제는 **넘어가지 않는 갈래**다 — 슬롯을 넘겼을 때 submit 은 소각
-         동의 창만 띄우고 돌아온다(PredictTab). 그때 손잡이가 끝에 붙은 채 남으면,
-         창을 닫은 사람은 이미 등록된 것처럼 읽는다. */
-      window.clearTimeout(homeTimer.current)
-      homeTimer.current = window.setTimeout(() => setAt(0), 380)
-    }
+  /** 손을 뗀 자리가 문턱을 넘었을 때만 확정한다. endDrag 가 부른다 */
+  const confirm = useCallback(() => {
+    fired.current = true
+    afterDrag.current = true
+    setAt(1)
+    onConfirm()
+    /* 붙은 것을 보여 준 뒤 제자리로 돌린다.
+
+       바로 busy 로 넘어가면 발판 자리를 진행 문구가 덮으므로 이 타이머는 보이지
+       않는다. 문제는 **넘어가지 않는 갈래**다 — 슬롯을 넘겼을 때 submit 은 소각
+       동의 창만 띄우고 돌아온다(PredictTab). 그때 손잡이가 끝에 붙은 채 남으면,
+       창을 닫은 사람은 이미 등록된 것처럼 읽는다. */
+    window.clearTimeout(homeTimer.current)
+    homeTimer.current = window.setTimeout(() => setAt(0), 380)
   }, [onConfirm])
 
   useEffect(() => () => window.clearTimeout(homeTimer.current), [])
@@ -106,6 +112,7 @@ export default function SlideToSign({
     if (locked) return
     dragging.current = true
     fired.current = false
+    atRef.current = 0
     grabDx.current = e.clientX - e.currentTarget.getBoundingClientRect().left
     window.clearTimeout(homeTimer.current)
     setHeld(true)
@@ -120,9 +127,12 @@ export default function SlideToSign({
     dragging.current = false
     setHeld(false)
     try { e.currentTarget.releasePointerCapture(e.pointerId) } catch { /* 이미 놓였다 */ }
-    /* 끝까지 못 밀었으면 되돌아온다. held 가 풀린 뒤라 CSS 전환을 타고 미끄러져
-       돌아간다 — 예전에는 그 자리에서 사라지듯 튀었다. */
-    if (!fired.current) setAt(0)
+    /* 손을 뗀 그 자리로 판정한다 — atRef 가 move() 가 마지막으로 적어 둔 값이다.
+       문턱을 넘겨 손을 뗐을 때만 확정하고, 그 못 미쳐 뗐으면(끝까지 안 밀었으면)
+       되돌아온다. held 가 풀린 뒤라 CSS 전환을 타고 미끄러져 돌아간다 —
+       예전에는 그 자리에서 사라지듯 튀었다. */
+    if (atRef.current >= THRESHOLD && !fired.current) confirm()
+    else if (!fired.current) setAt(0)
   }
 
   if (busy) {
@@ -154,10 +164,16 @@ export default function SlideToSign({
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
         onClick={(e) => {
-          /* 끌어서 넘긴 직후에 click 이 한 번 더 온다 — 그 하나만 삼킨다.
-             끌지 않고 그냥 누른 것(키보드·탭)은 그대로 통과시킨다. */
+          /* 끌어서 넘긴 직후에 click 이 한 번 더 온다 — 그 하나만 삼킨다. */
           if (afterDrag.current) { afterDrag.current = false; e.preventDefault(); return }
-          if (!locked) onConfirm()
+          /* **그냥 누른 클릭은 통과시키지 않는다**(2026-09-22, 되돌릴 수 없는
+             동작이 한 번의 오클릭으로 넘어가던 문제). 버튼이라 마우스로 그냥
+             누르기만 해도 이 click 이 온다 — 끝까지 밀지 않았는데 넘어가면
+             파일 머리말의 "한 번의 오클릭으로 되돌릴 수 없는 일이 벌어지지
+             않게" 라는 설계 목적이 깨진다.
+             **키보드(Enter·Space)만 통과시킨다.** 그 click 은 detail 이 0 이다
+             — 마우스·터치 클릭은 1 이상이라 여기서 가른다(MDN, UIEvent.detail). */
+          if (e.detail === 0 && !locked) onConfirm()
         }}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
