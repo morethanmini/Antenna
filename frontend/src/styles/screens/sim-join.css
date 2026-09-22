@@ -441,13 +441,25 @@ body.sim-join-page .sj-steps li:first-child{border-left:0}
   body.sim-join-page .sj-steps li{border-left:0}
   body.sim-join-page .sj-steps li + li{border-top:1px solid var(--rule)}
 }
-body.sim-join-page .sj-step-no{grid-column:1;grid-row:1;align-self:center;letter-spacing:.1em}
-/* 제목이 두 줄인 칸에서 아이콘이 두 줄 한가운데로 내려가 혼자 어긋났다.
-   첫 줄에 붙인다 — 한 줄짜리 칸에서는 center 와 결과가 같다. */
-body.sim-join-page .sj-steps svg{grid-column:2;grid-row:1;margin:0;align-self:start}
+/* **번호 · 아이콘은 제목의 첫 줄에 건다.** 가운데(center)로 두면 제목이 두 줄인
+   칸에서만 두 줄의 한가운데로 내려가, 넷을 나란히 봤을 때 01·03 과 02·04 가
+   서로 다른 높이에 섰다(2026-09-23). 셋 다 첫 줄과 같은 높이(--step-line)의
+   상자를 주고 그 안에서 가운데 정렬하면, 제목이 몇 줄이든 줄머리가 하나로 선다. */
+body.sim-join-page .sj-steps{--step-line:22px}
+body.sim-join-page .sj-step-no{
+  grid-column:1;grid-row:1;align-self:start;letter-spacing:.1em;
+  display:flex;align-items:center;height:var(--step-line);
+}
+body.sim-join-page .sj-steps svg{
+  grid-column:2;grid-row:1;margin:0;align-self:start;
+  height:var(--step-line);width:22px;
+}
 body.sim-join-page .sj-steps b{
-  grid-column:3;grid-row:1;align-self:center;
-  /* 두 줄이 되는 칸(04)에서 아래 줄에 낱말 하나만 남지 않게 나눠 준다 */
+  grid-column:3;grid-row:1;align-self:start;
+  /* 줄 높이를 상자 높이와 같은 값으로 못 박는다 — 1.45 배(21.75px)로 두면 반올림이
+     브라우저마다 달라 아이콘이 반 픽셀씩 어긋난다 */
+  line-height:var(--step-line);
+  /* 두 줄이 되는 칸에서 아래 줄에 낱말 하나만 남지 않게 나눠 준다 */
   text-wrap:balance;
 }
 /* 설명은 칸 너비를 통째로 쓴다. 제목 아래로만 두면 번호 · 아이콘 폭(60px)만큼
