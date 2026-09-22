@@ -144,13 +144,92 @@ body.is-night .iconbtn[aria-expanded="true"]{
 body.is-night .avatarbtn{box-shadow:var(--nav-raise)}
 body.is-night .avatarbtn:hover{box-shadow:var(--nav-raise-hi)}
 
-/* 바에 매달린 작은 메뉴 둘(햄버거 · 계정). 흰 판 그대로 두면 어두운 바 아래로
-   밝은 카드가 튀어나와, 바와 한 몸인 메뉴가 아니라 남의 창처럼 보인다.
-   알림 곁창은 건드리지 않는다 — 그쪽은 메뉴가 아니라 읽을거리가 담긴 판이다. */
+/* ── 바에 매달린 곁창 셋 (2026-09-22) ──────────────────────
+   햄버거 · 계정 · **알림**. 전에는 알림만 빼 두었는데("메뉴가 아니라 읽을거리가
+   담긴 판이다"), 그 결과 같은 바에서 같은 방식으로 내려오는 창인데 계정은 어둡고
+   알림은 흰 판이라 둘이 다른 제품처럼 보였다. 셋을 한 벌로 묶는다.
+
+   **판 색을 토큰에 맡기지 않는다.** 셋 다 --surface 를 쓰는데 그 토큰은 is-glass
+   화면에서 rgba(255,255,255,.07) 로 뒤집힌다 — 같은 곁창이 홈(is-glass)에서는
+   비치고 종목 탐색(is-night 만)에서는 흰 판이었다. 여기서 값을 못 박는다.
+
+   **반투명 + 블러다.** 불투명(.96)으로 두면 바 아래에 판때기 하나가 얹힌 것처럼
+   보인다. 뒤의 도시가 은은히 비쳐야 상단바와 한 몸으로 읽힌다 — 상단바 자신도
+   같은 방식이다(.navbar::before). 블러를 못 쓰는 브라우저를 위해 아래에
+   불투명한 값을 먼저 적고, @supports 안에서 알파를 내린다.
+
+   ── 모드마다 색이 다르다 ───────────────────────────────────
+   같은 곁창이지만 인사이트에서는 보라 쪽, 모의투자에서는 파랑 쪽으로 기운다.
+   각 모드의 온보딩 카드가 끝나는 색과 같은 계열이다(인사이트 #8b7dff ·
+   모의투자 #6d6bff). 두 모드를 스위치 하나로 오가는 제품이라, 지금 어느 쪽에
+   있는지를 바에 매달린 창까지 같이 말해 준다.
+
+   가르는 것은 **body[data-mode]** 다 — App.tsx 가 화면마다 붙인다. 지갑 · 설정처럼
+   두 모드가 같이 쓰는 화면(설정 · 마이페이지 · 지갑)은 들어온 모드를 주소로 이어
+   받으므로(sharedMode.ts), 모의투자에서 연 지갑은 곁창도 파랑을 유지한다.
+   기본값은 인사이트다: data-mode 가 없는 순간(첫 그림)에도 색이 비지 않게 한다. */
+body.is-night{
+  --pop-fill:52,42,104;
+  --pop-line:rgba(198,182,255,.3);
+  --pop-accent:#bcaeff;
+  --pop-unread:rgba(139,125,255,.2);
+  --pop-unread-hi:rgba(139,125,255,.28);
+}
+body.is-night[data-mode="sim"]{
+  --pop-fill:38,40,112;
+  --pop-line:rgba(170,176,255,.3);
+  --pop-accent:#a8acff;
+  --pop-unread:rgba(109,107,255,.22);
+  --pop-unread-hi:rgba(109,107,255,.3);
+}
 body.is-night .navburger-pop,
-body.is-night .accountmenu-pop{
-  background:rgba(24,21,58,.96);border-color:rgba(255,255,255,.12);
-  box-shadow:0 18px 44px -18px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.08);
+body.is-night .accountmenu-pop,
+body.is-night .nt-pop{
+  background:rgba(var(--pop-fill),.95);
+  border:1px solid var(--pop-line);
+  box-shadow:0 22px 50px -20px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.14);
+}
+@supports (backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px)){
+  body.is-night .navburger-pop,
+  body.is-night .accountmenu-pop,
+  body.is-night .nt-pop{
+    background:rgba(var(--pop-fill),.72);
+    -webkit-backdrop-filter:blur(18px) saturate(140%);
+    backdrop-filter:blur(18px) saturate(140%);
+  }
+}
+
+/* 알림 곁창 안쪽. 판만 어둡게 하고 두면 내용이 전부 밝은 판 기준 색이라 사라진다.
+   **줄 사이를 가르는 것은 선이 아니라 면이다** — 어두운 반투명 판에 회색 선을
+   그으면 그 선만 남는다. 안 읽은 줄은 보라 면으로, 나머지는 바탕 그대로 둔다. */
+body.is-night .nt-head{border-bottom-color:rgba(255,255,255,.12)}
+body.is-night .nt-head h2{color:var(--night-ink)}
+body.is-night .nt-readall{color:var(--pop-accent)}
+body.is-night .nt-readall:hover{color:#d6ccff}
+body.is-night .nt-clear{color:var(--night-body)}
+body.is-night .nt-clear:hover{color:#ff8b8b}
+body.is-night .nt-item:hover{background:rgba(255,255,255,.08)}
+body.is-night .nt-item.is-unread{background:var(--pop-unread)}
+body.is-night .nt-item.is-unread:hover{background:var(--pop-unread-hi)}
+body.is-night .nt-type{background:rgba(255,255,255,.1);color:var(--night-body)}
+body.is-night .nt-title{color:var(--night-ink)}
+body.is-night .nt-when{color:var(--night-faint)}
+body.is-night .nt-body{color:var(--night-body)}
+/* 비었을 때의 한 줄. --muted(#6b7280)가 그대로면 어두운 판에서 대비 3 아래로
+   떨어진다 — 이 창에서 유일하게 남는 글자라 특히 읽혀야 한다. */
+body.is-night .nt-state{color:var(--night-body)}
+body.is-night .nt-state.is-quiet{color:var(--night-faint)}
+body.is-night .nt-retry{color:var(--pop-accent)}
+body.is-night .nt-del{color:var(--night-faint)}
+body.is-night .nt-row:hover .nt-del,
+body.is-night .nt-row:focus-within .nt-del{color:var(--night-body)}
+body.is-night .nt-del:hover{background:rgba(255,255,255,.12);color:#fff}
+/* 불러오는 중 뼈대. 밝은 회색 두 단(--surface-2 → #f2f3f8)이라 어두운 판에서는
+   흰 막대 세 개가 번쩍인다. 같은 모양을 흰색 알파로 다시 만든다. */
+body.is-night .nt-item.is-skel{
+  background:linear-gradient(100deg,
+    rgba(255,255,255,.07) 30%,rgba(255,255,255,.14) 46%,rgba(255,255,255,.07) 62%);
+  background-size:220% 100%;
 }
 body.is-night .navburger-pop a,
 body.is-night .accountmenu-pop a,
@@ -274,9 +353,23 @@ body.sim-result-page .main::before{
   -webkit-mask:linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
 }
 
-/* ── 읽는 화면의 밤 바탕 (2026-09-22) ────────────────────────
-   종목 탐색 · 종목 상세 · 리포트 · 내 예측(주가 예측 랭킹은 제 세계가 있어 밤으로
-   바꾸지 않는다, 아래 참고). 홈과 같은 도시 사진을 깔되
+/* ── 인사이트 화면의 밤 바탕 (2026-09-22) ──────────────────
+   **인사이트 모드 전체가 같은 배경을 쓴다.** 처음에는 화면 이름을 넷만 적어
+   두었는데(종목 탐색 · 종목 상세 · 리포트 · 내 예측), 그 결과 지갑 · 설정 · 확정
+   기록 · 마이페이지처럼 목록에 없는 화면만 맨 그러데이션이라 같은 모드 안에서
+   배경이 갈렸다(2026-09-22 제보 — 지갑 화면).
+
+   이름을 더 적는 대신 **모드로 가른다**: body[data-mode] 는 App.tsx 가 화면마다
+   붙이고, 설정 · 마이페이지 · 지갑처럼 두 모드가 같이 쓰는 화면은 들어온 모드를
+   주소로 이어 받는다(sharedMode.ts) — 모의투자에서 연 지갑은 여기 걸리지 않는다.
+   새 인사이트 화면을 만들어도 저절로 따라온다.
+
+   빼는 곳 둘.
+     insight-home        자기 자리·자기 농도가 따로 있다(styles/home.css)
+     event-contest-page  제 배경(#120a4a)으로 꽉 채우는 화면이다
+   주가 예측 랭킹은 is-night 자체가 없어 저절로 빠진다(팀 결정, 아래 참고).
+
+   홈과 같은 도시 사진을 깔되
    **반투명 검정을 한 겹 덮는다** — 이 넷은 표와 글이 빽빽한 화면이라 사진이
    그대로 보이면 글자와 싸운다. 홈은 첫인상이 목적이라 사진을 밝게 두지만
    (opacity .55 · 아래를 마스크로 지움) 여기서는 분위기만 남긴다.
@@ -286,12 +379,9 @@ body.sim-result-page .main::before{
    내려가도 같은 배경이다. .main 에 transform 이 없어야 화면 기준으로 붙는데,
    night.css 의 .main 은 position·isolation 만 걸려 있어 그대로 동작한다.
 
-   홈(insight-home)은 여기 넣지 않는다 — 자기 자리·자기 농도가 따로 있다
-   (styles/home.css 의 .main::before). */
-body.stocks-page.is-night .main::before,
-body.reports-page.is-night .main::before,
-body.my-predictions-page.is-night .main::before,
-body.stock-detail-page.is-night .main::before{
+   **position:fixed 라 .main 안에 transform 이 없어야 한다.** night.css 의 .main 은
+   position·isolation 만 걸려 있어 그대로 동작한다. */
+body.is-night[data-mode="insight"]:not(.insight-home):not(.event-contest-page) .main::before{
   content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
   background:
     linear-gradient(180deg, rgba(8,6,28,.52) 0%, rgba(8,6,28,.62) 55%, rgba(8,6,28,.74) 100%),
