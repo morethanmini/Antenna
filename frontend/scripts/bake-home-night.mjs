@@ -31,6 +31,10 @@ const JOBS = [
   [path.join(DIR, 'ChatGPT Image 2026년 9월 22일 오전 09_04_36 (1).png'), path.join(DIR, 'city-night.webp'), 1920, 0.82],
   [path.join(DIR, 'ChatGPT Image 2026년 9월 22일 오전 09_04_36 (2).png'), path.join(DIR, 'hero-scout.webp'), 900, 0.9],
 
+  /* 대회 배너 완성본 한 장. lilac 이 조립한 9:1 띠(hm-ev-*)는 넓은 자리 전용이라
+     시안의 좁은 가운데 칸에서는 조각이 서로 파고든다 — 그 칸에서는 이 한 장을 쓴다. */
+  [path.join(DIR, 'ChatGPT Image 2026년 9월 22일 오전 09_04_40 (7).png'), path.join(DIR, 'contest-banner.webp'), 1000, 0.9],
+
   [path.join(DOCS, 'illustration-coins-v2.png'), path.join(UI, 'coins.webp'), 520, 0.9],
   [path.join(DOCS, 'illustration-watchlist-v2.png'), path.join(UI, 'empty-watchlist.webp'), 380, 0.9],
   [path.join(DOCS, 'illustration-predictors-v2.png'), path.join(UI, 'empty-predictors.webp'), 380, 0.9],

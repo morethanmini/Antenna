@@ -37,6 +37,11 @@ body.insight-home.is-night{
 body.insight-home.is-night .hm-card{
   position:relative; isolation:isolate; overflow:hidden;
   padding:0;
+  /* **칸 사이 간격은 각 칸이 마진으로 정한다.**
+     .hm-card 는 flex column 에 gap:14px 인데(home.css), 여기서 칸마다 margin-top 을
+     또 주니 둘이 더해져 24px 이 됐다. 카드가 20~40px 씩 길어진 주된 까닭이다.
+     간격을 한 군데서만 정하도록 gap 을 끄고 마진만 남긴다. */
+  gap:0;
   border:2px solid rgba(162,199,255,.89);
   border-radius:26px;
   color:var(--nc-ink);
@@ -73,7 +78,9 @@ body.insight-home.is-night .hm-card::after{
    가장자리까지 닿아야 하는 것이 있어서다. */
 body.insight-home.is-night .hm-head{
   display:flex; align-items:center; justify-content:space-between; gap:16px;
-  margin:0; padding:22px 24px 14px;
+  /* 시안은 위 39 / 아래 27 인데 그건 카드가 화면 폭을 다 쓰는 데모에서다.
+     2단 격자에서는 머리 한 줄(글자 31px)에 껍데기가 36px 붙어 내용보다 컸다. */
+  margin:0; padding:16px 22px 12px;
 }
 body.insight-home.is-night .hm-head h2{
   display:flex; align-items:center; gap:10px;
@@ -132,12 +139,12 @@ body.insight-home.is-night .hm-table-wrap,
 body.insight-home.is-night .hm-lead,
 body.insight-home.is-night .hm-ticker,
 body.insight-home.is-night .hm-state{margin-inline:20px}
-body.insight-home.is-night .hm-card > :last-child{margin-bottom:20px}
+body.insight-home.is-night .hm-card > :last-child{margin-bottom:16px}
 
 /* 카드 맨 아래 한 줄(기준 시각 · 안내). 시안은 가는 선 위에 시계 아이콘을 둔다 */
 body.insight-home.is-night .hm-foot{
   display:flex; align-items:center; gap:8px;
-  margin:12px 20px 0; padding:11px 0 0;
+  margin:10px 20px 0; padding:9px 0 0;
   border-top:1px solid rgba(131,169,255,.55);
   color:var(--nc-sub); font-size:var(--fs-sm);
 }
@@ -154,7 +161,7 @@ body.insight-home.is-night .hm-indices{
 }
 body.insight-home.is-night .hm-indices li{
   position:relative; min-width:0; overflow:hidden;
-  padding:14px 16px 10px;
+  padding:12px 14px 9px;
   border:1px solid var(--nc-line); border-radius:16px;
   background:
     linear-gradient(145deg, rgba(72,117,229,.32), rgba(11,40,111,.28)),
@@ -183,7 +190,7 @@ body.insight-home.is-night .hm-ix-delta:not(.up):not(.down){color:var(--nc-flat)
 /* 브리핑 띠. 시안의 .market-briefing */
 body.insight-home.is-night .hm-ticker{
   display:flex; align-items:center; gap:14px;
-  margin-top:12px; padding:10px 18px;
+  margin-top:10px; padding:9px 16px;
   border:1px solid rgba(156,195,255,.78); border-radius:14px;
   background:linear-gradient(95deg, rgba(38,84,193,.72), rgba(45,88,207,.48));
   box-shadow:inset 0 0 20px rgba(98,139,255,.15);
@@ -198,7 +205,7 @@ body.insight-home.is-night .hm-ticker-no{color:var(--nc-sub)}
    시안은 잔액 판 오른쪽 위에 코인 그림, 그 아래 알약 버튼이다. */
 body.insight-home.is-night .hm-ant-box{
   position:relative; overflow:hidden;
-  min-height:150px; padding:18px 20px;
+  min-height:132px; padding:15px 18px;
   border:1px solid var(--nc-line); border-radius:20px;
   background:
     radial-gradient(circle at 78% 35%, rgba(120,70,255,.38), transparent 35%),
@@ -208,7 +215,7 @@ body.insight-home.is-night .hm-ant-box{
 /* 코인 그림은 배경으로 얹는다 — 마크업을 건드리지 않고 시안의 자리를 잡는다 */
 body.insight-home.is-night .hm-ant-box::after{
   content:""; position:absolute; top:-10px; right:14px;
-  width:min(46%,190px); height:104px; pointer-events:none;
+  width:min(46%,178px); height:96px; pointer-events:none;
   background:url(/assets/page_home/ui/coins.webp) right top/contain no-repeat;
   filter:drop-shadow(0 0 14px rgba(154,108,255,.7));
 }
@@ -219,7 +226,7 @@ body.insight-home.is-night .hm-ant b{
 }
 /* 내역 보기 — 시안은 판 오른쪽 아래 알약이다 */
 body.insight-home.is-night .hm-ant-btn{
-  position:absolute; right:18px; bottom:16px;
+  position:absolute; right:16px; bottom:14px;
   display:inline-flex; align-items:center; justify-content:center; gap:8px;
   min-height:38px; padding:8px 20px;
   border:2px solid rgba(255,211,255,.9); border-radius:999px;
@@ -232,10 +239,10 @@ body.insight-home.is-night .hm-ant-btn:hover{filter:brightness(1.09)}
 
 /* 30일 흐름 둘 */
 body.insight-home.is-night .hm-flow{
-  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:12px;
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:10px;
 }
 body.insight-home.is-night .hm-flow > div{
-  position:relative; overflow:hidden; min-height:86px; padding:14px 16px;
+  position:relative; overflow:hidden; min-height:76px; padding:12px 14px;
   border:1px solid var(--nc-line); border-radius:16px;
   background:linear-gradient(125deg, rgba(34,70,161,.74), rgba(20,43,117,.61));
   box-shadow:inset 0 0 26px rgba(101,137,255,.12);
@@ -272,7 +279,7 @@ body.insight-home.is-night .hm-table td{border-color:rgba(255,255,255,.1)}
 body.insight-home.is-night .hm-table thead th{color:var(--nc-sub)}
 
 body.insight-home.is-night .hm-lead{
-  padding:16px 18px;
+  padding:13px 16px; gap:9px 13px;
   border:1px solid var(--nc-line); border-radius:18px;
   background:
     radial-gradient(circle at 50% 35%, rgba(87,110,250,.39), transparent 29%),
@@ -280,7 +287,7 @@ body.insight-home.is-night .hm-lead{
 }
 body.insight-home.is-night .hm-lead-btn{
   display:inline-flex; align-items:center; justify-content:center;
-  min-height:40px; padding:9px 22px;
+  min-height:36px; padding:7px 22px;
   border:2px solid rgba(255,211,255,.9); border-radius:999px;
   color:#fff; background:linear-gradient(90deg, rgba(122,78,255,.9), rgba(105,81,250,.9));
   box-shadow:0 0 0 3px rgba(151,95,255,.22), 0 0 14px rgba(241,117,255,.5),
@@ -338,3 +345,110 @@ body.insight-home.is-night .hm-empty-title{
 body.insight-home.is-night .hm-empty-hint{
   margin:0 0 14px; color:var(--nc-sub); font-size:var(--fs-base); line-height:1.55;
 }
+
+/* ── 시안 배치 (2026-09-22 · prototype.png) ──────────────────
+   시안의 줄은 넷이다.
+     1  히어로(넓게) | 스폰서드 + 지름길 타일 셋
+     2  다리 띠
+     3  시장 현황(넓게) · 대회 배너(좁게) · 내 자산      ← 한 줄에 셋
+     4  관심 종목 | 주목할 예측가
+
+   3번이 2단 격자 안에 셋이라, 두 칸을 가로지르는 상자를 하나 두고 그 안에서
+   다시 나눈다. 격자를 3단으로 바꾸지 않는 이유는 1·4번이 2단이어서다 — 3단으로
+   깔면 그 줄들이 칸을 가로질러야 해서 오히려 규칙이 늘어난다. */
+body.insight-home.is-night .hm-trio{
+  grid-column:1 / -1;
+  display:grid; gap:16px;
+  /* 시안 비율 그대로: 시장 현황이 가장 넓고 배너·자산이 비슷하다 */
+  grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1.1fr);
+  align-items:stretch;
+}
+
+/* ── 다리 띠 ────────────────────────────────────────────────
+   시안에서 강을 건너는 다리 위에 적힌 글귀다. 카드가 아니라 **배경 위의 글자**라
+   판을 깔지 않는다 — 깔면 카드 한 장이 더 생겨 줄이 다섯이 된다. */
+body.insight-home.is-night .hm-bridge{
+  grid-column:1 / -1;
+  display:flex; align-items:center; justify-content:center; gap:14px;
+  margin:2px 0; padding:9px 16px;
+  color:#d7e2ff; font-size:var(--fs-base); font-weight:var(--fw-bold);
+  letter-spacing:.14em; text-transform:uppercase; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis;
+  text-shadow:0 0 14px rgba(140,175,255,.55);
+}
+body.insight-home.is-night .hm-bridge i{
+  font-style:normal; color:#8fb3ff; opacity:.8;
+}
+
+/* ── 지름길 타일 셋 ─────────────────────────────────────────
+   시안은 카드 한 장 안의 칸이 아니라 따로 선 유리 타일 셋이다(에셋 4).
+   아이콘이 글자 왼쪽에 서고, 타일마다 제 테와 빛을 갖는다. */
+body.insight-home.is-night .hm-quick{
+  display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px;
+  padding:0; background:none; border:0; box-shadow:none; overflow:visible;
+}
+body.insight-home.is-night .hm-quick a{
+  display:flex; align-items:center; justify-content:center; gap:9px;
+  min-height:58px; padding:10px 8px;
+  border:1px solid rgba(151,187,255,.7); border-radius:14px;
+  color:#e7ecff; font-size:var(--fs-base); font-weight:var(--fw-bold);
+  background:linear-gradient(140deg, rgba(64,96,214,.5), rgba(24,52,140,.45));
+  box-shadow:inset 0 1px 14px rgba(140,175,255,.18), 0 10px 24px rgba(2,14,63,.24);
+  white-space:nowrap;
+}
+body.insight-home.is-night .hm-quick a:hover{
+  border-color:rgba(255,218,255,.8); color:#fff;
+  box-shadow:inset 0 1px 14px rgba(180,200,255,.24), 0 0 18px rgba(200,120,255,.35);
+}
+body.insight-home.is-night .hm-quick .hm-ico{color:#bba8ff; width:20px; height:20px}
+
+/* ── 대회 배너 ──────────────────────────────────────────────
+   가로 전체를 쓰던 9:1 띠가 이제 가운데 한 칸이다. 조각을 띠 높이(cqh)로 재어
+   쌓은 컴포넌트라 폭이 줄면 조각이 서로 파고든다 — 높이를 키워 조각이 제 크기를
+   찾게 한다 — 실제로 1.55:1 에 넣어 보니 캐릭터가 칸을 통째로 덮고 제목이
+   사라졌다. 그래서 **좁은 칸에서는 조각을 끄고 완성본 한 장으로 바꾼다.**
+   조각 쌓기는 넓은 자리에서 더 잘 맞으므로 지우지 않는다.
+   .hm-event 의 grid-column:1/-1 도 여기서 푼다 — 이제 한 칸짜리다. */
+body.insight-home.is-night .hm-trio .hm-event{grid-column:auto}
+body.insight-home.is-night .hm-trio .hm-event.is-art{
+  aspect-ratio:auto; height:100%; container-type:normal; border-radius:26px;
+}
+/* 조각은 전부 감춘다 — 하나만 남기면 완성본 위에 겹쳐 그려진다 */
+body.insight-home.is-night .hm-trio .hm-event.is-art > :not(.hm-ev-solo){display:none}
+/* **잘라내지 않는다(contain).** cover 로 채웠더니 3:1 그림이 좁은 칸에서 좌우가
+   날아가 "천하제일" 이 사라지고 캐릭터만 남았다. 글자가 그림 안에 있는 배너라
+   한 조각이라도 잘리면 무슨 대회인지 못 읽는다. 남는 위아래는 판 색으로 채운다. */
+body.insight-home.is-night .hm-trio .hm-event.is-art{
+  background:linear-gradient(150deg, rgba(38,60,150,.55), rgba(18,36,104,.5));
+  border:1px solid var(--nc-line);
+  display:flex; align-items:center; justify-content:center; padding:10px;
+}
+body.insight-home.is-night .hm-ev-solo{
+  display:block; width:100%; height:auto; max-height:100%; object-fit:contain;
+}
+/* 넓은 자리(다른 화면·밝은 판)에서는 완성본을 감추고 조각을 쓴다 */
+.hm-ev-solo{display:none}
+
+/* ── 히어로 ─────────────────────────────────────────────────
+   시안은 글자 왼쪽, 개미가 가운데다. 오른쪽 칸(스폰서드·지름길)이 따로 있으므로
+   개미는 히어로 칸의 오른쪽 끝에 서면 가운데로 읽힌다. */
+body.is-night .hm-hero h1{font-size:var(--fs-5xl); line-height:1.24}
+body.is-night .hm-hero h1 em{color:#a89bff; font-style:normal}
+body.is-night .hm-hello{letter-spacing:-.01em}
+
+/* 지수 판 안쪽 배치. 밝은 판은 왼쪽에 숫자 · 오른쪽에 미니차트인 2단인데,
+   3단 줄이 되며 칸이 330px 남짓으로 좁아지자 차트가 숫자 위로 올라탔다
+   ("6,894.23" 위로 선이 지나갔다). 시안처럼 **차트를 아래로 내려 한 줄씩** 쌓는다. */
+body.insight-home.is-night .hm-indices li{
+  grid-template-columns:minmax(0,1fr); grid-template-rows:auto auto auto auto; gap:0;
+}
+body.insight-home.is-night .hm-ix-name,
+body.insight-home.is-night .hm-ix-val,
+body.insight-home.is-night .hm-ix-delta{grid-column:1}
+body.insight-home.is-night .hm-ix-name{grid-row:1; overflow:visible; text-overflow:clip}
+body.insight-home.is-night .hm-ix-val{grid-row:2}
+body.insight-home.is-night .hm-ix-delta{grid-row:3}
+body.insight-home.is-night .hm-indices .spark{
+  grid-column:1; grid-row:4; width:100%; height:38px; margin-top:6px;
+}
+body.insight-home.is-night .hm-indices .spark svg{width:100%; height:100%}

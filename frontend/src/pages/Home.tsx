@@ -9,6 +9,7 @@
    레이아웃은 좌(넓음)·우(좁음) 두 줄기로 세운다. 카드를 그리드 칸에 직접
    넣지 않고 칼럼 안에 쌓는 이유는, 카드 높이가 서로 달라도 좌우 경계가
    어긋나지 않게 하려는 것이다. */
+import { DEFAULT_AVATAR } from '../auth/context'
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getMarketIndices, getWatchlist } from '../api/insight'
@@ -19,7 +20,6 @@ import { fetchRankings, formatComputedAt, metric } from '../api/rankings'
 import { getBriefings } from '../api/briefings'
 import { useBriefingParam } from '../components/briefingParam'
 import { useAsync } from '../api/useAsync'
-import { DEFAULT_AVATAR, useAuth } from '../auth/context'
 import Sparkline from '../components/Sparkline'
 import { BANNER, BANNER_BASE, CONTEST_PATH, phaseAt } from '../event/contest'
 import StockLogo from '../components/stocks/StockLogo'
@@ -178,26 +178,27 @@ function State({ loading, error, empty, emptyLook, onRetry }: {
   return null
 }
 
-/* 화면 맨 위 인사. 데이터를 쓰지 않는 정적 배너라 상태 처리가 없다.
+/* 화면 맨 위 히어로. 데이터를 쓰지 않는 정적 배너라 상태 처리가 없다.
    "실시간" 이라고 쓰지 않는 이유는 실전 시세가 전일 종가뿐이기 때문이다. */
 function Hero() {
-  const { user } = useAuth()
-
   return (
     <section className="hm-hero" aria-labelledby="hm-hero-h">
       <div className="hm-hero-text">
-        <p className="hm-hello">
-          {user?.nickname ? `${user.nickname}님, 환영합니다.` : '환영합니다.'}
-        </p>
+        {/* 시안(prototype.png)의 윗줄이다. 닉네임 인사를 여기 두었었는데 시안은
+            서비스가 무엇을 해 주는지부터 말한다 — 인사는 이 화면에서 뺀다. */}
+        <p className="hm-hello">더 넓은 시각을, 더 깊은 인사이트로</p>
         {/* 페이지 제목 자리다. 위에 따로 머리글을 두지 않으므로 h1 이다. */}
         <h1 id="hm-hero-h">
-          <em>AI</em>가 시장을 분석하고,<br /><em>현명한 투자 결정</em>을 도와드려요.
+          시장 흐름을 읽고,<br /><em>투자 판단의 단서</em>를 모아보세요.
         </h1>
         <p className="hm-hero-sub">
-          종가 데이터와 AI 인사이트로<br />투자의 방향을 제시합니다.
+          지수, 환율, 주요 뉴스와 리포트를 한눈에.<br />
+          지금, 더 나은 투자 결정을 위한 인사이트가 여기 있습니다.
         </p>
-        <Link className="hm-cta" to="/predict">
-          예측 시작하기
+        {/* 시안의 버튼 글자는 "인사이트 보기" 다. 인사이트 홈에서 제자리를 가리키지
+            않도록 갈 곳은 종목 탐색으로 둔다 — 지수·리포트를 실제로 파고드는 자리다. */}
+        <Link className="hm-cta" to="/stocks">
+          인사이트 보기
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M5 12h13M13 6.5l5.5 5.5L13 17.5" stroke="currentColor" strokeWidth="2"
                   strokeLinecap="round" strokeLinejoin="round" />
@@ -622,6 +623,10 @@ function ContestBanner() {
      달면 스크린리더가 토막 난 문장을 읽는다. */
   return (
       <Link className="hm-event is-art" to={CONTEST_PATH} aria-label={art.alt}>
+        {/* 좁은 칸(시안의 가운데 자리)에서 쓰는 **완성본 한 장**. 아래 조각들은 9:1 띠
+            전용이라 폭이 줄면 서로 파고든다 — 어느 쪽을 보일지는 CSS 가 고른다.
+            조각 쌓기를 지우지 않는 이유는 넓은 자리에서 그쪽이 더 잘 맞아서다. */}
+        <img className="hm-ev-solo" src="/assets/page_home/contest-banner.webp" alt="" aria-hidden="true" />
         {/* 띠 안쪽 — 배경·차트·색종이는 여기서 잘린다 */}
         <span className="hm-ev-clip" aria-hidden="true">
           <img className="hm-ev-bg" src={BANNER_BASE.bg} alt="" />
@@ -658,13 +663,26 @@ function ContestBanner() {
 
    그 자리를 리포트 작성이 받는다. 예측과 함께 이 서비스의 두 가지 쓰기 행위
    중 하나인데, 지금은 리포트 피드 안으로 들어가야만 닿는다. */
+/* 지름길 셋. 시안(prototype.png)은 카드 한 장 안의 칸이 아니라 **따로 선 타일 셋**이다.
+   그래서 .card 를 벗기고 타일마다 제 테를 갖는다. */
 function QuickLinks() {
   return (
-    <nav className="card hm-quick" aria-label="바로가기">
-      <Link to="/reports/new"><PenIcon />리포트 쓰기</Link>
+    <nav className="hm-quick" aria-label="바로가기">
+      <Link to="/reports"><PenIcon />리포트 보기</Link>
       <Link to="/stocks"><ChartIcon />종목 탐색</Link>
       <Link to="/me/predictions"><ListIcon />내 예측</Link>
     </nav>
+  )
+}
+
+/* 히어로와 카드 줄 사이의 띠. 시안에서는 강을 건너는 다리 위에 적힌 글귀다.
+   그림을 잘라 쓰지 않고 글자로 둔다 — 잘라 두면 글씨가 흐려지고 번역도 못 한다.
+   장식이라 읽어 주는 기기에서는 건너뛴다. */
+function BridgeBand() {
+  return (
+    <p className="hm-bridge" aria-hidden="true">
+      <span>IDEAS</span><i>›</i><span>BETTER INVESTORS</span><i>›</i><span>A BRIGHTER TOMORROW</span>
+    </p>
   )
 }
 
@@ -684,14 +702,17 @@ export default function Home() {
             <Sponsored />
             <QuickLinks />
           </div>
-          {/* 두 칸을 가로지른다 — 아래 카드 줄을 밀지 않고 한 줄만 쓴다 */}
-          <ContestBanner />
-          {/* 관심 종목을 시장 Overview 보다 위에 둔다 — 홈에 들어와 가장 먼저
-              보는 것이 "내가 담은 것" 이라는 코치 QA(2026-09-21). 시장 지표는
-              누구에게나 같은 값이라 한 줄 아래여도 손해가 없다. */}
+          {/* 두 칸을 가로지르는 띠 */}
+          <BridgeBand />
+          {/* 시안의 가운데 줄은 **셋**이다 — 시장 현황이 넓게 왼쪽, 대회 배너가
+              가운데 좁게, 내 자산이 오른쪽. 2단 격자 안에서 두 칸을 가로지르고
+              제 안에서 다시 셋으로 나눈다. */}
+          <div className="hm-trio">
+            <MarketOverview />
+            <ContestBanner />
+            <MyAssets />
+          </div>
           <Watchlist />
-          <MyAssets />
-          <MarketOverview />
           <TopPredictor />
         </div>
       </div>
