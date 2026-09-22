@@ -72,6 +72,9 @@ app:
     jwt-secret: ${JWT_SECRET}
     access-ttl-minutes: ${JWT_ACCESS_TTL_MINUTES}
     refresh-ttl-days: ${JWT_REFRESH_TTL_DAYS}
+    # 회전 뒤에도 이 시간 동안은 옛 토큰이 같은 새 토큰을 돌려받는다(ANT-AUTH-07) — 새로고침이 응답을 버려도
+    # 로그아웃되지 않게. 기본값이 있어 .env 에 없어도 된다. 0 이면 유예 없이 즉시 재사용 탐지.
+    refresh-grace-seconds: ${JWT_REFRESH_GRACE_SECONDS:30}
     # 로컬은 http 라 Secure 쿠키를 못 쓴다. 배포 환경에서 COOKIE_SECURE=true 로 켠다.
     cookie-secure: ${COOKIE_SECURE:false}
     # SSAFY SSO. 구글과 달리 스프링의 client registration 을 쓰지 않는다 —
