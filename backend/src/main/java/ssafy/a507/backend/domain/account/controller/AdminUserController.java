@@ -27,8 +27,9 @@ public class AdminUserController {
     private final AdminUserService adminUserService;
 
     @GetMapping
-    public AdminUserListResponse search(@RequestParam(required = false) String q) {
-        return adminUserService.search(q);
+    public AdminUserListResponse search(
+            @RequestParam(required = false) String q, @RequestParam(required = false) Long before) {
+        return adminUserService.search(q, before);
     }
 
     @PatchMapping("/{userId}/status")

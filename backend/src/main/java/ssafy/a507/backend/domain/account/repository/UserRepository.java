@@ -32,10 +32,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("""
             select u from User u
             where u.nickname is not null
+              and u.id < :before
               and lower(u.nickname) like lower(concat('%', :q, '%')) escape '\\'
             order by u.id desc
             """)
-    List<User> searchForAdmin(@Param("q") String q, Limit limit);
+    List<User> searchForAdmin(@Param("q") String q, @Param("before") long before, Limit limit);
 
     boolean existsByNickname(String nickname);
 

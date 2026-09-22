@@ -75,7 +75,8 @@ export function setReportCommentStatus(commentId: number, status: ContentStatus)
 
 export type AdminUserItem = {
   id: number
-  nickname: string
+  /** 온보딩을 끝내기 전이면 null 이다 */
+  nickname: string | null
   /** USER · ADMIN */
   role: string
   /** ACTIVE · BANNED */
@@ -83,10 +84,13 @@ export type AdminUserItem = {
   createdAt: string
 }
 
-/** q 가 비면 최근 가입 순으로 최대 50명. 닉네임 대소문자는 가리지 않는다. */
-export function searchUsers(q?: string) {
-  return api.get<{ items: AdminUserItem[] }>('/admin/users', {
-    query: { q: q?.trim() || undefined },
+/**
+ * q 가 비면 최근 가입 순. 한 번에 50명이고 뒤가 더 있으면 `nextBefore` 가 온다 —
+ * 그 값을 `before` 로 다시 부르면 그 id 앞(더 오래된) 50명이다. 닉네임 대소문자는 가리지 않는다.
+ */
+export function searchUsers(q?: string, before?: number) {
+  return api.get<{ items: AdminUserItem[]; nextBefore: number | null }>('/admin/users', {
+    query: { q: q?.trim() || undefined, before },
   })
 }
 
@@ -103,7 +107,8 @@ export function setUserStatus(userId: number, status: 'ACTIVE' | 'BANNED', reaso
 
 /* ── I-04 이벤트 운영 ─────────────────────────────────── */
 
-export type EventPhase = 'SCHEDULED' | 'OPEN' | 'SEALED' | 'SETTLING' | 'DONE'
+/** 서버 EventPhase 그대로 — 원시 status(SCHEDULED/OPEN/…) 가 아니라 화면 단계다 */
+export type EventPhase = 'BEFORE' | 'ENTRY' | 'SEALED' | 'SETTLED'
 
 export type AdminEventListItem = {
   eventId: number
