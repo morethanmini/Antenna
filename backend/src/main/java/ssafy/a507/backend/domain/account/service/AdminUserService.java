@@ -13,6 +13,7 @@ import ssafy.a507.backend.domain.account.dto.AdminUserDtos.AdminUserListResponse
 import ssafy.a507.backend.domain.account.dto.AdminUserDtos.UserStatusUpdateRequest;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.account.repository.UserRepository;
+import ssafy.a507.backend.domain.auth.service.RefreshTokenStore;
 
 /**
  * 관리자 회원 제재 (ANT-ADMIN-01).
@@ -26,7 +27,10 @@ import ssafy.a507.backend.domain.account.repository.UserRepository;
 @RequiredArgsConstructor
 public class AdminUserService {
 
-    /** 한 번에 돌려주는 최대 인원. 운영자가 눈으로 훑는 목록이라 페이지네이션 대신 상한만 둔다. */
+    /**
+     * 한 쪽 인원. 뒤가 더 있으면 응답의 {@code nextBefore} 로 알리고, 화면은 그 값을 {@code before} 로
+     * 다시 부른다(id 커서). 회원이 100명을 넘자 상한만으로는 앞쪽 절반이 검색 말고는 안 보였다(2026-09-22 QA).
+     */
     private static final int LIST_LIMIT = 50;
 
     /** 통합 검색(SearchService)과 같은 값이다. 닉네임이 30자라 이보다 긴 검색어는 맞을 것이 없다. */
@@ -34,6 +38,7 @@ public class AdminUserService {
 
     private final UserRepository userRepository;
     private final CurrentUserProvider currentUserProvider;
+    private final RefreshTokenStore refreshTokenStore;
 
     /**
      * 닉네임으로 회원을 찾는다. {@code q} 가 비면 최근 가입 순으로 앞에서 {@value #LIST_LIMIT} 명.
@@ -43,17 +48,19 @@ public class AdminUserService {
      * <p>검색어가 없어도 <b>널이 아니라 빈 문자열</b>을 넘긴다 — 리포지토리 주석 참고(널이면 PostgreSQL 에서 깨진다).
      */
     @Transactional(readOnly = true)
-    public AdminUserListResponse search(String q) {
+    public AdminUserListResponse search(String q, Long before) {
         requireAdmin();
         String keyword = q == null ? "" : q.trim();
         if (keyword.length() > MAX_QUERY_LENGTH) {
             throw new BusinessException(ErrorCode.INVALID_REQUEST, "q");
         }
-        List<AdminUserItem> items =
-                userRepository.searchForAdmin(escapeLike(keyword), Limit.of(LIST_LIMIT)).stream()
-                        .map(AdminUserItem::of)
-                        .toList();
-        return new AdminUserListResponse(items);
+        // 한 명 더 받아 "뒤가 있나" 를 안다 — count 쿼리를 따로 날리지 않는다.
+        List<User> found =
+                userRepository.searchForAdmin(
+                        escapeLike(keyword), before == null ? Long.MAX_VALUE : before, Limit.of(LIST_LIMIT + 1));
+        List<AdminUserItem> items = found.stream().limit(LIST_LIMIT).map(AdminUserItem::of).toList();
+        Long nextBefore = found.size() > LIST_LIMIT ? items.get(items.size() - 1).id() : null;
+        return new AdminUserListResponse(items, nextBefore);
     }
 
     @Transactional
@@ -69,7 +76,17 @@ public class AdminUserService {
         User target = userRepository
                 .findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-        target.changeStatus(User.Status.valueOf(request.status().name()));
+        /* 다른 관리자도 못 내린다. 관리자끼리 서로 막으면 남는 길이 DB 뿐이다(2026-09-22 QA). */
+        if (target.getRole() == User.Role.ADMIN) {
+            throw new BusinessException(ErrorCode.ADMIN_TARGET_ADMIN);
+        }
+        User.Status next = User.Status.valueOf(request.status().name());
+        target.changeStatus(next);
+        /* 차단과 동시에 refresh 를 지운다. 안 지우면 access 만료(30분)까지 그대로 쓰고,
+           refresh 는 다음 갱신(AuthService.refresh)에서야 거부된다(2026-09-22 QA). */
+        if (next == User.Status.BANNED) {
+            refreshTokenStore.revokeAll(userId);
+        }
     }
 
     private User requireAdmin() {
