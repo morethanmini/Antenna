@@ -125,7 +125,9 @@ public class BriefingGenerationService {
         String promptVersion = aiProperties.promptVersion();
         try {
             boolean written = generateMarket(stockMaterials.quotedOn(targetDate), targetDate, promptVersion);
-            log.info("[B6] 시장 브리핑 — 기준일 {} · {} (prompt {})", targetDate, written ? "생성" : "이미 있음", promptVersion);
+            // "이미 있음" 이라고만 적던 자리다. 재료가 없어 건너뛴 회차까지 그렇게 찍혀,
+            // 운영에서 지수가 비어 브리핑이 안 만들어지던 것을 로그만 보고는 알 수 없었다.
+            log.info("[B6] 시장 브리핑 — 기준일 {} · {} (prompt {})", targetDate, written ? "생성" : "새로 쓰지 않음", promptVersion);
             return written ? 1 : 0;
         } catch (AiException | DataAccessException e) {
             log.warn("[B6] 시장 브리핑 실패 — {}", e.getMessage());
