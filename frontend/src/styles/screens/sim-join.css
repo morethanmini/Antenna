@@ -391,6 +391,10 @@ body.sim-join-page .sj-steps{
 body.sim-join-page .sj-steps li{
   display:grid;grid-template-columns:auto minmax(0,1fr);
   column-gap:9px;row-gap:4px;align-items:start;
+  /* 설명 줄 수가 칸마다 달라(3줄·2줄·1줄·없음) 카드에 남는 세로 공간이 생기는데,
+     기본값(stretch)이면 그 공간이 행 사이로 나눠 들어가 제목이 칸마다 다른 높이에
+     선다 — 오른쪽으로 갈수록 10px 씩 내려갔다. 위로 붙여 넷의 제목을 나란히 둔다. */
+  align-content:start;
   padding:15px 18px 16px;
   border:0;border-left:1px solid var(--rule);border-radius:0;
   background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;
@@ -407,6 +411,8 @@ body.sim-join-page .sj-steps li:first-child{border-left:0}
   body.sim-join-page .sj-steps li + li{border-top:1px solid var(--rule)}
 }
 body.sim-join-page .sj-step-no{grid-column:1/-1}
-body.sim-join-page .sj-steps svg{grid-column:1;grid-row:2;margin:0;align-self:center}
+/* 제목이 두 줄인 칸에서 아이콘이 두 줄 한가운데로 내려가 혼자 어긋났다.
+   첫 줄에 붙인다 — 한 줄짜리 칸에서는 center 와 결과가 같다. */
+body.sim-join-page .sj-steps svg{grid-column:1;grid-row:2;margin:0;align-self:start}
 body.sim-join-page .sj-steps b{grid-column:2;grid-row:2;align-self:center}
 body.sim-join-page .sj-steps p{grid-column:2;grid-row:3}
