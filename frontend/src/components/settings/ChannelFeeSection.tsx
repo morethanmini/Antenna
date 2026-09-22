@@ -151,7 +151,7 @@ export default function ChannelFeeSection() {
               <p className={`cf-hint ${draft !== '' && !valid ? 'is-bad' : ''}`}>
                 {draft !== '' && !valid
                   ? `0 이상 ${formatToken(String(FEE_MAX))} 이하의 정수만 넣을 수 있습니다`
-                  : 'ANT 는 소수점이 없어 정수로만 정할 수 있습니다'}
+                  : '정수만 넣을 수 있습니다'}
               </p>
 
               {step === 'confirm' && (
@@ -213,11 +213,16 @@ export default function ChannelFeeSection() {
                         {isFuture(h.effectiveFrom) && <em className="cf-soon">예정</em>}
                       </span>
                       <b className="num">{`${formatToken(h.fee)} ANT`}</b>
-                      <span className={`cf-dir is-${dir}`}>
-                        {dir === 'up' ? `↑ ${formatToken(prev!.fee)} 에서 인상`
-                          : dir === 'down' ? `↓ ${formatToken(prev!.fee)} 에서 인하`
-                            : '처음 정함'}
-                      </span>
+                      {/* 첫 줄에는 아무것도 적지 않는다 — 날짜와 금액이 이미 있고,
+                          목록 맨 아래라는 것이 곧 처음이라는 뜻이다. compare 가 앞 줄과
+                          값이 같을 때도 'first' 를 돌려주므로 여기서 글자를 적으면 그
+                          줄에 틀린 딱지가 붙는다. */}
+                      {dir !== 'first' && (
+                        <span className={`cf-dir is-${dir}`}>
+                          {dir === 'up' ? `↑ ${formatToken(prev!.fee)} 에서 인상`
+                            : `↓ ${formatToken(prev!.fee)} 에서 인하`}
+                        </span>
+                      )}
                     </li>
                   )
                 })}

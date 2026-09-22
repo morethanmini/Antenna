@@ -385,11 +385,7 @@ export default function SeasonJoin() {
             혼자 남으니 그때 배치를 다시 본다. */}
         <section className="sj-rules" aria-labelledby="sj-rules-title">
           <header className="sj-rules-head">
-            <p className="sj-rules-kicker" aria-hidden="true">PRACTICE GUIDE</p>
             <h2 id="sj-rules-title">진행 방식</h2>
-            <p className="sj-rules-lead">
-              실제와 닮은 시장, 그러나 부담 없이. {s.title}이 만든 변화를 직접 경험해보세요.
-            </p>
           </header>
 
           <ol className="sj-steps">
@@ -410,7 +406,7 @@ export default function SeasonJoin() {
                 <path d="M4 8h13l-3-3M20 16H7l3 3" />
               </Ico>
               <b>주문은 그 게임일 종가로 한 번에 체결됩니다.</b>
-              <p>수수료·슬리피지·예약 주문이 없고, 수량과 방향만 정합니다.</p>
+              <p>수량과 방향만 정하면 됩니다. 수수료도 예약 주문도 없습니다.</p>
             </li>
             <li>
               <span className="sj-step-no" aria-hidden="true">03</span>

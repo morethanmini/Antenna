@@ -165,8 +165,8 @@ export default function ChannelProfile() {
               <p className={`ch-preview${previewing ? '' : ' is-owner'}`}>
                 <span>
                   {previewing
-                    ? '다른 예측가에게 보이는 화면입니다. 가려지는 범위는 규칙대로 다시 계산해 보여 줍니다.'
-                    : '내 채널 관리 화면입니다. 이름·소개·관심 섹터·외부 채널을 여기서 고칩니다.'}
+                    ? '다른 예측가에게 보이는 화면입니다.'
+                    : '내 채널 관리 화면입니다.'}
                 </span>
                 {previewing
                   ? <Link className="ch-preview-btn" to={`/channels/${userId}`}>내 채널 관리</Link>
@@ -442,7 +442,7 @@ function ChannelPredictions({ userId, owner, relock }: {
                 이 목록은 한 페이지뿐이라 "이 페이지 기준"이라는 뜻으로 적는다. */}
             {owner && lockedForOthers > 0 && (
               <p className="ch-gate-note">
-                {`판정 전 ${lockedForOthers}건은 비구독자에게 방향·목표가가 가려집니다. 지금 화면은 주인에게만 다 보입니다.`}
+                {`비구독자에게는 판정 전 ${lockedForOthers}건의 방향·목표가가 가려집니다.`}
               </p>
             )}
 

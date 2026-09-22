@@ -43,7 +43,7 @@ export default function NotifySettingsSection() {
   return (
     <section className="st-block">
       <h2>알림</h2>
-      <p className="st-note">끄면 그 종류의 알림이 알림함에 쌓이지 않습니다. 이미 온 알림은 그대로입니다.</p>
+      <p className="st-note">끈 뒤로는 오지 않습니다. 이미 온 알림은 그대로입니다.</p>
 
       {loaded.error && <ErrorState error={loaded.error} onRetry={loaded.reload} inline />}
 

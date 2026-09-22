@@ -267,7 +267,7 @@ export default function MyPage() {
                 {cell(port.loading, p?.anchored)}
                 {p && <i>/ {p.total.toLocaleString()}</i>}
               </strong>
-              <small>{p ? `블록에 박혔다 · 대기 ${p.unanchored.toLocaleString()}` : '블록에 박힌 예측'}</small>
+              <small>전체 예측 중</small>
             </li>
           </ul>
         </section>

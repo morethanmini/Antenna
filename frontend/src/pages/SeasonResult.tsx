@@ -282,8 +282,8 @@ export default function SeasonResult() {
             <p className="rs-none">
               {sim.joined === false
                 ? '아직 이 연습에 참가하지 않았습니다.'
-                : '이 시즌은 아직 한 판도 하지 않았습니다.'}
-              <small>진행 화면에서 주문을 넣고 다음 영업일로 넘기면 여기에 결과가 쌓입니다.</small>
+                : '아직 시작하지 않았습니다.'}
+              <small>진행 화면에서 주문을 넣고 게임일을 넘기면 결과가 나옵니다.</small>
               <Link className="rs-go" to={`/sim/${seasonId}/play`}>진행하러 가기</Link>
             </p>
           </section>
@@ -321,7 +321,7 @@ export default function SeasonResult() {
                 sub={
                   <span className="rs-dim">
                     {sells.length === 0
-                      ? '아직 판 적이 없습니다'
+                      ? '판 것 없음'
                       : `매도 ${sells.length}건 중 ${wins}건 이익`}
                   </span>
                 }
@@ -355,7 +355,7 @@ export default function SeasonResult() {
                 </h2>
                 <dl className="rs-dl">
                   <div>
-                    <dt>실현 손익<small>판 것에서 확정된 몫</small></dt>
+                    <dt>실현 손익</dt>
                     <dd className={`num ${signOf(realized)}`}>
                       {realized > 0 ? '+' : ''}{won(realized)}
                     </dd>
@@ -581,7 +581,7 @@ export default function SeasonResult() {
                         {card.avgHoldingDays === null ? '—' : `${card.avgHoldingDays.toFixed(1)}일`}
                       </dd>
                       <small>
-                        {card.avgHoldingDays === null ? '아직 판 적이 없습니다' : '사서 팔 때까지'}
+                        {card.avgHoldingDays === null ? '판 것 없음' : '사서 팔 때까지'}
                       </small>
                     </div>
                   </dl>

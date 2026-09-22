@@ -210,15 +210,6 @@
 /* ── 진행 방식 ────────────────────────────────────────── */
 .sj-rules{display:flex;flex-direction:column;gap:16px}
 
-.sj-rules-head{
-  display:grid;grid-template-columns:minmax(0,auto) minmax(0,1fr);
-  align-items:baseline;column-gap:18px;
-}
-.sj-rules-kicker{
-  grid-column:1/-1;margin:0 0 2px;
-  color:var(--brand);font-size:var(--fs-2xs);font-weight:var(--fw-bold);
-  letter-spacing:.24em;
-}
 .sj-rules h2{
   margin:0;color:var(--ink);
   font-size:var(--fs-6xl);font-weight:var(--fw-black);letter-spacing:-.03em;
@@ -228,10 +219,6 @@
   content:"";display:inline-block;vertical-align:middle;
   width:clamp(40px,14vw,220px);height:1px;margin-left:16px;
   background:linear-gradient(90deg,var(--rule),transparent);
-}
-.sj-rules-lead{
-  margin:0;justify-self:end;text-align:right;
-  color:var(--muted);font-size:var(--fs-lg);font-weight:var(--fw-normal);
 }
 
 .sj-steps{
@@ -288,9 +275,7 @@
   .sj-hero-body{max-width:100%;padding-bottom:44px}
   .sj-card{grid-template-columns:minmax(0,1fr);gap:18px;margin-top:-16px}
   .sj-head h1{font-size:var(--fs-title-lg)}
-  .sj-rules-head{grid-template-columns:minmax(0,1fr)}
   .sj-rules h2::after{display:none}
-  .sj-rules-lead{justify-self:start;text-align:left;margin-top:6px}
 }
 @media(max-width:860px){
   /* .main-inner 의 여백이 20px 16px 로 줄어든다(app.css) — 되밀 값도 같이 줄인다 */
@@ -368,7 +353,6 @@ body.sim-join-page .sj-cta.is-off:hover{
 /* 브랜드 보라(#5457e8)를 쓰던 작은 글자·아이콘. 버튼 채움처럼 넓은 면에서는
    그대로 읽히지만, 가는 글자와 22px 아이콘으로는 어두운 바탕에서 가라앉는다
    (머리말 대비 3.0:1). 밝은 쪽(--glow)으로 올린다 — 6.1:1 이 된다. */
-body.sim-join-page .sj-rules-kicker,
 body.sim-join-page .sj-stats svg,
 body.sim-join-page .sj-steps svg{color:var(--glow)}
 
@@ -407,6 +391,10 @@ body.sim-join-page .sj-steps{
 body.sim-join-page .sj-steps li{
   display:grid;grid-template-columns:auto minmax(0,1fr);
   column-gap:9px;row-gap:4px;align-items:start;
+  /* 설명 줄 수가 칸마다 달라(3줄·2줄·1줄·없음) 카드에 남는 세로 공간이 생기는데,
+     기본값(stretch)이면 그 공간이 행 사이로 나눠 들어가 제목이 칸마다 다른 높이에
+     선다 — 오른쪽으로 갈수록 10px 씩 내려갔다. 위로 붙여 넷의 제목을 나란히 둔다. */
+  align-content:start;
   padding:15px 18px 16px;
   border:0;border-left:1px solid var(--rule);border-radius:0;
   background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;
@@ -423,6 +411,8 @@ body.sim-join-page .sj-steps li:first-child{border-left:0}
   body.sim-join-page .sj-steps li + li{border-top:1px solid var(--rule)}
 }
 body.sim-join-page .sj-step-no{grid-column:1/-1}
-body.sim-join-page .sj-steps svg{grid-column:1;grid-row:2;margin:0;align-self:center}
+/* 제목이 두 줄인 칸에서 아이콘이 두 줄 한가운데로 내려가 혼자 어긋났다.
+   첫 줄에 붙인다 — 한 줄짜리 칸에서는 center 와 결과가 같다. */
+body.sim-join-page .sj-steps svg{grid-column:1;grid-row:2;margin:0;align-self:start}
 body.sim-join-page .sj-steps b{grid-column:2;grid-row:2;align-self:center}
 body.sim-join-page .sj-steps p{grid-column:2;grid-row:3}
