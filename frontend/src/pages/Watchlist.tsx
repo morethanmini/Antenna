@@ -75,7 +75,10 @@ export default function Watchlist() {
             <h1>관심 종목</h1>
             <p>담아 둔 종목의 전일 종가와 최근 30영업일 흐름입니다. 최근 담은 순입니다.</p>
           </div>
-          {keptCount > 0 && (
+          {/* 줄이 남아 있으면 개수도 남긴다 — 마지막 하나의 별을 비웠을 때 줄은 그대로인데
+              (`-377` 로 그렇게 정했다) 칩만 사라져, 목록이 있는데 숫자가 없는 화면이 됐다
+              (2026-09-22 QA). 0 이라고 적는 편이 아무 말도 안 하는 것보다 낫다. */}
+          {items.length > 0 && (
             <p className="wl-count num">
               <b>{keptCount}</b>
               <span>종목</span>
