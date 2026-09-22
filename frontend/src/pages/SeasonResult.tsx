@@ -282,8 +282,8 @@ export default function SeasonResult() {
             <p className="rs-none">
               {sim.joined === false
                 ? '아직 이 연습에 참가하지 않았습니다.'
-                : '이 시즌은 아직 한 판도 하지 않았습니다.'}
-              <small>진행 화면에서 주문을 넣고 다음 영업일로 넘기면 여기에 결과가 쌓입니다.</small>
+                : '아직 시작하지 않았습니다.'}
+              <small>진행 화면에서 주문을 넣고 게임일을 넘기면 결과가 나옵니다.</small>
               <Link className="rs-go" to={`/sim/${seasonId}/play`}>진행하러 가기</Link>
             </p>
           </section>
