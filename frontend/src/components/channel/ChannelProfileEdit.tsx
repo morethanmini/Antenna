@@ -37,7 +37,7 @@ import { NICKNAME_MAX, useNicknameCheck, validateNickname } from '../../api/useN
 import { getSectorSummary } from '../../api/stocks'
 import { useAsync } from '../../api/useAsync'
 import {
-  channelLabel, type MyProfile, type ProfileUpdate, type UserChannel,
+  channelLabel, detectPlatform, type MyProfile, type ProfileUpdate, type UserChannel,
 } from '../../api/account'
 import { useAuth } from '../../auth/context'
 import '../../styles/profile-edit.css'
@@ -397,7 +397,7 @@ function Form({ profile, heading, onClose, onSaved }: {
                 maxLength={CHANNEL_URL_MAX}
                 placeholder="https://"
                 onChange={(e) => {
-                  setRows(rows.map((r, j) => (j === i ? { ...r, url: e.target.value } : r)))
+                  setRows(rows.map((r, j) => (j === i ? withUrl(r, e.target.value) : r)))
                   setError(null)
                 }}
               />
@@ -408,11 +408,13 @@ function Form({ profile, heading, onClose, onSaved }: {
           ))}
         </ul>
         {/* 상한에 닿으면 끈다(2026-09-19, QA 09-18). 전에는 개수 제한이 없어 몇 개든 늘어났다 */}
+        {/* 새 행은 "직접 입력" 으로 시작한다 — 유튜브로 시작하면 다른 곳을 적는 사람이
+            매번 바꿔야 했다. 표에 있는 곳은 주소를 치면 withUrl 이 알아서 고른다 */}
         <button
           type="button"
           className="ch-edit-add"
           disabled={rows.length >= MAX_CHANNELS}
-          onClick={() => setRows([...rows, { platform: 'YOUTUBE', label: null, url: '' }])}
+          onClick={() => setRows([...rows, { platform: 'ETC', label: null, url: '' }])}
         >
           채널 추가
         </button>
@@ -431,6 +433,25 @@ function Form({ profile, heading, onClose, onSaved }: {
       {error && <p className="ch-name-hint is-invalid" aria-live="polite">{error}</p>}
     </form>
   )
+}
+
+/**
+ * 주소를 고치면서 플랫폼도 따라 고른다.
+ *
+ * 표에 있는 호스트(유튜브·X·블로그)면 그 플랫폼으로 바꾸고, 직접 붙인 이름은 버린다 —
+ * 아이콘은 유튜브인데 글자가 "브런치" 면 어긋난다(플랫폼 select 의 onChange 와 같은 규칙).
+ *
+ * 표에 없는 주소가 되면 두 갈래다. 지금 플랫폼이 **이전 주소에서 되짚은 값**이면
+ * (유튜브 주소를 지우고 브런치 주소를 치는 중) "직접 입력" 으로 되돌린다. 사람이 select 에서
+ * 직접 고른 값이면 — 자기 도메인 블로그를 BLOG 로 골라 둔 경우 — 건드리지 않는다.
+ */
+function withUrl(row: UserChannel, url: string): UserChannel {
+  const detected = detectPlatform(url)
+  if (detected) {
+    return detected === row.platform ? { ...row, url } : { ...row, url, platform: detected, label: null }
+  }
+  const cameFromUrl = row.platform !== 'ETC' && detectPlatform(row.url) === row.platform
+  return cameFromUrl ? { ...row, url, platform: 'ETC' } : { ...row, url }
 }
 
 /** 순서까지 같아야 같은 것으로 본다 — 서버가 넣은 순서대로 내려주므로 순서 변경도 저장거리다 */
