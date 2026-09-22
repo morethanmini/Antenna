@@ -69,6 +69,7 @@ app:
     jwt-secret: test-secret-key-for-context-loading-only-32b
     access-ttl-minutes: 30
     refresh-ttl-days: 14
+    refresh-grace-seconds: 30
     cookie-secure: false
   cors:
     allowed-origins: http://localhost:5173

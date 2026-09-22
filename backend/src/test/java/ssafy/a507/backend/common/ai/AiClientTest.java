@@ -3,6 +3,7 @@ package ssafy.a507.backend.common.ai;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -46,7 +47,12 @@ class AiClientTest {
     }
 
     private AiClient client() {
-        return new AiClient(builder.build(), new AiProperties("gms-key", null, null, "v1"), Duration.ZERO);
+        return client(null);
+    }
+
+    private AiClient client(Double temperature) {
+        return new AiClient(
+                builder.build(), new AiProperties("gms-key", null, null, "v1", temperature), Duration.ZERO);
     }
 
     @Test
@@ -56,7 +62,7 @@ class AiClientTest {
                 .andExpect(header("Authorization", "Bearer gms-key"))
                 .andExpect(content().string(containsString("\"model\":\"gpt-5.4-mini\"")))
                 .andExpect(content().string(containsString("\"role\":\"system\"")))
-                .andExpect(content().string(containsString("\"temperature\":0")))
+                .andExpect(content().string(not(containsString("\"temperature\""))))
                 .andRespond(withSuccess(
                         """
                         {"id":"chatcmpl-1","model":"gpt-5.4-mini-2026-03-17",
@@ -66,6 +72,22 @@ class AiClientTest {
                         JSON));
 
         assertThat(client().complete("규칙", "재료")).isEqualTo("요약 문장.");
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("온도는 설정에 있을 때만 싣는다 — GPT-5.6 계열은 기본값 말고는 거부하고, 자체 서빙 모델은 0 이 필요하다")
+    void 온도는_설정할_때만_싣는다() {
+        server.expect(requestTo(URL))
+                .andExpect(content().string(containsString("\"temperature\":0.0")))
+                .andRespond(withSuccess(
+                        """
+                        {"choices":[{"index":0,"finish_reason":"stop",
+                         "message":{"role":"assistant","content":"관련"}}]}
+                        """,
+                        JSON));
+
+        assertThat(client(0.0).complete("규칙", "재료")).isEqualTo("관련");
         server.verify();
     }
 

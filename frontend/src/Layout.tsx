@@ -194,7 +194,7 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
      한 장만 내려받게 하려고(아래 <picture> 주석) 겹쳐 두고 감추는 대신 주소를 바꾼다. */
   const night = bodyClass.split(' ').includes(NIGHT_CLASS)
 
-  /* 환경 설정(H-03) · 마이페이지(E-05) · 지갑(H-01)은 두 모드가 같이 쓰는 화면이라,
+  /* 환경 설정(H-03) · 마이페이지(E-05) · 지갑(H-01) · 확정 기록(D-01)은 두 모드가 같이 쓰는 화면이라,
      **어느 상단바에서 눌렀는지를 주소에 실어 보낸다.** 안 실으면 라우트 표의 기본값
      (인사이트)으로 그려져, 모의투자에서 열었는데 토글이 인사이트로 넘어갔다(2026-09-22).
      규칙과 받는 쪽은 sharedMode.ts 머리말. */
@@ -302,7 +302,7 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
               {/* 자물쇠. 장부(줄 그은 노트)와 사슬도 그려 봤는데, 원장(D-01)이 말하는
                   것은 "기록을 적어 둔 책" 이 아니라 **봉인** 이다 — 한 번 올라가면 못
                   바꾼다는 것. 예측 등록 발판 위에서도 같은 말을 쓴다("예측을 봉인해요"). */}
-              <Link className="iconbtn" to="/ledger" aria-label="확정 기록">
+              <Link className="iconbtn" to={href('/ledger')} aria-label="확정 기록">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                      strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="4.6" y="10.4" width="14.8" height="9.4" rx="2.4" />

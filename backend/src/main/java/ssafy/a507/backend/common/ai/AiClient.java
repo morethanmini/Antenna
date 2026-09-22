@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -148,17 +149,20 @@ public class AiClient {
 
     private String requestBody(String instruction, String input) {
         try {
-            // 사실 서술만 시키는 용도라 표집을 끈다. 기본값(모델마다 0.7 안팎)으로 뽑으면 자체 서빙
-            // 양자화 모델이 숫자를 바꿔 쓰거나 없는 사실을 덧붙이는 빈도가 눈에 띄게 는다.
-            return objectMapper.writeValueAsString(Map.of(
-                    "model",
-                    properties.model(),
-                    "temperature",
-                    0,
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("model", properties.model());
+            // 사실 서술만 시키는 용도라 표집을 끄고 싶지만 모델마다 받는 값이 다르다. 자체 서빙 양자화
+            // 모델은 기본값(0.7 안팎)으로 뽑으면 숫자를 바꿔 쓰거나 없는 사실을 덧붙이는 빈도가 눈에
+            // 띄게 늘고, GPT-5.6 계열은 기본값(1) 말고는 400 으로 거부한다. 그래서 설정에 있을 때만 싣는다.
+            if (properties.temperature() != null) {
+                body.put("temperature", properties.temperature());
+            }
+            body.put(
                     "messages",
                     List.of(
                             Map.of("role", ROLE_SYSTEM, "content", instruction),
-                            Map.of("role", ROLE_USER, "content", input))));
+                            Map.of("role", ROLE_USER, "content", input)));
+            return objectMapper.writeValueAsString(body);
         } catch (JsonProcessingException e) {
             throw new AiException("GMS 요청 본문을 만들지 못했다", e);
         }
