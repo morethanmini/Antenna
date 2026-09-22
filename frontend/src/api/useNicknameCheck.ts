@@ -7,6 +7,7 @@
    — 검사와 확정 사이에 누가 먼저 가져갈 수 있다. */
 import { useEffect, useRef, useState } from 'react'
 import { api } from './client'
+import { profanityError } from '../text/profanity'
 
 export const NICKNAME_MIN = 2
 export const NICKNAME_MAX = 30
@@ -23,13 +24,20 @@ export type NicknameCheck =
   /** 현재 내 닉네임과 같다 — 바꿀 것이 없으므로 중복 검사를 보내지 않는다 */
   | { state: 'unchanged' }
 
-/** 서버 NicknameRequest 의 제약(@Size · @Pattern)을 그대로 옮긴다. */
+/* 한글·영문·숫자만 — 서버 @NicknameFormat 과 같은 정규식 (ANT-COMMUNITY-09).
+   영문을 \p{Script=Latin} 이 아니라 a-zA-Z 로 적는 이유: 전각 라틴(ａｄｍｉｎ)도 Script=Latin 이라
+   스크립트로 받으면 전각으로 admin 을 사칭할 수 있다. 한글은 \p{Script=Hangul} 이라 ㅇㅇ 같은 자모도 통과.
+   허용 목록 방식이라 제로폭 공백·RTL 반전·이모지·밑줄은 열거하지 않아도 전부 걸린다. */
+const NICKNAME_PATTERN = /^[\p{Script=Hangul}a-zA-Z0-9]+$/u
+
+/** 서버 ProfileUpdateRequest.nickname 의 제약(@Size · @NicknameFormat · @NoProfanity)을 그대로 옮긴다. */
 export function validateNickname(value: string): string | null {
   if (value.length < NICKNAME_MIN || value.length > NICKNAME_MAX) {
     return `${NICKNAME_MIN}~${NICKNAME_MAX}자로 입력해 주세요.`
   }
-  if (value !== value.trim()) return '닉네임 앞뒤에 공백을 둘 수 없습니다.'
-  return null
+  /* 문자 규칙이 공백도 거절하므로 옛 "앞뒤 공백" 검사는 이 안에 흡수됐다. 문구는 서버 message 와 같다 */
+  if (!NICKNAME_PATTERN.test(value)) return '닉네임은 한글·영문·숫자만 쓸 수 있습니다.'
+  return profanityError(value)
 }
 
 /**

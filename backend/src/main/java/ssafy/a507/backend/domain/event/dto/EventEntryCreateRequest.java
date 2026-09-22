@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
+import ssafy.a507.backend.common.validation.NoProfanity;
 import ssafy.a507.backend.domain.prediction.entity.Prediction;
 
 /**
@@ -50,7 +51,7 @@ public record EventEntryCreateRequest(
             @NotNull(message = "배팅 금액을 입력해주세요.")
                     @DecimalMin(value = "1", message = "배팅 금액은 1 이상이어야 합니다.")
                     BigInteger stake,
-            @Size(max = 5000, message = "근거는 5000자까지 입력할 수 있습니다.") String note,
+            @Size(max = 5000, message = "근거는 5000자까지 입력할 수 있습니다.") @NoProfanity String note,
             @NotBlank(message = "noteSalt 가 필요합니다.")
                     @Pattern(regexp = "^[0-9a-f]{64}$", message = "noteSalt 는 소문자 64자리 hex 여야 합니다.")
                     String noteSalt,

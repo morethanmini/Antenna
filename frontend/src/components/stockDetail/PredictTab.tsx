@@ -56,7 +56,7 @@ import type { InvestPoint, PointKind, StockSummary } from '../../api/stockDetail
 import {
   DIRECTIONS, HORIZON_MAX, HORIZON_MIN, HORIZON_TICKS, NOTE_MAX,
   commitHash, commitPayload, createPrediction, getSlots, horizonLabel, horizonPickLabel, newNoteSalt, noteHash,
-  formatTargetPrice, predictionSigningPayload, targetPriceInRange, targetPriceInScale,
+  cleanTargetPrice, formatTargetPrice, predictionSigningPayload, targetPriceInRange, targetPriceInScale,
 } from '../../api/predictions'
 import type {
   CommitFields, Direction, Horizon, PredictionDraft,
@@ -66,6 +66,7 @@ import { requestNonce } from '../../api/wallet'
 import { emptyPredictForm, type PredictForm, type PredictResult } from './predictForm'
 import { connectAddress, hasWallet, personalSign } from '../../wallet/provider'
 import { useAuth } from '../../auth/context'
+import { containsProfanity, PROFANITY_MESSAGE } from '../../text/profanity'
 
 /** 남은 글자를 알리기 시작하는 지점. 이만큼 남았을 때부터 보인다 */
 const NOTE_WARN_LEFT = 500
@@ -210,11 +211,11 @@ export default function PredictTab({
      전일 종가가 없는 종목은 어차피 서버가 등록을 받지 않는다(latestClose 400). */
   const direction: Direction | null = gap === null || gap === 0 ? null : gap > 0 ? 'UP' : 'DOWN'
 
-  /* 버튼에 적을 등락률 글자(2026-09-21, QA). 목표가를 길게 치면 비율이 커지는데,
-     toFixed(2) 는 1e21 부터 지수 표기(`2.15e+22`)를 내놓아 버튼이 고장난 것처럼 보이고
-     그 전에도 자릿수가 늘어 입력칸을 폼 밖으로 밀어낸다. 1조 원 미만만 등록되므로
-     이만한 비율은 어차피 못 넣는 값이다 — 읽을 수 있는 선에서 자른다. */
-  const GAP_CAP = 9999
+  /* 버튼에 적을 등락률 글자(2026-09-21, QA). 목표가를 길게 치면 비율이 커지는데, 자릿수가
+     늘면 버튼 글자가 잘려 '+9,9…' 처럼 보이고 입력칸을 폼 밖으로 밀어낸다.
+     999%(열 배)에서 끊는다 — 그 위는 얼마든 "예측" 이 아니라 오타이고, 정확한 비율을
+     알려 줄 이유도 없다. 목표가 자체는 아래 안내가 막는다. */
+  const GAP_CAP = 999
   const gapText = (g: number) => (
     Math.abs(g) > GAP_CAP
       ? `${g > 0 ? '+' : '-'}${GAP_CAP.toLocaleString('ko-KR')}% 초과`
@@ -421,6 +422,14 @@ export default function PredictTab({
     if (!draft || blocked) return
     setFailure(null)
     setLocalMsg(null)
+
+    /* 근거의 비속어는 지갑 서명 **전에** 거른다 (ANT-COMMUNITY-09). 근거는 noteHash 로 봉인되는 재료라
+       서버가 글자를 고쳐 줄 수 없고, 400 을 받으면 서명부터 다시 해야 한다. 대회 경로(submitEventEntry)도
+       이 함수를 거쳐서만 들어오므로 여기 한 번이면 둘 다 덮는다 */
+    if (containsProfanity(draft.note)) {
+      setLocalMsg(PROFANITY_MESSAGE)
+      return
+    }
 
     /* 지갑이 준비되지 않았으면 M-01 을 띄운다. 모달이 성공을 올려 주면 이 함수를
        다시 부른다 — 사용자가 같은 버튼을 두 번 누르지 않게 한다.
@@ -680,11 +689,12 @@ export default function PredictTab({
                   placeholder={summary?.prevClose ? String(summary.prevClose) : '0'}
                   aria-label="목표가"
                   aria-describedby="pf-target-help"
-                  // 서버가 받는 가장 긴 값(정수 12자리 + 소수 2자리)에 쉼표를 친 길이다. 값 검증은 따로 한다
-                  maxLength={19}
-                  /* 앞자리 0 을 지운다 — '0000100' 이 그대로 남았다. 소수는 건드리지
-                     않는다('0.5' 의 0 은 뒤가 숫자가 아니라 그대로고, '00.5' 는 '0.5') */
-                  onChange={(e) => setTarget(e.target.value.replace(/^0+(?=\d)/, ''))}
+                  /* 폼이 받는 가장 긴 값 '999999999.99' 의 길이다(상한 10억 · 소수 둘째 자리).
+                     값 검증은 따로 하지만, 여기서 막으면 못 쓸 자릿수가 아예 안 쌓인다 */
+                  maxLength={12}
+                  /* 숫자와 소수점 하나만 남긴다(api/predictions.ts 의 cleanTargetPrice).
+                     거르지 않으면 '12301230--123232323' 이 그대로 남았다(QA 09-22). */
+                  onChange={(e) => setTarget(cleanTargetPrice(e.target.value))}
                 />
                 <span className="sd-unit">원</span>
 
@@ -759,7 +769,7 @@ export default function PredictTab({
             )}
             {priceTooLarge && (
               <p className="sd-warn">
-                목표가는 <b>1조 원 미만</b>으로 입력할 수 있습니다.
+                목표가는 <b>10억 원 미만</b>으로 입력할 수 있습니다.
               </p>
             )}
             {/* 방향을 고를 수 없게 된 뒤로, 방향이 안 서는 경우는 이것 하나다. 말해 주지 않으면

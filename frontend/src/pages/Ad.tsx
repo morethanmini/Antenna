@@ -45,7 +45,7 @@ import WalletLinkModal from '../components/wallet/WalletLinkModal'
 import WalletPrelink from '../components/wallet/WalletPrelink'
 import ErrorState from '../components/state/ErrorState'
 import ConfirmDialog from '../components/ConfirmDialog'
-import { MAX_BYTES, formatBytes } from '../api/uploads'
+import { UPLOAD_HINT } from '../api/uploads'
 import type { UploadedImage } from '../api/uploads'
 import { errorText } from '../components/state/errorText'
 import '../styles/screens/ad-new.css'
@@ -228,10 +228,8 @@ export default function Ad() {
             {/* ── 배너 ─────────────────────────────────── */}
             <section className="adreg-card">
               <h2>배너 이미지</h2>
-              {/* 비율이 어긋나면 모달이 가운데를 잘라 맞춘다(M-07). 미리 알려 둔다 */}
-              <p className="adreg-hint">
-                {`${formatBytes(MAX_BYTES)} 이하의 PNG · JPG · WebP. 가로세로 4:1 로 자르며, 남길 자리는 올릴 때 고릅니다.`}
-              </p>
+              {/* 올리기 창과 같은 한 줄을 쓴다(api/uploads.ts 의 UPLOAD_HINT) */}
+              <p className="adreg-hint">{UPLOAD_HINT}</p>
 
               {banner ? (
                 <div className="adreg-banner">

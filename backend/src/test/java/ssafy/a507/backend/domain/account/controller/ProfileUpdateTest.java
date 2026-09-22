@@ -188,6 +188,43 @@ class ProfileUpdateTest {
                 .andExpect(jsonPath("$.channels.length()").value(2));
     }
 
+    /** 사전 항목을 소스에 평문으로 남기지 않는다 — ProfanityFilterTest 와 같은 base64 표기. */
+    private static String bad() {
+        return new String(java.util.Base64.getDecoder().decode("7Iuc67Cc"), java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    @Test
+    @DisplayName("닉네임에 특수문자·공백·제로폭 문자가 있으면 400 nickname — 한글·영문·숫자만 받는다 (ANT-COMMUNITY-09)")
+    void rejectsNicknameWithSpecialCharacters() throws Exception {
+        for (String nickname : new String[] {"홍!길동", "홍 길동", "예측가\u200B", "ant_enna"}) {
+            patchMe("{\"nickname\":\"" + nickname + "\"}")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                    .andExpect(jsonPath("$.field").value("nickname"));
+        }
+        // 실시간 중복 검사도 같은 규칙이다 — 화면이 여기서 먼저 안내를 받는다
+        mockMvc.perform(get("/api/v1/users/nickname/availability").param("nickname", "홍!길동")
+                        .with(user(String.valueOf(userId))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.field").value("nickname"));
+    }
+
+    @Test
+    @DisplayName("닉네임·소개·채널 이름에 비속어가 있으면 400 — 숫자를 끼운 우회형도 잡고, 문구는 화면과 같다")
+    void rejectsProfanity() throws Exception {
+        String bad = bad();
+        patchMe("{\"nickname\":\"" + bad.charAt(0) + "1" + bad.charAt(1) + "\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.field").value("nickname"))
+                .andExpect(jsonPath("$.message").value("사용할 수 없는 표현이 포함되어 있습니다."));
+        patchMe("{\"introduce\":\"아 " + bad + " 진짜\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.field").value("introduce"));
+        patchMe("{\"channels\":[{\"platform\":\"ETC\",\"label\":\"" + bad + "\",\"url\":\"https://example.com\"}]}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.field").value("channels[0].label"));
+    }
+
     @Test
     @DisplayName("소개 200자를 넘기면 거절한다")
     void rejectsTooLongIntroduce() throws Exception {

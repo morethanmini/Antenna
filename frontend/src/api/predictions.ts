@@ -598,10 +598,37 @@ export const formatTargetPrice = (price: number) => price.toFixed(2)
 export const targetPriceInScale = (price: number) => Number(price.toFixed(2)) === price
 
 /**
- * 정수부 12자리까지. 서버 PredictionCreateRequest 의 @Digits(integer = 12) · DB numeric(14,2) 와 같다.
- * 넘는 값은 서명까지 받은 뒤 400 으로 떨어지므로(QA 09-21 — 18자리가 들어가 서명 발판이 열렸다) 폼에서 막는다.
+ * 목표가 입력칸에 남길 글자만 고른다 — 숫자와 소수점 하나.
+ *
+ * type=text 로 받는 칸이라 무엇이든 쳐진다. 거르지 않으면 '12301230--123232323' 같은
+ * 값이 그대로 남고, Number() 가 NaN 을 내 안내조차 못 띄운다(QA 09-22).
+ *
+ * 소수 자리는 자르지 않는다. 셋째 자리 이하는 서버가 400 으로 거절하고 폼이 그 이유를
+ * 따로 말해 주는데, 여기서 조용히 잘라 버리면 사람이 친 값과 봉인되는 값이 달라진다.
  */
-export const TARGET_PRICE_LIMIT = 1_000_000_000_000
+export function cleanTargetPrice(raw: string) {
+  const onlyNum = raw.replace(/[^0-9.]/g, '')
+  const [head, ...rest] = onlyNum.split('.')
+  const joined = rest.length > 0 ? `${head}.${rest.join('')}` : head
+  return joined.replace(/^0+(?=\d)/, '')
+}
+
+/**
+ * 목표가 상한. **서버보다 좁게 잡는다.**
+ *
+ * 서버는 정수부 12자리까지 받는다(PredictionCreateRequest 의 @Digits(integer = 12) · DB numeric(14,2)).
+ * 그 값을 그대로 폼에 쓰면 상한이 1조 원이 되는데, 안내 문구가 "목표가는 1조 원 미만"
+ * 이 된다 — 읽는 사람에게 도움이 되는 수가 아니다. 10억 원에서 끊는다.
+ *
+ * 10억인 이유 — 이 서비스는 코스피만 다루고(시장 필터를 뺀 것도 그래서다) 코스피 역대
+ * 최고가는 액면분할 전 삼성전자·태광산업의 수백만 원대다. 400배 가까운 여유다. 세계로
+ * 넓히면 한 주에 억이 넘는 주식이 있으므로(버크셔 해서웨이 A) 1억에서 끊지 않는다 —
+ * 상한을 낮게 잡아 멀쩡한 등록을 막는 쪽이, 헛값 하나를 통과시키는 것보다 나쁘다.
+ *
+ * 서버보다 좁으므로 여기를 통과한 값은 서버에서도 통과한다. 반대는 아니다 —
+ * 10억과 1조 사이의 값은 서버가 받지만 이 폼이 막는다(의도한 것이다).
+ */
+export const TARGET_PRICE_LIMIT = 1_000_000_000
 export const targetPriceInRange = (price: number) => price < TARGET_PRICE_LIMIT
 
 /**

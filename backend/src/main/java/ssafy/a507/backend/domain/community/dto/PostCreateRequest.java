@@ -3,6 +3,7 @@ package ssafy.a507.backend.domain.community.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+import ssafy.a507.backend.common.validation.NoProfanity;
 
 /**
  * POST /api/v1/posts 요청 본문.
@@ -16,6 +17,7 @@ public record PostCreateRequest(
 
         @NotBlank(message = "본문을 입력해야 합니다.")
         @Size(max = 5000, message = "본문은 5000자를 넘을 수 없습니다.")
+        @NoProfanity
         String body,
 
         @Positive(message = "리포트 ID가 올바르지 않습니다.")

@@ -35,6 +35,7 @@ import LikeButton from './LikeButton'
 import AbuseMenu from './AbuseMenu'
 import ConfirmDialog from '../ConfirmDialog'
 import { useAuth } from '../../auth/context'
+import { profanityError } from '../../text/profanity'
 import '../../styles/report-comments.css'
 
 type Props = {
@@ -201,10 +202,19 @@ function CommentForm({ reportId, onDone }: { reportId: number; onDone: () => voi
   const [body, setBody] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<ApiError | null>(null)
+  /** 화면 선검사(비속어)가 튕긴 이유. 서버 오류와 자리를 나누지 않고 같은 줄에 붙인다 */
+  const [localError, setLocalError] = useState<string | null>(null)
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     if (submitting || body.trim().length === 0) return
+
+    /* 서버 @NoProfanity 가 400 을 주기 전에 여기서 튕긴다 (ANT-COMMUNITY-09) */
+    const bad = profanityError(body)
+    if (bad) {
+      setLocalError(bad)
+      return
+    }
 
     setSubmitting(true)
     setError(null)
@@ -228,11 +238,11 @@ function CommentForm({ reportId, onDone }: { reportId: number; onDone: () => voi
       <textarea
         className="rc-input"
         value={body}
-        onChange={(e) => { setBody(e.target.value); setError(null) }}
+        onChange={(e) => { setBody(e.target.value); setError(null); setLocalError(null) }}
         maxLength={COMMENT_MAX}
         rows={3}
         disabled={submitting}
-        aria-invalid={fieldError}
+        aria-invalid={fieldError || localError !== null}
         aria-label="댓글"
         placeholder="이 리포트에 대해 남길 말이 있나요?"
       />
@@ -249,6 +259,7 @@ function CommentForm({ reportId, onDone }: { reportId: number; onDone: () => voi
       </div>
 
       {fieldError && <p className="rc-form-error">댓글을 다시 확인해 주세요.</p>}
+      {localError && <p className="rc-form-error">{localError}</p>}
       {formError && (
         <p className="rc-form-error">
           {formError.title}
