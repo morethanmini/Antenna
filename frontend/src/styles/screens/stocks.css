@@ -308,7 +308,9 @@
 }
 
 /* 손잡이가 양 끝에서 반쯤 잘리지 않도록 좌우로 손잡이 반지름만큼 벌린다 */
-.stocks-page .st-slider-body{position:relative; height:22px; margin:0 8px}
+/* 트랙을 눌러도 가까운 손잡이가 온다(RangeSlider 의 onTrackDown). 누를 수 있는 자리임을
+   알리려고 손 모양을 준다 — 손잡이는 자기 커서(grab)를 따로 들고 있다. */
+.stocks-page .st-slider-body{position:relative; height:22px; margin:0 8px; cursor:pointer}
 .stocks-page .st-slider-track,
 .stocks-page .st-slider-fill{
   position:absolute; top:50%; height:4px; margin-top:-2px; border-radius:99px;
