@@ -28,9 +28,45 @@ type Query = Record<string, string | number | boolean | undefined>
 /** 경로 대신 넘길 수 있는 조회 함수. cursor 는 query 에 섞여 들어온다. */
 export type CursorFetcher<T, M> = (query: Query) => Promise<CursorList<T> & M>
 
+type Cached = {
+  /** 어느 조회 조건의 결과인지. 조건이 바뀌면 되살리지 않고 처음부터 읽는다 */
+  queryKey: string
+  items: unknown[]
+  hasNext: boolean
+  meta: unknown
+  cursor: string | number | null
+  scrollY: number
+}
+
+/* 화면을 떠나도 목록을 들고 있는 자리 (2026-09-23).
+
+   종목 탐색(B-02)에서 "더 보기" 로 예순 줄을 펼치고 한 종목에 다녀오면, 목록이 다시
+   열 줄로 돌아가 처음부터 눌러 내려야 했다. 화면을 떠나면 훅의 상태가 사라지고
+   App 이 화면마다 맨 위로 올리기 때문이다(App.tsx).
+
+   되살리는 값은 받아 둔 줄·커서·스크롤 위치다. 탭 하나가 열려 있는 동안만 산다 —
+   모듈 변수라 새로고침하면 비고, 조회 조건이 바뀌면 그 자리에서 버려진다. 종가는
+   하루 단위라 몇 분 전 값이 남아 있어도 화면이 틀리지 않는다. 늘 새로 읽어야 하는
+   목록은 cacheKey 를 주지 않으면 된다 — 기존 화면은 그대로다. */
+const cache = new Map<string, Cached>()
+
+/** 들고 있는 목록 수. 필터를 이리저리 바꾸면 조합마다 한 벌씩 쌓여, 오래된 것부터 버린다 */
+const CACHE_MAX = 5
+
+function keep(key: string, entry: Cached) {
+  cache.delete(key)
+  cache.set(key, entry)
+  for (const old of cache.keys()) {
+    if (cache.size <= CACHE_MAX) break
+    cache.delete(old)
+  }
+}
+
 export function useCursorList<T, M = Record<string, never>>(
   source: string | CursorFetcher<T, M>,
   query?: Record<string, string | number | boolean | undefined>,
+  /** 주면 화면을 떠났다 돌아올 때 받아 둔 줄과 스크롤 위치를 되살린다 */
+  cacheKey?: string,
 ) {
   const [state, setState] = useState<State<T, M>>({
     items: [], hasNext: false, loading: true, error: null, meta: null,
@@ -65,23 +101,65 @@ export function useCursorList<T, M = Record<string, never>>(
       cursor.current = page.nextCursor
       /* 페이징 세 필드를 덜어낸 나머지가 meta 다 */
       const { items, nextCursor: _next, hasNext, ...rest } = page
-      setState((s) => ({
-        items: reset ? items : [...s.items, ...items],
-        hasNext,
-        loading: false,
-        error: null,
-        meta: rest as M,
-      }))
+      setState((s) => {
+        const next = {
+          items: reset ? items : [...s.items, ...items],
+          hasNext,
+          loading: false,
+          error: null,
+          meta: rest as M,
+        }
+        if (cacheKey) {
+          /* 돌아왔을 때 되살릴 값. 스크롤은 떠날 때 채운다 */
+          keep(cacheKey, {
+            queryKey,
+            items: next.items,
+            hasNext,
+            meta: next.meta,
+            cursor: cursor.current,
+            scrollY: cache.get(cacheKey)?.scrollY ?? 0,
+          })
+        }
+        return next
+      })
     } catch (e) {
       if (!alive.current) return
       setState((s) => ({ ...s, loading: false, error: e as ApiError }))
     }
-  }, [source, queryKey])
+  }, [source, queryKey, cacheKey])
 
   useEffect(() => {
+    const kept = cacheKey ? cache.get(cacheKey) : undefined
+    if (kept && kept.queryKey === queryKey) {
+      /* 들고 있던 것을 그대로 돌려준다. 서버를 다시 부르지 않는다 —
+         부르면 첫 쪽만 오므로 펼쳐 둔 줄이 다시 접힌다. */
+      cursor.current = kept.cursor
+      setState({
+        items: kept.items as T[],
+        hasNext: kept.hasNext,
+        loading: false,
+        error: null,
+        meta: kept.meta as M,
+      })
+      /* App 의 window.scrollTo(0, 0) 은 부모 effect 라 이 effect 보다 늦게 돈다.
+         그려진 뒤로 미뤄 그 위에 얹는다. */
+      if (kept.scrollY > 0) {
+        requestAnimationFrame(() => window.scrollTo(0, kept.scrollY))
+      }
+      return
+    }
     cursor.current = null
     void load(true)
-  }, [load])
+  }, [load, cacheKey, queryKey])
+
+  /* 떠나는 순간의 스크롤 위치를 적어 둔다 */
+  useEffect(() => {
+    if (!cacheKey) return
+    return () => {
+      const kept = cache.get(cacheKey)
+      if (kept) kept.scrollY = window.scrollY
+    }
+  }, [cacheKey])
 
   /* 최신 상태를 ref 로 비춰 둔다. loadMore 가 state 를 직접 읽으면 페이지를
      받을 때마다 새 함수가 되고, 그 함수를 의존성에 넣은 화면의 effect 가 매번

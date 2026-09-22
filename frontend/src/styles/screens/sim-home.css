@@ -19,6 +19,18 @@
    색·상단바처럼 기록 화면(G-09)과 같이 쓰는 것은 styles/night.css 에 있다.
    여기에는 이 화면만의 값(여백 · 히어로 · 카드 크기)만 남긴다.
 
+   ── 굵기 (2026-09-23) ────────────────────────────────
+   한 화면이 전부 700~850 이었다. 다 굵으면 어디가 중요한지 말하지 못하고, 어두운
+   바탕에서는 글자가 더 두꺼워 보여 화면이 무겁다. 한 단씩 내렸다.
+
+     850 -> 800  히어로 제목 · 큰 숫자 · 주제 카드 제목
+     800 -> 700  버튼 · 강조한 낱말(b) · 번호 배지
+     700 -> 600  라벨 · 설명 · 사실 띠 · 인용 밑줄
+
+   **600 아래로는 내리지 않는다.** 어두운 바탕 위의 밝은 글자는 같은 굵기라도 더
+   가늘어 보여서, 500 이하에서는 12~15px 글자가 흐려진다. 강조는 굵기 대신
+   **색**(흰색 vs --night-body)이 맡는다.
+
    ── .sim-home 으로 한정한 규칙이 있는 이유 ──────────────
    G-09 기록(sim-history.css)이 같은 sh- 접두사로 .sh-bar 를 이미 쓴다. CSS 는 import
    되는 순간 전역이라 두 화면을 오간 뒤에는 나중에 실린 쪽이 이긴다. 겹치는 것은
@@ -45,9 +57,8 @@ body.sim-home-page{
   --card-pt:20px;        /* 카드 위 여백. 번호 배지가 이 값만큼 끌어올려져 윗변에 붙는다 */
   /* 사실 띠 글자·항목 사이. 넷이 한 줄에 서야 해서 폭이 좁아지면 같이 내려간다 —
      접히면 띠가 두 줄이 되고 그만큼 화면이 넘친다. */
-  --fact:var(--fs-2xl);
-  --fact-gap:26px;
-  --quote:28px;
+  --fact:var(--fs-lg);
+  --fact-gap:20px;
 
 }
 
@@ -66,11 +77,6 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
 /* 밤 위에 놓이는 판. 히어로는 판이 아니라 바닥에 바로 앉고(아래 .sh-hero 참고),
    사실 띠만 유리판으로 뜬다. */
 .sim-home .is-dark{position:relative;color:var(--night-ink)}
-.sim-home .sh-facts{
-  background:rgba(255,255,255,.06);border:1px solid var(--night-line);
-  backdrop-filter:blur(12px);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 22px 50px -30px rgba(0,0,0,.8);
-}
 
 /* ── 히어로 ─────────────────────────────────────────── */
 .sh-hero{
@@ -105,22 +111,15 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
 
 /* 카피 */
 .sh-hero-copy{position:relative;z-index:1;display:flex;flex-direction:column;align-items:flex-start;min-width:0}
-.sh-hand{
-  display:inline-block;font-family:var(--hand);font-weight:400;line-height:1.05;
-  color:#d9d4ff;letter-spacing:.01em;
-}
-.sh-hero-copy > .sh-hand{
-  font-size:30px;margin:0 0 14px;transform:rotate(-4deg);transform-origin:left bottom;
-  text-shadow:0 0 18px rgba(139,125,255,.5);
-}
-.sh-hero-copy > .sh-hand::after{
-  content:"";display:block;width:70%;height:2px;margin-top:2px;border-radius:2px;
-  background:linear-gradient(90deg, var(--glow), transparent);
-}
+/* 손글씨 두 줄("가상으로 시작하는 진짜 투자 감각" · "연습이 더 나은 투자를 만든다")과
+   그 서체 규칙(.sh-hand)은 통째로 걷어냈다(2026-09-23). 어느 서비스에나 붙일 수 있는
+   말이라 이 화면이 무엇을 하는 곳인지 말해 주지 못했다 — 그 일은 제목과 주제 카드
+   다섯 장이 한다. 기록 화면(G-09)은 자기 손글씨(.rc-hand)를 따로 갖고 있어 영향이 없다. */
 /* 아래 여백이 큰 것은 제목과 버튼 사이에 아무것도 없어서다 — 설명 줄을 걷어낸
    뒤로 둘이 바로 붙어 한 덩어리로 읽혔다(2026-09-21). */
 .sh-title{
-  margin:0 0 34px;font-size:var(--title);line-height:1.25;color:#fff;text-wrap:balance;
+  margin:0 0 34px;font-size:var(--title);font-weight:var(--fw-heavy);line-height:1.25;
+  color:#fff;text-wrap:balance;
 }
 .sh-title em{
   font-style:normal;
@@ -128,27 +127,40 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
   -webkit-background-clip:text;background-clip:text;color:transparent;
 }
 .sh-cta{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+/* 캡슐이다. 질감 한 벌(--cap-*)은 night.css 에 있다 — 모의투자 화면들이 같은
+   버튼을 쓴다. 여기서는 크기만 정한다. */
 .sh-btn{
-  display:inline-flex;align-items:center;gap:10px;height:var(--btn-h);padding:0 26px;
-  border-radius:14px;border:1px solid transparent;
-  font-size:var(--fs-2xl);font-weight:var(--fw-heavy);letter-spacing:-.01em;
+  display:inline-flex;align-items:center;gap:10px;height:var(--btn-h);padding:0 28px;
+  border-radius:999px;border:0;
+  font-size:var(--fs-2xl);font-weight:var(--fw-bold);letter-spacing:-.01em;
   cursor:pointer;transition:transform .15s,box-shadow .15s,background .15s;
 }
-.sh-btn:active{transform:translateY(1px)}
+.sh-btn:active{transform:translateY(1px);box-shadow:var(--cap-press)}
 .sh-btn.solid{
-  background:linear-gradient(180deg,#6d6bff 0%,#5457e8 100%);color:#fff;
-  box-shadow:0 10px 26px -10px rgba(109,107,255,.8), inset 0 1px 0 rgba(255,255,255,.25);
+  background:var(--cap-fill);color:#fff;
+  box-shadow:var(--cap-edge), var(--cap-glow);
 }
-.sh-btn.solid:hover{box-shadow:0 14px 30px -10px rgba(109,107,255,.95)}
+.sh-btn.solid:hover{background:var(--cap-fill-hi);box-shadow:var(--cap-edge), var(--cap-glow-hi)}
 .sh-btn.line{
-  background:var(--night-glass);border-color:var(--night-line);color:var(--night-ink);
+  background:var(--cap-glass);color:#fff;
+  box-shadow:var(--cap-edge-soft);
   backdrop-filter:blur(8px);
 }
-.sh-btn.line:hover{background:var(--night-glass-hi)}
+.sh-btn.line:hover{background:var(--cap-glass-hi);box-shadow:var(--cap-edge)}
 .sh-btn svg:last-child{margin-right:-4px}
 
-.sh-topic{margin:16px 0 0;font-size:var(--fs-xl);color:var(--night-body);font-weight:var(--fw-bold)}
-.sh-topic b{color:#fff;font-weight:var(--fw-heavy)}
+/* 어디까지 하다 말았는지 알려 주는 한 줄. 히어로 바닥에 그냥 얹어 두면 뒤로
+   빛줄기가 지나가는 자리라 글자가 자리마다 흐려졌다 — 자기 바닥(유리 알약)을
+   갖게 해서 뒤에 무엇이 지나가든 같은 곳에서 읽히게 한다(2026-09-23). */
+.sh-topic{
+  display:inline-flex;align-items:center;gap:8px;
+  margin:16px 0 0;padding:7px 16px;border-radius:999px;
+  background:var(--cap-glass);box-shadow:var(--cap-edge-soft);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  font-size:var(--fs-lg);
+}
+.sh-topic span{color:var(--night-body);font-weight:var(--fw-normal)}
+.sh-topic b{color:#fff;font-weight:var(--fw-bold)}
 
 /* 개미 무대. 그림이 판 아래로 살짝 내려가 책상에 앉은 것처럼 보인다. */
 .sh-stage{
@@ -161,10 +173,8 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
   filter:drop-shadow(0 30px 40px rgba(0,0,0,.55));
   animation:sh-float 6s ease-in-out infinite alternate;
 }
-.sh-bubble{
-  position:absolute;left:8%;top:10%;width:26%;opacity:.9;
-  animation:sh-float 4.5s ease-in-out infinite alternate-reverse;
-}
+/* 말풍선 겹치기(.sh-bubble)는 걷어냈다(2026-09-23) — 새 개미 그림에 말풍선과
+   메모가 이미 그려져 있어, 그 위에 또 하나를 얹으면 같은 말이 두 번 뜬다. */
 @keyframes sh-float{from{transform:translateY(0)}to{transform:translateY(-8px)}}
 
 /* 오른쪽 요약 두 칸 — 유리판 */
@@ -176,11 +186,11 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
 }
 .sh-glass dt{
   display:flex;align-items:center;gap:7px;margin:0 0 8px;
-  font-size:var(--fs-xl);font-weight:var(--fw-bold);color:var(--night-body);
+  font-size:var(--fs-xl);font-weight:var(--fw-normal);color:var(--night-body);
 }
 .sh-glass dt svg{color:var(--glow)}
-.sh-glass dd{margin:0;font-size:var(--fs-6xl);font-weight:var(--fw-black);color:#fff;letter-spacing:-.02em;line-height:1.1}
-.sh-glass dd small{font-size:var(--fs-2xl);font-weight:var(--fw-bold);color:var(--night-body);margin-left:4px}
+.sh-glass dd{margin:0;font-size:var(--fs-6xl);font-weight:var(--fw-heavy);color:#fff;letter-spacing:-.02em;line-height:1.1}
+.sh-glass dd small{font-size:var(--fs-2xl);font-weight:var(--fw-normal);color:var(--night-body);margin-left:4px}
 .sh-glass-err{font-size:var(--fs-base)!important;font-weight:var(--fw-normal)!important;letter-spacing:0!important}
 .sim-home .sh-bar{
   display:block;height:6px;margin-top:12px;border-radius:999px;background:rgba(255,255,255,.12);overflow:hidden;
@@ -190,10 +200,10 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
    것이라, 칸을 새로 만들지 않고 진행률 아래 한 줄로 받는다 — 칸을 더하면 히어로가
    길어져 낮은 화면에서 한 화면에 안 들어간다. */
 .sh-glass-foot{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:11px}
-.sh-done{font-size:var(--fs-lg);font-weight:var(--fw-bold);color:var(--night-body);white-space:nowrap}
-.sh-done b{color:#fff;font-weight:var(--fw-heavy)}
+.sh-done{font-size:var(--fs-lg);font-weight:var(--fw-normal);color:var(--night-body);white-space:nowrap}
+.sh-done b{color:#fff;font-weight:var(--fw-bold)}
 .sh-glass-link{
-  font-size:var(--fs-lg);font-weight:var(--fw-bold);color:var(--night-body);white-space:nowrap;
+  font-size:var(--fs-lg);font-weight:var(--fw-normal);color:var(--night-body);white-space:nowrap;
 }
 .sh-glass-link:hover{color:#fff}
 
@@ -231,55 +241,68 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
   align-self:flex-start;margin:calc(var(--card-pt) * -1) 0 auto;
   padding:9px 12px 12px;border-radius:0 0 10px 10px;
   background:var(--night-glass);border:1px solid var(--night-line);border-top:0;backdrop-filter:blur(8px);
-  font-size:var(--fs-base);font-weight:var(--fw-heavy);color:#fff;
+  font-size:var(--fs-base);font-weight:var(--fw-bold);color:#fff;
 }
 .sh-topic-card.is-live .sh-topic-no{background:var(--brand);border-color:var(--brand)}
 /* 아래 여백 8px 은 걷어낸 설명 줄(p)이 들고 있던 값이다 — 그것만 물려받고 글자
    크기·카드 높이는 설명이 있던 때 그대로다. 지운 것은 글이지 카드가 아니다. */
 .sh-topic-card h2{
-  margin:0 0 8px;font-size:var(--fs-4xl);font-weight:var(--fw-black);line-height:1.25;
+  margin:0 0 8px;font-size:var(--fs-4xl);font-weight:var(--fw-heavy);line-height:1.25;
   letter-spacing:-.02em;color:#fff;text-wrap:balance;
 }
 .sh-topic-go{
   display:inline-flex;align-items:center;gap:8px;align-self:flex-start;
-  height:38px;padding:0 18px;border-radius:999px;
-  background:var(--night-glass);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(8px);
-  color:#fff;font-size:var(--fs-lg);font-weight:var(--fw-bold);transition:background .15s,gap .15s;
+  height:38px;padding:0 18px;border-radius:999px;border:0;
+  background:var(--cap-glass);box-shadow:var(--cap-edge-soft);backdrop-filter:blur(8px);
+  color:#fff;font-size:var(--fs-lg);font-weight:var(--fw-normal);
+  transition:background .15s,box-shadow .15s,gap .15s;
 }
-.sh-topic-go:hover{background:var(--night-glass-hi);gap:12px}
-.sh-topic-card.is-live .sh-topic-go{background:var(--brand);border-color:var(--brand)}
+.sh-topic-go:hover{background:var(--cap-glass-hi);box-shadow:var(--cap-edge);gap:12px}
+/* 지금 하고 있는 주제만 채운 캡슐이다 — 다섯 장 중 어디로 돌아가면 되는지 */
+.sh-topic-card.is-live .sh-topic-go{
+  background:var(--cap-fill);box-shadow:var(--cap-edge), var(--cap-glow);
+}
+.sh-topic-card.is-live .sh-topic-go:hover{background:var(--cap-fill-hi);box-shadow:var(--cap-edge), var(--cap-glow-hi)}
 
 .sh-nav{
-  display:none;flex:none;width:40px;height:40px;border-radius:50%;
-  border:1px solid var(--night-line);background:var(--night-glass);color:#fff;
+  display:none;flex:none;width:40px;height:40px;border-radius:50%;border:0;
+  background:var(--cap-glass);box-shadow:var(--cap-edge-soft);color:#fff;
   place-items:center;cursor:pointer;backdrop-filter:blur(8px);
 }
-.sh-nav:hover{background:var(--night-glass-hi);border-color:var(--glow)}
+.sh-nav:hover{background:var(--cap-glass-hi);box-shadow:var(--cap-edge)}
 
 .sh-state{flex:1;margin:0;padding:28px;text-align:center;color:var(--night-body);font-weight:var(--fw-normal)}
 
-/* ── 사실 띠 ───────────────────────────────────────── */
+/* ── 사실 띠 ───────────────────────────────────────────
+   히어로 바닥에 깔린다(격자 세 칸을 통째로 가로지른다). 한동안 화면 맨 아래에
+   유리판 하나로 따로 서 있었는데, 판을 두르면 그만큼 높이를 먹고 주제 카드를
+   아래로 밀었다. 여기서는 **판을 두르지 않는다** — 위쪽 가는 선 하나로 히어로와
+   가르고, 글자는 한 단 작게 둔다. 말하는 내용은 보조지 주인공이 아니다. */
 .sh-facts{
-  display:flex;align-items:center;justify-content:space-between;gap:24px;
-  padding:16px 28px;border-radius:18px;
+  grid-column:1 / -1;
+  display:flex;align-items:center;gap:24px;
+  margin-top:6px;padding:11px 2px 0;
+  border-top:1px solid rgba(255,255,255,.1);
 }
-.sh-facts ul{display:flex;align-items:center;gap:0;margin:0;padding:0;list-style:none;flex-wrap:wrap}
+/* 인용을 걷어낸 뒤로 이 띠에는 목록 하나만 남는다. 왼쪽에 몰아 두면 오른쪽이
+   통째로 비어 띠가 잘린 것처럼 보이므로, 네 칸을 띠 너비에 고르게 편다. */
+.sh-facts ul{
+  flex:1;display:flex;align-items:center;justify-content:space-between;
+  gap:0;margin:0;padding:0;list-style:none;flex-wrap:wrap;
+}
 .sh-facts li{
-  display:flex;align-items:center;gap:10px;padding:4px var(--fact-gap);
-  font-size:var(--fact);font-weight:var(--fw-bold);color:var(--night-body);white-space:nowrap;
+  display:flex;align-items:center;gap:9px;padding:2px var(--fact-gap);
+  font-size:var(--fact);font-weight:var(--fw-normal);color:var(--night-body);white-space:nowrap;
 }
 .sh-facts li + li{border-left:1px solid var(--night-line)}
 .sh-facts li:first-child{padding-left:0}
-.sh-facts li svg{color:var(--glow);flex:none;width:24px;height:24px}
-.sh-facts li b{color:#fff;font-weight:var(--fw-heavy)}
-.sh-quote{display:flex;align-items:baseline;gap:12px;margin:0;white-space:nowrap}
-.sh-quote .sh-hand{font-size:var(--quote);color:#e6e2ff}
-.sh-quote small{font-size:var(--fs-xl);color:var(--night-body);font-weight:var(--fw-bold)}
+.sh-facts li svg{color:var(--glow);flex:none;width:19px;height:19px}
+.sh-facts li b{color:#fff;font-weight:var(--fw-bold)}
 
 /* ── 반응형 ───────────────────────────────────────── */
 /* 카드가 한 줄에 안 서면 넘겨 보기로 바꾸고 화살표를 낸다 */
 @media (max-width:1460px){
-  body.sim-home-page{--fact:var(--fs-xl);--fact-gap:17px;--quote:24px}
+  body.sim-home-page{--fact:var(--fs-base);--fact-gap:13px}
   .sh-facts li svg{width:21px;height:21px}
 }
 @media (max-width:1400px){
@@ -305,12 +328,10 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
   .sh-hero{grid-template-columns:1fr}
   .sh-stage{order:2;min-height:0}
   .sh-side{order:3;flex-direction:column}
-  .sh-hero-copy > .sh-hand{font-size:26px}
   .sh-topic-track{grid-auto-columns:minmax(240px,84%)}
   .sh-nav{display:none}
   .sh-facts{padding:16px 18px}
   .sh-facts li{padding:4px 14px;white-space:normal}
-  .sh-quote{white-space:normal}
 }
 
 /* ── 낮은 뷰포트(표시 배율 125%·노트북) ──────────────── */
@@ -327,11 +348,10 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
 }
 @media (min-width:1041px) and (max-height:740px){
   body.sim-home-page{--hero-min:330px;--art:290px;--card-h:184px;--block-gap:10px}
-  .sh-hero-copy > .sh-hand{font-size:24px;margin-bottom:8px}
   .sh-title{margin-bottom:22px}
   .sh-topic-card h2{font-size:var(--fs-3xl)}
 }
 
 @media (prefers-reduced-motion:reduce){
-  .sh-bd-wave,.sh-hero-art,.sh-bubble{animation:none}
+  .sh-bd-wave,.sh-hero-art{animation:none}
 }

@@ -260,6 +260,8 @@ function BriefingTicker() {
 function MarketOverview() {
   const load = useCallback(() => getMarketIndices(30), [])
   const { data, loading, error, reload } = useAsync(load)
+  /* ISO 문자열이라 사전순이 곧 날짜순이다 */
+  const asOf = data?.items.reduce<string | null>((a, it) => (a && a > it.tradeDate ? a : it.tradeDate), null)
 
   return (
     <section className="card hm-card" aria-labelledby="hm-market">
@@ -291,7 +293,11 @@ function MarketOverview() {
         </ul>
       )}
       <BriefingTicker />
-      <p className="hm-foot">최근 30일 종가 흐름 · 실전 시세는 전일 종가 기준</p>
+      {/* 배치가 넣은 종가다. 며칠 전 값이 실시간으로 읽히지 않게 기준일을 밝힌다(§7).
+          지수끼리 날짜가 다를 수 있어(환율은 따로 수집) 가장 최근 날짜 하나를 적는다. */}
+      <p className="hm-foot">
+        최근 30일 종가 흐름 · {asOf ? `${asOf} 종가 기준` : '실전 시세는 전일 종가 기준'}
+      </p>
     </section>
   )
 }

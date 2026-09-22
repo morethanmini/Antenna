@@ -6,6 +6,7 @@ import static ssafy.a507.backend.domain.research.service.StockMaterials.plain;
 import static ssafy.a507.backend.domain.research.service.StockMaterials.rate;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -52,6 +53,12 @@ public class BriefingGenerationService {
     /** 시장 브리핑에 넣는 상승·하락 상위 종목 수. */
     private static final int MOVERS = 5;
 
+    /** 업종 재료에 넣는 평균 등락 상·하위 업종 수. */
+    private static final int SECTORS = 3;
+
+    /** 이보다 종목이 적은 업종은 뺀다 — 한두 종목의 등락을 업종 흐름으로 읽히게 두지 않는다. */
+    private static final int MIN_SECTOR_STOCKS = 3;
+
     /**
      * D16 위반 패턴 셋 — ① 방향 + 확률·가능성("상승 확률", "오를 가능성이"), ② 확률·가능성 + 수치
      * ("가능성이 60%"), ③ 방향 + 수치("하락 68%"). "3.2% 하락" 같은 사실 서술(수치가 앞)은 통과한다
@@ -75,6 +82,11 @@ public class BriefingGenerationService {
             아래 규칙을 반드시 지켜라.
 
             - 첫 줄에 헤드라인 한 줄(40자 이내)을 쓰고, 빈 줄 뒤에 본문을 3~4개 문단으로 쓴다.
+            - 헤드라인은 지수 방향만 적지 않는다. 그날 시장을 가른 축(업종·수급·환율 중 하나)을 적는다.
+            - 본문은 이 차례로 쓴다. ① 지수와 환율이 어디에 있는지 ② 업종이 어떻게 갈렸는지
+              ③ 상승·하락 상위 종목이 그 업종 흐름과 맞는지 어긋나는지 ④ 확인해 볼 점 한 문장.
+            - 주어진 수치를 전부 옮겨 적지 않는다. 그 회차에서 두드러진 것만 골라 쓰고, 같은 수치를
+              두 문단에서 되풀이하지 않는다.
             - 한국어 평서문만 쓴다. 목록·머리말·마크다운·이모지를 쓰지 않는다. 전체 1500자 이내.
             - 주어진 수치에 있는 사실만 쓴다. 새 수치를 계산하거나 지어내지 않는다.
             - 숫자는 주어진 값을 단위까지 그대로 옮긴다. 환산하거나 반올림하지 않는다.
@@ -174,14 +186,13 @@ public class BriefingGenerationService {
         if (stocks.isEmpty()) {
             return;
         }
-        Map<String, String> names = new LinkedHashMap<>();
-        stocks.forEach(s -> names.put(s.getCode(), s.getName()));
+        Map<String, Stock> byCode = new LinkedHashMap<>();
+        stocks.forEach(s -> byCode.put(s.getCode(), s));
         // 종목·날짜 오름차순 한 방 조회. 종목마다 두 점을 따로 읽으면 600번 왕복이다.
         List<DailyQuote> quotes = dailyQuoteRepository
                 .findByStock_CodeInAndTradeDateGreaterThanEqualOrderByStock_CodeAscTradeDateAsc(
-                        names.keySet(), targetDate.minusDays(10));
+                        byCode.keySet(), targetDate.minusDays(10));
 
-        record Move(String name, BigDecimal rate) {}
         List<Move> moves = new ArrayList<>();
         DailyQuote prev = null;
         for (DailyQuote q : quotes) {
@@ -190,7 +201,8 @@ public class BriefingGenerationService {
                     && q.getTradeDate().equals(targetDate)) {
                 BigDecimal r = changeRate(q.getClose(), prev.getClose());
                 if (r != null) {
-                    moves.add(new Move(names.get(q.getStock().getCode()), r));
+                    Stock stock = byCode.get(q.getStock().getCode());
+                    moves.add(new Move(stock.getName(), stock.getSector(), r));
                 }
             }
             prev = q;
@@ -211,6 +223,62 @@ public class BriefingGenerationService {
         down.stream().limit(MOVERS).forEach(m -> sb.append(m.name()).append(' ').append(pct(m.rate())).append(", "));
         sb.setLength(sb.length() - 2);
         sb.append('\n');
+        appendSectors(sb, moves);
+    }
+
+    /** 한 종목의 그날 등락. 업종은 비어 있을 수 있다 — 수집이 채우지 못한 종목이 있다. */
+    private record Move(String name, String sector, BigDecimal rate) {}
+
+    /** 한 업종의 그날 집계. */
+    private record SectorMove(String name, int total, long up, BigDecimal avg) {}
+
+    /**
+     * 업종별 상승 종목 수와 평균 등락(2026-09-23).
+     *
+     * <p>지수 셋과 상하위 5종목만 주면 모델이 쓸 수 있는 말이 "몇 개가 오르고 몇 개가 내렸다"
+     * 뿐이다 — 화면에 이미 숫자로 있는 것을 문장으로 옮기는 글이 됐다. 업종은 우리 DB 에 있고
+     * 화면 어디에도 없다. 글이 스스로 남기던 "확인해 볼 점"이 바로 이 갈림이었다.
+     *
+     * <p>새 조회가 없다. {@code stocks} 가 이미 업종을 들고 왔다.
+     */
+    private static void appendSectors(StringBuilder sb, List<Move> moves) {
+        Map<String, List<Move>> bySector = new LinkedHashMap<>();
+        for (Move m : moves) {
+            if (m.sector() != null && !m.sector().isBlank()) {
+                bySector.computeIfAbsent(m.sector(), k -> new ArrayList<>()).add(m);
+            }
+        }
+        List<SectorMove> sectors = new ArrayList<>();
+        bySector.forEach((name, list) -> {
+            if (list.size() < MIN_SECTOR_STOCKS) {
+                return;
+            }
+            BigDecimal sum = list.stream().map(Move::rate).reduce(BigDecimal.ZERO, BigDecimal::add);
+            sectors.add(new SectorMove(
+                    name,
+                    list.size(),
+                    list.stream().filter(m -> m.rate().signum() > 0).count(),
+                    sum.divide(BigDecimal.valueOf(list.size()), 2, RoundingMode.HALF_UP)));
+        });
+        if (sectors.isEmpty()) {
+            return;
+        }
+        sectors.sort(Comparator.comparing(SectorMove::avg).reversed());
+        // 상위와 하위가 겹치지 않게 자른다 — 업종이 다섯 개뿐인 날 같은 줄이 두 번 나가지 않는다.
+        int head = Math.min(SECTORS, sectors.size());
+        int tail = Math.min(SECTORS, sectors.size() - head);
+        appendSectorLines(sb, "업종 평균 등락 상위", sectors.subList(0, head));
+        if (tail > 0) {
+            appendSectorLines(sb, "업종 평균 등락 하위", sectors.subList(sectors.size() - tail, sectors.size()));
+        }
+    }
+
+    private static void appendSectorLines(StringBuilder sb, String label, List<SectorMove> sectors) {
+        sb.append(label).append('\n');
+        for (SectorMove s : sectors) {
+            sb.append("  ").append(s.name()).append(' ').append(s.total()).append("종목 중 ")
+                    .append(s.up()).append("종목 상승 · 평균 ").append(pct(s.avg())).append('\n');
+        }
     }
 
     // ── 공통 ─────────────────────────────────────────────────

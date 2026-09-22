@@ -62,7 +62,7 @@ public class MarketIndexService {
             BigDecimal previous = latestFirst.size() > 1 ? latestFirst.get(1).getClose() : null;
 
             items.add(new MarketIndexItemResponse(
-                    code.name(), close, changeRate(close, previous), series));
+                    code.name(), latestFirst.get(0).getTradeDate(), close, changeRate(close, previous), series));
         }
         return new MarketIndexListResponse(items);
     }

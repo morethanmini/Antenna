@@ -207,41 +207,32 @@
   font-variant-numeric:tabular-nums;
 }
 
-/* ── 진행 방식 ────────────────────────────────────────── */
-.sj-rules{display:flex;flex-direction:column;gap:16px}
-
+/* ── 진행 방식 ────────────────────────────────────────────
+   **한 줄 띠다(2026-09-23).** 넉 장 카드 + 설명문이었는데, 참가하기 바로 위에서
+   보기엔 너무 무거웠다 — 계약서가 아니라 훑고 넘어가는 자리다. 구만 남기고
+   문장은 title(hover)로 옮겼다. 인사이트 홈의 사실 띠(.hm-facts)·모의투자 홈의
+   .sh-facts 와 같은 결 — 아이콘 + 짧은 구 + 세로줄로 가른 한 줄. */
+.sj-rules{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .sj-rules h2{
-  margin:0;color:var(--ink);
-  font-size:var(--fs-6xl);font-weight:var(--fw-black);letter-spacing:-.03em;
-}
-/* 제목 오른쪽으로 빠지는 가는 줄 */
-.sj-rules h2::after{
-  content:"";display:inline-block;vertical-align:middle;
-  width:clamp(40px,14vw,220px);height:1px;margin-left:16px;
-  background:linear-gradient(90deg,var(--rule),transparent);
+  flex:none;margin:0;color:var(--ink);
+  font-size:var(--fs-xl);font-weight:var(--fw-heavy);letter-spacing:-.01em;
 }
 
 .sj-steps{
-  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;
+  display:flex;align-items:center;flex-wrap:wrap;gap:0;
   margin:0;padding:0;list-style:none;
 }
 .sj-steps li{
-  display:flex;flex-direction:column;gap:8px;
-  padding:18px 18px 20px;
-  border:1px solid var(--rule);border-radius:16px;
-  background:var(--surface);box-shadow:var(--shadow);
+  display:flex;align-items:center;gap:8px;
+  padding:4px 18px;border-left:1px solid var(--rule);
+  cursor:default;
 }
-/* 번호는 순서를 세는 눈금이라 크게 키우지 않는다 */
-.sj-step-no{
-  color:var(--faint);font-family:var(--mono);font-size:var(--fs-xs);
-  font-weight:var(--fw-bold);letter-spacing:.14em;
-}
-.sj-steps svg{color:var(--brand);margin:-2px 0 2px}
+.sj-steps li:first-child{border-left:0;padding-left:0}
+.sj-steps svg{flex:none;color:var(--brand)}
 .sj-steps b{
-  color:var(--ink);font-size:var(--fs-xl);font-weight:var(--fw-bold);
-  line-height:1.45;letter-spacing:-.01em;
+  color:var(--ink);font-size:var(--fs-base);font-weight:var(--fw-bold);
+  letter-spacing:-.005em;white-space:nowrap;
 }
-.sj-steps p{margin:0;color:var(--muted);font-size:var(--fs-md);line-height:1.62}
 
 /* ── 초기화 확인 ──────────────────────────────────────── */
 /* 네이티브 dialog. 배경막은 ::backdrop 이 그린다 */
@@ -294,14 +285,10 @@ body.is-night .sj-dialog::backdrop{background:rgba(8,5,26,.6)}
 .sj-dialog-btn:disabled{opacity:.6;cursor:default}
 
 /* ── 좁은 화면 ────────────────────────────────────────── */
-@media(max-width:1100px){
-  .sj-steps{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
 @media(max-width:900px){
   .sj-hero-body{max-width:100%;padding-bottom:44px}
   .sj-card{grid-template-columns:minmax(0,1fr);gap:18px;margin-top:-16px}
   .sj-head h1{font-size:var(--fs-title-lg)}
-  .sj-rules h2::after{display:none}
 }
 @media(max-width:860px){
   /* .main-inner 의 여백이 20px 16px 로 줄어든다(app.css) — 되밀 값도 같이 줄인다 */
@@ -313,7 +300,13 @@ body.is-night .sj-dialog::backdrop{background:rgba(8,5,26,.6)}
   .sj-hero-body{padding:20px 18px 44px}
   .sj-card{padding:18px 16px}
   .sj-stats > div{padding:0;border-left:0;flex:1 1 45%}
-  .sj-steps{grid-template-columns:minmax(0,1fr)}
+  /* 세로줄(border-left)로 가르던 것을 여기서부터 접는다. 네 구의 길이가 서로
+     달라 줄바꿈 지점이 매번 달라지고(3+1 · 2+2 …), 그때마다 줄 앞에 쓸모없는
+     세로줄이 하나 남는다. 아예 세로로 쌓고 세로줄을 뗀다 — 넷뿐이라 세로로
+     쌓아도 두 줄짜리 카드 하나 정도 높이다. */
+  .sj-rules{flex-direction:column;align-items:flex-start;gap:8px}
+  .sj-steps{flex-direction:column;align-items:flex-start;gap:8px;width:100%}
+  .sj-steps li{padding:0;border-left:0}
   /* lockup 의 설명 줄이 이 폭부터 못 읽을 크기가 된다 — 글자로 다시 깐다.
      히어로 안이라 사진 위 흰 글자다. */
   .sj-note-sm{
@@ -353,27 +346,25 @@ body.sim-join-page .sj-card{
   -webkit-backdrop-filter:blur(14px) saturate(140%);
   backdrop-filter:blur(14px) saturate(140%);
 }
-body.sim-join-page .sj-steps li{
-  -webkit-backdrop-filter:blur(12px) saturate(140%);
-  backdrop-filter:blur(12px) saturate(140%);
-}
 
 /* 참가 버튼. --brand 는 밤에서도 그대로 쓰지만(night.css 가 진한 쪽을 안 바꾼다)
    평평한 한 색은 어두운 판에서 판때기처럼 앉는다. 모의투자 홈·기록의 으뜸 버튼과
    같은 결로 — 위가 밝은 그러데이션 + 아래로 번지는 빛 — 맞춘다. 세 화면의 "지금
    시작하기 · 새로 시작하기 · 연습 참여하기" 가 같은 버튼으로 읽혀야 한다. */
 body.sim-join-page .sj-cta{
-  background:linear-gradient(180deg,#6d6bff 0%,#5457e8 100%);
-  box-shadow:0 12px 28px -12px rgba(109,107,255,.9), inset 0 1px 0 rgba(255,255,255,.25);
+  border-radius:999px;
+  background:var(--cap-fill);
+  box-shadow:var(--cap-edge), var(--cap-glow);
 }
 body.sim-join-page .sj-cta:hover{
-  background:linear-gradient(180deg,#7b79ff 0%,#5f62f0 100%);
-  box-shadow:0 16px 32px -12px rgba(109,107,255,1), inset 0 1px 0 rgba(255,255,255,.3);
+  background:var(--cap-fill-hi);
+  box-shadow:var(--cap-edge), var(--cap-glow-hi);
 }
+body.sim-join-page .sj-cta:active{box-shadow:var(--cap-press)}
 /* 누를 수 없는 상태는 반대로 빛을 뺀다 — 빛이 남으면 꺼진 버튼이 눌릴 것처럼 보인다 */
 body.sim-join-page .sj-cta.is-off,
 body.sim-join-page .sj-cta.is-off:hover{
-  background:rgba(255,255,255,.07);box-shadow:none;color:var(--night-faint);
+  background:rgba(255,255,255,.07);box-shadow:none;color:var(--night-faint);border-radius:999px;
 }
 
 /* 브랜드 보라(#5457e8)를 쓰던 작은 글자·아이콘. 버튼 채움처럼 넓은 면에서는
@@ -398,47 +389,8 @@ body.sim-join-page .sj-dialog{
 body.sim-join-page .sj-hero-body{padding-top:16px;gap:10px}
 body.sim-join-page .sj-head{gap:8px}
 
-/* ── 네 칸을 판 한 장으로 ──────────────────────────────────
-   **글자는 줄이지 않는다.** 한 번 한 단계씩 내려 봤는데 읽기만 나빠지고 얻은
-   높이는 얼마 안 됐다 — 네 칸은 나란히 서 있어서 구역 높이는 칸 하나의 높이지,
-   네 개의 합이 아니다. 줄여야 할 것은 글자가 아니라 **칸 안의 줄 수**였다.
 
-   그래서 판을 하나로 합치고(테두리 넷 → 하나, 가운데는 세로 줄로 가른다),
-   아이콘을 제목 옆으로 옮겨 한 줄을 없앴다. 번호 · 아이콘+제목 · 설명 세 줄이다.
-   글자 크기는 본문 기준 그대로다. */
-body.sim-join-page .sj-steps{
-  gap:0;padding:0;
-  border:1px solid var(--rule);border-radius:16px;
-  background:var(--surface);box-shadow:var(--shadow);
-  -webkit-backdrop-filter:blur(12px) saturate(140%);
-  backdrop-filter:blur(12px) saturate(140%);
-  overflow:hidden;
-}
-body.sim-join-page .sj-steps li{
-  display:grid;grid-template-columns:auto minmax(0,1fr);
-  column-gap:9px;row-gap:4px;align-items:start;
-  /* 설명 줄 수가 칸마다 달라(3줄·2줄·1줄·없음) 카드에 남는 세로 공간이 생기는데,
-     기본값(stretch)이면 그 공간이 행 사이로 나눠 들어가 제목이 칸마다 다른 높이에
-     선다 — 오른쪽으로 갈수록 10px 씩 내려갔다. 위로 붙여 넷의 제목을 나란히 둔다. */
-  align-content:start;
-  padding:15px 18px 16px;
-  border:0;border-left:1px solid var(--rule);border-radius:0;
-  background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;
-}
-body.sim-join-page .sj-steps li:first-child{border-left:0}
-/* 격자가 접히면 칸막이 방향도 같이 접는다 — 세로 줄만 남으면 한 줄로 쌓인
-   항목들 왼쪽에 쓸모없는 선이 그어진다(2열 2줄 · 1열 4줄 둘 다). */
-@media(max-width:1100px){
-  body.sim-join-page .sj-steps li:nth-child(odd){border-left:0}
-  body.sim-join-page .sj-steps li:nth-child(n+3){border-top:1px solid var(--rule)}
-}
-@media(max-width:600px){
-  body.sim-join-page .sj-steps li{border-left:0}
-  body.sim-join-page .sj-steps li + li{border-top:1px solid var(--rule)}
-}
-body.sim-join-page .sj-step-no{grid-column:1/-1}
-/* 제목이 두 줄인 칸에서 아이콘이 두 줄 한가운데로 내려가 혼자 어긋났다.
-   첫 줄에 붙인다 — 한 줄짜리 칸에서는 center 와 결과가 같다. */
-body.sim-join-page .sj-steps svg{grid-column:1;grid-row:2;margin:0;align-self:start}
-body.sim-join-page .sj-steps b{grid-column:2;grid-row:2;align-self:center}
-body.sim-join-page .sj-steps p{grid-column:2;grid-row:3}
+/* 진행 방식 띠는 밤에서 따로 규칙이 없다. 배경 없는 글자 줄이라 은은한
+   유리 카드용 값(--ground/--surface)이 뒤집혀도 눈에 띌 것이 없고, 세로줄
+   (--rule) · 제목(--ink) · 구(--body) 는 is-night.is-glass 의 토큰 뒤집기를
+   그대로 물려받는다. 아이콘 색만 위에서 --glow 로 올려 뒀다. */

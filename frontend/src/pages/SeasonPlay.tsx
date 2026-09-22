@@ -409,6 +409,12 @@ export default function SeasonPlay() {
      바로 아래 useDayPanel 이 훅이라, return 아래로 내려가면 어떤 렌더에서는
      호출되고 어떤 렌더에서는 안 되어 훅 규칙이 깨진다. */
   const todayHint = hints.data?.items.find((n) => n.gameDay === sim.day) ?? null
+  /* 펼쳤을 때 나올 줄. **비어 있으면 아예 펼치지 않는다** — 요약 한 줄은 접힌 줄에
+     이미 다 나와 있어서, 펼치면 빈 상자만 열렸다(2026-09-23). */
+  const hintLines = (todayHint?.body ?? '')
+    .split('\n')
+    .map((line) => line.replace(/^·\s*/, '').trim())
+    .filter(Boolean)
   const newsItems = (news.data?.items ?? []).filter((n) => n.kind !== 'AI_HINT')
 
   /* 그날 읽을 것이 있으면 저절로 편다. 불러오는 중에는 아직 모르므로 펴지 않는다 —
@@ -1008,7 +1014,11 @@ export default function SeasonPlay() {
                     type="button" className="sp-dialog-btn solid" disabled={sim.pending}
                     onClick={() => { void finishAndGo() }}
                   >
-                    {sim.pending ? '성적표·복기 만드는 중…' : '종료하고 결과 보기'}
+                    {sim.pending ? (
+                      <span className="waiting">
+                        <span className="spinner" aria-hidden="true" />성적표·복기 만드는 중…
+                      </span>
+                    ) : '종료하고 결과 보기'}
                   </button>
                 </div>
               </dialog>
@@ -1024,56 +1034,57 @@ export default function SeasonPlay() {
             아래라, 차트 보고 주문하면 시선이 거기서 끝나 아래로 안 내려간다.
             접어 둔 사람에게는 그 게임일 동안 다시 펴지 않고 점만 찍는다. */}
         <div className="sp-later">
-          <details
-            className="sp-fold" open={hintPanel.open}
-            onToggle={(e) => hintPanel.toggle((e.currentTarget as HTMLDetailsElement).open)}
-          >
-            <summary>
-              {hintPanel.dot && <i className="sp-dot" aria-label="읽지 않은 요약" />}
+          {/* **펼칠 것이 있을 때만 접이로 둔다(2026-09-23).** 요약은 한 줄이라
+              접힌 줄에 이미 다 나와 있다 — 그런데도 꺾쇠가 달려 있어서 눌러 보면
+              빈 상자만 열렸다. 펼칠 줄이 있으면 details, 없으면 같은 모양의 한 줄이다. */}
+          {hintLines.length > 0 ? (
+            <details
+              className="sp-fold" open={hintPanel.open}
+              onToggle={(e) => hintPanel.toggle((e.currentTarget as HTMLDetailsElement).open)}
+            >
+              <summary>
+                {hintPanel.dot && <i className="sp-dot" aria-label="읽지 않은 요약" />}
+                <span className="sp-h-ico t-ai" aria-hidden="true">
+                  <Ico size={15}><path d="m12 4 1.6 3.6L17 9.2l-3.4 1.6L12 14.4l-1.6-3.6L7 9.2l3.4-1.6z" /><path d="M18 15.5 18.8 17l1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8z" /></Ico>
+                </span>
+                AI 한줄 요약
+                <em>{todayHint?.title}</em>
+                <i aria-hidden="true">⌄</i>
+              </summary>
+              <div className="sp-fold-body">
+                <ul className="sp-hint">
+                  {hintLines.map((line) => <li key={line}>{line}</li>)}
+                </ul>
+              </div>
+            </details>
+          ) : (
+            <p className="sp-fold sp-fold-line">
               <span className="sp-h-ico t-ai" aria-hidden="true">
                 <Ico size={15}><path d="m12 4 1.6 3.6L17 9.2l-3.4 1.6L12 14.4l-1.6-3.6L7 9.2l3.4-1.6z" /><path d="M18 15.5 18.8 17l1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8z" /></Ico>
               </span>
               AI 한줄 요약
-              <em>{hints.loading ? '불러오는 중…' : (todayHint?.title ?? '이 게임일 요약이 없습니다')}</em>
-              <i aria-hidden="true">⌄</i>
-            </summary>
-            <div className="sp-fold-body">
-              {todayHint ? (
-                <ul className="sp-hint">
-                  {todayHint.body?.split('\n').filter(Boolean).map((line) => (
-                    <li key={line}>{line.replace(/^·\s*/, '')}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="sp-soon">
-                  그 시점 사건을 요약해 판단 근거를 짚어 줍니다.
-                  <small>배치 생성 · ANT-SEASON-07</small>
-                </p>
-              )}
-            </div>
-          </details>
+              <em>{hints.loading ? '불러오는 중…' : (todayHint?.title ?? '요약 없음')}</em>
+            </p>
+          )}
 
-          <details
-            className="sp-fold" open={newsPanel.open}
-            onToggle={(e) => newsPanel.toggle((e.currentTarget as HTMLDetailsElement).open)}
-          >
-            <summary>
-              {newsPanel.dot && <i className="sp-dot" aria-label="읽지 않은 소식" />}
-              <span className="sp-h-ico t-news" aria-hidden="true">
-                <Ico size={15}><path d="M5 4h11v16H5z" /><path d="M16 8h3v9.5a2.5 2.5 0 0 1-5 0" /><path d="M8 8h5M8 11.5h5M8 15h3" /></Ico>
-              </span>
-              당시 주요 이슈
-              <em>
-                {news.loading
-                  ? '불러오는 중…'
-                  : newsItems.length > 0
-                    ? `${ticker?.displayName ?? ''} 소식 ${newsItems.length}건`
-                    : '아직 소식이 없습니다'}
-              </em>
-              <i aria-hidden="true">⌄</i>
-            </summary>
-            <div className="sp-fold-body">
-              {newsItems.length > 0 ? (
+          {/* 소식도 같은 규칙이다 — 기사가 없으면 펼쳐도 "여기까지 전해진 기사가
+              없어요" 한 줄뿐이라, 접힌 줄의 "소식 없음" 과 같은 말을
+              두 번 하는 셈이었다. */}
+          {newsItems.length > 0 ? (
+            <details
+              className="sp-fold" open={newsPanel.open}
+              onToggle={(e) => newsPanel.toggle((e.currentTarget as HTMLDetailsElement).open)}
+            >
+              <summary>
+                {newsPanel.dot && <i className="sp-dot" aria-label="읽지 않은 소식" />}
+                <span className="sp-h-ico t-news" aria-hidden="true">
+                  <Ico size={15}><path d="M5 4h11v16H5z" /><path d="M16 8h3v9.5a2.5 2.5 0 0 1-5 0" /><path d="M8 8h5M8 11.5h5M8 15h3" /></Ico>
+                </span>
+                당시 주요 이슈
+                <em>{`${ticker?.displayName ?? ''} 소식 ${newsItems.length}건`}</em>
+                <i aria-hidden="true">⌄</i>
+              </summary>
+              <div className="sp-fold-body">
                 <ul className="sp-news">
                   {newsItems.map((n) => (
                     <li key={n.link ?? `${n.gameDay}${n.title}`}>
@@ -1083,7 +1094,7 @@ export default function SeasonPlay() {
                           <span className="sp-news-kind">{n.kind === 'IR' ? '기업설명회' : '공시'}</span>
                         )}
                         {n.link ? (
-                          <a href={n.link} target="_blank" rel="noreferrer">{n.title}</a>
+                          <a href={n.link} target="_blank" rel="noreferrer noopener">{n.title}</a>
                         ) : (
                           <b>{n.title}</b>
                         )}
@@ -1092,14 +1103,17 @@ export default function SeasonPlay() {
                     </li>
                   ))}
                 </ul>
-              ) : (
-                <p className="sp-soon">
-                  이 종목은 여기까지 전해진 기사·공시가 없습니다.
-                  <small>고른 종목과 진행일에 따라 달라집니다</small>
-                </p>
-              )}
-            </div>
-          </details>
+              </div>
+            </details>
+          ) : (
+            <p className="sp-fold sp-fold-line">
+              <span className="sp-h-ico t-news" aria-hidden="true">
+                <Ico size={15}><path d="M5 4h11v16H5z" /><path d="M16 8h3v9.5a2.5 2.5 0 0 1-5 0" /><path d="M8 8h5M8 11.5h5M8 15h3" /></Ico>
+              </span>
+              당시 주요 이슈
+              <em>{news.loading ? '불러오는 중…' : '소식 없음'}</em>
+            </p>
+          )}
         </div>
 
         {sim.loadError && <ErrorState error={sim.loadError} onRetry={() => { void sim.reload() }} inline />}
