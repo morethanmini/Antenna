@@ -9,6 +9,12 @@ import { BrowserRouter } from 'react-router-dom'
    (겹치는 선택자는 지금 한 건도 없어서 순서를 바꿔도 달라지는 화면은 없다.) */
 import './styles/app.css'
 
+/* 밤 화면 한 벌. 전부 body.is-night 아래로 묶여 있어 그 표시가 없는 화면에는
+   아무 영향이 없다. 쓰는 화면이 여섯이 되면서 화면마다 import 하는 대신 여기서
+   한 번만 가져온다 — 한 곳이라도 빠뜨리면 그 화면만 상단바가 밝게 남는다.
+   app.css 뒤에 두어야 셸의 값을 덮는다. */
+import './styles/night.css'
+
 import App from './App'
 import { AuthProvider } from './auth/AuthContext'
 // 전 화면이 공유하는 오류·빈 상태·잠금 표현

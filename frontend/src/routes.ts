@@ -87,13 +87,13 @@ export const ROUTES: PageMeta[] = [
 
   // ── B. 인사이트 ──────────────────────────────────────
   { screen: 'B-01', element: Home, path: '/', title: '인사이트 홈', access: 'user', mode: 'insight', nav: 'home', bodyClass: 'insight-home is-night', story: 'ANT-FE-HOME' },
-  { screen: 'B-02', element: Stocks, path: '/stocks', title: '종목 탐색', access: 'user', mode: 'insight', nav: 'stocks', bodyClass: 'stocks-page', story: 'ANT-FE-STOCKS' },
+  { screen: 'B-02', element: Stocks, path: '/stocks', title: '종목 탐색', access: 'user', mode: 'insight', nav: 'stocks', bodyClass: 'stocks-page is-night', story: 'ANT-FE-STOCKS' },
   { screen: 'B-03', element: StockDetail, path: '/stocks/:code', title: '종목 상세', access: 'user', mode: 'insight', nav: 'stocks', bodyClass: 'stock-detail-page', story: 'ANT-FE-STOCK-DETAIL' },
   { screen: 'B-04', element: Watchlist, path: '/watchlist', title: '관심 종목', access: 'user', mode: 'insight', nav: 'stocks', bodyClass: 'watchlist-page', story: 'ANT-FE-WATCHLIST' },
 
   // ── C. 예측 ──────────────────────────────────────────
   { screen: 'C-01', element: PredictNew, path: '/predict', title: '예측 등록', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'prediction-create-page', story: 'ANT-FE-PREDICT-NEW' },
-  { screen: 'C-02', element: PredictList, path: '/me/predictions', title: '내 예측 현황', access: 'user', mode: 'insight', nav: 'portfolio', bodyClass: 'my-predictions-page', story: 'ANT-FE-PREDICT-LIST' },
+  { screen: 'C-02', element: PredictList, path: '/me/predictions', title: '내 예측 현황', access: 'user', mode: 'insight', nav: 'portfolio', bodyClass: 'my-predictions-page is-night', story: 'ANT-FE-PREDICT-LIST' },
   { screen: 'C-03', element: PredictDetail, path: '/predictions/:id', title: '예측 상세', access: 'user', mode: 'insight', nav: 'portfolio', bodyClass: 'prediction-detail-page', story: 'ANT-FE-PREDICT-DETAIL' },
   { screen: 'C-04', element: Portfolio, path: '/me/portfolio', title: '예측 포트폴리오', access: 'user', mode: 'insight', nav: 'portfolio', bodyClass: 'forecast-page', story: 'ANT-FE-PORTFOLIO' },
 
@@ -106,7 +106,7 @@ export const ROUTES: PageMeta[] = [
   { screen: 'D-04', element: VerifyReport, path: '/ledger/verify/report/:reportId', title: '리포트 검산', access: 'user', mode: 'insight', nav: 'ledger', story: 'ANT-CHAIN-17' },
 
   // ── E. 채널 · 구독 ───────────────────────────────────
-  { screen: 'E-01', element: Ranking, path: '/rankings', title: '주가 예측 랭킹', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'predictor-market-page', story: 'ANT-FE-RANKING' },
+  { screen: 'E-01', element: Ranking, path: '/rankings', title: '주가 예측 랭킹', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'predictor-market-page is-night', story: 'ANT-FE-RANKING' },
   /* 모의투자 랭킹(/sim/rankings)은 뺐다(2026-09-16). REPLAY 트랙 누적 순위인데,
      "한 시즌 안의 순위는 G-07 시즌 리더보드가 이미 보여 준다" 가 그때의 근거였다.
 
@@ -125,7 +125,7 @@ export const ROUTES: PageMeta[] = [
   // ── F. 리포트 ───────────────────────────────────────
   // 커뮤니티(F-04 피드 · F-05 글 상세 · F-06 글 작성)는 개발 범위에서 뺐다
   // (2026-09-14). 화면과 라우트를 지웠고, 서버 API 는 그대로 남아 있다.
-  { screen: 'F-01', element: Reports, path: '/reports', title: '리포트 피드', access: 'user', mode: 'insight', nav: 'report', bodyClass: 'reports-page', story: 'ANT-FE-REPORTS' },
+  { screen: 'F-01', element: Reports, path: '/reports', title: '리포트 피드', access: 'user', mode: 'insight', nav: 'report', bodyClass: 'reports-page is-night', story: 'ANT-FE-REPORTS' },
   { screen: 'F-02', element: ReportDetail, path: '/reports/:id', title: '리포트 상세', access: 'user', mode: 'insight', nav: 'report', story: 'ANT-FE-REPORT-DETAIL' },
   { screen: 'F-03', element: ReportNew, path: '/reports/new', title: '리포트 작성', access: 'user', mode: 'insight', nav: 'report', story: 'ANT-FE-REPORT-NEW' },
 

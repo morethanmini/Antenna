@@ -23,7 +23,6 @@ import { useAsync } from '../api/useAsync'
 import Sparkline from '../components/Sparkline'
 import { BANNER, BANNER_BASE, CONTEST_PATH, phaseAt } from '../event/contest'
 import StockLogo from '../components/stocks/StockLogo'
-import '../styles/night.css'
 import '../styles/home-night.css'
 import '../styles/home.css'
 

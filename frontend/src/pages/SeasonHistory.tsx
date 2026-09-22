@@ -11,7 +11,6 @@
    목록에 필요한 값이 한 응답에 다 온다 — 시즌마다 상세를 다시 부르지 않는다.
 
    ── 2026-09-22 홈과 같은 밤으로 맞췄다 ────────────────────
-   색·상단바 한 벌은 styles/night.css 가 들고 있고(routes.ts 의 bodyClass 에
    `is-night` 를 더해 건다), 이 파일은 그 위에 놓이는 배치만 정한다.
    클래스 접두사를 sh- 에서 **rc-** 로 바꿨다. 홈(sim-home.css)이 같은 sh- 를 쓰고
    있어서 두 화면을 오가면 나중에 실린 쪽이 이겼다 — 실제로 .sh-bar 가 겹쳐 있었다.
@@ -37,7 +36,6 @@ import {
 } from '../api/seasons'
 import ErrorState from '../components/state/ErrorState'
 import { seasonArt } from '../sim/seasonArt'
-import '../styles/night.css'
 import '../styles/screens/sim-history.css'
 
 type Sort = 'RECENT' | 'BEST' | 'WORST'
