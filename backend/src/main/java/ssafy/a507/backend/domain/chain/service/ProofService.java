@@ -18,6 +18,8 @@ import ssafy.a507.backend.domain.chain.anchor.AnchorProof;
 import ssafy.a507.backend.domain.chain.dto.ProofResponse;
 import ssafy.a507.backend.domain.chain.entity.AnchorBatch;
 import ssafy.a507.backend.domain.chain.merkle.MerkleTree;
+import ssafy.a507.backend.domain.event.entity.PredictionEventBet;
+import ssafy.a507.backend.domain.event.repository.PredictionEventBetRepository;
 import ssafy.a507.backend.domain.monetize.entity.Subscription;
 import ssafy.a507.backend.domain.monetize.repository.SubscriptionRepository;
 import ssafy.a507.backend.domain.prediction.entity.Prediction;
@@ -57,6 +59,9 @@ public class ProofService {
 
     private final PredictionRepository predictions;
     private final PredictionCommitRepository commits;
+    /* 대회 등록이면 서명 문자열에 stake 가 들어간다(ANT-CHAIN-20). PK 가 prediction_id 라 findById 하나면 된다 —
+       event 도메인에 새 조회를 심지 않는다. */
+    private final PredictionEventBetRepository bets;
     private final AnchorProof anchorProof;
     private final SubscriptionRepository subscriptions;
     private final CurrentUserProvider currentUserProvider;
@@ -109,9 +114,34 @@ public class ProofService {
                 signatureGuard.chainId(),
                 commit == null ? null : commit.getRevealedAt(),
                 saltVisible ? commit.getSalt() : null,
+                eventEntryOf(predictionId, commit),
                 batch == null ? null : anchorOf(commit, batch),
                 ProofResponse.AnchorStatus.of(batch),
                 settled ? settleOf(prediction) : null);
+    }
+
+    /**
+     * ③단계가 대회 서명 문자열을 다시 만들 재료 (ANT-CHAIN-20). 대회로 등록한 예측이 아니면 null 이다.
+     *
+     * <p>대회 등록({@code POST /events/{id}/entries})은 {@code antenna:event-entry:v1} 서식으로 서명하는데,
+     * 그 서명이 단건 등록과 <b>같은 커밋 컬럼</b>에 저장된다. 그래서 여기서 구분 재료를 주지 않으면 화면은
+     * 단건 서식으로 조립하고, ECDSA 가 엉뚱한 주소를 뱉어 <b>거짓 "서명자 불일치"</b> 가 뜬다.
+     *
+     * <p>{@code itemCount} 는 같은 서명을 공유하는 커밋 수다. 2 이상이면 형제 종목 줄이 있어야 복원되는데
+     * 그 줄들은 이 응답에 없다 — 화면이 ③을 잠그게 하려고 <b>세어서 내린다</b>. 프론트가 추측할 방법이 없다.
+     *
+     * <p>{@code signNonce} 가 없는 옛 커밋은 세지 않는다. {@code countBySignNonce(null)} 은 IS NULL 로 풀려
+     * 무관한 옛 커밋 전부를 세게 되고, 그 수가 커지면 묶음도 아닌데 잠긴 것처럼 보인다. 어차피 nonce 가 없으면
+     * ③은 그 이유로 잠기므로 1 로 둔다.
+     */
+    private ProofResponse.EventEntry eventEntryOf(long predictionId, PredictionCommit commit) {
+        PredictionEventBet bet = bets.findById(predictionId).orElse(null);
+        if (bet == null) {
+            return null;
+        }
+        String nonce = commit == null ? null : commit.getSignNonce();
+        int itemCount = nonce == null ? 1 : commits.countBySignNonce(nonce);
+        return new ProofResponse.EventEntry(bet.getEvent().getId(), bet.getStake(), itemCount);
     }
 
     private boolean isSubscriber(Long viewerId, Long publisherId) {
