@@ -10,11 +10,11 @@
      작성 중 이탈 시 경고만 띄운다.
    - 두지 않는 것: 분야 · 한 줄 요약 · 임시 저장.
 
-   이미지 첨부를 넣지 않은 이유
-   두 겹으로 막혀 있다. POST /uploads 가 아직 없고(M-07 [ANT-FE-UPLOAD]),
-   그보다 먼저 서버 ReportCreateRequest 가 (title, body, visibility) 뿐이라
-   fileId 를 받을 자리 자체가 없다. 업로드 모달만 만들어도 발행에 실을 곳이 없다.
-   두 가지가 다 열린 뒤에 붙인다.
+   이미지 첨부
+   서버 ReportCreateRequest 는 지금도 (title, body, visibility) 뿐이라 fileId 를 받을
+   자리가 없다. 그래서 그림은 **본문 마크다운 안에** 주소로만 들어간다 — 올리기는
+   POST /uploads(M-07)가 맡고, 이 화면은 받은 주소를 본문에 붙인다.
+   화면에서 어떻게 다루는지는 아래 composeBody 머리말.
 
    이탈 경고의 범위
    beforeunload 로 새로고침 · 창 닫기 · 외부 이동을 막는다. 앱 안에서 사이드바를
@@ -22,7 +22,7 @@
    동작하는데 이 앱은 BrowserRouter 다(main.tsx). 라우터 교체는 셸 전체에 영향이
    가는 [ANT-FE-LAYOUT] 몫이라 이 스토리에서 건드리지 않는다.
    대신 화면 안의 취소 버튼은 직접 확인을 받는다. */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ApiError } from '../api/client'
 import { releaseIdempotencyKey } from '../api/idempotency'
@@ -45,6 +45,35 @@ import '../styles/screens/report-new.css'
    null 이면 아직 안 골랐다는 뜻이고, 그 상태로는 발행하지 않는다. */
 type Visibility = boolean | null
 
+/* ── 사진은 본문 글자에 전혀 섞지 않는다 (2026-09-23) ──────────────
+   처음에는 커서 자리에 `![](/api/v1/uploads/f9f1e192-…)` 를 꽂았다. 쓰는 사람이
+   개발자가 아니면 이게 무슨 글자인지 알 수 없다. 그래서 `[사진 1]` 이라는 자리표시자로
+   바꿔 보았는데, 그것도 **본문에 군더더기 글자가 뜨는 것**은 마찬가지였다
+   (2026-09-23 — "사진은 왜 뜨냐고, 밑에 첨부한 거 뜨잖아").
+
+   지금은 본문 글자에 아무것도 넣지 않는다. 올린 사진은 입력칸 아래 첨부 줄에만 있고,
+   **발행·미리보기 직전에 본문 끝에 붙인다.**
+
+   ── 잃은 것: 글 중간에 그림 넣기 ──────────────────────
+   사진은 항상 글 끝에 순서대로 붙는다. "이 문단 옆에 이 차트" 를 못 한다. 그 대신
+   본문 입력칸에는 쓴 사람이 적은 글만 남는다. 리포트가 근거를 적는 글이고 그림은
+   차트 갈무리를 덧붙이는 쪽에 가까워, 무엇을 잃는지 알고 고른 쪽이다.
+
+   저장 형식은 그대로 마크다운이다 — 본문은 keccak256 해시로 서명돼 온체인에
+   올라가므로(api/reports.ts reportSigningPayload) 서버로 가는 문자열은 바꿀 수 없다.
+   바꾼 것은 **화면에 보이는 것**뿐이다. */
+type BodyImage = { no: number; url: string }
+
+/** 화면에 보이는 글 + 첨부한 사진 → 서버에 보낼 마크다운.
+ *  미리보기와 발행이 **같은 함수**를 쓴다 — 미리보기가 실제와 다르면 미리보기가 아니다. */
+function composeBody(text: string, images: BodyImage[]): string {
+  if (images.length === 0) return text
+  /* 그림은 제 줄에 둔다. 글 끝에 바로 붙이면 마지막 문단 안 그림이 되어 폭을 밀어낸다 */
+  const shots = images.map((i) => `![](${i.url})`).join('\n\n')
+  const body = text.trimEnd()
+  return body === '' ? shots : `${body}\n\n${shots}`
+}
+
 const VISIBILITY_OPTIONS = [
   { value: true, label: '공개', desc: '누구나 전문을 읽을 수 있습니다' },
   { value: false, label: '구독자 전용', desc: '구독자만 본문을 읽고, 나머지는 제목만 봅니다' },
@@ -62,12 +91,10 @@ export default function ReportNew() {
      나란히 놓으면 둘 다 못 읽을 폭이 되고, 리포트는 길게 쓰는 글이다. */
   const [tab, setTab] = useState<'write' | 'preview'>('write')
   const [picking, setPicking] = useState(false)
+  /** 올린 사진. 본문 글자에는 없고 여기에만 있다 — 발행 때 끝에 붙는다(위 머리말) */
+  const [images, setImages] = useState<BodyImage[]>([])
   /* 이미지를 넣으면 상한을 넘는 경우. 조용히 안 넣으면 버튼이 고장 난 것처럼 보인다 */
   const [tooLong, setTooLong] = useState(false)
-  /* 커서 자리에 꽂아 넣으려면 실제 요소가 있어야 한다. 탭을 옮겨도 textarea 는
-     언마운트되므로, 넣기는 항상 쓰기 탭에서만 일어난다(이미지 버튼도 거기 있다). */
-  const bodyRef = useRef<HTMLTextAreaElement>(null)
-
   const [submitting, setSubmitting] = useState(false)
   /** 발행 확인 창이 떠 있는가 */
   const [confirming, setConfirming] = useState(false)
@@ -81,43 +108,40 @@ export default function ReportNew() {
   const [localMsg, setLocalMsg] = useState<string | null>(null)
 
   /**
-   * 커서 자리에 마크다운을 꽂는다. 끝에 붙이지 않는 이유 — 글 중간에 그림을 넣으려던
-   * 사람이 매번 잘라 옮겨야 한다.
+   * 사진을 첨부 줄에 더한다. **본문 글자는 건드리지 않는다**(위 머리말).
    *
-   * 이미지는 제 줄에 둔다. 글 한가운데 끼면 문단 안 그림이 되어 폭을 밀어낸다.
-   * 커서는 alt 자리(대괄호 안)에 둔다 — 설명을 바로 이어 쓸 수 있고, 안 쓰면 빈 alt 다.
+   * 번호는 다시 쓰지 않는다 — 지웠다 다시 올릴 때 번호가 당겨지면, 첨부 줄을 보며
+   * "사진 2를 빼자" 고 마음먹은 사람이 다른 그림을 지우게 된다.
    */
-  function insertImage(url: string) {
-    const el = bodyRef.current
-    const start = el ? el.selectionStart : body.length
-    const end = el ? el.selectionEnd : body.length
+  function addImage(url: string) {
+    const no = images.reduce((max, i) => Math.max(max, i.no), 0) + 1
+    const next = [...images, { no, url }]
 
-    const before = body.slice(0, start)
-    const after = body.slice(end)
-    /* 앞이 줄머리가 아니면 줄을 바꿔 준다. 뒤도 마찬가지 — 이미 개행이면 더 넣지 않는다 */
-    const lead = before === '' || before.endsWith('\n') ? '' : '\n'
-    const tail = after.startsWith('\n') ? '' : '\n'
-    const snippet = `${lead}![](${url})${tail}`
-
-    /* 상한을 넘기면서까지 넣지 않는다. 넣고 잘라 내면 주소가 반토막 난 채 남는다 */
-    if (before.length + snippet.length + after.length > BODY_MAX) {
+    /* 상한은 **붙인 뒤 길이**로 잰다. 첨부 줄에는 글자가 한 자도 안 늘지만
+       서버로 가는 본문에는 주소가 든 마크다운이 마흔 자 넘게 붙는다 */
+    if (composeBody(body, next).length > BODY_MAX) {
       setTooLong(true)
       return
     }
     setTooLong(false)
-    setBody(before + snippet + after)
+    setImages(next)
     edited()
-
-    /* 값이 그려진 뒤에 커서를 옮긴다. 같은 tick 에 옮기면 React 가 값을 넣으며 끝으로 되돌린다 */
-    const caret = start + lead.length + 2
-    requestAnimationFrame(() => {
-      el?.focus()
-      el?.setSelectionRange(caret, caret)
-    })
   }
 
+  /** 첨부 줄에서 빼기. 본문 글자에는 아무것도 없으므로 목록에서만 덜어 내면 된다 */
+  function removeImage(no: number) {
+    setImages((list) => list.filter((i) => i.no !== no))
+    setTooLong(false)
+    edited()
+  }
+
+  /* 서버로 갈 본문. 글자 수 · 상한 · 미리보기 · 발행이 모두 이 값을 본다 —
+     화면에 보이는 글자 수가 서버가 세는 수와 다르면 상한 앞에서 사용자가 속는다 */
+  const composed = composeBody(body, images)
+  const overflow = composed.length > BODY_MAX
+
   const dirty = title !== '' || body !== '' || visibility !== null
-  const ready = title.trim() !== '' && body.trim() !== '' && visibility !== null
+  const ready = title.trim() !== '' && body.trim() !== '' && visibility !== null && !overflow
 
   /* 초안이 없으므로 나가면 글이 사라진다. 발행 중에는 경고하지 않는다
      — 이미 서버로 갔고, 여기서 막으면 사용자가 더 헷갈린다. */
@@ -177,7 +201,7 @@ export default function ReportNew() {
     try {
       /* 서명에 들어갈 값은 지금 이 입력에서 나와야 한다. 다듬은 제목(trim)을 서버에
          그대로 보내므로 서명도 같은 값에 붙어야 SIGNER_MISMATCH 가 나지 않는다. */
-      const draft = { title: title.trim(), body, visibility }
+      const draft = { title: title.trim(), body: composed, visibility }
 
       const address = await connectAddress()
       const nonce = await requestNonce('REPORT_PUBLISH')
@@ -242,7 +266,7 @@ export default function ReportNew() {
           <div className="rn-field">
             <label className="rn-label" htmlFor="rn-body">
               본문
-              <span className="rn-count num">{`${body.length.toLocaleString('ko-KR')}/${BODY_MAX.toLocaleString('ko-KR')}`}</span>
+              <span className="rn-count num">{`${composed.length.toLocaleString('ko-KR')}/${BODY_MAX.toLocaleString('ko-KR')}`}</span>
             </label>
 
             {/* 쓰기 ↔ 미리보기. 발행 뒤 화면과 **같은 컴포넌트**로 그린다 —
@@ -278,25 +302,51 @@ export default function ReportNew() {
 
             {tab === 'write' ? (
               <textarea
-                className="rn-textarea" id="rn-body" ref={bodyRef}
+                className="rn-textarea" id="rn-body"
                 value={body}
                 onChange={(e) => { setBody(e.target.value); setTooLong(false); edited() }}
-                maxLength={BODY_MAX}
+                /* maxLength 를 걸지 않는다 — 막는 기준은 raw 길이가 아니라 자리표시자를
+                   바꾼 뒤 길이(overflow)다. 넘으면 아래 줄로 알리고 발행을 막는다 */
                 disabled={submitting}
                 rows={16}
                 aria-invalid={fieldError === 'body' || profanityField === 'body'}
-                placeholder={'근거와 판단을 적어 주세요.\n\n마크다운을 씁니다 — ## 제목, **굵게**, - 목록.\n엔터는 그대로 줄바꿈이 됩니다.'}
+                placeholder={'근거와 판단을 적어 주세요.'}
               />
             ) : (
               /* 빈 본문에 빈 상자만 두면 미리보기가 고장 난 줄 안다 */
               <div className="rn-preview">
                 {body.trim() === ''
                   ? <p className="rn-preview-empty">아직 쓴 내용이 없습니다.</p>
-                  : <Markdown text={body} />}
+                  : <Markdown text={composed} />}
               </div>
             )}
 
-            {tooLong && <FieldError>본문이 상한에 닿아 이미지를 넣지 못했습니다.</FieldError>}
+            {/* 첨부한 사진. 본문 글자에는 아무것도 안 들어가므로, 무엇을 올렸는지
+                알 수 있는 곳은 여기뿐이다. 붙는 순서도 이 순서다.
+                쓰기 탭에만 둔다 — 미리보기는 그림을 이미 제자리에 그린다. */}
+            {tab === 'write' && images.length > 0 && (
+              <ul className="rn-shots">
+                {images.map((img, i) => (
+                  <li key={img.no} className="rn-shot">
+                    <img src={img.url} alt="" />
+                    {/* 번호는 첨부 줄에서 세는 자리 순서다. img.no(다시 쓰지 않는 번호)를
+                        그대로 보이면 하나 빼는 순간 "사진 1, 사진 3" 처럼 구멍이 난다 */}
+                    <span className="rn-shot-no">{`사진 ${i + 1}`}</span>
+                    <button
+                      type="button" className="rn-shot-x"
+                      onClick={() => removeImage(img.no)}
+                      disabled={submitting}
+                      aria-label={`사진 ${i + 1} 빼기`}
+                    >
+                      빼기
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {tooLong && <FieldError>본문이 상한에 닿아 사진을 넣지 못했습니다.</FieldError>}
+            {overflow && <FieldError>본문이 너무 깁니다. 줄이거나 사진을 빼 주세요.</FieldError>}
             {fieldError === 'body' && <FieldError>본문을 다시 확인해 주세요.</FieldError>}
             {profanityField === 'body' && <FieldError>{PROFANITY_MESSAGE}</FieldError>}
           </div>
@@ -361,7 +411,7 @@ export default function ReportNew() {
           <ImageUploadModal
             purpose="REPORT"
             onClose={() => setPicking(false)}
-            onUploaded={(img) => { insertImage(img.url); setPicking(false) }}
+            onUploaded={(img) => { addImage(img.url); setPicking(false) }}
           />
         )}
       </div>
