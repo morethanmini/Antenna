@@ -151,7 +151,7 @@ export default function ChannelFeeSection() {
               <p className={`cf-hint ${draft !== '' && !valid ? 'is-bad' : ''}`}>
                 {draft !== '' && !valid
                   ? `0 이상 ${formatToken(String(FEE_MAX))} 이하의 정수만 넣을 수 있습니다`
-                  : 'ANT 는 소수점이 없어 정수로만 정할 수 있습니다'}
+                  : '정수만 넣을 수 있습니다'}
               </p>
 
               {step === 'confirm' && (
