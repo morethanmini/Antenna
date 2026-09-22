@@ -88,6 +88,29 @@ export function createAd(draft: AdDraft, signature: string) {
  * 신청 취소 — 본인의 심사 대기 건만. 배너가 닫히면서 묶였던 가용잔액이 풀린다.
  * 소각 tx 가 나가는 중이면 409 AD_ALREADY_HANDLED 다(돈이 이미 체인으로 가고 있다).
  */
+/** 내가 낸 신청 한 줄. 등록 화면(H-04)이 머리에 건다 — ANT-FE-AD */
+export type MyAd = {
+  id: number
+  imageUrl: string
+  linkUrl: string
+  startsAt: string
+  endsAt: string
+  status: 'PENDING' | 'ACTIVE' | 'REJECTED'
+  /** 정수 ANT 문자열 */
+  price: string
+  createdAt: string
+  /** 승인이 눌려 소각 tx 가 나가는 중. 상태는 아직 PENDING 이라 이 값으로만 갈린다 */
+  burnPending: boolean
+  /** 취소할 수 있는가 — 심사 대기이고 소각이 안 나갔을 때만 */
+  cancelable: boolean
+}
+
+/* 신청하면 게재료가 묶이는데 그 뒤로 신청을 볼 자리가 없어 **묶인 ANT 를 스스로 풀 길이
+   없었다**(2026-09-22 QA). 목록 화면을 새로 내지 않고 되돌아오는 자리인 등록 화면에 건다. */
+export function fetchMyAds() {
+  return api.get<{ items: MyAd[] }>('/ads/mine')
+}
+
 export function cancelAd(adId: number) {
   return api.delete<void>(`/ads/${adId}`)
 }
@@ -141,7 +164,12 @@ export async function fetchAdPricing() {
  * 곱한다. BigInt('') 는 0 이라 빈 값이 "0 ANT" 로 보이고, 소수 일수(1.5)는 BigInt 가 던진다.
  */
 export function priceOf(pricing: AdPricing, days: number): string | null {
-  if (!/^\d+$/.test(pricing.pricePerDay) || !Number.isInteger(days)) return null
+  /* 하루 미만은 값이 아니다. 전에는 정수인지만 봐서 **음수도 통과했고**, 화면이
+     "-5,000 ANT 가 소각됩니다" 라고 적었다(2026-09-22 QA). 상한은 서버·입력칸이
+     자르지만 하한은 아무도 안 보고 있었다 — 금액을 만드는 이 자리에서 끊는다.
+     0 은 칸을 비웠을 때의 값이기도 해서, 여기서 null 이면 "정수 일수를 넣어 주세요"
+     안내로 떨어진다(등록은 daysOk 가 따로 막는다). */
+  if (!/^\d+$/.test(pricing.pricePerDay) || !Number.isInteger(days) || days < 1) return null
   return (BigInt(pricing.pricePerDay) * BigInt(days)).toString()
 }
 

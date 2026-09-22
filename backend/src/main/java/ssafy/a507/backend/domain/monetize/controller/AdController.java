@@ -18,6 +18,7 @@ import ssafy.a507.backend.domain.monetize.dto.AdActiveResponse;
 import ssafy.a507.backend.domain.monetize.dto.AdCreateRequest;
 import ssafy.a507.backend.domain.monetize.dto.AdCreateResponse;
 import ssafy.a507.backend.domain.monetize.dto.AdPricingResponse;
+import ssafy.a507.backend.domain.monetize.dto.MyAdListResponse;
 import ssafy.a507.backend.domain.monetize.entity.AdBanner;
 import ssafy.a507.backend.domain.monetize.service.AdService;
 
@@ -71,6 +72,17 @@ public class AdController {
     public ResponseEntity<Void> cancel(@PathVariable Long adId) {
         adService.cancel(currentUserProvider.currentUserId(), adId);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 내가 낸 신청 — 광고 등록 화면이 머리에 건다.
+     *
+     * <p>신청하면 게재료가 묶이는데 그 뒤로 신청을 볼 자리가 없어, 묶인 ANT 를 스스로 풀 길이
+     * 없었다(2026-09-22 QA). 사용자용 목록 화면을 새로 내는 대신 되돌아오는 자리에 얹는다.
+     */
+    @GetMapping("/mine")
+    public MyAdListResponse mine() {
+        return adService.mine(currentUserProvider.currentUserId());
     }
 
     @GetMapping("/active")
