@@ -385,11 +385,7 @@ export default function SeasonJoin() {
             혼자 남으니 그때 배치를 다시 본다. */}
         <section className="sj-rules" aria-labelledby="sj-rules-title">
           <header className="sj-rules-head">
-            <p className="sj-rules-kicker" aria-hidden="true">PRACTICE GUIDE</p>
             <h2 id="sj-rules-title">진행 방식</h2>
-            <p className="sj-rules-lead">
-              실제와 닮은 시장, 그러나 부담 없이. {s.title}이 만든 변화를 직접 경험해보세요.
-            </p>
           </header>
 
           <ol className="sj-steps">

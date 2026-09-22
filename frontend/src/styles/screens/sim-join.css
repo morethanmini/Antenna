@@ -210,15 +210,6 @@
 /* ── 진행 방식 ────────────────────────────────────────── */
 .sj-rules{display:flex;flex-direction:column;gap:16px}
 
-.sj-rules-head{
-  display:grid;grid-template-columns:minmax(0,auto) minmax(0,1fr);
-  align-items:baseline;column-gap:18px;
-}
-.sj-rules-kicker{
-  grid-column:1/-1;margin:0 0 2px;
-  color:var(--brand);font-size:var(--fs-2xs);font-weight:var(--fw-bold);
-  letter-spacing:.24em;
-}
 .sj-rules h2{
   margin:0;color:var(--ink);
   font-size:var(--fs-6xl);font-weight:var(--fw-black);letter-spacing:-.03em;
@@ -228,10 +219,6 @@
   content:"";display:inline-block;vertical-align:middle;
   width:clamp(40px,14vw,220px);height:1px;margin-left:16px;
   background:linear-gradient(90deg,var(--rule),transparent);
-}
-.sj-rules-lead{
-  margin:0;justify-self:end;text-align:right;
-  color:var(--muted);font-size:var(--fs-lg);font-weight:var(--fw-normal);
 }
 
 .sj-steps{
@@ -288,9 +275,7 @@
   .sj-hero-body{max-width:100%;padding-bottom:44px}
   .sj-card{grid-template-columns:minmax(0,1fr);gap:18px;margin-top:-16px}
   .sj-head h1{font-size:var(--fs-title-lg)}
-  .sj-rules-head{grid-template-columns:minmax(0,1fr)}
   .sj-rules h2::after{display:none}
-  .sj-rules-lead{justify-self:start;text-align:left;margin-top:6px}
 }
 @media(max-width:860px){
   /* .main-inner 의 여백이 20px 16px 로 줄어든다(app.css) — 되밀 값도 같이 줄인다 */
@@ -368,7 +353,6 @@ body.sim-join-page .sj-cta.is-off:hover{
 /* 브랜드 보라(#5457e8)를 쓰던 작은 글자·아이콘. 버튼 채움처럼 넓은 면에서는
    그대로 읽히지만, 가는 글자와 22px 아이콘으로는 어두운 바탕에서 가라앉는다
    (머리말 대비 3.0:1). 밝은 쪽(--glow)으로 올린다 — 6.1:1 이 된다. */
-body.sim-join-page .sj-rules-kicker,
 body.sim-join-page .sj-stats svg,
 body.sim-join-page .sj-steps svg{color:var(--glow)}
 
