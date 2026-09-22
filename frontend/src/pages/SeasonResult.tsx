@@ -335,7 +335,7 @@ export default function SeasonResult() {
                     <Ico size={15}><path d="M4 16.5 9 11l3.5 3.5L20 7" /></Ico>
                   </span>
                   자산 곡선
-                  <em>가로선이 시작 예수금 {won(s.initialCash)} · 그 위면 번 것</em>
+                  <em>가로선은 시작 예수금 {won(s.initialCash)} · 위는 이익</em>
                 </h2>
                 {/* 폭이 넓어졌으니 높이를 줄인다. 꺾은선은 넓고 낮아야 오르내림의
                     기울기가 과장되지 않는다 — 좁고 높으면 작은 흔들림도 절벽처럼 보인다. */}
