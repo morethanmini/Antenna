@@ -11,14 +11,37 @@
    가리키는 곳의 캐릭터가 그쪽이라, 여기서 흰 개미를 쓰면 안내와 도착지가 어긋난다.
 
    bodyClass 스코프가 없다. 셸이 띄우므로 어느 화면 위에도 뜨고, 오버레이라
-   페이지 스코프 밖에서 그려진다 — 그래서 선택자 접두어(ob-)로만 가른다. */
+   페이지 스코프 밖에서 그려진다 — 그래서 선택자 접두어(ob-)로만 가른다.
+
+   ── 인사이트 홈과 같은 판으로 (2026-09-22) ─────────────────
+   화면이 밤이 된 뒤 이 카드만 흰 판이라 혼자 떠 있었다. 색을 어둡게만 바꿔 봤다가
+   되물렸는데, 그때 알게 된 것은 **문제가 색이 아니라 판을 만드는 방법**이었다는
+   점이다. 홈의 카드(home-night.css 의 .hm-card)는 채움 위에 세 겹이 더 있다.
+     1. 바깥의 밝은 테 2px
+     2. 안쪽으로 물러난 가는 테 한 겹 (::before)
+     3. 바깥으로 번지는 빛 여러 겹 + 안쪽 은은한 빛
+   이 셋이 빠지면 아무리 색을 맞춰도 그냥 어두운 사각형이다 — 실제로 한 번
+   그렇게 만들어 봤고, 880×472 나 되는 면이 통째로 비어 보였다.
+   그래서 **만드는 법을 그대로 가져오고 색만 연보라로 바꾼다.**
+
+   ── 왜 홈 카드의 파랑이 아니라 연보라인가 ───────────────────
+   홈 카드는 파랑(#112c74 계열)이지만, 그 카드가 앉아 있는 **밤하늘이 연보라**다
+   (도시 사진 + night.css 의 보라 그러데이션, 히어로 강조가 #a89bff · 인사말이
+   #c9c2ff). 홈 카드는 제 페이지 안에서 격자에 앉지만 이 오버레이는 화면 한가운데
+   에 혼자 뜨는 것이라, 옆에 낄 카드가 없고 **뒤의 하늘과만 견준다.** 파랑으로 두면
+   그 하늘에서 색이 갈려 오려 붙인 것처럼 보였다(한 번 그렇게 만들어 보고 되물렸다).
+   연보라면 하늘과 한 계열이면서, 테와 빛 덕에 하늘에 묻히지도 않는다.
+
+   모의투자 안내(sot-)와는 구조 · 치수 · 움직임이 그대로 한 벌이고 색만 갈린다.
+   그쪽은 테 없는 판이라, 나란히 놓으면 두 모드가 구분된다. */
 
 .ob-backdrop{
   position:fixed;inset:0;z-index:60;      /* 사이드바(40)·상단바(30) 위 */
   display:flex;align-items:center;justify-content:center;
   padding:20px;
-  background:rgba(20,20,27,.5);
-  backdrop-filter:blur(3px);
+  /* 덮개도 보라 쪽 검정이다 — 회색 검정을 깔면 뒤 화면의 보라가 탁하게 죽는다 */
+  background:rgba(8,5,26,.6);
+  backdrop-filter:blur(4px);
   animation:ob-fade .18s ease both;
 }
 @keyframes ob-fade{from{opacity:0}to{opacity:1}}
@@ -31,13 +54,83 @@
      더 키우면 장식이 개미 몸에 덮여 무엇인지 안 읽힌다. */
   --art:184px;
 
+  /* 연보라 밤 한 벌. **토큰을 쓰지 않고 값을 적는다** — --night-* 는 body.is-night
+     에, --nc-* 는 body.insight-home 에 달려 있는데 이 오버레이는 셸이 띄우므로 그
+     표시가 없는 화면 위에도 뜬다. 거기서는 토큰이 비어 카드가 색 없이 무너진다. */
+  --ob-ink:#f4f1ff;
+  --ob-body:#cdc5ee;
+  --ob-faint:#a79ed6;
+  --ob-line:rgba(190,176,255,.32);
+  --ob-glass:rgba(255,255,255,.07);
+  --ob-glass-hi:rgba(255,255,255,.13);
+  --ob-glow:#bcaeff;
+
   position:relative;
   width:100%;max-width:880px;height:var(--card-h);max-height:calc(100vh - 40px);
   display:grid;grid-template-columns:minmax(0,1fr) var(--stage-w);
+  border:2px solid rgba(190,176,255,.85);
   border-radius:22px;overflow:hidden;outline:none;
-  background:var(--surface);
-  box-shadow:0 40px 90px -30px rgba(20,20,27,.55),0 0 0 1px rgba(255,255,255,.6);
+  color:var(--ob-body);
+  /* **카드 한 장을 가로지르는 한 줄기다.** 글이 앉는 왼쪽이 가장 어둡고, 오른쪽
+     무대로 갈수록 연보라로 밝아진다 — night.css 의 --glow(#8b7dff)가 그 끝이다.
+
+     방향이 이쪽인 이유는 글 때문이다. 연보라를 글 칸에 두면 흰 글자가 그 위에서
+     대비를 잃는다(#cdc5ee on #8b7dff 는 1.5:1). 어두운 쪽에 글을, 밝은 쪽에
+     그림을 둬야 둘 다 산다.
+
+     **무대(.ob-stage)는 제 바탕을 갖지 않는다.** 두 칸이 각자 그라데이션을 들면
+     아무리 색을 맞춰도 가운데에서 한 번 끊긴다 — 전에는 그 자국을 띠 하나로
+     덮고 있었는데(.ob-stage::before), 줄기를 카드가 통째로 들면 덮을 자국 자체가
+     생기지 않는다. */
+  background:
+    radial-gradient(64% 86% at 97% 6%,rgba(198,186,255,.4),transparent 62%),
+    linear-gradient(112deg,
+      #14102e 0%,
+      #1a1440 26%,
+      #241c60 48%,
+      #3a2c93 68%,
+      #5b49c8 85%,
+      #8b7dff 100%);
+  /* 빛 다섯 겹. 홈 카드와 같은 구성이고 퍼짐만 이 크기에 맞췄다 —
+     테 밖 두 겹 · 바깥 번짐 · 바닥 그림자 · 안쪽 은은한 빛 */
+  box-shadow:
+    0 0 0 5px rgba(120,100,255,.16),
+    0 0 0 7px rgba(170,155,255,.15),
+    0 0 28px rgba(120,100,255,.55),
+    0 26px 56px -10px rgba(4,2,26,.6),
+    inset 0 0 46px rgba(150,130,255,.2);
+  /* 빛줄기(아래 .ob-modal::after)를 카드 안에 가둔다 — 음수 z-index 가 덮개까지
+     내려가지 않게 한다 */
+  isolation:isolate;
   animation:ob-rise .22s cubic-bezier(.2,.8,.3,1) both;
+}
+
+/* ── 빛줄기 ───────────────────────────────────────────
+   모의투자 안내(.sot::before)와 같은 그림 · 같은 방법이다. 자세한 까닭은 그쪽에
+   적었다 — 요는 z-index:-1 로 바탕과 내용 사이에 끼우고, isolation 으로 카드 밖에
+   나가지 않게 가둔다는 것.
+
+   **::before 가 아니라 ::after 다.** 이 카드는 ::before 를 안쪽 가는 테에 이미
+   쓰고 있다(위 참고). */
+.ob-modal::after{
+  content:"";position:absolute;z-index:-1;pointer-events:none;
+  left:-16%;right:-16%;top:4%;bottom:0;
+  background:url("/assets/pageset/wave-thin.webp") center/100% auto no-repeat;
+  transform:rotate(-8deg);
+  opacity:.5;
+  /* 글 위로는 옅게 지나가게 깎는다. 띠가 글줄과 목록을 같은 세기로 가로지르면
+     읽는 데 방해가 된다 — 왼쪽(글)에서 오른쪽(그림)으로 갈수록 진해진다. */
+  -webkit-mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.22) 26%,rgba(0,0,0,.6) 52%,#000 78%);
+  mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.22) 26%,rgba(0,0,0,.6) 52%,#000 78%);
+}
+
+/* 안쪽으로 물러난 가는 테. **두 겹 테가 이 판의 인상이다** — 이것 하나가 빠지면
+   테를 두른 어두운 사각형이 되고, 홈 카드와 다른 물건으로 읽힌다.
+   마우스를 받지 않고, 글과 그림 위를 지나가되 아무것도 가리지 않는다. */
+.ob-modal::before{
+  content:"";position:absolute;inset:10px;z-index:6;pointer-events:none;
+  border:1px solid rgba(214,204,255,.6);border-radius:14px;
+  box-shadow:inset 0 0 18px rgba(160,140,255,.28);
 }
 @keyframes ob-rise{
   from{opacity:0;transform:translateY(12px) scale(.985)}
@@ -62,18 +155,19 @@
 .ob-hello{
   margin:0;min-width:0;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  color:var(--faint);font-size:var(--fs-sm);font-weight:var(--fw-heavy);
+  color:var(--ob-faint);font-size:var(--fs-sm);font-weight:var(--fw-heavy);
 }
 .ob-dots{list-style:none;display:flex;align-items:center;gap:6px;margin:0 0 0 auto;padding:0}
 .ob-dots li{
   width:8px;height:8px;border-radius:999px;
-  background:var(--surface-2);
+  background:rgba(255,255,255,.18);
   transition:width .22s ease,background .22s ease;
 }
-.ob-dots li.is-done{background:var(--brand-softer);box-shadow:inset 0 0 0 1px #ddd8fb}
+/* 지난 걸음은 연보라를 옅게 — 어두운 판에서 흰 테를 두르면 그 테만 남는다 */
+.ob-dots li.is-done{background:rgba(169,156,255,.55)}
 /* 현재 걸음만 알약으로 늘인다 — 색만 다르면 지난 걸음과 구분이 어렵다 */
-.ob-dots li.is-on{width:26px;background:var(--brand)}
-.ob-count{flex:none;color:var(--faint);font-size:var(--fs-sm);font-weight:var(--fw-heavy);letter-spacing:.02em}
+.ob-dots li.is-on{width:26px;background:linear-gradient(90deg,#c9bcff 0%,#8b7dff 100%)}
+.ob-count{flex:none;color:var(--ob-faint);font-size:var(--fs-sm);font-weight:var(--fw-heavy);letter-spacing:.02em}
 
 /* ── 본문 ───────────────────────────────────────────── */
 /* 걸음이 바뀌면 key 로 리마운트되어 이 등장이 다시 돈다. 위치를 조금만 움직인다 —
@@ -87,33 +181,40 @@
   to{opacity:1;transform:none}
 }
 
-/* 머리말은 점 하나 + 한 줄. 카드 안이라 배경을 한 겹 더 깔면 흰 바탕 위에
-   회색 상자만 늘어난다. */
+/* 머리말은 점 하나 + 한 줄. 카드 안이라 배경을 한 겹 더 깔면 어두운 판 위에
+   상자만 늘어난다. */
 .ob-eyebrow{
   display:inline-flex;align-items:center;gap:7px;margin-bottom:9px;
-  color:var(--brand);font-size:var(--fs-md);font-weight:var(--fw-heavy);letter-spacing:-.01em;
+  color:var(--ob-glow);font-size:var(--fs-md);font-weight:var(--fw-heavy);letter-spacing:-.01em;
 }
 .ob-eyebrow::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
 
 .ob-body h2{
   margin:0 0 9px;
-  color:#141a3c;font-size:var(--fs-5xl);font-weight:var(--fw-black);letter-spacing:-.035em;line-height:1.3;
+  color:#fff;font-size:var(--fs-5xl);font-weight:var(--fw-black);letter-spacing:-.035em;line-height:1.3;
   text-wrap:balance;
 }
-.ob-body h2 em{color:var(--brand);font-style:normal}
+/* 강조는 그러데이션이다 — 어두운 판에서 단색 보라는 바로 옆 흰 글자에 눌려
+   탁해 보인다. 홈 히어로의 강조색(#a89bff)과 같은 계열이다. */
+.ob-body h2 em{
+  font-style:normal;
+  background:linear-gradient(90deg,#cabeff 0%,#9b8bff 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
 .ob-text{
   margin:0;max-width:36ch;
-  color:var(--muted);font-size:var(--fs-lg);font-weight:var(--fw-normal);line-height:1.7;
+  color:var(--ob-body);font-size:var(--fs-lg);font-weight:var(--fw-normal);line-height:1.7;
 }
 
 /* 어디로 가면 되는지. 본문보다 한 단 낮춰 "읽고 넘어가는 줄" 로 둔다 */
 .ob-where{
   display:flex;align-items:center;gap:8px;
   margin:14px 0 0;padding:10px 13px;
-  border-radius:11px;background:var(--brand-softer);
-  color:#4a5070;font-size:var(--fs-md);font-weight:var(--fw-bold);line-height:1.5;
+  border-radius:11px;
+  background:var(--ob-glass);border:1px solid var(--ob-line);
+  color:var(--ob-body);font-size:var(--fs-md);font-weight:var(--fw-bold);line-height:1.5;
 }
-.ob-where svg{flex:none;color:var(--brand)}
+.ob-where svg{flex:none;color:var(--ob-glow)}
 
 /* ── 마친 것 · 남은 것 ──────────────────────────────── */
 /* 마지막 걸음에서만 나온다. 닉네임은 A-02 에서 이미 끝냈으므로 할 일이 아니라
@@ -121,19 +222,22 @@
 .ob-checks{list-style:none;display:flex;flex-direction:column;gap:7px;margin:16px 0 0;padding:0}
 .ob-checks li{
   display:grid;grid-template-columns:22px auto minmax(0,1fr);align-items:center;gap:9px;
-  padding:9px 12px;border-radius:11px;background:var(--surface-2);
+  padding:9px 12px;border-radius:11px;
+  background:var(--ob-glass);border:1px solid var(--ob-line);
 }
-.ob-checks li.is-done{background:var(--brand-softer)}
+/* 마친 것은 브랜드 면으로 — 어두운 판에서 "끝났다" 를 옅게 칠하면 꺼진 것으로
+   읽힌다 */
+.ob-checks li.is-done{background:rgba(139,125,255,.22);border-color:rgba(190,176,255,.4)}
 .ob-mark{
   display:grid;place-items:center;width:22px;height:22px;border-radius:999px;
-  background:var(--surface);color:var(--faint);font-size:var(--fs-2xs);font-weight:var(--fw-heavy);
+  background:rgba(255,255,255,.12);color:var(--ob-body);font-size:var(--fs-2xs);font-weight:var(--fw-heavy);
 }
-.ob-checks li.is-done .ob-mark{background:var(--brand);color:#fff}
-.ob-checks b{color:#28304f;font-size:var(--fs-base);font-weight:var(--fw-heavy)}
+.ob-checks li.is-done .ob-mark{background:#8b7dff;color:#fff}
+.ob-checks b{color:#fff;font-size:var(--fs-base);font-weight:var(--fw-heavy)}
 .ob-sub{
   min-width:0;text-align:right;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  color:var(--muted);font-size:var(--fs-xs);font-weight:var(--fw-bold);
+  color:var(--ob-body);font-size:var(--fs-xs);font-weight:var(--fw-bold);
 }
 
 /* ── 버튼 줄 ────────────────────────────────────────── */
@@ -154,18 +258,18 @@
 .ob-mute{
   display:inline-flex;align-items:center;gap:8px;
   padding:7px 12px 7px 9px;border-radius:999px;
-  color:var(--faint);font-size:var(--fs-md);font-weight:var(--fw-bold);
+  color:var(--ob-faint);font-size:var(--fs-md);font-weight:var(--fw-bold);
   cursor:pointer;user-select:none;white-space:nowrap;
   transition:background .14s,color .14s;
 }
-.ob-mute:hover{background:var(--surface-2);color:var(--body)}
+.ob-mute:hover{background:var(--ob-glass-hi);color:#fff}
 
 .ob-mute input{
   appearance:none;-webkit-appearance:none;
   flex:none;display:grid;place-items:center;
   width:17px;height:17px;margin:0;
-  border:1.5px solid var(--rule);border-radius:6px;
-  background:var(--surface);cursor:pointer;
+  border:1.5px solid rgba(190,176,255,.5);border-radius:6px;
+  background:rgba(255,255,255,.08);cursor:pointer;
   transition:background .14s,border-color .14s;
 }
 /* 체크 표시 — 획 두 개짜리 꺾쇠를 테두리로 그린다. 글리프(✓)를 쓰면 서체마다
@@ -177,17 +281,17 @@
   transform:rotate(45deg) scale(0);
   transition:transform .16s cubic-bezier(.2,.9,.3,1.5);
 }
-.ob-mute input:checked{background:var(--brand);border-color:var(--brand)}
+.ob-mute input:checked{background:#8b7dff;border-color:#b2a4ff}
 .ob-mute input:checked::after{transform:rotate(45deg) scale(1)}
-.ob-mute input:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.ob-mute input:focus-visible{outline:2px solid var(--ob-glow);outline-offset:2px}
 
-/* 켜 두면 알약째 브랜드 색으로 바뀐다 — "지금 꺼 뒀다" 가 글씨만으로는 약하다 */
-.ob-mute:has(input:checked){background:var(--brand-softer);color:var(--brand)}
+/* 켜 두면 알약째 연보라로 바뀐다 — "지금 꺼 뒀다" 가 글씨만으로는 약하다 */
+.ob-mute:has(input:checked){background:rgba(139,125,255,.24);color:#ded7ff}
 .ob-skip{
-  padding:8px 2px;color:var(--faint);font-size:var(--fs-base);font-weight:var(--fw-bold);
+  padding:8px 2px;color:var(--ob-faint);font-size:var(--fs-base);font-weight:var(--fw-bold);
   transition:color .14s;
 }
-.ob-skip:hover{color:var(--body)}
+.ob-skip:hover{color:#fff}
 .ob-nav{display:flex;align-items:center;gap:8px}
 
 .ob-btn{
@@ -198,12 +302,18 @@
 }
 .ob-btn:active{transform:translateY(1px)}
 .ob-btn.solid{
-  background:linear-gradient(96deg,#7a63f2 0%,var(--brand) 62%,#4f4ae0 100%);
-  color:#fff;box-shadow:0 12px 24px -12px rgba(84,87,232,.8);
+  /* 홈의 네온 버튼(.hm-btn)에서 빛을 가져온다 — 모양(알약 · 분홍 테)까지 옮기면
+     이 카드의 다른 버튼들과 따로 논다 */
+  background:linear-gradient(92deg,#8b7dff 0%,#6d6bff 100%);
+  color:#fff;
+  box-shadow:
+    0 0 0 3px rgba(139,125,255,.2),
+    0 0 16px rgba(139,125,255,.5),
+    inset 0 1px 0 rgba(255,255,255,.28);
 }
-.ob-btn.solid:hover{filter:brightness(1.07)}
-.ob-btn.ghost{border:1px solid var(--rule);background:var(--surface);color:var(--body)}
-.ob-btn.ghost:hover{background:var(--surface-2)}
+.ob-btn.solid:hover{filter:brightness(1.09)}
+.ob-btn.ghost{border:1px solid var(--ob-line);background:var(--ob-glass);color:var(--ob-ink)}
+.ob-btn.ghost:hover{background:var(--ob-glass-hi)}
 /* 첫 걸음에서도 자리를 지킨다. display:none 으로 빼면 "다음" 이 옆으로 밀려
    연달아 누를 때 빗나간다. */
 .ob-btn.ghost:disabled{visibility:hidden;cursor:default}
@@ -211,16 +321,14 @@
 /* ── 오른쪽: 무대 ───────────────────────────────────── */
 .ob-stage{
   position:relative;overflow:hidden;
-  /* 채도를 한참 낮춘 연보라. 왼쪽(글 칸과 맞닿는 쪽)이 거의 흰색에 가깝고
-     오른쪽으로 갈수록 아주 조금 짙어진다 — 경계를 흰색으로 덮어 지우는 대신,
-     바탕 자체가 흰색에서 출발하게 해서 이음매가 생기지 않게 한다. */
-  background:
-    radial-gradient(60% 72% at 76% 20%,rgba(255,255,255,.7),transparent 64%),
-    radial-gradient(54% 60% at 97% 97%,rgba(206,197,255,.34),transparent 72%),
-    linear-gradient(100deg,#fdfcff 0%,#faf8ff 26%,#f6f3fe 58%,#f2eefd 84%,#f4f0fe 100%);
+  /* **채움이 없다.** 카드의 줄기가 이 칸까지 그대로 지나간다(.ob-modal 참고).
+     여기서 더하는 것은 마스코트 뒤의 빛 한 겹뿐이다 — 발밑이 밝아야 그림이 바닥에
+     붙지 않고 서 있는 것으로 읽힌다. */
+  background:radial-gradient(58% 56% at 52% 78%,rgba(214,204,255,.22),transparent 70%);
 }
-/* 안쪽 세로 경계. 선 대신 흰 쪽에서 보라 쪽으로 스미게 한다 — 카드 안에 선이
-   하나 더 생기면 두 장을 붙여 놓은 것처럼 보인다. */
+/* 안쪽 세로 경계 — **이제 없다.** 두 칸이 한 줄기를 나눠 쓰므로 이을 자국이
+   생기지 않는다. 규칙은 남겨 두되 아무것도 그리지 않는다: 좁은 화면(아래)에서
+   이 자리를 다시 쓰고 있어, 규칙째 지우면 그쪽까지 따라 사라진다. */
 .ob-stage::before{
   /* 흰 쪽에서 보라 쪽으로 스미는 띠. 선을 긋는 대신 번지게 한다 — 카드 안에
      선이 하나 더 생기면 두 장을 붙여 놓은 것처럼 보인다.
@@ -230,16 +338,8 @@
      띠의 끝에 또렷한 자국이 남는다. 그래서 뒤로 갈수록 천천히 옅어지도록
      여러 단으로 나눠 감쇠를 눕혔다.
      폭도 28px 에서 넉넉히 늘렸다 — 좁으면 아무리 곱게 깎아도 단차가 보인다. */
-  /* 바탕이 이미 흰색에서 시작하므로(.ob-stage) 덮을 것이 거의 없다. 남은
-     한 끗만 지우는 얇은 띠다 — 두껍게 덮으면 다시 흰 줄이 생긴다. */
   content:"";position:absolute;inset:0 auto 0 0;width:44px;z-index:4;
-  background:linear-gradient(90deg,
-    rgba(255,255,255,.9) 0%,
-    rgba(255,255,255,.72) 22%,
-    rgba(255,255,255,.5) 44%,
-    rgba(255,255,255,.28) 66%,
-    rgba(255,255,255,.1) 85%,
-    rgba(255,255,255,0) 100%);
+  background:none;
   pointer-events:none;
 }
 .ob-art-layer{
@@ -254,7 +354,7 @@
 .ob-art{
   position:absolute;left:50%;bottom:-2%;z-index:2;
   display:block;width:var(--art);height:auto;transform:translateX(-50%);
-  filter:drop-shadow(0 22px 28px rgba(70,66,229,.26));
+  filter:drop-shadow(0 22px 30px rgba(4,2,26,.6));
 }
 /* 걸음마다 원본 비율이 다르다. 그대로 두면 어떤 걸음만 훨씬 커 보인다. */
 .ob-stage.s1 .ob-art{width:var(--art)}                         /* 달리는 흰 개미(세로로 길다) */
@@ -283,6 +383,9 @@
   background:none;      /* 무대 그라데이션을 그대로 쓴다 */
   border-radius:0;
 }
+/* 바닥선은 밝은 판에서 쓰던 회색(--rule)이라 어두운 무대에서는 없는 것과 같다.
+   길이 있다는 것만 알면 되는 선이므로 연보라로 옅게 바꾼다. */
+.ob-scene .bs-ground{border-top-color:rgba(190,176,255,.34)}
 
 /* ── 떠다니는 장식 ──────────────────────────────────── */
 /* 위치는 무대 기준 % 라 무대가 줄어도 구성이 유지된다. 크기만 마스코트와 함께
@@ -339,16 +442,20 @@
 }
 
 /* ── 닫기 ───────────────────────────────────────────── */
-/* 무대 위에 얹는다. 보라 바탕이라 흰 원을 깔아야 글리프가 보인다 */
+/* 무대 위에 얹는다. 어두운 보라 바탕이라 흰 원 대신 **옅은 유리 원**이다 —
+   흰 원을 깔면 밤 카드에서 그 점 하나만 혼자 빛난다.
+   자리는 안쪽 가는 테(.ob-modal::before)보다 안쪽이라 테와 겹치지 않는다. */
 .ob-x{
-  position:absolute;top:12px;right:12px;z-index:5;
+  position:absolute;top:18px;right:18px;z-index:7;
   display:grid;place-items:center;width:32px;height:32px;
-  border-radius:50%;background:rgba(255,255,255,.78);color:#6a7093;
-  box-shadow:0 4px 12px -6px rgba(40,36,110,.5);
+  /* 줄기의 **밝은 끝**에 서는 자리다(오른쪽 위). 흰 유리 원은 그 위에서 묻히므로
+     어두운 원으로 뒤집는다 — 좁은 화면에서도 이 자리는 연보라 쪽이다. */
+  border-radius:50%;background:rgba(26,20,64,.34);color:#fff;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.28);
   transition:background .14s,color .14s;
 }
-.ob-x:hover{background:#fff;color:var(--ink)}
-.ob-x:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.ob-x:hover{background:rgba(26,20,64,.52);color:#fff}
+.ob-x:focus-visible{outline:2px solid var(--ob-glow);outline-offset:2px}
 
 /* ── 좁은 화면 ──────────────────────────────────────── */
 @media(max-width:780px){
@@ -358,17 +465,9 @@
     max-width:440px;
   }
   .ob-stage{grid-row:1}
-  .ob-stage::before{inset:auto 0 0 auto;width:auto;height:72px;
-    background:linear-gradient(0deg,
-      #fff 0%,
-      rgba(255,255,255,.97) 12%,
-      rgba(255,255,255,.88) 26%,
-      rgba(255,255,255,.72) 40%,
-      rgba(255,255,255,.53) 54%,
-      rgba(255,255,255,.34) 68%,
-      rgba(255,255,255,.17) 82%,
-      rgba(255,255,255,.05) 93%,
-      rgba(255,255,255,0) 100%)}
+  /* 눕는 띠도 없다 — 좁은 화면에서도 줄기는 카드가 통째로 들고 있다.
+     다만 방향이 바뀐다: 위(무대)가 연보라, 아래(글)가 어두운 쪽이다. */
+  .ob-stage::before{display:none}
 
   /* ── 띠 안에 통째로 들어오게 ───────────────────────
      넓을 때는 마스코트를 **폭**으로 맞춘다. 무대가 세로로 길어 아래를 조금
@@ -393,6 +492,20 @@
      씬 안쪽 배치(--s·--gate)는 건드리지 않고 통째로 줄인다. */
   .ob-scene{transform:translateY(-50%) scale(.74)}
 
+  /* 두 칸이 위아래로 서므로 줄기도 세운다. 가로 방향 그대로 두면 연보라가
+     오른쪽 끝에만 남아, 그림이 있는 위쪽은 어둡고 글이 있는 아래쪽만 밝아진다 —
+     넓은 화면에서 정한 것과 정반대가 된다. */
+  .ob-modal{
+    background:
+      radial-gradient(70% 40% at 78% 2%,rgba(198,186,255,.4),transparent 64%),
+      linear-gradient(196deg,
+        #8b7dff 0%,
+        #5b49c8 12%,
+        #3a2c93 24%,
+        #241c60 38%,
+        #1a1440 56%,
+        #14102e 100%);
+  }
   .ob-copy{grid-row:2;padding:18px 22px 20px;gap:16px}
   .ob-body h2{font-size:var(--fs-4xl)}
   /* 좁으면 장식이 마스코트와 겹친다. 오른쪽 하나만 뺀다 */
