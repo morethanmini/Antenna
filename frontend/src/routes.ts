@@ -104,12 +104,16 @@ export const ROUTES: PageMeta[] = [
   { screen: 'C-04', element: Portfolio, path: '/me/portfolio', title: '예측 포트폴리오', access: 'user', mode: 'insight', nav: 'portfolio', bodyClass: 'forecast-page is-night', story: 'ANT-FE-PORTFOLIO' },
 
   // ── D. 온체인 검증 ───────────────────────────────────
-  { screen: 'D-01', element: LedgerList, path: '/ledger', title: '확정 기록', access: 'user', mode: 'insight', nav: 'ledger', bodyClass: 'is-night', story: 'ANT-FE-LEDGER-LIST' },
-  { screen: 'D-02', element: Anchor, path: '/ledger/anchors/:id', title: '체인 기록 상세', access: 'user', mode: 'insight', nav: 'ledger', bodyClass: 'is-night', story: 'ANT-FE-ANCHOR' },
-  { screen: 'D-03', element: Verify, path: '/ledger/verify/:predictionId', title: '4단계 검산', access: 'user', mode: 'insight', nav: 'ledger', bodyClass: 'is-night', story: 'ANT-FE-VERIFY' },
+  /* 넷 다 sharedMode 다 — 자물쇠(상단바)는 두 모드 어디에도 서 있는데, 그 길로 들어온
+     원장이 인사이트로 고정돼 있어 모의투자에서 누르면 토글과 배경이 통째로 넘어갔다
+     (2026-09-23). 봉인 기록은 어느 모드의 기록이냐를 가리지 않는 화면이라 설정 · 지갑과
+     같은 부류다. 원장 안에서 서로 오가는 링크는 useSharedHref 로 모드를 잇는다. */
+  { screen: 'D-01', element: LedgerList, path: '/ledger', title: '확정 기록', access: 'user', mode: 'insight', sharedMode: true, nav: 'ledger', bodyClass: 'is-night', story: 'ANT-FE-LEDGER-LIST' },
+  { screen: 'D-02', element: Anchor, path: '/ledger/anchors/:id', title: '체인 기록 상세', access: 'user', mode: 'insight', sharedMode: true, nav: 'ledger', bodyClass: 'is-night', story: 'ANT-FE-ANCHOR' },
+  { screen: 'D-03', element: Verify, path: '/ledger/verify/:predictionId', title: '4단계 검산', access: 'user', mode: 'insight', sharedMode: true, nav: 'ledger', bodyClass: 'is-night', story: 'ANT-FE-VERIFY' },
   /* 리포트 검산. 예측 검산과 경로를 나눈 이유는 id 가 다른 시퀀스라서다 —
      /ledger/verify/:id 하나로 두면 12 가 예측인지 리포트인지 알 수 없다. */
-  { screen: 'D-04', element: VerifyReport, path: '/ledger/verify/report/:reportId', title: '리포트 검산', access: 'user', mode: 'insight', nav: 'ledger', bodyClass: 'is-night', story: 'ANT-CHAIN-17' },
+  { screen: 'D-04', element: VerifyReport, path: '/ledger/verify/report/:reportId', title: '리포트 검산', access: 'user', mode: 'insight', sharedMode: true, nav: 'ledger', bodyClass: 'is-night', story: 'ANT-CHAIN-17' },
 
   // ── E. 채널 · 구독 ───────────────────────────────────
   { screen: 'E-01', element: Ranking, path: '/rankings', title: '주가 예측 랭킹', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'predictor-market-page', story: 'ANT-FE-RANKING' },

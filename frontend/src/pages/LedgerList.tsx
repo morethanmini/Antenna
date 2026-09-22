@@ -56,6 +56,7 @@
    보여 주고 있었다 — 체인에 올라간 것의 절반만 보여 주는 원장은 서비스가 하는 주장을
    스스로 깎는다. 리포트 줄은 본문 없이 제목·공개범위까지만 온다. */
 import { Link } from 'react-router-dom'
+import { useSharedHref } from '../sharedMode'
 import { useCursorList } from '../api/useCursorList'
 import { useApiQuery } from '../api/useApiQuery'
 import {
@@ -238,6 +239,9 @@ function ChainNote() {
    들고 오기 때문이다. 앵커는 확정 시각과 건수를 얹어 줄 뿐이다. */
 function GroupHead({ group, anchor }: { group: Group; anchor?: Anchor }) {
   const rows = group.rows.length
+  /* 원장 안에서 옮겨 다닐 때 모드를 잇는다 — 모의투자에서 자물쇠로 들어왔으면
+     배치 상세도 모의투자다(sharedMode.ts) */
+  const href = useSharedHref()
 
   /* 대기 묶음 — 실패가 아니다. 봉인은 끝났고 묶이기를 기다리는 중이라
      경고색도 배치 번호도 쓰지 않는다. */
@@ -271,7 +275,7 @@ function GroupHead({ group, anchor }: { group: Group; anchor?: Anchor }) {
     <div className="lg-head">
       <img className="lg-node" src={CUBE[status ?? 'PENDING']} alt="" width="26" height="26" />
       <div className="lg-head-text">
-        <Link className="lg-head-no num" to={`/ledger/anchors/${group.anchorId}`}>
+        <Link className="lg-head-no num" to={href(`/ledger/anchors/${group.anchorId}`)}>
           {`배치 #${group.anchorId}`}
         </Link>
         <span>
@@ -307,6 +311,7 @@ function GroupHead({ group, anchor }: { group: Group; anchor?: Anchor }) {
    경계는 phaseOf 를 쓴다. 상태 넷 중 무엇이 공개인지의 정의가 거기 한 벌로 있고
    (api/predictions.ts), 서버 게이팅이 갈리는 자리와 정확히 같다. */
 function PredictionRow({ c }: { c: Extract<LedgerCommit, { kind: 'PREDICTION' }> }) {
+  const href = useSharedHref()
   return (
     <div className="lg-what">
       {c.stockName || c.stockCode ? (
@@ -324,7 +329,7 @@ function PredictionRow({ c }: { c: Extract<LedgerCommit, { kind: 'PREDICTION' }>
       <PredictionStatus status={c.status} />
 
       {phaseOf(c.status) === 'JUDGED' && (
-        <Link className="lg-go" to={`/ledger/verify/${c.predictionId}`}>
+        <Link className="lg-go" to={href(`/ledger/verify/${c.predictionId}`)}>
           검산<em aria-hidden="true">›</em>
         </Link>
       )}
@@ -339,13 +344,14 @@ function PredictionRow({ c }: { c: Extract<LedgerCommit, { kind: 'PREDICTION' }>
    링크가 둘인 이유: 제목은 리포트 본문(F-02)으로, 오른쪽 검산은 D-04 로 간다.
    예측 줄이 검산(D-03)으로 가는 자리와 같은 자리다. */
 function ReportRow({ c }: { c: Extract<LedgerCommit, { kind: 'REPORT' }> }) {
+  const href = useSharedHref()
   return (
     <div className="lg-what">
       <b className="lg-stock">리포트</b>
       <Link className="lg-title" to={`/reports/${c.reportId}`}>{c.title}</Link>
       <span className="lg-horizon">{c.visibility ? '공개' : '구독자 전용'}</span>
 
-      <Link className="lg-go" to={`/ledger/verify/report/${c.reportId}`}>
+      <Link className="lg-go" to={href(`/ledger/verify/report/${c.reportId}`)}>
         검산<em aria-hidden="true">›</em>
       </Link>
     </div>
