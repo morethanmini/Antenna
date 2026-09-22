@@ -141,7 +141,12 @@ export default function ChannelFeeSection() {
                     aria-invalid={draft !== '' && !valid}
                     /* type=number 에는 maxLength 가 안 먹는다. 온보딩(OnboardingFee)과 같이 6자리에서 자른다 —
                        상한(FEE_MAX)이 6자리라 그보다 긴 값은 어차피 저장되지 않고 칸만 넘친다. */
-                    onChange={(e) => { setDraft(e.target.value.slice(0, 6)); setStep('idle'); setError(null) }}
+                    /* 앞자리 0 은 값에 뜻이 없다 — 0 을 계속 치면 '000000' 이 그대로 남았다.
+                       0 하나는 남긴다(무료 채널이 실제 선택지다). '0500' 은 '500' 이 된다. */
+                    onChange={(e) => {
+                      setDraft(e.target.value.slice(0, 6).replace(/^0+(?=\d)/, ''))
+                      setStep('idle'); setError(null)
+                    }}
                   />
                   <span className="cf-unit">ANT / 30일</span>
                 </span>
