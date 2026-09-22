@@ -74,6 +74,32 @@ export default function RangeSlider({
     })
   }
 
+  /* 트랙을 눌러도 가까운 손잡이가 그 자리로 온다. 손잡이를 정확히 집어야만 움직이던
+     것을 고친다 — 16px 짜리 점 둘을 겨냥하는 것이 이 컨트롤에서 가장 어려운 동작이었다.
+
+     좌표를 값으로 되돌릴 때 양끝 8px(손잡이 반지름)을 뺀다. 네이티브 range 는 손잡이가
+     트랙 밖으로 나가지 않도록 그만큼 안쪽에서만 움직이므로, 그 보정을 빼면 누른 자리와
+     손잡이가 끝으로 갈수록 어긋난다.
+
+     손잡이를 직접 집은 경우에는 손을 떼고 끌기에 맡긴다 — 그때는 target 이 input 이다. */
+  const HALF_THUMB = 8
+
+  const onTrackDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).tagName === 'INPUT') return
+    const box = e.currentTarget.getBoundingClientRect()
+    const span = box.width - HALF_THUMB * 2
+    if (span <= 0) return
+    const ratio = Math.min(1, Math.max(0, (e.clientX - box.left - HALF_THUMB) / span))
+    const raw = from + ratio * (to - from)
+    const v = Math.min(to, Math.max(from, Math.round(raw / step) * step))
+    /* 가까운 쪽을 옮긴다. 거리가 같으면(두 손잡이가 겹쳐 있을 때) a 를 옮긴다 */
+    if (Math.abs(v - a) <= Math.abs(v - b)) { setA(v); commit(v, b) }
+    else { setB(v); commit(a, v) }
+    /* 옮긴 손잡이에 초점을 준다 — 누른 다음 화살표키로 이어 다듬을 수 있다 */
+    const moved = Math.abs(v - a) <= Math.abs(v - b) ? `${id}-a` : `${id}-b`
+    document.getElementById(moved)?.focus()
+  }
+
   /* 지금 고른 범위를 말로 적는다 — 손잡이 위치만으로는 끝이 "제한 없음" 인지
      "딱 그 값" 인지 구별되지 않는다 */
   const text = value.min === undefined && value.max === undefined
@@ -102,7 +128,7 @@ export default function RangeSlider({
         <b className="num">{text}</b>
       </div>
 
-      <div className="st-slider-body">
+      <div className="st-slider-body" onPointerDown={onTrackDown}>
         {/* 눈금과 고른 구간. 마우스는 손잡이만 받으므로 여기는 그림일 뿐이다 */}
         <span className="st-slider-track" aria-hidden="true" />
         <span

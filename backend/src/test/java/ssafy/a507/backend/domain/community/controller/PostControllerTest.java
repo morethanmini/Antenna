@@ -86,6 +86,20 @@ class PostControllerTest {
     // ── POST /posts ─────────────────────────────────────────
 
     @Test
+    @DisplayName("글에 비속어가 있으면 400 body (ANT-COMMUNITY-09)")
+    void 글_비속어_400() throws Exception {
+        String bad = new String(java.util.Base64.getDecoder().decode("7Iuc67Cc"), java.nio.charset.StandardCharsets.UTF_8);
+        mockMvc.perform(post(URL)
+                        .with(user(String.valueOf(authorId))).with(csrf())
+                        .header("Idempotency-Key", "key-profanity")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createBody("아 " + bad + " 진짜", null, null)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.field").value("body"));
+    }
+
+    @Test
     @DisplayName("글을 쓰면 201 과 id 를 받는다")
     void 글_작성_성공() throws Exception {
         mockMvc.perform(post(URL)

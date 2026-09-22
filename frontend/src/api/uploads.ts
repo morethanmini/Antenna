@@ -576,8 +576,18 @@ function parse(text: string): unknown {
 export function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes}B`
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)}KB`
-  return `${(bytes / 1024 / 1024).toFixed(1)}MB`
+  /* 10.0MB 처럼 딱 떨어지는 값에서 .0 은 읽는 데 방해만 된다 */
+  return `${(bytes / 1024 / 1024).toFixed(1).replace(/\.0$/, '')}MB`
 }
+
+/**
+ * 이미지를 올리는 모든 폼이 쓰는 한 줄. **여기 말고 다른 곳에 안내를 적지 않는다.**
+ *
+ * 전에는 올리기 창과 광고 화면이 각자 다른 말을 했다 — 한쪽은 형식과 자르기까지
+ * 설명하고 다른 쪽은 비율을 적었다. 고르기 전에 알아야 할 것은 크기 하나뿐이다.
+ * 형식 변환과 자르기는 창이 알아서 하고 그 자리에서 결과를 보여 준다.
+ */
+export const UPLOAD_HINT = `${formatBytes(MAX_BYTES)} 까지`
 
 /** "4:1" 처럼 읽히게. 비율 제약을 숫자로만 적으면 무엇을 맞춰야 하는지 모른다 */
 export function formatAspect(rule: AspectRule) {

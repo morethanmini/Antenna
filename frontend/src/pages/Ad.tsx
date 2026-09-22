@@ -45,7 +45,7 @@ import WalletLinkModal from '../components/wallet/WalletLinkModal'
 import WalletPrelink from '../components/wallet/WalletPrelink'
 import ErrorState from '../components/state/ErrorState'
 import ConfirmDialog from '../components/ConfirmDialog'
-import { MAX_BYTES, formatBytes } from '../api/uploads'
+import { UPLOAD_HINT } from '../api/uploads'
 import type { UploadedImage } from '../api/uploads'
 import { errorText } from '../components/state/errorText'
 import '../styles/screens/ad-new.css'
@@ -228,10 +228,8 @@ export default function Ad() {
             {/* ── 배너 ─────────────────────────────────── */}
             <section className="ad-card">
               <h2>배너 이미지</h2>
-              {/* 비율이 어긋나면 모달이 가운데를 잘라 맞춘다(M-07). 미리 알려 둔다 */}
-              <p className="ad-hint">
-                {`${formatBytes(MAX_BYTES)} 이하의 PNG · JPG · WebP. 가로세로 4:1 로 자르며, 남길 자리는 올릴 때 고릅니다.`}
-              </p>
+              {/* 올리기 창과 같은 한 줄을 쓴다(api/uploads.ts 의 UPLOAD_HINT) */}
+              <p className="ad-hint">{UPLOAD_HINT}</p>
 
               {banner ? (
                 <div className="ad-banner">
@@ -276,9 +274,12 @@ export default function Ad() {
             <section className="ad-card">
               <h2>노출 기간</h2>
               <div className="ad-days">
+                {/* type=number 를 쓰지 않는다 — '3-4-3' 처럼 숫자가 아닌 것을 치면 브라우저는
+                    그 글자를 화면에 둔 채 value 로는 빈 문자열을 준다. 아래 손질이 돌지 않아
+                    글자가 끝없이 쌓인다(환경 설정 구독료에서 실제로 나왔다). */}
                 <input
-                  type="number" className="ad-input is-num"
-                  value={days} min={terms?.minDays} max={terms?.maxDays}
+                  type="text" inputMode="numeric" className="ad-input is-num"
+                  value={days} maxLength={8}
                   /* 위로 자르고, 아래로는 **0 까지만** 둔다 — 0 은 칸을 비웠을 때의 값이라
                      1 로 올려 버리면 지우고 새로 칠 수가 없다. 모자란 값은 daysOk 가 막고,
                      금액은 priceOf 가 days < 1 이면 안 만든다(2026-09-22 QA: -5 일이
@@ -286,7 +287,7 @@ export default function Ad() {
                      안 자르면 99999999일 → 99,999,999,000 ANT 가 그대로 그려졌다(QA 09-21, 서버는 maxDays 로 막는다).
                      소수를 버리는 것은 서버가 일수를 정수로만 받기 때문이다 — 1.5 일은 칸에서 1 이 된다. */
                   onChange={(e) => setDays(Math.min(
-                    Math.max(0, Math.trunc(Number(e.target.value) || 0)),
+                    Math.max(0, Math.trunc(Number(e.target.value.replace(/[^0-9]/g, '')) || 0)),
                     terms?.maxDays ?? Infinity,
                   ))}
                 />

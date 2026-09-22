@@ -270,6 +270,23 @@ class ReportSocialControllerTest {
         }
 
         @Test
+        @DisplayName("비속어 본문은 400 INVALID_REQUEST · field 는 body (ANT-COMMUNITY-09)")
+        void 댓글_비속어() throws Exception {
+            Long reportId = insertReport(authorId, "공개 리포트", true);
+            flush();
+            String bad = new String(java.util.Base64.getDecoder().decode("7Iuc67Cc"), java.nio.charset.StandardCharsets.UTF_8);
+
+            mockMvc.perform(post(commentsUrl(reportId))
+                            .with(user(str(readerId)))
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"body\":\"아 " + bad + " 진짜\"}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                    .andExpect(jsonPath("$.field").value("body"));
+        }
+
+        @Test
         @DisplayName("빈 본문은 400 INVALID_REQUEST · field 는 body")
         void 댓글_빈_본문() throws Exception {
             Long reportId = insertReport(authorId, "공개 리포트", true);

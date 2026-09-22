@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import ssafy.a507.backend.common.validation.NicknameFormat;
+import ssafy.a507.backend.common.validation.NoProfanity;
 import ssafy.a507.backend.domain.account.entity.UserChannel;
 
 public final class UserDtos {
@@ -18,12 +20,15 @@ public final class UserDtos {
     /**
      * 닉네임 확정·변경 요청. 온보딩과 프로필 수정이 같은 API 를 쓴다.
      *
-     * <p>공백만 있는 값과 앞뒤 공백을 막는다 — 화면에서 구분되지 않는 닉네임이 유일성만 통과하는 것을 피한다.
+     * <p>한글·영문·숫자만 받고 비속어를 거절한다(ANT-COMMUNITY-09). 전에는 앞뒤 공백만 막았는데, 가운데 공백·제로폭
+     * 문자·사칭용 유사 글자가 유일성만 통과해 화면에서 구분되지 않는 닉네임이 생길 수 있었다.
      */
     public record NicknameRequest(
             @NotBlank
                     @Size(min = 2, max = 30)
-                    @Pattern(regexp = "\\S(.*\\S)?", message = "닉네임 앞뒤에 공백을 둘 수 없습니다.")
+                    @NicknameFormat
+
+                    @NoProfanity
                     String nickname) {}
 
     public record NicknameAvailability(boolean available) {}
@@ -44,9 +49,11 @@ public final class UserDtos {
      */
     public record ProfileUpdateRequest(
             @Size(min = 2, max = 30)
-                    @Pattern(regexp = "\\S(.*\\S)?", message = "닉네임 앞뒤에 공백을 둘 수 없습니다.")
+                    @NicknameFormat
+
+                    @NoProfanity
                     String nickname,
-            @Size(max = 200) String introduce,
+            @Size(max = 200) @NoProfanity String introduce,
             List<@NotBlank @Size(max = 30) String> interests,
             /**
              * 외부 채널은 {@value #MAX_CHANNELS}개까지다(2026-09-19 · QA 09-18). 전에는 개수 제한이 서버에도
@@ -75,7 +82,7 @@ public final class UserDtos {
      */
     public record ChannelRequest(
             @NotNull UserChannel.Platform platform,
-            @Size(max = 30) String label,
+            @Size(max = 30) @NoProfanity String label,
             @NotBlank
                     @Size(max = 300)
                     @Pattern(regexp = "https://.+", message = "채널 주소는 https 로 시작해야 합니다.")

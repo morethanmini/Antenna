@@ -69,7 +69,6 @@
 
 .st-label{ font-size:var(--fs-xs); font-weight:var(--fw-normal); color:var(--faint); }
 
-.st-row{ display:flex; gap:8px; align-items:center; }
 
 .st-input{
   flex:1 1 auto; min-width:0;
@@ -190,8 +189,6 @@
 .st-foot-btn.danger:hover{ background:#fdeeee; border-color:#f6d5d5; }
 
 @media (max-width: 560px){
-  .st-row{ flex-wrap:wrap; }
-  .st-row .st-btn{ width:100%; }
   /* 맨 아래 줄은 좁아져도 버튼 둘이 나란히 선다 — 한 줄에 다 들어간다 */
   .st-foot .st-btn{ width:auto; }
 }

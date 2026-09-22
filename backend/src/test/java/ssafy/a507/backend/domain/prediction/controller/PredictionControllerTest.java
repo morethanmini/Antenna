@@ -324,6 +324,19 @@ class PredictionControllerTest {
         }
 
         @Test
+        @DisplayName("근거에 비속어가 있으면 400 note — noteHash 봉인 재료라 거절뿐이고, 서명 검증 앞에서 끝난다 (ANT-COMMUNITY-09)")
+        void 근거_비속어() throws Exception {
+            String bad = new String(java.util.Base64.getDecoder().decode("7Iuc67Cc"), java.nio.charset.StandardCharsets.UTF_8);
+            PredictionCreateRequest req = new PredictionCreateRequest(
+                    SAMSUNG, Prediction.Direction.UP, new BigDecimal("82000"), (short) 30, "아 " + bad + " 진짜", NOTE_SALT,
+                    List.of(), "0x" + "ab".repeat(65));
+            perform(req, UUID.randomUUID().toString())
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                    .andExpect(jsonPath("$.field").value("note"));
+        }
+
+        @Test
         @DisplayName("horizon 이 3~90 밖이면 400 horizon · noteSalt 형식이 틀리면 400 noteSalt")
         void horizon_noteSalt() throws Exception {
             perform(signed(request(SAMSUNG, "UP", "82000", 91, List.of()), wallet), UUID.randomUUID().toString())
