@@ -490,7 +490,7 @@ body.insight-home.is-night .hm-hello{
   margin:0 0 6px; line-height:0;
 }
 body.insight-home.is-night .hm-hello img{
-  width:clamp(170px, 17vw, 250px); height:auto; display:block;
+  width:clamp(140px, 13vw, 195px); height:auto; display:block;
 }
 
 /* 버튼 그림. 링크는 진짜라 짚기·초점 반응을 여기서 준다 */
@@ -540,5 +540,5 @@ body.insight-home.is-night .hm-deco-board{
    이제 CSS 값이 곧 눈에 보이는 간격이라 시안처럼 바짝 붙인다. */
 body.insight-home.is-night .hm-hello{margin:0 0 10px}
 body.insight-home.is-night .hm-hero h1{margin:0}
-body.insight-home.is-night .hm-hero-sub{margin:10px 0 0}
-body.insight-home.is-night .hm-cta.is-art{margin-top:16px}
+body.insight-home.is-night .hm-hero-sub{margin:8px 0 0}
+body.insight-home.is-night .hm-cta.is-art{margin-top:8px}
