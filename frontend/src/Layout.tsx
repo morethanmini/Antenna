@@ -25,6 +25,7 @@ import { useDismiss } from './components/useDismiss'
 import { onSimOnboardingOpen, simOnboardingSeen } from './sim/onboardingSeen'
 import { formatToken } from './api/wallet'
 import { useWalletBalance } from './api/walletBalance'
+import { sharedHref } from './sharedMode'
 
 export type Mode = 'insight' | 'sim'
 
@@ -78,12 +79,15 @@ const MODES = {
    못 받았을 때도 — 다. 0 은 "잔액이 없다" 는 주장이라, 못 불러온 것과 구분돼야 한다.
 
    눌러서 H-01 지갑·토큰으로 간다 — 잔액을 본 사람이 다음에 궁금한 것은 "어디서 늘고
-   줄었나" 이고, 그 답이 그 화면의 원장이다. 못 불러왔을 때(—)도 링크는 살려 둔다. */
-function WalletChip() {
+   줄었나" 이고, 그 답이 그 화면의 원장이다. 못 불러왔을 때(—)도 링크는 살려 둔다.
+
+   주소는 셸이 넘긴다 — 지갑은 두 모드가 같이 쓰는 화면이라 어느 모드에서 눌렀는지를
+   실어야 한다(sharedMode.ts). */
+function WalletChip({ href }: { href: string }) {
   const { data } = useWalletBalance()
 
   return (
-    <Link className="wallet" to="/me/wallet" aria-label="보유 ANT · 지갑으로">
+    <Link className="wallet" to={href} aria-label="보유 ANT · 지갑으로">
       <span className="num">{data ? formatToken(data.balance) : '—'}</span> ANT
     </Link>
   )
@@ -190,6 +194,12 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
      한 장만 내려받게 하려고(아래 <picture> 주석) 겹쳐 두고 감추는 대신 주소를 바꾼다. */
   const night = bodyClass.split(' ').includes(NIGHT_CLASS)
 
+  /* 환경 설정(H-03) · 마이페이지(E-05) · 지갑(H-01)은 두 모드가 같이 쓰는 화면이라,
+     **어느 상단바에서 눌렀는지를 주소에 실어 보낸다.** 안 실으면 라우트 표의 기본값
+     (인사이트)으로 그려져, 모의투자에서 열었는데 토글이 인사이트로 넘어갔다(2026-09-22).
+     규칙과 받는 쪽은 sharedMode.ts 머리말. */
+  const href = (path: string) => sharedHref(path, mode)
+
   return (
     <>
       <header className="navbar">
@@ -280,7 +290,7 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
 
           {authed ? (
             <>
-              <WalletChip />
+              <WalletChip href={href('/me/wallet')} />
 
               {/* 검색 아이콘이 있던 자리다(2026-09-21). 원장 내역이 메뉴에서 내려오면서
                   이리로 왔다 — 원장은 하루에 여러 번 여는 곳은 아니지만, 이 서비스가
@@ -310,7 +320,7 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
                   칸을 더 쓰면서 360px 에 1px 밖에 안 남았다. 잔액 칩이 먼저 같은
                   길로 내려갔다: 좁아지면 상단바에 남길 것과 계정 메뉴로 접을 것을
                   가르고, 설정은 하루에 한 번 열 자리가 아니다. */}
-              <Link className="iconbtn nav-gear" to="/settings" aria-label="설정">
+              <Link className="iconbtn nav-gear" to={href('/settings')} aria-label="설정">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="3" />
                   <path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1v.2a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-2.7-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H3.4a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.7 6.3l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 2.7-1.1V2a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7h.2a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1" />
@@ -331,11 +341,11 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
 
                 {menuOpen && (
                   <div className="accountmenu-pop" ref={menuBox} role="menu" aria-label="계정">
-                    <Link role="menuitem" to="/me" onClick={() => closeMenu()}>마이페이지</Link>
-                    <Link role="menuitem" to="/me/wallet" onClick={() => closeMenu()}>내 지갑</Link>
+                    <Link role="menuitem" to={href('/me')} onClick={() => closeMenu()}>마이페이지</Link>
+                    <Link role="menuitem" to={href('/me/wallet')} onClick={() => closeMenu()}>내 지갑</Link>
                     {/* 넓을 때는 톱니 아이콘이 바에 있으므로 여기서는 숨는다 —
                         같은 길이 두 곳에 보이면 어느 쪽을 눌러야 하는지가 생긴다 */}
-                    <Link role="menuitem" className="only-narrow" to="/settings" onClick={() => closeMenu()}>환경 설정</Link>
+                    <Link role="menuitem" className="only-narrow" to={href('/settings')} onClick={() => closeMenu()}>환경 설정</Link>
                     {/* 관리자 화면 4개의 유일한 입구(2026-09-22). 상단 메뉴 줄에는 두지 않는다 —
                         모드마다 다른 줄이라 두 모드에 다 걸어야 하고, 관리자 한둘이 하루에
                         몇 번 여는 자리라 계정 메뉴가 맞다. 비관리자에게는 그리지 않는다. */}

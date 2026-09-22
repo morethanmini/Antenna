@@ -4,12 +4,21 @@ import Layout from './Layout'
 import RequireAccess from './auth/RequireAccess'
 import ErrorBoundary from './components/state/ErrorBoundary'
 import { ROUTES, type PageMeta } from './routes'
+import { MODE_PARAM, isMode } from './sharedMode'
 
 /* 화면 한 장. 셸을 씌울지와 body 속성만 여기서 정하고,
    내용은 meta.element(각 화면 컴포넌트)가 그린다. */
 function Page({ meta }: { meta: PageMeta }) {
   const Element = meta.element
   const [params] = useSearchParams()
+
+  /* 두 모드가 같이 쓰는 화면(routes.ts 의 sharedMode)은 **들어온 모드를 주소로 받는다.**
+     환경 설정을 모의투자 상단바에서 열었는데 토글이 인사이트로 넘어가 있었다(2026-09-22).
+     아래 ?event= 와 같은 이유로 routes.ts 의 표를 고치지 않는다 — 같은 화면이 주소에
+     따라 다른 자리에 속한다. sharedMode 가 아닌 화면은 주소의 mode 를 무시한다.
+     주소 규칙은 sharedMode.ts 머리말. */
+  const modeParam = params.get(MODE_PARAM)
+  const mode = meta.sharedMode && isMode(modeParam) ? modeParam : meta.mode
 
   /* 대회로 들어온 화면은 **아무 메뉴도 칠하지 않는다**(2026-09-18).
      종목 상세는 routes.ts 에서 nav:'stocks' 인데, 대회 종목 카드를 눌러 들어오면
@@ -18,19 +27,23 @@ function Page({ meta }: { meta: PageMeta }) {
      대신 칠할 항목도 없다. 그래서 빈 문자열을 넘겨 어느 것도 안 맞게 둔다.
 
      routes.ts 를 고치지 않는 이유 — 같은 화면이 주소에 따라 다른 자리에 속하는
-     것이라, 정적인 표가 답할 수 있는 값이 아니다. */
-  const nav = params.get('event') ? '' : (meta.nav ?? 'home')
+     것이라, 정적인 표가 답할 수 있는 값이 아니다.
+
+     다른 모드로 들어온 공유 화면도 같다. 표의 nav 키는 **기본 모드 기준**이라 —
+     지갑(H-01)의 'portfolio' 는 인사이트 줄에서 '내 예측' 인데, 모의투자 줄에서는
+     같은 키가 '투자 포트폴리오' 라 엉뚱한 메뉴에 불이 들어간다. */
+  const nav = params.get('event') || mode !== meta.mode ? '' : (meta.nav ?? 'home')
 
   useEffect(() => {
     document.title = `${meta.title} · ANTENNA`
-    if (meta.mode) document.body.dataset.mode = meta.mode
+    if (mode) document.body.dataset.mode = mode
     else {
       delete document.body.dataset.mode
       // 셸이 없는 화면(로그인)은 body 클래스를 직접 관리한다
       document.body.className = meta.bodyClass ?? ''
     }
     window.scrollTo(0, 0)
-  }, [meta])
+  }, [meta, mode])
 
   /* 가드와 오류 경계를 모두 셸 안쪽에 둔다 — 403 이나 렌더 예외를 만나도
      사이드바가 남아 다른 화면으로 갈 수 있다.
@@ -45,8 +58,8 @@ function Page({ meta }: { meta: PageMeta }) {
     </ErrorBoundary>
   )
 
-  return meta.mode
-    ? <Layout mode={meta.mode} nav={nav} bodyClass={meta.bodyClass ?? ''}>{body}</Layout>
+  return mode
+    ? <Layout mode={mode} nav={nav} bodyClass={meta.bodyClass ?? ''}>{body}</Layout>
     : body
 }
 
