@@ -346,24 +346,14 @@ body.insight-home.is-night .hm-empty-hint{
   margin:0 0 14px; color:var(--nc-sub); font-size:var(--fs-base); line-height:1.55;
 }
 
-/* ── 시안 배치 (2026-09-22 · prototype.png) ──────────────────
-   시안의 줄은 넷이다.
-     1  히어로(넓게) | 스폰서드 + 지름길 타일 셋
-     2  다리 띠
-     3  시장 현황(넓게) · 대회 배너(좁게) · 내 자산      ← 한 줄에 셋
-     4  관심 종목 | 주목할 예측가
+/* ── 배치는 밝은 판 그대로다 (2026-09-22) ────────────────────
+   한때 시안(prototype.png)에 맞춰 가운데를 3단 줄로 묶고(시장 현황 · 대회 배너 ·
+   내 자산) 그 위에 다리 띠를 얹었다. 되돌렸다 — **밤으로 바꾸는 것은 결이지
+   배치가 아니다.** 낮에 정한 순서에는 까닭이 있었고(관심 종목이 시장 지표보다
+   위에 오는 것은 코치 QA 였다), 밤이 됐다고 그 까닭이 사라지지 않는다.
 
-   3번이 2단 격자 안에 셋이라, 두 칸을 가로지르는 상자를 하나 두고 그 안에서
-   다시 나눈다. 격자를 3단으로 바꾸지 않는 이유는 1·4번이 2단이어서다 — 3단으로
-   깔면 그 줄들이 칸을 가로질러야 해서 오히려 규칙이 늘어난다. */
-body.insight-home.is-night .hm-trio{
-  grid-column:1 / -1;
-  display:grid; gap:16px;
-  /* 시안 비율 그대로: 시장 현황이 가장 넓고 배너·자산이 비슷하다 */
-  grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1.1fr);
-  align-items:stretch;
-}
-
+   카드 결 · 빛 · 빈 상태는 이 파일이 계속 맡는다. 바뀐 것은 줄 순서와 배너 자리
+   뿐이다(사용자 결정 2026-09-22). */
 
 /* ── 지름길 타일 셋 ─────────────────────────────────────────
    시안은 카드 한 장 안의 칸이 아니라 따로 선 유리 타일 셋이다(에셋 4).
@@ -387,32 +377,8 @@ body.insight-home.is-night .hm-quick a:hover{
 }
 body.insight-home.is-night .hm-quick .hm-ico{color:#bba8ff; width:20px; height:20px}
 
-/* ── 대회 배너 ──────────────────────────────────────────────
-   가로 전체를 쓰던 9:1 띠가 이제 가운데 한 칸이다. 조각을 띠 높이(cqh)로 재어
-   쌓은 컴포넌트라 폭이 줄면 조각이 서로 파고든다 — 높이를 키워 조각이 제 크기를
-   찾게 한다 — 실제로 1.55:1 에 넣어 보니 캐릭터가 칸을 통째로 덮고 제목이
-   사라졌다. 그래서 **좁은 칸에서는 조각을 끄고 완성본 한 장으로 바꾼다.**
-   조각 쌓기는 넓은 자리에서 더 잘 맞으므로 지우지 않는다.
-   .hm-event 의 grid-column:1/-1 도 여기서 푼다 — 이제 한 칸짜리다. */
-body.insight-home.is-night .hm-trio .hm-event{grid-column:auto}
-body.insight-home.is-night .hm-trio .hm-event.is-art{
-  aspect-ratio:auto; height:100%; container-type:normal; border-radius:26px;
-}
-/* 조각은 전부 감춘다 — 하나만 남기면 완성본 위에 겹쳐 그려진다 */
-body.insight-home.is-night .hm-trio .hm-event.is-art > :not(.hm-ev-solo){display:none}
-/* **잘라내지 않는다(contain).** cover 로 채웠더니 3:1 그림이 좁은 칸에서 좌우가
-   날아가 "천하제일" 이 사라지고 캐릭터만 남았다. 글자가 그림 안에 있는 배너라
-   한 조각이라도 잘리면 무슨 대회인지 못 읽는다. 남는 위아래는 판 색으로 채운다. */
-body.insight-home.is-night .hm-trio .hm-event.is-art{
-  background:linear-gradient(150deg, rgba(38,60,150,.55), rgba(18,36,104,.5));
-  border:1px solid var(--nc-line);
-  display:flex; align-items:center; justify-content:center; padding:10px;
-}
-body.insight-home.is-night .hm-ev-solo{
-  display:block; width:100%; height:auto; max-height:100%; object-fit:contain;
-}
-/* 넓은 자리(다른 화면·밝은 판)에서는 완성본을 감추고 조각을 쓴다 */
-.hm-ev-solo{display:none}
+/* 대회 배너는 밝은 판 규칙 그대로다 — 가로 전체를 쓰는 9:1 띠에 조각을 쌓는다.
+   좁은 칸에 넣으려고 완성본 한 장으로 바꿔 두었던 규칙은 3단 줄과 함께 걷었다. */
 
 /* ── 히어로 ─────────────────────────────────────────────────
    시안은 글자 왼쪽, 개미가 가운데다. 오른쪽 칸(스폰서드·지름길)이 따로 있으므로
@@ -507,5 +473,4 @@ body.insight-home.is-night .hm-cta.is-art{margin-top:8px}
    (0 0 0 5px · 7px · 0 0 26px …) 그 빛이 이웃 카드 자리까지 번져, 같은 16px 인데도
    카드끼리 맞닿은 것처럼 보였다. 빛이 퍼지는 만큼 더 벌린다. */
 body.insight-home.is-night .hm-grid{gap:30px}
-body.insight-home.is-night .hm-trio{gap:30px}
 body.insight-home.is-night .hm-stack{gap:22px}

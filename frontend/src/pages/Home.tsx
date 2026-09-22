@@ -626,10 +626,6 @@ function ContestBanner() {
      달면 스크린리더가 토막 난 문장을 읽는다. */
   return (
       <Link className="hm-event is-art" to={CONTEST_PATH} aria-label={art.alt}>
-        {/* 좁은 칸(시안의 가운데 자리)에서 쓰는 **완성본 한 장**. 아래 조각들은 9:1 띠
-            전용이라 폭이 줄면 서로 파고든다 — 어느 쪽을 보일지는 CSS 가 고른다.
-            조각 쌓기를 지우지 않는 이유는 넓은 자리에서 그쪽이 더 잘 맞아서다. */}
-        <img className="hm-ev-solo" src="/assets/page_home/contest-banner.webp" alt="" aria-hidden="true" />
         {/* 띠 안쪽 — 배경·차트·색종이는 여기서 잘린다 */}
         <span className="hm-ev-clip" aria-hidden="true">
           <img className="hm-ev-bg" src={BANNER_BASE.bg} alt="" />
@@ -695,15 +691,14 @@ export default function Home() {
             <Sponsored />
             <QuickLinks />
           </div>
-          {/* 시안의 가운데 줄은 **셋**이다 — 시장 현황이 넓게 왼쪽, 대회 배너가
-              가운데 좁게, 내 자산이 오른쪽. 2단 격자 안에서 두 칸을 가로지르고
-              제 안에서 다시 셋으로 나눈다. */}
-          <div className="hm-trio">
-            <MarketOverview />
-            <ContestBanner />
-            <MyAssets />
-          </div>
+          {/* 두 칸을 가로지른다 — 아래 카드 줄을 밀지 않고 한 줄만 쓴다 */}
+          <ContestBanner />
+          {/* 관심 종목을 시장 Overview 보다 위에 둔다 — 홈에 들어와 가장 먼저
+              보는 것이 "내가 담은 것" 이라는 코치 QA(2026-09-21). 시장 지표는
+              누구에게나 같은 값이라 한 줄 아래여도 손해가 없다. */}
           <Watchlist />
+          <MyAssets />
+          <MarketOverview />
           <TopPredictor />
         </div>
       </div>
