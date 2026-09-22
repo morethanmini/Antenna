@@ -145,8 +145,19 @@ const SparkIcon = () => (
 )
 
 /** 섹션 안의 로딩·실패·빈 상태. A-04 [ANT-FE-ERROR] 가 공용 컴포넌트를 만들면 그걸로 교체한다. */
-function State({ loading, error, empty, onRetry }: {
-  loading: boolean; error: unknown; empty?: boolean; onRetry?: () => void
+/**
+ * 카드 안의 세 상태(읽는 중 · 못 읽음 · 빈 목록).
+ *
+ * 빈 목록만 **카드마다 다르게** 그린다(2026-09-22 시안). 한 줄짜리 "아직 표시할
+ * 내용이 없습니다" 는 무엇을 하면 되는지 말해 주지 않는다 — 그림 · 제목 · 한 줄 ·
+ * 갈 곳까지 주는 편이 낫고, 그 넷은 카드마다 다르다. 넘기지 않으면 예전처럼 한
+ * 줄로 떨어지므로 다른 호출부는 그대로다.
+ */
+type EmptyLook = { art: string; title: string; hint: string; to: string; cta: string }
+
+function State({ loading, error, empty, emptyLook, onRetry }: {
+  loading: boolean; error: unknown; empty?: boolean
+  emptyLook?: EmptyLook; onRetry?: () => void
 }) {
   if (loading) return <p className="hm-state">불러오는 중…</p>
   if (error) return (
@@ -154,6 +165,14 @@ function State({ loading, error, empty, onRetry }: {
       불러오지 못했습니다.
       {onRetry && <button type="button" className="hm-retry" onClick={onRetry}>다시 시도</button>}
     </p>
+  )
+  if (empty && emptyLook) return (
+    <div className="hm-empty">
+      <img className="hm-empty-art" src={emptyLook.art} alt="" aria-hidden="true" />
+      <p className="hm-empty-title">{emptyLook.title}</p>
+      <p className="hm-empty-hint">{emptyLook.hint}</p>
+      <Link className="hm-btn" to={emptyLook.to}>{emptyLook.cta} ›</Link>
+    </div>
   )
   if (empty) return <p className="hm-state">아직 표시할 내용이 없습니다.</p>
   return null
@@ -269,7 +288,7 @@ function MarketOverview() {
       <header className="hm-head">
         {/* 시안(docs/market-status-component.html · prototype.png)이 둘 다 "시장 현황" 이다.
             "Overview" 만 영어라 한 줄 안에서 결이 갈렸다. */}
-        <h2 id="hm-market"><img className="hm-head-ico" src="/assets/page_home/ui/icon-bars-earned.svg" alt="" />시장 현황</h2>
+        <h2 id="hm-market"><img className="hm-head-ico" src="/assets/page_home/ui/icon-bars-earned.webp" alt="" />시장 현황</h2>
         <Link to="/stocks">더보기 ›</Link>
       </header>
       <State loading={loading} error={error} onRetry={reload} />
@@ -312,7 +331,7 @@ function MyAssets() {
   return (
     <section className="card hm-card hm-wallet" aria-labelledby="hm-assets">
       <header className="hm-head">
-        <h2 id="hm-assets"><img className="hm-head-ico" src="/assets/page_home/ui/icon-wallet.svg" alt="" />내 자산 현황</h2>
+        <h2 id="hm-assets"><img className="hm-head-ico" src="/assets/page_home/ui/icon-wallet.webp" alt="" />내 자산 현황</h2>
         <Link to="/me/wallet">지갑 ›</Link>
       </header>
       <State loading={loading} error={error} onRetry={reload} />
@@ -367,10 +386,18 @@ function Watchlist() {
   return (
     <section className="card hm-card" aria-labelledby="hm-watch">
       <header className="hm-head">
-        <h2 id="hm-watch"><img className="hm-head-ico" src="/assets/page_home/ui/icon-star.svg" alt="" />관심 종목</h2>
+        <h2 id="hm-watch"><img className="hm-head-ico" src="/assets/page_home/ui/icon-star.webp" alt="" />관심 종목</h2>
         <Link to="/watchlist">더보기 ›</Link>
       </header>
-      <State loading={loading} error={error} empty={data?.items.length === 0} onRetry={reload} />
+      <State
+        loading={loading} error={error} empty={data?.items.length === 0} onRetry={reload}
+        emptyLook={{
+          art: '/assets/page_home/ui/empty-watchlist.webp',
+          title: '아직 관심 종목이 없어요!',
+          hint: '관심 있는 종목을 추가하고, 매일 흐름을 확인해보세요.',
+          to: '/stocks', cta: '종목 탐색하기',
+        }}
+      />
       {data && data.items.length > 0 && (
         <div className="hm-table-wrap">
           <table className="hm-table">
@@ -435,10 +462,18 @@ function TopPredictor() {
   return (
     <section className="card hm-card" aria-labelledby="hm-top">
       <header className="hm-head">
-        <h2 id="hm-top"><img className="hm-head-ico" src="/assets/page_home/ui/icon-trophy.svg" alt="" />주목할 예측가</h2>
+        <h2 id="hm-top"><img className="hm-head-ico" src="/assets/page_home/ui/icon-trophy.webp" alt="" />주목할 예측가</h2>
         <Link to="/rankings">랭킹 ›</Link>
       </header>
-      <State loading={loading} error={error} empty={data?.items.length === 0} onRetry={reload} />
+      <State
+        loading={loading} error={error} empty={data?.items.length === 0} onRetry={reload}
+        emptyLook={{
+          art: '/assets/page_home/ui/empty-predictors.webp',
+          title: '아직 주목할 예측가가 없습니다.',
+          hint: '지금, 실력 있는 예측가들의 수익률을 확인해보세요!',
+          to: '/rankings', cta: '주가 예측 랭킹 보기',
+        }}
+      />
       {lead && (
         <>
           <div className="hm-lead">

@@ -143,7 +143,7 @@ body.insight-home.is-night .hm-foot{
 }
 body.insight-home.is-night .hm-foot::before{
   content:""; flex:none; width:15px; height:15px;
-  background:url(/assets/page_home/ui/icon-clock.svg) center/contain no-repeat;
+  background:url(/assets/page_home/ui/icon-clock.webp) center/contain no-repeat;
 }
 
 /* ── 시장 Overview ─────────────────────────────────────────
@@ -209,7 +209,7 @@ body.insight-home.is-night .hm-ant-box{
 body.insight-home.is-night .hm-ant-box::after{
   content:""; position:absolute; top:-10px; right:14px;
   width:min(46%,190px); height:104px; pointer-events:none;
-  background:url(/assets/page_home/ui/illustration-coins.svg) right top/contain no-repeat;
+  background:url(/assets/page_home/ui/coins.webp) right top/contain no-repeat;
   filter:drop-shadow(0 0 14px rgba(154,108,255,.7));
 }
 body.insight-home.is-night .hm-ant-label{color:var(--nc-sub); font-weight:var(--fw-bold)}
@@ -253,16 +253,19 @@ body.insight-home.is-night .hm-flow > div::after{
   width:36px; height:34px; opacity:.9;
 }
 body.insight-home.is-night .hm-flow > div:first-child::after{
-  background:url(/assets/page_home/ui/icon-bars-earned.svg) center/contain no-repeat;
+  background:url(/assets/page_home/ui/icon-bars-earned.webp) center/contain no-repeat;
 }
 body.insight-home.is-night .hm-flow > div:last-child::after{
-  background:url(/assets/page_home/ui/icon-bars-spent.svg) center/contain no-repeat;
+  background:url(/assets/page_home/ui/icon-bars-spent.webp) center/contain no-repeat;
 }
 
 /* ── 관심 종목 · 주목할 예측가 ─────────────────────────────── */
+/* 관심 종목은 **판을 두르지 않는다.** 표에 테를 한 겹 더 씌우면 카드 테 안에
+   또 테가 생겨 안쪽이 잘린 것처럼 좁아 보인다 — 줄 목록은 그 자체로 이미 칸이
+   나뉘어 있어 판이 없어도 읽힌다. 다른 카드(지수·잔액·흐름)는 값 하나가 판 하나라
+   테가 의미를 갖지만 여기서는 아니다. */
 body.insight-home.is-night .hm-table-wrap{
-  border:1px solid var(--nc-line); border-radius:18px; overflow:hidden;
-  background:linear-gradient(130deg, rgba(28,67,170,.45), rgba(23,54,150,.28));
+  border:0; border-radius:0; background:none; overflow:visible;
 }
 body.insight-home.is-night .hm-table th,
 body.insight-home.is-night .hm-table td{border-color:rgba(255,255,255,.1)}
@@ -301,4 +304,37 @@ body.insight-home.is-night .hm-card .state{
   background:
     radial-gradient(circle at 50% 48%, rgba(90,112,255,.34), transparent 32%),
     linear-gradient(130deg, rgba(28,67,170,.45), rgba(23,54,150,.28));
+}
+
+/* 빈 상태 판. 시안은 그림 · 제목 · 한 줄 · 알약 버튼이 판 한가운데 선다.
+   판의 결(테·채움)은 위 .hm-state 규칙과 같은 것을 쓴다. */
+body.insight-home.is-night .hm-empty{
+  position:relative; overflow:hidden;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:2px; min-height:230px; margin:0 20px 20px; padding:22px;
+  border:1px solid rgba(103,151,255,.48); border-radius:18px;
+  text-align:center;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(90,112,255,.34), transparent 32%),
+    linear-gradient(130deg, rgba(28,67,170,.45), rgba(23,54,150,.28));
+}
+/* 바닥의 옅은 격자·사선. 시안 .empty-state::before 를 그대로 옮겼다 */
+body.insight-home.is-night .hm-empty::before{
+  content:""; position:absolute; inset:45% -3% -20%; pointer-events:none; opacity:.42;
+  background:
+    linear-gradient(164deg, transparent 0 24%, rgba(112,147,255,.26) 24.4% 24.8%, transparent 25.2%),
+    repeating-linear-gradient(90deg, transparent 0 60px, rgba(82,125,244,.14) 61px 68px, transparent 69px 95px);
+  -webkit-mask-image:linear-gradient(to bottom, transparent, #000 45%);
+  mask-image:linear-gradient(to bottom, transparent, #000 45%);
+}
+body.insight-home.is-night .hm-empty > *{position:relative; z-index:1}
+body.insight-home.is-night .hm-empty-art{
+  width:170px; height:auto; margin-bottom:4px; object-fit:contain;
+}
+body.insight-home.is-night .hm-empty-title{
+  margin:0; color:var(--nc-ink);
+  font-size:var(--fs-2xl); font-weight:var(--fw-heavy); letter-spacing:-.035em;
+}
+body.insight-home.is-night .hm-empty-hint{
+  margin:0 0 14px; color:var(--nc-sub); font-size:var(--fs-base); line-height:1.55;
 }

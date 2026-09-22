@@ -1,4 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <defs><linearGradient id="a" x1="14" y1="8" x2="50" y2="57"><stop stop-color="#fff"/><stop offset="1" stop-color="#B9D5FF"/></linearGradient><filter id="b" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.2" result="x"/><feMerge><feMergeNode in="x"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
-  <path d="m32 7 7.5 15.3 16.9 2.5-12.2 11.9 2.9 16.8L32 45.6l-15.1 7.9 2.9-16.8L7.6 24.8l16.9-2.5L32 7Z" fill="url(#a)" stroke="#EAF3FF" stroke-width="2" stroke-linejoin="round" filter="url(#b)"/>
-</svg>

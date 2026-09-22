@@ -1,4 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 64" fill="none">
-  <defs><linearGradient id="a" x1="4" y1="60" x2="66" y2="3"><stop stop-color="#6E7EFF"/><stop offset="1" stop-color="#B4C5FF"/></linearGradient><filter id="b" x="-25%" y="-25%" width="150%" height="150%"><feGaussianBlur stdDeviation="2" result="x"/><feMerge><feMergeNode in="x"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
-  <g fill="url(#a)" filter="url(#b)"><rect x="4" y="46" width="11" height="14" rx="4"/><rect x="22" y="35" width="11" height="25" rx="4"/><rect x="40" y="21" width="11" height="39" rx="4"/><rect x="58" y="4" width="11" height="56" rx="4"/></g>
-</svg>

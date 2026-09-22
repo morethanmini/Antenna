@@ -19,11 +19,28 @@ const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe'
 const PORT = 5610
 const CDP = 9350
 const DIR = path.resolve('public/assets/page_home')
+const UI = path.join(DIR, 'ui')
+const DOCS = path.resolve('../docs/dashboard-components-assets')
 
-/* [원본, 결과, 목표 가로(px), 품질] */
+/* [원본 절대경로, 결과 절대경로, 목표 가로(px), 품질]
+
+   ui/ 아래 것들은 docs 시안에서 온다. 처음에는 SVG 였는데 그림이 마음에 들지 않아
+   PNG 로 다시 그려 왔다(2026-09-22) — 일러스트가 장당 1MB 라 그대로는 못 쓴다.
+   아이콘은 화면에서 쓰는 크기의 두 배로 굽는다(고해상도 화면 대비). */
 const JOBS = [
-  ['ChatGPT Image 2026년 9월 22일 오전 09_04_36 (1).png', 'city-night.webp', 1920, 0.82],
-  ['ChatGPT Image 2026년 9월 22일 오전 09_04_36 (2).png', 'hero-scout.webp', 900, 0.9],
+  [path.join(DIR, 'ChatGPT Image 2026년 9월 22일 오전 09_04_36 (1).png'), path.join(DIR, 'city-night.webp'), 1920, 0.82],
+  [path.join(DIR, 'ChatGPT Image 2026년 9월 22일 오전 09_04_36 (2).png'), path.join(DIR, 'hero-scout.webp'), 900, 0.9],
+
+  [path.join(DOCS, 'illustration-coins-v2.png'), path.join(UI, 'coins.webp'), 520, 0.9],
+  [path.join(DOCS, 'illustration-watchlist-v2.png'), path.join(UI, 'empty-watchlist.webp'), 380, 0.9],
+  [path.join(DOCS, 'illustration-predictors-v2.png'), path.join(UI, 'empty-predictors.webp'), 380, 0.9],
+
+  [path.join(DOCS, 'icon-wallet.png'), path.join(UI, 'icon-wallet.webp'), 64, 0.92],
+  [path.join(DOCS, 'icon-star.png'), path.join(UI, 'icon-star.webp'), 64, 0.92],
+  [path.join(DOCS, 'icon-trophy.png'), path.join(UI, 'icon-trophy.webp'), 64, 0.92],
+  [path.join(DOCS, 'icon-bars-earned.png'), path.join(UI, 'icon-bars-earned.webp'), 80, 0.92],
+  [path.join(DOCS, 'icon-bars-spent.png'), path.join(UI, 'icon-bars-spent.webp'), 80, 0.92],
+  [path.join(DOCS, 'icon-clock.png'), path.join(UI, 'icon-clock.webp'), 40, 0.92],
 ]
 
 /* 파일 이름에 한글과 공백이 섞여 있어 주소로 실어 보내면 인코딩이 어긋난다.
@@ -31,7 +48,7 @@ const JOBS = [
 const server = http.createServer((q, s) => {
   const job = JOBS[Number(q.url.slice(1))]
   if (!job) { s.writeHead(404); return s.end() }
-  const file = path.join(DIR, job[0])
+  const file = job[0]
   if (!fs.existsSync(file)) { s.writeHead(404); return s.end() }
   /* 캔버스가 더럽혀지지 않게 CORS 를 연다 — crossOrigin='anonymous' 로 받아야
      toDataURL 이 SecurityError 없이 돈다. 로컬 임시 서버라 * 로 둔다. */
@@ -100,8 +117,9 @@ for (const [i, [src, out, width, quality]] of JOBS.entries()) {
   })()`)
   const o = JSON.parse(data)
   const bytes = Buffer.from(o.url.split(',')[1], 'base64')
-  fs.writeFileSync(path.join(DIR, out), bytes)
-  const before = fs.statSync(path.join(DIR, src)).size
+  fs.mkdirSync(path.dirname(out), { recursive: true })
+  fs.writeFileSync(out, bytes)
+  const before = fs.statSync(src).size
   console.log(`${out.padEnd(18)} ${o.ow}x${o.oh} -> ${o.w}x${o.h}  `
     + `${(before / 1024 / 1024).toFixed(2)}MB -> ${(bytes.length / 1024).toFixed(0)}KB`)
 }
