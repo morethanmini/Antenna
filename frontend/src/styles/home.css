@@ -672,3 +672,51 @@
   .hm-ant b{font-size:var(--fs-5xl)}
   .hm-ant-box{flex-wrap:wrap}
 }
+
+/* ── 밤 홈 (2026-09-22) ─────────────────────────────────────
+   시안이 "카드 몇 장이 밤 도시 위에 떠 있는" 한 장면이다. 색 한 벌과 상단바는
+   styles/night.css 가 body.is-night 로 들고 있고(routes.ts 의 bodyClass),
+   **도시 그림만 화면마다 서는 자리가 달라** 여기서 깐다 — night.css 머리말의 규칙.
+
+   카드는 따로 칠하지 않는다. .card 가 --surface·--card-line·--shadow 를 쓰고 있어
+   night.css 가 뒤집은 값이 그대로 따라온다. */
+body.insight-home.is-night .main::before{
+  content:"";position:absolute;inset:0 0 auto;height:min(78vh,880px);
+  background:url(/assets/page_home/city-night.webp) center top/cover no-repeat;
+  /* 아래로 갈수록 지워 night.css 의 밤하늘 그러데이션에 녹인다. 자르면 경계에
+     가로 줄이 생겨 도시가 붙여 놓은 조각처럼 보인다. */
+  -webkit-mask-image:linear-gradient(180deg,#000 0%,#000 46%,transparent 100%);
+  mask-image:linear-gradient(180deg,#000 0%,#000 46%,transparent 100%);
+  opacity:.55;z-index:-1;pointer-events:none;
+}
+
+/* 히어로는 **카드가 아니다.** 밤에서는 도시 위에 글자가 바로 선다 — 판을 깔면
+   배경 그림을 가리려고 깐 그림 위에 또 판을 얹는 꼴이 된다. */
+body.is-night .hm-hero{
+  background:none;border-color:transparent;box-shadow:none;
+  padding:34px 30px 0;
+}
+body.is-night .hm-hello{color:#c9c2ff}
+body.is-night .hm-hero h1{text-shadow:0 2px 18px rgba(8,6,28,.6)}
+body.is-night .hm-hero h1 em{color:#a89bff}
+body.is-night .hm-hero-sub{text-shadow:0 1px 12px rgba(8,6,28,.55)}
+/* 버튼은 브랜드 채움 그대로 두되 밤에서 떠 보이게 빛을 두른다 */
+body.is-night .hm-cta{box-shadow:0 0 0 1px rgba(255,255,255,.14), 0 10px 30px -10px rgba(139,125,255,.9)}
+
+/* 정찰 개미 — 난간까지 그려진 누끼라 **바닥에 세운다.** 카드가 아니라서 잘라 낼
+   테두리가 없으므로 음수 마진으로 흘리지 않는다. */
+/* 정찰 개미 — 난간까지 그려진 누끼라 **바닥에 세운다.** 카드가 아니라서 잘라 낼
+   테두리가 없으므로 음수 마진으로 흘리지 않는다.
+
+   **높이가 아니라 폭으로 잰다.** 옛 그림(560x611)은 세로가 길어 높이로 재야 했지만
+   이 그림은 가로가 길다(1448x1086) — 높이 300px 로 두면 폭이 400px 이 되어 격자의
+   글자 칸을 340px 까지 밀어내고 제목이 세 줄로 깨졌다. 칸의 비율로 재면 좁은 폭에서도
+   저절로 줄어든다.
+
+   **퍼센트로는 못 잰다.** auto 로 잡힌 격자 칸 안에서 width:% 는 칸 크기를 물어보고
+   칸은 다시 이 그림을 물어보는 순환이 된다 — 실제로 칸이 0 으로 무너져 제목이
+   스물두 줄이 됐다. 창 기준(vw)은 그 고리를 만들지 않는다. */
+.hm-hero-art.is-scout{
+  align-self:end;width:clamp(170px,18vw,300px);height:auto;margin:0 0 -6px;
+  filter:drop-shadow(0 18px 30px rgba(8,6,28,.55));
+}
