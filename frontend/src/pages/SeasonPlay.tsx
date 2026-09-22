@@ -88,7 +88,7 @@ const PANE_H = 130
    조금 남는다 — 봉을 더 뭉개느니 그 편이 낫다.
    천장은 원래 값(330)에서 한 뼘 내린 320 이다. 330 이면 820~900 구간에서 차트가
    주문 패널보다 높아져 줄을 밀고, 그만큼 아래가 3px 넘쳤다. */
-const CHART_REST = 460
+const CHART_REST = 440
 const CHART_MIN = 170
 const CHART_MAX = 320
 
@@ -134,7 +134,10 @@ type Override = { day: number; open: boolean }
 function useDayPanel(day: number, hasContent: boolean) {
   const [override, setOverride] = useState<Override | null>(null)
   const mine = override?.day === day ? override : null
-  const open = mine ? mine.open : hasContent
+  /* **처음에는 접혀 있다(2026-09-22).** 한때 그날 읽을 것이 있으면 저절로 폈는데,
+     두 상자가 펴진 채로 열리면 첫 화면이 그만큼 길어져 아래가 잘렸다. 알리는 일은
+     아래 dot 이 한다 — 새 것이 있는데 접혀 있을 때만 켜진다. */
+  const open = mine ? mine.open : false
   return {
     open,
     dot: hasContent && !open,
