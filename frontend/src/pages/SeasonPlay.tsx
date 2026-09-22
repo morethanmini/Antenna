@@ -1034,7 +1034,7 @@ export default function SeasonPlay() {
                 <Ico size={15}><path d="m12 4 1.6 3.6L17 9.2l-3.4 1.6L12 14.4l-1.6-3.6L7 9.2l3.4-1.6z" /><path d="M18 15.5 18.8 17l1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8z" /></Ico>
               </span>
               AI 한줄 요약
-              <em>{hints.loading ? '불러오는 중…' : (todayHint?.title ?? '이 게임일 요약이 없습니다')}</em>
+              <em>{hints.loading ? '불러오는 중…' : (todayHint?.title ?? '요약 없음')}</em>
               <i aria-hidden="true">⌄</i>
             </summary>
             <div className="sp-fold-body">
@@ -1045,9 +1045,12 @@ export default function SeasonPlay() {
                   ))}
                 </ul>
               ) : (
+                /* 각주가 "배치 생성 · ANT-SEASON-07" 이었다. 만드는 쪽 사정과 스토리
+                   코드라 읽는 사람에게는 뜻이 없다. 무엇이 올 자리인지로 바꾼다
+                   (2026-09-23, QA). 아래 소식 칸과 같은 짜임이다. */
                 <p className="sp-soon">
-                  그 시점 사건을 요약해 판단 근거를 짚어 줍니다.
-                  <small>배치 생성 · ANT-SEASON-07</small>
+                  이 게임일은 요약이 없어요.
+                  <small>그날 사건을 한 줄로 짚어 주는 자리</small>
                 </p>
               )}
             </div>
@@ -1068,7 +1071,7 @@ export default function SeasonPlay() {
                   ? '불러오는 중…'
                   : newsItems.length > 0
                     ? `${ticker?.displayName ?? ''} 소식 ${newsItems.length}건`
-                    : '아직 소식이 없습니다'}
+                    : '소식 없음'}
               </em>
               <i aria-hidden="true">⌄</i>
             </summary>
@@ -1093,9 +1096,11 @@ export default function SeasonPlay() {
                   ))}
                 </ul>
               ) : (
+                /* 접힌 줄(위 em)이 이미 "소식 없음" 이라, 여기서 없다는 말을 다시 하지
+                   않는다. 펼친 사람에게 필요한 것은 왜 비었는지다(2026-09-23, QA). */
                 <p className="sp-soon">
-                  이 종목은 여기까지 전해진 기사·공시가 없습니다.
-                  <small>고른 종목과 진행일에 따라 달라집니다</small>
+                  여기까지는 소식이 없어요.
+                  <small>종목과 게임일에 따라 달라요</small>
                 </p>
               )}
             </div>
