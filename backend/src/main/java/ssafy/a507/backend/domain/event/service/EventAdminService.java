@@ -123,6 +123,15 @@ public class EventAdminService {
         if (request.slug() != null && events.existsBySlug(request.slug())) {
             throw new BusinessException(ErrorCode.EVENT_DUPLICATE_SLUG, "slug");
         }
+        /* 생성 버튼을 연달아 누르면 회차가 그만큼 생기고 온체인 openEvent 도 그만큼 나갔다
+           (2026-09-22 QA). 화면 가드는 버튼이 잠기기 전에 새고 이 경로에는 멱등 키가 없다.
+           같은 기준일로 살아 있는 회차가 있으면 여기서 끊는다 — 마지막 방어선은 부분 UNIQUE
+           인덱스이고(db/append-only.sql), 이 검사는 그것을 409 로 번역해 준다. */
+        if (events.existsByBaseDateAndStatusIn(
+                request.baseDate(),
+                List.of(PredictionEvent.Status.SCHEDULED, PredictionEvent.Status.OPEN))) {
+            throw new BusinessException(ErrorCode.EVENT_DUPLICATE_BASE_DATE, "baseDate");
+        }
 
         PredictionEvent event =
                 events.save(PredictionEvent.create(
@@ -337,7 +346,7 @@ public class EventAdminService {
         return new EventSettlementStatusResponse(
                 eventId,
                 event.getStatus(),
-                EventPhase.of(event.getStatus()),
+                EventPhase.of(event),
                 pre.ready(),
                 pre.reasons(),
                 runs.findLatest(eventId).map(EventSettlementStatusResponse.Run::of).orElse(null),

@@ -16,7 +16,7 @@
    대부분의 종목이 왼쪽 끝 몇 px 안에 뭉쳐 고를 수가 없다. 그래서 상한을 적당한
    데서 끊고, 손잡이가 **끝에 있으면 "그 위로는 제한 없음"** 으로 친다.
    같은 이유로 왼쪽 끝은 "아래로 제한 없음" 이다. 둘 다 끝이면 조건이 없는 것과 같다. */
-import { useId } from 'react'
+import { useId, useRef } from 'react'
 
 export type Range = { min?: number; max?: number }
 
@@ -45,16 +45,39 @@ export default function RangeSlider({
   const pct = (v: number) => ((v - from) / (to - from)) * 100
   const fmt = (v: number) => v.toFixed(digits)
 
-  /* 손잡이가 서로를 지나치지 못하게 막는다. 지나치게 두면 min > max 가 되어
-     서버가 400 을 준다(StockService 가 perMin 으로 거절한다). */
-  const setLo = (v: number) => onChange({
-    min: v <= from ? undefined : Math.min(v, hi),
-    max: value.max,
-  })
-  const setHi = (v: number) => onChange({
-    min: value.min,
-    max: v >= to ? undefined : Math.max(v, lo),
-  })
+  /* 끌던 손잡이가 상대를 지나가면 **둘의 역할이 바뀐다.**
+     끌던 것이 상한이 되고 서 있던 것이 하한으로 남는다(반대도 같다). 그래서
+     끌던 손은 지나간 뒤에도 끊기지 않고 가던 방향으로 계속 간다.
+
+     전에는 맞닿은 자리에 세웠다. 그러면 겹친 순간 **양쪽 다 잠겼다** — 겹치면
+     위에 깔린 상한 손잡이만 잡히는데 그것은 하한 밑으로 못 내려가고, 밑에 깔린
+     하한은 잡을 길이 없었다. 벌리는 쪽으로만 움직였다.
+
+     지나가게 두어도 min > max 는 생기지 않는다. 두 값을 크기순으로 세워 넣기
+     때문이다(서버는 perMin > perMax 를 400 으로 거절한다). 두 손잡이가 겹쳐
+     보일 때 어느 input 이 잡히든 아래 두 함수가 같은 결과를 내므로, 위아래
+     순서를 손보는 z-index 꼼수도 필요 없다.
+
+     **상대 값은 잡는 순간 못 박는다.** 지나간 뒤로는 끌던 input 이 작은 쪽을
+     들게 되는데, 상대를 그때그때 다시 읽으면 서 있어야 할 손잡이가 끌려온다
+     (40 에서 겹친 뒤 25 까지 끌면 상대가 40 이 아니라 35 로 따라왔다). */
+  const held = useRef<number | null>(null)
+  const commit = (a: number, b: number) => {
+    const min = Math.min(a, b)
+    const max = Math.max(a, b)
+    onChange({
+      min: min <= from ? undefined : min,
+      max: max >= to ? undefined : max,
+    })
+  }
+  const setLo = (v: number) => commit(v, held.current ?? hi)
+  const setHi = (v: number) => commit(v, held.current ?? lo)
+  /* 끌기가 끝나면 푼다 — 화살표키로 만질 때는 상대를 그때그때 읽는 게 맞다.
+     푸는 것은 창에 건다. 손잡이 밖에서 손을 떼면 input 은 pointerup 을 못 받는다. */
+  const grab = (partner: number) => () => {
+    held.current = partner
+    window.addEventListener('pointerup', () => { held.current = null }, { once: true })
+  }
 
   /* 지금 고른 범위를 말로 적는다 — 손잡이 위치만으로는 끝이 "제한 없음" 인지
      "딱 그 값" 인지 구별되지 않는다 */
@@ -85,6 +108,7 @@ export default function RangeSlider({
           id={`${id}-lo`} min={from} max={to} step={step} value={lo}
           aria-label={`${label} 하한`}
           aria-valuetext={value.min === undefined ? '제한 없음' : `${fmt(lo)}${unit}`}
+          onPointerDown={grab(hi)}
           onChange={(e) => setLo(Number(e.target.value))}
         />
         <input
@@ -92,6 +116,7 @@ export default function RangeSlider({
           id={`${id}-hi`} min={from} max={to} step={step} value={hi}
           aria-label={`${label} 상한`}
           aria-valuetext={value.max === undefined ? '제한 없음' : `${fmt(hi)}${unit}`}
+          onPointerDown={grab(lo)}
           onChange={(e) => setHi(Number(e.target.value))}
         />
       </div>

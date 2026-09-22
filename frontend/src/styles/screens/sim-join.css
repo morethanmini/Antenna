@@ -4,15 +4,19 @@
    연습 시즌 다섯 장에 사건 아트를 깔았다(sim/seasonArt). 시즌마다 배경 사진과
    제목 덩어리(lockup) 두 장이 있고, 표에 없는 제목은 글자 제목으로 떨어진다.
 
-   <b>다크는 걷어냈다.</b> 시안이 다크였고 실제로 한 번 어둡게 만들어 봤지만
-   (이 화면만 → 모의투자 모드 전체 순으로 넓혔다가 둘 다 되돌렸다), 서비스의
-   다른 화면이 전부 밝아서 이 한 장만 검으면 다른 서비스처럼 읽혔다. 지금은
-   <b>히어로 안쪽만</b> 사진 위 흰 글자이고, 히어로 밖은 app.css 의 밝은 토큰을
-   그대로 쓴다 — 이 파일에 자기 판 색(--sj-bg 같은 것)이 없는 이유다.
+   ── 2026-09-22 · 다크로 돌아왔다 ────────────────────────────────
+   전에는 "서비스의 다른 화면이 전부 밝아서 이 한 장만 검으면 다른 서비스처럼
+   읽힌다" 는 이유로 다크를 걷어냈었다. <b>그 전제가 뒤집혔다</b> — 모의투자 홈·기록,
+   인사이트 홈까지 밤이 되면서 이제는 이 한 장만 밝은 것이 튄다.
 
-   그래서 색 규칙이 둘로 갈린다. 고칠 때 어느 쪽인지 먼저 보면 된다:
-     · .sj-hero 안  — 배경이 사진이다. 글자는 흰색 + 그림자로 버틴다.
-     · .sj-hero 밖  — 배경이 --ground/--surface 다. 평범한 밝은 화면이다.
+   거는 방법은 routes.ts 의 bodyClass 에 `is-night` 를 더하는 것뿐이다. 판·글자·
+   테두리 색은 styles/night.css 가 토큰 한 벌을 통째로 갈아 끼우므로, 토큰을 쓰는
+   자리는 저절로 따라온다. <b>이 파일이 따로 잡는 것은 색을 직접 박아 둔 자리뿐</b>
+   이고 파일 맨 아래 한 덩어리로 모아 뒀다.
+
+   색 규칙이 둘로 갈리는 것은 그대로다. 고칠 때 어느 쪽인지 먼저 보면 된다:
+     · .sj-hero 안  — 배경이 사진이다. 글자는 흰색 + 그림자로 버틴다(밤에도 같다).
+     · .sj-hero 밖  — 배경이 --ground/--surface 다. 이제 어두운 판이다.
 
    <b>히어로 밖에는 시즌 색이 없다.</b> 한때 시즌마다 다른 강조색(--accent)을
    진행 방식 아이콘·머리말에 썼는데, 밝은 판에서 빨강·주황 아이콘이 뜬금없이 튀고
@@ -118,6 +122,16 @@
 .sj-lockup{margin:0;line-height:0}
 .sj-lockup img{
   display:block;width:100%;height:auto;
+  /* 화면이 낮으면 제목이 먼저 양보한다.
+     빼는 값은 히어로에서 제목 말고 자리를 차지하는 것들의 합이다 —
+     상단바 72 + 히어로 위아래 여백과 말머리·배지 120 + 조건 카드 131 + 숨 32.
+     여기까지가 "한 화면에 들어와야 하는" 덩어리다.
+     폭이 아니라 높이로 맞추는 것이라 object-fit 으로 비율을 지키고,
+     남는 자리는 오른쪽에 두어 제목이 왼쪽 선에 그대로 붙어 있게 한다.
+     대부분의 화면에서는 이 값이 그림보다 커서 아무 일도 하지 않는다 —
+     세 줄짜리 코로나처럼 원래 키가 큰 한 장만 여기에 걸린다. */
+  max-height:max(220px,calc(100vh - 355px));
+  object-fit:contain;object-position:left center;
   filter:drop-shadow(0 10px 28px rgba(0,0,0,.5));
 }
 
@@ -126,9 +140,15 @@
 
 /* ── 히어로 밖 · 시즌 카드 ────────────────────────────────
    히어로 위로 올라타 두 덩어리를 한 몸으로 묶는다. 위 여백(gap:20px)을
-   상쇄하고 더 끌어올린 값이다. */
+   상쇄하고 더 끌어올린 값이다.
+
+   한때 -72px 이었다. 제목 그림마다 아래 투명 여백이 제각각(원본 기준 24~166px)
+   이라 그 빈 칸을 겹쳐 먹으려던 값인데, 여백이 가장 얇은 코로나에서는 겹침이
+   글자까지 파고들었다. 그림의 빈 칸을 아예 잘라내고 나니(scripts/trim-season-titles.py)
+   다섯 장의 글자 끝이 같은 자리에 서서, 한 값으로 정해도 어느 장도 잘리지 않는다.
+   히어로 아래 여백 34 - 16 = 18px 에 그림에 남긴 숨통 8px 이 더해진다. */
 .sj-card{
-  position:relative;z-index:2;margin:-72px 0 0;
+  position:relative;z-index:2;margin:-16px 0 0;
   display:grid;grid-template-columns:minmax(0,1fr) minmax(0,320px);
   align-items:center;gap:24px;padding:22px 26px;
   border:1px solid var(--rule);border-radius:20px;
@@ -265,8 +285,8 @@
   .sj-steps{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:900px){
-  .sj-hero-body{max-width:100%;padding-bottom:64px}
-  .sj-card{grid-template-columns:minmax(0,1fr);gap:18px;margin-top:-52px}
+  .sj-hero-body{max-width:100%;padding-bottom:44px}
+  .sj-card{grid-template-columns:minmax(0,1fr);gap:18px;margin-top:-16px}
   .sj-head h1{font-size:var(--fs-title-lg)}
   .sj-rules-head{grid-template-columns:minmax(0,1fr)}
   .sj-rules h2::after{display:none}
@@ -279,7 +299,7 @@
 @media(max-width:600px){
   .sj-head h1{font-size:var(--fs-title)}
   .sj-hero{min-height:260px}
-  .sj-hero-body{padding:20px 18px 58px}
+  .sj-hero-body{padding:20px 18px 44px}
   .sj-card{padding:18px 16px}
   .sj-stats > div{padding:0;border-left:0;flex:1 1 45%}
   .sj-steps{grid-template-columns:minmax(0,1fr)}
@@ -295,3 +315,114 @@
 @media(prefers-reduced-motion:reduce){
   .sj-cta{transition:none}
 }
+
+/* ── 밤(2026-09-22) ───────────────────────────────────────
+   토큰으로 된 자리는 night.css 가 이미 뒤집었다. 여기 있는 것은 **색을 직접 박아
+   둔 자리**뿐이다 — 그 값들은 밝은 판을 전제로 고른 것이라 밤에서 무너진다. */
+
+/* 모드 배지. 옅은 파스텔 판 + 진한 글자였다. 밤에서는 그 판이 형광처럼 튀어
+   사진 위에서 배지만 먼저 보인다. 같은 색을 채도 낮은 투명 판으로 바꾼다. */
+body.sim-join-page .sim-join.learn{--tone:#4ade80;--tone-ink:#a7f3c9;--tone-soft:rgba(34,197,94,.22)}
+body.sim-join-page .sim-join.contest{--tone:#8b7dff;--tone-ink:#cdc6ff;--tone-soft:rgba(139,125,255,.24)}
+body.sim-join-page .sim-join.demo{--tone:#6aa8ff;--tone-ink:#bcd6ff;--tone-soft:rgba(88,150,255,.24)}
+body.sim-join-page .sj-mode{border:1px solid rgba(255,255,255,.18)}
+
+/* 아트가 없는 시즌의 되돌림 색. 밝은 판에서 쓰던 회청색 셋이라 밤에서 가라앉는다 */
+body.sim-join-page .sj-hero:not(.has-art) .sj-crumb{color:var(--night-body)}
+body.sim-join-page .sj-hero:not(.has-art) .sj-crumb i{color:var(--night-faint)}
+body.sim-join-page .sj-hero:not(.has-art) .sj-head p{color:var(--night-body)}
+body.sim-join-page .sj-hero:not(.has-art) .sj-note-sm{color:var(--night-body)}
+body.sim-join-page .sj-schedule{color:var(--night-body)}
+
+/* 시즌 카드. 사진 위로 떠 있는 판이라 공용 --shadow 보다 깊게 주던 값인데,
+   그 그림자가 검정이라 밤에서는 보이지 않으면서 색만 탁해진다. 깊이는 위쪽
+   흰 줄 하나로 만들고, 반투명 판이므로 블러를 걸어 글이 건물 위에 겹치지 않게 한다. */
+body.sim-join-page .sj-card{
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.1), 0 26px 56px -30px rgba(0,0,0,.85);
+  -webkit-backdrop-filter:blur(14px) saturate(140%);
+  backdrop-filter:blur(14px) saturate(140%);
+}
+body.sim-join-page .sj-steps li{
+  -webkit-backdrop-filter:blur(12px) saturate(140%);
+  backdrop-filter:blur(12px) saturate(140%);
+}
+
+/* 참가 버튼. --brand 는 밤에서도 그대로 쓰지만(night.css 가 진한 쪽을 안 바꾼다)
+   평평한 한 색은 어두운 판에서 판때기처럼 앉는다. 모의투자 홈·기록의 으뜸 버튼과
+   같은 결로 — 위가 밝은 그러데이션 + 아래로 번지는 빛 — 맞춘다. 세 화면의 "지금
+   시작하기 · 새로 시작하기 · 연습 참여하기" 가 같은 버튼으로 읽혀야 한다. */
+body.sim-join-page .sj-cta{
+  background:linear-gradient(180deg,#6d6bff 0%,#5457e8 100%);
+  box-shadow:0 12px 28px -12px rgba(109,107,255,.9), inset 0 1px 0 rgba(255,255,255,.25);
+}
+body.sim-join-page .sj-cta:hover{
+  background:linear-gradient(180deg,#7b79ff 0%,#5f62f0 100%);
+  box-shadow:0 16px 32px -12px rgba(109,107,255,1), inset 0 1px 0 rgba(255,255,255,.3);
+}
+/* 누를 수 없는 상태는 반대로 빛을 뺀다 — 빛이 남으면 꺼진 버튼이 눌릴 것처럼 보인다 */
+body.sim-join-page .sj-cta.is-off,
+body.sim-join-page .sj-cta.is-off:hover{
+  background:rgba(255,255,255,.07);box-shadow:none;color:var(--night-faint);
+}
+
+/* 브랜드 보라(#5457e8)를 쓰던 작은 글자·아이콘. 버튼 채움처럼 넓은 면에서는
+   그대로 읽히지만, 가는 글자와 22px 아이콘으로는 어두운 바탕에서 가라앉는다
+   (머리말 대비 3.0:1). 밝은 쪽(--glow)으로 올린다 — 6.1:1 이 된다. */
+body.sim-join-page .sj-rules-kicker,
+body.sim-join-page .sj-stats svg,
+body.sim-join-page .sj-steps svg{color:var(--glow)}
+
+/* 확인창 배경막. 밝은 판 기준의 .38 은 밤에서 거의 안 보여 뒤가 그대로 읽힌다 */
+body.sim-join-page .sj-dialog::backdrop{background:rgba(6,5,24,.72)}
+body.sim-join-page .sj-dialog{
+  -webkit-backdrop-filter:blur(16px) saturate(140%);
+  backdrop-filter:blur(16px) saturate(140%);
+}
+
+/* 조건 카드를 위로 올린다(2026-09-22).
+   히어로와 조건 카드까지는 한 화면(배율 100%)에 들어와야 하는 자리다.
+   제목 그림 자체는 줄이지 않는다 — 줄인 것은 글자 위의 빈 자리와,
+   그림 파일 안에 들어 있던 빈 자리다(scripts/trim-season-titles.py).
+   여기서는 제목 **위쪽** 만 걷는다. 위가 줄면 그림·히어로 아래끝·카드가
+   같이 올라오므로 그림과 카드 사이는 그대로다. */
+body.sim-join-page .sj-hero-body{padding-top:16px;gap:10px}
+body.sim-join-page .sj-head{gap:8px}
+
+/* ── 네 칸을 판 한 장으로 ──────────────────────────────────
+   **글자는 줄이지 않는다.** 한 번 한 단계씩 내려 봤는데 읽기만 나빠지고 얻은
+   높이는 얼마 안 됐다 — 네 칸은 나란히 서 있어서 구역 높이는 칸 하나의 높이지,
+   네 개의 합이 아니다. 줄여야 할 것은 글자가 아니라 **칸 안의 줄 수**였다.
+
+   그래서 판을 하나로 합치고(테두리 넷 → 하나, 가운데는 세로 줄로 가른다),
+   아이콘을 제목 옆으로 옮겨 한 줄을 없앴다. 번호 · 아이콘+제목 · 설명 세 줄이다.
+   글자 크기는 본문 기준 그대로다. */
+body.sim-join-page .sj-steps{
+  gap:0;padding:0;
+  border:1px solid var(--rule);border-radius:16px;
+  background:var(--surface);box-shadow:var(--shadow);
+  -webkit-backdrop-filter:blur(12px) saturate(140%);
+  backdrop-filter:blur(12px) saturate(140%);
+  overflow:hidden;
+}
+body.sim-join-page .sj-steps li{
+  display:grid;grid-template-columns:auto minmax(0,1fr);
+  column-gap:9px;row-gap:4px;align-items:start;
+  padding:15px 18px 16px;
+  border:0;border-left:1px solid var(--rule);border-radius:0;
+  background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;
+}
+body.sim-join-page .sj-steps li:first-child{border-left:0}
+/* 격자가 접히면 칸막이 방향도 같이 접는다 — 세로 줄만 남으면 한 줄로 쌓인
+   항목들 왼쪽에 쓸모없는 선이 그어진다(2열 2줄 · 1열 4줄 둘 다). */
+@media(max-width:1100px){
+  body.sim-join-page .sj-steps li:nth-child(odd){border-left:0}
+  body.sim-join-page .sj-steps li:nth-child(n+3){border-top:1px solid var(--rule)}
+}
+@media(max-width:600px){
+  body.sim-join-page .sj-steps li{border-left:0}
+  body.sim-join-page .sj-steps li + li{border-top:1px solid var(--rule)}
+}
+body.sim-join-page .sj-step-no{grid-column:1/-1}
+body.sim-join-page .sj-steps svg{grid-column:1;grid-row:2;margin:0;align-self:center}
+body.sim-join-page .sj-steps b{grid-column:2;grid-row:2;align-self:center}
+body.sim-join-page .sj-steps p{grid-column:2;grid-row:3}

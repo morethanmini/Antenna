@@ -22,10 +22,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * 로 거부한다. H2 는 이걸 그냥 통과시켜서 <b>테스트만 보면 멀쩡해 보인다</b> —
      * {@code AdminUserSearchPostgresTest} 가 실제 DB 로 잡아냈다.
      */
+    /**
+     * 관리자 회원 검색. {@code q} 는 <b>이스케이프된 값</b>이어야 한다 —
+     * {@link ssafy.a507.backend.domain.account.service.AdminUserService} 가 넣기 전에 처리한다.
+     *
+     * <p>이스케이프 없이 넣으면 {@code %} 한 글자가 전 회원을 부르고 {@code _} 가 아무 글자나
+     * 맞춘다 — 검색어가 질의어가 되어 버린다(2026-09-22 QA). {@code escape '\\'} 로 벗어난다.
+     */
     @Query("""
             select u from User u
             where u.nickname is not null
-              and lower(u.nickname) like lower(concat('%', :q, '%'))
+              and lower(u.nickname) like lower(concat('%', :q, '%')) escape '\\'
             order by u.id desc
             """)
     List<User> searchForAdmin(@Param("q") String q, Limit limit);

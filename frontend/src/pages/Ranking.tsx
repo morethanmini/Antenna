@@ -34,6 +34,7 @@
    되살릴 때는 api/rankings.ts 의 sector 질의 인자가 그대로 살아 있으니 칩만 다시 그리면
    된다. 서버 쪽은 건드리지 않았다. */
 import { useEffect, useState } from 'react'
+import { useUrlState } from '../urlState'
 import { Link, useSearchParams } from 'react-router-dom'
 import type { ApiError } from '../api/errors'
 import {
@@ -52,7 +53,8 @@ const PAGE = 20
 
 /** 트랙만 다르고 나머지는 같다. 두 라우트가 이 하나를 나눠 쓴다. */
 function RankingBoard({ track }: { track: Track }) {
-  const [period, setPeriod] = useState<Period>('ALL')
+  /* 주소에 둔다 — 채널로 갔다 뒤로 오면 보던 기간이 살아 있어야 한다(2026-09-22 QA) */
+  const [period, setPeriod] = useUrlState<Period>('period', 'ALL', PERIODS)
 
   const [rows, setRows] = useState<RankingRow[]>([])
   const [computedAt, setComputedAt] = useState<string | null>(null)
@@ -140,7 +142,12 @@ function RankingBoard({ track }: { track: Track }) {
     {me && (
       <section className="rk-me">
         <div className="rk-me-rank">
-          <span className="rk-me-label">내 순위</span>
+          {/* 내 순위는 **늘 전체 기간 기준**이다(GET /rankings/me 가 track 만 받는다 · 명세 §랭킹).
+              아래 표는 고른 기간으로 걸러지므로, 기간을 좁히면 "표에는 1명인데 내가 2위" 처럼
+              둘이 다른 이야기를 한다(2026-09-22 QA). 기준이 다르다는 것을 카드가 직접 말한다. */}
+          <span className="rk-me-label">
+            내 순위{track === 'REAL' && period !== 'ALL' && ' · 전체 기간 기준'}
+          </span>
           <p><b className="num">{me.rank}</b><small>위</small></p>
         </div>
 

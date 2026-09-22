@@ -22,6 +22,7 @@ import ssafy.a507.backend.domain.monetize.dto.AdActiveResponse;
 import ssafy.a507.backend.domain.monetize.dto.AdCreateRequest;
 import ssafy.a507.backend.domain.monetize.dto.AdCreateResponse;
 import ssafy.a507.backend.domain.monetize.dto.AdPricingResponse;
+import ssafy.a507.backend.domain.monetize.dto.MyAdListResponse;
 import ssafy.a507.backend.domain.monetize.entity.AdBanner;
 import ssafy.a507.backend.domain.monetize.repository.AdBannerRepository;
 import ssafy.a507.backend.domain.upload.entity.UploadFile;
@@ -49,6 +50,8 @@ public class AdService {
      * 설정으로 뺄 수 없기 때문이다. 그 1 과 같은 값을 조건 조회에서 내린다.
      */
     private static final int MIN_DAYS = 1;
+    /** 등록 화면 머리에 거는 내 신청 수. 여기서 할 일은 심사 중인 건을 다루는 것이라 길 필요가 없다. */
+    private static final int MINE_LIMIT = 5;
 
     /** 슬롯을 차지하는 상태. 심사 대기(PENDING)도 자리를 잡는다 — 승인되는 순간 배너가 둘이 되면 안 된다. */
     static final List<AdBanner.Status> OCCUPYING = List.of(AdBanner.Status.ACTIVE, AdBanner.Status.PENDING);
@@ -164,6 +167,22 @@ public class AdService {
                 .findFirstByResourceTypeAndResourceIdOrderByCreatedAtDesc(Operation.ResourceType.AD, adId)
                 .map(op -> op.getStatus() == Operation.Status.PENDING)
                 .orElse(false);
+    }
+
+    /**
+     * 내가 낸 신청 목록 — 등록 화면이 머리에 건다(ANT-FE-AD).
+     *
+     * <p>끝난 것까지 다 내리지는 않는다. 사용자가 여기서 할 일은 <b>심사 중인 건을 확인하고
+     * 취소하는 것</b>이고, 게재가 끝난 배너는 되돌릴 것이 없다. 최근 것부터 몇 건만 본다.
+     */
+    @Transactional(readOnly = true)
+    public MyAdListResponse mine(Long userId) {
+        List<AdBanner> banners = adBannerRepository.findByAdvertiser_IdOrderByIdDesc(userId);
+        List<MyAdListResponse.Item> items = banners.stream()
+                .limit(MINE_LIMIT)
+                .map(b -> MyAdListResponse.Item.of(b, b.isPending() && burnInFlight(b.getId())))
+                .toList();
+        return new MyAdListResponse(items);
     }
 
     /**

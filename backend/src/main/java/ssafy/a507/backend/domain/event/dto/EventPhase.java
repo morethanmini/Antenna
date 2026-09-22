@@ -1,5 +1,6 @@
 package ssafy.a507.backend.domain.event.dto;
 
+import java.time.Instant;
 import ssafy.a507.backend.domain.event.entity.PredictionEvent;
 
 /**
@@ -26,5 +27,23 @@ public enum EventPhase {
             case SEALED, REVEALED, RESOLVED -> SEALED;
             case SETTLED -> SETTLED;
         };
+    }
+
+    /**
+     * 상태에 더해 <b>마감 시각</b>도 본다 — 화면에는 이쪽을 쓴다.
+     *
+     * <p>{@code status} 만 보면 봉인 tx 가 늦거나 실패한 동안 회차가 계속 "등록 중" 으로 보인다.
+     * 그런데 접수는 이미 닫혀 있다 — {@code EventEntryService.ensureOpen()} 이 {@code sealsAt} 을
+     * 지나면 {@code EVENT_SEALED} 로 거절한다. 그래서 참가 입구만 열린 채로 남아, 누르고 들어간
+     * 사람이 등록 단계에서야 닫힌 것을 알게 된다(2026-09-22 QA).
+     *
+     * <p>접수 창 판단을 두 곳이 다른 규칙으로 하지 않게, 표시도 서버 규칙과 같은 식을 쓴다.
+     */
+    public static EventPhase of(PredictionEvent event) {
+        EventPhase phase = of(event.getStatus());
+        if (phase == ENTRY && event.getSealsAt() != null && !Instant.now().isBefore(event.getSealsAt())) {
+            return SEALED;
+        }
+        return phase;
     }
 }

@@ -33,16 +33,18 @@ const Renderer = lazy(async () => {
         components={{
           /* 바깥으로 나가는 링크는 새 탭으로. rel 은 새 탭이 이 페이지를 조작하지 못하게 막는다 —
              본문을 쓴 사람이 우리 쪽 사람이 아닐 수 있다. */
-          a: ({ children, ...props }) => (
+          /* react-markdown 은 컴포넌트마다 hast 노드를 `node` 로 넘긴다. 그대로 펼치면
+             DOM 에 node="[object Object]" 속성이 찍히므로 셋 다 빼고 넘긴다 */
+          a: ({ node: _node, children, ...props }) => (
             <a {...props} target="_blank" rel="noreferrer noopener nofollow">{children}</a>
           ),
           /* 이미지는 본문 폭을 넘지 않게 하고 늦게 불러온다. alt 가 없으면 빈 문자열로 둔다 —
              react-markdown 이 undefined 를 넘기면 스크린리더가 파일 주소를 읽는다. */
-          img: ({ alt, ...props }) => (
+          img: ({ node: _node, alt, ...props }) => (
             <img {...props} alt={alt ?? ''} loading="lazy" className="md-img" />
           ),
           /* 표가 좁은 화면을 밀어내지 않게 가로 스크롤 상자에 담는다 */
-          table: ({ children, ...props }) => (
+          table: ({ node: _node, children, ...props }) => (
             <div className="md-table-wrap"><table {...props}>{children}</table></div>
           ),
         }}

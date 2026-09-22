@@ -75,3 +75,11 @@ ALTER TABLE users ALTER COLUMN nickname DROP NOT NULL;
 -- 손대는 것은 이 파일에 모은다. IF NOT EXISTS 라 매 부팅 멱등이다.
 CREATE INDEX IF NOT EXISTS idx_token_ledger_user_created
     ON token_ledger (user_id, created_at);
+
+-- 대회 회차: 아직 끝나지 않은 회차는 기준일마다 하나다 (ANT-EVENT · 2026-09-22 QA).
+-- 관리자 화면에서 생성을 세 번 누르면 회차 세 개가 생기고 온체인 openEvent 도 그만큼 나갔다.
+-- 화면 가드는 버튼이 잠기기 전에 새고, 생성에는 멱등 키가 없다 — 마지막 방어선을 DB 에 둔다.
+-- 부분 인덱스인 이유: 지난 회차(SEALED 이후)는 같은 기준일로 다시 열릴 수 있어야 한다.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_prediction_events_live_base_date
+    ON prediction_events (base_date)
+    WHERE status IN ('SCHEDULED', 'OPEN');

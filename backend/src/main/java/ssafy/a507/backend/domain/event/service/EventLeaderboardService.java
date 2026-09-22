@@ -59,7 +59,7 @@ public class EventLeaderboardService {
         PredictionEvent event =
                 events.findById(eventId)
                         .orElseThrow(() -> new BusinessException(ErrorCode.EVENT_NOT_FOUND, "eventId"));
-        EventPhase phase = EventPhase.of(event.getStatus());
+        EventPhase phase = EventPhase.of(event);
         if (phase != EventPhase.SETTLED) {
             return new EventLeaderboardResponse(phase, noticeOf(phase), List.of(), null, null);
         }

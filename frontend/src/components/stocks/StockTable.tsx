@@ -31,6 +31,7 @@ import EmptyState from '../state/EmptyState'
 import ErrorState from '../state/ErrorState'
 import RangeSlider from './RangeSlider'
 import StockLogo from './StockLogo'
+import { Q_MAX } from './stockFilterParams'
 
 const won = (n: number) => n.toLocaleString('ko-KR')
 /* 0 에는 부호를 붙이지 않고 색도 주지 않는다 — 근거는 Watchlist.tsx(B-04). */
@@ -484,8 +485,7 @@ export default function StockTable({ filter, setFilter }: Props) {
             <input
               type="search" className="st-search" placeholder="종목명 또는 코드"
               aria-label="종목명 또는 종목코드로 찾기"
-              // 서버 StockService.MAX_QUERY_LENGTH 와 같은 값이다 — 넘기면 400 이다
-              maxLength={50}
+              maxLength={Q_MAX}
               value={draft.q ?? ''}
               onChange={(e) => {
                 const v = e.target.value
