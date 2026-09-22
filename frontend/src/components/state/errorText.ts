@@ -14,39 +14,39 @@ type Text = { title: string; hint?: string; retryable?: boolean }
 /* code 우선. 같은 status 라도 사유가 다르면 안내가 달라야 한다. */
 const BY_CODE: Record<string, Text> = {
   [ERROR_CODE.INVALID_REQUEST]: { title: '입력값을 다시 확인해 주세요' },
-  [ERROR_CODE.UNAUTHENTICATED]: { title: '로그인이 필요합니다' },
-  [ERROR_CODE.INTERNAL_ERROR]: { title: '서버에 문제가 생겼습니다', hint: '잠시 후 다시 시도해 주세요', retryable: true },
+  [ERROR_CODE.UNAUTHENTICATED]: { title: '로그인이 필요해요' },
+  [ERROR_CODE.INTERNAL_ERROR]: { title: '서버에 문제가 생겼어요', hint: '잠시 후 다시 시도해 주세요', retryable: true },
 
   /* 셋 다 앱이 잘못 부른 것이다 — 주소·메서드·본문 형식. **retryable 을 주지 않는다**:
      같은 요청을 다시 보내도 결과가 같아서, 재시도 버튼은 사용자를 헛되이 붙잡아 둔다.
      이 문구가 뜨면 사용자가 아니라 우리가 고칠 일이라 "알려 주세요" 로 끝낸다.
      BY_CODE 에 없으면 405·415 는 BY_STATUS 에도 없어 FALLBACK(재시도 가능)으로 떨어진다. */
-  [ERROR_CODE.NOT_FOUND]: { title: '요청한 주소를 찾을 수 없습니다', hint: '앱이 없는 주소를 불렀습니다. 문제가 계속되면 알려 주세요' },
-  [ERROR_CODE.METHOD_NOT_ALLOWED]: { title: '처리할 수 없는 요청입니다', hint: '앱이 잘못된 방식으로 요청했습니다. 문제가 계속되면 알려 주세요' },
-  [ERROR_CODE.UNSUPPORTED_MEDIA_TYPE]: { title: '처리할 수 없는 요청입니다', hint: '앱이 잘못된 형식으로 요청했습니다. 문제가 계속되면 알려 주세요' },
+  [ERROR_CODE.NOT_FOUND]: { title: '요청한 주소를 찾을 수 없어요', hint: '앱이 없는 주소를 불렀습니다. 문제가 계속되면 알려 주세요' },
+  [ERROR_CODE.METHOD_NOT_ALLOWED]: { title: '처리할 수 없는 요청이에요', hint: '앱이 잘못된 방식으로 요청했습니다. 문제가 계속되면 알려 주세요' },
+  [ERROR_CODE.UNSUPPORTED_MEDIA_TYPE]: { title: '처리할 수 없는 요청이에요', hint: '앱이 잘못된 형식으로 요청했습니다. 문제가 계속되면 알려 주세요' },
 
   // 멱등성 — KEY_REQUIRED 는 클라이언트 결함이라 화면에 띄우지 않는다(isClientDefect)
-  [ERROR_CODE.IDEMPOTENCY_KEY_REUSED]: { title: '이미 처리된 요청입니다', hint: '결과를 다시 불러옵니다', retryable: true },
+  [ERROR_CODE.IDEMPOTENCY_KEY_REUSED]: { title: '이미 처리한 요청이에요', hint: '결과를 다시 불러옵니다', retryable: true },
 
   // 신고
-  [ERROR_CODE.TARGET_NOT_FOUND]: { title: '신고 대상을 찾을 수 없습니다', hint: '이미 삭제되었을 수 있습니다' },
-  [ERROR_CODE.SELF_REPORT]: { title: '자신을 신고할 수 없습니다' },
-  [ERROR_CODE.DUPLICATE_REPORT]: { title: '이미 신고한 대상입니다', hint: '처리 결과를 기다려 주세요' },
+  [ERROR_CODE.TARGET_NOT_FOUND]: { title: '신고 대상을 찾을 수 없어요', hint: '이미 삭제됐을 수 있어요' },
+  [ERROR_CODE.SELF_REPORT]: { title: '자신은 신고할 수 없어요' },
+  [ERROR_CODE.DUPLICATE_REPORT]: { title: '이미 신고한 대상이에요', hint: '처리 결과를 기다려 주세요' },
 
   // 예측 · 잔액 · 모의투자
-  [ERROR_CODE.PREDICTION_SLOT_EXCEEDED]: { title: '무료 예측 슬롯을 모두 썼습니다', hint: '토큰을 소각하고 계속 등록할 수 있습니다' },
-  [ERROR_CODE.INSUFFICIENT_BALANCE]: { title: '토큰 잔액이 부족합니다', hint: '지갑에서 잔액을 확인해 주세요' },
-  [ERROR_CODE.DAY_MISMATCH]: { title: '진행 상황이 달라졌습니다', hint: '최신 상태로 맞춘 뒤 다시 시도합니다', retryable: true },
+  [ERROR_CODE.PREDICTION_SLOT_EXCEEDED]: { title: '무료 예측 슬롯을 모두 썼어요', hint: '토큰을 소각하면 계속 등록할 수 있어요' },
+  [ERROR_CODE.INSUFFICIENT_BALANCE]: { title: '토큰 잔액이 부족해요', hint: '지갑에서 잔액을 확인해 주세요' },
+  [ERROR_CODE.DAY_MISMATCH]: { title: '진행 상황이 달라졌어요', hint: '최신 상태로 맞춘 뒤 다시 시도해요', retryable: true },
   [ERROR_CODE.SEASON_NOT_FOUND]: { title: '시즌을 찾을 수 없습니다' },
   [ERROR_CODE.SEASON_TICKER_NOT_FOUND]: { title: '이 시즌에 없는 종목입니다' },
-  [ERROR_CODE.SEASON_ALREADY_JOINED]: { title: '이미 진행 중인 모의투자가 있습니다', hint: '이어서 하거나 초기화하고 다시 시작할 수 있습니다' },
+  [ERROR_CODE.SEASON_ALREADY_JOINED]: { title: '진행 중인 모의투자가 있어요', hint: '이어서 하거나 초기화하고 다시 시작할 수 있어요' },
   [ERROR_CODE.SEASON_NOT_RUNNING]: { title: '지금은 참가할 수 없는 시즌입니다' },
   [ERROR_CODE.SEASON_JOIN_NOT_SUPPORTED]: { title: '대회 참가는 아직 열리지 않았습니다' },
   [ERROR_CODE.SEASON_NOT_JOINED]: { title: '아직 참가하지 않은 시즌입니다', hint: '시즌 상세에서 먼저 참가해 주세요' },
-  [ERROR_CODE.SEASON_INSUFFICIENT_QTY]: { title: '보유 수량이 부족합니다' },
+  [ERROR_CODE.SEASON_INSUFFICIENT_QTY]: { title: '보유 수량이 부족해요' },
   [ERROR_CODE.SEASON_PRICE_NOT_FOUND]: { title: '이 게임일의 가격이 아직 없습니다' },
   [ERROR_CODE.SEASON_ADVANCE_NOT_ALLOWED]: { title: '대회는 직접 진행할 수 없습니다', hint: '정해진 시각에 함께 넘어갑니다' },
-  [ERROR_CODE.SEASON_ATTEMPT_ENDED]: { title: '이미 끝난 회차입니다', hint: '결과를 보거나 새로 시작할 수 있습니다' },
+  [ERROR_CODE.SEASON_ATTEMPT_ENDED]: { title: '이미 끝난 회차예요', hint: '결과를 보거나 새로 시작할 수 있어요' },
   [ERROR_CODE.SEASON_LAST_DAY]: { title: '마지막 게임일입니다', hint: '종료하고 결과를 확인해 주세요' },
   [ERROR_CODE.SEASON_NOT_LAST_DAY]: { title: '아직 마지막 게임일이 아닙니다' },
   [ERROR_CODE.SEASON_RESULT_NOT_FOUND]: { title: '아직 결과가 없습니다', hint: '마지막 게임일에 종료하면 만들어집니다' },
@@ -56,9 +56,9 @@ const BY_CODE: Record<string, Text> = {
   [ERROR_CODE.INVALID_SIGNATURE]: { title: '서명이 올바르지 않습니다', hint: '지갑에서 다시 서명해 주세요', retryable: true },
   [ERROR_CODE.NONCE_NOT_FOUND]: { title: '인증 요청이 만료되었습니다', hint: '5분이 지났습니다. 처음부터 다시 진행해 주세요', retryable: true },
   [ERROR_CODE.SIGNER_MISMATCH]: { title: '서명한 지갑이 다릅니다', hint: '연동하려는 주소의 계정으로 바꾼 뒤 다시 서명해 주세요', retryable: true },
-  [ERROR_CODE.WALLET_NOT_LINKED]: { title: '지갑을 먼저 연동해 주세요', hint: '지갑 · 토큰 화면에서 연동할 수 있습니다' },
+  [ERROR_CODE.WALLET_NOT_LINKED]: { title: '지갑을 먼저 연동해 주세요', hint: '지갑·토큰 화면에서 연동해 주세요' },
   // 재시도로 풀리지 않는다 — 다른 지갑을 쓰라고 안내한다(설계 제약)
-  [ERROR_CODE.WALLET_ALREADY_LINKED]: { title: '이미 연동된 지갑입니다', hint: '다른 계정에 연동된 주소이거나, 이 계정에 이미 지갑이 있습니다' },
+  [ERROR_CODE.WALLET_ALREADY_LINKED]: { title: '이미 연동된 지갑이에요', hint: '다른 계정에 연결됐거나 이 계정에 이미 지갑이 있어요' },
 
   // 회원 · 인증
   [ERROR_CODE.DUPLICATE_NICKNAME]: { title: '이미 사용 중인 닉네임입니다' },
@@ -68,9 +68,9 @@ const BY_CODE: Record<string, Text> = {
 
   // 온체인 (ANT-CHAIN)
   [ERROR_CODE.ANCHOR_NOT_FOUND]: { title: '체인 기록을 찾을 수 없습니다', hint: '아직 만들어지지 않았거나 지워진 배치입니다' },
-  [ERROR_CODE.PREDICTION_FORBIDDEN]: { title: '아직 공개되지 않은 예측입니다', hint: '판정 전에는 작성자와 구독자만 근거를 볼 수 있습니다' },
+  [ERROR_CODE.PREDICTION_FORBIDDEN]: { title: '아직 공개되지 않은 예측입니다', hint: '판정 전에는 작성자와 구독자만 근거를 볼 수 있어요' },
   /* 구독하면 풀린다. 재시도로는 안 풀리므로 retryable 을 주지 않는다 — 화면이 구독 CTA 를 띄운다 */
-  [ERROR_CODE.REPORT_FORBIDDEN]: { title: '구독자 전용 리포트입니다', hint: '구독하면 본문을 읽고 좋아요·댓글을 남길 수 있습니다' },
+  [ERROR_CODE.REPORT_FORBIDDEN]: { title: '구독자 전용 리포트입니다', hint: '구독하면 본문을 읽고 좋아요·댓글을 남길 수 있어요' },
   // 재시도해도 같다 — retryable 을 주지 않는다
   [ERROR_CODE.REPORT_BLOCKED]: { title: '신고로 가려진 리포트입니다', hint: '운영 정책에 따라 관리자가 이 리포트를 가렸습니다' },
   /* 검산 화면은 이 code 를 직접 보고 안내로 그린다(오류가 아니다). 여기 문구는 다른 화면이
@@ -91,7 +91,7 @@ const BY_CODE: Record<string, Text> = {
      사라졌다(화면: "시작일은 고를 수 없고, 관리자가 승인하는 시점부터 시작합니다"). 서버도 시작을
      늘 now 로 잡아(AdService) 자리를 점유한 광고가 있으면 노출 일수를 1일로 줄여도 구간이 겹친다.
      안내대로 해도 통과할 수 없으니, 할 수 있는 일(기다리기)을 말한다. */
-  [ERROR_CODE.AD_SLOT_SOLD_OUT]: { title: '광고 자리가 이미 차 있습니다', hint: '게재 중인 광고가 끝난 뒤에 다시 시도해 주세요' },
+  [ERROR_CODE.AD_SLOT_SOLD_OUT]: { title: '광고 자리가 이미 찼어요', hint: '게재 중인 광고가 끝난 뒤에 다시 시도해 주세요' },
   /* 취소를 누르는 사이 관리자가 승인·반려한 경우다. 매핑이 없어 "요청을 처리할 수 없습니다" 로
      뭉개졌다 — 승인됐다면 게재료가 이미 나가는 중이라 그 사실을 말해야 한다. */
   [ERROR_CODE.AD_ALREADY_HANDLED]: { title: '이미 처리된 광고 신청입니다', hint: '관리자가 먼저 승인하거나 반려했습니다. 승인된 신청은 취소할 수 없습니다' },
@@ -101,13 +101,13 @@ const BY_CODE: Record<string, Text> = {
   // 시세 · 리서치 · 관심 종목
   [ERROR_CODE.STOCK_NOT_FOUND]: { title: '종목을 찾을 수 없습니다' },
   [ERROR_CODE.BRIEFING_NOT_FOUND]: { title: '브리핑을 찾을 수 없습니다', hint: '지워졌거나 주소가 잘못된 링크입니다' },
-  [ERROR_CODE.DUPLICATE_WATCHLIST_ITEM]: { title: '이미 관심 종목에 있습니다' },
+  [ERROR_CODE.DUPLICATE_WATCHLIST_ITEM]: { title: '이미 관심 종목에 있어요' },
 
   // 댓글 · 좋아요
-  [ERROR_CODE.COMMENT_NOT_FOUND]: { title: '댓글을 찾을 수 없습니다', hint: '삭제되었을 수 있습니다' },
+  [ERROR_CODE.COMMENT_NOT_FOUND]: { title: '댓글을 찾을 수 없어요', hint: '이미 삭제됐을 수 있어요' },
   /* 도배 제한(서버 CommentThrottle — 1분에 5개 · 같은 글에 같은 내용 연속 금지).
      둘 다 같은 요청을 곧바로 다시 보내면 같은 답이라 재시도 버튼을 붙이지 않는다. */
-  [ERROR_CODE.COMMENT_RATE_LIMITED]: { title: '댓글을 너무 자주 쓰고 있습니다', hint: '1분 뒤에 다시 시도해 주세요' },
+  [ERROR_CODE.COMMENT_RATE_LIMITED]: { title: '댓글을 너무 자주 쓰고 있어요', hint: '1분 뒤에 다시 시도해 주세요' },
   [ERROR_CODE.COMMENT_DUPLICATED]: { title: '같은 내용을 연달아 올릴 수 없습니다', hint: '내용을 바꿔서 올려 주세요' },
   [ERROR_CODE.DUPLICATE_LIKE]: { title: '이미 좋아요를 눌렀습니다' },
 
@@ -120,7 +120,7 @@ const BY_CODE: Record<string, Text> = {
   [CLIENT_ERROR_CODE.CLIENT_NOT_JSON]: { title: '서버에 연결하지 못했습니다', hint: '백엔드 연동 전이거나 응답이 올바르지 않습니다', retryable: true },
   [CLIENT_ERROR_CODE.CLIENT_WALLET_MISSING]: { title: '지갑을 찾을 수 없습니다', hint: '브라우저에 지갑 확장을 설치한 뒤 다시 시도해 주세요' },
   [CLIENT_ERROR_CODE.CLIENT_SIGN_REJECTED]: { title: '지갑에서 요청을 취소했습니다', hint: '연동하려면 지갑 창에서 승인해 주세요', retryable: true },
-  [CLIENT_ERROR_CODE.CLIENT_WALLET_BUSY]: { title: '지갑이 응답을 기다리고 있습니다', hint: '열려 있는 지갑 창을 확인해 주세요', retryable: true },
+  [CLIENT_ERROR_CODE.CLIENT_WALLET_BUSY]: { title: '지갑 응답을 기다리는 중이에요', hint: '열려 있는 지갑 창을 확인해 주세요', retryable: true },
   [CLIENT_ERROR_CODE.CLIENT_NO_ACCOUNT]: { title: '지갑 계정을 가져오지 못했습니다', hint: '지갑 잠금을 해제하고 계정을 선택해 주세요', retryable: true },
   /* D-03 은 브라우저가 체인 RPC 를 직접 읽는다. CHAIN_UNAVAILABLE 과 문구를 나눈 이유 —
      그건 서버가 못 붙은 것이고 이건 이 브라우저가 못 붙은 것이라, 사용자가 확인할 곳이 다르다. */
@@ -129,7 +129,7 @@ const BY_CODE: Record<string, Text> = {
   [CLIENT_ERROR_CODE.CLIENT_CHAIN_NOT_CONFIGURED]: { title: '체인 접속 주소가 설정되지 않았습니다', hint: '관리자에게 알려 주세요' },
   /* 업로드(M-07) — 전송이 끊긴 것과 서버가 규격 위반으로 거절한 것은 사용자가 할 일이 다르다.
      앞은 같은 파일로 다시, 뒤는 다른 파일로. 그래서 문구를 합치지 않는다. */
-  [CLIENT_ERROR_CODE.CLIENT_UPLOAD_FAILED]: { title: '올리는 중에 연결이 끊겼습니다', hint: '같은 파일로 다시 시도할 수 있습니다', retryable: true },
+  [CLIENT_ERROR_CODE.CLIENT_UPLOAD_FAILED]: { title: '올리는 중에 연결이 끊겼습니다', hint: '같은 파일로 다시 시도해 주세요', retryable: true },
   // 사용자가 스스로 멈춘 것이라 화면에 오류로 띄우지 않는다. 호출부가 이 code 를 보고 조용히 넘긴다
   [CLIENT_ERROR_CODE.CLIENT_UPLOAD_ABORTED]: { title: '업로드를 취소했습니다' },
   /* retryable 을 붙이지 않는다 — 전에는 DOMException 이 그대로 올라와 FALLBACK("잠시 후 다시 시도")이
@@ -140,13 +140,13 @@ const BY_CODE: Record<string, Text> = {
 /* code 를 못 찾으면 status 로 떨어진다. 명세에 없는 사유가 와도 화면이 비지 않게. */
 const BY_STATUS: Record<number, Text> = {
   400: { title: '입력값을 다시 확인해 주세요' },
-  401: { title: '로그인이 필요합니다' },
+  401: { title: '로그인이 필요해요' },
   403: { title: '접근 권한이 없습니다' },
   404: { title: '찾을 수 없습니다' },
   /* 405·415 는 code 없이 와도 재시도로 풀리지 않는다. 여기 없으면 FALLBACK 으로 떨어져
      "잠시 후 다시 시도" + 재시도 버튼이 붙는데, 같은 요청은 몇 번을 보내도 같은 답이다. */
-  405: { title: '처리할 수 없는 요청입니다', hint: '앱이 잘못된 방식으로 요청했습니다' },
-  409: { title: '요청을 처리할 수 없습니다', hint: '상태가 바뀌었을 수 있습니다', retryable: true },
+  405: { title: '처리할 수 없는 요청이에요', hint: '앱이 잘못된 방식으로 요청했습니다' },
+  409: { title: '요청을 처리할 수 없어요', hint: '상태가 바뀌었을 수 있어요', retryable: true },
   /* 410 은 서버가 REPORT_BLOCKED 코드를 실어 보내지만, 프록시나 캐시가 본문을 떨군 채
      상태만 넘기면 여기로 온다. 가려진 것은 재시도로 돌아오지 않는다. */
   410: { title: '더 이상 볼 수 없는 내용입니다', hint: '가려졌거나 지워진 내용입니다' },
@@ -154,16 +154,16 @@ const BY_STATUS: Record<number, Text> = {
      BY_CODE 의 FILE_TOO_LARGE 를 못 탄다. 같은 말을 쓴다: 어디서 잘렸든 사용자가 할 일은
      같다(더 작은 파일). 같은 파일로 재시도해도 같은 답이라 retryable 을 붙이지 않는다. */
   413: { title: '파일이 너무 큽니다', hint: '더 작은 이미지를 올려 주세요' },
-  415: { title: '처리할 수 없는 요청입니다', hint: '앱이 잘못된 형식으로 요청했습니다' },
+  415: { title: '처리할 수 없는 요청이에요', hint: '앱이 잘못된 형식으로 요청했습니다' },
   // 대상·한도가 아직 미정이라 구체 수치를 적지 않는다
   429: { title: '요청이 너무 잦습니다', hint: '잠시 후 다시 시도해 주세요', retryable: true },
-  500: { title: '서버에 문제가 생겼습니다', hint: '잠시 후 다시 시도해 주세요', retryable: true },
+  500: { title: '서버에 문제가 생겼어요', hint: '잠시 후 다시 시도해 주세요', retryable: true },
   /* 502·503·504 는 서버가 아니라 **그 앞(nginx)** 이 준다 — 배포로 백엔드가 내려가 있거나 응답이
      늦을 때다. 본문이 HTML 이라 code 가 없어 전에는 FALLBACK("문제가 발생했습니다")으로 떨어졌다.
      무엇이 잘못됐는지가 아니라 **기다리면 된다**는 것을 말한다(QA 09-18). */
-  502: { title: '서버에 연결하지 못했습니다', hint: '점검 중일 수 있습니다. 잠시 후 다시 시도해 주세요', retryable: true },
-  503: { title: '서버가 잠시 쉬고 있습니다', hint: '잠시 후 다시 시도해 주세요', retryable: true },
-  504: { title: '서버 응답이 늦어지고 있습니다', hint: '잠시 후 다시 시도해 주세요', retryable: true },
+  502: { title: '서버에 연결하지 못했어요', hint: '점검 중일 수 있어요. 잠시 후 다시 시도해 주세요', retryable: true },
+  503: { title: '서버가 잠시 쉬고 있어요', hint: '잠시 후 다시 시도해 주세요', retryable: true },
+  504: { title: '서버 응답이 늦어지고 있어요', hint: '잠시 후 다시 시도해 주세요', retryable: true },
 }
 
 const FALLBACK: Text = { title: '문제가 발생했습니다', hint: '잠시 후 다시 시도해 주세요', retryable: true }

@@ -112,9 +112,9 @@ export default function OAuthCallback() {
               <span className="cb-spinner" aria-hidden="true" />
               <h2>로그인 중</h2>
               <p className="sub">
-                {label ? `${label} 계정을 확인하고 있습니다.` : '계정을 확인하고 있습니다.'}
+                {label ? `${label} 계정을 확인하는 중이에요.` : '계정을 확인하는 중이에요.'}
               </p>
-              <p className="cb-hint">잠시만 기다려 주세요. 곧 자동으로 이동합니다.</p>
+              <p className="cb-hint">잠시만 기다려 주세요. 곧 이동해요.</p>
             </>
           )}
         </section>

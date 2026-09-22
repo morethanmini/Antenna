@@ -68,8 +68,8 @@ const STEPS = [
        곧 "커밋을 체인에 올린다" 다. */
     key: 'proof',
     eyebrow: '고칠 수 없다는 증거',
-    title: <>고치지 않았다는 걸 <em>증명</em>합니다</>,
-    body: '등록한 예측은 커밋 해시로 봉인되고 블록체인에 올라갑니다. 만기가 지나면 결과와 오차가 자동으로 판정됩니다.',
+    title: <>고치지 않았다는 걸 <em>증명</em>해요</>,
+    body: '등록한 예측은 해시로 봉인해 블록체인에 기록해요. 만기가 지나면 결과와 오차를 자동으로 판정해요.',
     /* 이 걸음만 정지컷이 아니라 **실제 봉인 장면**이다. C-01 등록 진행 모달이
        쓰는 BlockchainScene 을 그대로 가져온다 — 개미들이 블록을 안고 나와
        받침대에 하나씩 놓고 빈손으로 나가고, 받침대 위 사슬이 그만큼 자란다.
@@ -98,20 +98,20 @@ const STEPS = [
        안내와 도착지가 어긋난다. */
     key: 'sim',
     eyebrow: '부담 없이 연습하기',
-    title: <>과거 시세로 먼저 <em>연습</em>할 수 있습니다</>,
+    title: <>과거 시세로 먼저 <em>연습</em>해요</>,
     body: '모의투자는 지난 장을 되돌려 매매해 보는 곳입니다. 주제를 고르고 원하는 때 하루씩 넘기며, 30일이 지나면 성적과 AI 복기를 받습니다.',
     art: '/assets/pageset/ant-chart.webp',
     drift: ['/assets/pageset/card-practice.webp', '/assets/pageset/arrow.webp'],
     /* 자리를 방향으로 못 박지 않는다. 전에는 왼쪽 사이드바였고 지금은 위쪽
        네비바라(2026-09-17) "왼쪽 위" 라고 적었으면 셸을 바꿀 때마다 틀린 안내가
        된다. 메뉴 안에 있다는 것까지만 말하면 자리가 옮겨져도 계속 맞는다. */
-    where: '메뉴의 "모의 투자"에서 언제든 시작할 수 있습니다.',
+    where: '메뉴의 "모의 투자"에서 언제든 시작해 보세요.',
   },
   {
     key: 'wallet',
     eyebrow: '마지막 한 걸음',
     title: <>지갑을 <em>연동</em>해 주세요</>,
-    body: '예측을 등록하려면 지갑 서명이 필요합니다. 연동은 지금 해도 되고, 첫 예측을 등록할 때 해도 됩니다.',
+    body: '예측을 등록할 때 지갑 서명이 필요해요. 지갑은 지금 또는 첫 예측 때 연동하면 돼요.',
     art: '/assets/blockchain-animation/mascot/cheer-3.webp',
     drift: ['/assets/blockchain-animation/cube/cube-anchored.webp',
             '/assets/blockchain-animation/effect/ring.webp'],
@@ -217,7 +217,7 @@ export default function OnboardingTour({ onClose, onLinkWallet }: Props) {
                   <span className="ob-mark" aria-hidden="true">{walletLinked ? '✓' : '○'}</span>
                   <b>지갑 연동</b>
                   <span className="ob-sub">
-                    {walletLinked ? '연동됨' : '예측 등록에 필요합니다'}
+                    {walletLinked ? '연동됨' : '예측 등록에 필요해요'}
                   </span>
                 </li>
               </ul>

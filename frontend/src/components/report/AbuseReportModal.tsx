@@ -102,7 +102,7 @@ export default function AbuseReportModal({
         {done ? (
           <div className="ab-body">
             {/* 설계서 M-06 — 가려졌다고 쓰지 않는다. 지금 일어난 일은 접수뿐이다. */}
-            <p className="ab-done">관리자가 확인한 뒤 처리합니다.</p>
+            <p className="ab-done">관리자가 확인한 뒤 처리해요.</p>
             <p className="ab-sub">처리 전까지 같은 대상을 다시 신고할 수 없습니다.</p>
             <div className="ab-actions">
               <button type="button" className="ab-btn solid" onClick={onClose}>닫기</button>
@@ -136,7 +136,7 @@ export default function AbuseReportModal({
                 rows={4}
                 disabled={sending}
                 placeholder={detailRequired
-                  ? '어떤 점이 문제인지 적어 주세요. 관리자가 이 내용으로 판단합니다.'
+                  ? '문제가 된 내용을 적어 주세요. 관리자가 확인해요.'
                   : '판단에 도움이 될 내용을 적어 주세요.'}
                 onChange={(e) => setDetail(e.target.value)}
               />
@@ -146,7 +146,7 @@ export default function AbuseReportModal({
             {/* 사유를 고르기 전에는 이 안내를 띄우지 않는다 — 창을 열자마자 빨간 글씨가
                 보이면 잘못한 것처럼 읽힌다. */}
             <FieldError>
-              {detailMissing ? '기타를 고르면 상세 내용을 적어야 합니다.' : undefined}
+              {detailMissing ? '기타를 고르면 상세 내용을 적어 주세요.' : undefined}
             </FieldError>
 
             {/* 중복은 빨강이 아니다 — 신고는 이미 들어가 있고 잘못한 것이 없다.
@@ -193,7 +193,7 @@ const DUPLICATE_TITLE: Record<AbuseTargetType, string> = {
   REPORT_COMMENT: '이 댓글은 이미 신고하셨습니다',
 }
 
-const DUPLICATE_HINT = '먼저 넣으신 신고를 관리자가 확인하고 있습니다. 처리가 끝나면 다시 신고할 수 있습니다.'
+const DUPLICATE_HINT = '앞서 접수한 신고를 관리자가 확인 중이에요. 처리가 끝나면 다시 신고할 수 있어요.'
 
 function reportErrorText(error: ApiError, targetType: AbuseTargetType) {
   const text = errorText(error)

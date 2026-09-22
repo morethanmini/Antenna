@@ -117,7 +117,7 @@ export default function ReportComments({ reportId, commentCount, canWrite, chann
           ? <p className="rc-gate">신고로 가려진 리포트라 댓글을 남길 수 없습니다.</p>
           : (
           <p className="rc-gate">
-            구독자만 댓글을 남길 수 있습니다.
+            구독자만 댓글을 쓸 수 있어요.
             {' '}
             <Link to={`/channels/${channelId}`}>채널 보러 가기</Link>
           </p>

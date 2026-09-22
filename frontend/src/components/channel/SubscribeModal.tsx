@@ -192,13 +192,13 @@ export default function SubscribeModal({ channel, onClose, onSubscribed, onNeedW
               {/* "오퍼레이터 위임 승인" 은 계약 용어고 화면 어디에도 그 말이 없다.
                   범위(구독료만)는 돈이 걸린 고지라 남기되, "인출되지 않습니다" 대신
                   무엇이 빠져나가는지로 적는다(2026-09-23). */}
-              <p className="sub-authorize-title">자동 갱신 권한도 같이 승인합니다</p>
+              <p className="sub-authorize-title">자동 갱신도 함께 승인해요</p>
               <p>
                 다음 달부터 구독료를 대신 낼 수 있게 해 주는 서명입니다.
                 <b> 매달 구독료만 빠져나갑니다.</b>
               </p>
               <p className="sub-authorize-off">
-                마이페이지 <b>구독 관리</b>에서 언제든 끌 수 있습니다. 끈 뒤에도 만료일까지 봅니다.
+                마이페이지 <b>구독 관리</b>에서 언제든 끌 수 있어요. 꺼도 만료일까지 볼 수 있어요.
               </p>
             </section>
 
@@ -211,7 +211,7 @@ export default function SubscribeModal({ channel, onClose, onSubscribed, onNeedW
 
             {short && (
               <p className="sub-error" role="alert">
-                <b>ANT 잔액이 부족합니다</b>
+                <b>ANT 잔액이 부족해요</b>
                 <span>{`보유 ${formatToken(balance)} ANT · 구독료 ${fee}. 지갑에서 잔액을 확인해 주세요.`}</span>
               </p>
             )}
@@ -228,7 +228,7 @@ export default function SubscribeModal({ channel, onClose, onSubscribed, onNeedW
         {view === 'signing' && (
           <div className="sub-body sub-progress" aria-live="polite">
             <span className="sub-spinner" aria-hidden="true" />
-            <p className="sub-progress-title">지갑에서 서명을 기다리고 있습니다</p>
+            <p className="sub-progress-title">지갑 서명을 기다리는 중이에요</p>
             <p className="sub-sub">지갑 창이 뜨지 않으면 확장 아이콘을 눌러 확인해 주세요.</p>
           </div>
         )}
@@ -251,8 +251,8 @@ export default function SubscribeModal({ channel, onClose, onSubscribed, onNeedW
                 <path d="m5 12.5 4.5 4.5L19 7.5" />
               </svg>
             </span>
-            <p className="sub-progress-title">{`${channel.nickname} 채널을 30일간 이용합니다`}</p>
-            <p className="sub-sub">미판정 예측과 근거를 이제 볼 수 있습니다.</p>
+            <p className="sub-progress-title">{`${channel.nickname} 채널을 30일간 이용할 수 있어요`}</p>
+            <p className="sub-sub">이제 미판정 예측과 근거를 볼 수 있어요.</p>
             <div className="sub-actions">
               <button type="button" className="sub-btn solid" onClick={onClose}>확인</button>
             </div>

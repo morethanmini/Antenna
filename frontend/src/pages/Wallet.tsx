@@ -36,7 +36,7 @@ export default function Wallet() {
       <div className="main-inner">
         <div className="page-head">
           <h1>지갑 · 토큰</h1>
-          <p>연동 상태와 ANT 잔액, 획득·사용 내역을 확인합니다</p>
+          <p>지갑 연동 상태와 ANT 잔액·사용 내역</p>
         </div>
 
         {/* ── 연동 상태 + 잔액 ─────────────────────────── */}
@@ -48,7 +48,7 @@ export default function Wallet() {
           <section className="wallet-unlinked">
             <p className="wallet-unlinked-title">아직 지갑을 연동하지 않았습니다</p>
             <p className="wallet-unlinked-hint">
-              지갑을 연동해야 예측을 등록하고 토큰을 받을 수 있습니다
+              지갑을 연동하면 예측을 등록하고 토큰을 받을 수 있어요
             </p>
             <button type="button" className="state-cta" onClick={() => setLinking(true)}>
               지갑 연동하기

@@ -57,7 +57,7 @@ export default function OnboardingNickname() {
   }
 
   const hint = {
-    idle: '2~30자로 정해 주세요. 나중에 마이페이지에서 바꿀 수 있습니다.',
+    idle: '2~30자로 정해 주세요. 마이페이지에서 바꿀 수 있어요.',
     checking: '확인 중…',
     available: '사용할 수 있는 닉네임입니다.',
     taken: '이미 사용 중인 닉네임입니다.',

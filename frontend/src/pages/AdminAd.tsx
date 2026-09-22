@@ -59,7 +59,7 @@ export default function AdminAd() {
     try {
       await handleAd(ad.id, action)
       setNote(action === 'APPROVE'
-        ? `#${ad.id} 승인 — 게재료 ${formatToken(ad.price)} ANT 소각 tx 를 보냈습니다. 체인 확정은 인덱서가 반영합니다.`
+        ? `#${ad.id} 승인 — 게재료 ${formatToken(ad.price)} ANT 소각 요청을 보냈어요. 체인 확정 후 반영돼요.`
         : `#${ad.id} 반려 — 아무것도 태우지 않았습니다.`)
       await load()
     } catch (e) {
@@ -74,7 +74,7 @@ export default function AdminAd() {
       <div className="main-inner">
         <div className="page-head">
           <h1>광고 승인</h1>
-          <p><b>승인을 누르는 순간 신청자 지갑에서 게재료가 소각됩니다.</b> 되돌릴 수 없습니다. 반려는 아무것도 태우지 않습니다.</p>
+          <p><b>승인하면 신청자 지갑에서 게재료가 소각돼요.</b> 소각은 되돌릴 수 없어요. 반려하면 소각되지 않아요.</p>
         </div>
 
         <div className="admin-tabs" role="tablist">
@@ -121,7 +121,7 @@ export default function AdminAd() {
                     <td>
                       {ad.days}일
                       <div className="admin-dim">{when(ad.startsAt)} → {when(ad.endsAt)}</div>
-                      {ad.status === 'PENDING' && <div className="admin-dim">승인 시점부터 다시 계산됩니다</div>}
+                      {ad.status === 'PENDING' && <div className="admin-dim">승인한 날부터 계산해요</div>}
                     </td>
                     <td>{formatToken(ad.price)} ANT</td>
                     <td>
@@ -158,10 +158,10 @@ export default function AdminAd() {
       {confirming && (
         <ConfirmDialog
           title={confirming.kind === 'APPROVE'
-            ? `#${confirming.ad.id} 를 승인합니다`
-            : `#${confirming.ad.id} 를 반려합니다`}
+            ? `#${confirming.ad.id} 승인`
+            : `#${confirming.ad.id} 반려`}
           description={confirming.kind === 'APPROVE'
-            ? `${confirming.ad.advertiserNickname ?? '신청자'} 님의 지갑에서 ${formatToken(confirming.ad.price)} ANT 가 소각됩니다. 되돌릴 수 없습니다. 게재는 ${confirming.ad.days}일, 지금부터입니다.`
+            ? `${confirming.ad.advertiserNickname ?? '신청자'} 님의 지갑에서 ${formatToken(confirming.ad.price)} ANT가 소각돼요. 되돌릴 수 없고, 지금부터 ${confirming.ad.days}일간 게재돼요.`
             : '아무것도 태우지 않습니다. 신청자가 묶어 뒀던 잔액이 풀립니다.'}
           confirmLabel={confirming.kind === 'APPROVE' ? '승인하고 소각' : '반려'}
           tone="danger"

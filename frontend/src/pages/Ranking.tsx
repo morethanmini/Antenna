@@ -198,7 +198,7 @@ function RankingBoard({ track }: { track: Track }) {
     {!error && !loading && rows.length === 0 && (
       <EmptyState
         title="집계된 랭킹이 없습니다"
-        hint="판정이 끝난 예측이 쌓이면 다음 배치에 반영됩니다"
+        hint="판정된 예측은 다음 배치에 반영돼요"
       />
     )}
 

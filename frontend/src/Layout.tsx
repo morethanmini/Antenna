@@ -301,7 +301,7 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
                   이 주석을 같이 본다. */}
               {/* 자물쇠. 장부(줄 그은 노트)와 사슬도 그려 봤는데, 원장(D-01)이 말하는
                   것은 "기록을 적어 둔 책" 이 아니라 **봉인** 이다 — 한 번 올라가면 못
-                  바꾼다는 것. 예측 등록 발판 위에서도 같은 말을 쓴다("예측이 봉인됩니다"). */}
+                  바꾼다는 것. 예측 등록 발판 위에서도 같은 말을 쓴다("예측을 봉인해요"). */}
               <Link className="iconbtn" to="/ledger" aria-label="확정 기록">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                      strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
@@ -415,7 +415,7 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
       {confirmingSignOut && (
         <ConfirmDialog
           title="정말 로그아웃할까요?"
-          description="이 브라우저의 세션이 끝납니다. 다시 이용하려면 로그인 화면에서 한 번 더 로그인해야 합니다."
+          description="이 브라우저에서 로그아웃해요. 다시 이용하려면 로그인해 주세요."
           confirmLabel="로그아웃"
           tone="danger"
           onCancel={() => setConfirmingSignOut(false)}

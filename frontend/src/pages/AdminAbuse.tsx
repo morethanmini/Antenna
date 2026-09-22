@@ -116,7 +116,7 @@ export default function AdminAbuse() {
       <div className="main-inner">
         <div className="page-head">
           <h1>신고 처리</h1>
-          <p>접수된 신고를 보고 리포트·댓글을 가리거나 신고를 기각합니다. 회원 차단은 <a href="/admin/users">회원 제재</a>에서 합니다.</p>
+          <p>신고를 확인하고 리포트·댓글을 가리거나 신고를 기각해요. 회원 차단은 <a href="/admin/users">회원 제재</a>에서 해요.</p>
         </div>
 
         <div className="admin-tabs" role="tablist">
@@ -213,11 +213,11 @@ export default function AdminAbuse() {
 
       {confirming && (
         <ConfirmDialog
-          title="신고를 수락합니다"
+          title="신고 수락"
           description={
             confirming.targetType === 'USER'
-              ? '신고가 닫힙니다. 계정은 막히지 않습니다 — 차단은 회원 제재에서 따로 합니다.'
-              : `대상 ${withSubject(TARGET_LABEL[confirming.targetType])} 가려집니다. 지워지지 않고, 나중에 복구할 수 있습니다.`
+              ? '신고를 닫아요. 계정을 차단하려면 회원 제재로 가세요.'
+              : `대상 ${withSubject(TARGET_LABEL[confirming.targetType])} 가려져요. 삭제되지는 않으며 나중에 복구할 수 있어요.`
           }
           confirmLabel="수락"
           tone="danger"

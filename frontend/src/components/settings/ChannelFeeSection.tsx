@@ -121,10 +121,10 @@ export default function ChannelFeeSection() {
           {/* ── 변경 ────────────────────────────────── */}
           {step === 'done' && applied ? (
             <div className="cf-done" role="status">
-              <p className="cf-done-title">{`${formatToken(applied.fee)} ANT 로 바뀝니다`}</p>
+              <p className="cf-done-title">{`${formatToken(applied.fee)} ANT로 바뀌어요`}</p>
               {/* 언제부터인지 말하지 않으면 지금 바뀐 줄 안다 */}
               <p className="cf-sub">
-                {`${formatDay(applied.effectiveFrom)}부터 적용됩니다. 이미 구독 중인 사람은 만료까지 바꾸기 전 가격입니다.`}
+                {`${formatDay(applied.effectiveFrom)}부터 적용돼요. 기존 구독자는 만료일까지 이전 가격을 내요.`}
               </p>
               <button type="button" className="st-btn" onClick={reset}>확인</button>
             </div>
@@ -162,8 +162,8 @@ export default function ChannelFeeSection() {
               {/* 입력 규칙은 누르기 전에 알린다 */}
               <p className={`cf-hint ${draft !== '' && !valid ? 'is-bad' : ''}`}>
                 {draft !== '' && !valid
-                  ? `0 이상 ${formatToken(String(FEE_MAX))} 이하의 정수만 넣을 수 있습니다`
-                  : '정수만 넣을 수 있습니다'}
+                  ? `0 이상 ${formatToken(String(FEE_MAX))} 이하의 정수로 입력해 주세요`
+                  : '정수로 입력해 주세요'}
               </p>
 
               {step === 'confirm' && (
@@ -171,13 +171,13 @@ export default function ChannelFeeSection() {
                 <div className="cf-confirm">
                   <p className="cf-confirm-title">
                     {latest === null
-                      ? `구독료를 ${formatToken(draft)} ANT 로 정합니다`
-                      : `${formatToken(latest)} ANT → ${formatToken(draft)} ANT 로 바꿉니다`}
+                      ? `구독료를 ${formatToken(draft)} ANT로 정해요`
+                      : `${formatToken(latest)} ANT → ${formatToken(draft)} ANT로 바꿔요`}
                   </p>
                   <ul className="cf-confirm-list">
-                    <li><b>구독자 전원에게 알림이 갑니다.</b> 되돌려도 알림은 취소되지 않습니다.</li>
-                    <li>차기 결제 주기부터 적용됩니다. <b>이미 구독 중인 사람은 만료까지 바꾸기 전 가격</b>입니다.</li>
-                    <li>변경 이력에 남습니다. 구독자가 볼 수 있습니다.</li>
+                    <li><b>모든 구독자에게 알림을 보내요.</b> 변경을 되돌려도 알림은 취소할 수 없어요.</li>
+                    <li>다음 결제 주기부터 적용돼요. <b>기존 구독자는 만료일까지 이전 가격</b>을 내요.</li>
+                    <li>변경 이력에 남고 구독자도 볼 수 있어요.</li>
                   </ul>
                 </div>
               )}

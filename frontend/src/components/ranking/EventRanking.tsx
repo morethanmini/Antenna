@@ -167,7 +167,7 @@ function Stage(
         <p className="rke-stage-sub">
           {event.phase === 'SETTLED'
             ? `${dayStamp(event.settleDate)} 종가로 판정했습니다`
-            : `${dayStamp(event.settleDate)} 종가로 판정합니다`}
+            : `${dayStamp(event.settleDate)} 종가로 판정해요`}
           {head.target !== null && ` · 마감 ${stamp(event[head.target])}`}
         </p>
       </div>

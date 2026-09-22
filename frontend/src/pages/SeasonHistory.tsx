@@ -181,7 +181,7 @@ function Journey({ done }: { done: number }) {
       <p className="rc-side-lead">
         {done === 0
           ? '첫 판을 끝내면 여기부터 채워져요.'
-          : `지금까지 ${done}판을 끝냈어요. 연습이 모여 더 좋은 투자자가 됩니다.`}
+          : `지금까지 ${done}판을 끝냈어요. 연습할수록 투자 감각이 쌓여요.`}
       </p>
 
       <ol className="rc-steps" style={{ ['--reached' as string]: reached }}>

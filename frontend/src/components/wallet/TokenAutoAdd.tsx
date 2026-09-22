@@ -118,7 +118,7 @@ export default function TokenAutoAdd({ chainId }: {
         <>
           <p className="wl-chain-warn" role="alert">
             지갑이 다른 네트워크를 보고 있어 {ANT_SYMBOL} 를 추가하지 못했습니다.
-            <b>{chain.name}</b> 로 바꾸면 넣을 수 있습니다.
+            <b>{chain.name}</b>로 바꾸면 추가할 수 있어요.
           </p>
           {/* 바꾸는 것도 우리가 부를 수 있는 일이다 — 경고만 남기면 막다른 길이 된다.
               바꾸고 나면 그 자리에서 토큰까지 이어 넣는다. */}
