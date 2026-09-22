@@ -107,8 +107,6 @@ function Hero({ lead, practice, ongoing, done, startAt, myError, myLoading, onRe
           전부 장식이라 레이어째 aria-hidden 이다. */}
       <div className="sh-backdrop" aria-hidden="true">
         <img className="sh-bd-wave" src="/assets/pageset/wave-thin.webp" alt="" />
-        <img className="sh-bd-spark" src="/assets/pageset/sparks.webp" alt="" />
-        <img className="sh-bd-candles" src="/assets/pageset/candles.webp" alt="" />
       </div>
 
       <div className="sh-hero-copy">

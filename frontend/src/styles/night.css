@@ -237,6 +237,43 @@ body.is-night.is-glass .card{
   backdrop-filter:blur(14px) saturate(140%);
 }
 
+/* ── 시즌 진행(G-04)만 흰 판이다 ──────────────────────────
+   이 화면은 is-glass 를 붙이지 않는다(위 is-glass 주석 참고) — 캔들과 주문 패널이
+   같이 서는 자리라 판이 하얘야 빨강 · 파랑을 어두운 판에 맞춰 다시 잡을 일이 없다.
+   토큰이 이미 밝은 값이라 되돌릴 것은 없고, 남는 것은 **그림자 하나**다:
+   밝은 화면용 --shadow 는 어두운 바닥에서 보이지 않아 판이 바닥에 붙어 보인다.
+
+   **바닥에 직접 앉는 판은 빠짐없이 적어야 한다.** 판을 새로 만들면 여기에 이름을
+   더한다. 카드 안쪽 상자들은 이 판들의 자손이라 저절로 따라온다. */
+body.sim-play-page .sp-stat,
+body.sim-play-page .sp-card,
+body.sim-play-page .sp-chart-card,
+body.sim-play-page .sp-fold,
+body.sim-play-page .sp-dialog,
+body.sim-play-page .sp-help .ms-say,
+body.sim-play-page .sp-help-pop,
+body.sim-play-page .spc-card,
+body.sim-play-page .tp-modal{
+  --shadow:0 1px 2px rgba(0,0,0,.18), 0 22px 44px -28px rgba(0,0,0,.7);
+}
+
+/* 머리 위 도시 띠. 세 화면이 같은 사진 · 같은 방식이다. 제목 줄 뒤에만 서고
+   아래로 녹아 사라진다 — 흰 판 뒤까지 내려가면 가려져 낭비다.
+   왼쪽 그늘은 제목이 앉는 자리다. 사진에 구름 · 불빛이 밝게 지나가는 구간이 있어
+   글자 그림자만으로는 자리마다 읽히는 정도가 달라진다. */
+body.sim-home-page .main::before,
+body.sim-play-page .main::before,
+body.sim-trades-page .main::before,
+body.sim-result-page .main::before{
+  content:"";position:absolute;inset:0 0 auto;height:300px;z-index:-1;pointer-events:none;
+  background:
+    linear-gradient(100deg, rgba(8,9,20,.9) 0%, rgba(8,9,20,.72) 26%, rgba(8,9,20,.16) 60%, transparent 80%),
+    linear-gradient(180deg, rgba(13,12,34,.52) 0%, rgba(13,12,34,.38) 45%, rgba(13,12,34,.9) 100%),
+    url("/assets/page_train2/city-skyline.webp") center top / cover no-repeat;
+  mask:linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
+  -webkit-mask:linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
+}
+
 /* ── 읽는 화면의 밤 바탕 (2026-09-22) ────────────────────────
    종목 탐색 · 종목 상세 · 리포트 · 내 예측(주가 예측 랭킹은 제 세계가 있어 밤으로
    바꾸지 않는다, 아래 참고). 홈과 같은 도시 사진을 깔되

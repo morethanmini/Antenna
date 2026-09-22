@@ -132,7 +132,7 @@ export const ROUTES: PageMeta[] = [
   // ── G. 모의투자 ──────────────────────────────────────
   /* G-00 모의투자 온보딩은 라우트가 없다 — M-09 와 같이 셸 위 오버레이다
      (components/SimOnboardingTour.tsx, Layout 이 띄운다). */
-  { screen: 'G-01', element: SeasonHome, path: '/sim', title: '모의투자 홈', access: 'user', mode: 'sim', nav: 'play', bodyClass: 'sim-home-page is-night', story: 'ANT-FE-SEASON-HOME' },
+  { screen: 'G-01', element: SeasonHome, path: '/sim', title: '모의투자 홈', access: 'user', mode: 'sim', nav: 'play', bodyClass: 'sim-home-page is-night is-glass', story: 'ANT-FE-SEASON-HOME' },
   /* **G-02 모드 선택을 걷어냈다(2026-09-21).** 모의투자를 연습 하나로 가기로 정해져
      고를 것이 없어졌다. 라우트는 넘겨보내는 자리로 남긴다(C-01 과 같은 처리) —
      사이드바·안내 투어가 여기를 가리키던 동안 즐겨찾기에 들어갔을 수 있고, 없는
@@ -142,19 +142,19 @@ export const ROUTES: PageMeta[] = [
      질문에 답하고 있었다 — 자세한 사정은 pages/SeasonPractice.tsx 머리말에 있다.
      모드 선택과 같이 넘겨보내는 자리로만 남긴다. */
   { screen: 'G-02', element: SeasonPractice, path: '/sim/practice', title: '연습하기', access: 'user', mode: 'sim', nav: 'play', story: 'ANT-FE-SEASON-PRACTICE' },
-  { screen: 'G-03', element: SeasonJoin, path: '/sim/seasons/:id', title: '시즌 상세 · 참가', access: 'user', mode: 'sim', nav: 'play', bodyClass: 'sim-join-page is-night', story: 'ANT-FE-SEASON-JOIN' },
+  { screen: 'G-03', element: SeasonJoin, path: '/sim/seasons/:id', title: '시즌 상세 · 참가', access: 'user', mode: 'sim', nav: 'play', bodyClass: 'sim-join-page is-night is-glass', story: 'ANT-FE-SEASON-JOIN' },
   { screen: 'G-04', element: SeasonPlay, path: '/sim/:id/play', title: '시즌 진행', access: 'user', mode: 'sim', nav: 'play', bodyClass: 'sim-play-page is-night', story: 'ANT-FE-SEASON-PLAY' },
   /* **G-05 시즌 리서치를 지웠다(2026-09-17).** 프로토타입에서 빠진 뒤로 "결론 나면
      정리한다" 는 주석과 함께 자리표시자만 남아 있었는데, 안 만들기로 정해졌다. */
-  { screen: 'G-06', element: SeasonTrades, path: '/sim/:id/trades', title: '매매일지', access: 'user', mode: 'sim', nav: 'portfolio', story: 'ANT-FE-SEASON-TRADES' },
+  { screen: 'G-06', element: SeasonTrades, path: '/sim/:id/trades', title: '매매일지', access: 'user', mode: 'sim', nav: 'portfolio', bodyClass: 'sim-trades-page is-night is-glass', story: 'ANT-FE-SEASON-TRADES' },
   /* **G-07 시즌 리더보드도 지웠다(2026-09-17).** 지라에서 폐기된 스토리다.
 
      ⚠ 그래서 **한 시즌 안의 순위를 볼 화면이 지금 하나도 없다.** 사이드바에서
      '모의투자 랭킹' 을 내릴 때(2026-09-16) "그건 시즌 리더보드(G-07)가 이미 보여
      준다" 를 근거로 삼았는데, 그 G-07 이 빈 페이지였다. 순위를 다시 보여줘야 한다면
      이 자리가 아니라 그 결정부터 되짚어야 한다. */
-  { screen: 'G-08', element: SeasonResult, path: '/sim/:id/result', title: '결과 · AI 복기', access: 'user', mode: 'sim', nav: 'portfolio', story: 'ANT-FE-SEASON-RESULT' },
-  { screen: 'G-09', element: SeasonHistory, path: '/sim/history', title: '기록 · 배지', access: 'user', mode: 'sim', nav: 'portfolio', bodyClass: 'sim-record-page is-night', story: 'ANT-FE-SEASON-HISTORY' },
+  { screen: 'G-08', element: SeasonResult, path: '/sim/:id/result', title: '결과 · AI 복기', access: 'user', mode: 'sim', nav: 'portfolio', bodyClass: 'sim-result-page is-night is-glass', story: 'ANT-FE-SEASON-RESULT' },
+  { screen: 'G-09', element: SeasonHistory, path: '/sim/history', title: '기록 · 배지', access: 'user', mode: 'sim', nav: 'portfolio', bodyClass: 'sim-record-page is-night is-glass', story: 'ANT-FE-SEASON-HISTORY' },
 
   // ── H. 지갑 · 알림 · 설정 · 광고 ─────────────────────
   { screen: 'H-01', element: Wallet, path: '/me/wallet', title: '지갑 · 토큰', access: 'user', mode: 'insight', nav: 'portfolio', bodyClass: 'is-night', story: 'ANT-FE-WALLET' },

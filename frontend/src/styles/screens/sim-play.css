@@ -122,13 +122,17 @@
   transition:background .12s;
 }
 .sp-tpick:hover{background:var(--surface-2)}
-.sp-tpick i{flex:none;color:var(--muted);font-size:var(--fs-lg);line-height:1;font-style:normal}
+/* 종목 이름 줄은 baseline 정렬이라(.sp-tname) 꺾쇠 상자가 글자 밑선에 앉아 처진다 */
+.sp-tpick i{flex:none;align-self:center;color:var(--muted)}
+/* 무게를 한 단씩 내렸다(2026-09-22). 850/24px 로 세워 두니 카드 머리줄 전체가
+   한 덩어리 검은 띠로 보여, 정작 읽어야 할 캔들보다 먼저 눈에 들어왔다.
+   종목명과 가격은 여전히 이 카드에서 가장 큰 글자다 — 크기 차이는 남기고 굵기만 뺀다. */
 .sp-tname b{
-  color:#0e1330;font-size:var(--fs-4xl);font-weight:var(--fw-black);letter-spacing:-.02em;
+  color:#0e1330;font-size:var(--fs-2xl);font-weight:var(--fw-heavy);letter-spacing:-.02em;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.sp-tname strong{color:#0e1330;font-size:var(--fs-5xl);font-weight:var(--fw-black);letter-spacing:-.025em}
-.sp-diff{font-size:var(--fs-lg);font-weight:var(--fw-heavy)}
+.sp-tname strong{color:#0e1330;font-size:var(--fs-3xl);font-weight:var(--fw-heavy);letter-spacing:-.025em}
+.sp-diff{font-size:var(--fs-base);font-weight:var(--fw-bold)}
 .sp-sector{
   flex:none;align-self:center;padding:3px 9px;border-radius:999px;
   background:var(--surface-2);color:var(--muted);font-size:var(--fs-xs);font-weight:var(--fw-bold);
@@ -148,7 +152,7 @@
   background:var(--surface-2);color:var(--muted);font-size:var(--fs-xs);
 }
 .sp-indbtn.on{border-color:var(--brand);background:var(--brand-softer)}
-.sp-indbtn i{font-style:normal;font-size:var(--fs-base);line-height:1}
+.sp-indbtn i{flex:none}
 
 /* 지표 목록. 접어 두는 이유는 차트 위 두 줄을 아끼려는 것이다 —
    지표를 바꾸는 일은 종목을 바꾸는 것보다도 드물다.
@@ -194,8 +198,10 @@
    구분선을 두지 않는다. 라벨이 이미 회색이라 경계 노릇을 한다. */
 .sp-ohlc{display:flex;flex-wrap:wrap;gap:4px 20px;margin:0 0 7px}
 .sp-ohlc > div{display:flex;align-items:baseline;gap:7px}
-.sp-ohlc dt{color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold)}
-.sp-ohlc dd{margin:0;color:var(--body);font-size:var(--fs-lg);font-weight:var(--fw-bold)}
+/* 라벨은 보조로 물러나고 값만 조금 진하다. 넷이 나란한 줄이라 둘 다 굵으면
+   여덟 덩어리가 같은 무게로 서서 어디가 값인지 안 갈린다. */
+.sp-ohlc dt{color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-normal)}
+.sp-ohlc dd{margin:0;color:var(--body);font-size:var(--fs-base);font-weight:var(--fw-bold)}
 
 .sp-state,.sp-hint{margin:8px 0 0;color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold)}
 .sp-hint{color:#8a7a3c}
@@ -212,7 +218,7 @@
 .ck-legend i{
   display:block;width:14px;height:2.5px;border-radius:2px;flex:none;
 }
-.ck-legend span{color:var(--muted);font-size:var(--fs-xs);font-weight:var(--fw-bold)}
+.ck-legend span{color:var(--muted);font-size:var(--fs-xs);font-weight:var(--fw-normal)}
 .ck-legend b{color:var(--body);font-size:var(--fs-sm);font-weight:var(--fw-bold)}
 .ck-svg{display:block;width:100%;outline:none}
 .ck-svg:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:8px}
@@ -447,6 +453,11 @@
   display:flex;align-items:center;gap:8px;
   min-height:54px;padding:0 18px;list-style:none;cursor:pointer;border-radius:16px;
   color:var(--ink);font-size:var(--fs-xl);font-weight:var(--fw-heavy);letter-spacing:-.02em;
+  /* 줄 전체가 누르는 자리다. 글자를 고를 수 있게 두면 두 번 누르거나 조금 끌린
+     순간 제목과 한 마디가 파랗게 잡혀, 접었다 폈다 하는 동안 화면이 어지럽다.
+     읽을 본문은 펴진 안쪽에 있으므로 여기서 글자를 고를 일이 없다. */
+  user-select:none;-webkit-user-select:none;
+  -webkit-tap-highlight-color:transparent;
 }
 .sp-fold > summary::-webkit-details-marker{display:none}
 .sp-fold > summary::marker{content:''}
@@ -458,11 +469,16 @@
   color:var(--faint);font-size:var(--fs-md);font-weight:var(--fw-bold);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.sp-fold > summary i{
-  flex:none;color:var(--muted);font-size:var(--fs-xl);line-height:1;font-style:normal;
-  transition:transform .15s;
+/* 꺾쇠 하나로 둔다. 한때 동그란 칸에 담았는데(2026-09-22) 줄 전체가 이미 누르는
+   자리라 그 안에 또 버튼이 있는 것처럼 보였다 — 접이 줄에서 누를 곳은 줄 하나다.
+   접고 펴는 자리라는 것은 꺾쇠의 방향과 색이 말한다. */
+.sp-fold > summary i:not(.sp-dot){
+  flex:none;width:22px;height:22px;color:var(--muted);
+  transition:transform .15s, color .12s;
 }
-.sp-fold[open] > summary i{transform:rotate(180deg)}
+.sp-fold > summary:hover i:not(.sp-dot){color:var(--brand)}
+/* 펴진 동안에는 색도 켜 둔다 — 방향 하나로만 말하면 화면을 훑을 때 잘 안 보인다 */
+.sp-fold[open] > summary i:not(.sp-dot){transform:rotate(180deg);color:var(--brand)}
 .sp-fold[open] > summary{border-radius:16px 16px 0 0;border-bottom:1px solid #eef0f6}
 .sp-fold-body{padding:16px 18px 18px}
 
@@ -476,9 +492,12 @@
 
 /* ── 종목 고르기 모달 ───────────────────────────────── */
 /* 규칙은 M-01 지갑 연동 모달과 같다 — z-index 60, 사이드바(40)·상단바(30) 위 */
+/* 가운데가 아니라 상단바 아래에서 시작한다. 가운데로 두면 창 윗부분이 상단바와
+   겹치는데, 그 바가 뒤를 흐리는 유리라 창 머리에만 흐림이 한 겹 더 얹혀 보인다. */
 .tp-backdrop{
   position:fixed;inset:0;z-index:60;
-  display:flex;align-items:center;justify-content:center;padding:20px;
+  display:flex;align-items:flex-start;justify-content:center;
+  padding:calc(var(--topbar-h) + 14px) 20px 20px;
   background:rgba(20,20,27,.44);
 }
 /* 높이를 고정한다. 목록 길이에 맞춰 늘었다 줄었다 하면 타자 한 글자마다 상자가
@@ -487,8 +506,11 @@
 .tp-modal{
   display:flex;flex-direction:column;
   width:100%;max-width:560px;
-  height:min(620px,calc(100vh - 40px));
+  height:min(620px,calc(100vh - var(--topbar-h) - 34px));
   border-radius:14px;background:var(--surface);
+  /* 안에서 구르는 목록이 모서리를 넘어 그려져 오른쪽 아래만 각져 보였다 —
+     스크롤바가 그 자리까지 내려온다. 판이 곡선을 직접 잘라 낸다. */
+  overflow:hidden;
   box-shadow:0 24px 60px -20px rgba(20,20,27,.4);outline:none;
 }
 .tp-head{
@@ -514,30 +536,55 @@
   color:var(--ink);font-size:var(--fs-lg);font-weight:var(--fw-bold);
 }
 
-/* 업종. 칩으로 늘어놓으면 스무 개가 넘어 가로 스크롤이 생기고, 스크롤바가 검색칸
-   바로 아래에 걸려 지저분하다. 접어 두면 한 줄이면 되고 개수도 같이 보인다.
+/* 업종 칩. 가로로 흘리지 않고 줄바꿈으로 깐다 — 가로 스크롤은 스크롤바가 검색칸
+   바로 아래 걸려 지저분하고, 무엇보다 오른쪽에 뭐가 더 있는지 안 보인다.
+   기본은 두 줄까지만(칩 30 + 사이 8 = 68px) 두고 나머지는 접는다.
    업종 목록은 서버가 종목마다 주는 sector 를 모아 만든다 — 하드코딩하지 않는다. */
+.tp-sectors{
+  display:flex;flex-wrap:wrap;gap:8px;
+  max-height:68px;overflow:hidden;
+}
+.tp-sectors.is-open{max-height:none}
+.tp-chip{
+  display:inline-flex;align-items:center;gap:6px;
+  height:30px;padding:0 11px;border:1px solid var(--rule);border-radius:999px;
+  color:var(--body);font-size:var(--fs-base);font-weight:var(--fw-bold);
+  transition:border-color .12s,background .12s,color .12s;
+}
+.tp-chip em{font-style:normal;color:var(--faint);font-size:var(--fs-xs);font-weight:var(--fw-bold)}
+.tp-chip:hover{border-color:var(--brand);background:var(--brand-softer)}
+.tp-chip.on{
+  border-color:var(--brand);background:var(--brand);color:#fff;
+}
+.tp-chip.on em{color:rgba(255,255,255,.75)}
+
 .tp-filter{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.tp-pick{
-  position:relative;display:inline-flex;align-items:center;gap:8px;
-  height:34px;padding:0 11px;border:1px solid var(--rule);border-radius:10px;
-  color:var(--body);
+.tp-more{
+  padding:2px 0;color:var(--brand);font-size:var(--fs-sm);font-weight:var(--fw-bold);
+  text-decoration:underline;text-underline-offset:3px;
 }
-.tp-pick:focus-within{border-color:var(--brand)}
-.tp-pick > span{flex:none;color:var(--muted);font-size:var(--fs-sm);font-weight:var(--fw-bold)}
-.tp-pick select{
-  appearance:none;border:0;background:transparent;outline:none;padding-right:2px;
-  max-width:190px;color:var(--ink);font-size:var(--fs-base);font-weight:var(--fw-bold);
-  font-family:inherit;cursor:pointer;
-}
-.tp-pick i{flex:none;color:var(--muted);font-size:var(--fs-base);line-height:1;font-style:normal}
+.tp-more:hover{color:var(--brand-ink)}
 
 .tp-count{margin:0;color:var(--muted);font-size:var(--fs-sm);font-weight:var(--fw-bold);white-space:nowrap}
 
 .tp-list{
   flex:1;min-height:0;overflow-y:auto;
-  list-style:none;margin:0;padding:6px 12px 14px;
+  margin:0;padding:6px 12px 14px;
 }
+.tp-list ul{list-style:none;margin:0;padding:0}
+
+/* 업종 머리글. 구르는 동안 위에 붙어 있어 지금 어느 업종을 보고 있는지 잃지 않는다.
+   목록 칸 자체가 스크롤 상자라 sticky 의 기준도 그 칸이다. */
+.tp-gh{
+  position:sticky;top:0;z-index:1;
+  display:flex;align-items:center;gap:8px;
+  margin:0;padding:9px 12px 7px;
+  background:var(--surface);
+  color:var(--muted);font-size:var(--fs-sm);font-weight:var(--fw-heavy);letter-spacing:.01em;
+}
+.tp-gh::after{content:"";flex:1;height:1px;background:var(--rule)}
+.tp-gh em{order:1;font-style:normal;color:var(--faint);font-size:var(--fs-xs)}
+.tp-group + .tp-group{margin-top:2px}
 .tp-row{
   display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;
   align-items:center;gap:10px;width:100%;
@@ -557,7 +604,7 @@
 }
 .tp-price{flex:none;min-width:78px;color:var(--body);font-size:var(--fs-base);font-weight:var(--fw-bold);text-align:right}
 /* 목록 안에 둔다 — 바깥에 두면 목록 칸이 0 으로 줄면서 상자가 뛴다 */
-.tp-empty{padding:40px 18px;text-align:center;color:var(--muted);font-size:var(--fs-base);font-weight:var(--fw-bold)}
+.tp-empty{margin:0;padding:40px 18px;text-align:center;color:var(--muted);font-size:var(--fs-base);font-weight:var(--fw-bold)}
 
 /* ── 좁은 화면 ──────────────────────────────────────── */
 /* 좁아지면 포트폴리오를 차트 아래로 내린다 — 차트가 먼저 좁아지면 안 된다 */
@@ -615,7 +662,7 @@
 
 @media(prefers-reduced-motion:reduce){
   .sp-indbtn,.sp-indpop button,.sp-tpick,.sp-steps button,.sp-stepper > button,.sp-join,
-  .sp-submit,.sp-advance,.tp-row,.pd-legend button,.sp-fold > summary i{transition:none}
+  .sp-submit,.sp-advance,.tp-row,.pd-legend button,.sp-fold > summary i:not(.sp-dot){transition:none}
 }
 
 /* ── 그날의 요약·소식 (ANT-SEASON-07) ───────────────── */
@@ -732,80 +779,39 @@
    그대로 둔다.** 인사이트의 종목 탐색이 이미 같은 방식이다(어두운 바닥 + 흰 판).
 
    바닥색 · 상단바 · 로고는 routes 의 bodyClass 에 붙인 is-night 가 가져온다.
-   다만 night.css 는 색 토큰 한 벌(--surface · --ink · --up …)까지 어둡게 갈아
-   끼운다 — 홈과 기록은 카드까지 유리판이라 그게 맞지만 여기서는 카드가 하얘야 한다.
-   그래서 **카드 뿌리에서 토큰을 밝은 값으로 되돌린다.** body 에 되돌리면 바닥 위
-   제목까지 검은 글자가 되므로, 되돌리는 자리는 반드시 카드 안쪽이다.
-   여기 적힌 값은 app.css :root 의 원래 값 그대로다 — 저기가 바뀌면 여기도 같이 본다.
-
-   **바닥에 직접 앉는 판은 빠짐없이 적어야 한다.** 처음에 .sp-card 만 적었더니
-   차트 · AI 한줄 요약 · 당시 주요 이슈가 어두운 판으로 남아 화면이 반반이 됐다.
-   판 이름이 하나가 아니다 — 요약 칸 · 일반 카드 · 차트 · 접히는 상자 · 확인창 ·
-   코치 말풍선 · 도움말 팝오버. 카드 **안쪽** 상자들(.sp-stepper · .sp-indpop ·
-   주문 패널 …)은 이 판들의 자손이라 저절로 따라온다.
-   판을 새로 만들면 여기에 이름을 더한다. */
-body.sim-play-page .sp-stat,
-body.sim-play-page .sp-card,
-body.sim-play-page .sp-chart-card,
-body.sim-play-page .sp-fold,
-body.sim-play-page .sp-dialog,
-body.sim-play-page .sp-help .ms-say,
-body.sim-play-page .sp-help-pop{
-  --ground:#fff;
-  --surface:#fff;
-  --surface-2:#f0f2f7;
-  --ink:#14141b;
-  --body:#3b3f4a;
-  --muted:#6b7280;
-  --faint:#9ca3af;
-  --rule:#e5e7ef;
-  --card-line:#dfe2ed;
-  --brand-soft:#ece9fd;
-  --brand-softer:#f4f3fe;
-  --ok:#15803d;
-  --ok-soft:#e7f5ec;
-  --hit:#0a7f3d;
-  --danger:#e04343;
-  --up:#ee0000;
-  --up-vivid:#ff2020;
-  --up-soft:#fdeceb;
-  --down:#0066ff;
-  --down-vivid:#0066ff;
-  --down-soft:#e9f0ff;
-  --wash:linear-gradient(118deg,#f2f0ff 0%,#ebe8fd 44%,#e6e2fc 74%,#f1ecff 100%);
-  --wash-line:#e4e1fa;
-  --glass-ink:#3b4150;
-  /* 흰 판이 어두운 바닥 위에 뜬다. 원래 그림자는 어두운 바닥에서 안 보이므로
-     한 단 깊게 준다 — 안 그러면 판이 바닥에 붙어 오려 붙인 것처럼 보인다. */
-  --shadow:0 1px 2px rgba(0,0,0,.18), 0 22px 44px -28px rgba(0,0,0,.7);
-  color:var(--body);
-}
-
-/* 머리 위 도시 띠. 기록 화면과 같은 사진 · 같은 방식이다. 제목 줄 뒤에만 서고
-   아래로 녹아 사라진다 — 요약 칸 아래까지 내려가면 흰 판 뒤에 가려 낭비다. */
-body.sim-play-page .main::before{
-  content:"";position:absolute;inset:0 0 auto;height:300px;z-index:-1;pointer-events:none;
-  background:
-    linear-gradient(180deg, rgba(13,12,34,.52) 0%, rgba(13,12,34,.38) 45%, rgba(13,12,34,.9) 100%),
-    url("/assets/page_train2/city-skyline.webp") center top / cover no-repeat;
-  mask:linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
-  -webkit-mask:linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
-}
+   카드를 흰 판으로 되돌리는 규칙은 **night.css 의 "흰 판" 목록**에 있다 —
+   매매일지 · 결과와 같은 방식이라 한 군데에 모아 뒀다. 이 화면에서 판을 새로
+   만들면 그 목록에 이름을 더한다. 여기에는 이 화면에만 있는 것들만 적는다. */
 
 /* 바닥에 직접 앉은 글자들 — 여기만 밤의 글자색을 쓴다 */
 body.sim-play-page .sp-crumb{color:var(--night-body)}
 body.sim-play-page .sp-crumb a:hover{color:#fff}
 body.sim-play-page .sp-crumb i{color:var(--night-faint)}
-body.sim-play-page .sp-title h1{color:var(--night-ink);text-shadow:0 2px 14px rgba(0,0,0,.45)}
-body.sim-play-page .sp-title p{color:var(--night-body)}
-body.sim-play-page .sp-dayof{color:var(--night-body)}
+body.sim-play-page .sp-title h1{color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.7)}
+/* 소제목은 흰색을 조금만 낮춘다. --night-body(#bdb8dc)는 어두운 판 위에서는
+   맞는 값이지만 사진 위에서는 밝은 구간을 만나면 그대로 묻힌다. */
+body.sim-play-page .sp-title p{color:rgba(255,255,255,.92);text-shadow:0 1px 10px rgba(0,0,0,.7)}
 
 /* DAY 알약과 진행 바. 밝은 화면에서는 옅은 보라 판이었는데 어두운 바닥에서는
    그 판이 너무 밝아 제목보다 먼저 눈에 든다 — 유리 한 겹으로 낮춘다. */
-body.sim-play-page .sp-daychip{
-  border-color:var(--night-line);background:var(--night-glass);color:#fff;
+/* DAY · 진행 바 · 남은 날. 왼쪽 그늘은 제목 자리까지만 내려온다(사진을 다 덮으면
+   띠를 깐 뜻이 없다). 그래서 이쪽은 **자기 판**을 하나 갖는다 — 뒤 사진을 흐리고
+   어둡게 눌러, 건물 불빛이 지나가도 숫자가 늘 같은 바닥 위에 선다. */
+body.sim-play-page .sp-day{
+  /* **테두리는 DAY 칩 것 하나만 남긴다.** 판에도 테를 두르고 안쪽에 여백까지 주면
+     테가 두 줄로 겹쳐 보여, 판이 칩을 감싼 것이 아니라 뒤에서 겉돈다.
+     그래서 판은 테 없는 그늘이고, 모서리와 왼쪽·위·아래 끝을 칩에 그대로 맞춘다 —
+     같은 10px, 여백 0. 오른쪽만 열어 진행 바와 남은 날을 담는다. */
+  padding:0 13px 0 0;border-radius:10px;
+  background:rgba(10,9,28,.55);
+  -webkit-backdrop-filter:blur(10px) saturate(130%);
+  backdrop-filter:blur(10px) saturate(130%);
 }
-body.sim-play-page .sp-bar{background:rgba(255,255,255,.14)}
+body.sim-play-page .sp-daychip{
+  border-color:rgba(255,255,255,.22);background:rgba(255,255,255,.12);color:#fff;
+}
+body.sim-play-page .sp-bar{background:rgba(255,255,255,.2)}
+body.sim-play-page .sp-dayof{color:rgba(255,255,255,.92)}
 
 /* ── 한 화면에 담는다(2026-09-22) ──────────────────────────
    배율 100% 에서 제목부터 아래 두 접이 카드까지가 한 화면에 들어와야 한다.
@@ -860,9 +866,6 @@ body.sim-play-page .sp-fold-body{padding:10px 18px 12px}
 @media (max-height:900px){
   body.sim-play-page .main-inner{padding-top:10px;padding-bottom:10px}
   body.sim-play-page .sp-stat-val{font-size:var(--fs-xl)}
-  /* 접이 카드 본문은 읽을거리라 줄 수가 날마다 다르다. 낮은 화면에서는 높이를
-     묶고 안에서 굴린다 — 이 카드 하나 때문에 아래 전부가 화면 밖으로 밀리느니 낫다 */
-  body.sim-play-page .sp-fold-body{max-height:76px;overflow:auto}
 }
 @media (max-height:820px){
   /* 말머리("모의투자 홈 › 진행"). 여기서는 가장 덜 중요한 줄이다 — 상단바의
@@ -871,12 +874,88 @@ body.sim-play-page .sp-fold-body{padding:10px 18px 12px}
 }
 
 @media (max-height:820px){
-  body.sim-play-page .sim-play{gap:8px}
-  body.sim-play-page .main-inner{padding-top:8px;padding-bottom:8px}
+  body.sim-play-page .sim-play{gap:7px}
+  body.sim-play-page .main-inner{padding-top:7px;padding-bottom:7px}
   /* 주문 패널의 줄 사이. 누르는 것들의 높이(44)는 그대로 두고 사이만 좁힌다 */
   body.sim-play-page .sp-sides{margin-bottom:7px}
   body.sim-play-page .sp-fixed{margin-bottom:6px}
   body.sim-play-page .sp-qty-row{height:40px}
-  body.sim-play-page .sp-steps{margin-top:6px;margin-bottom:8px}
+  body.sim-play-page .sp-steps{margin-top:6px;margin-bottom:6px}
   body.sim-play-page .sp-amount .sp-total dd{font-size:var(--fs-2xl)}
+  /* 진행 중인 시즌에만 서는 두 줄(건너뛰고 종료 · 체결 안내). 끝난 시즌보다 패널이
+     그만큼 높아져 줄 전체를 밀어 올린다 — 누르는 자리는 살리고 여백만 줄인다. */
+  body.sim-play-page .sp-skip{margin-top:3px;padding:3px 0}
+  body.sim-play-page .sp-note{margin-top:5px}
+}
+
+/* 화면 안내(코치마크) 말풍선. 뒤에 어두운 덮개가 깔리는데 말풍선 바탕이 옅은 흰색
+   이면 그 덮개와 아래 주문 패널이 그대로 비쳐 글자를 못 읽는다 — 위에서 토큰을
+   되돌려 흰 판으로 세우고, 여기서는 어두운 판 위에 뜨도록 그림자만 깊게 준다.
+   꼬리도 같은 흰색이어야 판에서 떨어져 나가지 않는다. */
+body.sim-play-page .spc-card{
+  box-shadow:0 26px 54px -16px rgba(0,0,0,.72), 0 0 0 1px rgba(255,255,255,.28);
+}
+body.sim-play-page .spc-card::before{background:#fff}
+
+/* 화면 안내 보기. 원래는 브랜드색 글자 버튼인데, 어두운 바닥에서는 그 보라가
+   가라앉아 글자인지도 잘 안 보이고 누를 수 있다는 것도 안 드러난다.
+   밤에서만 알약 하나로 세운다 — 옆 설명과 같은 줄에 있으므로 크기는 그대로 두고
+   테두리와 옅은 채움으로 "누르는 것" 만 말한다. */
+body.sim-play-page .sp-coach-again{
+  display:inline-flex;align-items:center;gap:5px;
+  margin-left:4px;padding:1px 11px 1px 9px;
+  border:1px solid rgba(186,173,255,.55);border-radius:999px;
+  /* 연보라 유리. 위쪽이 밝고 아래로 가라앉아 볼록해 보인다 — 밤 화면의 다른
+     누르는 것들과 같은 방향이다(안쪽 윗선의 빛). */
+  background:linear-gradient(180deg, rgba(167,152,255,.42) 0%, rgba(124,108,232,.3) 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45), 0 0 14px -4px rgba(150,130,255,.75);
+  color:#fff;font-weight:var(--fw-bold);
+  transition:background .16s, border-color .16s, box-shadow .16s;
+}
+/* 앞의 작은 빛. 눌러 보라고 눈길을 한 번 끌되, 계속 깜빡이지는 않는다 */
+body.sim-play-page .sp-coach-again::before{
+  content:"";flex:none;width:5px;height:5px;border-radius:50%;
+  background:#efeaff;box-shadow:0 0 7px 1px rgba(200,186,255,.95);
+}
+body.sim-play-page .sp-coach-again:hover{
+  background:linear-gradient(180deg, rgba(190,178,255,.62) 0%, rgba(140,124,245,.46) 100%);
+  border-color:rgba(214,205,255,.85);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6), 0 0 20px -3px rgba(168,150,255,.9);
+  text-decoration:none;
+}
+body.sim-play-page .sp-coach-again:active{
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.35);
+}
+body.sim-play-page .sp-coach-again:focus-visible{outline:2px solid #cfc6ff;outline-offset:2px}
+
+/* 종목 고르기 창. 판 자체는 위에서 흰 판으로 되돌렸고, 여기서는 그 뒤 배경막만
+   진하게 한다 — 밝은 화면 기준(.44)으로 두면 어두운 본문 위에서 막이 있는지
+   없는지 갈리지 않아, 창이 화면에 떠 있는 것처럼 안 보인다. */
+body.sim-play-page .tp-backdrop{background:rgba(6,5,24,.66)}
+body.sim-play-page .tp-modal{
+  box-shadow:0 30px 70px -18px rgba(0,0,0,.75), 0 0 0 1px rgba(255,255,255,.14);
+}
+
+/* ── 꺾쇠 한 벌 ───────────────────────────────────────────
+   '⌄' 글리프를 그대로 쓰면 서체마다 글자 상자 안에서 앉는 높이가 달라, 같은 줄에
+   있는 글자와 가운데가 안 맞는다(아래로 처져 보였다). 글리프는 지우고 테두리
+   두 변으로 직접 그린다 — 크기·굵기·가운데가 서체와 무관해진다.
+   .sp-dot 은 같은 <i> 지만 점이라 뺀다. */
+.sp-tpick i,
+.sp-indbtn i,
+.sp-fold > summary i:not(.sp-dot){
+  display:inline-grid;place-items:center;font-size:0;font-style:normal;
+}
+.sp-tpick i{width:16px;height:16px}
+.sp-indbtn i{width:14px;height:14px}
+/* 접이 줄의 꺾쇠만 한 단 크다. 줄이 54px 이라 작으면 줄 오른쪽 끝이 비어 보인다 */
+.sp-fold > summary i:not(.sp-dot)::before{width:9px;height:9px;border-width:2px}
+.sp-tpick i::before,
+.sp-indbtn i::before,
+.sp-fold > summary i:not(.sp-dot)::before{
+  content:"";width:7px;height:7px;
+  border-right:1.8px solid currentColor;border-bottom:1.8px solid currentColor;
+  border-radius:0 0 2px 0;
+  /* 45도로 돌리면 꼭짓점이 상자 아래로 내려간다 — 그만큼 올려 가운데를 맞춘다 */
+  transform:translateY(-2px) rotate(45deg);
 }
