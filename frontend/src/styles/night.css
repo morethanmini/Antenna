@@ -233,9 +233,11 @@ body.is-night .card{
 }
 
 /* ── 바닥만 밤, 카드는 낮 ─────────────────────────────────
-   시즌 진행(G-04) · 매매일지(G-06) · 결과(G-08) 세 화면이 이 방식이다. 홈과
-   포트폴리오는 카드까지 유리판이지만, 이 셋은 숫자 · 캔들 · 표를 오래 들여다보는
-   자리라 판이 하얘야 한다. 인사이트의 종목 탐색도 같은 방식이다.
+   **시즌 진행(G-04) 한 화면만** 이 방식이다. 캔들과 주문 패널이 같이 서는 자리라
+   판이 하얘야 빨강 · 파랑을 다시 잡을 일이 없다. 인사이트의 종목 탐색도 같은 방식이다.
+   나머지 모의투자 화면(홈 · 시즌 상세 · 포트폴리오 · 매매일지 · 결과)은 카드까지
+   유리판이다 — 한때 매매일지와 결과도 여기 있었는데(2026-09-22), 표뿐인 화면이라
+   유리로 둬도 읽히고 그 편이 다른 화면들과 한 벌로 보인다.
 
    위에서 색 토큰 한 벌(--surface · --ink · --up …)을 어둡게 갈아 끼웠으므로,
    흰 판으로 둘 곳에서는 그 값을 **되돌려** 준다. 값은 app.css :root 의 원래 값
@@ -256,12 +258,7 @@ body.sim-play-page .sp-dialog,
 body.sim-play-page .sp-help .ms-say,
 body.sim-play-page .sp-help-pop,
 body.sim-play-page .spc-card,
-body.sim-play-page .tp-modal,
-body.sim-trades-page .st-stat,
-body.sim-trades-page .st-card,
-body.sim-result-page .rs-stat,
-body.sim-result-page .rs-card,
-body.sim-result-page .rs-fold{
+body.sim-play-page .tp-modal{
   --ground:#fff;
   --surface:#fff;
   --surface-2:#f0f2f7;
