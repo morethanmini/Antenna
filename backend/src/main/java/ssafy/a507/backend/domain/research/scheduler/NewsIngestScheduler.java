@@ -5,8 +5,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import ssafy.a507.backend.domain.research.service.BriefingGenerationService;
@@ -75,28 +73,6 @@ public class NewsIngestScheduler {
     @Scheduled(cron = "${app.ai.generation-cron:-}", zone = "Asia/Seoul")
     public void generate() {
         briefingGenerationService.generate();
-    }
-
-    /**
-     * 기동 직후 한 번 더 — 배포하고 나서 첫 cron 틱을 기다리지 않는다(2026-09-23).
-     *
-     * <p>콜이 늘지 않는다. {@code generate()} 는 같은 기준일·같은 세대 행이 있으면 모델을 부르지
-     * 않고 조회 두 번으로 끝난다. 그날 브리핑이 아직 없을 때만 한 콜이다 — 즉 배포가 그날의 첫
-     * 회차를 앞당길 뿐이다.
-     *
-     * <p>기동을 막지 않도록 별도 스레드에서 돈다. 헬스체크가 이 회차를 기다리면 배포 스크립트가
-     * GMS 응답 시간만큼 늦어지고, 느린 날엔 롤백으로 읽힌다. 예외는 여기서 받는다 — 스레드 밖으로
-     * 나가면 아무도 받지 않아 표준 오류로만 흘러 로그 검색에 안 걸린다.
-     */
-    @EventListener(ApplicationReadyEvent.class)
-    public void generateOnStartup() {
-        Thread.ofVirtual().name("briefing-startup").start(() -> {
-            try {
-                generate();
-            } catch (RuntimeException e) {
-                log.warn("[B6] 기동 직후 브리핑 회차 실패 — {}", e.toString());
-            }
-        });
     }
 
     /**
