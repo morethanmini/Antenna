@@ -16,6 +16,9 @@
    셸의 .main-inner 여백도 이 화면에서만 줄인다. bodyClass 'sim-home-page'(routes.ts)
    가 body 에 붙으므로 다른 화면의 여백은 그대로다.
 
+   색·상단바처럼 기록 화면(G-09)과 같이 쓰는 것은 styles/night.css 에 있다.
+   여기에는 이 화면만의 값(여백 · 히어로 · 카드 크기)만 남긴다.
+
    ── .sim-home 으로 한정한 규칙이 있는 이유 ──────────────
    G-09 기록(sim-history.css)이 같은 sh- 접두사로 .sh-bar 를 이미 쓴다. CSS 는 import
    되는 순간 전역이라 두 화면을 오간 뒤에는 나중에 실린 쪽이 이긴다. 겹치는 것은
@@ -46,38 +49,10 @@ body.sim-home-page{
   --fact-gap:26px;
   --quote:28px;
 
-  /* 어두운 판의 색 한 벌 */
-  --night-0:#0d0c22;
-  --night-1:#171436;
-  --night-2:#231d4d;
-  --night-ink:#f4f2ff;
-  --night-body:#bdb8dc;
-  --night-faint:#8c86b3;
-  --night-line:rgba(255,255,255,.12);
-  --night-glass:rgba(255,255,255,.07);
-  --night-glass-hi:rgba(255,255,255,.12);
-  --glow:#8b7dff;
-  --hand:"Nanum Pen Script","Nanum Pen",cursive;
 }
 
 body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--page-pb)}
 
-/* ── 페이지 전체가 밤이다(2026-09-21) ──────────────────────
-   시안은 히어로만 어두운 카드가 아니라 본문 전체가 밤 도시다. 상단바는 그대로 밝게 두고
-   .main 만 어둡게 칠한다 — bodyClass 로 한정되므로 다른 화면은 영향이 없다.
-   도시 실루엣(city-night.webp)은 scripts/build-city-night.py 가 그린 것이다. 사진이
-   아니라 사각형과 창문 점으로 만든 그림이어서 시대·지역 단서가 없다.
-   body 도 같은 색으로 칠해 스크롤 끝에서 밝은 바탕이 새지 않게 한다. */
-body.sim-home-page{background:var(--night-0)}
-body.sim-home-page .main{
-  position:relative;isolation:isolate;
-  color:var(--night-ink);
-  background:
-    radial-gradient(60% 45% at 72% 12%, rgba(139,125,255,.30) 0%, transparent 60%),
-    radial-gradient(45% 40% at 12% 30%, rgba(84,87,232,.22) 0%, transparent 60%),
-    radial-gradient(50% 35% at 50% 100%, rgba(120,100,255,.25) 0%, transparent 70%),
-    linear-gradient(180deg, #100e2b 0%, var(--night-1) 45%, var(--night-0) 100%);
-}
 /* 도시는 별도 레이어에 깐다. 배경 이미지로 같이 넣으면 그라데이션과 크기 기준이 달라
    화면 폭에 따라 끊긴다. 아래에 붙여 두고 위쪽은 하늘로 흐려진다. */
 body.sim-home-page .main::before{
@@ -90,128 +65,6 @@ body.sim-home-page .main::before{
   -webkit-mask:linear-gradient(180deg, transparent 20%, #000 60%, #000 100%);
 }
 
-/* ── 상단바도 밤이다(2026-09-21) ────────────────────────
-   시안은 바까지 어두운 한 덩어리다. 셸(app.css)의 상단바는 흰 유리 한 벌로 맞춰져
-   있어서, 그 위에 어두운 배경만 깔면 **아무것도 안 보인다** — 유리 버튼의 형태는
-   흰 테와 어두운 그림자가 만드는데, 어두운 바탕에서는 흰 테가 과하게 튀고 그림자는
-   통째로 사라진다. 그래서 색 한 벌을 여기서 뒤집는다.
-   1. 채움은 흰색을 아주 옅게(.06~.12). 밝은 판에서 쓰던 청회색 그러데이션은 어두운
-      바탕에서 때 낀 것처럼 보인다.
-   2. 형태는 **안쪽 위의 흰 줄 하나**가 잡는다. 바깥 헤어라인은 어두운 선 대신
-      옅은 흰 선이다 — 어두운 선은 어두운 바탕에서 경계가 되지 못한다.
-   3. 바깥 그림자는 뺀다. 어두운 바탕 위의 검은 그림자는 보이지 않으면서 색만 탁하게
-      만든다.
-   메뉴 **항목은 손대지 않는다** — 바뀌는 것은 색뿐이다.
-   곁창(검색 · 알림 · 계정 · 햄버거)은 바에 매달린 별개의 판이라 그대로 밝게 둔다.
-
-   로고는 CSS 로 못 바꾼다(img src). Layout.tsx 의 NIGHT_PAGES 가 밝은 글자
-   버전으로 갈아 끼운다 — 기본 워드마크는 글자가 짙은 남색이라 여기서 사라진다. */
-body.sim-home-page{
-  --nav-glass:linear-gradient(180deg, rgba(255,255,255,.12) 0%, rgba(255,255,255,.05) 55%, rgba(255,255,255,.09) 100%);
-  --nav-glass-hi:linear-gradient(180deg, rgba(255,255,255,.2) 0%, rgba(255,255,255,.1) 55%, rgba(255,255,255,.16) 100%);
-  --nav-raise:0 0 0 1px rgba(255,255,255,.1), inset 0 1px 0 rgba(255,255,255,.22);
-  --nav-raise-hi:0 0 0 1px rgba(255,255,255,.18), inset 0 1px 0 rgba(255,255,255,.34);
-  /* 파임. **안쪽 위의 그늘 + 아래 모서리의 빛** 이 만든다 — app.css 의 --glass-inset
-     과 같은 방향이고 값만 어두운 판에 맞게 키웠다. 흰 테를 한 바퀴 두르면 사방이
-     밝아져 파인 것이 아니라 떠 있는 것으로 읽힌다(2026-09-21 에 한 번 그렇게 만들었다). */
-  --nav-inset:inset 0 3px 7px rgba(0,0,0,.55), inset 0 -1px 0 rgba(255,255,255,.16);
-}
-/* **뒤가 비쳐야 한다(2026-09-21).** .82 로 깔았더니 바와 본문이 서로 다른 검정
-   두 판으로 갈려 경계에 가로 줄이 생겼다. 본문의 그러데이션·도시가 바 밑으로
-   그대로 지나가므로(.main 은 top:0 에서 시작하고 padding-top 으로 밀린다) 알파를
-   내리면 그 그림이 비쳐 한 덩어리가 된다.
-   아래 실선도 뺀다 — 비치는 바에 선을 그으면 그 선만 남아 다시 두 판이 된다.
-   대신 아주 옅은 흰 줄 하나로 바닥을 표시한다. */
-body.sim-home-page .navbar{
-  background:rgba(18,16,44,.55);
-  border-bottom-color:rgba(255,255,255,.07);
-}
-@supports (backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px)){
-  body.sim-home-page .navbar{
-    background:rgba(18,16,44,.34);
-    -webkit-backdrop-filter:blur(16px) saturate(150%);
-    backdrop-filter:blur(16px) saturate(150%);
-  }
-}
-
-/* 모드 전환 — 파인 트랙은 어두운 바탕에서 반대로 읽힌다. 안쪽 위를 더 어둡게 두고
-   아래 밝은 줄을 지운다(흰 줄이 어두운 바에서 혼자 빛난다). 켜진 알은 그대로 브랜드색. */
-body.sim-home-page .modeswitch{
-  --ms-track:rgba(255,255,255,.08);
-  box-shadow:inset 0 2px 5px rgba(0,0,0,.4), inset 0 -1px 0 rgba(255,255,255,.08), 0 0 0 1px rgba(255,255,255,.07);
-}
-body.sim-home-page .modeswitch a{color:var(--night-faint);text-shadow:none}
-body.sim-home-page .modeswitch a:hover{color:var(--night-ink)}
-body.sim-home-page .modeswitch a.on{color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.3)}
-
-/* 메뉴 글자. 밝은 판에서는 검정이었다 — 여기서는 그 반대로 간다.
-   짚으면 뜨고 지금 있는 자리는 들어가 있다는 규칙(app.css)은 그대로 살린다. */
-body.sim-home-page .navmenu a{color:var(--night-body)}
-body.sim-home-page .navmenu a:hover{
-  color:#fff;background-image:var(--nav-glass);box-shadow:var(--nav-raise);
-}
-/* 지금 있는 자리. **app.css 가 걸어 둔 유리 블러를 끈다** — 바가 이미 블러라 그 위에
-   한 겹 더 얹으면 saturate(180%)가 이 칸만 밝히고 채도를 올려, 눌린 자리가 도로
-   떠 보인다(밝은 판에서는 흰 바 위 은은한 서리였지만 여기서는 반대로 작동한다).
-   대신 바보다 확실히 어두운 채움으로 판다 — 어두운 바탕에서 검은 그림자만으로는
-   파임이 보이지 않아, 파였다고 말하는 것은 결국 색의 깊이다. */
-body.sim-home-page .navmenu a.on{
-  color:#fff;background-color:rgba(0,0,0,.34);box-shadow:var(--nav-inset);
-  -webkit-backdrop-filter:none;backdrop-filter:none;
-}
-body.sim-home-page .navmenu a.on:hover{
-  background-image:none;background-color:rgba(0,0,0,.42);box-shadow:var(--nav-inset);
-}
-
-/* 잔액 칩 · 아이콘 버튼 · 프로필 — 유리 한 벌을 어두운 쪽으로 갈아 끼운다 */
-body.sim-home-page .wallet,
-body.sim-home-page .iconbtn{background-image:var(--nav-glass);box-shadow:var(--nav-raise)}
-body.sim-home-page .wallet{color:#fff}
-body.sim-home-page .iconbtn{color:var(--night-body)}
-body.sim-home-page .wallet:hover,
-body.sim-home-page .iconbtn:hover{background-image:var(--nav-glass-hi);box-shadow:var(--nav-raise-hi);color:#fff}
-body.sim-home-page .wallet:active,
-body.sim-home-page .iconbtn:active{box-shadow:var(--nav-inset)}
-/* 곁창을 열어 둔 버튼은 눌린 채로. 밝은 판의 연보라 채움은 어두운 바에서 탁해
-   보여, 브랜드색을 좀 더 진하게 깐다. */
-body.sim-home-page .iconbtn[aria-expanded="true"]{
-  background-image:linear-gradient(180deg,
-    color-mix(in oklab, var(--brand) 55%, transparent) 0%,
-    color-mix(in oklab, var(--brand) 72%, transparent) 100%);
-  color:#fff;box-shadow:inset 0 2px 6px rgba(0,0,0,.3), 0 0 0 1px color-mix(in oklab, var(--brand) 60%, transparent);
-}
-body.sim-home-page .avatarbtn{box-shadow:var(--nav-raise)}
-body.sim-home-page .avatarbtn:hover{box-shadow:var(--nav-raise-hi)}
-
-/* 바에 매달린 작은 메뉴 둘(햄버거 · 계정). 흰 판 그대로 두면 어두운 바 아래로
-   밝은 카드가 튀어나와, 바와 한 몸인 메뉴가 아니라 남의 창처럼 보인다.
-   알림 곁창은 건드리지 않는다 — 그쪽은 메뉴가 아니라 읽을거리가 담긴 판이다. */
-body.sim-home-page .navburger-pop,
-body.sim-home-page .accountmenu-pop{
-  background:rgba(24,21,58,.96);border-color:rgba(255,255,255,.12);
-  box-shadow:0 18px 44px -18px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.08);
-}
-body.sim-home-page .navburger-pop a,
-body.sim-home-page .accountmenu-pop a,
-body.sim-home-page .accountmenu-pop button{color:var(--night-body)}
-body.sim-home-page .navburger-pop a:hover,
-body.sim-home-page .accountmenu-pop a:hover,
-body.sim-home-page .accountmenu-pop button:hover{background:rgba(255,255,255,.09);color:#fff}
-/* 지금 있는 자리는 한 줄일 때(.navmenu a.on)와 같은 음각이다 */
-body.sim-home-page .navburger-pop a.on{
-  background-color:rgba(0,0,0,.3);color:#fff;box-shadow:var(--nav-inset);
-}
-body.sim-home-page .navburger-pop a.on:hover{background-color:rgba(0,0,0,.36);box-shadow:var(--nav-inset)}
-/* 로그아웃은 색으로 구분한다는 규칙을 어두운 판에서도 지킨다 — 기본 --danger 는
-   어두운 바탕에서 가라앉아 한 단계 밝힌다. */
-body.sim-home-page .accountmenu-pop .is-danger{color:#ff8b8b}
-body.sim-home-page .accountmenu-pop .is-danger:hover{background:rgba(255,107,107,.14);color:#ffa3a3}
-
-/* 비로그인 상태의 두 버튼. 로그인 쪽이 흰 판(#fff)이라 어두운 바에서 혼자 튄다. */
-body.sim-home-page .navbar-login{
-  background:rgba(255,255,255,.08);color:var(--night-ink);border-color:rgba(255,255,255,.16)!important;
-}
-body.sim-home-page .navbar-auth a:hover{border-color:var(--glow)!important;color:#fff}
 
 .sim-home{display:flex;flex-direction:column;gap:var(--block-gap);word-break:keep-all}
 

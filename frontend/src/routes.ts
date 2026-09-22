@@ -132,7 +132,7 @@ export const ROUTES: PageMeta[] = [
   // ── G. 모의투자 ──────────────────────────────────────
   /* G-00 모의투자 온보딩은 라우트가 없다 — M-09 와 같이 셸 위 오버레이다
      (components/SimOnboardingTour.tsx, Layout 이 띄운다). */
-  { screen: 'G-01', element: SeasonHome, path: '/sim', title: '모의투자 홈', access: 'user', mode: 'sim', nav: 'play', bodyClass: 'sim-home-page', story: 'ANT-FE-SEASON-HOME' },
+  { screen: 'G-01', element: SeasonHome, path: '/sim', title: '모의투자 홈', access: 'user', mode: 'sim', nav: 'play', bodyClass: 'sim-home-page is-night', story: 'ANT-FE-SEASON-HOME' },
   /* **G-02 모드 선택을 걷어냈다(2026-09-21).** 모의투자를 연습 하나로 가기로 정해져
      고를 것이 없어졌다. 라우트는 넘겨보내는 자리로 남긴다(C-01 과 같은 처리) —
      사이드바·안내 투어가 여기를 가리키던 동안 즐겨찾기에 들어갔을 수 있고, 없는
@@ -154,7 +154,7 @@ export const ROUTES: PageMeta[] = [
      준다" 를 근거로 삼았는데, 그 G-07 이 빈 페이지였다. 순위를 다시 보여줘야 한다면
      이 자리가 아니라 그 결정부터 되짚어야 한다. */
   { screen: 'G-08', element: SeasonResult, path: '/sim/:id/result', title: '결과 · AI 복기', access: 'user', mode: 'sim', nav: 'portfolio', story: 'ANT-FE-SEASON-RESULT' },
-  { screen: 'G-09', element: SeasonHistory, path: '/sim/history', title: '기록 · 배지', access: 'user', mode: 'sim', nav: 'portfolio', bodyClass: 'sim-record-page', story: 'ANT-FE-SEASON-HISTORY' },
+  { screen: 'G-09', element: SeasonHistory, path: '/sim/history', title: '기록 · 배지', access: 'user', mode: 'sim', nav: 'portfolio', bodyClass: 'sim-record-page is-night', story: 'ANT-FE-SEASON-HISTORY' },
 
   // ── H. 지갑 · 알림 · 설정 · 광고 ─────────────────────
   { screen: 'H-01', element: Wallet, path: '/me/wallet', title: '지갑 · 토큰', access: 'user', mode: 'insight', nav: 'portfolio', story: 'ANT-FE-WALLET' },
