@@ -107,6 +107,27 @@
   white-space:pre-wrap; overflow-wrap:anywhere;
   font-size:var(--fs-lg); line-height:1.7; color:var(--body);
 }
+/* 접힘(QA 09-22 도배). 몇 줄에서 자르는지는 CommentBody 가 인라인 -webkit-line-clamp 로 준다 —
+   숫자를 CSS 와 TSX 두 곳에 두면 한쪽만 고치게 된다. -webkit-box 는 line-clamp 가
+   요구하는 display 다. 크롬·파폭·사파리 전부 이 조합만 자른다 */
+.rc-body.is-folded{
+  display:-webkit-box; -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+
+/* 더보기 / 접기 — 정렬 버튼(.rc-sort)과 같은 글자 버튼. 본문 왼쪽 끝에 글자가 맞게
+   패딩만큼 왼쪽으로 당긴다. 화살표는 두지 않는다(유저 결정 09-22 — 글자만으로 충분하다) */
+.rc-fold{
+  display:inline-block;
+  margin:-4px 0 8px -8px; padding:3px 8px;
+  border:0; border-radius:7px; background:none; cursor:pointer;
+  font-family:inherit; font-size:var(--fs-md); font-weight:var(--fw-bold); color:var(--brand-ink);
+  transition:background-color 160ms ease;
+}
+.rc-fold:hover{ background:var(--brand-softer); }
+@media(prefers-reduced-motion:reduce){
+  .rc-fold{ transition:none; }
+}
 
 .rc-more-hint{ margin:12px 0 0; color:var(--muted); font-size:var(--fs-md); }
 

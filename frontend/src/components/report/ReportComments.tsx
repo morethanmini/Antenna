@@ -13,6 +13,9 @@
      승인되면 서버가 BLOCKED 로 내려 목록에서 빠진다 — 화면이 따로 지우지 않는다.
    - 내 댓글에는 그 자리에 "삭제" 를 둔다(QA 09-21 — 도배는 막았지만 올라간 댓글을 지울 방법이 없었다).
      되돌릴 수 없으니 확인창을 거친다. 지운 뒤에는 작성 때처럼 목록을 다시 읽고 개수에서 1을 뺀다.
+   - 긴 댓글은 접는다(QA 09-22). 500자 제한이 있어도 줄바꿈만 499개 넣고 글자 하나를 붙이면
+     화면 세로를 통째로 차지하는 도배가 된다. 입력을 막으면 줄바꿈 많은 정상 댓글까지 잡히므로
+     보여 주는 쪽에서 접는다 — CommentBody 참고.
 
    개수는 서버 commentCount 로 그린다 — items.length 가 아니다
    목록은 커서 페이징이라 items 에는 불러온 만큼만 있다. 20건 넘는 리포트에서
@@ -20,7 +23,7 @@
    작성 성공 시에는 재조회 없이 1을 더한다 — 총 개수를 주는 경로가 따로 없고,
    상세(GET /reports/{id})를 다시 부르면 조회수가 함께 올라간다. 그 사이 다른
    사람이 단 댓글만큼 어긋날 수 있지만, 다음 진입에서 서버 값으로 되돌아온다. */
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError } from '../../api/client'
 import { useCursorList } from '../../api/useCursorList'
@@ -159,7 +162,7 @@ export default function ReportComments({ reportId, commentCount, canWrite, chann
                 )}
               </div>
 
-              <p className="rc-body">{c.body}</p>
+              <CommentBody body={c.body} />
 
               {/* 댓글 좋아요도 리포트 잠금을 따른다 — 서버가 403 을 주고, 여기서도 숨긴다 */}
               {canWrite && (
@@ -194,6 +197,55 @@ export default function ReportComments({ reportId, commentCount, canWrite, chann
         </button>
       )}
     </section>
+  )
+}
+
+/* 이보다 길면 접는다. 줄바꿈 문자 개수가 아니라 화면에 그려진 줄 수다 — 공백 없는 긴 글이
+   줄바꿈되어 길어진 것도 같은 도배라서. 인라인 -webkit-line-clamp 로 넘기므로 숫자는 여기 하나다. */
+const FOLD_LINES = 6
+
+/* 댓글 본문. 접힌 채로 그려 보고 넘치는지 잰다.
+
+   - 잣대는 scrollHeight > clientHeight 다. line-clamp 가 자른 만큼이 scrollHeight 에 남는다.
+     그래서 펼치기 전에는 **넘치든 말든 늘 자른 채로** 그린다 — 6줄 아래 댓글은 잘라도 그대로다.
+     "넘칠 때만 자르기" 로 하면 첫 그리기가 안 잘린 채라 둘이 같아져 영영 넘침을 못 본다(첫 시도의 버그).
+     펼친 상태에서도 둘이 같아지므로 그때는 재지 않는다 — 다시 재면 "안 넘친다" 로 읽혀 접기 버튼이 사라진다.
+   - useLayoutEffect 다. useEffect 로 하면 버튼 없는 화면을 한 번 그린 뒤 버튼이 튀어나온다.
+   - ResizeObserver 로 너비 변화를 따라간다. 창을 줄이면 줄바꿈이 늘어 6줄을 넘길 수 있고,
+     넓히면 반대다. 목록이 다시 읽히면 key(댓글 id)가 같아 상태가 남는다 — 펼쳐 둔 댓글은
+     펼친 채로 있다. */
+function CommentBody({ body }: { body: string }) {
+  const ref = useRef<HTMLParagraphElement>(null)
+  const [open, setOpen] = useState(false)
+  /** 접을 만큼 긴가. 잰 결과라 첫 그리기 전에는 false 다 */
+  const [overflows, setOverflows] = useState(false)
+
+  useLayoutEffect(() => {
+    if (open) return
+    const el = ref.current
+    if (!el) return
+    const measure = () => setOverflows(el.scrollHeight > el.clientHeight + 1)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [body, open])
+
+  return (
+    <>
+      <p
+        ref={ref}
+        className={open ? 'rc-body' : 'rc-body is-folded'}
+        style={{ WebkitLineClamp: FOLD_LINES }}
+      >
+        {body}
+      </p>
+      {overflows && (
+        <button type="button" className="rc-fold" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+          {open ? '접기' : '더보기'}
+        </button>
+      )}
+    </>
   )
 }
 
