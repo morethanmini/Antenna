@@ -7,7 +7,9 @@
    글자는 토큰을 못 쓴다 — 앱 토큰은 흰 바탕 기준이라 어두운 판에 올리면 안 읽힌다.
    그 자리만 배너 그림에서 뽑은 값을 직접 적는다(event-contest.css 의 .ev-rules 와 같다). */
 
-.predictor-market-page .rke{ display:flex; flex-direction:column; gap:14px; }
+/* container-type 를 준다 — 아래 무대 단이 **뷰포트가 아니라 이 폭**으로 접혀야 한다
+   (이유는 판·시상대 겹침 구간 주석 참고). */
+.predictor-market-page .rke{ display:flex; flex-direction:column; gap:14px; container-type:inline-size; }
 
 /* ── 시상대 무대 ──────────────────────────────────────────
    배경 그림 위에 시상대를 세운다. 그림이 무대 바닥을 아래쪽에 두고 있어, 받침을
@@ -296,14 +298,21 @@
 }
 
 
-/* 1100px 아래에서는 판을 흐름으로 되돌려 위아래로 나눈다.
+/* 이 단의 폭이 1008px 아래로 좁아지면 판을 흐름으로 되돌려 위아래로 나눈다.
    가운데 시상대를 지키려고 모서리에 띄운 것이라, 좁아지면 겹칠 수밖에 없다.
+   판(왼쪽, 24+220=244px)과 시상대(가운데, 최대 520px)가 같은 줄에 있는 채로 폭이
+   줄면, 시상대 첫 칸(2등)이 244px 선 안쪽으로 들어오는 지점이 (W-520)/2 < 244,
+   즉 W < 1008 이다.
 
-   **1000 이 아니라 1100 이다**(2026-09-22). 판(왼쪽, 24+220=244px)과 시상대(가운데,
-   최대 520px)가 같은 줄에 있는 채로 폭이 줄면, 시상대 첫 칸(2등)이 244px 선 안쪽으로
-   들어오는 지점이 (W-520)/2 < 244, 즉 W < 1008 — 1000px 은 이 문턱보다 좁아 판이
-   2등 카드를 가렸다. 100px 여유를 더 둔다. */
-@media (max-width: 1100px){
+   **뷰포트 media query 가 아니라 container query 다**(2026-09-22 정정). 처음엔
+   `@media(max-width:1100px)` 로 고쳤는데, 그건 이 화면 폭이 창 폭과 같다고 잘못
+   가정한 것이었다 — `.rk-page .main-inner` 가 배경 그림의 빈 가운데에 맞추려고
+   폭을 `clamp(820px, ..., 1080px)` 로 따로 잡아 둔다(ranking.css). 그 결과 이
+   무대는 **창이 아무리 넓어도 820~1080px 사이에 갇히고**, 그 범위 대부분(1008 미만)이
+   바로 겹침 구간이다 — 실측해 보니 1920px 창에서도 실제 폭이 989px 로 나와 여전히
+   가려졌다. 그래서 `.rke`(위)에 `container-type:inline-size` 를 주고, 창이 아니라
+   **이 요소 자신의 렌더 폭**을 기준으로 접는다. */
+@container (max-width: 1007px){
   .predictor-market-page .rke-stage{
     flex-direction:column; align-items:flex-start; gap:12px; padding:20px 18px 0;
   }
