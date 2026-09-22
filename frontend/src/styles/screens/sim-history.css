@@ -99,6 +99,8 @@ body.sim-record-page .main::before{
 .rc-fig-sub{display:block;font-size:var(--fs-md);font-weight:var(--fw-bold);color:var(--night-faint)}
 
 /* ── 본문 2열 ─────────────────────────────────────── */
+/* 왼쪽 기둥. 요약 4칸과 목록이 같은 폭으로 쌓인다 */
+.rc-main{display:flex;flex-direction:column;gap:var(--rc-gap);min-width:0}
 /* 오른쪽 기둥 폭은 격려 카드 그림에서 나왔다 — 그림 속 본문이 읽히는 최소 폭이다 */
 .rc-body{display:grid;grid-template-columns:minmax(0,1fr) var(--rc-side-w);gap:var(--rc-gap);align-items:start}
 

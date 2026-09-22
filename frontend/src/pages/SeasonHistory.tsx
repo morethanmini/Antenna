@@ -309,6 +309,13 @@ export default function SeasonHistory() {
           </div>
         </header>
 
+        <div className="rc-body">
+          {/* 왼쪽 기둥 — 요약 4칸과 목록이 같은 폭으로 선다(2026-09-22).
+              요약이 화면 전체를 가로지르던 때는 오른쪽 기둥이 그 아래에서야 시작해,
+              격려 카드와 성장 여정이 통째로 한 칸 내려앉아 있었다. 요약을 왼쪽으로
+              들이면 오른쪽 기둥이 요약과 같은 높이에서 시작한다 — 화면 전체 높이는
+              그대로이고(덩어리 순서만 바뀐다) 오른쪽 위 빈자리만 없어진다. */}
+          <div className="rc-main">
         {/* ── 요약 4칸 ─────────────────────────────────── */}
         <section className="rc-figs" aria-label="기록 요약">
           <Figure
@@ -341,7 +348,6 @@ export default function SeasonHistory() {
           />
         </section>
 
-        <div className="rc-body">
           {/* ── 목록. 진행 중과 마친 시즌은 같은 목록의 두 상태다 ── */}
           <section className="rc-card">
             <div className="rc-tabs" role="tablist" aria-label="기록 종류">
@@ -398,6 +404,7 @@ export default function SeasonHistory() {
               )}
             </div>
           </section>
+          </div>
 
           {/* ── 오른쪽 기둥 ───────────────────────────── */}
           <aside className="rc-side">
