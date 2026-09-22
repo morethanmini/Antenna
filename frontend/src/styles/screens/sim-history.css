@@ -31,7 +31,7 @@ body.sim-record-page{
   /* 오른쪽 기둥 폭. **격려 카드 그림의 크기가 여기서 따라온다** — 그림이 세로로
      제일 큰 덩어리라, 한 화면에 담느냐 마느냐가 사실상 이 한 값에 달려 있다.
      400 은 그림 속 본문이 100% 배율에서 읽히는 폭이다(실측 13px). */
-  --rc-side-w:400px;
+  --rc-side-w:370px;
   /* 본문 아래 여백. 셸 기본 64 는 이 화면에서 너무 길다 — 여기를 줄인 만큼이
      그대로 "한 화면에 들어오느냐" 의 여유가 된다(1900×945 에서 5px 차이였다). */
   --page-pb:22px;
@@ -180,21 +180,16 @@ body.sim-record-page .main::before{
 .rc-empty small{font-size:var(--fs-lg);font-weight:var(--fw-normal);color:var(--night-faint)}
 
 /* ── 오른쪽 기둥 ──────────────────────────────────── */
-.rc-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.rc-side{display:flex;flex-direction:column;gap:11px;min-width:0}
 .rc-side-card{padding:var(--rc-side-pad) var(--rc-pad)}
-.rc-side-head{display:flex;align-items:center;gap:9px;margin:0 0 6px;font-size:var(--fs-3xl);font-weight:var(--fw-black);color:#fff;letter-spacing:-.025em}
+.rc-side-head{display:flex;align-items:center;gap:9px;margin:0 0 4px;font-size:var(--fs-3xl);font-weight:var(--fw-black);color:#fff;letter-spacing:-.025em}
 .rc-side-head svg{color:var(--glow)}
-.rc-side-lead{margin:0 0 11px;font-size:var(--fs-lg);font-weight:var(--fw-bold);color:var(--night-body)}
+.rc-side-lead{margin:0 0 10px;font-size:var(--fs-lg);font-weight:var(--fw-bold);color:var(--night-body)}
 
 /* 격려 카드. 그림 한 장이 판 전체다 — 그림에 이미 테두리와 빛이 있어서 판의
    여백을 줄이고 유리 테두리도 걷는다. 둘 다 있으면 테두리가 두 겹으로 보인다. */
-.rc-cheer{padding:8px 8px 10px;background:none;border-color:transparent;box-shadow:none}
+.rc-cheer{padding:7px;background:none;border-color:transparent;box-shadow:none}
 .rc-cheer-card{display:block;width:100%;height:auto;border-radius:14px}
-.rc-cheer-say{
-  margin:8px 2px 0;padding:8px 12px;border-radius:11px;
-  background:rgba(255,255,255,.07);border:1px solid var(--night-line);
-  font-size:var(--fs-md);line-height:1.6;font-weight:var(--fw-bold);color:var(--night-ink);
-}
 
 /* ── 성장 여정 ────────────────────────────────────── */
 /* 가로 한 줄에 네 칸. 점 사이를 잇는 선은 ::before 하나로 깔고, 지나온 만큼만
@@ -276,7 +271,7 @@ body.sim-record-page .main::before{
     --rc-row-py:6px;--rc-side-pad:12px;--page-pb:10px;
     /* 기둥을 좁혀 격려 카드 그림을 같이 줄인다. 이 단계는 표시 배율이 125% 인
        화면이 대부분이라, CSS 폭이 줄어도 눈에 보이는 크기는 크게 달라지지 않는다. */
-    --rc-side-w:315px;
+    --rc-side-w:300px;
   }
   .rc-thumb{height:38px}
   .rc-name b{font-size:var(--fs-xl)}

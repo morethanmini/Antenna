@@ -173,7 +173,14 @@ function Journey({ done }: { done: number }) {
   return (
     <section className="rc-side-card" aria-label="나의 성장 여정">
       <h2 className="rc-side-head"><ChartIcon />나의 성장 여정</h2>
-      <p className="rc-side-lead">여러 번의 연습이 모여, 더 좋은 투자자가 됩니다.</p>
+      {/* 격려 카드 아래에 따로 있던 "지금까지 n판" 줄을 여기로 합쳤다(2026-09-22).
+          이 카드가 곧 "내가 몇 판을 했나" 를 말하는 자리라 제자리이기도 하고,
+          오른쪽 기둥이 목록보다 104px 아래로 내려가던 것도 이걸로 줄였다. */}
+      <p className="rc-side-lead">
+        {done === 0
+          ? '첫 판을 끝내면 여기부터 채워져요.'
+          : `지금까지 ${done}판을 끝냈어요. 연습이 모여 더 좋은 투자자가 됩니다.`}
+      </p>
 
       <ol className="rc-steps" style={{ ['--reached' as string]: reached }}>
         {STEPS.map((s, i) => (
@@ -403,13 +410,6 @@ export default function SeasonHistory() {
               />
               {/* 칭찬은 실제 기록에 따라 갈린다 — 한 판도 안 끝낸 사람에게
                   "잘하고 있어요" 라고 하면 빈말이 된다. */}
-              {/* 한 줄을 넘기지 않는다. 격려하는 말은 위 카드 그림이 이미 하고 있어
-                  여기서는 내 기록에서 나오는 사실만 적는다. */}
-              <p className="rc-cheer-say">
-                {done.length === 0
-                  ? '아직 끝까지 마친 판이 없어요.'
-                  : `지금까지 ${done.length}판을 끝냈어요.`}
-              </p>
             </section>
 
             <Journey done={done.length} />
