@@ -26,6 +26,35 @@
   display:flex; flex-direction:column;
 }
 
+/* ── 밤 + 유리 화면에서도 판은 흰색이고 글자는 검정이다 (2026-09-23) ──────
+   이 창은 첫 로그인 튜토리얼 끝에 홈(B-01)에서 뜬다. 홈은 body.is-night.is-glass 라
+   night.css 가 --ink · --body · --muted · --faint · --rule 을 밝은 쪽으로 뒤집는데,
+   위에서 판만 흰색으로 못 박아 두어 **흰 판 위에 흰 글씨**가 됐다 — 제목 · 안내문 ·
+   취소 버튼이 통째로 사라졌다(실측 2026-09-23).
+
+   M-10 브리핑 창(briefing-modal.css)과 같은 풀이다: 이 창이 쓰는 색 토큰 한 벌을
+   창 안에서만 :root 값으로 되돌린다. 아래 값은 app.css 의 :root 가 원본이다.
+   토큰을 되돌리는 방식이라 머리·본문·주소·서명 원문·버튼 규칙은 손대지 않아도
+   따라온다. --brand-soft · --brand-softer 까지 되돌리는 이유 — 서명 원문 상자와
+   보너스 띠가 이 둘로 판을 까는데, 유리용 알파값을 흰 판 위에 얹으면 테가 거의
+   안 보인다. */
+body.is-night.is-glass .wl-modal{
+  --surface:#ffffff;
+  --surface-2:#f0f2f7;
+  --ink:#14141b;
+  --body:#3b3f4a;
+  --muted:#6b7280;
+  --faint:#9ca3af;
+  --rule:#e5e7ef;
+  --brand-soft:#ece9fd;
+  --brand-softer:#f4f3fe;
+  /* 오류 제목(.wl-error b)이 쓴다. 유리용 값(#ff8b8b)은 연분홍 판(#fdeeee) 위에서 안 읽힌다 */
+  --danger:#e04343;
+  background:var(--surface);
+  /* 어두운 바닥 위에 뜨므로 그늘을 한 단 진하게 — 밝은 화면용 값은 여기서 안 보인다 */
+  box-shadow:0 28px 64px -18px rgba(0,0,0,.7);
+}
+
 .wl-head{
   display:flex; align-items:center; justify-content:space-between;
   gap:12px; padding:16px 18px;

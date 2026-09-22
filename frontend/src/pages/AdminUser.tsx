@@ -61,18 +61,21 @@ export default function AdminUser() {
   // oxlint-disable-next-line react/set-state-in-effect -- 데이터 페칭이라 상태 갱신이 목적이다.
   useEffect(() => { void load() }, [load])
 
+  /* 성공해도 다시 불러오지 않는다. load() 는 첫 50명으로 되돌리기 때문에 더 보기로
+     이어 붙인 목록이 사라지고 화면이 맨 위로 튄다. 서버는 바뀐 회원을 돌려주지 않으니
+     그 줄의 상태만 제자리에서 고친다 — 목록·nextBefore·스크롤이 그대로 남는다. */
   const 상태변경 = useCallback(async (target: AdminUserItem, next: 'ACTIVE' | 'BANNED') => {
     setBusy(target.id)
     setError(null)
     try {
       await setUserStatus(target.id, next)
-      await load()
+      setItems((prev) => prev.map((u) => (u.id === target.id ? { ...u, status: next } : u)))
     } catch (e) {
       setError((e as ApiError).message)
     } finally {
       setBusy(null)
     }
-  }, [load])
+  }, [])
 
   return (
     <main className="main">
