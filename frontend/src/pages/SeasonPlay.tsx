@@ -1034,7 +1034,7 @@ export default function SeasonPlay() {
                 <Ico size={15}><path d="m12 4 1.6 3.6L17 9.2l-3.4 1.6L12 14.4l-1.6-3.6L7 9.2l3.4-1.6z" /><path d="M18 15.5 18.8 17l1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8z" /></Ico>
               </span>
               AI 한줄 요약
-              <em>{hints.loading ? '불러오는 중…' : (todayHint?.title ?? '이 게임일 요약이 없습니다')}</em>
+              <em>{hints.loading ? '불러오는 중…' : (todayHint?.title ?? '요약 없음')}</em>
               <i aria-hidden="true">⌄</i>
             </summary>
             <div className="sp-fold-body">
@@ -1045,9 +1045,12 @@ export default function SeasonPlay() {
                   ))}
                 </ul>
               ) : (
+                /* 각주가 "배치 생성 · ANT-SEASON-07" 이었다. 만드는 쪽 사정과 스토리
+                   코드라 읽는 사람에게는 뜻이 없다. 무엇이 올 자리인지로 바꾼다
+                   (2026-09-23, QA). 아래 소식 칸과 같은 짜임이다. */
                 <p className="sp-soon">
-                  그 시점 사건을 요약해 판단 근거를 짚어 줍니다.
-                  <small>배치 생성 · ANT-SEASON-07</small>
+                  이 게임일은 요약이 없어요.
+                  <small>그날 사건을 한 줄로 짚어 주는 자리</small>
                 </p>
               )}
             </div>
