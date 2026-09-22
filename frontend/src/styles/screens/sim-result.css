@@ -336,39 +336,6 @@ body.sim-result-page .rs-head h1{color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.7
 body.sim-result-page .rs-head p{color:rgba(255,255,255,.92);text-shadow:0 1px 10px rgba(0,0,0,.7)}
 body.sim-result-page .rs-head p span{color:rgba(255,255,255,.66)}
 
-/* 판은 유리다. 기록(G-09)과 같은 한 벌 */
-body.sim-result-page .rs-stat,
-body.sim-result-page .rs-card,
-body.sim-result-page .rs-fold{
-  background:rgba(255,255,255,.055);border-color:var(--night-line);border-radius:18px;
-  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 22px 50px -32px rgba(0,0,0,.8);
-}
-body.sim-result-page .rs-stat-val{color:#fff}
-body.sim-result-page .rs-fold > summary{border-radius:18px}
-body.sim-result-page .rs-fold[open] > summary{border-radius:18px 18px 0 0;border-bottom-color:var(--night-line)}
-
-/* 아이콘 타일. 파스텔 채움을 같은 색의 투명한 겹으로 바꾼다 */
-body.sim-result-page .rs-stat.t-up{--tone:#ff9d9d;--tint:rgba(255,107,107,.16)}
-body.sim-result-page .rs-stat.t-down{--tone:#8fbaff;--tint:rgba(88,150,255,.16)}
-body.sim-result-page .rs-stat.t-flat{--tone:var(--night-faint);--tint:rgba(255,255,255,.1)}
-body.sim-result-page .rs-stat.t-trade{--tone:var(--glow);--tint:rgba(139,125,255,.16)}
-body.sim-result-page .rs-stat.t-rate{--tone:#f0c073;--tint:rgba(232,161,60,.18)}
-body.sim-result-page .rs-h-ico.t-eq,
-body.sim-result-page .rs-h-ico.t-pie{--tone:#5ee89b;--tint:rgba(34,197,94,.16)}
-body.sim-result-page .rs-h-ico.t-board{--tone:#8fbaff;--tint:rgba(88,150,255,.16)}
-body.sim-result-page .rs-h-ico.t-ai{--tone:var(--glow);--tint:rgba(139,125,255,.16)}
-body.sim-result-page .rs-h-ico.t-card{--tone:#f0a0c4;--tint:rgba(201,81,143,.2)}
-body.sim-result-page .rs-h-ico.t-split{--tone:#f0c073;--tint:rgba(232,161,60,.18)}
-
-/* 밝은 화면 기준으로 박아 둔 옅은 선들 */
-body.sim-result-page .rs-review{border-top-color:var(--night-line)}
-/* 자산 곡선. 기준선과 축 글자는 밝은 바닥을 전제로 한 회색이라 어두운 판에서 묻힌다 */
-body.sim-result-page .eq-base{stroke:rgba(255,255,255,.22)}
-body.sim-result-page .eq-axis{fill:var(--night-faint)}
-body.sim-result-page .eq-dot{stroke:var(--night-1)}
-body.sim-result-page .eq-empty span{color:var(--night-faint)}
-
 /* 테두리만 있는 버튼은 브랜드 잉크 글자라 어두운 바닥에서 가라앉는다 */
 /* 머리줄 버튼 둘 — 모의투자의 캡슐 한 벌(--cap-*, night.css) */
 body.sim-result-page .rs-go,
