@@ -110,6 +110,10 @@ body.is-night.is-glass .nt-pop{
   grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto;
   gap:2px 8px;align-items:baseline;
   padding:10px 46px 11px 10px;border-radius:10px;
+  /* **읽은 줄은 테로 가른다**(2026-09-22). 안 읽은 줄은 바탕색이 칠해져 있어 어디서
+     하나가 끝나는지 보이지만, 읽고 나면 바탕이 없어져 줄들이 한 덩어리로 붙어
+     보였다. 4px 간격만으로는 모자랐다. 테는 옅게 — 진하면 목록이 표처럼 보인다. */
+  border:1px solid var(--rule);
   transition:background .12s;
 }
 .nt-row:hover{background:var(--surface-2)}
