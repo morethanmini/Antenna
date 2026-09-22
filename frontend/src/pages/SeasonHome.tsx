@@ -224,7 +224,9 @@ function Topics({ practice, ongoing, loading, error, onRetry }: {
 }) {
   const track = useRef<HTMLUListElement>(null)
   const failure = shown(error)
-  const items = practice.filter(isJoinable).sort(joinableFirst)
+  /* 거르기·정렬은 SeasonHome 이 한 번만 한다 — 여기서 또 걸렀더니 히어로의 분모와
+     카드 장수가 서로 다른 목록을 세고 있었다(2026-09-23, QA). */
+  const items = practice
   const liveById = new Map(ongoing.map((r) => [r.seasonId, r]))
 
   const slide = (dir: 1 | -1) => {
@@ -313,13 +315,22 @@ export default function SeasonHome() {
   const { data, loading, error, reload } = useAsync(getMyRuns)
   const { data: open, loading: openLoading, error: openError, reload: reloadOpen } = useAsync(getPracticeRuns)
 
+  /* **카드가 되는 주제만 추린다 — 이 화면의 모든 수가 이 목록에서 나온다**(2026-09-23, QA).
+     전에는 Hero·Facts 가 거르지 않은 목록의 길이를 분모로 쓰고, Topics 만 따로 걸렀다.
+     지금은 셋이 같은 목록을 본다. */
+  const topics = open?.items.filter(isJoinable).sort(joinableFirst)
   const ongoing = data?.ongoing ?? []
   const done = data?.done ?? []
+  /* 진행 중이어도 **카드가 있는 것만 센다**(2026-09-23, QA: "진행 중인 연습 3 / 5" 인데
+     이어서 하기 카드는 2장이었다). /seasons/me 는 거르지 않고 오므로 은퇴한 주제
+     (RETIRED_TITLES)와 CLOSED 시즌의 참가 기록이 그대로 섞여 들어온다. 분자가 분모의
+     부분집합이 아니면 "6 / 5" 도 나올 수 있다. 카드에 없는 판은 G-09 기록에서 잇는다. */
+  const live = topics ? ongoing.filter((r) => topics.some((s) => s.id === r.seasonId)) : []
   /* 여러 개가 진행 중이면 가장 최근 것을 시작 버튼에 건다. 나머지는 카드에서 이어간다. */
-  const lead = [...ongoing].sort(recentFirst)[0] ?? null
+  const lead = [...live].sort(recentFirst)[0] ?? null
   /* 히어로의 "지금 시작하기" 가 갈 곳. 카드와 같은 규칙으로 고른 맨 앞 주제다 —
      목록이 비었거나 아직 안 왔으면 null 이고, 그때는 버튼을 내린다. */
-  const firstOpen = (open?.items ?? []).filter(isJoinable).sort(joinableFirst)[0]
+  const firstOpen = topics?.[0]
   const startAt = firstOpen ? `/sim/seasons/${firstOpen.id}` : null
 
   return (
@@ -328,14 +339,14 @@ export default function SeasonHome() {
         {/* 목록이 실패해도 화면 전체를 오류로 덮지 않는다 — 실패한 칸만 안내를
             띄우고 나머지는 그대로 읽힌다. 판단은 shown() 이 한다. */}
         <Hero
-          lead={lead} practice={open?.items} ongoing={ongoing} done={done} startAt={startAt}
+          lead={lead} practice={topics} ongoing={live} done={done} startAt={startAt}
           myError={error} myLoading={loading} onRetry={reload}
         />
         <Topics
-          practice={open?.items ?? []} ongoing={ongoing}
+          practice={topics ?? []} ongoing={live}
           loading={openLoading} error={openError} onRetry={reloadOpen}
         />
-        <Facts practice={open?.items} />
+        <Facts practice={topics} />
       </div>
     </main>
   )
