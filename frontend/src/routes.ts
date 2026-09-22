@@ -86,7 +86,7 @@ export const ROUTES: PageMeta[] = [
   { screen: 'A-03', element: Search, path: '/search', title: '통합 검색', access: 'user', mode: 'insight', nav: 'stocks', story: 'ANT-FE-SEARCH' },
 
   // ── B. 인사이트 ──────────────────────────────────────
-  { screen: 'B-01', element: Home, path: '/', title: '인사이트 홈', access: 'user', mode: 'insight', nav: 'home', bodyClass: 'insight-home', story: 'ANT-FE-HOME' },
+  { screen: 'B-01', element: Home, path: '/', title: '인사이트 홈', access: 'user', mode: 'insight', nav: 'home', bodyClass: 'insight-home is-night', story: 'ANT-FE-HOME' },
   { screen: 'B-02', element: Stocks, path: '/stocks', title: '종목 탐색', access: 'user', mode: 'insight', nav: 'stocks', bodyClass: 'stocks-page', story: 'ANT-FE-STOCKS' },
   { screen: 'B-03', element: StockDetail, path: '/stocks/:code', title: '종목 상세', access: 'user', mode: 'insight', nav: 'stocks', bodyClass: 'stock-detail-page', story: 'ANT-FE-STOCK-DETAIL' },
   { screen: 'B-04', element: Watchlist, path: '/watchlist', title: '관심 종목', access: 'user', mode: 'insight', nav: 'stocks', bodyClass: 'watchlist-page', story: 'ANT-FE-WATCHLIST' },

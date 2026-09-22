@@ -72,14 +72,16 @@ body.is-night{
    두 판으로 갈려 경계에 가로 줄이 생겼다. 본문의 그러데이션·도시가 바 밑으로
    그대로 지나가므로(.main 은 top:0 에서 시작하고 padding-top 으로 밀린다) 알파를
    내리면 그 그림이 비쳐 한 덩어리가 된다.
-   아래 실선도 뺀다 — 비치는 바에 선을 그으면 그 선만 남아 다시 두 판이 된다.
-   대신 아주 옅은 흰 줄 하나로 바닥을 표시한다. */
-body.is-night .navbar{
-  background:rgba(18,16,44,.55);
-  border-bottom-color:rgba(255,255,255,.07);
+   아래 실선도 없다 — 비치는 바에 선을 그으면 그 선만 남아 다시 두 판이 된다.
+   바닥은 app.css 의 .navbar::before 가 그러데이션으로 지운다(2026-09-22). 여기서는
+   그 판의 색만 어두운 쪽으로 갈아 끼운다 — 지우는 모양(마스크)은 셸이 들고 있다. */
+body.is-night .navbar::before{
+  background:linear-gradient(180deg,
+    rgba(18,16,44,.55) 0%, rgba(18,16,44,.55) 52%,
+    rgba(18,16,44,.3) 78%, transparent 100%);
 }
 @supports (backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px)){
-  body.is-night .navbar{
+  body.is-night .navbar::before{
     background:rgba(18,16,44,.34);
     -webkit-backdrop-filter:blur(16px) saturate(150%);
     backdrop-filter:blur(16px) saturate(150%);
@@ -166,3 +168,58 @@ body.is-night .navbar-login{
 body.is-night .navbar-auth a:hover{border-color:var(--glow)!important;color:#fff}
 
 
+
+/* ── 본문 토큰을 어두운 쪽으로 뒤집는다 (2026-09-22) ────────────
+   여기까지는 **셸(상단바·메뉴)** 만 밤이었고 본문 카드는 흰 판 그대로였다. 모의투자
+   홈·기록은 제 CSS 로 카드를 직접 칠했지만, 인사이트는 화면이 열둘이라 그 방식으로는
+   같은 값을 열두 번 적게 된다 — 한 군데가 빠지면 그 화면만 흰 카드로 남는다.
+
+   그래서 색 토큰 한 벌을 여기서 갈아 끼운다. 토큰만 쓰는 화면은 is-night 를 붙이는
+   것만으로 따라온다. 색을 직접 박아 둔 자리는 그 화면 CSS 에서 따로 잡는다.
+
+   **--brand 계열의 진한 쪽(--brand · --brand-ink)은 안 바꾼다.** 버튼 채움과 강조는
+   어두운 바탕에서도 그대로 읽히고, 바꾸면 두 모드의 브랜드색이 달라진다.
+   옅은 쪽(--brand-soft · --brand-softer)만 어두운 판에 맞게 내린다 — 연보라 채움은
+   밤에서 형광처럼 튄다.
+
+   판 색은 **불투명이 아니라 옅은 흰색**이다. 시안의 카드가 유리라 뒤의 도시가 비쳐야
+   한다. 불투명하게 두면 카드마다 검은 사각형이 떠서 배경 그림이 죽는다. */
+body.is-night{
+  --ground:var(--night-0);
+  --surface:rgba(255,255,255,.07);
+  --surface-2:rgba(255,255,255,.12);
+  --ink:var(--night-ink);
+  --body:#cfcbe8;
+  --muted:#a9a4cc;
+  --faint:var(--night-faint);
+  --rule:var(--night-line);
+  --card-line:rgba(255,255,255,.14);
+  --nav-line:rgba(255,255,255,.07);
+  --brand-soft:rgba(139,125,255,.22);
+  --brand-softer:rgba(139,125,255,.12);
+  --ok-soft:rgba(34,197,94,.18);
+  --up-soft:rgba(255,120,120,.16);
+  --down-soft:rgba(120,160,255,.18);
+  /* 어두운 바탕에서 검은 그림자는 보이지 않는다. 깊이는 위쪽 흰 줄 하나가 만든다 */
+  --shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 18px 40px -26px rgba(0,0,0,.8);
+  --wash:linear-gradient(118deg, rgba(139,125,255,.16) 0%, rgba(84,87,232,.12) 60%, rgba(139,125,255,.18) 100%);
+  --wash-line:rgba(255,255,255,.14);
+  --glass-ink:var(--night-ink);
+  /* 신호색은 밤에서 한 단계 밝힌다 — 원래 값은 어두운 판에서 가라앉는다 */
+  --up:#ff6b6b;
+  --up-vivid:#ff8080;
+  --down:#7aa7ff;
+  --down-vivid:#7aa7ff;
+  --ok:#5ee89b;
+  --hit:#5ee89b;
+  --danger:#ff8b8b;
+  --gold:#ffd464;
+}
+
+/* 카드. 채움·테·그림자는 app.css 의 .card 가 이미 토큰으로 쓰고 있어 위에서
+   뒤집은 값이 그대로 따라온다. 여기서 더하는 것은 **블러 하나**다 — 판이
+   반투명이라 그냥 두면 글자 위로 뒤의 건물이 지나간다. */
+body.is-night .card{
+  -webkit-backdrop-filter:blur(14px) saturate(140%);
+  backdrop-filter:blur(14px) saturate(140%);
+}
