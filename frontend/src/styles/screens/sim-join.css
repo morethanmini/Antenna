@@ -122,6 +122,16 @@
 .sj-lockup{margin:0;line-height:0}
 .sj-lockup img{
   display:block;width:100%;height:auto;
+  /* 화면이 낮으면 제목이 먼저 양보한다.
+     빼는 값은 히어로에서 제목 말고 자리를 차지하는 것들의 합이다 —
+     상단바 72 + 히어로 위아래 여백과 말머리·배지 120 + 조건 카드 131 + 숨 32.
+     여기까지가 "한 화면에 들어와야 하는" 덩어리다.
+     폭이 아니라 높이로 맞추는 것이라 object-fit 으로 비율을 지키고,
+     남는 자리는 오른쪽에 두어 제목이 왼쪽 선에 그대로 붙어 있게 한다.
+     대부분의 화면에서는 이 값이 그림보다 커서 아무 일도 하지 않는다 —
+     세 줄짜리 코로나처럼 원래 키가 큰 한 장만 여기에 걸린다. */
+  max-height:max(220px,calc(100vh - 355px));
+  object-fit:contain;object-position:left center;
   filter:drop-shadow(0 10px 28px rgba(0,0,0,.5));
 }
 
@@ -130,9 +140,15 @@
 
 /* ── 히어로 밖 · 시즌 카드 ────────────────────────────────
    히어로 위로 올라타 두 덩어리를 한 몸으로 묶는다. 위 여백(gap:20px)을
-   상쇄하고 더 끌어올린 값이다. */
+   상쇄하고 더 끌어올린 값이다.
+
+   한때 -72px 이었다. 제목 그림마다 아래 투명 여백이 제각각(원본 기준 24~166px)
+   이라 그 빈 칸을 겹쳐 먹으려던 값인데, 여백이 가장 얇은 코로나에서는 겹침이
+   글자까지 파고들었다. 그림의 빈 칸을 아예 잘라내고 나니(scripts/trim-season-titles.py)
+   다섯 장의 글자 끝이 같은 자리에 서서, 한 값으로 정해도 어느 장도 잘리지 않는다.
+   히어로 아래 여백 34 - 16 = 18px 에 그림에 남긴 숨통 8px 이 더해진다. */
 .sj-card{
-  position:relative;z-index:2;margin:-72px 0 0;
+  position:relative;z-index:2;margin:-16px 0 0;
   display:grid;grid-template-columns:minmax(0,1fr) minmax(0,320px);
   align-items:center;gap:24px;padding:22px 26px;
   border:1px solid var(--rule);border-radius:20px;
@@ -269,8 +285,8 @@
   .sj-steps{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:900px){
-  .sj-hero-body{max-width:100%;padding-bottom:64px}
-  .sj-card{grid-template-columns:minmax(0,1fr);gap:18px;margin-top:-52px}
+  .sj-hero-body{max-width:100%;padding-bottom:44px}
+  .sj-card{grid-template-columns:minmax(0,1fr);gap:18px;margin-top:-16px}
   .sj-head h1{font-size:var(--fs-title-lg)}
   .sj-rules-head{grid-template-columns:minmax(0,1fr)}
   .sj-rules h2::after{display:none}
@@ -283,7 +299,7 @@
 @media(max-width:600px){
   .sj-head h1{font-size:var(--fs-title)}
   .sj-hero{min-height:260px}
-  .sj-hero-body{padding:20px 18px 58px}
+  .sj-hero-body{padding:20px 18px 44px}
   .sj-card{padding:18px 16px}
   .sj-stats > div{padding:0;border-left:0;flex:1 1 45%}
   .sj-steps{grid-template-columns:minmax(0,1fr)}
@@ -364,14 +380,11 @@ body.sim-join-page .sj-dialog{
 }
 
 /* 조건 카드를 위로 올린다(2026-09-22).
-   **제목 그림 아래는 건드릴 수 없다.** 카드가 히어로를 72px 겹쳐 올라타는데, 그림마다
-   아래 투명 여백이 달라서다 — 실측으로 코로나 14px · 계엄 38 · 전쟁 58 · 엔캐리 80 ·
-   트럼프 101. 코로나는 이미 글자 끝이 카드에 닿아 있어(여유 -4px) 겹침을 더 주거나
-   히어로 아래 여백을 줄이면 그 한 장만 제목이 잘린다.
-
-   그래서 **제목 위쪽**을 줄인다. 위가 줄면 그림·히어로 아래끝·카드가 **같이** 올라오므로
-   그림과 카드 사이는 그대로이고 카드만 화면 위로 붙는다. 1366×768 에서 카드 바닥이
-   19px 넘쳐 있었다 — 위에서 22px 을 걷어 안으로 들인다. */
+   히어로와 조건 카드까지는 한 화면(배율 100%)에 들어와야 하는 자리다.
+   제목 그림 자체는 줄이지 않는다 — 줄인 것은 글자 위의 빈 자리와,
+   그림 파일 안에 들어 있던 빈 자리다(scripts/trim-season-titles.py).
+   여기서는 제목 **위쪽** 만 걷는다. 위가 줄면 그림·히어로 아래끝·카드가
+   같이 올라오므로 그림과 카드 사이는 그대로다. */
 body.sim-join-page .sj-hero-body{padding-top:16px;gap:10px}
 body.sim-join-page .sj-head{gap:8px}
 
