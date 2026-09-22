@@ -221,10 +221,14 @@ export default function SeasonJoin() {
                    지키고, 읽히는 글자는 alt 가 준다. */
                 <>
                   <h1 className="sj-lockup">
+                    {/* 폭 상한을 인라인 style 이 아니라 **변수로** 넘긴다(2026-09-22).
+                        style 로 max-width 를 직접 주면 그 값이 CSS 를 이겨서, 화면
+                        높이에 맞춰 같이 줄이는 규칙(--lockup-h)을 걸 수 없다.
+                        변수로 넘기면 CSS 가 폭·높이 두 상한을 함께 본다. */}
                     <img
                       src={art.lockup}
                       alt={s.note ? `${s.title} — ${s.note}` : s.title}
-                      style={{ maxWidth: `${art.lockupMax}px` }}
+                      style={{ '--lockup-max': `${art.lockupMax}px` } as React.CSSProperties}
                     />
                   </h1>
                   {/* 좁은 화면 전용. lockup 안의 한 줄 설명은 그림이라 폭이 줄면

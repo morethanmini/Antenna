@@ -28,7 +28,7 @@
    모드 선택 화면이 없어지면서(2026-09-21) 이 파일이 유일한 주인이 됐다. */
 
 .sim-join{
-  display:flex;flex-direction:column;gap:20px;
+  display:flex;flex-direction:column;gap:16px;
   /* 히어로가 본문 폭을 꽉 채운다. 바깥 .main-inner 의 max-width:1600 이
      이미 한계를 잡고 있어 여기서 또 좁히지 않는다. */
   max-width:none;
@@ -120,8 +120,14 @@
 /* 제목 덩어리(이미지). h1 은 자리만 잡고 크기는 img 가 정한다 —
    시즌마다 원본 여백이 달라 최대 폭을 화면에서 넘겨준다(seasonArt.lockupMax). */
 .sj-lockup{margin:0;line-height:0}
+/* **폭과 높이 두 상한을 함께 본다.** 폭은 시즌마다 다르고(--lockup-max, 원본 여백을
+   잘라 둔 탓에 장마다 체감 크기가 달라 화면이 넘겨준다), 높이는 뷰포트를 따라간다 —
+   이 그림이 히어로 높이를 혼자 정하기 때문이다(1900×945 에서 493px 이었다).
+   width·height 를 auto 로 두면 브라우저가 비율을 지키며 둘 다에 맞춰 줄인다. */
 .sj-lockup img{
-  display:block;width:100%;height:auto;
+  display:block;width:auto;height:auto;
+  max-width:min(var(--lockup-max,100%),100%);
+  max-height:var(--lockup-h,none);
   filter:drop-shadow(0 10px 28px rgba(0,0,0,.5));
 }
 
@@ -361,4 +367,37 @@ body.sim-join-page .sj-dialog::backdrop{background:rgba(6,5,24,.72)}
 body.sim-join-page .sj-dialog{
   -webkit-backdrop-filter:blur(16px) saturate(140%);
   backdrop-filter:blur(16px) saturate(140%);
+}
+
+/* ── 한 화면에 담기(2026-09-22) ────────────────────────────
+   1920×1080·100% 배율에서 스크롤 없이 들어오게 잡았다. 높이를 만드는 것은 거의
+   제목 그림 하나다 — 그것만 뷰포트를 따라 줄이면 나머지는 여백 정리로 충분하다.
+   셸의 아래 여백 64 도 이 화면에서는 길다(목록이 아니라 한 장짜리 화면이다). */
+/* **제목 그림을 많이 줄이지 않는다.** 그 그림 안에 한 줄 설명이 같이 그려져 있어서,
+   폭이 줄면 그 글자도 같이 줄어 못 읽는다(430px 폭에서 9px 쯤 된다). 그래서 그림은
+   덜 줄이고 모자란 높이는 여백에서 걷는다 — 여백은 줄여도 읽히는 것이 없어지지 않는다. */
+body.sim-join-page{--lockup-h:clamp(210px,42vh,400px)}
+body.sim-join-page .main-inner{padding-bottom:20px}
+body.sim-join-page .sim-join{gap:14px}
+body.sim-join-page .sj-card{padding:18px 26px}
+body.sim-join-page .sj-rules{gap:10px}
+body.sim-join-page .sj-steps li{padding:13px 16px 15px}
+/* 표시 배율 125%(1920 → 1536×864)가 여기 걸린다 */
+@media (max-height:900px){
+  body.sim-join-page{--lockup-h:clamp(190px,36vh,320px)}
+  body.sim-join-page .main-inner{padding-bottom:14px}
+  body.sim-join-page .sj-steps li{padding:11px 14px 13px}
+}
+/* 1366×768 같은 낮은 노트북. 여기서는 제목 그림을 한 번 더 줄인다 —
+   더 걷어낼 여백이 남아 있지 않다. */
+@media (max-height:800px){
+  body.sim-join-page{--lockup-h:clamp(150px,27vh,220px)}
+  body.sim-join-page .main-inner{padding-bottom:6px}
+  body.sim-join-page .sim-join{gap:9px}
+  body.sim-join-page .sj-card{padding:12px 20px}
+  body.sim-join-page .sj-steps li{padding:9px 13px 11px}
+  body.sim-join-page .sj-hero-body{padding:18px 32px 16px}
+  /* 여기서는 그림이 아니라 **히어로의 최소 높이**가 바닥이다 — 내용이 줄어도
+     min-height 가 버티고 있어서 여백을 아무리 걷어도 6px 이 남았다. */
+  body.sim-join-page .sj-hero{min-height:clamp(240px,24vw,340px)}
 }
