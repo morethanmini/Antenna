@@ -182,7 +182,6 @@ export default function SeasonTrades() {
             tone="all"
             label="전체 매매"
             value={`${all.length.toLocaleString('ko-KR')}회`}
-            sub={<span className="st-dim">{tickerOptions.length}종목</span>}
             icon={<Ico><path d="M4 7h13M14 4l3 3-3 3" /><path d="M20 17H7M10 14l-3 3 3 3" /></Ico>}
           />
           <Stat
@@ -195,18 +194,13 @@ export default function SeasonTrades() {
             tone="sell"
             label="매도"
             value={`${sells.length.toLocaleString('ko-KR')}회`}
-            sub={
-              <span className="st-dim">
-                {sells.length === 0 ? '아직 판 적이 없습니다' : `${wins}건 이익`}
-              </span>
-            }
+            sub={sells.length > 0 ? <span className="st-dim">{wins}건 이익</span> : undefined}
             icon={<Ico><path d="M12 19V5M5 12l7-7 7 7" /></Ico>}
           />
           <Stat
             tone={realized > 0 ? 'up' : realized < 0 ? 'down' : 'flat'}
             label="실현 손익"
             value={`${realized > 0 ? '+' : ''}${won(realized)}`}
-            sub={<span className="st-dim">판 것에서 확정된 몫</span>}
             icon={<Ico><path d="M12 19V5M12 5l-5 5M12 5l5 5" /></Ico>}
           />
         </section>
@@ -258,7 +252,7 @@ export default function SeasonTrades() {
                 : '고른 조건에 맞는 체결이 없습니다.'}
               <small>
                 {all.length === 0
-                  ? '진행 화면에서 주문을 넣으면 여기에 쌓입니다.'
+                  ? '진행 화면에서 주문을 넣으면 보입니다.'
                   : '필터를 전체로 두면 다시 보입니다.'}
               </small>
             </p>
@@ -297,11 +291,11 @@ export default function SeasonTrades() {
           )}
 
           <p className="st-note">
-            체결가는 그 게임일 종가입니다. 수수료와 슬리피지는 없습니다.
+            체결가는 그 게임일 종가 그대로입니다. 수수료는 없습니다.
             {sells.length > 0 && (
               <> 실현 손익은 평균 매입가 기준입니다. 매도 {sells.length}건 중 {wins}건이
-                이익이라 건수로 세면 {rate((wins / sells.length) * 100).replace('+', '')}입니다 —
-                나눠 팔면 한 판단이 여러 건으로 세어지므로 참고로만 보세요.</>
+                이익으로 건수 비율은 {rate((wins / sells.length) * 100).replace('+', '')}입니다.
+                나눠 팔면 한 판단이 여러 건이 되니 참고로만 보세요.</>
             )}
           </p>
         </section>

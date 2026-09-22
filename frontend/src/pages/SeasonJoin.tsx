@@ -406,7 +406,7 @@ export default function SeasonJoin() {
                 <path d="M4 8h13l-3-3M20 16H7l3 3" />
               </Ico>
               <b>주문은 그 게임일 종가로 한 번에 체결됩니다.</b>
-              <p>수수료·슬리피지·예약 주문이 없고, 수량과 방향만 정합니다.</p>
+              <p>수량과 방향만 정하면 됩니다. 수수료도 예약 주문도 없습니다.</p>
             </li>
             <li>
               <span className="sj-step-no" aria-hidden="true">03</span>
