@@ -7,6 +7,7 @@ import ssafy.a507.backend.domain.market.entity.Stock;
 import ssafy.a507.backend.domain.monetize.entity.Report;
 import ssafy.a507.backend.domain.prediction.entity.Prediction;
 import ssafy.a507.backend.domain.prediction.entity.PredictionCommit;
+import ssafy.a507.backend.domain.prediction.service.BusinessDays;
 
 /**
  * GET /api/v1/commits 목록 한 줄 (화면 D-01 커밋 원장).
@@ -51,7 +52,12 @@ public record CommitItemResponse(
         Boolean visibility,
         Long anchorId,
         LocalDate businessDate,
-        AnchorBatch.Status anchorStatus) {
+        AnchorBatch.Status anchorStatus,
+        /**
+         * 결과 공개 예정일 (ANT-PRED-12). 화면이 "3일" 대신 이 날짜를 적는다 — 기간만 보여 주면 만기가 주말일 때
+         * "3일이 지났는데 안 열린다" 로 읽힌다. 계산은 {@link BusinessDays#revealDate}. 리포트 줄과 만기일이 없는 예측은 null.
+         */
+        LocalDate revealDate) {
 
     public static CommitItemResponse of(PredictionCommit c) {
         Prediction p = c.getPrediction();
@@ -69,7 +75,8 @@ public record CommitItemResponse(
                 null,
                 batchId(c.getAnchorBatch()),
                 businessDate(c.getAnchorBatch()),
-                batchStatus(c.getAnchorBatch()));
+                batchStatus(c.getAnchorBatch()),
+                BusinessDays.revealDate(p.getSettleDate(), p.getSettledOn()));
     }
 
     /** 봉인된 리포트만 원장에 오른다 — {@code reportHash} 가 null 인 줄은 만들 수 없다(레포지토리가 걸러 준다). */
@@ -88,7 +95,8 @@ public record CommitItemResponse(
                 r.isPublic(),
                 batchId(r.getAnchorBatch()),
                 businessDate(r.getAnchorBatch()),
-                batchStatus(r.getAnchorBatch()));
+                batchStatus(r.getAnchorBatch()),
+                null);
     }
 
     private static Long batchId(AnchorBatch batch) {

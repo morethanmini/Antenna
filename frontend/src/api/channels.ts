@@ -136,6 +136,8 @@ export type ChannelPrediction = {
   errorRate: number | null
   horizon: number
   dueDate: string | null
+  /** 결과 공개 예정일 YYYY-MM-DD (ANT-PRED-12). 만기일이 없으면 null. 화면은 revealLabel 로 그린다 */
+  revealDate?: string | null
   locked: boolean
 }
 

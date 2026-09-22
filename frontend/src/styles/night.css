@@ -1,0 +1,225 @@
+/* 밤 화면 한 벌 — [ANT-FE-SEASON-HOME]
+   모의투자 홈(G-01)과 기록(G-09)이 같이 쓴다. 화면이 하나뿐이던 때는 sim-home.css
+   안에 있었는데, 두 화면이 되면서 옮겼다 — 복사해 두면 한쪽만 고쳐져 상단바 색이
+   화면마다 달라진다.
+
+   **거는 방법.** routes.ts 의 bodyClass 에 `is-night` 를 더한다(예: 'sim-home-page
+   is-night'). Layout 이 그 문자열을 body 에 그대로 붙이므로 여러 클래스를 띄어쓰기로
+   나열하면 된다. 로고만은 CSS 로 못 바꾸니(img src) Layout.tsx 도 같은 토큰을 보고
+   밝은 글자 버전으로 갈아 끼운다 — 한쪽만 하면 바는 어두운데 로고가 사라진다.
+
+   화면마다 다른 값(여백 · 카드 크기 · 제목 크기)은 여기 두지 않는다. 그건 각 화면의
+   CSS 가 자기 bodyClass 아래에서 정한다. */
+
+body.is-night{
+  /* 어두운 판의 색 한 벌 */
+  --night-0:#0d0c22;
+  --night-1:#171436;
+  --night-2:#231d4d;
+  --night-ink:#f4f2ff;
+  --night-body:#bdb8dc;
+  --night-faint:#8c86b3;
+  --night-line:rgba(255,255,255,.12);
+  --night-glass:rgba(255,255,255,.07);
+  --night-glass-hi:rgba(255,255,255,.12);
+  --glow:#8b7dff;
+  --hand:"Nanum Pen Script","Nanum Pen",cursive;
+}
+
+/* ── 페이지 전체가 밤이다(2026-09-21) ──────────────────────
+   시안은 히어로만 어두운 카드가 아니라 본문 전체가 밤 도시다. 상단바는 그대로 밝게 두고
+   .main 만 어둡게 칠한다 — bodyClass 로 한정되므로 다른 화면은 영향이 없다.
+   **도시 그림은 여기 없다.** 화면마다 서는 자리가 달라서다 — 홈은 카드 뒤 아래쪽,
+   기록은 머리 위 띠다. 각 화면 CSS 가 자기 .main::before 로 깐다.
+   body 도 같은 색으로 칠해 스크롤 끝에서 밝은 바탕이 새지 않게 한다. */
+body.is-night{background:var(--night-0)}
+body.is-night .main{
+  position:relative;isolation:isolate;
+  color:var(--night-ink);
+  background:
+    radial-gradient(60% 45% at 72% 12%, rgba(139,125,255,.30) 0%, transparent 60%),
+    radial-gradient(45% 40% at 12% 30%, rgba(84,87,232,.22) 0%, transparent 60%),
+    radial-gradient(50% 35% at 50% 100%, rgba(120,100,255,.25) 0%, transparent 70%),
+    linear-gradient(180deg, #100e2b 0%, var(--night-1) 45%, var(--night-0) 100%);
+}
+/* ── 상단바도 밤이다(2026-09-21) ────────────────────────
+   시안은 바까지 어두운 한 덩어리다. 셸(app.css)의 상단바는 흰 유리 한 벌로 맞춰져
+   있어서, 그 위에 어두운 배경만 깔면 **아무것도 안 보인다** — 유리 버튼의 형태는
+   흰 테와 어두운 그림자가 만드는데, 어두운 바탕에서는 흰 테가 과하게 튀고 그림자는
+   통째로 사라진다. 그래서 색 한 벌을 여기서 뒤집는다.
+   1. 채움은 흰색을 아주 옅게(.06~.12). 밝은 판에서 쓰던 청회색 그러데이션은 어두운
+      바탕에서 때 낀 것처럼 보인다.
+   2. 형태는 **안쪽 위의 흰 줄 하나**가 잡는다. 바깥 헤어라인은 어두운 선 대신
+      옅은 흰 선이다 — 어두운 선은 어두운 바탕에서 경계가 되지 못한다.
+   3. 바깥 그림자는 뺀다. 어두운 바탕 위의 검은 그림자는 보이지 않으면서 색만 탁하게
+      만든다.
+   메뉴 **항목은 손대지 않는다** — 바뀌는 것은 색뿐이다.
+   곁창(검색 · 알림 · 계정 · 햄버거)은 바에 매달린 별개의 판이라 그대로 밝게 둔다.
+
+   로고는 CSS 로 못 바꾼다(img src). Layout.tsx 의 NIGHT_PAGES 가 밝은 글자
+   버전으로 갈아 끼운다 — 기본 워드마크는 글자가 짙은 남색이라 여기서 사라진다. */
+body.is-night{
+  --nav-glass:linear-gradient(180deg, rgba(255,255,255,.12) 0%, rgba(255,255,255,.05) 55%, rgba(255,255,255,.09) 100%);
+  --nav-glass-hi:linear-gradient(180deg, rgba(255,255,255,.2) 0%, rgba(255,255,255,.1) 55%, rgba(255,255,255,.16) 100%);
+  --nav-raise:0 0 0 1px rgba(255,255,255,.1), inset 0 1px 0 rgba(255,255,255,.22);
+  --nav-raise-hi:0 0 0 1px rgba(255,255,255,.18), inset 0 1px 0 rgba(255,255,255,.34);
+  /* 파임. **안쪽 위의 그늘 + 아래 모서리의 빛** 이 만든다 — app.css 의 --glass-inset
+     과 같은 방향이고 값만 어두운 판에 맞게 키웠다. 흰 테를 한 바퀴 두르면 사방이
+     밝아져 파인 것이 아니라 떠 있는 것으로 읽힌다(2026-09-21 에 한 번 그렇게 만들었다). */
+  --nav-inset:inset 0 3px 7px rgba(0,0,0,.55), inset 0 -1px 0 rgba(255,255,255,.16);
+}
+/* **뒤가 비쳐야 한다(2026-09-21).** .82 로 깔았더니 바와 본문이 서로 다른 검정
+   두 판으로 갈려 경계에 가로 줄이 생겼다. 본문의 그러데이션·도시가 바 밑으로
+   그대로 지나가므로(.main 은 top:0 에서 시작하고 padding-top 으로 밀린다) 알파를
+   내리면 그 그림이 비쳐 한 덩어리가 된다.
+   아래 실선도 없다 — 비치는 바에 선을 그으면 그 선만 남아 다시 두 판이 된다.
+   바닥은 app.css 의 .navbar::before 가 그러데이션으로 지운다(2026-09-22). 여기서는
+   그 판의 색만 어두운 쪽으로 갈아 끼운다 — 지우는 모양(마스크)은 셸이 들고 있다. */
+body.is-night .navbar::before{
+  background:linear-gradient(180deg,
+    rgba(18,16,44,.55) 0%, rgba(18,16,44,.55) 52%,
+    rgba(18,16,44,.3) 78%, transparent 100%);
+}
+@supports (backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px)){
+  body.is-night .navbar::before{
+    background:rgba(18,16,44,.34);
+    -webkit-backdrop-filter:blur(16px) saturate(150%);
+    backdrop-filter:blur(16px) saturate(150%);
+  }
+}
+
+/* 모드 전환 — 파인 트랙은 어두운 바탕에서 반대로 읽힌다. 안쪽 위를 더 어둡게 두고
+   아래 밝은 줄을 지운다(흰 줄이 어두운 바에서 혼자 빛난다). 켜진 알은 그대로 브랜드색. */
+body.is-night .modeswitch{
+  --ms-track:rgba(255,255,255,.08);
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.4), inset 0 -1px 0 rgba(255,255,255,.08), 0 0 0 1px rgba(255,255,255,.07);
+}
+body.is-night .modeswitch a{color:var(--night-faint);text-shadow:none}
+body.is-night .modeswitch a:hover{color:var(--night-ink)}
+body.is-night .modeswitch a.on{color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.3)}
+
+/* 메뉴 글자. 밝은 판에서는 검정이었다 — 여기서는 그 반대로 간다.
+   짚으면 뜨고 지금 있는 자리는 들어가 있다는 규칙(app.css)은 그대로 살린다. */
+body.is-night .navmenu a{color:var(--night-body)}
+body.is-night .navmenu a:hover{
+  color:#fff;background-image:var(--nav-glass);box-shadow:var(--nav-raise);
+}
+/* 지금 있는 자리. **app.css 가 걸어 둔 유리 블러를 끈다** — 바가 이미 블러라 그 위에
+   한 겹 더 얹으면 saturate(180%)가 이 칸만 밝히고 채도를 올려, 눌린 자리가 도로
+   떠 보인다(밝은 판에서는 흰 바 위 은은한 서리였지만 여기서는 반대로 작동한다).
+   대신 바보다 확실히 어두운 채움으로 판다 — 어두운 바탕에서 검은 그림자만으로는
+   파임이 보이지 않아, 파였다고 말하는 것은 결국 색의 깊이다. */
+body.is-night .navmenu a.on{
+  color:#fff;background-color:rgba(0,0,0,.34);box-shadow:var(--nav-inset);
+  -webkit-backdrop-filter:none;backdrop-filter:none;
+}
+body.is-night .navmenu a.on:hover{
+  background-image:none;background-color:rgba(0,0,0,.42);box-shadow:var(--nav-inset);
+}
+
+/* 잔액 칩 · 아이콘 버튼 · 프로필 — 유리 한 벌을 어두운 쪽으로 갈아 끼운다 */
+body.is-night .wallet,
+body.is-night .iconbtn{background-image:var(--nav-glass);box-shadow:var(--nav-raise)}
+body.is-night .wallet{color:#fff}
+body.is-night .iconbtn{color:var(--night-body)}
+body.is-night .wallet:hover,
+body.is-night .iconbtn:hover{background-image:var(--nav-glass-hi);box-shadow:var(--nav-raise-hi);color:#fff}
+body.is-night .wallet:active,
+body.is-night .iconbtn:active{box-shadow:var(--nav-inset)}
+/* 곁창을 열어 둔 버튼은 눌린 채로. 밝은 판의 연보라 채움은 어두운 바에서 탁해
+   보여, 브랜드색을 좀 더 진하게 깐다. */
+body.is-night .iconbtn[aria-expanded="true"]{
+  background-image:linear-gradient(180deg,
+    color-mix(in oklab, var(--brand) 55%, transparent) 0%,
+    color-mix(in oklab, var(--brand) 72%, transparent) 100%);
+  color:#fff;box-shadow:inset 0 2px 6px rgba(0,0,0,.3), 0 0 0 1px color-mix(in oklab, var(--brand) 60%, transparent);
+}
+body.is-night .avatarbtn{box-shadow:var(--nav-raise)}
+body.is-night .avatarbtn:hover{box-shadow:var(--nav-raise-hi)}
+
+/* 바에 매달린 작은 메뉴 둘(햄버거 · 계정). 흰 판 그대로 두면 어두운 바 아래로
+   밝은 카드가 튀어나와, 바와 한 몸인 메뉴가 아니라 남의 창처럼 보인다.
+   알림 곁창은 건드리지 않는다 — 그쪽은 메뉴가 아니라 읽을거리가 담긴 판이다. */
+body.is-night .navburger-pop,
+body.is-night .accountmenu-pop{
+  background:rgba(24,21,58,.96);border-color:rgba(255,255,255,.12);
+  box-shadow:0 18px 44px -18px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.08);
+}
+body.is-night .navburger-pop a,
+body.is-night .accountmenu-pop a,
+body.is-night .accountmenu-pop button{color:var(--night-body)}
+body.is-night .navburger-pop a:hover,
+body.is-night .accountmenu-pop a:hover,
+body.is-night .accountmenu-pop button:hover{background:rgba(255,255,255,.09);color:#fff}
+/* 지금 있는 자리는 한 줄일 때(.navmenu a.on)와 같은 음각이다 */
+body.is-night .navburger-pop a.on{
+  background-color:rgba(0,0,0,.3);color:#fff;box-shadow:var(--nav-inset);
+}
+body.is-night .navburger-pop a.on:hover{background-color:rgba(0,0,0,.36);box-shadow:var(--nav-inset)}
+/* 로그아웃은 색으로 구분한다는 규칙을 어두운 판에서도 지킨다 — 기본 --danger 는
+   어두운 바탕에서 가라앉아 한 단계 밝힌다. */
+body.is-night .accountmenu-pop .is-danger{color:#ff8b8b}
+body.is-night .accountmenu-pop .is-danger:hover{background:rgba(255,107,107,.14);color:#ffa3a3}
+
+/* 비로그인 상태의 두 버튼. 로그인 쪽이 흰 판(#fff)이라 어두운 바에서 혼자 튄다. */
+body.is-night .navbar-login{
+  background:rgba(255,255,255,.08);color:var(--night-ink);border-color:rgba(255,255,255,.16)!important;
+}
+body.is-night .navbar-auth a:hover{border-color:var(--glow)!important;color:#fff}
+
+
+
+/* ── 본문 토큰을 어두운 쪽으로 뒤집는다 (2026-09-22) ────────────
+   여기까지는 **셸(상단바·메뉴)** 만 밤이었고 본문 카드는 흰 판 그대로였다. 모의투자
+   홈·기록은 제 CSS 로 카드를 직접 칠했지만, 인사이트는 화면이 열둘이라 그 방식으로는
+   같은 값을 열두 번 적게 된다 — 한 군데가 빠지면 그 화면만 흰 카드로 남는다.
+
+   그래서 색 토큰 한 벌을 여기서 갈아 끼운다. 토큰만 쓰는 화면은 is-night 를 붙이는
+   것만으로 따라온다. 색을 직접 박아 둔 자리는 그 화면 CSS 에서 따로 잡는다.
+
+   **--brand 계열의 진한 쪽(--brand · --brand-ink)은 안 바꾼다.** 버튼 채움과 강조는
+   어두운 바탕에서도 그대로 읽히고, 바꾸면 두 모드의 브랜드색이 달라진다.
+   옅은 쪽(--brand-soft · --brand-softer)만 어두운 판에 맞게 내린다 — 연보라 채움은
+   밤에서 형광처럼 튄다.
+
+   판 색은 **불투명이 아니라 옅은 흰색**이다. 시안의 카드가 유리라 뒤의 도시가 비쳐야
+   한다. 불투명하게 두면 카드마다 검은 사각형이 떠서 배경 그림이 죽는다. */
+body.is-night{
+  --ground:var(--night-0);
+  --surface:rgba(255,255,255,.07);
+  --surface-2:rgba(255,255,255,.12);
+  --ink:var(--night-ink);
+  --body:#cfcbe8;
+  --muted:#a9a4cc;
+  --faint:var(--night-faint);
+  --rule:var(--night-line);
+  --card-line:rgba(255,255,255,.14);
+  --nav-line:rgba(255,255,255,.07);
+  --brand-soft:rgba(139,125,255,.22);
+  --brand-softer:rgba(139,125,255,.12);
+  --ok-soft:rgba(34,197,94,.18);
+  --up-soft:rgba(255,120,120,.16);
+  --down-soft:rgba(120,160,255,.18);
+  /* 어두운 바탕에서 검은 그림자는 보이지 않는다. 깊이는 위쪽 흰 줄 하나가 만든다 */
+  --shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 18px 40px -26px rgba(0,0,0,.8);
+  --wash:linear-gradient(118deg, rgba(139,125,255,.16) 0%, rgba(84,87,232,.12) 60%, rgba(139,125,255,.18) 100%);
+  --wash-line:rgba(255,255,255,.14);
+  --glass-ink:var(--night-ink);
+  /* 신호색은 밤에서 한 단계 밝힌다 — 원래 값은 어두운 판에서 가라앉는다 */
+  --up:#ff6b6b;
+  --up-vivid:#ff8080;
+  --down:#7aa7ff;
+  --down-vivid:#7aa7ff;
+  --ok:#5ee89b;
+  --hit:#5ee89b;
+  --danger:#ff8b8b;
+  --gold:#ffd464;
+}
+
+/* 카드. 채움·테·그림자는 app.css 의 .card 가 이미 토큰으로 쓰고 있어 위에서
+   뒤집은 값이 그대로 따라온다. 여기서 더하는 것은 **블러 하나**다 — 판이
+   반투명이라 그냥 두면 글자 위로 뒤의 건물이 지나간다. */
+body.is-night .card{
+  -webkit-backdrop-filter:blur(14px) saturate(140%);
+  backdrop-filter:blur(14px) saturate(140%);
+}

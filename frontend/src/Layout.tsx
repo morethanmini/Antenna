@@ -52,9 +52,12 @@ const MODES = {
     label: '모의 투자',
     home: '/sim',
     nav: [
-      /* 연습 허브로 바로 간다(2026-09-21). 모드 선택(/sim/modes)은 고를 것이
-         하나뿐이 되어 걷어냈다 — 그 라우트는 이제 여기로 넘겨보내기만 한다. */
-      { key: 'play', text: '투자하기', href: '/sim/practice' },
+      /* 모의투자 홈으로 간다(2026-09-21). 연습 허브(/sim/practice)가 홈과 같은 두
+         응답으로 같은 질문에 답하고 있어 홈에 합쳤다 — 모드 선택(/sim/modes)과 함께
+         두 라우트 모두 이제 여기로 넘겨보내기만 한다.
+         로고도 같은 곳으로 가지만 이 줄을 남긴다: 글자 메뉴를 쓰는 사람에게
+         로고만이 유일한 입구이면 모의투자 안에서 시작점으로 돌아갈 길이 없다. */
+      { key: 'play', text: '투자하기', href: '/sim' },
       { key: 'portfolio', text: '투자 포트폴리오', href: '/sim/history' },
       /* '모의투자 랭킹' 을 내렸다(2026-09-16). 한 시즌 안의 순위는 시즌 리더보드(G-07)가
          이미 보여 준다. 둘을 같이 두면 "내 등수" 가 두 곳에서 다른 값으로 나온다. */
@@ -93,6 +96,14 @@ function WalletChip() {
 
    되살릴 때는 git 역사에서 이 블록(NavSearch · SEARCH_MAX)과 상단바의 버튼을 함께
    꺼내면 된다. 화면(A-03)과 API(GET /search)는 그대로 살아 있다. */
+
+/* 상단바가 어두워지는 화면을 가리키는 표시. 색은 styles/night.css 가 같은 토큰으로
+   칠하고, 여기서는 **로고 파일을 고르는 데만** 쓴다 — <img src> 는 조상 클래스로
+   못 고르기 때문이다.
+   어두운 화면을 새로 만들면 routes.ts 의 bodyClass 에 이 토큰만 더하면 둘이 함께
+   따라온다. 빠뜨리면 바만 어둡고 로고는 짙은 남색 글자 그대로라 사라진다.
+   마크 파일(600px 아래)은 마스코트뿐이라 어느 바탕에서도 읽혀 갈아 끼우지 않는다. */
+const NIGHT_CLASS = 'is-night'
 
 export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode; nav: string; bodyClass: string; children: React.ReactNode }) {
   const { authed, user, signOut } = useAuth()
@@ -174,6 +185,10 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
   useEffect(() => { document.body.className = bodyClass }, [bodyClass])
 
   const modeConfig = MODES[mode] ?? MODES.insight
+  /* 상단바까지 어두운 화면인가. 색은 그 화면의 CSS 가 body 클래스로 칠하지만
+     **로고만은 여기서 갈아 끼워야 한다** — <img src> 는 조상 클래스로 못 고른다.
+     한 장만 내려받게 하려고(아래 <picture> 주석) 겹쳐 두고 감추는 대신 주소를 바꾼다. */
+  const night = bodyClass.split(' ').includes(NIGHT_CLASS)
 
   return (
     <>
@@ -196,7 +211,12 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
         <Link className="brand" to={modeConfig.home}>
           <picture>
             <source media="(max-width:600px)" srcSet="/assets/logo/antenna-mark-light.png" />
-            <img className="brand-logo" src="/assets/logo/antenna-wordmark-3d.png" alt="ANTENNA 홈" />
+            <img
+              className="brand-logo" alt="ANTENNA 홈"
+              src={night
+                ? '/assets/logo/antenna-wordmark-3d-on-dark.png'
+                : '/assets/logo/antenna-wordmark-3d.png'}
+            />
           </picture>
         </Link>
 
@@ -361,7 +381,7 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
       {simTour && !tour && (
         <SimOnboardingTour
           onClose={() => setSimTour(false)}
-          onStart={() => { setSimTour(false); navigate('/sim/practice') }}
+          onStart={() => { setSimTour(false); navigate('/sim') }}
         />
       )}
 

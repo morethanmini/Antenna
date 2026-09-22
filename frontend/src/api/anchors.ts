@@ -112,6 +112,8 @@ export type LedgerCommit =
       stockCode: string | null
       stockName: string | null
       horizon: Horizon
+      /** 결과 공개 예정일 YYYY-MM-DD (ANT-PRED-12). 만기일이 없으면 null */
+      revealDate?: string | null
       status: PredictionStatus
       reportId: null
       title: null

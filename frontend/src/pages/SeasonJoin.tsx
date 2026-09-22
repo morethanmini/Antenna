@@ -173,7 +173,7 @@ export default function SeasonJoin() {
             <EmptyState
               title="시즌을 찾을 수 없습니다"
               hint="종료되었거나 삭제된 시즌일 수 있습니다"
-              action={{ label: '연습 주제 고르기', to: '/sim/practice' }}
+              action={{ label: '연습 주제 고르기', to: '/sim' }}
             />
           )}
         </div>
@@ -206,14 +206,10 @@ export default function SeasonJoin() {
             <nav className="sj-crumb" aria-label="위치">
               <Link to="/sim">모의투자 홈</Link>
               <i aria-hidden="true">›</i>
-              {/* 연습만 돌아갈 곳이 있다(2026-09-21). 모드 선택을 걷어내면서 대회·시연은
-                  목록 화면이 없어졌다 — 없는 곳으로 거는 링크 대신 글자만 남긴다.
-                  자리를 아예 비우지 않는 이유는 여기가 어느 갈래인지는 여전히 사실이라서다. */}
-              {s.mode === 'PRACTICE' ? (
-                <Link to="/sim/practice">{MODE_LABEL[s.mode]}</Link>
-              ) : (
-                <span>{MODE_LABEL[s.mode]}</span>
-              )}
+              {/* 어느 갈래인지만 말한다. 링크가 아닌 이유(2026-09-21) — 연습 허브를
+                  홈에 합쳐 "연습" 이 곧 앞 칸의 홈이 됐다. 같은 곳으로 두 번 걸 수 없고,
+                  대회·시연은 애초에 목록 화면이 없다. 갈래는 사실이라 글자로 남긴다. */}
+              <span>{MODE_LABEL[s.mode]}</span>
               <i aria-hidden="true">›</i>
               <span>시즌 상세</span>
             </nav>

@@ -57,6 +57,26 @@ public interface ReportCommentRepository extends JpaRepository<ReportComment, Lo
             Limit limit);
 
     /**
+     * 댓글 목록 한 페이지 — 최신 순(QA 09-21). 커서가 {@code id <} 로 거꾸로 나아가는 것만
+     * 다르고 나머지는 {@link #findPage} 와 같다. 정렬과 커서 방향은 늘 같이 움직여야 해서
+     * 한 쿼리에 방향 인자를 끼우는 대신 메서드를 나눴다 — 조건과 order by 를 동시에 뒤집는
+     * case 식은 읽을 수 없고, 인덱스도 타지 못한다.
+     */
+    @Query("""
+            select c from ReportComment c
+              join fetch c.user
+             where c.report.id = :reportId
+               and c.status = :status
+               and (:cursor is null or c.id < :cursor)
+             order by c.id desc
+            """)
+    List<ReportComment> findPageLatest(
+            @Param("reportId") Long reportId,
+            @Param("status") ReportComment.Status status,
+            @Param("cursor") Long cursor,
+            Limit limit);
+
+    /**
      * 댓글 좋아요가 대상 댓글과 그 댓글이 달린 리포트를 한 번에 필요로 한다.
      *
      * <p>{@code report} 를 함께 읽는 이유는 잠금 판정 때문이다 — 구독자 전용 리포트의 댓글에

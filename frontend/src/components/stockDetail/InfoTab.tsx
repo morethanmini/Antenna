@@ -590,7 +590,8 @@ const DOC_GROUPS = [
   {
     key: 'news' as const,
     label: '뉴스',
-    desc: (name: string) => `${name}와 관련된 주요 언론 소식을 확인할 수 있습니다.`,
+    /* 조사를 붙이지 않는다 — "삼성물산와" 처럼 받침 있는 이름에서 틀린다(09-21 QA) */
+    desc: (name: string) => `${name} 관련 주요 언론 소식을 확인할 수 있습니다.`,
     empty: '아직 들어온 뉴스가 없습니다.',
     icon: (
       <>

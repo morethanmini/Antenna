@@ -223,7 +223,10 @@ const REJECT_TEXT: Record<string, string> = {
   LAST_DAY: '마지막 게임일입니다',
   REVIEW: 'AI 복기를 만들지 못해 종료하지 않았습니다. 다시 시도해 주세요',
   DAY_MISMATCH: '다른 창에서 진행됐습니다. 화면을 새로 맞췄습니다',
-  FAILED: '주문을 처리하지 못했습니다. 다시 시도해 주세요',
+  STALE: '처리됐지만 바뀐 잔고를 불러오지 못했습니다. 새로고침해 주세요',
+  /* 끊김·500 처럼 이유를 모르는 실패. 서버가 처리했을 수도 있어 "못 했다" 고 단정하지 않는다 —
+     훅이 실패 뒤에도 현황을 다시 받으므로 지금 화면의 잔고·체결 내역이 답이다 */
+  FAILED: '처리 결과를 확인하지 못했습니다. 잔고와 체결 내역을 확인한 뒤 다시 시도해 주세요',
 }
 
 const Ico = ({ size = 18, children }: { size?: number; children: ReactNode }) => (
@@ -463,9 +466,9 @@ export default function SeasonPlay() {
       <main className="main">
         <div className="main-inner sim-play">
           <nav className="sp-crumb" aria-label="위치">
+            {/* "연습" 칸이 있었다(2026-09-21 제거). 연습 허브를 홈에 합치면서 둘이
+                같은 곳이 되어, 같은 링크가 나란히 두 번 서 있었다. */}
             <Link to="/sim">모의투자 홈</Link>
-            <i aria-hidden="true">›</i>
-            <Link to="/sim/practice">연습</Link>
             <i aria-hidden="true">›</i>
             <span>진행</span>
           </nav>
@@ -569,8 +572,6 @@ export default function SeasonPlay() {
       <div className="main-inner sim-play">
         <nav className="sp-crumb" aria-label="위치">
           <Link to="/sim">모의투자 홈</Link>
-          <i aria-hidden="true">›</i>
-          <Link to="/sim/practice">연습</Link>
           <i aria-hidden="true">›</i>
           <span>진행</span>
         </nav>

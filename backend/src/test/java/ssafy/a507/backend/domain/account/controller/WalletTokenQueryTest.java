@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.chain.entity.ChainEvent;
 import ssafy.a507.backend.domain.chain.entity.TokenLedger;
+import ssafy.a507.backend.domain.monetize.entity.AdBanner;
 import ssafy.a507.backend.support.TestNonceStoreConfig;
 
 /**
@@ -59,6 +60,28 @@ class WalletTokenQueryTest {
     }
 
     @Test
+    @DisplayName("심사 중 광고 게재료는 adHeld 로 따로 — 잔액(원장 합)에서는 빼지 않는다(09-21 QA)")
+    void 심사_중_광고는_따로_알린다() throws Exception {
+        User u = newUser();
+        credit(u, 10_000, "SIGNUP_BONUS");
+        Instant now = Instant.now();
+        AdBanner pending = AdBanner.request(u, "/api/v1/uploads/x", "https://ad.example.com",
+                now, now.plus(7, ChronoUnit.DAYS), BigInteger.valueOf(7_000));
+        AdBanner rejected = AdBanner.request(u, "/api/v1/uploads/y", "https://ad.example.com",
+                now, now.plus(3, ChronoUnit.DAYS), BigInteger.valueOf(3_000));
+        rejected.reject();
+        em.persist(pending);
+        em.persist(rejected);
+        em.flush();
+
+        mockMvc.perform(get("/api/v1/wallet/balance").with(user(String.valueOf(u.getId()))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.balance").value("10000"))
+                // 반려된 광고는 돈이 나간 적도 묶인 적도 없다 — 심사 중인 것만 센다
+                .andExpect(jsonPath("$.adHeld").value("7000"));
+    }
+
+    @Test
     @DisplayName("30일 집계 — 번 것·쓴 것을 둘 다 양수로, 31일 전 행은 안 센다")
     void 삼십일_집계() throws Exception {
         User u = newUser();
@@ -88,7 +111,8 @@ class WalletTokenQueryTest {
                 .andExpect(jsonPath("$.balance").value("0"))
                 // SUM 이 NULL 이라 그냥 두면 키가 빠진다. 화면이 0 을 그릴 수 있어야 한다
                 .andExpect(jsonPath("$.earned30d").value("0"))
-                .andExpect(jsonPath("$.spent30d").value("0"));
+                .andExpect(jsonPath("$.spent30d").value("0"))
+                .andExpect(jsonPath("$.adHeld").value("0"));
         mockMvc.perform(get("/api/v1/wallet/ledger").with(user(String.valueOf(u.getId()))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items.length()").value(0))

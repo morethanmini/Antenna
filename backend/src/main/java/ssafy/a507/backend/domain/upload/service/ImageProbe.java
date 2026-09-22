@@ -18,7 +18,7 @@ import ssafy.a507.backend.common.error.ErrorCode;
  * 만드는 쪽이 자유롭게 쓰는 값이라, {@code image/png} 라고 적고 실행 파일을 올릴 수 있다.
  * 화이트리스트 판정은 파일 앞머리의 매직 바이트로만 한다.
  *
- * <p>크기는 헤더만 읽는다. {@code ImageIO.read} 는 픽셀까지 전부 디코딩해 5MB JPEG 하나가
+ * <p>크기는 헤더만 읽는다. {@code ImageIO.read} 는 픽셀까지 전부 디코딩해 10MB JPEG 하나가
  * 수십 MB 힙을 잡는다 — 여기서 필요한 건 두 정수뿐이다.
  */
 public final class ImageProbe {

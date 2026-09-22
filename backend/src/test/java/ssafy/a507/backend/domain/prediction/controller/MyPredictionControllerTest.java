@@ -66,6 +66,20 @@ class MyPredictionControllerTest {
     }
 
     @Test
+    @DisplayName("공개 예정일이 함께 내려온다 — 만기가 일요일이면 월요일 종가로 판정해 화요일에 열린다. 만기일이 없으면 null")
+    void 공개_예정일() throws Exception {
+        // 2026-09-20 은 일요일이다. 화면이 "3일" 만 적어 "지났는데 안 열린다" 로 보이던 사례(ANT-PRED-12)
+        insertPrediction(userId, "OPEN", LocalDate.of(2026, 9, 20), null);
+        insertPrediction(userId, "BASE", null, null);
+
+        mockMvc.perform(get(URL).with(user(String.valueOf(userId))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].revealDate").doesNotExist())
+                .andExpect(jsonPath("$.items[1].settleDate").value("2026-09-20"))
+                .andExpect(jsonPath("$.items[1].revealDate").value("2026-09-22"));
+    }
+
+    @Test
     @DisplayName("status=PENDING 은 BASE·OPEN 을, JUDGED 는 HIT·MISS 를 묶고, 집계는 필터와 무관하게 전량 기준이다")
     void 상태_필터와_집계() throws Exception {
         insertPrediction(userId, "BASE", null, null);

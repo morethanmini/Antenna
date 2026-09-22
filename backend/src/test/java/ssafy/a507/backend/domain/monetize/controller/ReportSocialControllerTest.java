@@ -319,6 +319,55 @@ class ReportSocialControllerTest {
         }
 
         @Test
+        @DisplayName("sort=LATEST 면 최신 순이고 커서도 거꾸로 이어진다 — 뒤쪽을 다시 주지 않는다")
+        void 댓글_최신순_커서() throws Exception {
+            Long reportId = insertReport(authorId, "공개 리포트", true);
+            flush();
+            for (int i = 1; i <= 3; i++) {
+                insertComment(reportId, readerId, "댓글" + i, "VISIBLE");
+            }
+            flush();
+
+            String first = mockMvc.perform(get(commentsUrl(reportId))
+                            .param("size", "2")
+                            .param("sort", "LATEST")
+                            .with(user(str(readerId))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.items.length()").value(2))
+                    .andExpect(jsonPath("$.items[0].body").value("댓글3"))
+                    .andExpect(jsonPath("$.items[1].body").value("댓글2"))
+                    .andExpect(jsonPath("$.hasNext").value(true))
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+
+            /* 커서가 정렬과 같이 뒤집히지 않으면 여기서 댓글3 이 다시 온다 — 이 단언이 그걸 잡는다. */
+            String cursor = json(first).get("nextCursor").asText();
+            mockMvc.perform(get(commentsUrl(reportId))
+                            .param("size", "2")
+                            .param("cursor", cursor)
+                            .param("sort", "LATEST")
+                            .with(user(str(readerId))))
+                    .andExpect(jsonPath("$.items.length()").value(1))
+                    .andExpect(jsonPath("$.items[0].body").value("댓글1"))
+                    .andExpect(jsonPath("$.hasNext").value(false));
+        }
+
+        @Test
+        @DisplayName("모르는 sort 값은 400 이 아니라 기본(오래된 순)이다")
+        void 댓글_정렬_모르는값() throws Exception {
+            Long reportId = insertReport(authorId, "공개 리포트", true);
+            flush();
+            insertComment(reportId, readerId, "댓글1", "VISIBLE");
+            insertComment(reportId, readerId, "댓글2", "VISIBLE");
+            flush();
+
+            mockMvc.perform(get(commentsUrl(reportId)).param("sort", "뭔가오타").with(user(str(readerId))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.items[0].body").value("댓글1"));
+        }
+
+        @Test
         @DisplayName("BLOCKED 댓글은 목록에서 빠진다")
         void 댓글_블라인드() throws Exception {
             Long reportId = insertReport(authorId, "공개 리포트", true);

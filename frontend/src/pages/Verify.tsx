@@ -192,7 +192,9 @@ export default function Verify() {
         ) : (
           <Link className="vf-back" to="/ledger">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
-            커밋 원장
+            {/* D-01 화면 제목과 같은 말이어야 한다 — 그쪽은 "확정 기록" 으로
+                바뀌었는데(2026-09-21) 이 되돌아가기만 옛 이름으로 남아 있었다 */}
+            확정 기록
           </Link>
         )}
 

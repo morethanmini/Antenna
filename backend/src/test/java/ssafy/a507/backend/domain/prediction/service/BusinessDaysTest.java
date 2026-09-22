@@ -35,10 +35,12 @@ class BusinessDaysTest {
     }
 
     @Test
-    @DisplayName("5영업일은 정확히 한 주 뒤 같은 요일이다")
+    @DisplayName("5영업일은 정확히 한 주 뒤 같은 요일이다 — 휴장일이 없는 주에서")
     void 다섯_영업일은_한_주() {
+        // 9/14 주에서 세면 추석(9/24 · 25)을 건너뛰어 하루 이틀 더 간다(ANT-PRED-12). 휴장일이 없는 11월 첫 주로 옮겼다
+        LocalDate quietMonday = LocalDate.of(2026, 11, 2);
         for (int i = 0; i < 5; i++) {
-            LocalDate from = MON.plusDays(i);
+            LocalDate from = quietMonday.plusDays(i);
             assertThat(BusinessDays.plusWeekdays(from, 5)).isEqualTo(from.plusWeeks(1));
         }
     }
@@ -65,5 +67,60 @@ class BusinessDaysTest {
     void 다음_평일() {
         assertThat(BusinessDays.nextWeekday(MON.plusDays(4))).isEqualTo(MON.plusWeeks(1));
         assertThat(BusinessDays.nextWeekday(MON)).isEqualTo(MON.plusDays(1));
+    }
+
+    // ── 휴장일 (ANT-PRED-12) ─────────────────────────────────────────
+    // 2026-09: 23 수 · 24 목(추석 연휴) · 25 금(추석) · 26·27 주말 · 28 월
+
+    @Test
+    @DisplayName("추석 전날(9/23 수) 등록 — 기준일이 연휴를 건너 9/28(월)이고, 3일 만기는 10/1(목)이다")
+    void 기준일이_연휴를_건너뛴다() {
+        LocalDate base = BusinessDays.nextWeekday(LocalDate.of(2026, 9, 23));
+
+        assertThat(base).isEqualTo(LocalDate.of(2026, 9, 28));
+        // 전에는 기준일 9/24(휴장) · 만기 9/29 였다 — 기준가가 9/28 종가로 밀려 "3일" 이 하루만 쟀다
+        assertThat(BusinessDays.plusWeekdays(base, 3)).isEqualTo(LocalDate.of(2026, 10, 1));
+    }
+
+    @Test
+    @DisplayName("만기일을 세다가 휴장일을 만나면 세지 않는다 — 9/21(월) + 3 = 22 · 23 · 28")
+    void 만기일이_연휴를_건너뛴다() {
+        assertThat(BusinessDays.plusWeekdays(LocalDate.of(2026, 9, 21), 3)).isEqualTo(LocalDate.of(2026, 9, 28));
+    }
+
+    @Test
+    @DisplayName("휴장일 목록 — 추석 이틀은 쉬고 9/28(월)은 선다. 추석은 일요일과 겹칠 때만 대체휴일이다")
+    void 휴장일() {
+        assertThat(MarketHolidays.isTradingDay(LocalDate.of(2026, 9, 24))).isFalse();
+        assertThat(MarketHolidays.isTradingDay(LocalDate.of(2026, 9, 25))).isFalse();
+        assertThat(MarketHolidays.isTradingDay(LocalDate.of(2026, 9, 28))).isTrue();
+        assertThat(MarketHolidays.isTradingDay(LocalDate.of(2026, 10, 5))).isFalse(); // 개천절 대체
+        assertThat(MarketHolidays.isTradingDay(LocalDate.of(2026, 12, 31))).isFalse(); // 연말 휴장
+        assertThat(MarketHolidays.isTradingDay(LocalDate.of(2026, 9, 26))).isFalse(); // 토요일
+    }
+
+    @Test
+    @DisplayName("공개일 — 만기일 이후 첫 거래일의 다음 거래일이다. 종가는 다음 거래일 13:00 에 들어온다")
+    void 공개일() {
+        // 평일 만기: 그날 종가가 다음 날 들어온다
+        assertThat(BusinessDays.revealDate(LocalDate.of(2026, 9, 22))).isEqualTo(LocalDate.of(2026, 9, 23));
+        // 금요일 만기: 월요일 회차가 금요일 종가를 집는다
+        assertThat(BusinessDays.revealDate(LocalDate.of(2026, 9, 18))).isEqualTo(LocalDate.of(2026, 9, 21));
+        // 일요일 만기(옛 달력일 방식 예측): 월요일 종가로 판정 → 화요일. 운영에서 "3일인데 안 열린다" 로 보인 사례
+        assertThat(BusinessDays.revealDate(LocalDate.of(2026, 9, 20))).isEqualTo(LocalDate.of(2026, 9, 22));
+        // 추석 전날 만기: 다음 거래일이 연휴 뒤다
+        assertThat(BusinessDays.revealDate(LocalDate.of(2026, 9, 23))).isEqualTo(LocalDate.of(2026, 9, 28));
+        // 추석 당일 만기(배포 전에 등록된 예측): 9/28 종가로 판정 → 9/29
+        assertThat(BusinessDays.revealDate(LocalDate.of(2026, 9, 24))).isEqualTo(LocalDate.of(2026, 9, 29));
+    }
+
+    @Test
+    @DisplayName("공개일 — 이미 판정됐으면 실제로 종가를 딴 날에서 센다. 만기일이 없으면 null")
+    void 공개일_판정된_건() {
+        // 만기 9/21 인데 그날 종가가 빠져 9/22 종가로 판정된 건
+        assertThat(BusinessDays.revealDate(LocalDate.of(2026, 9, 21), LocalDate.of(2026, 9, 22)))
+                .isEqualTo(LocalDate.of(2026, 9, 23));
+        assertThat(BusinessDays.revealDate(LocalDate.of(2026, 9, 21), null)).isEqualTo(LocalDate.of(2026, 9, 22));
+        assertThat(BusinessDays.revealDate(null, null)).isNull();
     }
 }

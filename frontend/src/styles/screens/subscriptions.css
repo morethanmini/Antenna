@@ -75,6 +75,7 @@
   border-top:1px dashed var(--rule);
 }
 .sb-renew .sb-note{ margin:0; }
+.sb-renew .sb-error{ flex-basis:100%; }
 /* 자동 갱신 여부를 글자 앞머리에 세운다. 색으로만 알리지 않는다 — 글자가 이미 말한다 */
 .sb-renew-state{ font-weight:var(--fw-heavy); }
 .sb-renew-state.is-on{ color:#15803d; }
@@ -102,8 +103,7 @@
 }
 .sb-confirm-title{ margin:0; font-size:var(--fs-lg); font-weight:var(--fw-heavy); color:var(--ink); }
 .sb-confirm-body{ margin:6px 0 0; font-size:var(--fs-md); line-height:1.65; color:var(--body); }
-/* 되돌릴 수 없다는 사실은 본문보다 눈에 띄어야 한다 — 다만 경고색은 쓰지 않는다.
-   위험한 일이 아니라 "다시 켤 수 없다" 는 사실을 알리는 것이다. */
+/* 되돌릴 수 있다는 안내. 해지를 망설이는 사람이 가장 궁금한 것이라 본문보다 한 톤 세운다 */
 .sb-confirm-warn{ margin:6px 0 0; font-size:var(--fs-md); line-height:1.65; color:var(--brand-ink); font-weight:var(--fw-normal); }
 
 .sb-error{

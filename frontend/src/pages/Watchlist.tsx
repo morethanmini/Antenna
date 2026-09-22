@@ -15,15 +15,18 @@
    - 전일 종가다. "현재가" 라고 쓰지 않는다(§7 legal). 기준일이 응답에 없어
      행마다 날짜를 적을 수 없으므로 목록 위에 무슨 값인지 한 번 밝힌다.
 
-   빼기는 낙관적으로 처리한다. 눌렀을 때 바로 사라지고 실패하면 되돌린다.
-   B-02 의 별 토글과 같은 규칙이다(§4 B-02). */
+   빼기는 낙관적으로 처리하되 **행을 지우지 않는다.** 별만 빈 별이 된다.
+   줄이 그 자리에 남아 있어야 잘못 누른 사람이 다시 눌러 되담을 수 있다
+   — 사라지고 나면 어느 종목이었는지조차 기억해서 찾아와야 한다(코치 QA
+   2026-09-21). 서버에는 누르는 즉시 반영되고, 이 화면을 떠났다 오면
+   빈 별 줄은 목록에서 빠져 있다. B-02 의 별 토글과 같은 규칙이다(§4 B-02). */
 import { useCallback, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Sparkline from '../components/Sparkline'
 import EmptyState from '../components/state/EmptyState'
 import ErrorState from '../components/state/ErrorState'
 import { useAsync } from '../api/useAsync'
-import { getWatchlist, removeWatch } from '../api/stocks'
+import { addWatch, getWatchlist, removeWatch } from '../api/stocks'
 import type { WatchlistItem } from '../api/stocks'
 import '../styles/screens/watchlist.css'
 
@@ -35,29 +38,33 @@ export default function Watchlist() {
   /* 모듈 스코프 함수를 그대로 넘긴다 — 매 렌더 새로 만들면 계속 다시 읽는다 */
   const q = useAsync(getWatchlist)
 
-  /* 빼는 중인 종목. 응답을 기다리지 않고 목록에서 먼저 감춘다.
-     목록은 훅이 들고 있어 직접 못 고치므로, 감출 코드만 따로 들고
-     렌더에서 걸러낸다(B-02 관심 토글과 같은 방식). */
-  const [removing, setRemoving] = useState<string[]>([])
+  /* 이 화면에서 관심을 **끈** 종목. 목록은 훅이 들고 있어 직접 못 고치므로
+     끈 코드만 따로 들고 렌더에서 별 모양을 뒤집는다. 행은 그대로 둔다. */
+  const [off, setOff] = useState<string[]>([])
 
-  const drop = useCallback(async (item: WatchlistItem) => {
-    setRemoving((prev) => [...prev, item.stockCode])
+  /* 응답을 기다리지 않고 별부터 뒤집는다. 실패하면 되돌린다 — 그대로 두면
+     화면과 서버가 어긋난 채 남는다. */
+  const toggle = useCallback(async (item: WatchlistItem) => {
+    const code = item.stockCode
+    const wasOff = off.includes(code)
+    setOff((prev) => (wasOff ? prev.filter((c) => c !== code) : [...prev, code]))
     try {
-      await removeWatch(item.stockCode)
+      await (wasOff ? addWatch(code) : removeWatch(code))
     } catch {
-      /* 실패하면 되돌린다. 사라진 채 두면 새로고침할 때까지 빠진 것처럼
-         보이는데 서버에는 그대로 남아 있다. */
-      setRemoving((prev) => prev.filter((c) => c !== item.stockCode))
+      setOff((prev) => (wasOff ? [...prev, code] : prev.filter((c) => c !== code)))
     }
-  }, [])
+  }, [off])
 
-  const items = useMemo(
-    () => (q.data?.items ?? []).filter((s) => !removing.includes(s.stockCode)),
-    [q.data, removing],
+  /* 훅이 준 목록을 그대로 쓴다. ?? [] 를 렌더마다 새로 만들면 아래 useMemo 가 매번 다시 돈다 */
+  const items = useMemo(() => q.data?.items ?? [], [q.data])
+  /* 머리의 종목 수는 **지금 담겨 있는 수**다. 빈 별로 남은 줄은 세지 않는다 */
+  const keptCount = useMemo(
+    () => items.filter((s) => !off.includes(s.stockCode)).length,
+    [items, off],
   )
 
-  /* 담은 게 없는 것과 다 빼버린 것을 같은 화면으로 그린다 — 둘 다
-     "이제 담을 차례" 가 할 일이다 */
+  /* 서버가 빈 목록을 줄 때만이다. 여기서 별을 다 꺼도 줄은 남으므로
+     되담을 길이 있는 화면이 빈 화면으로 바뀌지 않는다 */
   const isEmpty = !q.loading && !q.error && items.length === 0
 
   return (
@@ -68,9 +75,9 @@ export default function Watchlist() {
             <h1>관심 종목</h1>
             <p>담아 둔 종목의 전일 종가와 최근 30영업일 흐름입니다. 최근 담은 순입니다.</p>
           </div>
-          {items.length > 0 && (
+          {keptCount > 0 && (
             <p className="wl-count num">
-              <b>{items.length}</b>
+              <b>{keptCount}</b>
               <span>종목</span>
             </p>
           )}
@@ -110,6 +117,7 @@ export default function Watchlist() {
               const rising = tone === ' up' ? true
                 : tone === ' down' ? false
                 : s.series.length < 2 || s.series[s.series.length - 1] >= s.series[0]
+              const isOff = off.includes(s.stockCode)
               return (
                 <li key={s.stockCode} className="wl-row">
                   <Link className="wl-stock" to={`/stocks/${s.stockCode}`}>
@@ -137,15 +145,20 @@ export default function Watchlist() {
                     예측
                   </Link>
 
+                  {/* 끈 별도 **자리를 지킨다.** 빈 별로 바뀔 뿐이라 잘못 눌렀으면
+                      한 번 더 눌러 되담는다. aria-pressed 로 켜짐/꺼짐을 읽어 준다 */}
                   <button
                     type="button"
-                    className="wl-drop"
-                    aria-label={`${s.name} 관심 해제`}
-                    onClick={() => void drop(s)}
+                    className={`wl-drop${isOff ? ' is-off' : ''}`}
+                    aria-pressed={!isOff}
+                    aria-label={`${s.name} 관심 ${isOff ? '다시 담기' : '해제'}`}
+                    onClick={() => void toggle(s)}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
                       <path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8-4.2-4.1 5.8-.8z"
-                            fill="currentColor" stroke="currentColor" strokeWidth="1.6" />
+                            fill={isOff ? 'none' : 'currentColor'}
+                            stroke="currentColor" strokeWidth="1.6"
+                            strokeLinejoin="round" />
                     </svg>
                   </button>
                 </li>

@@ -75,6 +75,11 @@ public class SubscriptionService {
     public SubscribeResponse subscribe(Long subscriberId, Long publisherId, SubscribeRequest request) {
         tokenOperationService.requireEnabled();
         Accepted accepted = tx.execute(status -> accept(subscriberId, publisherId, request));
+        if (accepted.fee().signum() == 0) {
+            // 무료 채널 — 접수 트랜잭션에서 이미 ACTIVE 로 닫혔다(accept 끝). 보낼 tx 가 없다.
+            return new SubscribeResponse(
+                    accepted.operationId(), accepted.subscriptionId(), Operation.Status.SUCCEEDED);
+        }
         try {
             tokenOperationService.dispatchSubscribe(accepted.operationId(), publisherId, accepted.fee());
         } catch (RuntimeException e) {
@@ -159,6 +164,16 @@ public class SubscriptionService {
                         Operation.ResourceType.SUBSCRIPTION,
                         subscription.getId());
 
+        // 무료 채널(구독료 0, 온보딩 기본값)은 체인에 보내지 않고 여기서 확정한다. 컨트랙트 subscribe 가
+        // amount == 0 을 ZeroAmount 로 되돌려, 보내면 매번 500 에 FAILED 구독이 쌓였다.
+        // 작업·구독 행은 유료와 똑같이 남긴다 — 화면은 같은 폴링으로 곧바로 SUCCEEDED 를 본다.
+        // ponytail: 발행자 "새 구독자" 알림은 인덱서(TokenIndexService.notifySubscribed)에만 있어 무료 구독은
+        // 알리지 않는다. 자동 갱신(ANT-TOKEN-06)이 붙으면 그 배치도 0 이면 전송을 건너뛰어야 한다.
+        if (fee.signum() == 0) {
+            subscription.activate(null, Instant.now());
+            operation.markSucceeded(null);
+        }
+
         return new Accepted(operation.getId(), subscription.getId(), fee);
     }
 
@@ -235,7 +250,7 @@ public class SubscriptionService {
      * 자동 갱신 해지 — ANT-TOKEN-05, 화면 E-03.
      *
      * <p><b>구독을 끊지 않는다.</b> 만료일까지는 ACTIVE 그대로고 다음 주기 결제만 멈춘다
-     * (설계서 §4 E-03). 명세에 되살리는 경로가 없어 화면이 확인 단계를 둔다.
+     * (설계서 §4 E-03). 되살리기는 {@link #resumeRenewal} — 만료 전이면 언제든 다시 켤 수 있다.
      *
      * <p>남의 구독과 없는 구독을 같은 404 로 묶는다 — 403 을 주면 "그 id 의 구독은 있다" 가
      * 새 나간다.
@@ -247,6 +262,21 @@ public class SubscriptionService {
                 .filter(s -> s.getSubscriber().getId().equals(subscriberId))
                 .orElseThrow(() -> new BusinessException(ErrorCode.SUBSCRIPTION_NOT_FOUND, "id"))
                 .cancelRenewal(Instant.now());
+    }
+
+    /**
+     * 자동 갱신 다시 켜기 — 해지 번복(09-21 QA). 남의 구독·없는 구독은 해지와 같은 404 로 묶는다.
+     * 끝났거나 결제가 끝나지 않은 구독은 409 — 다시 켤 것이 아니라 새로 구독해야 한다.
+     */
+    @Transactional
+    public void resumeRenewal(Long subscriberId, Long subscriptionId) {
+        Subscription subscription = subscriptions
+                .findById(subscriptionId)
+                .filter(s -> s.getSubscriber().getId().equals(subscriberId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.SUBSCRIPTION_NOT_FOUND, "id"));
+        if (!subscription.resumeRenewal(Instant.now())) {
+            throw new BusinessException(ErrorCode.SUBSCRIPTION_NOT_RENEWABLE, "id");
+        }
     }
 
     private record Accepted(String operationId, Long subscriptionId, BigInteger fee) {}

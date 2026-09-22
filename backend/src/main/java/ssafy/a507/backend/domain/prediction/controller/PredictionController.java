@@ -53,8 +53,18 @@ public class PredictionController {
                 userId,
                 CREATE_ENDPOINT,
                 idempotencyKey,
-                // record 의 toString 은 모든 구성요소(서명·noteSalt 포함)를 순서대로 담는다 — 같은 본문이면 같은 해시.
-                IdempotencyStore.hash(request.toString()),
+                /* 서명은 해시에 넣지 않는다(2026-09-21). 전에는 request.toString() 이라 서명까지 들어갔다 — 화면은
+                   재시도마다 nonce 를 새로 받아 다시 서명하므로, 접수는 됐는데 응답만 잃은 재시도가 처음 만든 예측을
+                   돌려받지 못하고 IDEMPOTENCY_KEY_REUSED(409) 였다. 사용자가 정한 값만 본다(noteSalt 포함) —
+                   구독·광고와 같은 판단이다. */
+                IdempotencyStore.hash(String.join("|",
+                        request.stockCode(),
+                        String.valueOf(request.direction()),
+                        String.valueOf(request.targetPrice()),
+                        String.valueOf(request.horizon()),
+                        request.note(),
+                        request.noteSalt(),
+                        String.valueOf(request.evidencePointIds()))),
                 () -> encode(registerService.create(userId, request)));
         Registration registration = decode(stored);
         if (registration.operationId() == null) {

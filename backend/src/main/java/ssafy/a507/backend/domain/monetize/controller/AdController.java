@@ -48,11 +48,18 @@ public class AdController {
             @Valid @RequestBody AdCreateRequest request) {
 
         Long userId = currentUserProvider.currentUserId();
+        /* 본문 해시에 서명을 넣지 않는다(2026-09-21). 전에는 request.toString() 이라 서명까지 들어갔다 —
+           화면은 재시도마다 nonce 를 새로 받아 다시 서명하므로 "같은 키·같은 신청" 의 정당한 재시도가 전부
+           IDEMPOTENCY_KEY_REUSED(409) 였고, 재생 경로는 영영 못 탔다(QA 09-21: 취소 뒤 같은 화면에서
+           다시 신청하면 "이미 처리된 요청입니다"). 같은 키로 다른 광고를 찍는 것만 막으면 된다 — 사용자가
+           고른 값은 이미지·주소·일수 셋이다. 구독(SubscriptionController)과 같은 판단이다.
+           취소한 신청의 id 를 재생하지 않게 하는 것은 화면 몫이다 — 접수가 확정되면 키를 버린다(api/ads.ts). */
         String adId = idempotencyStore.execute(
                 userId,
                 CREATE_ENDPOINT,
                 idempotencyKey,
-                IdempotencyStore.hash(request.toString()),
+                IdempotencyStore.hash(
+                        request.imageFileId() + "|" + request.linkUrl() + "|" + request.days()),
                 () -> String.valueOf(adService.create(userId, request).adId()));
 
         return ResponseEntity.status(HttpStatus.CREATED)

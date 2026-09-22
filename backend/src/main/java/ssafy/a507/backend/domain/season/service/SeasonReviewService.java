@@ -38,7 +38,7 @@ public class SeasonReviewService {
     static final int MAX_TRADES = 60;
 
     /** 이 지시문의 세대. 고치면 올린다 — 어느 복기가 어느 지시문으로 쓰였는지 season_results 에 남는다. */
-    static final String PROMPT_VERSION = "review-2";
+    static final String PROMPT_VERSION = "review-3";
 
     /** 게임일별 시장 요약을 몇 줄까지 싣나. 시즌이 길어도 재료가 끝없이 늘지 않게 한다. */
     static final int MAX_HINTS = 60;
@@ -46,6 +46,9 @@ public class SeasonReviewService {
     public static final String INSTRUCTION =
             """
             너는 모의투자 복기 코치다. 아래 재료만 근거로 한국어 복기 리포트를 쓴다.
+            문체: 모든 문장을 "~습니다" "~입니다" "~했습니다" 로 끝나는 합니다체로 쓴다. \
+            "~다" "~했다" "~한다" 로 끝나는 문장은 하나도 쓰지 않는다. 이 지시문과 재료가 평서형이어도 따라 하지 않는다. \
+            숫자·금액·등락률·게임일은 재료에 적힌 표기(예: -3.1%, 12,000원, D+5) 그대로 쓰고 한글로 풀어 쓰지 않는다.
             형식: 정확히 네 단락. 각 단락은 "시장 흐름:", "잘한 판단:", "아쉬운 판단:", "개선 제안:" 으로 시작한다. \
             단락마다 3~5문장, 전체 1,200~1,500자. 제목·머리말·불릿·마크다운 없이 문장만 쓰고 단락 사이에 빈 줄을 하나 둔다.
             내용: "시장 흐름" 은 이 시즌의 주제가 된 사건·이슈가 시장과 업종을 어떻게 움직였는지를 재료의 구간 등락 · \
@@ -55,7 +58,7 @@ public class SeasonReviewService {
             기회와 위험이 있었는지를 재료로 짚는다. "개선 제안" 은 이런 국면을 다시 만났을 때 해 볼 구체적인 행동 두세 가지다.
             규칙: 재료에 없는 사실·수치를 지어내지 않는다. 재료에 나온 사건·이슈의 이름은 말해도 된다. \
             실제 연도·날짜·요일은 말하지 않고 시점은 게임일 D+n 으로만 가리킨다. \
-            특정 종목의 매수·매도 권유나 수익 보장 표현을 쓰지 않는다. 존댓말을 쓴다.
+            특정 종목의 매수·매도 권유나 수익 보장 표현을 쓰지 않는다.
             """;
 
     private final AiClient aiClient;
@@ -116,7 +119,7 @@ public class SeasonReviewService {
                 .append(" · 평균 보유일 ").append(num(r.avgHoldingDays())).append('\n');
 
         if (trades.isEmpty()) {
-            sb.append("체결: 없음 — 한 번도 매매하지 않고 끝냈다.\n");
+            sb.append("체결: 없음 — 한 번도 매매하지 않고 끝냈습니다.\n");
             return sb.toString();
         }
 

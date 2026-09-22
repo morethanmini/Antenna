@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -173,6 +174,70 @@ class MySubscriptionControllerTest {
         mockMvc.perform(delete(RENEWAL, 999_999L).with(user(String.valueOf(subscriberId))))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("SUBSCRIPTION_NOT_FOUND"));
+    }
+
+    // ── 갱신 다시 켜기 (09-21 QA) ────────────────────────
+
+    @Test
+    @DisplayName("해지한 갱신을 다시 켜면 켜지고 해지 시각이 지워진다")
+    void 해지를_번복한다() throws Exception {
+        Long id = insertSubscription(subscriberId, publisherId, "1000", "ACTIVE", days(10), true);
+        mockMvc.perform(delete(RENEWAL, id).with(user(String.valueOf(subscriberId))))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(put(RENEWAL, id).with(user(String.valueOf(subscriberId))))
+                .andExpect(status().isNoContent());
+
+        em.flush();
+        em.clear();
+        assertThat(autoRenewOf(id)).isTrue();
+        assertThat(canceledAtOf(id)).isNull();
+        assertThat(statusOf(id)).isEqualTo("ACTIVE");
+    }
+
+    @Test
+    @DisplayName("이미 켜져 있으면 그대로 204 다")
+    void 켜진_것을_다시_켜도_같다() throws Exception {
+        Long id = insertSubscription(subscriberId, publisherId, "1000", "ACTIVE", days(10), true);
+
+        mockMvc.perform(put(RENEWAL, id).with(user(String.valueOf(subscriberId))))
+                .andExpect(status().isNoContent());
+
+        em.flush();
+        em.clear();
+        assertThat(autoRenewOf(id)).isTrue();
+    }
+
+    @Test
+    @DisplayName("끝난 구독은 409 다 — 다시 켤 것이 아니라 새로 구독해야 하고, 끝난 시각을 지우면 안 된다")
+    void 끝난_구독은_다시_못_켠다() throws Exception {
+        Long expired = insertSubscription(subscriberId, publisherId, "1000", "EXPIRED", days(-5), false);
+        Long lapsed = insertSubscription(subscriberId, strangerId, "1000", "ACTIVE", days(-1), false);
+
+        for (Long id : new Long[] {expired, lapsed}) {
+            mockMvc.perform(put(RENEWAL, id).with(user(String.valueOf(subscriberId))))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value("SUBSCRIPTION_NOT_RENEWABLE"));
+        }
+
+        em.flush();
+        em.clear();
+        assertThat(autoRenewOf(expired)).isFalse();
+        assertThat(autoRenewOf(lapsed)).isFalse();
+    }
+
+    @Test
+    @DisplayName("남의 구독 다시 켜기도 404 다")
+    void 남의_구독_다시_켜기는_404() throws Exception {
+        Long id = insertSubscription(strangerId, publisherId, "1000", "ACTIVE", days(10), false);
+
+        mockMvc.perform(put(RENEWAL, id).with(user(String.valueOf(subscriberId))))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("SUBSCRIPTION_NOT_FOUND"));
+
+        em.flush();
+        em.clear();
+        assertThat(autoRenewOf(id)).isFalse();
     }
 
     // ── 예측가 프로필 사진 (S15P21A507-273) ──────────────

@@ -71,15 +71,17 @@ export function fetchMySubscriptions(): Promise<{ items: Subscription[] }> {
   return api.get<{ items: Subscription[] }>('/subscriptions/me')
 }
 
-/**
- * 자동 갱신 해지. 204 라 돌려줄 것이 없다.
- *
- * **되돌리는 API 가 없다.** 명세에 DELETE 만 있고 다시 켜는 경로가 없어, 해지하면
- * 이 화면에서 자동 갱신을 되살릴 방법이 없다. 그래서 확인 단계를 둔다 —
- * 되돌릴 수 있는 토글처럼 보이게 만들지 않는다.
- */
+/** 자동 갱신 해지. 204 라 돌려줄 것이 없다. 되살리기는 resumeRenewal */
 export function cancelRenewal(subscriptionId: number): Promise<void> {
   return api.delete<void>(`/subscriptions/${subscriptionId}/renewal`)
+}
+
+/**
+ * 자동 갱신 다시 켜기 — 해지 번복(09-21 QA). 204. 만료 전 ACTIVE 구독만 되고,
+ * 끝난 구독은 409 SUBSCRIPTION_NOT_RENEWABLE 이다(새로 구독해야 한다).
+ */
+export function resumeRenewal(subscriptionId: number): Promise<void> {
+  return api.put<void>(`/subscriptions/${subscriptionId}/renewal`)
 }
 
 export const STATUS_LABEL: Record<SubscriptionStatus, string> = {

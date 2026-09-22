@@ -23,6 +23,7 @@ import { DEFAULT_AVATAR, useAuth } from '../auth/context'
 import Sparkline from '../components/Sparkline'
 import { BANNER, BANNER_BASE, CONTEST_PATH, phaseAt } from '../event/contest'
 import StockLogo from '../components/stocks/StockLogo'
+import '../styles/night.css'
 import '../styles/home.css'
 
 const INDEX_LABEL: Record<string, string> = {
@@ -191,13 +192,15 @@ function Hero() {
           </svg>
         </Link>
       </div>
-      {/* 개미 한 마리. 둘이 선 그림은 바탕 그림 위에 얹으니 오른쪽이 두 겹으로 무거웠다.
-          한 마리는 자리를 덜 먹고 바탕의 빛줄기를 가리지 않는다.
-          (옛 그림 antenna-characters-welcome.png 는 이 브랜치에서 지웠다 — git 역사에 있다)
+      {/* 망원경으로 시장을 살피는 개미(2026-09-22 밤 시안). 난간과 고양이까지 한 덩어리로
+          그려진 누끼라 카드 아래쪽에 세우면 시안의 "난간 위에서 내려다본다" 가 그대로 선다.
 
-          **차트판을 든 판을 골랐다.** black_ant/README 가 이 포즈의 자리를 "예측 등록 유도" 로
-          적어 뒀고, 이 카드의 버튼이 "예측 시작하기" 다 — 그림과 버튼이 같은 말을 한다. */}
-      <img className="hm-hero-art is-one" src="/assets/character/hero-ant.webp" alt=""
+          **차트판을 든 옛 그림(character/hero-ant.webp)은 지우지 않았다** — 밝은 판을
+          되살릴 때 쓸 수 있고, 다른 화면이 쓰는지 확인하지 않고 지울 파일이 아니다.
+
+          원본은 page_home 의 ChatGPT 시안이고, 웹용 webp 는 scripts/bake-home-night.mjs
+          가 굽는다(1448x1086 -> 900px · 1.57MB -> 142KB). */}
+      <img className="hm-hero-art is-scout" src="/assets/page_home/hero-scout.webp" alt=""
            aria-hidden="true" />
     </section>
   )
@@ -653,9 +656,12 @@ export default function Home() {
           </div>
           {/* 두 칸을 가로지른다 — 아래 카드 줄을 밀지 않고 한 줄만 쓴다 */}
           <ContestBanner />
-          <MarketOverview />
-          <MyAssets />
+          {/* 관심 종목을 시장 Overview 보다 위에 둔다 — 홈에 들어와 가장 먼저
+              보는 것이 "내가 담은 것" 이라는 코치 QA(2026-09-21). 시장 지표는
+              누구에게나 같은 값이라 한 줄 아래여도 손해가 없다. */}
           <Watchlist />
+          <MyAssets />
+          <MarketOverview />
           <TopPredictor />
         </div>
       </div>

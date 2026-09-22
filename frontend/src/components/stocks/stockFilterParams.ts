@@ -39,6 +39,8 @@ const toFlag = (raw: string | null) => (raw === 'true' ? true : undefined)
 const isSort = (raw: string | null): raw is StockSort =>
   raw !== null && (STOCK_SORTS as readonly string[]).includes(raw)
 
+const nonEmpty = (list: string[]) => (list.length > 0 ? list : undefined)
+
 /** 역전된 범위(최소 > 최대)는 서버가 400 으로 막는다. 손으로 친 주소면 둘 다 버린다 */
 const toRange = (min: number | undefined, max: number | undefined) =>
   min !== undefined && max !== undefined && min > max ? {} : { min, max }
@@ -52,7 +54,7 @@ export function filterFromParams(params: URLSearchParams): StockFilter {
     /* 앞뒤 공백을 다듬지 않는다 — "삼성 " 까지 친 순간 주소를 거쳐 돌아온 값이
        입력칸의 공백을 지우면 "삼성 전자" 를 칠 수 없다. 서버가 trim 한다 */
     q: q !== null && q.trim() !== '' ? q : undefined,
-    sector: params.get('sector') || undefined,
+    sector: nonEmpty(params.getAll('sector').filter(Boolean)),
     perMin: per.min,
     perMax: per.max,
     pbrMin: pbr.min,
@@ -72,6 +74,8 @@ export function paramsWithFilter(prev: URLSearchParams, filter: StockFilter): UR
     const value = filter[key]
     if (value === undefined || value === false || value === '') return []
     if (key === 'sort' && value === EMPTY_FILTER.sort) return []
+    /* 섹터는 같은 키로 여러 번 — 서버와 같은 모양이라 주소를 그대로 넘겨도 된다 */
+    if (Array.isArray(value)) return value.map((one): [string, string] => [key, one])
     return [[key, String(value)]]
   })
   return new URLSearchParams([...kept, ...mine])

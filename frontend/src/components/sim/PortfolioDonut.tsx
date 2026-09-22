@@ -142,7 +142,10 @@ export default function PortfolioDonut({ slices, total, onPick, mini, maxRows }:
         </svg>
         <div className="pd-center">
           <span>총 자산</span>
-          <b className="num">{won(total)}</b>
+          {/* 글자 수를 CSS 로 넘긴다 — 1억을 넘으면 자릿수가 늘어 12.5px 로는 고리 안지름을
+              넘는다(132px 고리의 안지름 84.7px 에 "100,000,000원" 이 91.1px). 고리 폭이 화면마다
+              달라(진행 150 · 결과 132) 크기는 CSS 가 고리 폭과 이 수로 계산한다. */}
+          <b className="num" style={{ '--pd-n': won(total).length } as CSSProperties}>{won(total)}</b>
         </div>
       </div>
 

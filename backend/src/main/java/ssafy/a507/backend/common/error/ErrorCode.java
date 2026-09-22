@@ -93,7 +93,7 @@ public enum ErrorCode {
     UNSUPPORTED_IMAGE_TYPE(HttpStatus.BAD_REQUEST, "png · jpeg · webp 이미지만 올릴 수 있습니다."),
     /** 배너는 노출 자리가 고정이라 비율이 어긋나면 잘리거나 늘어난다. 올리는 시점에 막는다. */
     INVALID_IMAGE_RATIO(HttpStatus.BAD_REQUEST, "배너 이미지 비율이 규격과 다릅니다."),
-    FILE_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "파일 용량이 5MB 를 넘습니다."),
+    FILE_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "파일 용량이 10MB 를 넘습니다."),
     /** 용량과 별개다 — 헤더만 큰 크기를 선언한 작은 파일이 렌더 시점에 클라이언트를 마비시킨다. */
     IMAGE_TOO_LARGE(HttpStatus.BAD_REQUEST, "이미지 크기가 너무 큽니다."),
 
@@ -247,6 +247,12 @@ public enum ErrorCode {
      * 있다" 가 새 나가므로 둘을 같은 404 로 묶는다 — {@code OPERATION_NOT_FOUND} 와 같은 판단이다.
      */
     SUBSCRIPTION_NOT_FOUND(HttpStatus.NOT_FOUND, "구독을 찾을 수 없습니다."),
+
+    /**
+     * 자동 갱신을 다시 켤 수 없는 구독이다 — 기간이 끝났거나(EXPIRED · 만료일 지남) 아직 결제 중이거나
+     * (PENDING) 실패했다(FAILED). 다시 켤 것이 아니라 새로 구독해야 한다(09-21 QA).
+     */
+    SUBSCRIPTION_NOT_RENEWABLE(HttpStatus.CONFLICT, "끝났거나 결제가 끝나지 않은 구독은 자동 갱신을 다시 켤 수 없습니다."),
 
     // ── 배팅 이벤트 (ANT-EVENT) — REST 작업명세 v1.2 §7 ──────────────────────────
     EVENT_NOT_FOUND(HttpStatus.NOT_FOUND, "이벤트를 찾을 수 없습니다."),

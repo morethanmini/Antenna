@@ -83,6 +83,7 @@ export type SimReject =
   | 'LAST_DAY'      // 마지막 게임일이라 더 못 넘긴다
   | 'DAY_MISMATCH'  // 보고 있는 게임일이 서버와 다르다
   | 'REVIEW'        // 종료는 됐어야 하는데 AI 복기를 못 만들어 아무것도 저장되지 않았다
+  | 'STALE'         // 서버는 처리했는데 바뀐 잔고를 다시 받지 못했다
   | 'FAILED'        // 그 밖
 
 /* 서버 코드 → 화면이 아는 이유. 표에 없는 코드는 FAILED 로 모은다 */
@@ -98,6 +99,9 @@ const REJECT_OF: Record<string, SimReject> = {
   SEASON_REVIEW_FAILED: 'REVIEW',
   DAY_MISMATCH: 'DAY_MISMATCH',
 }
+
+/** 체결 내역 한 번에 받는 최대 건수 — 서버 MAX_PAGE_SIZE 와 같다 */
+const TRADES_PAGE_MAX = 100
 
 const rejectOf = (e: unknown): SimReject =>
   e instanceof ApiError ? REJECT_OF[e.code] ?? 'FAILED' : 'FAILED'
@@ -126,24 +130,33 @@ export function useSeasonSim({
   const [pending, setPending] = useState(false)
 
   /* 현황과 체결 내역을 함께 받는다. 주문 하나에 예수금·포지션·내역이 모두 바뀌므로
-     따로 받으면 화면의 두 곳이 다른 시점을 보여 줄 수 있다. */
-  const reload = useCallback(async () => {
-    if (!seasonId) return
+     따로 받으면 화면의 두 곳이 다른 시점을 보여 줄 수 있다. 받았으면 true.
+
+     체결 내역은 서버 상한(100)만큼 받는다. 기본 20 이면 스무 건을 넘긴 회차에서 자산
+     곡선의 중간이 빠진 체결로 그려진다.
+     ponytail: 한 회차 100건까지. 넘기는 회차가 나오면 커서로 이어 받는다. */
+  const reload = useCallback(async (): Promise<boolean> => {
+    if (!seasonId) return false
     try {
-      const [me, list] = await Promise.all([getMyStatus(seasonId), getTrades(seasonId)])
+      const [me, list] = await Promise.all([
+        getMyStatus(seasonId),
+        getTrades(seasonId, { size: TRADES_PAGE_MAX }),
+      ])
       setStatus(me)
       setTrades(list.items)
       setJoined(true)
       setLoadError(null)
+      return true
     } catch (e) {
       if (e instanceof ApiError && e.code === 'SEASON_NOT_JOINED') {
         setJoined(false)
         setStatus(null)
         setTrades([])
         setLoadError(null)
-        return
+        return true
       }
       setLoadError(e instanceof ApiError ? e : null)
+      return false
     }
   }, [seasonId])
 
@@ -254,8 +267,12 @@ export function useSeasonSim({
     return rows
   }, [day, simTrades, initialCash, priceOf, status])
 
-  /* 서버를 부르고 성공하면 현황을 다시 받는다. 실패는 이유로 좁혀 화면에 넘긴다.
-     한 번에 하나만 보낸다 — 두 번 눌러 두 건이 체결되면 되돌릴 수가 없다. */
+  /* 서버를 부르고 끝나면 성공이든 실패든 현황을 다시 받는다. 실패는 이유로 좁혀 화면에
+     넘긴다. 한 번에 하나만 보낸다 — 두 번 눌러 두 건이 체결되면 되돌릴 수가 없다.
+
+     실패에도 다시 받는 이유: 서버는 커밋했는데 응답만 잃는 경우(끊김·타임아웃·500)
+     화면이 옛 예수금에 머물러 "거래 후 금액이 반영되지 않는다" 로 보였다(09-21 QA).
+     다시 받으면 체결됐는지는 잔고와 체결 내역이 말한다. */
   const run = useCallback(
     async <T,>(work: () => Promise<T>): Promise<T | null> => {
       if (pending) return null
@@ -263,12 +280,13 @@ export function useSeasonSim({
       setReject(null)
       try {
         const out = await work()
-        await reload()
+        /* 처리는 됐는데 새 잔고를 못 받았으면 "체결" 대신 그 사실을 말한다 —
+           옛 숫자 옆에 체결 문구만 뜨면 반영이 안 된 것처럼 읽힌다 */
+        if (!(await reload())) setReject('STALE')
         return out
       } catch (e) {
         setReject(rejectOf(e))
-        /* 게임일이 어긋났으면 서버 쪽이 맞다. 다시 받아 화면을 맞춘다 */
-        if (e instanceof ApiError && e.code === 'DAY_MISMATCH') await reload()
+        await reload()
         return null
       } finally {
         setPending(false)

@@ -616,7 +616,9 @@
    좌우도 카드 본문과 저절로 맞는다. */
 .stock-detail-page .sd-terms-pop{
   position:absolute;z-index:6;left:0;right:0;top:calc(100% + 8px);
-  max-height:min(440px,62vh);overflow:auto;overscroll-behavior:contain;
+  /* 높이를 자르지 않는다. 판 안에 또 스크롤이 생기면 페이지 스크롤과 둘이 되어
+     어느 쪽이 움직일지 모른 채 굴리게 된다 — 용어 여덟 줄을 그렇게까지 가둘
+     이유가 없다. 길면 페이지가 내려간다(position:absolute 라 판도 함께 움직인다). */
   padding:14px 16px;border:1px solid var(--rule);border-radius:14px;background:var(--surface);
   box-shadow:0 2px 4px rgba(20,20,27,.06),0 16px 34px -12px rgba(20,20,27,.28);
 }
@@ -738,7 +740,9 @@
 
 /* 등락률 고르개 — 목표가 칸 왼쪽에 붙는다 */
 .stock-detail-page .pf-pct-btn{
-  display:flex;align-items:center;gap:5px;flex:none;
+  /* 글자가 길어져도 **입력칸을 밀지 않는다**(2026-09-21) — 등락률은 잘려도 읽을 수
+     있지만 목표가 칸이 좁아지면 지금 치는 값이 안 보인다 */
+  display:flex;align-items:center;gap:5px;flex:0 1 auto;min-width:0;max-width:45%;
   height:46px;padding:0 11px;
   border:1px solid var(--rule);border-right:0;border-radius:12px 0 0 12px;
   background:var(--surface-2);color:var(--muted);
@@ -748,7 +752,11 @@
 .stock-detail-page .pf-pct-btn:hover:not(:disabled){background:#eceefb}
 .stock-detail-page .pf-pct-btn:disabled{opacity:.5;cursor:not-allowed}
 .stock-detail-page .pf-pct-btn:focus-visible{outline:2px solid var(--brand);outline-offset:-2px}
-.stock-detail-page .pf-pct-btn b{font-weight:var(--fw-bold);white-space:nowrap}
+.stock-detail-page .pf-pct-btn b{
+  font-weight:var(--fw-bold);white-space:nowrap;
+  min-width:0;overflow:hidden;text-overflow:ellipsis;
+}
+.stock-detail-page .pf-pct-btn svg{flex:none}
 .stock-detail-page .pf-pct-btn.is-open svg{transform:rotate(180deg)}
 
 /* 고르개 목록. 칸 아래에 떠서 다음 단계를 밀지 않는다 */

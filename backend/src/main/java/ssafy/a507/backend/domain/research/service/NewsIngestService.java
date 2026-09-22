@@ -78,6 +78,7 @@ public class NewsIngestService {
                 List<NaverNewsItem> items = newsClient.searchLatest(stock.getName()).stream()
                         .filter(item -> item.publishedAt().isAfter(since))
                         .filter(item -> mentions(item.title(), stock.getName()))
+                        .filter(item -> !isGarbled(item.title(), item.snippet()))
                         .toList();
                 created += save(stock, items);
             } catch (NaverNewsException e) {
@@ -155,6 +156,17 @@ public class NewsIngestService {
             return false;
         }
         return title.replace(" ", "").contains(stockName.replace(" ", ""));
+    }
+
+    /**
+     * 글자가 깨진 기사. 네이버 응답에 이미 U+FFFD 가 섞여 오는 경우가 있다 — 2026-09-21 QA,
+     * 삼성물산 카드에 "바짝 뒤�i는" 이 떴다. 원문 "뒤쫒는" 의 "쫒"(CP949 확장 한글 A6 69)을
+     * 어딘가에서 EUC-KR 로 읽어 앞 바이트가 깨진 흔적이다. 우리 쪽은 JSON 을 UTF-8 로 받을 뿐
+     * 문자셋 변환이 없어 고칠 원문이 없다. 되살릴 수 없는 글자라 카드에 올리지 않는다.
+     */
+    static boolean isGarbled(String title, String snippet) {
+        return (title != null && title.indexOf('\uFFFD') >= 0)
+                || (snippet != null && snippet.indexOf('\uFFFD') >= 0);
     }
 
     /**

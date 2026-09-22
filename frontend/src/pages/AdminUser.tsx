@@ -70,6 +70,8 @@ export default function AdminUser() {
         >
           <input
             type="search" value={q} placeholder="닉네임 일부 (대소문자 무관)"
+            // 서버 AdminUserService.MAX_QUERY_LENGTH 와 같은 값이다 — 넘기면 400 이다
+            maxLength={50}
             onChange={(e) => { setQ(e.target.value) }}
           />
           <button type="submit" className="se-btn solid">찾기</button>

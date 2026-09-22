@@ -25,6 +25,7 @@
    옮긴 것이고 손대려면 양쪽을 같이 고쳐야 한다. */
 import { api } from './client'
 import { ApiError, CLIENT_ERROR_CODE } from './errors'
+import { releaseIdempotencyKey } from './idempotency'
 import type { WalletNonce } from './wallet'
 
 /* ── 신청 ────────────────────────────────────────────── */
@@ -73,9 +74,14 @@ export const adScope = (draft: AdDraft) =>
   `ad:${draft.imageFileId}:${draft.days}:${draft.linkUrl}`
 
 export function createAd(draft: AdDraft, signature: string) {
-  return api.post<AdAccepted>('/ads', { ...draft, signature }, {
-    idempotencyScope: adScope(draft),
-  })
+  const scope = adScope(draft)
+  return api.post<AdAccepted>('/ads', { ...draft, signature }, { idempotencyScope: scope })
+    /* 접수가 확정된 뒤에야 키를 버린다(2026-09-21). 전에는 한 번도 버리지 않았다 — scope 가 신청
+       내용이라, 취소한 뒤 같은 화면에서 같은 내용으로 다시 신청하면 첫 신청의 키가 그대로 나갔다.
+       서버에는 그 키로 취소된 신청이 24시간 남아 있어 409 IDEMPOTENCY_KEY_REUSED("이미 처리된
+       요청입니다")였고, 새로고침 말고는 빠져나갈 길이 없었다. 실패한 시도는 같은 키로 다시 가야
+       신청이 둘이 되지 않으므로 성공했을 때만 버린다 — 구독(channels.ts subscribe)과 같은 규칙이다. */
+    .then((r) => { releaseIdempotencyKey(scope); return r })
 }
 
 /**

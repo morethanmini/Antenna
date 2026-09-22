@@ -161,17 +161,25 @@ public class ReportSocialService {
      *
      * <p>미구독자에게도 제목·작성자·통계를 보여 주는 것이 구독 유인이라는 명세의 전제를 따른다.
      * 댓글이 몇 개 달렸고 어떤 이야기가 오가는지가 그 유인의 일부다. 본문은 여전히 잠겨 있다.
+     *
+     * <p>{@code sort} 는 {@code LATEST} 일 때만 최신 순이고 그 밖의 값(없는 값 포함)은 모두 기존
+     * 오래된 순이다(QA 09-21). 모르는 값에 400 을 주지 않는 이유 — 정렬은 읽기 취향이라, 오타
+     * 하나로 댓글이 통째로 안 보이는 것보다 기본 순서로 보이는 편이 낫다.
      */
     @Transactional(readOnly = true)
-    public ReportCommentListResponse listComments(Long reportId, Long cursor, Integer size) {
+    public ReportCommentListResponse listComments(Long reportId, Long cursor, Integer size, String sort) {
         Long viewerId = currentUserProvider.currentUserId();
         // 가려진 리포트의 댓글은 관리자만 읽는다 — 상세와 같은 판정(검토할 때 맥락이 필요하다)
         reportAccess.requireVisible(existingReport(reportId), viewerId);
         int pageSize = pageSize(size);
+        boolean latest = "LATEST".equalsIgnoreCase(sort);
 
         // 한 건 더 읽어 다음 페이지가 있는지 본다(리포트 목록과 같은 방식).
-        List<ReportComment> found = reportCommentRepository.findPage(
-                reportId, ReportComment.Status.VISIBLE, cursor, Limit.of(pageSize + 1));
+        List<ReportComment> found = latest
+                ? reportCommentRepository.findPageLatest(
+                        reportId, ReportComment.Status.VISIBLE, cursor, Limit.of(pageSize + 1))
+                : reportCommentRepository.findPage(
+                        reportId, ReportComment.Status.VISIBLE, cursor, Limit.of(pageSize + 1));
         boolean hasNext = found.size() > pageSize;
         List<ReportComment> comments = hasNext ? found.subList(0, pageSize) : found;
 
@@ -195,7 +203,7 @@ public class ReportSocialService {
                         comment.getCreatedAt()))
                 .toList();
 
-        // 오래된 순이라 다음 커서는 마지막(가장 최근) 항목이다.
+        // 어느 순서든 다음 커서는 이 페이지의 마지막 항목이다 — 커서 비교 방향이 정렬과 같이 뒤집힌다.
         Long nextCursor = hasNext ? comments.get(comments.size() - 1).getId() : null;
         return new ReportCommentListResponse(items, nextCursor, hasNext);
     }

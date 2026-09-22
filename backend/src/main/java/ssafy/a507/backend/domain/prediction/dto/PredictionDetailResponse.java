@@ -9,6 +9,7 @@ import ssafy.a507.backend.domain.chain.entity.AnchorBatch;
 import ssafy.a507.backend.domain.market.entity.DailyQuote;
 import ssafy.a507.backend.domain.market.entity.Stock;
 import ssafy.a507.backend.domain.prediction.entity.Prediction;
+import ssafy.a507.backend.domain.prediction.service.BusinessDays;
 import ssafy.a507.backend.domain.prediction.entity.PredictionCommit;
 import ssafy.a507.backend.domain.research.entity.ResearchPoint;
 
@@ -48,7 +49,12 @@ public record PredictionDetailResponse(
         String note,
         List<Evidence> evidences,
         LastClose lastClose,
-        Proof proof) {
+        Proof proof,
+        /**
+         * 결과 공개 예정일 (ANT-PRED-12). 화면이 "3일" 대신 이 날짜를 적는다 — 기간만 보여 주면 만기가 주말일 때
+         * "3일이 지났는데 안 열린다" 로 읽힌다. 계산은 {@link BusinessDays#revealDate}. 만기일이 없으면(REPLAY) null.
+         */
+        LocalDate revealDate) {
 
     public record Author(Long userId, String nickname) {}
 
@@ -115,6 +121,7 @@ public record PredictionDetailResponse(
                         commit == null ? null : commit.getCommitHash(),
                         ProofResponse.AnchorStatus.of(batch),
                         batch == null ? null : batch.getBlockNumber(),
-                        commit != null && commit.isRevealed()));
+                        commit != null && commit.isRevealed()),
+                BusinessDays.revealDate(p.getSettleDate(), p.getSettledOn()));
     }
 }

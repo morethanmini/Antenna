@@ -58,6 +58,7 @@ import {
 import type {
   CommitFields, Direction, Horizon, PredictionDraft,
 } from '../../api/predictions'
+import { isTradingDay } from '../../api/marketHolidays'
 import { requestNonce } from '../../api/wallet'
 import { emptyPredictForm, type PredictForm, type PredictResult } from './predictForm'
 import { connectAddress, hasWallet, personalSign } from '../../wallet/provider'
@@ -86,13 +87,13 @@ const commitFields = (d: PredictionDraft, hash: string): CommitFields => ({
    horizon 은 **캘린더일**이다(결정 B5). 서버가 만기일 = 기준일 + horizon 일로 잡고,
    기준일은 등록 시점의 "다음 평일" 이다. 휴장일을 세지 않으므로 클라이언트가 서버와
    똑같이 계산할 수 있다 — 예전처럼 어긋나지 않는다. */
-/* 서버 BusinessDays 와 같은 규칙이다 — 기준일은 다음 평일, 만기일은 거기서 평일만 horizon 번 센 날
-   (ANT-PRED-11). 전에는 달력일로 더해 수요일 + 3 이 토요일로 찍혔다. 공휴일은 모른다 — 걸리면
-   서버가 그 이후 첫 거래일 종가로 판정한다. 여기와 서버가 어긋나면 등록 전에 본 만기와 등록 뒤의
-   만기가 달라지므로 **둘을 같이 고친다.** */
+/* 서버 BusinessDays 와 같은 규칙이다 — 기준일은 다음 거래일, 만기일은 거기서 거래일만 horizon 번 센 날
+   (ANT-PRED-11). 전에는 달력일로 더해 수요일 + 3 이 토요일로 찍혔다. 휴장일도 건너뛴다(ANT-PRED-12) —
+   추석 전날 등록하면 기준일이 연휴 뒤다. 여기와 서버가 어긋나면 등록 전에 본 만기와 등록 뒤의
+   만기가 달라지므로 **둘을 같이 고친다**(휴장일 목록은 api/marketHolidays.ts ↔ MarketHolidays.java). */
 function dueLabel(horizon: Horizon) {
   const d = new Date()
-  const nextWeekday = () => { do { d.setDate(d.getDate() + 1) } while (d.getDay() === 0 || d.getDay() === 6) }
+  const nextWeekday = () => { do { d.setDate(d.getDate() + 1) } while (!isTradingDay(d)) }
   nextWeekday() // 기준일. 토·일에 등록하면 월요일이다
   for (let i = 0; i < horizon; i++) nextWeekday()
   return `${d.getMonth() + 1}.${d.getDate()}`
@@ -192,6 +193,17 @@ export default function PredictTab({
      같은 값(gap 0)이면 방향을 정할 수 없으므로 비운다 — 서버도 양쪽 다 거절한다.
      전일 종가가 없는 종목은 어차피 서버가 등록을 받지 않는다(latestClose 400). */
   const direction: Direction | null = gap === null || gap === 0 ? null : gap > 0 ? 'UP' : 'DOWN'
+
+  /* 버튼에 적을 등락률 글자(2026-09-21, QA). 목표가를 길게 치면 비율이 커지는데,
+     toFixed(2) 는 1e21 부터 지수 표기(`2.15e+22`)를 내놓아 버튼이 고장난 것처럼 보이고
+     그 전에도 자릿수가 늘어 입력칸을 폼 밖으로 밀어낸다. 1조 원 미만만 등록되므로
+     이만한 비율은 어차피 못 넣는 값이다 — 읽을 수 있는 선에서 자른다. */
+  const GAP_CAP = 9999
+  const gapText = (g: number) => (
+    Math.abs(g) > GAP_CAP
+      ? `${g > 0 ? '+' : '-'}${GAP_CAP.toLocaleString('ko-KR')}% 초과`
+      : `${g > 0 ? '+' : ''}${g.toFixed(2)}%`
+  )
 
   /* 근거(note)도 필수다 — 서버가 @NotBlank 로 받아 비우면 400 이다(명세: note *).
      커밋의 noteHash 가 봉인의 핵심이라, 근거 없는 예측은 규격상 만들 수 없다. */
@@ -636,7 +648,7 @@ export default function PredictTab({
                   onClick={() => setPctOpen((v) => !v)}
                 >
                   <b className={gap === null ? '' : `num ${gap >= 0 ? 'up' : 'down'}`}>
-                    {gap === null ? '등락률(%)' : `${gap > 0 ? '+' : ''}${gap.toFixed(2)}%`}
+                    {gap === null ? '등락률(%)' : gapText(gap)}
                   </b>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                        strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -652,6 +664,8 @@ export default function PredictTab({
                   placeholder={summary?.prevClose ? String(summary.prevClose) : '0'}
                   aria-label="목표가"
                   aria-describedby="pf-target-help"
+                  // 서버가 받는 가장 긴 값(정수 12자리 + 소수 2자리)에 쉼표를 친 길이다. 값 검증은 따로 한다
+                  maxLength={19}
                   onChange={(e) => setTarget(e.target.value)}
                 />
                 <span className="sd-unit">원</span>
@@ -820,7 +834,7 @@ export default function PredictTab({
                 이미 말하고 있어, 같은 말을 한 번 더 길게 적는 셈이다 */}
             {!eventMode && (
               <p className="sd-help">
-                <b className="num">{horizonPickLabel(horizon)}</b> · 만기 <b className="num">{dueLabel(horizon)}</b> · 기준일(다음 평일)부터 셉니다(주말 제외). 공휴일에 걸리면 그다음 거래일 종가로 판정합니다. 기준가는 기준일 종가로 확정됩니다.
+                <b className="num">{horizonPickLabel(horizon)}</b> · 만기 <b className="num">{dueLabel(horizon)}</b> · 기준일(다음 거래일)부터 셉니다(주말·휴장일 제외). 기준가는 기준일 종가로 확정됩니다.
               </p>
             )}
           </li>

@@ -227,17 +227,18 @@ function CreateForm({ onCreated, onError }: {
   return (
     <form className="admin-form" onSubmit={(e) => { void submit(e) }}>
       <label>제목<input value={form.title} onChange={set('title')} required maxLength={80} /></label>
-      <label>slug<input value={form.slug} onChange={set('slug')} placeholder="scalping (비우면 주소 없음)" /></label>
+      <label>slug<input value={form.slug} onChange={set('slug')} maxLength={40} placeholder="scalping (비우면 주소 없음)" /></label>
       <label>접수 시작<input type="datetime-local" value={form.opensAt} onChange={set('opensAt')} required /></label>
       <label>접수 마감<input type="datetime-local" value={form.sealsAt} onChange={set('sealsAt')} required /></label>
       <label>기준일<input type="date" value={form.baseDate} onChange={set('baseDate')} required /></label>
       <label>판정일<input type="date" value={form.settleDate} onChange={set('settleDate')} required /></label>
-      <label>최소 배팅<input type="number" min={1} value={form.minStake} onChange={set('minStake')} required /></label>
-      <label>최대 배팅<input type="number" min={1} value={form.maxStake} onChange={set('maxStake')} required /></label>
-      <label>최소 참가 종목 수<input type="number" min={1} value={form.minStocks} onChange={set('minStocks')} required /></label>
+      {/* 위쪽 상한은 서버에 없다(QA 09-21 전수조사). 칸이 끝없이 늘어나지 않게 브라우저 검증만 건다 */}
+      <label>최소 배팅<input type="number" min={1} max={999999999} value={form.minStake} onChange={set('minStake')} required /></label>
+      <label>최대 배팅<input type="number" min={1} max={999999999} value={form.maxStake} onChange={set('maxStake')} required /></label>
+      <label>최소 참가 종목 수<input type="number" min={1} max={200} value={form.minStocks} onChange={set('minStocks')} required /></label>
       <label className="wide">
         종목코드 — 줄바꿈이나 쉼표로 구분. <b>적은 순서가 컨트랙트 종목 번호</b>다
-        <textarea rows={5} value={form.codes} onChange={set('codes')} required placeholder={'005930\n000660\n…'} />
+        <textarea rows={5} value={form.codes} onChange={set('codes')} required maxLength={2000} placeholder={'005930\n000660\n…'} />
       </label>
       <div className="admin-actions">
         <button type="submit" className="se-btn solid" disabled={sending}>

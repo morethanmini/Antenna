@@ -67,6 +67,7 @@ function toCard(p: ChannelPrediction) {
     targetPrice: p.targetPrice,
     errorRate: p.errorRate,
     horizon: p.horizon,
+    revealDate: p.revealDate,
     dueDate: p.dueDate,
   }
 }
@@ -169,7 +170,7 @@ export default function ChannelProfile() {
                 </span>
                 {previewing
                   ? <Link className="ch-preview-btn" to={`/channels/${userId}`}>내 채널 관리</Link>
-                  : <Link className="ch-preview-btn" to={`/channels/${userId}?as=visitor`}>남에게 보이는 화면</Link>}
+                  : <Link className="ch-preview-btn" to={`/channels/${userId}?as=visitor`}>미리보기</Link>}
               </p>
             )}
 

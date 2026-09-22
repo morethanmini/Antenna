@@ -108,6 +108,14 @@ class NewsIngestServiceTest {
     }
 
     @Test
+    @DisplayName("글자가 깨진(U+FFFD) 기사는 카드에 올리지 않는다")
+    void 깨진_글자_필터() {
+        assertThat(NewsIngestService.isGarbled("현대건설 독주...바짝 뒤\uFFFDi는 삼성물산", "")).isTrue();
+        assertThat(NewsIngestService.isGarbled("삼성물산 수주", "발췌 \uFFFD 깨짐")).isTrue();
+        assertThat(NewsIngestService.isGarbled("현대건설 독주...바짝 뒤쫒는 삼성물산", null)).isFalse();
+    }
+
+    @Test
     @DisplayName("스포츠 기사를 가려낸다 — 두산·한화·KT·LG·기아·NC 는 구단 이름이기도 하다")
     void 스포츠_기사_필터() {
         assertThat(NewsIngestService.isNoise("두산 선발 최승용, 3이닝 4실점으로 강판", null)).isTrue();
