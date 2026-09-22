@@ -174,10 +174,15 @@ body.is-night.is-glass .nt-pop{
   grid-row:2;grid-column:2 / -1;
   position:relative;z-index:1;pointer-events:none;
   display:flex;align-items:baseline;gap:4px;min-width:0;
+  /* **줄 사이는 이 상자가 정한다.** 펼치면 .nt-body 가 inline 이 되므로 줄 상자의
+     높이는 감싼 블록의 line-height(strut)를 따른다 — 안쪽에만 적어 두면 소용이
+     없다. 실제로 .nt-body 에 1.5(18.75px)를 줬는데도 줄 간격이 22px 였다
+     (실측 2026-09-22). 두 줄이 한 묶음으로 읽히게 둘을 같은 값으로 맞춘다. */
+  font-size:var(--fs-md);line-height:1.38;
 }
 .nt-body{
   min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  color:var(--body);font-size:var(--fs-md);line-height:1.5;
+  color:var(--body);font-size:var(--fs-md);line-height:1.38;
 }
 /* 펼친 줄. 줄바꿈을 풀고 본문을 글자 흐름으로 되돌리면 [접기] 가 마지막 낱말
    바로 뒤에 따라붙는다 — 접혔을 때와 같은 자리다. */
