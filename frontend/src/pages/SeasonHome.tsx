@@ -3,14 +3,14 @@
    설계서 docs/화면설계서.md §3 G-01 — "진행 중 시즌(이어하기) · 완료 기록 요약 · 시즌 목록"
 
    **2026-09-21 시안으로 갈아엎었다.** 본문 전체가 밤 도시다(상단바는 그대로 밝다). 왼쪽은 카피와 시작 버튼, 가운데는
-   책상에 앉은 개미, 오른쪽은 "가상 투자 자금 · 진행 중인 연습" 두 칸이다. 그 아래로
+   책상에 앉은 개미, 오른쪽은 "투자 자금 · 진행 중인 연습" 두 칸이다. 그 아래로
    연습 주제 다섯 장이 가로로 늘어서고, 맨 밑은 연습이 어떤 것인지 말하는 사실 띠다.
    상단바·사이드바는 그대로 Layout 것을 쓴다.
 
    ── 시안에서 그리지 않은 것 ────────────────────────────
    1. 상단의 지수 전광판(KOSPI · NASDAQ · S&P 500 과 등락률). 실시간 시세는 이 화면이 받는
       값이 아니고, 숫자를 박아 두면 가짜 시세가 된다. 장식으로도 두지 않는다.
-   2. 가상 투자 자금 옆의 연필(수정). 시작 자산은 시즌 속성이라 사용자가 바꾸는 값이 아니다.
+   2. 투자 자금 옆의 연필(수정). 시작 자산은 시즌 속성이라 사용자가 바꾸는 값이 아니다.
    3. 주제 카드의 날짜·연도. 시대를 특정하는 말은 모의투자 전체에서 쓰지 않는다 — 카드에는
       서버가 준 제목(title)만 쓴다. 제목 자체가 사건을 말하는 것은 시더
       (PracticeSeasonSeeder)가 정한 일이라 여기서 손대지 않는다.
@@ -110,15 +110,15 @@ function Hero({ lead, practice, ongoing, done, startAt, myError, myLoading, onRe
       </div>
 
       <div className="sh-hero-copy">
-        <span className="sh-hand">가상으로 시작하는<br />진짜 투자 감각</span>
+        {/* 손글씨 한 줄("가상으로 시작하는 진짜 투자 감각")은 걷어냈다(2026-09-23).
+            어느 서비스에나 붙일 수 있는 말이라 이 화면이 무엇을 하는 곳인지 말해
+            주지 못했다. 제목이 그 일을 한다.
 
-        {/* 연습 주제가 전부 사건 이름(코로나 · 전쟁 · 재당선 · 계엄)이다. 제목도 그
-            말을 그대로 쓴다 — "투자 감각을 깨워보세요" 같은 문구는 어느 서비스에나
-            붙일 수 있어 이 화면이 무엇을 하는 곳인지 말해 주지 못했다.
-            어느 시장인지는 아래 카드 다섯 장이 이미 말하고 있어 제목에서 뺀다.
-            강조는 "순간" 에 건다 — 이 화면이 파는 것은 기간이 아니라 그 며칠이다. */}
+            연습 주제가 전부 사건 이름(코로나 · 전쟁 · 재당선 · 계엄)이라 제목도 그
+            말을 그대로 쓴다. 강조는 "순간" 에 건다 — 이 화면이 파는 것은 기간이
+            아니라 그 며칠이다. */}
         <h1 className="sh-title" id="sh-hero-h">
-          역사적인 <em>순간</em>을
+          <em>모의투자</em>로 역사적인 <em>순간</em>을
           <br />
           연습해보세요
         </h1>
@@ -152,7 +152,8 @@ function Hero({ lead, practice, ongoing, done, startAt, myError, myLoading, onRe
             눌러 봐야 알았다. */}
         {lead && (
           <p className="sh-topic">
-            플레이 중인 주제 <b>{lead.title}</b>
+            <span>가장 최근 플레이:</span>
+            <b>{lead.title}</b>
           </p>
         )}
       </div>
@@ -160,7 +161,6 @@ function Hero({ lead, practice, ongoing, done, startAt, myError, myLoading, onRe
       {/* 책상에 앉은 개미. 시안 원본(page_train)을 여백만 잘라 webp 로 구웠다.
           말풍선("오늘도 조금 더 성장!") 이 그림 안에 있어 따로 얹지 않는다. */}
       <div className="sh-stage" aria-hidden="true">
-        <img className="sh-bubble" src="/assets/pageset/bubble.webp" alt="" />
         <img className="sh-hero-art" src="/assets/page_train/ant-desk.webp" alt="" />
       </div>
 
@@ -169,7 +169,7 @@ function Hero({ lead, practice, ongoing, done, startAt, myError, myLoading, onRe
       <aside className="sh-side" aria-label="연습 요약">
         {cash !== undefined && (
           <dl className="sh-glass">
-            <dt><CoinIcon />가상 투자 자금</dt>
+            <dt><CoinIcon />투자 자금</dt>
             <dd className="num">{cash.toLocaleString('ko-KR')}<small>원</small></dd>
           </dl>
         )}
@@ -203,6 +203,12 @@ function Hero({ lead, practice, ongoing, done, startAt, myError, myLoading, onRe
           )}
         </dl>
       </aside>
+
+      {/* 연습이 어떤 것인지 말하는 네 줄. 한동안 화면 맨 아래에 판 하나로 따로 서
+          있었는데, 주제 카드를 다 보고 내려간 뒤에야 나와서 "무엇을 하는 곳인지"
+          를 제일 늦게 말했다. 히어로 바닥으로 올려 제목 · 버튼과 한 덩어리로
+          읽히게 한다(2026-09-23). 판을 걷었으므로 높이도 그만큼 줄었다. */}
+      <Facts practice={practice} />
     </section>
   )
 }
@@ -299,14 +305,10 @@ function Facts({ practice }: { practice: OpenRun[] | undefined }) {
         )}
         <li><ClockIcon /><span>각기 다른 시기와 시장 상황</span></li>
         {cash !== undefined && (
-          <li><CoinsIcon /><span>가상의 <b className="num">{manwon(cash)}</b>으로 진행</span></li>
+          <li><CoinsIcon /><span><b className="num">{manwon(cash)}</b>으로 진행</span></li>
         )}
         <li><BarsIcon /><span>실제 데이터 기반 시뮬레이션</span></li>
       </ul>
-      <p className="sh-quote">
-        <span className="sh-hand">"연습이 더 나은 투자를 만든다."</span>
-        <small>— ANTENNA</small>
-      </p>
     </footer>
   )
 }
@@ -346,7 +348,6 @@ export default function SeasonHome() {
           practice={topics ?? []} ongoing={live}
           loading={openLoading} error={openError} onRetry={reloadOpen}
         />
-        <Facts practice={topics} />
       </div>
     </main>
   )

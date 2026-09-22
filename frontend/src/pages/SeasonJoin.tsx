@@ -380,63 +380,37 @@ export default function SeasonJoin() {
         </dialog>
 
         {/* 진행 규칙 요약 — 명세 §2·설계서 §4 G-04 에서 확정된 것만 적는다.
-            글은 그대로고 모양만 번호 붙은 넉 장으로 바꿨다(2026-09-17). 규칙이
-            네 개로 고정이라 번호가 헛돌지 않는다 — 다섯 번째가 생기면 한 줄이
-            혼자 남으니 그때 배치를 다시 본다. */}
-        <section className="sj-rules" aria-labelledby="sj-rules-title">
-          <header className="sj-rules-head">
-            <h2 id="sj-rules-title">진행 방식</h2>
-          </header>
+            **한 줄 띠로 둔다(2026-09-23).** 넉 장 카드 + 설명문이었는데, 참가하기
+            직전에 볼 것치고는 너무 무거웠다 — 여기는 계약서가 아니라 한눈에 훑고
+            넘어가는 자리다. 문장을 다 지우고 한 마디만 남긴다. 긴 설명은 title 로
+            옮겨 마우스를 올리면 보이게 한다.
 
-          <ol className="sj-steps">
-            <li>
-              <span className="sj-step-no" aria-hidden="true">01</span>
-              <Ico>
-                <path d="M6 3h8l4 4v14H6z" /><path d="M14 3v4h4" /><path d="M9 12h6M9 16h6" />
-              </Ico>
-              <b>시기는 공개되지 않습니다.</b>
-              <p>
-                어떤 장이었는지만 알려주고 실제 날짜는 가립니다. 종목은 실명이며,
-                그 구간의 대형주가 모두 들어 있어요.
-              </p>
+            **말은 "~해요" 로 건다(2026-09-23).** "날짜 비공개 · 종목 실명" 처럼
+            명사를 가운뎃점으로 이어 붙이면 짧기는 한데 공고문처럼 읽힌다 —
+            읽는 사람에게 말을 거는 자리라 서술형으로 푼다. 가운뎃점도 같이 뺐다. */}
+        <section className="sj-rules" aria-labelledby="sj-rules-title">
+          <h2 id="sj-rules-title">진행 방식</h2>
+
+          <ul className="sj-steps">
+            <li title="어떤 장이었는지만 알려주고 실제 날짜는 가립니다. 종목은 실명이며, 그 구간의 대형주가 모두 들어 있어요.">
+              <Ico><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v4h4" /><path d="M9 12h6M9 16h6" /></Ico>
+              <b>언제인지는 알려주지 않아요</b>
+            </li>
+            <li title="매수·매도와 수량만 정하세요. 수수료와 예약 주문은 없어요.">
+              <Ico><path d="M4 8h13l-3-3M20 16H7l3 3" /></Ico>
+              <b>그날 종가로 체결돼요</b>
+            </li>
+            <li title={isCompetition
+              ? '모든 참가자가 같은 게임일을 같은 시각에 보며, 직접 넘길 수 없습니다.'
+              : '중단해도 진행하던 게임일부터 이어 할 수 있어요.'}>
+              <Ico><path d="M4 5l7 7-7 7zM13 5l7 7-7 7z" /></Ico>
+              <b>{isCompetition ? '하루가 저절로 넘어가요' : '하루씩 직접 넘겨요'}</b>
             </li>
             <li>
-              <span className="sj-step-no" aria-hidden="true">02</span>
-              <Ico>
-                <path d="M4 8h13l-3-3M20 16H7l3 3" />
-              </Ico>
-              <b>주문은 그 게임일 종가로 한 번에 체결돼요.</b>
-              <p>매수·매도와 수량만 정하세요. 수수료와 예약 주문은 없어요.</p>
+              <Ico><path d="M3 20h18" /><path d="M6 20v-7M11 20v-11M16 20v-5" /></Ico>
+              <b>{isCompetition ? '성적이 리더보드에 올라요' : '실전 랭킹에는 안 들어가요'}</b>
             </li>
-            <li>
-              <span className="sj-step-no" aria-hidden="true">03</span>
-              <Ico>
-                <path d="M4 5l7 7-7 7zM13 5l7 7-7 7z" />
-              </Ico>
-              {isCompetition ? (
-                <>
-                  <b>게임일은 시간이 지나면 자동으로 넘어갑니다.</b>
-                  <p>모든 참가자가 같은 게임일을 같은 시각에 보며, 직접 넘길 수 없습니다.</p>
-                </>
-              ) : (
-                <>
-                  <b>게임일은 직접 넘깁니다.</b>
-                  <p>중단해도 진행하던 게임일부터 이어 할 수 있어요.</p>
-                </>
-              )}
-            </li>
-            <li>
-              <span className="sj-step-no" aria-hidden="true">04</span>
-              <Ico>
-                <path d="M3 20h18" /><path d="M6 20v-7M11 20v-11M16 20v-5" />
-              </Ico>
-              {isCompetition ? (
-                <b>성과가 집계되어 리더보드에 오릅니다.</b>
-              ) : (
-                <b>연습 성과는 실전 랭킹과 신뢰도에 반영되지 않습니다.</b>
-              )}
-            </li>
-          </ol>
+          </ul>
         </section>
       </div>
     </main>

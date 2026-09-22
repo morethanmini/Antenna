@@ -365,9 +365,11 @@ body.is-panel .wallet-more:hover,
 body.is-panel .cf-pending,
 body.is-panel .cf-soon{ color:#cbbcff; }
 
-/* ── 시즌 진행(G-04)만 흰 판이다 ──────────────────────────
-   이 화면은 is-glass 를 붙이지 않는다(위 is-glass 주석 참고) — 캔들과 주문 패널이
-   같이 서는 자리라 판이 하얘야 빨강 · 파랑을 어두운 판에 맞춰 다시 잡을 일이 없다.
+/* ── 흰 판으로 두는 화면들 ────────────────────────────────
+   시즌 진행(G-04) · 매매일지(G-06) · 결과(G-08) · 기록(G-09). 넷 다 is-glass 를
+   붙이지 않는다(위 is-glass 주석 참고) — 캔들 · 표 · 숫자를 오래 들여다보는 자리라
+   판이 하얘야 하고, 그래야 빨강 · 파랑을 어두운 판에 맞춰 다시 잡을 일이 없다.
+
    토큰이 이미 밝은 값이라 되돌릴 것은 없고, 남는 것은 **그림자 하나**다:
    밝은 화면용 --shadow 는 어두운 바닥에서 보이지 않아 판이 바닥에 붙어 보인다.
 
@@ -381,7 +383,15 @@ body.sim-play-page .sp-dialog,
 body.sim-play-page .sp-help .ms-say,
 body.sim-play-page .sp-help-pop,
 body.sim-play-page .spc-card,
-body.sim-play-page .tp-modal{
+body.sim-play-page .tp-modal,
+body.sim-trades-page .st-stat,
+body.sim-trades-page .st-card,
+body.sim-result-page .rs-stat,
+body.sim-result-page .rs-card,
+body.sim-result-page .rs-fold,
+body.sim-record-page .rc-fig,
+body.sim-record-page .rc-card,
+body.sim-record-page .rc-side-card{
   --shadow:0 1px 2px rgba(0,0,0,.18), 0 22px 44px -28px rgba(0,0,0,.7);
 }
 
@@ -538,3 +548,23 @@ body.is-night:not(.is-glass) .mp-block > h2{color:var(--night-ink)}
    흰 카드가 남는 화면에서는 **어두운 글자가 기본**이고, 바탕에 바로 놓인 몇 개만
    아래에서 따로 밝힌다. */
 body.is-night.is-glass .main{color:var(--night-ink)}
+
+/* ── 눌러야 하는 것 — 캡슐 버튼 한 벌 (2026-09-23) ─────────
+   인사이트 홈의 "인사이트 보기" 버튼의 질감이다. 어두운 바탕에서 버튼이 판처럼
+   납작하지 않고 **유리알처럼 도드라져야** 눌러야 할 것으로 읽힌다. 세 겹이다.
+     1. 채움   위가 밝고 아래로 가라앉는 보라. 단색은 어두운 판에서 구멍처럼 보인다.
+     2. 테     안쪽 위의 흰 줄 + 사방 아주 옅은 흰 테. 빛이 위에서 온다는 신호다.
+     3. 번짐   바깥으로 보라 빛. 판에 붙어 있지 않고 떠 있는 것으로 읽힌다.
+   값은 토큰으로 두어 모의투자 화면들이 같은 버튼을 쓴다 — 화면마다 적으면 한 군데가
+   빠져 그 화면 버튼만 납작해진다. */
+body.is-night{
+  --cap-fill:linear-gradient(180deg,#9184ff 0%,#6f63f2 48%,#5a4fe0 100%);
+  --cap-fill-hi:linear-gradient(180deg,#a294ff 0%,#7d71f7 48%,#6558e8 100%);
+  --cap-glass:linear-gradient(180deg,rgba(255,255,255,.17) 0%,rgba(255,255,255,.07) 100%);
+  --cap-glass-hi:linear-gradient(180deg,rgba(255,255,255,.27) 0%,rgba(255,255,255,.13) 100%);
+  --cap-edge:inset 0 1px 0 rgba(255,255,255,.55), inset 0 0 0 1px rgba(255,255,255,.26);
+  --cap-edge-soft:inset 0 1px 0 rgba(255,255,255,.35), inset 0 0 0 1px rgba(255,255,255,.18);
+  --cap-glow:0 10px 24px -8px rgba(124,108,255,.85), 0 0 30px -8px rgba(160,140,255,.6);
+  --cap-glow-hi:0 14px 30px -8px rgba(140,124,255,.95), 0 0 40px -6px rgba(170,150,255,.85);
+  --cap-press:inset 0 2px 6px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.14);
+}
