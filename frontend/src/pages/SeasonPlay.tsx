@@ -1014,7 +1014,11 @@ export default function SeasonPlay() {
                     type="button" className="sp-dialog-btn solid" disabled={sim.pending}
                     onClick={() => { void finishAndGo() }}
                   >
-                    {sim.pending ? '성적표·복기 만드는 중…' : '종료하고 결과 보기'}
+                    {sim.pending ? (
+                      <span className="waiting">
+                        <span className="spinner" aria-hidden="true" />성적표·복기 만드는 중…
+                      </span>
+                    ) : '종료하고 결과 보기'}
                   </button>
                 </div>
               </dialog>

@@ -519,7 +519,11 @@ export default function SeasonResult() {
                     disabled={sim.pending}
                     onClick={finishHere}
                   >
-                    {sim.pending ? '성적표·복기 만드는 중…' : '이 판 끝내고 성적표 받기'}
+                    {sim.pending ? (
+                      <span className="waiting">
+                        <span className="spinner" aria-hidden="true" />성적표·복기 만드는 중…
+                      </span>
+                    ) : '이 판 끝내고 성적표 받기'}
                   </button>
                   {sim.reject && (
                     <b className="rs-reject" role="alert">
