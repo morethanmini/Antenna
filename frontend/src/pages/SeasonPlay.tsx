@@ -1068,7 +1068,7 @@ export default function SeasonPlay() {
                   ? '불러오는 중…'
                   : newsItems.length > 0
                     ? `${ticker?.displayName ?? ''} 소식 ${newsItems.length}건`
-                    : '아직 소식이 없습니다'}
+                    : '소식 없음'}
               </em>
               <i aria-hidden="true">⌄</i>
             </summary>
@@ -1093,9 +1093,11 @@ export default function SeasonPlay() {
                   ))}
                 </ul>
               ) : (
+                /* 접힌 줄(위 em)이 이미 "소식 없음" 이라, 여기서 없다는 말을 다시 하지
+                   않는다. 펼친 사람에게 필요한 것은 왜 비었는지다(2026-09-23, QA). */
                 <p className="sp-soon">
-                  이 종목은 여기까지 전해진 기사·공시가 없습니다.
-                  <small>고른 종목과 진행일에 따라 달라집니다</small>
+                  여기까지는 소식이 없어요.
+                  <small>종목과 게임일에 따라 달라요</small>
                 </p>
               )}
             </div>
