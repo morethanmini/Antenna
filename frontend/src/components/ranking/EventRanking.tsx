@@ -172,12 +172,6 @@ function Stage(
         </p>
       </div>
 
-      {/* 순위를 보러 왔다가 참가하고 싶어질 수 있다. 되돌아갈 문을 무대 안에 둔다 */}
-      <Link className="rke-stage-link" to={`/events/${CONTEST.id}`}>
-        <img src={STAGE.trophy} alt="" aria-hidden="true" />
-        {event.phase === 'ENTRY' ? '대회 참가하기' : '대회 페이지'}
-      </Link>
-
       {/* 참가자가 셋 미만이면 있는 만큼만 선다 — 빈 받침을 세우면 아직 안 온 사람
           자리처럼 보인다 */}
       <ol className="rke-podium">
