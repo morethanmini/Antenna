@@ -146,14 +146,14 @@ export const ROUTES: PageMeta[] = [
   { screen: 'G-04', element: SeasonPlay, path: '/sim/:id/play', title: '시즌 진행', access: 'user', mode: 'sim', nav: 'play', bodyClass: 'sim-play-page is-night', story: 'ANT-FE-SEASON-PLAY' },
   /* **G-05 시즌 리서치를 지웠다(2026-09-17).** 프로토타입에서 빠진 뒤로 "결론 나면
      정리한다" 는 주석과 함께 자리표시자만 남아 있었는데, 안 만들기로 정해졌다. */
-  { screen: 'G-06', element: SeasonTrades, path: '/sim/:id/trades', title: '매매일지', access: 'user', mode: 'sim', nav: 'portfolio', story: 'ANT-FE-SEASON-TRADES' },
+  { screen: 'G-06', element: SeasonTrades, path: '/sim/:id/trades', title: '매매일지', access: 'user', mode: 'sim', nav: 'portfolio', bodyClass: 'sim-trades-page is-night', story: 'ANT-FE-SEASON-TRADES' },
   /* **G-07 시즌 리더보드도 지웠다(2026-09-17).** 지라에서 폐기된 스토리다.
 
      ⚠ 그래서 **한 시즌 안의 순위를 볼 화면이 지금 하나도 없다.** 사이드바에서
      '모의투자 랭킹' 을 내릴 때(2026-09-16) "그건 시즌 리더보드(G-07)가 이미 보여
      준다" 를 근거로 삼았는데, 그 G-07 이 빈 페이지였다. 순위를 다시 보여줘야 한다면
      이 자리가 아니라 그 결정부터 되짚어야 한다. */
-  { screen: 'G-08', element: SeasonResult, path: '/sim/:id/result', title: '결과 · AI 복기', access: 'user', mode: 'sim', nav: 'portfolio', story: 'ANT-FE-SEASON-RESULT' },
+  { screen: 'G-08', element: SeasonResult, path: '/sim/:id/result', title: '결과 · AI 복기', access: 'user', mode: 'sim', nav: 'portfolio', bodyClass: 'sim-result-page is-night', story: 'ANT-FE-SEASON-RESULT' },
   { screen: 'G-09', element: SeasonHistory, path: '/sim/history', title: '기록 · 배지', access: 'user', mode: 'sim', nav: 'portfolio', bodyClass: 'sim-record-page is-night', story: 'ANT-FE-SEASON-HISTORY' },
 
   // ── H. 지갑 · 알림 · 설정 · 광고 ─────────────────────

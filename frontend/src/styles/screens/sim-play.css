@@ -779,71 +779,9 @@
    그대로 둔다.** 인사이트의 종목 탐색이 이미 같은 방식이다(어두운 바닥 + 흰 판).
 
    바닥색 · 상단바 · 로고는 routes 의 bodyClass 에 붙인 is-night 가 가져온다.
-   다만 night.css 는 색 토큰 한 벌(--surface · --ink · --up …)까지 어둡게 갈아
-   끼운다 — 홈과 기록은 카드까지 유리판이라 그게 맞지만 여기서는 카드가 하얘야 한다.
-   그래서 **카드 뿌리에서 토큰을 밝은 값으로 되돌린다.** body 에 되돌리면 바닥 위
-   제목까지 검은 글자가 되므로, 되돌리는 자리는 반드시 카드 안쪽이다.
-   여기 적힌 값은 app.css :root 의 원래 값 그대로다 — 저기가 바뀌면 여기도 같이 본다.
-
-   **바닥에 직접 앉는 판은 빠짐없이 적어야 한다.** 처음에 .sp-card 만 적었더니
-   차트 · AI 한줄 요약 · 당시 주요 이슈가 어두운 판으로 남아 화면이 반반이 됐다.
-   판 이름이 하나가 아니다 — 요약 칸 · 일반 카드 · 차트 · 접히는 상자 · 확인창 ·
-   코치 말풍선 · 도움말 팝오버 · 화면 안내 말풍선(.spc-card). 카드 **안쪽** 상자들(.sp-stepper · .sp-indpop ·
-   주문 패널 …)은 이 판들의 자손이라 저절로 따라온다.
-   판을 새로 만들면 여기에 이름을 더한다. */
-body.sim-play-page .sp-stat,
-body.sim-play-page .sp-card,
-body.sim-play-page .sp-chart-card,
-body.sim-play-page .sp-fold,
-body.sim-play-page .sp-dialog,
-body.sim-play-page .sp-help .ms-say,
-body.sim-play-page .sp-help-pop,
-body.sim-play-page .spc-card,
-body.sim-play-page .tp-modal{
-  --ground:#fff;
-  --surface:#fff;
-  --surface-2:#f0f2f7;
-  --ink:#14141b;
-  --body:#3b3f4a;
-  --muted:#6b7280;
-  --faint:#9ca3af;
-  --rule:#e5e7ef;
-  --card-line:#dfe2ed;
-  --brand-soft:#ece9fd;
-  --brand-softer:#f4f3fe;
-  --ok:#15803d;
-  --ok-soft:#e7f5ec;
-  --hit:#0a7f3d;
-  --danger:#e04343;
-  --up:#ee0000;
-  --up-vivid:#ff2020;
-  --up-soft:#fdeceb;
-  --down:#0066ff;
-  --down-vivid:#0066ff;
-  --down-soft:#e9f0ff;
-  --wash:linear-gradient(118deg,#f2f0ff 0%,#ebe8fd 44%,#e6e2fc 74%,#f1ecff 100%);
-  --wash-line:#e4e1fa;
-  --glass-ink:#3b4150;
-  /* 흰 판이 어두운 바닥 위에 뜬다. 원래 그림자는 어두운 바닥에서 안 보이므로
-     한 단 깊게 준다 — 안 그러면 판이 바닥에 붙어 오려 붙인 것처럼 보인다. */
-  --shadow:0 1px 2px rgba(0,0,0,.18), 0 22px 44px -28px rgba(0,0,0,.7);
-  color:var(--body);
-}
-
-/* 머리 위 도시 띠. 기록 화면과 같은 사진 · 같은 방식이다. 제목 줄 뒤에만 서고
-   아래로 녹아 사라진다 — 요약 칸 아래까지 내려가면 흰 판 뒤에 가려 낭비다. */
-body.sim-play-page .main::before{
-  content:"";position:absolute;inset:0 0 auto;height:300px;z-index:-1;pointer-events:none;
-  background:
-    /* 왼쪽 그늘. 제목과 소제목이 앉는 자리다 — 사진에 구름·불빛이 밝게 지나가는
-       구간이 있어 글자 그림자만으로는 자리마다 읽히는 정도가 달라진다.
-       오른쪽(DAY 진행 쪽)은 열어 두어 사진이 살아 있게 한다. */
-    linear-gradient(100deg, rgba(8,9,20,.9) 0%, rgba(8,9,20,.72) 26%, rgba(8,9,20,.16) 60%, transparent 80%),
-    linear-gradient(180deg, rgba(13,12,34,.52) 0%, rgba(13,12,34,.38) 45%, rgba(13,12,34,.9) 100%),
-    url("/assets/page_train2/city-skyline.webp") center top / cover no-repeat;
-  mask:linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
-  -webkit-mask:linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
-}
+   카드를 흰 판으로 되돌리는 규칙은 **night.css 의 "흰 판" 목록**에 있다 —
+   매매일지 · 결과와 같은 방식이라 한 군데에 모아 뒀다. 이 화면에서 판을 새로
+   만들면 그 목록에 이름을 더한다. 여기에는 이 화면에만 있는 것들만 적는다. */
 
 /* 바닥에 직접 앉은 글자들 — 여기만 밤의 글자색을 쓴다 */
 body.sim-play-page .sp-crumb{color:var(--night-body)}

@@ -231,3 +231,80 @@ body.is-night .card{
   -webkit-backdrop-filter:blur(14px) saturate(140%);
   backdrop-filter:blur(14px) saturate(140%);
 }
+
+/* ── 바닥만 밤, 카드는 낮 ─────────────────────────────────
+   시즌 진행(G-04) · 매매일지(G-06) · 결과(G-08) 세 화면이 이 방식이다. 홈과
+   포트폴리오는 카드까지 유리판이지만, 이 셋은 숫자 · 캔들 · 표를 오래 들여다보는
+   자리라 판이 하얘야 한다. 인사이트의 종목 탐색도 같은 방식이다.
+
+   위에서 색 토큰 한 벌(--surface · --ink · --up …)을 어둡게 갈아 끼웠으므로,
+   흰 판으로 둘 곳에서는 그 값을 **되돌려** 준다. 값은 app.css :root 의 원래 값
+   그대로다 — 저기가 바뀌면 여기도 같이 본다.
+
+   **body 에 되돌리면 안 된다.** 바닥 위에 앉은 제목 · 말머리까지 검은 글자가 된다.
+   되돌리는 자리는 반드시 카드 뿌리다.
+
+   **바닥에 직접 앉는 판은 빠짐없이 적어야 한다.** 진행 화면에서 .sp-card 만 적었다가
+   차트 · AI 요약 · 안내 말풍선 · 종목 고르기 창이 차례로 반투명으로 남아 네 번
+   고쳤다. 판을 새로 만들면 여기에 이름을 더한다. 카드 **안쪽** 상자들은 이 판들의
+   자손이라 저절로 따라온다. */
+body.sim-play-page .sp-stat,
+body.sim-play-page .sp-card,
+body.sim-play-page .sp-chart-card,
+body.sim-play-page .sp-fold,
+body.sim-play-page .sp-dialog,
+body.sim-play-page .sp-help .ms-say,
+body.sim-play-page .sp-help-pop,
+body.sim-play-page .spc-card,
+body.sim-play-page .tp-modal,
+body.sim-trades-page .st-stat,
+body.sim-trades-page .st-card,
+body.sim-result-page .rs-stat,
+body.sim-result-page .rs-card,
+body.sim-result-page .rs-fold{
+  --ground:#fff;
+  --surface:#fff;
+  --surface-2:#f0f2f7;
+  --ink:#14141b;
+  --body:#3b3f4a;
+  --muted:#6b7280;
+  --faint:#9ca3af;
+  --rule:#e5e7ef;
+  --card-line:#dfe2ed;
+  --brand-soft:#ece9fd;
+  --brand-softer:#f4f3fe;
+  --ok:#15803d;
+  --ok-soft:#e7f5ec;
+  --hit:#0a7f3d;
+  --danger:#e04343;
+  --up:#ee0000;
+  --up-vivid:#ff2020;
+  --up-soft:#fdeceb;
+  --down:#0066ff;
+  --down-vivid:#0066ff;
+  --down-soft:#e9f0ff;
+  --wash:linear-gradient(118deg,#f2f0ff 0%,#ebe8fd 44%,#e6e2fc 74%,#f1ecff 100%);
+  --wash-line:#e4e1fa;
+  --glass-ink:#3b4150;
+  /* 흰 판이 어두운 바닥 위에 뜬다. 원래 그림자는 어두운 바닥에서 안 보이므로
+     한 단 깊게 준다 — 안 그러면 판이 바닥에 붙어 오려 붙인 것처럼 보인다. */
+  --shadow:0 1px 2px rgba(0,0,0,.18), 0 22px 44px -28px rgba(0,0,0,.7);
+  color:var(--body);
+}
+
+/* 머리 위 도시 띠. 세 화면이 같은 사진 · 같은 방식이다. 제목 줄 뒤에만 서고
+   아래로 녹아 사라진다 — 흰 판 뒤까지 내려가면 가려져 낭비다.
+   왼쪽 그늘은 제목이 앉는 자리다. 사진에 구름 · 불빛이 밝게 지나가는 구간이 있어
+   글자 그림자만으로는 자리마다 읽히는 정도가 달라진다. */
+body.sim-play-page .main::before,
+body.sim-trades-page .main::before,
+body.sim-result-page .main::before{
+  content:"";position:absolute;inset:0 0 auto;height:300px;z-index:-1;pointer-events:none;
+  background:
+    linear-gradient(100deg, rgba(8,9,20,.9) 0%, rgba(8,9,20,.72) 26%, rgba(8,9,20,.16) 60%, transparent 80%),
+    linear-gradient(180deg, rgba(13,12,34,.52) 0%, rgba(13,12,34,.38) 45%, rgba(13,12,34,.9) 100%),
+    url("/assets/page_train2/city-skyline.webp") center top / cover no-repeat;
+  mask:linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
+  -webkit-mask:linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
+}
+

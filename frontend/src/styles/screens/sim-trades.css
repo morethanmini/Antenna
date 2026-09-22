@@ -167,3 +167,24 @@
 @media(prefers-reduced-motion:reduce){
   .st-go,.st-back,.st-sides button{transition:none}
 }
+
+/* ── 밤 (2026-09-22) ──────────────────────────────────────
+   진행 화면(G-04)과 같은 방식이다 — **바닥만 밤이고 카드는 흰 판 그대로.**
+   여기는 표를 오래 읽는 자리라 판이 하얘야 하고, 빨강 · 파랑도 밝은 화면 그대로다.
+
+   카드를 흰 판으로 되돌리는 규칙과 머리 위 도시 띠는 night.css 에 있다(세 화면이
+   같이 쓴다). 여기에는 **바닥에 직접 앉는 것들**만 적는다. */
+body.sim-trades-page .st-crumb{color:var(--night-body)}
+body.sim-trades-page .st-crumb a:hover{color:#fff}
+body.sim-trades-page .st-crumb i{color:var(--night-faint)}
+body.sim-trades-page .st-head h1{color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.7)}
+body.sim-trades-page .st-head p{color:rgba(255,255,255,.92);text-shadow:0 1px 10px rgba(0,0,0,.7)}
+
+/* 머리줄 버튼 둘. 채운 쪽(진행으로 가기)은 브랜드색이라 어두운 바닥에서도 읽히지만,
+   테두리만 있는 쪽은 브랜드 잉크 글자라 그대로 가라앉는다 — 유리 한 겹으로 세운다. */
+body.sim-trades-page .st-back{
+  border-color:rgba(255,255,255,.28);background:rgba(255,255,255,.12);color:#fff;
+}
+body.sim-trades-page .st-back:hover{
+  border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.22);
+}
