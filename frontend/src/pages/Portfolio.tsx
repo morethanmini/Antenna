@@ -68,7 +68,7 @@ export default function Portfolio() {
               </dl>
               {/* 분모가 판정된 것뿐임을 적는다 — 대기가 많을수록 적중률이 낮아진다고 오해한다 */}
               <p className="fc-note">
-                대기 중인 {d.pending}건은 아직 셈에 들어가지 않았습니다.
+                판정이 끝난 예측만 센 값입니다. 판정 대기 {d.pending}건은 빠져 있습니다.
               </p>
             </section>
 
