@@ -30,6 +30,7 @@
    화면" 이 된다. 검산이 이 화면의 본문이므로 들어오면 바로 돈다. */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useSharedHref } from '../sharedMode'
 import { formatConfirmedAt } from '../api/anchors'
 import { horizonLabel } from '../api/predictions'
 import type { ApiError } from '../api/errors'
@@ -166,6 +167,8 @@ function won(value: number | null) {
 export default function Verify() {
   const { predictionId } = useParams<{ predictionId: string }>()
   const navigate = useNavigate()
+  /* 원장 안을 오갈 때 모드를 잇는다 — 모의투자에서 들어왔으면 되돌아가기도 모의투자다 */
+  const href = useSharedHref()
 
   const load = useCallback(() => fetchProof(predictionId ?? ''), [predictionId])
   const { data, loading, error, reload } = useAsync<Proof>(load)
@@ -190,7 +193,7 @@ export default function Verify() {
             뒤로
           </button>
         ) : (
-          <Link className="vf-back" to="/ledger">
+          <Link className="vf-back" to={href('/ledger')}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
             {/* D-01 화면 제목과 같은 말이어야 한다 — 그쪽은 "확정 기록" 으로
                 바뀌었는데(2026-09-21) 이 되돌아가기만 옛 이름으로 남아 있었다 */}
@@ -399,7 +402,7 @@ export default function Verify() {
                     <div>
                       <dt>배치</dt>
                       <dd>
-                        <Link className="vf-link" to={`/ledger/anchors/${anchor.batchId}`}>
+                        <Link className="vf-link" to={href(`/ledger/anchors/${anchor.batchId}`)}>
                           {`#${anchor.batchId}`}
                         </Link>
                         <AnchorBadge status={anchor.status} />

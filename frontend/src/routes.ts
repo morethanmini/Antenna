@@ -104,12 +104,16 @@ export const ROUTES: PageMeta[] = [
   { screen: 'C-04', element: Portfolio, path: '/me/portfolio', title: '예측 포트폴리오', access: 'user', mode: 'insight', nav: 'portfolio', bodyClass: 'forecast-page is-night', story: 'ANT-FE-PORTFOLIO' },
 
   // ── D. 온체인 검증 ───────────────────────────────────
-  { screen: 'D-01', element: LedgerList, path: '/ledger', title: '확정 기록', access: 'user', mode: 'insight', nav: 'ledger', bodyClass: 'is-night', story: 'ANT-FE-LEDGER-LIST' },
-  { screen: 'D-02', element: Anchor, path: '/ledger/anchors/:id', title: '체인 기록 상세', access: 'user', mode: 'insight', nav: 'ledger', bodyClass: 'is-night', story: 'ANT-FE-ANCHOR' },
-  { screen: 'D-03', element: Verify, path: '/ledger/verify/:predictionId', title: '4단계 검산', access: 'user', mode: 'insight', nav: 'ledger', bodyClass: 'is-night', story: 'ANT-FE-VERIFY' },
+  /* 넷 다 sharedMode 다 — 자물쇠(상단바)는 두 모드 어디에도 서 있는데, 그 길로 들어온
+     원장이 인사이트로 고정돼 있어 모의투자에서 누르면 토글과 배경이 통째로 넘어갔다
+     (2026-09-23). 봉인 기록은 어느 모드의 기록이냐를 가리지 않는 화면이라 설정 · 지갑과
+     같은 부류다. 원장 안에서 서로 오가는 링크는 useSharedHref 로 모드를 잇는다. */
+  { screen: 'D-01', element: LedgerList, path: '/ledger', title: '확정 기록', access: 'user', mode: 'insight', sharedMode: true, nav: 'ledger', bodyClass: 'is-night', story: 'ANT-FE-LEDGER-LIST' },
+  { screen: 'D-02', element: Anchor, path: '/ledger/anchors/:id', title: '체인 기록 상세', access: 'user', mode: 'insight', sharedMode: true, nav: 'ledger', bodyClass: 'is-night', story: 'ANT-FE-ANCHOR' },
+  { screen: 'D-03', element: Verify, path: '/ledger/verify/:predictionId', title: '4단계 검산', access: 'user', mode: 'insight', sharedMode: true, nav: 'ledger', bodyClass: 'is-night', story: 'ANT-FE-VERIFY' },
   /* 리포트 검산. 예측 검산과 경로를 나눈 이유는 id 가 다른 시퀀스라서다 —
      /ledger/verify/:id 하나로 두면 12 가 예측인지 리포트인지 알 수 없다. */
-  { screen: 'D-04', element: VerifyReport, path: '/ledger/verify/report/:reportId', title: '리포트 검산', access: 'user', mode: 'insight', nav: 'ledger', bodyClass: 'is-night', story: 'ANT-CHAIN-17' },
+  { screen: 'D-04', element: VerifyReport, path: '/ledger/verify/report/:reportId', title: '리포트 검산', access: 'user', mode: 'insight', sharedMode: true, nav: 'ledger', bodyClass: 'is-night', story: 'ANT-CHAIN-17' },
 
   // ── E. 채널 · 구독 ───────────────────────────────────
   { screen: 'E-01', element: Ranking, path: '/rankings', title: '주가 예측 랭킹', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'predictor-market-page', story: 'ANT-FE-RANKING' },
@@ -127,7 +131,7 @@ export const ROUTES: PageMeta[] = [
      /me 에 있는데 예측 포트폴리오에 불이 들어왔다.
      App.tsx 가 `meta.nav ?? 'home'` 으로 기본값을 주므로 비우면 이번엔 홈이 켜진다. */
   /* 상단 계정 메뉴로 **어느 모드에서든** 들어온다 — 환경 설정(H-03)과 같은 sharedMode 다. */
-  { screen: 'E-05', element: MyPage, path: '/me', title: '마이페이지', access: 'user', mode: 'insight', sharedMode: true, nav: 'me', bodyClass: 'mypage-page is-night', story: 'ANT-FE-MYPAGE' },
+  { screen: 'E-05', element: MyPage, path: '/me', title: '마이페이지', access: 'user', mode: 'insight', sharedMode: true, nav: 'me', bodyClass: 'mypage-page is-night is-panel', story: 'ANT-FE-MYPAGE' },
 
   // ── F. 리포트 ───────────────────────────────────────
   // 커뮤니티(F-04 피드 · F-05 글 상세 · F-06 글 작성)는 개발 범위에서 뺐다
@@ -167,7 +171,7 @@ export const ROUTES: PageMeta[] = [
   /* 상단바 잔액 칩 · 계정 메뉴로 **어느 모드에서든** 들어온다 — 환경 설정(H-03)과 같은
      sharedMode 다. nav 'portfolio' 는 인사이트 줄 기준이고, 모의투자로 들어오면 App.tsx 가
      아무것도 칠하지 않는다(같은 키가 그 줄에서는 '투자 포트폴리오' 다). */
-  { screen: 'H-01', element: Wallet, path: '/me/wallet', title: '지갑 · 토큰', access: 'user', mode: 'insight', sharedMode: true, nav: 'portfolio', bodyClass: 'is-night', story: 'ANT-FE-WALLET' },
+  { screen: 'H-01', element: Wallet, path: '/me/wallet', title: '지갑 · 토큰', access: 'user', mode: 'insight', sharedMode: true, nav: 'portfolio', bodyClass: 'is-night is-panel', story: 'ANT-FE-WALLET' },
   /* H-02 알림함은 **라우트를 두지 않는다**(2026-09-16). 알림은 보러 가는 것이
      아니라 하던 일 옆에서 확인하고 닫는 것이라, 상단바 종에서 여는 팝업
      하나로 끝낸다(components/NotificationBell). 설계서 §3 H-02 에는 이 경로가
@@ -176,7 +180,7 @@ export const ROUTES: PageMeta[] = [
   /* 상단바 톱니로 **어느 모드에서든** 들어온다. 모의투자에서 눌렀는데 상단바 토글이
      인사이트로 넘어가 있었다(2026-09-22) — 들어온 모드를 ?mode= 로 받아 유지한다
      (sharedMode · sharedMode.ts). 주소에 없으면 인사이트다. 마이페이지(E-05)·지갑(H-01)도 같다. */
-  { screen: 'H-03', element: Settings, path: '/settings', title: '환경 설정', access: 'user', mode: 'insight', sharedMode: true, nav: 'home', bodyClass: 'is-night', story: 'ANT-FE-SETTINGS' },
+  { screen: 'H-03', element: Settings, path: '/settings', title: '환경 설정', access: 'user', mode: 'insight', sharedMode: true, nav: 'home', bodyClass: 'is-night is-panel', story: 'ANT-FE-SETTINGS' },
   { screen: 'H-04', element: Ad, path: '/ads/new', title: '광고 등록', access: 'user', mode: 'insight', nav: 'home', bodyClass: 'is-night', story: 'ANT-FE-AD' },
 
   /* ── I. 관리자 ────────────────────────────────────────

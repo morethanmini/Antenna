@@ -288,6 +288,83 @@ body.is-night.is-glass .card{
   backdrop-filter:blur(14px) saturate(140%);
 }
 
+/* ── 불투명 판 — 두 모드가 같이 쓰는 화면 (2026-09-23) ──────
+   환경 설정(H-03) · 마이페이지(E-05) · 지갑(H-01). 셋 다 흰 판을 그대로 들고 있었다.
+   모드마다 화면 전체에 도시 사진이 깔리고 나서(2026-09-22) 그 위에 흰 사각형이 떠서
+   "인사이트에서도 모의투자에서도 이 하얀색이 이상하다" 는 지적을 받았다(2026-09-23).
+
+   ── is-glass 가 아니라 불투명이다 ─────────────────────
+   유리(위 블록)를 붙이는 화면은 홈 · 시즌처럼 히어로가 주인공이라, 판 뒤로 도시가
+   비쳐야 그림이 산다. 이 셋은 반대다 — 설정 항목 · 거래 내역 · 통계처럼 글과 숫자가
+   빽빽해서, 판이 비치면 사진의 밝은 구간이 글자 사이로 계속 올라온다. 확정 기록
+   목록(.lg-board, ledger.css)에서 같은 판단을 먼저 했고 값도 거기서 맞춰 왔다.
+
+   ── --brand 계열의 진한 쪽은 여기서도 안 바꾼다 ────────
+   위 is-glass 와 같은 이유이고, 이 셋에서는 더 절실하다. `background:var(--brand)`
+   에 흰 글자를 얹는 자리가 앱 전체에 예순 곳 넘게 있고 그중 여럿이 이 화면 위에
+   뜬다 — 상단바 · 확인 창(se-btn) · 빈 상태 버튼(state-cta) · 이미지 올리기.
+   토큰을 밝은 쪽으로 갈면 그 채움이 전부 연보라가 되어 흰 글자가 사라진다.
+
+   대신 브랜드색을 **글자**로 쓰는 자리만 아래에서 따로 올린다. */
+body.is-night.is-panel{
+  --ground:var(--night-0);
+  --surface:var(--night-2);
+  --surface-2:#2f2860;
+  /* 판 안 글자는 밤 기본값보다 한 단 밝다(2026-09-23 요청 — "조금만 더 잘 보이면").
+     불투명한 판은 유리와 달리 뒤가 비치지 않아, 같은 값이어도 글자가 더 가라앉는다.
+     판(#231d4d) 기준 대비 — 제목 14.02 · 본문 11.33 · 보조 8.44 · 흐림 6.08 로
+     네 단이 그대로 벌어져 있다(올리기 전 9.86 · 6.55 · 4.56).
+     .lg-board(ledger.css)와 같은 값이다 — 한쪽만 고치지 않는다. */
+  --ink:var(--night-ink);
+  --body:#ded9f5;
+  --muted:#c0bbe0;
+  --faint:#a49dc8;
+  --rule:var(--night-line);
+  --card-line:rgba(255,255,255,.18);
+  --nav-line:rgba(255,255,255,.07);
+  --brand-soft:#362d6e;
+  --brand-softer:#2b2557;
+  /* 어두운 바탕에서 검은 그림자는 안 보인다 — 깊이는 위쪽 흰 줄이 만든다(is-glass 와 같다) */
+  --shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 18px 40px -26px rgba(0,0,0,.8);
+  /* 신호색은 밤에서 한 단계 밝힌다. 값은 is-glass 와 같게 둔다 —
+     같은 뜻이 화면마다 다른 초록·빨강으로 보이면 안 된다 */
+  --up:#ff6b6b;
+  --up-vivid:#ff8080;
+  --down:#7aa7ff;
+  --down-vivid:#7aa7ff;
+  --ok:#5ee89b;
+  --ok-soft:rgba(94,232,155,.16);
+  --hit:#5ee89b;
+  --danger:#ff8b8b;
+  --gold:#ffd464;
+}
+
+/* 브랜드색을 **글자**로 쓰는 자리. 위에서 토큰을 그대로 둔 탓에 낮 값(#5457e8 ·
+   #4144c9)이 어두운 판에 그대로 얹혀 가라앉는다 — 여기만 밝은 보라로 올린다.
+   값은 확정 기록 목록(.lg-board)의 해시·검산 링크와 같다. 판 안 글자를 한 단
+   올리면서(위) 이 색도 같이 올렸다 — 안 올리면 브랜드 링크가 바로 옆 보조
+   텍스트(--muted 8.44)보다 어두워져, 강조하려던 쪽이 덜 또렷해진다(지금 8.99).
+
+   **채움인 자리는 여기 적지 않는다.** 판을 브랜드색으로 채우고 그 위에 흰 글자를
+   얹는 곳(설정 solid 버튼 · 마이페이지 체인 칸 · 적중률 바 · 켜진 토글)은 낮 값
+   그대로여야 흰 글자가 읽힌다. 새로 더할 때 그 자리인지 먼저 본다. */
+body.is-panel .st-tabs button.is-on,
+body.is-panel .st-onboarding > h2,
+body.is-panel .st-tags li,
+body.is-panel .st-channel-platform,
+body.is-panel .mp-rank em,
+body.is-panel .mp-score-head,
+body.is-panel .mp-pill svg,
+body.is-panel .mp-pill:hover,
+body.is-panel .badge-chip.pinned,
+body.is-panel .badge-pin,
+body.is-panel .wallet-entry-delta.gain,
+body.is-panel .wallet-filters button:hover,
+body.is-panel .wallet-filters button.on,
+body.is-panel .wallet-more:hover,
+body.is-panel .cf-pending,
+body.is-panel .cf-soon{ color:#cbbcff; }
+
 /* ── 시즌 진행(G-04)만 흰 판이다 ──────────────────────────
    이 화면은 is-glass 를 붙이지 않는다(위 is-glass 주석 참고) — 캔들과 주문 패널이
    같이 서는 자리라 판이 하얘야 빨강 · 파랑을 어두운 판에 맞춰 다시 잡을 일이 없다.
