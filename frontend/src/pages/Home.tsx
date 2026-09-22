@@ -184,9 +184,13 @@ function Hero() {
   return (
     <section className="hm-hero" aria-labelledby="hm-hero-h">
       <div className="hm-hero-text">
-        {/* 시안(prototype.png)의 윗줄이다. 닉네임 인사를 여기 두었었는데 시안은
-            서비스가 무엇을 해 주는지부터 말한다 — 인사는 이 화면에서 뺀다. */}
-        <p className="hm-hello">더 넓은 시각을, 더 깊은 인사이트로</p>
+        {/* 시안의 윗줄. **손글씨 네온이라 그림으로 받았다** — 번짐과 획 끝의 빛을
+            폰트로는 못 흉내 낸다. 글자는 읽어 주는 기기를 위해 남겨 두고(hm-sr),
+            그림 쪽은 장식으로 비운다. */}
+        <p className="hm-hello">
+          <img src="/assets/page_home/hero-eyebrow.webp" alt="" aria-hidden="true" />
+          <span className="hm-sr">더 넓은 시각을, 더 깊은 인사이트로</span>
+        </p>
         {/* 페이지 제목 자리다. 위에 따로 머리글을 두지 않으므로 h1 이다. */}
         <h1 id="hm-hero-h">
           시장 흐름을 읽고,<br /><em>투자 판단의 단서</em>를 모아보세요.
@@ -195,14 +199,14 @@ function Hero() {
           지수, 환율, 주요 뉴스와 리포트를 한눈에.<br />
           지금, 더 나은 투자 결정을 위한 인사이트가 여기 있습니다.
         </p>
-        {/* 시안의 버튼 글자는 "인사이트 보기" 다. 인사이트 홈에서 제자리를 가리키지
-            않도록 갈 곳은 종목 탐색으로 둔다 — 지수·리포트를 실제로 파고드는 자리다. */}
-        <Link className="hm-cta" to="/stocks">
-          인사이트 보기
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M5 12h13M13 6.5l5.5 5.5L13 17.5" stroke="currentColor" strokeWidth="2"
-                  strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+        {/* 갈 곳은 종목 탐색이다 — 인사이트 홈에서 "인사이트 보기" 가 제자리를
+            가리키지 않게. 버튼도 네온 그림이라 링크 안에 얹는다.
+
+            **그림이지만 링크는 진짜다.** 이름은 aria-label 이 들고, 초점 테두리와
+            짚었을 때의 반응은 CSS 가 준다. 그림 한 장으로 갈음하면 키보드로 쓸 수
+            없고 글자 크기 설정도 안 따라간다. */}
+        <Link className="hm-cta is-art" to="/stocks" aria-label="인사이트 보기">
+          <img src="/assets/page_home/hero-cta.webp" alt="" aria-hidden="true" />
         </Link>
       </div>
       {/* 망원경으로 시장을 살피는 개미(2026-09-22 밤 시안). 난간과 고양이까지 한 덩어리로

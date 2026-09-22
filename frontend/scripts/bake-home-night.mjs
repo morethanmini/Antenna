@@ -35,6 +35,11 @@ const JOBS = [
      시안의 좁은 가운데 칸에서는 조각이 서로 파고든다 — 그 칸에서는 이 한 장을 쓴다. */
   [path.join(DIR, 'ChatGPT Image 2026년 9월 22일 오전 09_04_40 (7).png'), path.join(DIR, 'contest-banner.webp'), 1000, 0.9],
 
+  /* 히어로 윗줄(손글씨 네온)과 버튼. 글자가 그림 안에 있는 조각이라 CSS 로는
+     못 만든다 — 시안의 네온 번짐이 폰트로 흉내 내지지 않는다. */
+  [path.join(DIR, 'src-hero-eyebrow.png'), path.join(DIR, 'hero-eyebrow.webp'), 760, 0.92],
+  [path.join(DIR, 'src-hero-cta.png'), path.join(DIR, 'hero-cta.webp'), 520, 0.92],
+
   [path.join(DOCS, 'illustration-coins-v2.png'), path.join(UI, 'coins.webp'), 520, 0.9],
   [path.join(DOCS, 'illustration-watchlist-v2.png'), path.join(UI, 'empty-watchlist.webp'), 380, 0.9],
   [path.join(DOCS, 'illustration-predictors-v2.png'), path.join(UI, 'empty-predictors.webp'), 380, 0.9],

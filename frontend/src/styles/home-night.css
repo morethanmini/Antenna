@@ -452,3 +452,59 @@ body.insight-home.is-night .hm-indices .spark{
   grid-column:1; grid-row:4; width:100%; height:38px; margin-top:6px;
 }
 body.insight-home.is-night .hm-indices .spark svg{width:100%; height:100%}
+
+/* ── 히어로 글자 (2026-09-22 시안 대조) ─────────────────────
+   두 가지가 시안과 달랐다.
+
+   1. **뒤가 너무 밝았다.** 도시 그림의 하늘이 노을이라 흰 글자가 묻혔다. 시안은
+      글자 뒤에 검은 기운이 깔려 있다. 글자마다 text-shadow 를 키우는 대신 판
+      하나를 왼쪽에 깔아 지운다 — 그림자를 키우면 획이 뭉개지고, 부제처럼 가는
+      글씨에서는 번져 보인다.
+   2. **글자가 작았다.** 시안 제목은 히어로 폭의 절반을 넘게 쓴다.
+
+   판은 .hm-hero-text 가 아니라 히어로 전체에 깐다 — 글자 상자에만 깔면 그 상자가
+   끝나는 자리에서 딱 잘려 네모가 보인다. */
+body.insight-home.is-night .hm-hero{position:relative; isolation:isolate}
+body.insight-home.is-night .hm-hero::before{
+  content:; position:absolute; z-index:-1; pointer-events:none;
+  inset:-18px auto -18px -30px; width:min(78%, 780px);
+  background:
+    radial-gradient(120% 90% at 8% 50%, rgba(6,5,24,.78) 0%, rgba(6,5,24,.55) 42%, transparent 78%);
+}
+
+/* 제목 — 시안 크기에 맞춰 키운다. 창이 좁아지면 따라 줄어든다 */
+/* 제목 두 줄을 지킨다. 둘째 줄 "투자 판단의 단서를 모아보세요." 가 15자라
+   1440px 에서 글자칸 480px 에 42px 로는 안 들어가 세 줄로 깨졌다("…모아보세 / 요.").
+   글자를 조금 줄이고 개미를 좁혀 칸을 벌린다. keep-all 은 낱말 중간에서 끊기지
+   않게 한다 — 한글은 기본이 글자 단위로 끊긴다. */
+body.is-night .hm-hero h1{
+  font-size:clamp(26px, 2.5vw, 38px); line-height:1.26; letter-spacing:-.035em;
+  word-break:keep-all;
+}
+body.is-night .hm-hero-sub{
+  font-size:clamp(14px, 1.15vw, 17px); line-height:1.7; color:#dcd8f5;
+}
+
+/* 윗줄 손글씨 — 그림이라 폭으로 잰다 */
+body.insight-home.is-night .hm-hello{
+  margin:0 0 6px; line-height:0;
+}
+body.insight-home.is-night .hm-hello img{
+  width:clamp(230px, 24vw, 340px); height:auto; display:block;
+}
+
+/* 버튼 그림. 링크는 진짜라 짚기·초점 반응을 여기서 준다 */
+body.insight-home.is-night .hm-cta.is-art{
+  display:inline-block; margin-top:22px; padding:0;
+  background:none; border-radius:999px; box-shadow:none;
+  transition:transform .16s ease, filter .16s ease;
+}
+body.insight-home.is-night .hm-cta.is-art img{
+  width:clamp(190px, 18vw, 250px); height:auto; display:block;
+}
+body.insight-home.is-night .hm-cta.is-art:hover{transform:translateY(-2px); filter:brightness(1.08)}
+body.insight-home.is-night .hm-cta.is-art:focus-visible{outline:2px solid #fff; outline-offset:4px}
+@media (prefers-reduced-motion:reduce){
+  body.insight-home.is-night .hm-cta.is-art{transition:none}
+  body.insight-home.is-night .hm-cta.is-art:hover{transform:none}
+}
