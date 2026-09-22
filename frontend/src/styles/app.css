@@ -153,6 +153,34 @@ html,body{height:100%}
    overflow-y:scroll 로도 막을 수 있지만 그쪽은 필요 없을 때도 빈 트랙을 그려서,
    어두운 화면(모의투자 홈)에 밝은 띠가 한 줄 선다. gutter 는 자리만 비운다. */
 html{scrollbar-gutter:stable}
+
+/* ── 스크롤 막대 (2026-09-22) ──────────────────────────────
+   운영체제 기본 막대는 두껍고(윈도우 크롬 15px) 위아래 화살표까지 달고 나온다.
+   6px 짜리 알약 하나로 바꾼다. 위 gutter 가 비워 두는 자리도 그만큼 줄어든다.
+
+   **표준 속성(scrollbar-width)을 함께 적으면 안 된다.** 크로뮴 121 부터는 그것이
+   적혀 있으면 ::-webkit-scrollbar 규칙을 통째로 무시한다. 둘 다 적었더니 막대는
+   얇아졌는데 화살표가 그대로 남았다 — 지우는 규칙이 webkit 쪽에 있었기 때문이다
+   (확대해서 확인). thin 은 크로뮴에서 화살표를 없애 주지 않는다. 그래서 webkit 을
+   본 줄기로 두고, 표준 속성은 **그것을 모르는 브라우저에만** 준다.
+
+   **손잡이 색 하나로 밝은 화면과 밤 화면을 다 덮는다.** 밤에서만 밝게 뒤집는 길도
+   있지만, 밤 화면 안에도 흰 판(종목 탐색 카드 · 알림 팝업)이 있어 그 안에서 굴리는
+   곳은 도로 안 보인다. 반투명 중간 회색이면 흰 판 위에서는 옅은 회색, 어두운
+   바탕에서는 밝은 회색으로 각각 떠오른다.
+
+   일부러 숨겨 둔 가로 띠들(.st-tabs · .sh-topic-track · .sd-doc-rail ·
+   .st-sector-track)은 클래스로 잡혀 있어 이 규칙보다 세다 — 그대로 숨는다. */
+*::-webkit-scrollbar{width:6px;height:6px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{background:rgba(140,145,175,.6);border-radius:999px}
+*::-webkit-scrollbar-thumb:hover{background:rgba(140,145,175,.85)}
+/* 위아래 화살표. display:none 만으로 자리를 남기는 판이 있어 크기도 0 으로 둔다 */
+*::-webkit-scrollbar-button{display:none;width:0;height:0}
+*::-webkit-scrollbar-corner{background:transparent}
+@supports not selector(::-webkit-scrollbar){
+  html{scrollbar-width:thin;scrollbar-color:rgba(140,145,175,.6) transparent}
+}
 body{
   margin:0;background:var(--ground);color:var(--body);
   font:var(--fs-lg)/1.6 var(--sans);-webkit-font-smoothing:antialiased;
