@@ -18,6 +18,8 @@ export default function AdminUser() {
   const { user: me } = useAuth()
   const [q, setQ] = useState('')
   const [items, setItems] = useState<AdminUserItem[]>([])
+  /* 뒤가 더 있으면 서버가 마지막 id 를 준다. 그 값으로 다음 50명을 이어 붙인다 */
+  const [nextBefore, setNextBefore] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState<number | null>(null)
@@ -33,12 +35,28 @@ export default function AdminUser() {
     try {
       const res = await searchUsers(submitted)
       setItems(res.items)
+      setNextBefore(res.nextBefore)
     } catch (e) {
       setError((e as ApiError).message)
     } finally {
       setLoading(false)
     }
   }, [submitted])
+
+  const 더보기 = useCallback(async () => {
+    if (nextBefore === null) return
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await searchUsers(submitted, nextBefore)
+      setItems((prev) => [...prev, ...res.items])
+      setNextBefore(res.nextBefore)
+    } catch (e) {
+      setError((e as ApiError).message)
+    } finally {
+      setLoading(false)
+    }
+  }, [submitted, nextBefore])
 
   // oxlint-disable-next-line react/set-state-in-effect -- 데이터 페칭이라 상태 갱신이 목적이다.
   useEffect(() => { void load() }, [load])
@@ -83,13 +101,13 @@ export default function AdminUser() {
 
         {error && <div className="admin-error" role="alert">{error}</div>}
 
-        {loading && <div className="placeholder">불러오는 중…</div>}
+        {loading && items.length === 0 && <div className="placeholder">불러오는 중…</div>}
 
         {!loading && items.length === 0 && (
           <div className="placeholder">찾는 회원이 없습니다.</div>
         )}
 
-        {!loading && items.length > 0 && (
+        {items.length > 0 && (
           <table className="admin-table">
             <thead>
               <tr><th>#</th><th>닉네임</th><th>역할</th><th>상태</th><th>가입</th><th>처리</th></tr>
@@ -101,7 +119,7 @@ export default function AdminUser() {
                   <tr key={u.id} className={busy === u.id ? 'busy' : undefined}>
                     <td>{u.id}</td>
                     <td>
-                      {u.nickname}
+                      {u.nickname ?? <span className="admin-dim">(닉네임 없음)</span>}
                       {나 && <span className="admin-chip"> 나</span>}
                     </td>
                     <td>{u.role === 'ADMIN' ? <span className="admin-chip">관리자</span> : '일반'}</td>
@@ -112,8 +130,9 @@ export default function AdminUser() {
                     </td>
                     <td className="admin-dim">{when(u.createdAt)}</td>
                     <td className="admin-actions">
-                      {/* 자기 계정은 서버가 409 로 막는다. 버튼을 안 그려 그 상황 자체를 없앤다 */}
+                      {/* 자기 계정·다른 관리자는 서버가 409 로 막는다. 버튼을 안 그려 그 상황 자체를 없앤다 */}
                       {나 ? <span className="admin-dim">본인</span>
+                        : u.role === 'ADMIN' ? <span className="admin-dim">관리자</span>
                         : u.status === 'BANNED' ? (
                           <button
                             type="button" className="se-btn" disabled={busy === u.id}
@@ -132,11 +151,19 @@ export default function AdminUser() {
             </tbody>
           </table>
         )}
+
+        {nextBefore !== null && (
+          <div className="admin-actions">
+            <button type="button" className="se-btn" disabled={loading} onClick={() => { void 더보기() }}>
+              {loading ? '불러오는 중…' : '더 보기'}
+            </button>
+          </div>
+        )}
       </div>
 
       {confirming && (
         <ConfirmDialog
-          title={`${confirming.nickname} 님을 차단합니다`}
+          title={`${confirming.nickname ?? `#${confirming.id}`} 님을 차단합니다`}
           description="이 계정은 로그인할 수 없게 됩니다. 예측과 원장은 남고, 나중에 해제할 수 있습니다."
           confirmLabel="차단"
           tone="danger"
