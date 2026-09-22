@@ -355,28 +355,6 @@ body.insight-home.is-night .hm-empty-hint{
    카드 결 · 빛 · 빈 상태는 이 파일이 계속 맡는다. 바뀐 것은 줄 순서와 배너 자리
    뿐이다(사용자 결정 2026-09-22). */
 
-/* ── 지름길 타일 셋 ─────────────────────────────────────────
-   시안은 카드 한 장 안의 칸이 아니라 따로 선 유리 타일 셋이다(에셋 4).
-   아이콘이 글자 왼쪽에 서고, 타일마다 제 테와 빛을 갖는다. */
-body.insight-home.is-night .hm-quick{
-  display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px;
-  padding:0; background:none; border:0; box-shadow:none; overflow:visible;
-}
-body.insight-home.is-night .hm-quick a{
-  display:flex; align-items:center; justify-content:center; gap:9px;
-  min-height:58px; padding:10px 8px;
-  border:1px solid rgba(151,187,255,.7); border-radius:14px;
-  color:#e7ecff; font-size:var(--fs-base); font-weight:var(--fw-bold);
-  background:linear-gradient(140deg, rgba(64,96,214,.5), rgba(24,52,140,.45));
-  box-shadow:inset 0 1px 14px rgba(140,175,255,.18), 0 10px 24px rgba(2,14,63,.24);
-  white-space:nowrap;
-}
-body.insight-home.is-night .hm-quick a:hover{
-  border-color:rgba(255,218,255,.8); color:#fff;
-  box-shadow:inset 0 1px 14px rgba(180,200,255,.24), 0 0 18px rgba(200,120,255,.35);
-}
-body.insight-home.is-night .hm-quick .hm-ico{color:#bba8ff; width:20px; height:20px}
-
 /* 대회 배너는 밝은 판 규칙 그대로다 — 가로 전체를 쓰는 9:1 띠에 조각을 쌓는다.
    좁은 칸에 넣으려고 완성본 한 장으로 바꿔 두었던 규칙은 3단 줄과 함께 걷었다. */
 
@@ -473,4 +451,3 @@ body.insight-home.is-night .hm-cta.is-art{margin-top:8px}
    (0 0 0 5px · 7px · 0 0 26px …) 그 빛이 이웃 카드 자리까지 번져, 같은 16px 인데도
    카드끼리 맞닿은 것처럼 보였다. 빛이 퍼지는 만큼 더 벌린다. */
 body.insight-home.is-night .hm-grid{gap:30px}
-body.insight-home.is-night .hm-stack{gap:22px}
