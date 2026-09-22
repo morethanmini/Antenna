@@ -96,12 +96,12 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
 }
 .sh-backdrop img{position:absolute;display:block;user-select:none}
 .sh-bd-wave{left:-6%;top:6%;width:112%;opacity:.55;animation:sh-sway 12s ease-in-out infinite alternate}
-.sh-bd-spark{right:24%;top:2%;width:240px;opacity:.75;animation:sh-twinkle 5s ease-in-out infinite alternate}
-/* 촛대(캔들 그림) 장식은 걷어냈다(2026-09-22). 히어로 한가운데 개미 그림 뒤에
-   또 다른 캔들이 흐리게 서서, 그림이 두 겹으로 겹쳐 보였다. */
+/* 촛대(캔들)와 반짝임(별) 장식은 걷어냈다(2026-09-22).
+   촛대는 개미가 든 노트북 화면에 이미 캔들이 있어 같은 그림이 두 겹이었고,
+   반짝임은 도시 띠의 불빛과 겹쳐 하늘이 지저분해 보였다.
+   남은 장식은 빛줄기(.sh-bd-wave) 하나다. */
 
 @keyframes sh-sway{from{transform:translateY(-6px)}to{transform:translateY(8px)}}
-@keyframes sh-twinkle{from{opacity:.45}to{opacity:.9}}
 
 /* 카피 */
 .sh-hero-copy{position:relative;z-index:1;display:flex;flex-direction:column;align-items:flex-start;min-width:0}
@@ -333,5 +333,5 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
 }
 
 @media (prefers-reduced-motion:reduce){
-  .sh-bd-wave,.sh-bd-spark,.sh-hero-art,.sh-bubble{animation:none}
+  .sh-bd-wave,.sh-hero-art,.sh-bubble{animation:none}
 }
