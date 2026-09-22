@@ -1,5 +1,7 @@
 /* D-01 커밋 원장 — [ANT-FE-LEDGER-LIST] · 리디자인 S15P21A507-292
    색·간격은 app.css 의 토큰만 쓴다 — 단 하나, 어두운 체인 패널(.lg-chain)은 빼고.
+   (이 화면은 routes.ts 에서 늘 is-night 라, 글자색은 맨 아래 밤 블록이 한 번 더
+   덮는다. 흰 바탕용 값은 밤 블록을 뺐을 때의 기본값으로 남겨 둔다.)
 
    **어두운 패널 위에서는 토큰을 쓸 수 없다.** --ink · --body · --muted 는 전부
    흰 바탕을 전제로 고른 값이라 어두운 바탕에서는 대비가 무너진다. 그래서 그
@@ -198,6 +200,45 @@
   .lg-group::before{ left:9px; }
   .lg-node{ width:20px; height:20px; top:10px; }
   .lg-row:hover{ box-shadow:none; }
+}
+
+/* ── 밤 바탕 위의 글자 (2026-09-23) ─────────────────────
+   이 화면은 routes.ts 에서 늘 is-night 다. 위 규칙들은 흰 바탕용 토큰(--ink · --body ·
+   --muted · --brand-ink)이라 어두운 바탕에서 배치 번호 · 해시 · 검산 링크가 보이지
+   않았다(QA 09-23 · 배치 번호는 #14141b on #171436 로 대비 1.1). 밤 한 벌(night.css)의
+   토큰으로 갈아 끼운다. night.css 의 "카드 밖 글자" 목록에 두지 않고 여기 모은다 —
+   이 화면의 밤 색이 두 파일에 나뉘면 한쪽만 고쳐진다. */
+body.is-night .lg-head-no,
+body.is-night .lg-head-text b,
+body.is-night .lg-stock,
+body.is-night .lg-title{ color:var(--night-ink); }
+body.is-night .lg-head-no:hover,
+body.is-night .lg-title:hover{ color:#fff; }
+/* 대기 묶음은 한 단 낮춘다 — 위 .is-waiting 규칙(--body)과 같은 뜻, 밤 값으로 */
+body.is-night .lg-head.is-waiting .lg-head-text b{ color:var(--night-body); }
+body.is-night .lg-head-text span,
+body.is-night .lg-horizon,
+body.is-night .lg-loading{ color:var(--night-body); }
+body.is-night .lg-code,
+body.is-night .lg-stock.is-none{ color:var(--night-faint); }
+/* 브랜드색 해시·링크. --brand-ink(#4144c9)는 어두운 바탕에서 대비 2:1 이 안 된다 —
+   밤 화면의 강조색 --glow(#8b7dff)로 올린다(기록 화면 sim-history 가 같은 자리에 같은 색). */
+body.is-night .lg-hash,
+body.is-night .lg-go{ color:var(--glow); }
+body.is-night .lg-go:hover{ color:#fff; }
+/* 선과 짚은 줄. --rule(#e5e7ef)은 어두운 바탕에서 흰 줄로 튀고, 짚었을 때 깔리던
+   --brand-softer(#f4f3fe)는 거의 흰 판이라 밝게 바꾼 글자가 그 위에서 도로 사라진다. */
+body.is-night .lg-group::before{ background:var(--night-line); }
+body.is-night .lg-group:last-of-type::before{
+  background:linear-gradient(180deg, var(--night-line) 70%, transparent);
+}
+body.is-night .lg-row{ border-top-color:var(--night-line); }
+body.is-night .lg-row:hover{
+  background:var(--night-glass);
+  box-shadow:-14px 0 0 var(--night-glass), 14px 0 0 var(--night-glass);
+}
+@media (max-width: 560px){
+  body.is-night .lg-row:hover{ box-shadow:none; }
 }
 
 /* 움직이는 것이 없다. Bitfeed 식 사각형 무리를 걷어내면서 그 칸의 숨쉬기
