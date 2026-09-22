@@ -110,7 +110,6 @@
 .cf-dir{ font-size:var(--fs-xs); }
 .cf-dir.is-up{ color:var(--danger); }
 .cf-dir.is-down{ color:#1d6fd0; }
-.cf-dir.is-first{ color:var(--muted); }
 
 @media (max-width:560px){
   .cf-input{ width:100%; }
