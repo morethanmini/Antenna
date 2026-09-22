@@ -4,15 +4,19 @@
    연습 시즌 다섯 장에 사건 아트를 깔았다(sim/seasonArt). 시즌마다 배경 사진과
    제목 덩어리(lockup) 두 장이 있고, 표에 없는 제목은 글자 제목으로 떨어진다.
 
-   <b>다크는 걷어냈다.</b> 시안이 다크였고 실제로 한 번 어둡게 만들어 봤지만
-   (이 화면만 → 모의투자 모드 전체 순으로 넓혔다가 둘 다 되돌렸다), 서비스의
-   다른 화면이 전부 밝아서 이 한 장만 검으면 다른 서비스처럼 읽혔다. 지금은
-   <b>히어로 안쪽만</b> 사진 위 흰 글자이고, 히어로 밖은 app.css 의 밝은 토큰을
-   그대로 쓴다 — 이 파일에 자기 판 색(--sj-bg 같은 것)이 없는 이유다.
+   ── 2026-09-22 · 다크로 돌아왔다 ────────────────────────────────
+   전에는 "서비스의 다른 화면이 전부 밝아서 이 한 장만 검으면 다른 서비스처럼
+   읽힌다" 는 이유로 다크를 걷어냈었다. <b>그 전제가 뒤집혔다</b> — 모의투자 홈·기록,
+   인사이트 홈까지 밤이 되면서 이제는 이 한 장만 밝은 것이 튄다.
 
-   그래서 색 규칙이 둘로 갈린다. 고칠 때 어느 쪽인지 먼저 보면 된다:
-     · .sj-hero 안  — 배경이 사진이다. 글자는 흰색 + 그림자로 버틴다.
-     · .sj-hero 밖  — 배경이 --ground/--surface 다. 평범한 밝은 화면이다.
+   거는 방법은 routes.ts 의 bodyClass 에 `is-night` 를 더하는 것뿐이다. 판·글자·
+   테두리 색은 styles/night.css 가 토큰 한 벌을 통째로 갈아 끼우므로, 토큰을 쓰는
+   자리는 저절로 따라온다. <b>이 파일이 따로 잡는 것은 색을 직접 박아 둔 자리뿐</b>
+   이고 파일 맨 아래 한 덩어리로 모아 뒀다.
+
+   색 규칙이 둘로 갈리는 것은 그대로다. 고칠 때 어느 쪽인지 먼저 보면 된다:
+     · .sj-hero 안  — 배경이 사진이다. 글자는 흰색 + 그림자로 버틴다(밤에도 같다).
+     · .sj-hero 밖  — 배경이 --ground/--surface 다. 이제 어두운 판이다.
 
    <b>히어로 밖에는 시즌 색이 없다.</b> 한때 시즌마다 다른 강조색(--accent)을
    진행 방식 아이콘·머리말에 썼는데, 밝은 판에서 빨강·주황 아이콘이 뜬금없이 튀고
@@ -294,4 +298,67 @@
 }
 @media(prefers-reduced-motion:reduce){
   .sj-cta{transition:none}
+}
+
+/* ── 밤(2026-09-22) ───────────────────────────────────────
+   토큰으로 된 자리는 night.css 가 이미 뒤집었다. 여기 있는 것은 **색을 직접 박아
+   둔 자리**뿐이다 — 그 값들은 밝은 판을 전제로 고른 것이라 밤에서 무너진다. */
+
+/* 모드 배지. 옅은 파스텔 판 + 진한 글자였다. 밤에서는 그 판이 형광처럼 튀어
+   사진 위에서 배지만 먼저 보인다. 같은 색을 채도 낮은 투명 판으로 바꾼다. */
+body.sim-join-page .sim-join.learn{--tone:#4ade80;--tone-ink:#a7f3c9;--tone-soft:rgba(34,197,94,.22)}
+body.sim-join-page .sim-join.contest{--tone:#8b7dff;--tone-ink:#cdc6ff;--tone-soft:rgba(139,125,255,.24)}
+body.sim-join-page .sim-join.demo{--tone:#6aa8ff;--tone-ink:#bcd6ff;--tone-soft:rgba(88,150,255,.24)}
+body.sim-join-page .sj-mode{border:1px solid rgba(255,255,255,.18)}
+
+/* 아트가 없는 시즌의 되돌림 색. 밝은 판에서 쓰던 회청색 셋이라 밤에서 가라앉는다 */
+body.sim-join-page .sj-hero:not(.has-art) .sj-crumb{color:var(--night-body)}
+body.sim-join-page .sj-hero:not(.has-art) .sj-crumb i{color:var(--night-faint)}
+body.sim-join-page .sj-hero:not(.has-art) .sj-head p{color:var(--night-body)}
+body.sim-join-page .sj-hero:not(.has-art) .sj-note-sm{color:var(--night-body)}
+body.sim-join-page .sj-schedule{color:var(--night-body)}
+
+/* 시즌 카드. 사진 위로 떠 있는 판이라 공용 --shadow 보다 깊게 주던 값인데,
+   그 그림자가 검정이라 밤에서는 보이지 않으면서 색만 탁해진다. 깊이는 위쪽
+   흰 줄 하나로 만들고, 반투명 판이므로 블러를 걸어 글이 건물 위에 겹치지 않게 한다. */
+body.sim-join-page .sj-card{
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.1), 0 26px 56px -30px rgba(0,0,0,.85);
+  -webkit-backdrop-filter:blur(14px) saturate(140%);
+  backdrop-filter:blur(14px) saturate(140%);
+}
+body.sim-join-page .sj-steps li{
+  -webkit-backdrop-filter:blur(12px) saturate(140%);
+  backdrop-filter:blur(12px) saturate(140%);
+}
+
+/* 참가 버튼. --brand 는 밤에서도 그대로 쓰지만(night.css 가 진한 쪽을 안 바꾼다)
+   평평한 한 색은 어두운 판에서 판때기처럼 앉는다. 모의투자 홈·기록의 으뜸 버튼과
+   같은 결로 — 위가 밝은 그러데이션 + 아래로 번지는 빛 — 맞춘다. 세 화면의 "지금
+   시작하기 · 새로 시작하기 · 연습 참여하기" 가 같은 버튼으로 읽혀야 한다. */
+body.sim-join-page .sj-cta{
+  background:linear-gradient(180deg,#6d6bff 0%,#5457e8 100%);
+  box-shadow:0 12px 28px -12px rgba(109,107,255,.9), inset 0 1px 0 rgba(255,255,255,.25);
+}
+body.sim-join-page .sj-cta:hover{
+  background:linear-gradient(180deg,#7b79ff 0%,#5f62f0 100%);
+  box-shadow:0 16px 32px -12px rgba(109,107,255,1), inset 0 1px 0 rgba(255,255,255,.3);
+}
+/* 누를 수 없는 상태는 반대로 빛을 뺀다 — 빛이 남으면 꺼진 버튼이 눌릴 것처럼 보인다 */
+body.sim-join-page .sj-cta.is-off,
+body.sim-join-page .sj-cta.is-off:hover{
+  background:rgba(255,255,255,.07);box-shadow:none;color:var(--night-faint);
+}
+
+/* 브랜드 보라(#5457e8)를 쓰던 작은 글자·아이콘. 버튼 채움처럼 넓은 면에서는
+   그대로 읽히지만, 가는 글자와 22px 아이콘으로는 어두운 바탕에서 가라앉는다
+   (머리말 대비 3.0:1). 밝은 쪽(--glow)으로 올린다 — 6.1:1 이 된다. */
+body.sim-join-page .sj-rules-kicker,
+body.sim-join-page .sj-stats svg,
+body.sim-join-page .sj-steps svg{color:var(--glow)}
+
+/* 확인창 배경막. 밝은 판 기준의 .38 은 밤에서 거의 안 보여 뒤가 그대로 읽힌다 */
+body.sim-join-page .sj-dialog::backdrop{background:rgba(6,5,24,.72)}
+body.sim-join-page .sj-dialog{
+  -webkit-backdrop-filter:blur(16px) saturate(140%);
+  backdrop-filter:blur(16px) saturate(140%);
 }
