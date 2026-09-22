@@ -293,6 +293,7 @@ body.sim-play-page .tp-modal{
    아래로 녹아 사라진다 — 흰 판 뒤까지 내려가면 가려져 낭비다.
    왼쪽 그늘은 제목이 앉는 자리다. 사진에 구름 · 불빛이 밝게 지나가는 구간이 있어
    글자 그림자만으로는 자리마다 읽히는 정도가 달라진다. */
+body.sim-home-page .main::before,
 body.sim-play-page .main::before,
 body.sim-trades-page .main::before,
 body.sim-result-page .main::before{

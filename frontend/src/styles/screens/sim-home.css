@@ -53,18 +53,9 @@ body.sim-home-page{
 
 body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--page-pb)}
 
-/* 도시는 별도 레이어에 깐다. 배경 이미지로 같이 넣으면 그라데이션과 크기 기준이 달라
-   화면 폭에 따라 끊긴다. 아래에 붙여 두고 위쪽은 하늘로 흐려진다. */
-body.sim-home-page .main::before{
-  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
-  /* 건물 꼭대기가 주제 카드 뒤 어깨쯤(화면 55%)에 오게 위에서부터 자리를 잡는다 */
-  background:url("/assets/page_train/city-night.webp") center 100% / max(1920px,100%) auto no-repeat;
-  background-position-y:min(100%, calc(100% - 4vh));
-  opacity:.85;
-  mask:linear-gradient(180deg, transparent 20%, #000 60%, #000 100%);
-  -webkit-mask:linear-gradient(180deg, transparent 20%, #000 60%, #000 100%);
-}
-
+/* 도시 띠는 night.css 에 있다 — 모의투자 다섯 화면이 같은 사진 · 같은 자리를 쓴다.
+   한때 이 화면만 다른 사진(page_train/city-night)을 아래에 깔았는데, 화면을 옮겨
+   다닐 때 배경이 바뀌어 다른 서비스처럼 보였다(2026-09-22). */
 
 .sim-home{display:flex;flex-direction:column;gap:var(--block-gap);word-break:keep-all}
 
