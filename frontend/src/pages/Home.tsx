@@ -518,7 +518,7 @@ function Sponsored() {
           <div className="hm-showcase-track">
             <div className="hm-showcase-slide hm-t-a">
               <p className="hm-showcase-title">이 자리에 광고를 실어 보세요</p>
-              <p className="hm-showcase-sub">홈 첫 화면에 배너가 걸립니다. ANT 로 결제합니다.</p>
+              <p className="hm-showcase-sub">ANT 로 결제합니다.</p>
               <Link className="hm-showcase-btn" to="/ads/new">
                 광고 등록하기
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
