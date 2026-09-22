@@ -15,7 +15,7 @@
    ConfirmDialog 와 같은 판단이다. 이건 길을 막는 창이 아니라 곁창이라, Tab 이
    새어 나가면 그대로 페이지를 계속 쓰면 된다. 대신 열 때 목록으로 초점을 옮겨
    키보드만 쓰는 사람도 바로 읽을 수 있게 한다. */
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { TYPE_LABEL } from '../api/notifications'
 import type { Notification } from '../api/notifications'
@@ -98,6 +98,39 @@ export default function NotificationPopover({
 
   const unread = items.filter((n) => !n.read).length
 
+  /* ── 본문 한 줄 · [더보기] ────────────────────────────
+     전에는 두 줄까지 보이고 그 뒤를 잘랐다(-webkit-line-clamp:2). 줄 수가
+     들쭉날쭉해 목록이 층계처럼 보였고, 두 줄째가 잘린 알림은 어차피 다 못 읽는다.
+     한 줄로 고정하고 넘치는 것만 펼칠 수 있게 한다.
+
+     **넘치는지는 재서 안다.** 글자 수로 어림하면 팝업 폭(380px)·글꼴·언어가
+     바뀔 때마다 어긋난다. 그린 뒤 scrollWidth 와 clientWidth 를 비교한다 —
+     한 줄로 잘려 있을 때만 뜻이 있는 값이라, **펼쳐 둔 것은 재지 않고**
+     이미 길다고 판정된 것을 그대로 들고 간다. */
+  const listRef = useRef<HTMLUListElement>(null)
+  const [longIds, setLongIds] = useState<number[]>([])
+  const [openIds, setOpenIds] = useState<number[]>([])
+
+  useLayoutEffect(() => {
+    const el = listRef.current
+    if (!el) return
+    const next: number[] = []
+    el.querySelectorAll<HTMLElement>('.nt-body').forEach((b) => {
+      const id = Number(b.dataset.id)
+      if (!Number.isFinite(id)) return
+      /* 펼쳐 둔 줄은 잴 수 없다 — 판정을 그대로 잇는다 */
+      if (openIds.includes(id)) { if (longIds.includes(id)) next.push(id); return }
+      if (b.scrollWidth > b.clientWidth + 1) next.push(id)
+    })
+    /* 같은 값이면 새 배열을 넣지 않는다 — 넣으면 이 효과가 스스로를 다시 부른다 */
+    setLongIds((prev) =>
+      prev.length === next.length && prev.every((v, i) => v === next[i]) ? prev : next)
+  }, [items, openIds, longIds])
+
+  const toggleMore = useCallback((id: number) => {
+    setOpenIds((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]))
+  }, [])
+
   return (
     <div
       className="nt-pop"
@@ -141,39 +174,76 @@ export default function NotificationPopover({
       )}
 
       {!loading && !error && items.length > 0 && (
-        <ul className="nt-list">
+        <ul className="nt-list" ref={listRef}>
           {items.map((n) => (
-            <li key={n.id} className="nt-row">
+            /* ── 줄 하나 (2026-09-22 구조 바꿈) ─────────────────────
+               전에는 줄 전체가 <button> 이고 지우기만 그 바깥에 얹혀 있었다.
+               [더보기] 를 본문 바로 뒤에 붙이려니 그 구조로는 안 됐다 — 버튼 안에
+               버튼을 넣을 수 없어 본문 밖에 띄워 놓을 수밖에 없었고, 그러면 글자와
+               떨어져 "…" 와 [더보기] 사이가 벌어진다.
+
+               그래서 줄을 판(li)으로 두고, **누를 자리는 덮개 버튼(.nt-main)이**
+               inset:0 으로 깔아 준다. 글자는 제자리에 흐르므로 본문과 [더보기] 를
+               한 줄(flex)에 나란히 놓을 수 있다. 줄 아무 데나 눌러도 알림이 열리는
+               것은 그대로다 — 덮개가 줄 전체를 덮기 때문이다.
+
+               덮개를 **맨 앞**에 둔다. Tab 순서를 줄 → 더보기 → 삭제 로 맞추기
+               위해서다. 그리는 순서는 DOM 순서와 무관하다 — 자리를 잡은(positioned)
+               덮개가 흐르는 글자보다 늘 위에 그려지므로, 글자를 가리지 않으면서도
+               클릭을 받는다. */
+            <li
+              key={n.id}
+              className={`nt-row${n.read ? '' : ' is-unread'}${openIds.includes(n.id) ? ' is-open' : ''}`}
+            >
+              {/* 줄 전체를 덮는 누름판. 보이는 글자는 따로 흐르므로, 읽어 주는
+                  기기를 위해 이름을 여기 모아 준다 — 종류 · 제목 · 본문 · 온 때,
+                  그리고 안 읽었으면 그 말까지. 점을 뺀 뒤로 안 읽음을 알리는 것이
+                  바탕색 하나뿐이라, 색을 못 보는 사람에게는 이 말이 유일한 단서다. */}
               <button
                 type="button"
-                className={`nt-item${n.read ? '' : ' is-unread'}${n.linkPath ? '' : ' is-flat'}`}
+                className={`nt-main${n.linkPath ? '' : ' is-flat'}`}
+                aria-label={[
+                  TYPE_LABEL[n.type] ?? n.type,
+                  n.title,
+                  n.body,
+                  ago(n.createdAt),
+                  n.read ? '' : '읽지 않음',
+                ].filter(Boolean).join(' · ')}
                 onClick={() => open(n)}
                 /* 갈 곳이 없으면 읽음 처리만 한다. 눌러도 아무 데도 안 가는 것이
                    기본값이라, 커서까지 손가락으로 바꾸지는 않는다(.is-flat) */
-              >
-                {/* 서버가 새 종류를 보내면 표에 없다. 빈 칸보다 종류 이름이 낫다 */}
-                {/* 표에 없는 종류는 종류 문자열이 그대로 보인다 — 새 종류가 붙은 것을
-                    알아채라는 뜻이다(api/notifications.ts). 그 값이 길면 이름표 폭에서
-                    잘리므로(notification.css) 온전한 값을 title 로 남긴다.
-                    아이콘은 글자를 대신하지 않는다 — 까닭은 NotificationTypeIcon 머리말. */}
-                <span className="nt-type" title={TYPE_LABEL[n.type] ?? n.type}>
-                  <NotificationTypeIcon type={n.type} />
-                  <span className="nt-type-txt">{TYPE_LABEL[n.type] ?? n.type}</span>
-                </span>
-                <b className="nt-title">{n.title}</b>
-                <span className="nt-body">{n.body}</span>
-                <span className="nt-when num">{ago(n.createdAt)}</span>
-                {/* 파란 점을 뺐다(2026-09-18). 안 읽은 표시가 바탕색과 점 둘이라
-                    같은 말을 두 번 하고 있었다.
+              />
 
-                    **글자는 남긴다.** 점이 지던 몫이 눈에 보이는 표시만은 아니었다 —
-                    바탕색만 남기면 화면에 나오는 단서가 색 하나뿐이라, 색을 못 보는
-                    사람에게는 읽은 줄과 안 읽은 줄이 같아진다. 이 글자는 눈에는
-                    안 보이고 스크린리더만 읽는다. */}
-                {!n.read && <span className="nt-sr">읽지 않음</span>}
-              </button>
-              {/* 항목 버튼 **바깥**에 둔다. 버튼 안에 버튼을 넣으면 마크업이 깨지고,
-                  지우기를 눌렀는데 그 알림으로 이동해 버린다 */}
+              {/* **종류 글자를 뺐다**(2026-09-22, 디자인). 남은 것은 동그라미 안의
+                  아이콘 하나다. 종류 이름은 마우스에 title 로, 읽어 주는 기기에는
+                  위 덮개의 aria-label 로 남는다 — 화면에서 지운 것이지 없앤 것이
+                  아니다. 표에 없는 새 종류도 그 두 곳에는 그대로 실린다. */}
+              <span className="nt-type" title={TYPE_LABEL[n.type] ?? n.type} aria-hidden="true">
+                <NotificationTypeIcon type={n.type} />
+              </span>
+              <b className="nt-title" aria-hidden="true">{n.title}</b>
+              <span className="nt-when num" aria-hidden="true">{ago(n.createdAt)}</span>
+
+              {/* 본문과 [더보기] 가 한 줄이다. 본문이 줄어들며 잘리고 그 **바로 뒤에**
+                  버튼이 선다 — "…미적중 · 오차 3 더보기" 처럼 이어 읽힌다.
+                  글자 쪽은 누름을 덮개로 흘려보내고(.nt-bodyline pointer-events:none)
+                  버튼만 다시 받는다. 안 그러면 본문을 눌렀을 때 알림이 안 열린다. */}
+              <span className="nt-bodyline" aria-hidden="true">
+                <span className="nt-body" data-id={n.id}>{n.body}</span>
+                {longIds.includes(n.id) && (
+                  <button
+                    type="button"
+                    className="nt-more"
+                    aria-hidden="false"
+                    aria-expanded={openIds.includes(n.id)}
+                    onClick={() => toggleMore(n.id)}
+                  >
+                    {openIds.includes(n.id) ? '접기' : '더보기'}
+                  </button>
+                )}
+              </span>
+
+              {/* 덮개 **위에** 선다(z-index). 여기를 눌렀는데 알림이 열리면 안 된다 */}
               <button
                 type="button"
                 className="nt-del"

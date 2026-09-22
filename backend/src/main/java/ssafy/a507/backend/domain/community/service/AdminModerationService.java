@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
 import ssafy.a507.backend.common.security.CurrentUserProvider;
+import ssafy.a507.backend.common.text.KoreanText;
 import ssafy.a507.backend.domain.account.entity.Notification;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.account.repository.NotificationRepository;
@@ -93,8 +94,9 @@ public class AdminModerationService {
             report.reject(admin);
             notificationRepository.save(Notification.create(
                     report.getReporter(), REPORT_HANDLED,
-                    "신고가 기각됐습니다",
-                    "신고하신 " + josa(what, "은", "는") + " 검토 결과 운영 정책 위반으로 보지 않았습니다.",
+                    "신고가 기각되었습니다",
+                    "신고하신 " + KoreanText.josa(what, "은", "는")
+                            + " 검토 결과 운영 정책 위반으로 보지 않았습니다.",
                     link));
             return;
         }
@@ -122,24 +124,16 @@ public class AdminModerationService {
         notificationRepository.save(Notification.create(
                 report.getReporter(), REPORT_HANDLED,
                 hidden ? "신고가 받아들여졌습니다" : "신고를 확인했습니다",
-                hidden ? "신고하신 " + josa(what, "을", "를") + " 가렸습니다."
+                hidden ? "신고하신 " + KoreanText.josa(what, "을", "를") + " 가렸습니다."
                        : "신고하신 회원을 확인했습니다. 제재는 운영 정책에 따라 따로 진행됩니다.",
                 null));
         if (author != null && !author.getId().equals(report.getReporter().getId())) {
             notificationRepository.save(Notification.create(
                     author, CONTENT_BLOCKED,
-                    josa(what, "이", "가") + " 신고로 가려졌습니다",
+                    KoreanText.josa(what, "이", "가") + " 신고로 가려졌습니다",
                     "운영 정책에 따라 다른 회원에게 보이지 않습니다. 문의는 운영자에게 해 주세요.",
                     null));
         }
-    }
-
-    /** 받침 유무로 조사를 고른다 — "리포트는 · 글은". 마지막 글자가 한글이 아니면 받침 없는 쪽. */
-    private static String josa(String word, String withBatchim, String without) {
-        char last = word.charAt(word.length() - 1);
-        boolean hangul = last >= 0xAC00 && last <= 0xD7A3;
-        boolean batchim = hangul && (last - 0xAC00) % 28 != 0;
-        return word + (batchim ? withBatchim : without);
     }
 
     private static String targetLabel(AbuseReport r) {

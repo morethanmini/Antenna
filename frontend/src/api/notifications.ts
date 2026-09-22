@@ -28,9 +28,13 @@ import { api } from './client'
  * 알림 종류. 값은 서버가 `notifications.type` 에 쓰는 문자열 그대로다 — 화면에서
  * 만든 이름을 두면 서버가 새 종류를 보냈을 때 조용히 빠진다(아래 TYPE_LABEL 참고).
  *
- * 서버가 보내는 것(2026-09-16): VERDICT · SUBSCRIBE · FEE_CHANGED · REPORT_PUBLISHED ·
- * PREDICTION_REGISTERED · REPORT_COMMENT · REPORT_LIKE. SEASON · RENEW_FAILED 는
- * 명세에는 있지만 아직 보내는 곳이 없다 — 라벨만 준비해 둔다.
+ * 서버가 실제로 보내는 것(2026-09-22 기준, 백엔드 호출부를 훑어 확인): VERDICT ·
+ * PREDICTION_REGISTERED · SUBSCRIBE · FEE_CHANGED · REPORT_PUBLISHED · REPORT_COMMENT ·
+ * REPORT_LIKE · AD_APPROVED · AD_REJECTED · REPORT_HANDLED · CONTENT_BLOCKED — 열하나다.
+ *
+ * SEASON · RENEW_FAILED 는 명세에 있고 알림 on/off 스위치(NotificationGate)도 SEASON 을
+ * 보고 있지만, **보내는 곳이 아직 없다.** 모의투자는 화면이 다 도는데 알림만 안 간다.
+ * 라벨은 준비해 둔다 — 붙는 날 여기를 고칠 일이 없도록.
  */
 export const NOTIFICATION_TYPES = [
   'VERDICT', 'SEASON', 'SUBSCRIBE', 'FEE_CHANGED', 'RENEW_FAILED', 'REPORT_PUBLISHED',
