@@ -41,6 +41,11 @@ const isSort = (raw: string | null): raw is StockSort =>
 
 const nonEmpty = (list: string[]) => (list.length > 0 ? list : undefined)
 
+/** 검색어 상한. 서버 StockService.MAX_QUERY_LENGTH 와 같은 값 — 넘기면 400 이다.
+    입력칸은 maxLength 로 막지만 주소창으로 들어온 51자는 그대로 서버까지 가서
+    목록 전체가 오류 화면이 됐다(QA 09-22). 여기서 잘라 둔다 */
+export const Q_MAX = 50
+
 /** 역전된 범위(최소 > 최대)는 서버가 400 으로 막는다. 손으로 친 주소면 둘 다 버린다 */
 const toRange = (min: number | undefined, max: number | undefined) =>
   min !== undefined && max !== undefined && min > max ? {} : { min, max }
@@ -53,7 +58,7 @@ export function filterFromParams(params: URLSearchParams): StockFilter {
   return {
     /* 앞뒤 공백을 다듬지 않는다 — "삼성 " 까지 친 순간 주소를 거쳐 돌아온 값이
        입력칸의 공백을 지우면 "삼성 전자" 를 칠 수 없다. 서버가 trim 한다 */
-    q: q !== null && q.trim() !== '' ? q : undefined,
+    q: q !== null && q.trim() !== '' ? q.slice(0, Q_MAX) : undefined,
     sector: nonEmpty(params.getAll('sector').filter(Boolean)),
     perMin: per.min,
     perMax: per.max,
