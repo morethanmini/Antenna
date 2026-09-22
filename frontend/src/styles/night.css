@@ -183,54 +183,26 @@ body.is-night[data-mode="sim"]{
   --pop-unread-hi:rgba(109,107,255,.3);
 }
 body.is-night .navburger-pop,
-body.is-night .accountmenu-pop,
-body.is-night .nt-pop{
+body.is-night .accountmenu-pop{
   background:rgba(var(--pop-fill),.95);
   border:1px solid var(--pop-line);
   box-shadow:0 22px 50px -20px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.14);
 }
 @supports (backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px)){
   body.is-night .navburger-pop,
-  body.is-night .accountmenu-pop,
-  body.is-night .nt-pop{
+  body.is-night .accountmenu-pop{
     background:rgba(var(--pop-fill),.72);
     -webkit-backdrop-filter:blur(18px) saturate(140%);
     backdrop-filter:blur(18px) saturate(140%);
   }
 }
 
-/* 알림 곁창 안쪽. 판만 어둡게 하고 두면 내용이 전부 밝은 판 기준 색이라 사라진다.
-   **줄 사이를 가르는 것은 선이 아니라 면이다** — 어두운 반투명 판에 회색 선을
-   그으면 그 선만 남는다. 안 읽은 줄은 보라 면으로, 나머지는 바탕 그대로 둔다. */
-body.is-night .nt-head{border-bottom-color:rgba(255,255,255,.12)}
-body.is-night .nt-head h2{color:var(--night-ink)}
-body.is-night .nt-readall{color:var(--pop-accent)}
-body.is-night .nt-readall:hover{color:#d6ccff}
-body.is-night .nt-clear{color:var(--night-body)}
-body.is-night .nt-clear:hover{color:#ff8b8b}
-body.is-night .nt-item:hover{background:rgba(255,255,255,.08)}
-body.is-night .nt-item.is-unread{background:var(--pop-unread)}
-body.is-night .nt-item.is-unread:hover{background:var(--pop-unread-hi)}
-body.is-night .nt-type{background:rgba(255,255,255,.1);color:var(--night-body)}
-body.is-night .nt-title{color:var(--night-ink)}
-body.is-night .nt-when{color:var(--night-faint)}
-body.is-night .nt-body{color:var(--night-body)}
-/* 비었을 때의 한 줄. --muted(#6b7280)가 그대로면 어두운 판에서 대비 3 아래로
-   떨어진다 — 이 창에서 유일하게 남는 글자라 특히 읽혀야 한다. */
-body.is-night .nt-state{color:var(--night-body)}
-body.is-night .nt-state.is-quiet{color:var(--night-faint)}
-body.is-night .nt-retry{color:var(--pop-accent)}
-body.is-night .nt-del{color:var(--night-faint)}
-body.is-night .nt-row:hover .nt-del,
-body.is-night .nt-row:focus-within .nt-del{color:var(--night-body)}
-body.is-night .nt-del:hover{background:rgba(255,255,255,.12);color:#fff}
-/* 불러오는 중 뼈대. 밝은 회색 두 단(--surface-2 → #f2f3f8)이라 어두운 판에서는
-   흰 막대 세 개가 번쩍인다. 같은 모양을 흰색 알파로 다시 만든다. */
-body.is-night .nt-item.is-skel{
-  background:linear-gradient(100deg,
-    rgba(255,255,255,.07) 30%,rgba(255,255,255,.14) 46%,rgba(255,255,255,.07) 62%);
-  background-size:220% 100%;
-}
+/* **알림 곁창은 여기서 칠하지 않는다**(2026-09-23). 한때 계정 · 햄버거와 한 벌로
+   묶어 어두운 유리로 만들었는데(039c7747), 알림은 목록을 읽는 창이라 흰 판으로
+   가기로 했다 — 종목 탐색 · 리포트 · 내 예측이 같은 이유로 이미 흰 판이다.
+   색은 notification.css 가 제 안에서 토큰 한 벌을 되돌려 직접 든다. 여기에 다시
+   적으면 특정도(0,2,1)가 그쪽(0,1,0)을 눌러 조용히 덮어쓴다 — 실제로 그렇게
+   제목이 흰 판에 흰 글씨가 됐다. 계정 · 햄버거는 위 규칙 그대로 어두운 유리다. */
 body.is-night .navburger-pop a,
 body.is-night .accountmenu-pop a,
 body.is-night .accountmenu-pop button{color:var(--night-body)}
