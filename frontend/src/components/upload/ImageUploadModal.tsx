@@ -61,7 +61,7 @@ type Picked = {
 /* 경고 문구. "안 된다" 가 아니라 "이렇게 보인다" 를 말한다 — 그대로 갈지는 사용자가 정한다 */
 const WARNING_TEXT: Record<UploadWarning, string> = {
   CROP_LOSS: '그림의 절반 넘게 잘려 나갑니다. 미리보기를 확인해 주세요',
-  AD_SMALL: '배너 자리보다 작은 그림입니다. 늘어나서 흐리게 보일 수 있습니다',
+  AD_SMALL: '배너보다 작은 그림이에요. 늘리면 흐려질 수 있어요',
   STRETCHED: '너무 작은 그림이라 늘려서 넣었습니다. 깨져 보입니다',
   TALL: '세로로 아주 긴 그림입니다. 본문이 그만큼 길어집니다',
   FLAT: '가로로 아주 납작한 그림입니다. 본문에서 가는 줄처럼 보입니다',
@@ -376,7 +376,7 @@ export default function ImageUploadModal({ purpose, onClose, onUploaded, aspect 
           )}
 
           {step === 'done' && (
-            <p className="iu-done">이 그림을 글에 넣을 수 있습니다.</p>
+            <p className="iu-done">이제 그림을 글에 넣을 수 있어요.</p>
           )}
 
           {/* 규격 위반은 화면을 덮지 않고 여기 인라인으로 (설계 제약) */}

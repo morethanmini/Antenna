@@ -71,7 +71,7 @@ export default function VerifyReport() {
 
         <div className="page-head">
           <h1>리포트 검산</h1>
-          <p>서버 말을 믿지 않고 이 브라우저가 직접 계산합니다</p>
+          <p>이 브라우저에서 직접 검산해요</p>
         </div>
 
         {notSealed && (
@@ -130,7 +130,7 @@ export default function VerifyReport() {
               <p className="vf-hint">
                 {proof.data.salt
                   ? '본문과 salt 를 이 브라우저에서 다시 해시해 서버가 저장한 값과 맞췄습니다.'
-                  : '구독자 전용 리포트라 salt 가 오지 않아 본문 대조는 잠깁니다. 바깥 한 겹은 bodyHash 만으로 조립되므로 그대로 확인됩니다.'}
+                  : '구독자 전용 리포트라 salt가 없어 본문은 대조할 수 없어요. 바깥 해시는 bodyHash만으로 확인할 수 있어요.'}
               </p>
             </Step>
 

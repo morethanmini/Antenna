@@ -205,7 +205,7 @@ export default function Verify() {
           <h1>4단계 검산</h1>
           {/* 이 화면이 무엇을 주장하는지 먼저 밝힌다. 아래 판정들은 우리가 내린 것이 아니다 */}
           <p>
-            서버 말을 믿지 않아도 되도록, 아래 네 단계를 이 브라우저가 직접 계산합니다.
+            이 브라우저에서 아래 네 단계를 직접 검산해요.
           </p>
         </div>
 
@@ -246,13 +246,13 @@ export default function Verify() {
               <ul className="vf-checks">
                 {!data.commitHash ? (
                   <CheckLine verdict="locked" label="아직 커밋 전입니다">
-                    등록이 원장에 봉인되면 이 자리에서 바로 계산해 보여 드립니다.
+                    원장에 기록되면 여기서 바로 검산할 수 있어요.
                   </CheckLine>
                 ) : !commit.preimage ? (
                   /* 재료가 덜 왔다. 빈칸을 채워 해시하면 반드시 불일치가 나오고,
                      그 붉은 표시는 "네 예측이 조작됐다" 로 읽힌다 — 계산하지 않는다. */
                   <CheckLine verdict="locked" label="커밋 문자열을 다시 만들 재료가 오지 않았습니다">
-                    종목코드와 근거 해시가 있어야 등록 당시의 문자열을 복원할 수 있습니다.
+                    등록 당시의 문자열을 복원하려면 종목코드와 근거 해시가 필요해요.
                   </CheckLine>
                 ) : !commit.hash ? (
                   <CheckLine verdict="wait" label="브라우저에서 다시 해시하는 중…" />
@@ -269,9 +269,9 @@ export default function Verify() {
 
                     {/* 한 겹 더는 사용자 몫이다(③과 같은 이유) — 근거 본문이 이 응답에 없다 */}
                     {data.salt && (
-                      <CheckLine verdict="manual" label="근거 본문 대조는 직접 하실 수 있습니다">
+                      <CheckLine verdict="manual" label="근거 본문은 직접 대조해 주세요">
                         아래 근거 salt 를 자기 근거 본문 뒤에 그대로 붙여 keccak256 하면
-                        위 문자열의 <code>noteHash</code> 가 나와야 합니다.
+                        위 문자열의 <code>noteHash</code>가 나와야 해요.
                       </CheckLine>
                     )}
                   </>
@@ -450,10 +450,17 @@ export default function Verify() {
               verdict={step3Verdict(data, signer)}
             >
               <p className="vf-lead">
-                등록할 때 지갑으로 서명한 문자열을 브라우저가 다시 만들어, 그 서명에서 주소를
-                직접 복원합니다. 복원한 주소가 아래 주소와 같으면 <b>이 지갑의 주인이 이 내용에
-                서명했다</b>는 뜻입니다 — 서버가 알려 준 주소를 옮겨 적지 않습니다.
+                브라우저가 등록 당시 서명한 문자열을 다시 만들고, 서명에서 지갑 주소를 복원해요.
+                복원한 주소가 아래 주소와 같으면 <b>이 지갑의 주인이 서명했다</b>는 뜻이에요.
               </p>
+              {/* 대회 등록은 서명 문자열이 다르다(ANT-CHAIN-20). 아래 펼쳐진 문자열에 회차 번호와
+                  배팅액이 보이는데, 설명이 없으면 "왜 여기 배팅액이 있지" 가 된다 */}
+              {data.eventEntry && (
+                <p className="vf-lead">
+                  대회로 등록한 예측이라 <b>회차 번호와 배팅액까지 한 문자열에 함께 서명</b>돼
+                  있습니다. 그래서 걸었던 금액도 서명의 일부로 남아 나중에 바꿀 수 없습니다.
+                </p>
+              )}
 
               <ul className="vf-checks">
                 {!data.signature ? (
@@ -465,11 +472,20 @@ export default function Verify() {
                      nonce 는 서버에서 이미 소비돼 사라졌고 소급해 만들 수 없다. */
                   <CheckLine verdict="locked" label="이 예측에는 서명 문자열을 복원할 재료가 없습니다">
                     서명에 쓰인 nonce 를 함께 저장하기 시작한 것이 2026-09-15 입니다.
-                    그 전에 등록된 예측은 이 단계만 잠기고 나머지는 그대로 계산됩니다.
+                    그전에 등록된 예측은 이 단계만 잠기고 나머지는 그대로 계산해요.
+                  </CheckLine>
+                ) : data.eventEntry && data.eventEntry.itemCount !== 1 ? (
+                  /* 여러 종목을 한 번에 서명하던 시절(2026-09-17 이전)의 대회 등록. 형제 종목 줄이
+                     이 응답에 없어 문자열을 만들 수 없다. 이 한 종목만으로 조립하면 반드시 불일치가
+                     나오므로, 억지로 계산하지 않고 못 한다고 적는다. */
+                  <CheckLine verdict="locked" label="여러 종목을 한 번에 서명한 예측입니다">
+                    이 서명은 {data.eventEntry.itemCount}개 종목을 한 문자열로 덮고 있어, 그중 한
+                    종목만으로는 원래 문자열을 되살릴 수 없습니다. 지금은 종목마다 따로 서명하므로
+                    이후에 등록된 예측은 이 단계까지 계산됩니다.
                   </CheckLine>
                 ) : !signer.preimage ? (
                   <CheckLine verdict="locked" label="서명 문자열을 다시 만들 재료가 오지 않았습니다">
-                    종목코드와 근거 해시가 있어야 등록 당시의 문자열을 복원할 수 있습니다.
+                    등록 당시의 문자열을 복원하려면 종목코드와 근거 해시가 필요해요.
                   </CheckLine>
                 ) : signer.recovered === null ? (
                   <CheckLine verdict="wait" label="브라우저에서 주소를 복원하는 중…" />
@@ -516,8 +532,8 @@ export default function Verify() {
               verdict={settle ? 'manual' : 'locked'}
             >
               <p className="vf-lead">
-                적중·빗나감을 가른 종가가 실제 시장 종가와 같은지는 원천에서 직접 확인합니다.
-                우리가 대신 불러다 보여 주면 다시 우리를 믿어야 하므로, 원본 주소만 드립니다.
+                판정에 쓴 종가가 실제 시장 종가와 같은지는 원본에서 직접 확인해요.
+                원본과 직접 대조할 수 있도록 원본 주소를 남겨요.
               </p>
 
               {!settle ? (
@@ -529,7 +545,7 @@ export default function Verify() {
               ) : (
                 <>
                   <ul className="vf-checks">
-                    <CheckLine verdict="manual" label="이 대조는 직접 하셔야 합니다">
+                    <CheckLine verdict="manual" label="원본과 직접 대조해 주세요">
                       아래 숫자는 우리가 기록한 값입니다. 같은 날짜·종목의 종가를
                       원천에서 직접 열어 맞춰 보세요.
                     </CheckLine>
@@ -561,7 +577,7 @@ export default function Verify() {
                       {/* 열어 보면 인증키 오류가 나므로 미리 말한다 — 고장으로 오해하지 않게 */}
                       <p className="vf-hint">
                         주소에 인증키가 없습니다. 공공데이터포털에서 발급받은 본인 키를{' '}
-                        <code>&serviceKey=…</code> 로 붙여 열면 같은 날짜·종목의 종가를 볼 수 있습니다.
+                        <code>&serviceKey=…</code>로 붙여 열면 같은 날짜·종목의 종가를 볼 수 있어요.
                       </p>
                     </>
                   ) : (
@@ -630,5 +646,5 @@ function chainLabel(chain: ChainRead, anchor: ProofAnchor) {
       ? `서버는 확정이라는데 체인에는 이 루트가 없습니다 (배치 #${anchor.batchId})`
       : `아직 체인에 오르지 않았습니다 (배치 #${anchor.batchId})`
   }
-  return `체인이 이 루트를 기억하고 있습니다 (chainId ${chain.chainId})`
+  return `블록체인에 이 루트가 기록돼 있어요 (chainId ${chain.chainId})`
 }

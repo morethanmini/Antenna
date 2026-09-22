@@ -228,7 +228,7 @@ function Form({ profile, heading, onClose, onSaved }: {
   const nicknameBlocked = nicknameChanged && check.state !== 'available'
 
   const nicknameHint = {
-    idle: `${NICKNAME_MAX}자까지 입력할 수 있습니다.`,
+    idle: `${NICKNAME_MAX}자까지 입력해 주세요.`,
     unchanged: '현재 사용 중인 닉네임입니다.',
     checking: '확인 중…',
     available: '사용할 수 있는 닉네임입니다.',
@@ -262,7 +262,7 @@ function Form({ profile, heading, onClose, onSaved }: {
     if (channels.some((c, i) => c !== rows[i])) setRows(channels)
     /* 그래도 https 가 아니면(http:// 를 직접 적은 경우) 서버가 400 을 준다. 눌러 보고 알게 하지 않는다 */
     if (channels.some((r) => !r.url.startsWith('https://'))) {
-      setError('채널 주소는 https 로 시작해야 합니다.')
+      setError('채널 주소는 https로 시작해야 해요.')
       return
     }
 
@@ -442,7 +442,7 @@ function Form({ profile, heading, onClose, onSaved }: {
           채널 추가
         </button>
         {/* https 만 받는 이유와 개수 제한을 미리 말한다 — 저장 눌러 400 을 받고 알게 하지 않는다 */}
-        <p className="ch-name-hint">{`주소는 https 로 시작해야 합니다. 채널은 ${MAX_CHANNELS}개까지 등록할 수 있습니다.`}</p>
+        <p className="ch-name-hint">{`주소는 https로 시작해 주세요. 채널은 ${MAX_CHANNELS}개까지 등록할 수 있어요.`}</p>
       </fieldset>
 
       <div className="ch-name-row">

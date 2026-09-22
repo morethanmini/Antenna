@@ -49,10 +49,10 @@ const ICON: Record<ProofAnchorStatus, React.ReactNode> = {
    보고 등록이 덜 끝난 줄 안다 — 등록은 서버가 받은 순간 이미 끝났고,
    앵커는 주기적으로 도는 배치가 나중에 묶는 별개의 일이다. */
 const HINT: Record<ProofAnchorStatus, string> = {
-  WAITING: `등록은 이미 끝났어요. ${ANCHOR_BATCH_CYCLE} 도는 배치가 곧 묶어서 기록합니다.`,
+  WAITING: `등록됐어요. ${ANCHOR_BATCH_CYCLE} 도는 배치가 블록체인에 기록할 거예요.`,
   PENDING: '배치가 트랜잭션을 보냈고 블록 확정을 기다리는 중입니다. 잠시 뒤 확정으로 바뀝니다.',
   CONFIRMED: '이 예측은 블록체인에 기록됐습니다. 이제 누구도, 나조차도 내용을 바꿀 수 없어요.',
-  FAILED: '체인 기록 전송이 실패해 서버가 다음 회차에 다시 시도합니다. 예측 자체는 그대로 남아 있어요.',
+  FAILED: '블록체인 기록에 실패했어요. 다음 회차에 다시 시도해요. 예측은 그대로 남아 있어요.',
 }
 
 /** 더 기다리면 바뀌는가. 두 묶음으로 가르는 기준을 여기 하나로 둔다 */

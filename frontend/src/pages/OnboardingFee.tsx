@@ -110,7 +110,7 @@ export default function OnboardingFee() {
       setError(
         e instanceof ApiError && e.code === 'INVALID_REQUEST'
           ? '구독료를 다시 확인해 주세요.'
-          : '구독료를 저장하지 못했습니다. 잠시 후 다시 시도하거나 나중에 정할 수 있습니다.',
+          : '구독료를 저장하지 못했어요. 잠시 후 다시 시도하거나 나중에 정해 주세요.',
       )
     } finally {
       sending.current = false
@@ -124,10 +124,10 @@ export default function OnboardingFee() {
        값을 못 적어서가 아니라 얼마가 적당한지 몰라서이므로, 그 기준을 준다. */
     ? '적중률이 쌓이기 전에는 낮게 시작하는 편이 구독자를 모으기 좋습니다.'
     : !valid
-      ? `정수로, ${FEE_MAX.toLocaleString('ko-KR')} ANT 까지 정할 수 있습니다.`
+      ? `${FEE_MAX.toLocaleString('ko-KR')} ANT 이하의 정수로 정해 주세요.`
       : value === '0'
         /* 0 을 서버가 받는다. 실수로 둔 것인지 일부러 무료로 여는 것인지 구분해 준다 */
-        ? '무료 채널이 됩니다 — 누구나 구독해서 전문을 볼 수 있습니다.'
+        ? '무료 채널이에요. 누구나 구독하고 전문을 볼 수 있어요.'
         : `구독자는 30일에 ${formatToken(value)} ANT 를 냅니다.`
 
   /* 조회가 끝나기 전에는 아무것도 그리지 않는다 — 여기서 잠깐 보이는 것은
@@ -193,7 +193,7 @@ export default function OnboardingFee() {
               저장해도 되는 자리가 됐고, 버튼이 둘이면 "저장하면 못 바꾼다" 로 읽혀
               오히려 고르기 어려워진다. 되돌릴 수 있다는 사실만 알리면 충분하다. */}
           <p className="fee-note">
-            구독료는 <b>마이페이지 → 설정 → 구독료</b> 에서 언제든 바꿀 수 있습니다.
+            구독료는 <b>마이페이지 → 설정 → 구독료</b>에서 언제든 바꿀 수 있어요.
           </p>
         </section>
       </main>

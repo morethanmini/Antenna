@@ -77,7 +77,7 @@ export default function Settings() {
       <div className="main-inner">
         <div className="page-head">
           <h1>환경 설정</h1>
-          <p>구독료와 알림, 로그아웃을 관리합니다</p>
+          <p>구독료와 알림 설정</p>
         </div>
 
         {/* ── 온보딩 보완 ───────────────────────────────
@@ -90,7 +90,7 @@ export default function Settings() {
               {current === '' && (
                 <li>
                   <b>닉네임</b>
-                  <span>예측 기록과 랭킹에 표시됩니다.</span>
+                  <span>예측 기록과 랭킹에 보여요.</span>
                   {/* 정하는 자리가 내 채널로 옮겨 갔다 — 여기서 알리기만 하고 보낸다 */}
                   <Link className="st-btn solid" to={`/channels/${user?.id ?? ''}`}>내 채널에서 정하기</Link>
                 </li>
@@ -98,7 +98,7 @@ export default function Settings() {
               {!walletLinked && (
                 <li>
                   <b>지갑 연동</b>
-                  <span>연동해야 예측을 등록하고 토큰을 받을 수 있습니다.</span>
+                  <span>연동하면 예측을 등록하고 토큰을 받을 수 있어요.</span>
                   <button type="button" className="st-btn solid" onClick={() => setLinking(true)}>
                     지갑 연동하기
                   </button>
@@ -176,7 +176,7 @@ export default function Settings() {
         {confirmingSignOut && (
           <ConfirmDialog
             title="정말 로그아웃할까요?"
-            description="이 브라우저의 세션이 끝납니다. 다시 이용하려면 로그인 화면에서 한 번 더 로그인해야 합니다."
+            description="이 브라우저에서 로그아웃해요. 다시 이용하려면 로그인해 주세요."
             confirmLabel="로그아웃"
             tone="danger"
             onCancel={() => setConfirmingSignOut(false)}

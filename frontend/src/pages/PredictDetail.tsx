@@ -240,7 +240,7 @@ export default function PredictDetail() {
 
             {d.dday !== null && (
               <p className="pd-dday num">
-                {isAwaitingVerdict(d.dday) ? '만기 지남 · 다음 거래일 종가로 판정합니다'
+                {isAwaitingVerdict(d.dday) ? '만기 지남 · 다음 거래일 종가로 판정해요'
                   : d.dday === 0 ? '오늘 만기' : `만기까지 D-${d.dday}`}
               </p>
             )}

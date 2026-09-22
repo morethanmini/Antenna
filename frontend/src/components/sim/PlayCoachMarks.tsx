@@ -99,7 +99,7 @@ const buildSteps = ({ lengthDays }: Facts): Step[] => [
     key: 'order',
     sel: '.sp-order',
     title: '사고파는 곳',
-    body: '매수인지 매도인지 고르고 수량만 넣으면 됩니다. 가격은 고르지 않아요 — 그 게임일 종가로만 체결되거든요.',
+    body: '매수·매도와 수량만 고르세요. 가격은 그 게임일 종가로 정해져요.',
     place: ['left', 'bottom'],
     pad: 6,
   },
@@ -107,7 +107,7 @@ const buildSteps = ({ lengthDays }: Facts): Step[] => [
     key: 'advance',
     sel: '.sp-advance',
     title: '누르면 다음 날로 넘어가요',
-    body: '넣어 둔 주문은 이때 한 번에 체결됩니다. 되돌릴 수 없으니 주문을 마치고 눌러요. 마지막 날이 되면 이 자리가 결과 보기로 바뀌고, 그 전에 끝내고 싶으면 바로 아래 건너뛰고 종료가 있어요.',
+    body: '넣어 둔 주문을 이때 한 번에 체결해요. 되돌릴 수 없으니 주문을 마친 뒤 눌러 주세요. 마지막 날에는 결과 보기로 바뀌어요. 그전에 끝내려면 아래의 건너뛰고 종료를 누르세요.',
     place: ['left', 'top'],
   },
   {

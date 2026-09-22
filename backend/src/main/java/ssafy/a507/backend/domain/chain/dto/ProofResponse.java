@@ -1,6 +1,7 @@
 package ssafy.a507.backend.domain.chain.dto;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -39,6 +40,7 @@ public record ProofResponse(
         long chainId,
         Instant revealedAt,
         String salt,
+        EventEntry eventEntry,
         Anchor anchor,
         AnchorStatus anchorStatus,
         Settle settle) {
@@ -67,6 +69,24 @@ public record ProofResponse(
             short horizon,
             String noteHash,
             Instant createdAt) {}
+
+    /**
+     * 대회(이벤트)로 등록한 예측일 때만 채운다. 단건 등록이면 <b>객체 자체가 null</b> 이다 — {@link Anchor} 와 같은 판단이다
+     * (09-06 결정). 프론트는 "대회 예측인가" 를 이 한 칸의 null 여부로 묻는다.
+     *
+     * <p><b>왜 필요한가 (ANT-CHAIN-20).</b> 대회 등록은 서명 문자열이 다르다 — 첫 줄이 {@code antenna:event-entry:v1}
+     * 이고 {@code eventId} 줄과 {@code 종목/방향/목표가/noteHash/stake} 줄이 들어간다({@code EventEntryService.Signed}).
+     * 그런데 그 서명이 단건 등록과 <b>같은 컬럼</b>에 저장되므로, 서식을 구분할 재료가 없으면 화면은 단건 서식으로 조립한다.
+     * ECDSA 는 틀린 메시지에도 실패하지 않고 <b>엉뚱한 주소를 뱉으므로</b>, 그 결과가 화면에 "서명자 불일치" 로 떴다.
+     * 조작이 아니라 재료가 틀린 것이었다 — 이 세 칸이 그 재료다.
+     *
+     * @param stake 그 종목에 건 ANT. <b>서명 줄의 마지막 칸이라 검산에 반드시 필요하다.</b> 이 값이 공개되면서
+     *     종목별 배팅액이 열린다(전에는 본인만 봤다 — 순위표는 총액만). ③을 살리려면 피할 수 없는 대가다.
+     * @param itemCount 같은 서명을 공유하는 커밋 수. 1이면 브라우저가 문자열을 복원할 수 있고, 2 이상이면
+     *     형제 종목 줄이 없어 복원이 불가능하다(그때 화면은 ③을 실패가 아니라 <b>잠김</b>으로 그린다).
+     *     묶음은 리허설 회차에만 남아 있다 — 등록 화면이 2026-09-17 부터 종목마다 따로 서명한다.
+     */
+    public record EventEntry(long eventId, BigInteger stake, int itemCount) {}
 
     /**
      * 배치와 이 커밋의 자리. {@code merkleProof} 는 아래에서 위로 형제 해시(정렬 결합이라 좌우 정보 없음).

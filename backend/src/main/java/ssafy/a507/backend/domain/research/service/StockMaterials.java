@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -85,7 +86,7 @@ class StockMaterials {
         StringBuilder sb = new StringBuilder();
         sb.append("종목: ").append(stock.getName()).append(" (").append(stock.getCode()).append(")\n");
         sb.append("기준일: ").append(targetDate).append('\n');
-        sb.append("종가 ").append(plain(closes.get(0)))
+        sb.append("종가 ").append(won(closes.get(0)))
                 .append("원 · 1영업일 ").append(rate(closes, 1))
                 .append(" · 5영업일 ").append(rate(closes, 5))
                 .append(" · 20영업일 ").append(rate(closes, 20))
@@ -110,14 +111,14 @@ class StockMaterials {
         }
         double avg = prior.stream().mapToLong(Long::longValue).average().orElse(0);
         BigDecimal multiple = BigDecimal.valueOf(last.getVolume() / avg).setScale(1, RoundingMode.HALF_UP);
-        sb.append("거래량 ").append(last.getVolume()).append("주 · 최근 20영업일 평균의 ")
+        sb.append("거래량 ").append(grouped(BigInteger.valueOf(last.getVolume()))).append("주 · 최근 20영업일 평균의 ")
                 .append(multiple).append("배\n");
     }
 
     private static void append52Week(StringBuilder sb, List<DailyQuote> quotes, BigDecimal close) {
         BigDecimal high = quotes.stream().map(DailyQuote::getClose).max(Comparator.naturalOrder()).orElse(close);
         BigDecimal low = quotes.stream().map(DailyQuote::getClose).min(Comparator.naturalOrder()).orElse(close);
-        sb.append("52주 종가 최고 ").append(plain(high)).append("원 · 최저 ").append(plain(low)).append("원");
+        sb.append("52주 종가 최고 ").append(won(high)).append("원 · 최저 ").append(won(low)).append("원");
         if (high.compareTo(low) > 0) {
             BigDecimal position = close.subtract(low)
                     .multiply(BigDecimal.valueOf(100))
@@ -148,6 +149,7 @@ class StockMaterials {
         }
         sb.setLength(sb.length() - 2);
         sb.append('\n');
+        appendGrowth(sb, rows);
         CorpFinancial latest = rows.get(0);
         List<String> ratios = new ArrayList<>();
         BigDecimal debtRatio = ratio(latest.getTotalLiabilities(), latest.getTotalEquity());
@@ -160,6 +162,47 @@ class StockMaterials {
         }
         if (!ratios.isEmpty()) {
             sb.append(String.join(" · ", ratios)).append(" (").append(latest.getFiscalYear()).append("년 기준)\n");
+        }
+    }
+
+    /**
+     * 최근 연도의 전년 대비 증감과 영업이익률. 모델은 수치를 계산하지 못하게 막혀 있어(입력에 없는 숫자는
+     * 버려진다) 여기서 주지 않으면 "18,184억원으로 23,960억원에서 감소했다" 처럼 두 값을 늘어놓기만 한다.
+     *
+     * <p>적자가 낀 해는 증감률이 뜻을 잃는다(-100 → 50 이 -150%). 그때는 전환·지속으로 적는다.
+     */
+    private static void appendGrowth(StringBuilder sb, List<CorpFinancial> rows) {
+        if (rows.size() < 2) {
+            return;
+        }
+        CorpFinancial now = rows.get(0);
+        CorpFinancial before = rows.get(1);
+        List<String> parts = new ArrayList<>();
+        addGrowth(parts, "매출", now.getRevenue(), before.getRevenue());
+        addGrowth(parts, "영업이익", now.getOperatingProfit(), before.getOperatingProfit());
+        addGrowth(parts, "순이익", now.getNetIncome(), before.getNetIncome());
+        BigDecimal margin = ratio(now.getOperatingProfit(), now.getRevenue());
+        BigDecimal marginBefore = ratio(before.getOperatingProfit(), before.getRevenue());
+        if (margin != null && marginBefore != null) {
+            parts.add("영업이익률 " + margin + "% (" + before.getFiscalYear() + "년 " + marginBefore + "%)");
+        }
+        if (!parts.isEmpty()) {
+            sb.append(now.getFiscalYear()).append("년 전년 대비: ").append(String.join(" · ", parts)).append('\n');
+        }
+    }
+
+    private static void addGrowth(List<String> parts, String label, BigInteger now, BigInteger before) {
+        if (now == null || before == null) {
+            return;
+        }
+        if (before.signum() > 0 && now.signum() > 0) {
+            parts.add(label + " " + pct(changeRate(new BigDecimal(now), new BigDecimal(before))));
+        } else if (before.signum() > 0) {
+            parts.add(label + " 적자 전환");
+        } else if (now.signum() > 0) {
+            parts.add(label + " 흑자 전환");
+        } else {
+            parts.add(label + " 적자 지속");
         }
     }
 
@@ -192,7 +235,20 @@ class StockMaterials {
     }
 
     private static String eok(BigInteger won) {
-        return won == null ? "-" : won.divide(BigInteger.valueOf(100_000_000L)).toString();
+        return won == null ? "-" : grouped(won.divide(BigInteger.valueOf(100_000_000L)));
+    }
+
+    /**
+     * 원 단위 가격 — 천 단위 쉼표. 모델은 입력 표기를 그대로 옮기므로 여기서 읽기 좋게 줘야 화면도 읽기
+     * 좋다. 숫자 가드는 쉼표를 지우고 값으로 견줘 영향이 없다. 지수(소수점)를 쓰는 브리핑은 {@link #plain}.
+     */
+    static String won(BigDecimal value) {
+        BigDecimal v = value.stripTrailingZeros();
+        return v.scale() <= 0 ? grouped(v.toBigIntegerExact()) : v.toPlainString();
+    }
+
+    private static String grouped(BigInteger value) {
+        return String.format(Locale.ROOT, "%,d", value);
     }
 
     /**

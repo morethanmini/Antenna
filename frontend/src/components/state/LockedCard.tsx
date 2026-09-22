@@ -48,7 +48,7 @@ export default function LockedCard({ label, title, channelId, preview, children 
             <path d="M8 10V7a4 4 0 0 1 8 0v3" />
           </svg>
         </i>
-        <p className="state-locked-title">{title ?? `${label}${topicParticle(label)} 구독자에게만 공개됩니다`}</p>
+        <p className="state-locked-title">{title ?? `${label}${topicParticle(label)} 구독자만 볼 수 있어요`}</p>
         {children}
         {channelId && (
           <Link className="state-cta" to={`/channels/${channelId}`}>

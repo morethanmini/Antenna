@@ -172,7 +172,7 @@ export default function SeasonJoin() {
           ) : (
             <EmptyState
               title="시즌을 찾을 수 없습니다"
-              hint="종료되었거나 삭제된 시즌일 수 있습니다"
+              hint="종료되었거나 삭제된 시즌일 수 있어요"
               action={{ label: '연습 주제 고르기', to: '/sim' }}
             />
           )}
@@ -318,7 +318,7 @@ export default function SeasonJoin() {
             {closed ? (
               <>
                 <span className="sj-cta is-off" aria-disabled="true">종료된 시즌</span>
-                <p className="sj-cta-note">기록은 결과 화면에서 볼 수 있습니다</p>
+                <p className="sj-cta-note">기록은 결과 화면에서 볼 수 있어요</p>
               </>
             ) : isCompetition ? (
               /* 참가비 소각 서명이 필요해 지갑 연동에 걸려 있다.
@@ -327,8 +327,8 @@ export default function SeasonJoin() {
                 <span className="sj-cta is-off" aria-disabled="true">대회 참여하기</span>
                 <p className="sj-cta-note">
                   {s.entryFee
-                    ? `참가비 ${ant(s.entryFee)} 소각 · 지갑 서명이 필요합니다`
-                    : '지갑 서명이 필요합니다'}
+                    ? `참가비 ${ant(s.entryFee)} 소각 · 지갑 서명이 필요해요`
+                    : '지갑 서명이 필요해요'}
                 </p>
               </>
             ) : (
@@ -344,8 +344,8 @@ export default function SeasonJoin() {
                 </button>
                 <p className="sj-cta-note">
                   {s.joined
-                    ? `${s.currentDay ? `${s.currentDay}게임일까지 진행한` : '진행 중인'} 모의투자가 있습니다`
-                    : '참가비 없이 바로 시작합니다'}
+                    ? `${s.currentDay ? `${s.currentDay}게임일까지 진행한` : '진행 중인'} 모의투자가 있어요`
+                    : '참가비 없이 바로 시작해요'}
                 </p>
               </>
             )}
@@ -357,7 +357,7 @@ export default function SeasonJoin() {
         {/* 초기화 확인. 성공하면 G-04 로 넘어가며 창도 같이 사라진다.
             실패는 창을 닫고 위의 ErrorState 로 보인다. */}
         <dialog className="sj-dialog" ref={restartDialog} aria-labelledby="sj-restart-title">
-          <h2 id="sj-restart-title">이미 진행 중인 모의투자가 있습니다</h2>
+          <h2 id="sj-restart-title">진행 중인 모의투자가 있어요</h2>
           <p>
             초기화하고 다시 시작하시겠습니까?
             <br />
@@ -392,17 +392,17 @@ export default function SeasonJoin() {
           <h2 id="sj-rules-title">진행 방식</h2>
 
           <ul className="sj-steps">
-            <li title="어떤 장이었는지만 알려주고 실제 날짜는 가립니다. 종목은 실명이며, 그 구간의 대형주가 전부 들어 있습니다.">
+            <li title="어떤 장이었는지만 알려주고 실제 날짜는 가립니다. 종목은 실명이며, 그 구간의 대형주가 모두 들어 있어요.">
               <Ico><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v4h4" /><path d="M9 12h6M9 16h6" /></Ico>
               <b>언제인지는 알려주지 않아요</b>
             </li>
-            <li title="수량과 방향만 정하면 됩니다. 수수료도 예약 주문도 없습니다.">
+            <li title="매수·매도와 수량만 정하세요. 수수료와 예약 주문은 없어요.">
               <Ico><path d="M4 8h13l-3-3M20 16H7l3 3" /></Ico>
               <b>그날 종가로 체결돼요</b>
             </li>
             <li title={isCompetition
               ? '모든 참가자가 같은 게임일을 같은 시각에 보며, 직접 넘길 수 없습니다.'
-              : '중단해도 진행하던 게임일부터 이어서 할 수 있습니다.'}>
+              : '중단해도 진행하던 게임일부터 이어 할 수 있어요.'}>
               <Ico><path d="M4 5l7 7-7 7zM13 5l7 7-7 7z" /></Ico>
               <b>{isCompetition ? '하루가 저절로 넘어가요' : '하루씩 직접 넘겨요'}</b>
             </li>

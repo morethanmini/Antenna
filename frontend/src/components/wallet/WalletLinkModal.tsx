@@ -184,12 +184,12 @@ export default function WalletLinkModal({
                 </p>
               ) : bonusStatus === 'FAILED' ? (
                 <p className="wl-done-bonus">
-                  가입 보너스 입금이 늦어지고 있습니다. 잠시 뒤 자동으로 들어옵니다.
+                  가입 보너스가 늦어지고 있어요. 잠시 뒤 자동으로 들어와요.
                   <small>창을 닫아도 괜찮습니다.</small>
                 </p>
               ) : (
                 <p className="wl-done-bonus">
-                  가입 보너스 {formatToken(bonus.amount)} ANT 가 입금 중입니다. (최대 1분 소요됩니다.)
+                  가입 보너스 {formatToken(bonus.amount)} ANT가 들어오는 중이에요. 최대 1분 걸려요.
                   <small>창을 닫아도 괜찮습니다.</small>
                 </p>
               )
@@ -200,7 +200,7 @@ export default function WalletLinkModal({
                 (TokenAutoAdd 머리말). 실패하면 그 안에서 손으로 넣는 절차로 넘어간다. */}
             {draft && <TokenAutoAdd chainId={draft.chainId} />}
 
-            <p className="wl-note">이제 예측을 등록하고 토큰을 받을 수 있습니다.</p>
+            <p className="wl-note">이제 예측을 등록하고 토큰을 받을 수 있어요.</p>
             <div className="wl-actions">
               <button
                 type="button" className="wl-btn solid"
@@ -248,7 +248,7 @@ export default function WalletLinkModal({
               <>
                 <p className="wl-lead">
                   {draft
-                    ? '아래 내용에 서명하면 이 지갑이 계정에 연결됩니다.'
+                    ? '아래 내용에 서명하면 지갑이 계정에 연결돼요.'
                     : '계정에 연결할 지갑을 선택해 주세요.'}
                 </p>
 

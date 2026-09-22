@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ssafy.a507.backend.common.ai.AiClient;
 import ssafy.a507.backend.common.ai.AiException;
 import ssafy.a507.backend.domain.market.repository.StockRepository;
+import ssafy.a507.backend.domain.research.entity.CorpFinancial;
 import ssafy.a507.backend.domain.research.entity.NewsSignal;
 import ssafy.a507.backend.domain.research.entity.ResearchDocument;
 import ssafy.a507.backend.domain.research.entity.ResearchPoint;
@@ -79,7 +81,9 @@ class ResearchPointGenerationServiceTest {
         verify(aiClient).complete(anyString(), input.capture());
         assertThat(input.getValue())
                 .contains("종목: 삼성전자 (005930)")
-                .contains("종가 72400원")
+                .as("가격·거래량은 천 단위 쉼표로 넣는다 — 모델이 표기를 그대로 옮긴다")
+                .contains("종가 72,400원")
+                .contains("거래량 10,000,000주")
                 .contains("52주 범위 내 위치 100% (0%=최저, 100%=최고)")
                 .contains("문서(번호 · 날짜 · 원천 · 내용):")
                 .contains("[" + newsId + "] 2026-09-01 · 뉴스 · 제목 · 신제품 양산 소식.")
@@ -219,6 +223,57 @@ class ResearchPointGenerationServiceTest {
     }
 
     @Test
+    @DisplayName("같은 기준일이라도 세대(prompt-version)가 다르면 다시 만든다 — 옛 행은 지우지 않는다")
+    void 세대_재생성() {
+        seedQuotes(3);
+        researchPointRepository.save(ResearchPoint.of(
+                stockRepository.getReferenceById(SAMSUNG), TARGET, ResearchPoint.Kind.RISK, "옛 세대.", null, null));
+        em.flush();
+        given(aiClient.complete(anyString(), anyString())).willReturn(reply(null, null));
+
+        assertThat(generationService.generate(stockRepository.getReferenceById(SAMSUNG))).isEqualTo(3);
+        em.flush();
+
+        assertThat(researchPointRepository.findAll())
+                .hasSize(4)
+                .filteredOn(p -> p.getPromptVersion() != null)
+                .as("테스트 설정의 app.ai.prompt-version")
+                .hasSize(3)
+                .allSatisfy(p -> assertThat(p.getPromptVersion()).isEqualTo("v1"));
+    }
+
+    @Test
+    @DisplayName("새 세대 생성이 실패해도 같은 기준일 옛 세대가 있으면 예외를 올리지 않는다 — 보이던 포인트가 오류로 바뀌지 않게")
+    void 세대_재생성_실패() {
+        seedQuotes(3);
+        researchPointRepository.save(ResearchPoint.of(
+                stockRepository.getReferenceById(SAMSUNG), TARGET, ResearchPoint.Kind.RISK, "옛 세대.", null, null));
+        em.flush();
+        given(aiClient.complete(anyString(), anyString())).willThrow(new AiException("GMS 오류"));
+
+        assertThat(generationService.generate(stockRepository.getReferenceById(SAMSUNG))).isZero();
+        assertThat(researchPointRepository.findAll()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("재무는 전년 대비 증감률과 영업이익률을 서버가 계산해 넣는다 — 적자가 끼면 전환으로 적는다")
+    void 재무_전년_대비() {
+        seedQuotes(3);
+        seedFinancial(2025, 110_000, -5_000, 3_000);
+        seedFinancial(2024, 100_000, 8_000, 3_000);
+        given(aiClient.complete(anyString(), anyString())).willReturn(reply(null, null));
+
+        generationService.generate(stockRepository.getReferenceById(SAMSUNG));
+
+        ArgumentCaptor<String> input = ArgumentCaptor.forClass(String.class);
+        verify(aiClient).complete(anyString(), input.capture());
+        assertThat(input.getValue())
+                .contains("2025년 매출 110,000 영업이익 -5,000 순이익 3,000")
+                .contains("2025년 전년 대비: 매출 +10.00% · 영업이익 적자 전환 · 순이익 0.00%"
+                        + " · 영업이익률 -4.5% (2024년 8.0%)");
+    }
+
+    @Test
     @DisplayName("기준일 뒤에 나온 문서는 재료에 넣지 않는다")
     void 문서_기준일_경계() {
         seedQuotes(3);
@@ -346,6 +401,19 @@ class ResearchPointGenerationServiceTest {
                     .setParameter(5, Instant.now())
                     .executeUpdate();
         }
+        em.flush();
+    }
+
+    /** 연간 재무 한 해. 금액은 억원 단위로 받아 원으로 넣는다. */
+    private void seedFinancial(int year, long revenueEok, long operatingProfitEok, long netIncomeEok) {
+        BigInteger eok = BigInteger.valueOf(100_000_000L);
+        CorpFinancial financial = CorpFinancial.of(SAMSUNG, year, CorpFinancial.ANNUAL_QUARTER);
+        financial.update("CFS", "KRW", null,
+                BigInteger.valueOf(revenueEok).multiply(eok),
+                BigInteger.valueOf(operatingProfitEok).multiply(eok),
+                BigInteger.valueOf(netIncomeEok).multiply(eok),
+                null, null, null);
+        em.persist(financial);
         em.flush();
     }
 

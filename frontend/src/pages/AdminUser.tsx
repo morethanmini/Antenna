@@ -166,8 +166,8 @@ export default function AdminUser() {
 
       {confirming && (
         <ConfirmDialog
-          title={`${confirming.nickname ?? `#${confirming.id}`} 님을 차단합니다`}
-          description="이 계정은 로그인할 수 없게 됩니다. 예측과 원장은 남고, 나중에 해제할 수 있습니다."
+          title={`${confirming.nickname ?? `#${confirming.id}`} 님 차단`}
+          description="차단하면 로그인할 수 없어요. 예측과 원장은 남고, 나중에 차단을 풀 수 있어요."
           confirmLabel="차단"
           tone="danger"
           onConfirm={() => {
