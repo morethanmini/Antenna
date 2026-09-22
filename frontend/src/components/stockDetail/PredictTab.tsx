@@ -173,6 +173,9 @@ export default function PredictTab({
   const priceEntered = target !== '' && Number.isFinite(targetPrice) && targetPrice > 0
   /* 소수 셋째 자리 이하는 서버가 반올림하지 않고 400 으로 거절한다(numeric(14,2)).
      여기서 조용히 잘라 서명하면 서명한 값과 서버가 해시한 값이 달라진다. */
+  /* 0·음수를 적었을 때. priceEntered 는 "쓸 수 있는 값이 들어왔나" 라 0 이면 거짓이고,
+     그러면 빈 칸과 구분이 안 된다. 안내를 띄우려면 "적기는 적었다" 를 따로 봐야 한다. */
+  const zeroTarget = target !== '' && Number.isFinite(targetPrice) && targetPrice <= 0
   const priceTooPrecise = priceEntered && !targetPriceInScale(targetPrice)
   const priceTooLarge = priceEntered && !targetPriceInRange(targetPrice)
   const validTarget = priceEntered && !priceTooPrecise && !priceTooLarge
@@ -725,6 +728,14 @@ export default function PredictTab({
                 : '이 종목은 전일 종가가 없어 대비 비율을 계산할 수 없습니다.'}
             </p>
             {/* 자릿수를 먼저 알린다 — 이건 고치지 않으면 등록 자체가 막힌다 */}
+            {/* 0 을 넣으면 빈 칸과 똑같이 취급된다(priceEntered 가 0 보다 커야 선다) — 등락률도
+                안 그려지고 발판도 잠겨, 사용자는 왜 안 되는지 알 수 없었다(2026-09-22 QA).
+                1조를 넘길 때는 이유를 말해 주면서 0 에는 아무 말이 없었다. */}
+            {zeroTarget && (
+              <p className="sd-warn">
+                목표가는 <b>0보다 큰 값</b>이어야 합니다.
+              </p>
+            )}
             {priceTooPrecise && (
               <p className="sd-warn">
                 목표가는 <b>소수 둘째 자리까지</b> 입력할 수 있습니다. 봉인되는 값이라 서버가
