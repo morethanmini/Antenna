@@ -14,7 +14,9 @@ services:
       TZ: Asia/Seoul
       PGTZ: Asia/Seoul
     ports:
-      - "${DB_PORT:-5432}:5432"
+      # 127.0.0.1 로만 연다. 도커가 포트를 열면 UFW 를 거치지 않아, 앞을 비우면 운영 서버에서 인터넷에 그대로 열린다.
+      # 백엔드·체인 컨테이너는 compose 네트워크(postgres:5432)로 붙으므로 이 줄과 무관하다.
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
     volumes:
       # postgres 18+ 이미지는 /var/lib/postgresql 통째로 마운트해야 한다 (data 하위가 아님)
       - postgres-data:/var/lib/postgresql
@@ -36,7 +38,8 @@ services:
       --maxmemory 256mb
       --maxmemory-policy allkeys-lru
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      # postgres 와 같은 이유로 127.0.0.1 로만 연다. 비밀번호가 없어 열리면 누구나 읽고 쓴다.
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
