@@ -143,7 +143,7 @@ export const ROUTES: PageMeta[] = [
      모드 선택과 같이 넘겨보내는 자리로만 남긴다. */
   { screen: 'G-02', element: SeasonPractice, path: '/sim/practice', title: '연습하기', access: 'user', mode: 'sim', nav: 'play', story: 'ANT-FE-SEASON-PRACTICE' },
   { screen: 'G-03', element: SeasonJoin, path: '/sim/seasons/:id', title: '시즌 상세 · 참가', access: 'user', mode: 'sim', nav: 'play', bodyClass: 'sim-join-page is-night', story: 'ANT-FE-SEASON-JOIN' },
-  { screen: 'G-04', element: SeasonPlay, path: '/sim/:id/play', title: '시즌 진행', access: 'user', mode: 'sim', nav: 'play', bodyClass: 'sim-play-page', story: 'ANT-FE-SEASON-PLAY' },
+  { screen: 'G-04', element: SeasonPlay, path: '/sim/:id/play', title: '시즌 진행', access: 'user', mode: 'sim', nav: 'play', bodyClass: 'sim-play-page is-night', story: 'ANT-FE-SEASON-PLAY' },
   /* **G-05 시즌 리서치를 지웠다(2026-09-17).** 프로토타입에서 빠진 뒤로 "결론 나면
      정리한다" 는 주석과 함께 자리표시자만 남아 있었는데, 안 만들기로 정해졌다. */
   { screen: 'G-06', element: SeasonTrades, path: '/sim/:id/trades', title: '매매일지', access: 'user', mode: 'sim', nav: 'portfolio', story: 'ANT-FE-SEASON-TRADES' },

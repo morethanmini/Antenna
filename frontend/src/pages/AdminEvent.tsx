@@ -17,14 +17,15 @@ import {
   createEvent, getEvents, getSettlementStatus, reopenEvent,
   sealEvent, setBasePrice, settleEvent,
 } from '../api/admin'
-import type { AdminEventListItem, EventCreateBody } from '../api/admin'
+import type { AdminEventListItem, EventCreateBody, EventPhase } from '../api/admin'
 import type { ApiError } from '../api/errors'
 import '../styles/screens/admin.css'
 
 type Danger = { kind: 'seal' | 'settle'; event: AdminEventListItem }
 
-const PHASE_LABEL: Record<string, string> = {
-  SCHEDULED: '생성됨', OPEN: '접수 중', SEALED: '봉인됨', SETTLING: '정산 중', DONE: '끝남',
+/* 키는 서버 EventPhase 다. 원시 status(SCHEDULED/OPEN…) 로 적어 두면 전부 날것으로 찍힌다(2026-09-22 QA) */
+const PHASE_LABEL: Record<EventPhase, string> = {
+  BEFORE: '접수 전', ENTRY: '접수 중', SEALED: '봉인됨', SETTLED: '정산 끝',
 }
 
 export default function AdminEvent() {
@@ -113,16 +114,21 @@ export default function AdminEvent() {
               접수 {when(e.opensAt)} → 봉인 {when(e.sealsAt)} · 기준일 {e.baseDate} · 판정일 {e.settleDate}
             </div>
 
+            {/* 단계에 맞는 버튼만 산다 — 서버 가드(EVENT_NOT_OPEN·EVENT_NOT_READY)와 같은 규칙.
+                전부 열어 두면 정산 끝난 회차에도 봉인·정산이 눌려 409 만 본다(2026-09-22 QA) */}
             <div className="admin-actions">
-              <button type="button" className="se-btn" disabled={busy === e.eventId}
+              <button type="button" className="se-btn"
+                disabled={busy === e.eventId || e.phase === 'SEALED' || e.phase === 'SETTLED'}
                 onClick={() => { void 실행(e.eventId, 'openEvent 재전송', () => reopenEvent(e.eventId)) }}
               >openEvent 재전송</button>
 
-              <button type="button" className="se-btn solid danger" disabled={busy === e.eventId}
+              <button type="button" className="se-btn solid danger"
+                disabled={busy === e.eventId || e.phase !== 'ENTRY'}
                 onClick={() => { setDanger({ kind: 'seal', event: e }) }}
               >봉인</button>
 
-              <button type="button" className="se-btn solid danger" disabled={busy === e.eventId}
+              <button type="button" className="se-btn solid danger"
+                disabled={busy === e.eventId || e.phase !== 'SEALED'}
                 onClick={() => { setDanger({ kind: 'settle', event: e }) }}
               >정산</button>
 
@@ -131,11 +137,14 @@ export default function AdminEvent() {
               >정산 상태</button>
             </div>
 
-            <BasePriceRow
-              eventId={e.eventId}
-              onDone={() => { setNote('기준가를 넣었습니다.') }}
-              onError={(m) => { setError(m) }}
-            />
+            {/* 기준가는 접수 전(SCHEDULED)에만 넣을 수 있다 — 서버 EVENT_BASE_PRICE_LOCKED */}
+            {e.phase === 'BEFORE' && (
+              <BasePriceRow
+                eventId={e.eventId}
+                onDone={() => { setNote('기준가를 넣었습니다.') }}
+                onError={(m) => { setError(m) }}
+              />
+            )}
 
             {/* 정산 상태는 필드가 많고 화면이 운영자 전용이라 원본 JSON 을 그대로 보여 준다.
                 예쁘게 접으면 무엇이 빠졌는지 보이지 않는다. */}

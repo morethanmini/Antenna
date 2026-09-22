@@ -177,7 +177,9 @@ export default function AdminAbuse() {
                   <td>{r.reporterNickname ?? `#${r.reporterId}`}</td>
                   <td className="admin-dim">{when(r.createdAt)}</td>
                   <td>
-                    <span className={`admin-chip ${r.status.toLowerCase()}`}>{r.status}</span>
+                    <span className={`admin-chip ${r.status.toLowerCase()}`}>
+                      {TABS.find((t) => t.key === r.status)?.label ?? r.status}
+                    </span>
                     {r.handledAt && <div className="admin-dim">{when(r.handledAt)}</div>}
                   </td>
                   <td className="admin-actions">

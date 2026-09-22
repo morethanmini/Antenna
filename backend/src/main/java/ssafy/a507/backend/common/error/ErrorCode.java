@@ -71,6 +71,8 @@ public enum ErrorCode {
      * 스스로를 내린 관리자는 다시 들어와 풀 수 없고, DB 를 직접 고치는 수밖에 없어진다.
      */
     ADMIN_SELF_DEMOTE(HttpStatus.CONFLICT, "자신의 계정 상태는 바꿀 수 없습니다."),
+    /** 관리자가 다른 관리자를 차단하면 서로 잠글 수 있다 — 되돌리는 길이 DB 뿐이다(2026-09-22 QA). */
+    ADMIN_TARGET_ADMIN(HttpStatus.CONFLICT, "다른 관리자의 계정 상태는 바꿀 수 없습니다."),
 
     // 피드 글 (ANT-COMMUNITY-02)
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "글을 찾을 수 없습니다."),

@@ -67,10 +67,42 @@ const won = (n: number) => `${Math.round(n).toLocaleString('ko-KR')}원`
 /** 시고저는 "원" 을 붙이지 않는다 — 네 칸이 나란히 서는 자리라 단위가 반복되면 시끄럽다 */
 const cut = (n: number) => Math.round(n).toLocaleString('ko-KR')
 const QTY_STEPS = [10, 100, 1000]
-/** 캔들 차트 높이. RSI 칸이 붙으면 이 값을, 아니면 여기에 PANE_H 를 더해 쓴다 */
+/** 봉 그림의 기준 높이. 지금은 보조지표 칸을 켰을 때의 바닥을 정하는 데만 쓴다 */
 const CHART_H = 200
 /** IndicatorPane 이 차지하는 총 높이 — 여백·머리줄·그림 */
 const PANE_H = 130
+
+/* 봉 그림과 보조지표 칸이 함께 쓰는 세로. 원래 330 으로 못 박혀 있었는데, 그러면
+   낮은 화면에서 아래 접이 카드 둘이 화면 밖으로 밀렸다 — 배율 100% 에서 제목부터
+   거기까지가 한 화면에 들어와야 하는 자리다.
+
+   REST 는 차트 **말고** 화면이 쓰는 세로다(상단바 · 제목줄 · 요약 네 칸 · 카드 여백 ·
+   접이 카드 둘 · 위아래 여백). 1410x712 에서 실측해 맞춘 값이라, 위쪽 CSS 의 여백을
+   고치면 이 숫자도 같이 재야 한다.
+
+   이 값에서 나오는 높이는 가운데 줄의 다른 두 카드와도 맞물린다. 줄 높이는 셋 중
+   가장 높은 것이 정하는데(주문 패널이 그 자리다), 차트가 그보다 커지면 차트가 줄을
+   밀어 올려 아래가 화면 밖으로 나간다. 1410x712 에서 둘이 같은 높이로 서도록 잡았다.
+
+   바닥 170 은 봉이 그림으로 읽히는 한계다. 여기까지 줄여도 모자라면 그때는 스크롤이
+   조금 남는다 — 봉을 더 뭉개느니 그 편이 낫다.
+   천장은 원래 값(330)에서 한 뼘 내린 320 이다. 330 이면 820~900 구간에서 차트가
+   주문 패널보다 높아져 줄을 밀고, 그만큼 아래가 3px 넘쳤다. */
+const CHART_REST = 460
+const CHART_MIN = 170
+const CHART_MAX = 320
+
+function useChartTotal() {
+  const read = () => Math.min(CHART_MAX, Math.max(CHART_MIN, window.innerHeight - CHART_REST))
+  const [h, setH] = useState(read)
+  useEffect(() => {
+    const on = () => setH(read())
+    window.addEventListener('resize', on)
+    return () => window.removeEventListener('resize', on)
+  }, [])
+  return h
+}
+
 
 /* 켤 수 있는 지표.
 
@@ -518,7 +550,10 @@ export default function SeasonPlay() {
      패널과의 높이 균형이 켤 때마다 달라져 화면이 뛴다. 차트가 그만큼 양보해서
      카드 높이를 같게 둔다 — 껐을 때는 봉이 커지므로 손해도 아니다. */
   const paneOn = PANES.some((k) => on.includes(k))
-  const chartH = paneOn ? CHART_H : CHART_H + PANE_H
+  /* 보조지표 칸을 켜면 그 몫을 봉 그림에서 뗀다 — 둘이 합쳐 같은 세로를 쓴다.
+     칸을 켠 채로 화면이 낮으면 봉이 너무 얇아지므로 거기서는 바닥을 하나 더 둔다. */
+  const chartTotal = useChartTotal()
+  const chartH = paneOn ? Math.max(CHART_H * 0.7, chartTotal - PANE_H) : chartTotal
 
   const stockDiff = sim.stockValue - prevStock
   const stockRate = prevStock > 0 ? (stockDiff / prevStock) * 100 : null
