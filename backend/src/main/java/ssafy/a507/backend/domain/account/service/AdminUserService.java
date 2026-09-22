@@ -50,7 +50,7 @@ public class AdminUserService {
             throw new BusinessException(ErrorCode.INVALID_REQUEST, "q");
         }
         List<AdminUserItem> items =
-                userRepository.searchForAdmin(keyword, Limit.of(LIST_LIMIT)).stream()
+                userRepository.searchForAdmin(escapeLike(keyword), Limit.of(LIST_LIMIT)).stream()
                         .map(AdminUserItem::of)
                         .toList();
         return new AdminUserListResponse(items);
@@ -80,5 +80,19 @@ public class AdminUserService {
             throw new BusinessException(ErrorCode.ADMIN_ONLY);
         }
         return user;
+    }
+
+    /**
+     * LIKE 와일드카드를 벗어난다 — 검색어에 든 {@code %}·{@code _} 는 글자 그대로 찾는다.
+     *
+     * <p>안 하면 {@code %} 한 글자가 전 회원을 부르고 {@code _} 가 아무 글자나 맞는다
+     * (2026-09-22 QA). 역슬래시를 먼저 바꾸지 않으면 뒤에 붙인 이스케이프 문자까지 다시
+     * 벗어나게 되어 순서가 중요하다.
+     */
+    private static String escapeLike(String keyword) {
+        return keyword
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
     }
 }
