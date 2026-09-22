@@ -24,6 +24,7 @@ import Sparkline from '../components/Sparkline'
 import { BANNER, BANNER_BASE, CONTEST_PATH, phaseAt } from '../event/contest'
 import StockLogo from '../components/stocks/StockLogo'
 import '../styles/night.css'
+import '../styles/home-night.css'
 import '../styles/home.css'
 
 const INDEX_LABEL: Record<string, string> = {
@@ -110,14 +111,6 @@ const WalletIcon = () => (
     <rect x="3" y="6" width="18" height="13" rx="3" stroke="currentColor" strokeWidth="1.8" />
     <path d="M3 10h18" stroke="currentColor" strokeWidth="1.8" />
     <circle cx="16.5" cy="14.5" r="1.4" fill="currentColor" />
-  </svg>
-)
-const TrophyIcon = () => (
-  <svg {...ico} className="hm-ico">
-    <path d="M7 4h10v4a5 5 0 01-10 0V4z" stroke="currentColor" strokeWidth="1.8"
-          strokeLinejoin="round" />
-    <path d="M7 6H4.8a3 3 0 003 3M17 6h2.2a3 3 0 01-3 3M12 13v3M9 20h6M10 20l.4-4h3.2l.4 4"
-          stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 )
 const PenIcon = () => (
@@ -274,7 +267,9 @@ function MarketOverview() {
   return (
     <section className="card hm-card" aria-labelledby="hm-market">
       <header className="hm-head">
-        <h2 id="hm-market">시장 Overview</h2>
+        {/* 시안(docs/market-status-component.html · prototype.png)이 둘 다 "시장 현황" 이다.
+            "Overview" 만 영어라 한 줄 안에서 결이 갈렸다. */}
+        <h2 id="hm-market"><img className="hm-head-ico" src="/assets/page_home/ui/icon-bars-earned.svg" alt="" />시장 현황</h2>
         <Link to="/stocks">더보기 ›</Link>
       </header>
       <State loading={loading} error={error} onRetry={reload} />
@@ -317,7 +312,7 @@ function MyAssets() {
   return (
     <section className="card hm-card hm-wallet" aria-labelledby="hm-assets">
       <header className="hm-head">
-        <h2 id="hm-assets">내 자산 현황</h2>
+        <h2 id="hm-assets"><img className="hm-head-ico" src="/assets/page_home/ui/icon-wallet.svg" alt="" />내 자산 현황</h2>
         <Link to="/me/wallet">지갑 ›</Link>
       </header>
       <State loading={loading} error={error} onRetry={reload} />
@@ -372,7 +367,7 @@ function Watchlist() {
   return (
     <section className="card hm-card" aria-labelledby="hm-watch">
       <header className="hm-head">
-        <h2 id="hm-watch"><StarIcon />관심 종목</h2>
+        <h2 id="hm-watch"><img className="hm-head-ico" src="/assets/page_home/ui/icon-star.svg" alt="" />관심 종목</h2>
         <Link to="/watchlist">더보기 ›</Link>
       </header>
       <State loading={loading} error={error} empty={data?.items.length === 0} onRetry={reload} />
@@ -440,7 +435,7 @@ function TopPredictor() {
   return (
     <section className="card hm-card" aria-labelledby="hm-top">
       <header className="hm-head">
-        <h2 id="hm-top"><TrophyIcon />주목할 예측가</h2>
+        <h2 id="hm-top"><img className="hm-head-ico" src="/assets/page_home/ui/icon-trophy.svg" alt="" />주목할 예측가</h2>
         <Link to="/rankings">랭킹 ›</Link>
       </header>
       <State loading={loading} error={error} empty={data?.items.length === 0} onRetry={reload} />

@@ -1,0 +1,304 @@
+/* 인사이트 홈 밤 카드 한 벌 — [ANT-FE-HOME]
+   시안: docs/market-status-component.html · docs/dashboard-components.html
+   아이콘·일러스트: docs/dashboard-components-assets → public/assets/page_home/ui
+
+   ── 시안을 그대로 베끼지 않은 곳 ───────────────────────────
+   시안 HTML 은 카드 한 장이 화면 폭(1120~1180px)을 다 쓰는 **독립 데모**다. 그래서
+   제목 43px · 잔액 86px · 빈 상태 최소 높이 400px 처럼 값이 크다. 실제 홈에서는 같은
+   카드가 2단 격자에 들어가 한 장이 660px 남짓이라, 그 값을 그대로 쓰면 카드 하나가
+   화면을 삼킨다.
+
+   그래서 **결(테·빛·채움·둥글기·버튼 모양)은 시안 그대로 가져오고 크기만 이 격자에
+   맞춰 줄였다.** 색은 한 자리도 바꾸지 않았다 — 시안의 값이 곧 여기 --nc-* 다.
+
+   ── 이름 앞에 nc- 를 붙인 이유 ─────────────────────────────
+   시안 CSS 는 --ink · --line · --panel 처럼 짧은 이름을 쓰는데, 이 저장소에는 이미
+   --ink 가 있다(app.css 의 본문 글자색). 그대로 들여오면 밤 홈에서 앱 전체의 --ink 가
+   뒤집힌다. neon-card 의 머리글자를 따 --nc- 로 가둔다. */
+
+body.insight-home.is-night{
+  --nc-ink:#f8faff;
+  --nc-sub:#cbd8ff;
+  --nc-line:rgba(151,187,255,.76);
+  --nc-panel:rgba(25,57,146,.55);
+  --nc-rise:#ff6479;
+  --nc-fall:#77a8ff;
+  --nc-flat:#cbd9ff;
+}
+
+/* ── 카드 한 장 ──────────────────────────────────────────────
+   시안의 .neon-card 다. 셋이 겹쳐 한 장을 만든다.
+     본체   파란 그러데이션 채움 + 밝은 테 + 바깥 빛 네 겹
+     ::before  안쪽으로 물러난 가는 테 한 겹 (두 겹 테가 이 카드의 인상이다)
+     ::after   비스듬한 흰 빛줄기 + 아래쪽 반사. screen 으로 얹어 색을 밝힌다
+
+   isolation:isolate 가 필요하다 — ::after 가 mix-blend-mode:screen 이라 격리하지
+   않으면 카드 밖(페이지 배경·도시)까지 섞어 버린다. */
+body.insight-home.is-night .hm-card{
+  position:relative; isolation:isolate; overflow:hidden;
+  padding:0;
+  border:2px solid rgba(162,199,255,.89);
+  border-radius:26px;
+  color:var(--nc-ink);
+  background:
+    radial-gradient(circle at 70% -15%, rgba(82,112,255,.94), transparent 34%),
+    radial-gradient(circle at 6% 33%, rgba(29,94,225,.66), transparent 34%),
+    linear-gradient(132deg, #112c74 0%, #102563 47%, #18399b 100%);
+  /* 시안의 다섯 겹 그대로. 퍼짐만 격자에 맞춰 줄였다(8/10 → 5/7, 30px → 20px) */
+  box-shadow:
+    0 0 0 5px rgba(52,100,255,.18),
+    0 0 0 7px rgba(126,172,255,.17),
+    0 0 26px rgba(48,105,255,.6),
+    0 20px 46px rgba(0,10,48,.5),
+    inset 0 0 44px rgba(88,132,255,.22);
+  -webkit-backdrop-filter:none; backdrop-filter:none;
+}
+body.insight-home.is-night .hm-card::before{
+  content:""; position:absolute; z-index:-1; inset:10px; pointer-events:none;
+  border:1px solid rgba(205,224,255,.7);
+  border-radius:17px;
+  box-shadow:inset 0 0 18px rgba(122,166,255,.32);
+}
+body.insight-home.is-night .hm-card::after{
+  content:""; position:absolute; z-index:-1; inset:0; pointer-events:none;
+  background:
+    linear-gradient(105deg, transparent 2%, rgba(255,255,255,.19) 4%, transparent 8%),
+    radial-gradient(circle at 76% 14%, rgba(234,105,255,.19), transparent 17%),
+    radial-gradient(ellipse at 48% 102%, rgba(98,132,255,.25), transparent 55%);
+  mix-blend-mode:screen;
+}
+
+/* 카드 안쪽 여백. 시안은 머리 48px · 본문 43px 인데 격자 폭이 절반이라 줄인다.
+   패딩을 .hm-card 에서 걷고 각 부분이 제 몫을 갖는 것은, 빈 상태 판처럼 카드
+   가장자리까지 닿아야 하는 것이 있어서다. */
+body.insight-home.is-night .hm-head{
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  margin:0; padding:22px 24px 14px;
+}
+body.insight-home.is-night .hm-head h2{
+  display:flex; align-items:center; gap:10px;
+  margin:0; color:var(--nc-ink);
+  font-size:var(--fs-3xl); letter-spacing:-.035em; line-height:1.1;
+  text-shadow:0 0 11px rgba(210,226,255,.44);
+}
+body.insight-home.is-night .hm-head h2 svg,
+body.insight-home.is-night .hm-head-ico{
+  width:26px; height:26px; flex:none; object-fit:contain;
+}
+body.insight-home.is-night .hm-head a{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:5px 7px; border-radius:10px;
+  color:var(--nc-ink); font-size:var(--fs-base); font-weight:var(--fw-bold);
+  white-space:nowrap;
+}
+body.insight-home.is-night .hm-head a:hover{background:rgba(255,255,255,.08)}
+
+/* 카드 안의 작은 판. 시장 지수 · 잔액 · 30일 흐름 · 빈 상태가 모두 이 결이다 */
+body.insight-home.is-night .hm-panel{
+  position:relative; overflow:hidden;
+  border:1px solid var(--nc-line); border-radius:18px;
+  background:linear-gradient(125deg, rgba(34,70,161,.74), rgba(20,43,117,.61));
+  box-shadow:inset 0 0 26px rgba(101,137,255,.12);
+}
+
+/* 알약 버튼. 시안의 .neon-button 이다 — 보라 채움에 분홍 테, 바깥으로 빛.
+   높이만 70px → 42px 로 줄였다(격자 안에서 70px 는 카드 절반을 먹는다). */
+body.insight-home.is-night .hm-btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:9px;
+  min-height:42px; padding:9px 26px;
+  border:2px solid rgba(255,211,255,.9); border-radius:999px;
+  color:#fff;
+  background:linear-gradient(90deg, rgba(122,78,255,.9), rgba(105,81,250,.9));
+  box-shadow:
+    0 0 0 3px rgba(151,95,255,.22),
+    0 0 14px rgba(241,117,255,.5),
+    inset 0 0 18px rgba(255,255,255,.15);
+  font-size:var(--fs-lg); font-weight:var(--fw-bold);
+  transition:transform .18s ease, filter .18s ease;
+}
+body.insight-home.is-night .hm-btn:hover{transform:translateY(-2px); filter:brightness(1.09)}
+@media (prefers-reduced-motion:reduce){
+  body.insight-home.is-night .hm-btn{transition:none}
+  body.insight-home.is-night .hm-btn:hover{transform:none}
+}
+
+/* ── 카드 안쪽 여백 ─────────────────────────────────────────
+   .hm-card 에서 패딩을 걷었으므로 각 부분이 제 몫을 갖는다. 빈 상태 판처럼 넓게
+   깔려야 하는 것과 글줄처럼 좁게 들어와야 하는 것이 섞여 있어서다. */
+body.insight-home.is-night .hm-indices,
+body.insight-home.is-night .hm-ant-box,
+body.insight-home.is-night .hm-flow,
+body.insight-home.is-night .hm-table-wrap,
+body.insight-home.is-night .hm-lead,
+body.insight-home.is-night .hm-ticker,
+body.insight-home.is-night .hm-state{margin-inline:20px}
+body.insight-home.is-night .hm-card > :last-child{margin-bottom:20px}
+
+/* 카드 맨 아래 한 줄(기준 시각 · 안내). 시안은 가는 선 위에 시계 아이콘을 둔다 */
+body.insight-home.is-night .hm-foot{
+  display:flex; align-items:center; gap:8px;
+  margin:12px 20px 0; padding:11px 0 0;
+  border-top:1px solid rgba(131,169,255,.55);
+  color:var(--nc-sub); font-size:var(--fs-sm);
+}
+body.insight-home.is-night .hm-foot::before{
+  content:""; flex:none; width:15px; height:15px;
+  background:url(/assets/page_home/ui/icon-clock.svg) center/contain no-repeat;
+}
+
+/* ── 시장 Overview ─────────────────────────────────────────
+   시안(market-status-component.html)은 지수 셋이 **각자 판**이다. 지금은 세로줄로
+   나눈 한 덩어리라 판으로 쪼갠다. */
+body.insight-home.is-night .hm-indices{
+  display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px;
+}
+body.insight-home.is-night .hm-indices li{
+  position:relative; min-width:0; overflow:hidden;
+  padding:14px 16px 10px;
+  border:1px solid var(--nc-line); border-radius:16px;
+  background:
+    linear-gradient(145deg, rgba(72,117,229,.32), rgba(11,40,111,.28)),
+    var(--nc-panel);
+  box-shadow:inset 0 1px 18px rgba(134,169,255,.13), 0 10px 26px rgba(2,14,63,.18);
+}
+body.insight-home.is-night .hm-ix-name{
+  display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  color:#e8efff; font-size:var(--fs-base); font-weight:var(--fw-bold);
+}
+body.insight-home.is-night .hm-ix-val{
+  display:block; margin-top:6px;
+  font-size:var(--fs-3xl); font-weight:var(--fw-heavy); line-height:1;
+  letter-spacing:-.035em; font-variant-numeric:tabular-nums;
+}
+body.insight-home.is-night .hm-ix-delta{
+  display:block; margin-top:5px;
+  font-size:var(--fs-base); font-weight:var(--fw-heavy);
+  letter-spacing:-.025em; white-space:nowrap;
+}
+/* 등락색은 시안 값이다. 앱의 --up/--down 과 다른 톤이라 여기서만 쓴다 */
+body.insight-home.is-night .hm-ix-delta.up{color:var(--nc-rise)}
+body.insight-home.is-night .hm-ix-delta.down{color:var(--nc-fall)}
+body.insight-home.is-night .hm-ix-delta:not(.up):not(.down){color:var(--nc-flat)}
+
+/* 브리핑 띠. 시안의 .market-briefing */
+body.insight-home.is-night .hm-ticker{
+  display:flex; align-items:center; gap:14px;
+  margin-top:12px; padding:10px 18px;
+  border:1px solid rgba(156,195,255,.78); border-radius:14px;
+  background:linear-gradient(95deg, rgba(38,84,193,.72), rgba(45,88,207,.48));
+  box-shadow:inset 0 0 20px rgba(98,139,255,.15);
+}
+body.insight-home.is-night .hm-ticker-tag{
+  color:var(--nc-ink); font-weight:var(--fw-heavy); white-space:nowrap;
+}
+body.insight-home.is-night .hm-ticker-line,
+body.insight-home.is-night .hm-ticker-no{color:var(--nc-sub)}
+
+/* ── 내 자산 현황 ──────────────────────────────────────────
+   시안은 잔액 판 오른쪽 위에 코인 그림, 그 아래 알약 버튼이다. */
+body.insight-home.is-night .hm-ant-box{
+  position:relative; overflow:hidden;
+  min-height:150px; padding:18px 20px;
+  border:1px solid var(--nc-line); border-radius:20px;
+  background:
+    radial-gradient(circle at 78% 35%, rgba(120,70,255,.38), transparent 35%),
+    linear-gradient(120deg, rgba(28,66,161,.76), rgba(19,46,125,.58));
+  box-shadow:inset 0 0 30px rgba(91,129,255,.15);
+}
+/* 코인 그림은 배경으로 얹는다 — 마크업을 건드리지 않고 시안의 자리를 잡는다 */
+body.insight-home.is-night .hm-ant-box::after{
+  content:""; position:absolute; top:-10px; right:14px;
+  width:min(46%,190px); height:104px; pointer-events:none;
+  background:url(/assets/page_home/ui/illustration-coins.svg) right top/contain no-repeat;
+  filter:drop-shadow(0 0 14px rgba(154,108,255,.7));
+}
+body.insight-home.is-night .hm-ant-label{color:var(--nc-sub); font-weight:var(--fw-bold)}
+body.insight-home.is-night .hm-ant b{
+  font-size:var(--fs-5xl); line-height:1; letter-spacing:-.045em;
+  font-variant-numeric:tabular-nums;
+}
+/* 내역 보기 — 시안은 판 오른쪽 아래 알약이다 */
+body.insight-home.is-night .hm-ant-btn{
+  position:absolute; right:18px; bottom:16px;
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  min-height:38px; padding:8px 20px;
+  border:2px solid rgba(255,211,255,.9); border-radius:999px;
+  color:#fff; background:linear-gradient(90deg, rgba(122,78,255,.9), rgba(105,81,250,.9));
+  box-shadow:0 0 0 3px rgba(151,95,255,.22), 0 0 14px rgba(241,117,255,.5),
+             inset 0 0 18px rgba(255,255,255,.15);
+  font-size:var(--fs-base); font-weight:var(--fw-bold);
+}
+body.insight-home.is-night .hm-ant-btn:hover{filter:brightness(1.09)}
+
+/* 30일 흐름 둘 */
+body.insight-home.is-night .hm-flow{
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:12px;
+}
+body.insight-home.is-night .hm-flow > div{
+  position:relative; overflow:hidden; min-height:86px; padding:14px 16px;
+  border:1px solid var(--nc-line); border-radius:16px;
+  background:linear-gradient(125deg, rgba(34,70,161,.74), rgba(20,43,117,.61));
+  box-shadow:inset 0 0 26px rgba(101,137,255,.12);
+}
+body.insight-home.is-night .hm-flow dt{color:#e1e8ff; font-weight:var(--fw-bold)}
+body.insight-home.is-night .hm-flow dd{
+  margin:6px 0 0; font-size:var(--fs-3xl); font-weight:var(--fw-heavy); line-height:1;
+  font-variant-numeric:tabular-nums;
+}
+/* 색은 시안 값이다. 등락색(--up/--down)을 쓰지 않는 이유는 Home.tsx 주석에 있다 */
+body.insight-home.is-night .hm-flow .is-in{color:#69e4ff; text-shadow:0 0 10px rgba(67,220,255,.28)}
+body.insight-home.is-night .hm-flow .is-out{color:#ffb0d2; text-shadow:0 0 10px rgba(255,115,182,.25)}
+body.insight-home.is-night .hm-flow > div::after{
+  content:""; position:absolute; right:14px; bottom:14px;
+  width:36px; height:34px; opacity:.9;
+}
+body.insight-home.is-night .hm-flow > div:first-child::after{
+  background:url(/assets/page_home/ui/icon-bars-earned.svg) center/contain no-repeat;
+}
+body.insight-home.is-night .hm-flow > div:last-child::after{
+  background:url(/assets/page_home/ui/icon-bars-spent.svg) center/contain no-repeat;
+}
+
+/* ── 관심 종목 · 주목할 예측가 ─────────────────────────────── */
+body.insight-home.is-night .hm-table-wrap{
+  border:1px solid var(--nc-line); border-radius:18px; overflow:hidden;
+  background:linear-gradient(130deg, rgba(28,67,170,.45), rgba(23,54,150,.28));
+}
+body.insight-home.is-night .hm-table th,
+body.insight-home.is-night .hm-table td{border-color:rgba(255,255,255,.1)}
+body.insight-home.is-night .hm-table thead th{color:var(--nc-sub)}
+
+body.insight-home.is-night .hm-lead{
+  padding:16px 18px;
+  border:1px solid var(--nc-line); border-radius:18px;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(87,110,250,.39), transparent 29%),
+    linear-gradient(130deg, rgba(32,65,164,.5), rgba(26,56,150,.34));
+}
+body.insight-home.is-night .hm-lead-btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-height:40px; padding:9px 22px;
+  border:2px solid rgba(255,211,255,.9); border-radius:999px;
+  color:#fff; background:linear-gradient(90deg, rgba(122,78,255,.9), rgba(105,81,250,.9));
+  box-shadow:0 0 0 3px rgba(151,95,255,.22), 0 0 14px rgba(241,117,255,.5),
+             inset 0 0 18px rgba(255,255,255,.15);
+  font-weight:var(--fw-bold);
+}
+body.insight-home.is-night .hm-lead-btn:hover{filter:brightness(1.09)}
+body.insight-home.is-night .hm-lead-rank{
+  color:#fff; background:linear-gradient(90deg,#7958f2,#6e59e8);
+  border:1px solid rgba(255,218,255,.94);
+  box-shadow:0 0 0 3px rgba(147,96,255,.21), 0 0 16px rgba(220,98,255,.45);
+}
+
+/* ── 빈 상태 ────────────────────────────────────────────────
+   시안은 카드마다 그림 + 제목 + 한 줄 + 알약 버튼이다. 공용 컴포넌트를 쓰므로
+   여기서는 그 판의 결만 입힌다. */
+body.insight-home.is-night .hm-state,
+body.insight-home.is-night .hm-card .state{
+  position:relative; overflow:hidden;
+  border:1px solid rgba(103,151,255,.48); border-radius:18px;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(90,112,255,.34), transparent 32%),
+    linear-gradient(130deg, rgba(28,67,170,.45), rgba(23,54,150,.28));
+}
