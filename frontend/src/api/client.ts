@@ -44,12 +44,23 @@ let refreshing: Promise<boolean> | null = null
  * refresh 쿠키로 access 를 되찾는다. 쿠키가 없거나 만료면 false.
  * 실패를 예외로 올리지 않는다 — 호출부는 "다시 시도할 수 있는가"만 알면 된다.
  */
+/** 로그인 화면이 한 번 읽고 지우는 자리. 차단된 계정이 왜 튕겼는지 알리는 데만 쓴다 */
+export const AUTH_NOTICE_KEY = 'auth-notice'
+
 export function refreshAccessToken(): Promise<boolean> {
   if (refreshing) return refreshing
 
   refreshing = fetch(BASE + REFRESH_PATH, { method: 'POST', credentials: 'include' })
     .then(async (res) => {
-      if (!res.ok) return false
+      if (!res.ok) {
+        /* 차단(ACCOUNT_BANNED)은 쿠키 만료와 다르다 — 다시 로그인해도 안 풀린다. 그 사실을
+           로그인 화면까지 들고 간다. 그 밖의 실패는 그냥 "풀렸다" 로 둔다(2026-09-22 QA). */
+        const body = (await res.json().catch(() => null)) as { code?: string } | null
+        if (body?.code === 'ACCOUNT_BANNED') {
+          try { sessionStorage.setItem(AUTH_NOTICE_KEY, body.code) } catch { /* 저장소 막힘 — 안내만 못 한다 */ }
+        }
+        return false
+      }
       const body = (await res.json().catch(() => null)) as { accessToken?: string } | null
       if (!body?.accessToken) return false
       setAccessToken(body.accessToken)

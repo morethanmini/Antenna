@@ -95,7 +95,8 @@ export type MyAd = {
   linkUrl: string
   startsAt: string
   endsAt: string
-  status: 'PENDING' | 'ACTIVE' | 'REJECTED'
+  /** REJECTED 는 관리자 반려와 본인 취소 둘 다다 — 서버가 같은 상태로 닫는다(AdBanner.reject) */
+  status: 'PENDING' | 'ACTIVE' | 'REJECTED' | 'ENDED'
   /** 정수 ANT 문자열 */
   price: string
   createdAt: string
