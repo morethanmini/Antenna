@@ -132,7 +132,7 @@ public class ChannelFeeService {
                                         Notification.create(
                                                 users.getReferenceById(subscriberId),
                                                 NOTIFICATION_TYPE,
-                                                "구독료가 변경됐습니다",
+                                                "구독료가 변경되었습니다",
                                                 body,
                                                 linkPath))
                         .toList());

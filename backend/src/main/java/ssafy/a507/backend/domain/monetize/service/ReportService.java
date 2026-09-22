@@ -275,7 +275,7 @@ public class ReportService {
                 .map(subscriberId -> Notification.create(
                         userRepository.getReferenceById(subscriberId),
                         NOTIFICATION_TYPE,
-                        "새 리포트가 발행됐습니다",
+                        "새 리포트가 발행되었습니다",
                         body,
                         linkPath))
                 .toList();

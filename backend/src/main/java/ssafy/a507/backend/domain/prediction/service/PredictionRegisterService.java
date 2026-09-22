@@ -312,7 +312,7 @@ public class PredictionRegisterService {
                 .map(id -> Notification.create(
                         users.getReferenceById(id),
                         "PREDICTION_REGISTERED",
-                        "새 예측이 등록됐습니다",
+                        "새 예측이 등록되었습니다",
                         body,
                         linkPath))
                 .toList());

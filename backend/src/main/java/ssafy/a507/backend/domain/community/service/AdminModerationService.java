@@ -94,7 +94,7 @@ public class AdminModerationService {
             report.reject(admin);
             notificationRepository.save(Notification.create(
                     report.getReporter(), REPORT_HANDLED,
-                    "신고가 기각됐습니다",
+                    "신고가 기각되었습니다",
                     "신고하신 " + KoreanText.josa(what, "은", "는")
                             + " 검토 결과 운영 정책 위반으로 보지 않았습니다.",
                     link));
