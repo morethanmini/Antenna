@@ -101,7 +101,7 @@ public class EventQueryService {
                 event.getSlug(),
                 event.getTitle(),
                 event.getStatus(),
-                EventPhase.of(event.getStatus()),
+                EventPhase.of(event),
                 event.getOpensAt(),
                 event.getSealsAt(),
                 event.getBaseDate(),
@@ -249,7 +249,7 @@ public class EventQueryService {
         PredictionEventResult frozen =
                 results.findByEventIdAndUserId(eventId, viewerId).orElse(null);
         return new EventMeResponse(
-                EventPhase.of(event.getStatus()),
+                EventPhase.of(event),
                 new EventMeResponse.Summary(
                         mine.size(),
                         staked,
