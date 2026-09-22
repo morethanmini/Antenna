@@ -37,8 +37,19 @@ const JOBS = [
 
   /* 히어로 윗줄(손글씨 네온)과 버튼. 글자가 그림 안에 있는 조각이라 CSS 로는
      못 만든다 — 시안의 네온 번짐이 폰트로 흉내 내지지 않는다. */
-  [path.join(DIR, 'src-hero-eyebrow.png'), path.join(DIR, 'hero-eyebrow.webp'), 760, 0.92],
-  [path.join(DIR, 'src-hero-cta.png'), path.join(DIR, 'hero-cta.webp'), 520, 0.92],
+  /* 다섯째 값 trim — 투명한 가장자리를 잘라낸다. 받은 PNG 는 글자 둘레에 빈칸이
+     넓어(손글씨는 높이의 69%가 빈칸이었다) 그대로 쓰면 CSS 여백을 0 으로 해도
+     글자 사이가 벌어진다. */
+  [path.join(DIR, 'src-hero-eyebrow.png'), path.join(DIR, 'hero-eyebrow.webp'), 760, 0.92, true],
+  [path.join(DIR, 'src-hero-cta.png'), path.join(DIR, 'hero-cta.webp'), 520, 0.92, true],
+
+  /* 배경 장식 셋. 시안(prototype.png)에서 하늘에 떠 있는 조각들인데, 낱개 모음
+     한 장(09_04_44 (10))에 같이 그려져 있다. 빛이 서로 닿아 자동으로는 안 갈라져
+     자리를 적어 오려낸다 — 오린 뒤 trim 이 빈칸을 다시 다듬으므로 네모가 조금
+     넉넉해도 결과는 딱 맞는다. 원본 1448x1086 기준. */
+  [path.join(DIR, 'ChatGPT Image 2026년 9월 22일 오전 09_04_44 (10).png'), path.join(DIR, 'deco-airship.webp'), 420, 0.9, true, [60, 20, 610, 350]],
+  [path.join(DIR, 'ChatGPT Image 2026년 9월 22일 오전 09_04_44 (10).png'), path.join(DIR, 'deco-globe.webp'), 420, 0.9, true, [720, 130, 470, 500]],
+  [path.join(DIR, 'ChatGPT Image 2026년 9월 22일 오전 09_04_44 (10).png'), path.join(DIR, 'deco-billboard.webp'), 220, 0.9, true, [1225, 10, 215, 540]],
 
   [path.join(DOCS, 'illustration-coins-v2.png'), path.join(UI, 'coins.webp'), 520, 0.9],
   [path.join(DOCS, 'illustration-watchlist-v2.png'), path.join(UI, 'empty-watchlist.webp'), 380, 0.9],
@@ -106,21 +117,67 @@ const evalJs = async (expression) => {
 await send('Page.enable')
 await send('Runtime.enable')
 
-for (const [i, [src, out, width, quality]] of JOBS.entries()) {
+for (const [i, [src, out, width, quality, trim, rect]] of JOBS.entries()) {
   const url = `http://127.0.0.1:${PORT}/${i}`
   const data = await evalJs(`(async () => {
     const img = new Image()
     img.crossOrigin = 'anonymous'
     img.src = ${JSON.stringify(url)}
     await img.decode()
-    const w = Math.min(${width}, img.naturalWidth)
-    const h = Math.round(img.naturalHeight * (w / img.naturalWidth))
+
+    /* 투명한 가장자리 잘라내기. 원본 크기에서 알파 경계를 찾은 뒤 그 사각형만
+       옮겨 그린다. 문턱을 8 로 둔 것은 네온 번짐의 아주 옅은 끝까지 살리기
+       위해서다 — 0 으로 두면 눈에 안 보이는 한 점 때문에 안 잘리고, 크게 두면
+       빛이 잘려 글자에 테두리가 생긴다. */
+    /* 여섯째 값 rect — 낱개 모음 한 장에서 한 조각만 오려낸다. 조각끼리 빛이
+       이어져 있어 자동 탐지로는 안 갈라진다(연결 요소가 한 덩어리가 된다). */
+    const rect = ${rect ? JSON.stringify(rect) : 'null'}
+    let sx = rect ? rect[0] : 0, sy = rect ? rect[1] : 0
+    let sw = rect ? rect[2] : img.naturalWidth, sh = rect ? rect[3] : img.naturalHeight
+    if (${trim ? 'true' : 'false'}) {
+      const m = document.createElement('canvas')
+      m.width = sw; m.height = sh
+      const mg = m.getContext('2d')
+      mg.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh)
+      const d = mg.getImageData(0, 0, sw, sh).data
+      let top = -1, bottom = -1, left = sw, right = -1
+      for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) {
+        if (d[(y * sw + x) * 4 + 3] > 8) {
+          if (top < 0) top = y
+          bottom = y; if (x < left) left = x; if (x > right) right = x
+        }
+      }
+      if (top >= 0) { sx += left; sy += top; sw = right - left + 1; sh = bottom - top + 1 }
+    }
+
+    const w = Math.min(${width}, sw)
+    const h = Math.round(sh * (w / sw))
     const c = document.createElement('canvas')
     c.width = w; c.height = h
     /* 알파를 지운 채로 그리지 않는다 — 누끼가 검은 판이 된다 */
     const g = c.getContext('2d')
     g.imageSmoothingQuality = 'high'
-    g.drawImage(img, 0, 0, w, h)
+    g.drawImage(img, sx, sy, sw, sh, 0, 0, w, h)
+
+    /* 오려낸 네모의 가장자리를 부드럽게 지운다. 조각끼리 빛이 닿아 있어 어디서
+       잘라도 이웃의 옅은 빛이 조금 들어오는데, 그대로 두면 하늘 위에 **직사각형
+       자국**이 보인다. 가장자리 몇 px 만 투명으로 녹이면 티가 나지 않는다.
+       rect 로 오려낸 것에만 건다 — 온전한 누끼는 가장자리가 이미 투명하다. */
+    if (rect) {
+      const f = Math.max(4, Math.round(Math.min(w, h) * 0.05))
+      g.globalCompositeOperation = 'destination-out'
+      const fade = (x0, y0, x1, y1) => {
+        const lg = g.createLinearGradient(x0, y0, x1, y1)
+        lg.addColorStop(0, 'rgba(0,0,0,1)')
+        lg.addColorStop(1, 'rgba(0,0,0,0)')
+        g.fillStyle = lg
+      }
+      fade(0, 0, f, 0); g.fillRect(0, 0, f, h)
+      fade(w, 0, w - f, 0); g.fillRect(w - f, 0, f, h)
+      fade(0, 0, 0, f); g.fillRect(0, 0, w, f)
+      fade(0, h, 0, h - f); g.fillRect(0, h - f, w, f)
+      g.globalCompositeOperation = 'source-over'
+    }
     return JSON.stringify({ w, h, ow: img.naturalWidth, oh: img.naturalHeight,
       url: c.toDataURL('image/webp', ${quality}) })
   })()`)

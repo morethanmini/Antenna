@@ -490,7 +490,7 @@ body.insight-home.is-night .hm-hello{
   margin:0 0 6px; line-height:0;
 }
 body.insight-home.is-night .hm-hello img{
-  width:clamp(230px, 24vw, 340px); height:auto; display:block;
+  width:clamp(170px, 17vw, 250px); height:auto; display:block;
 }
 
 /* 버튼 그림. 링크는 진짜라 짚기·초점 반응을 여기서 준다 */
@@ -508,3 +508,37 @@ body.insight-home.is-night .hm-cta.is-art:focus-visible{outline:2px solid #fff; 
   body.insight-home.is-night .hm-cta.is-art{transition:none}
   body.insight-home.is-night .hm-cta.is-art:hover{transform:none}
 }
+
+/* ── 하늘 장식 셋 ───────────────────────────────────────────
+   히어로 상자 안에 절대 위치로 띄운다. 히어로가 overflow:hidden 이라 밖으로는
+   못 나가고, z-index:-1 로 글자 뒤에 선다.
+   비율은 창 기준(vw)으로 잰다 — 히어로 칸은 격자가 정하는데 그 폭을 퍼센트로
+   물으면 칸과 서로를 물어보는 고리가 된다(개미에서 한 번 겪었다). */
+body.insight-home.is-night .hm-deco{
+  position:absolute; inset:0; z-index:-1; pointer-events:none; overflow:hidden;
+}
+body.insight-home.is-night .hm-deco img{position:absolute; height:auto}
+/* 비행선 — 시안에서 도시 위를 가로지른다 */
+body.insight-home.is-night .hm-deco-airship{
+  top:6%; right:20%; width:clamp(120px, 13vw, 210px); opacity:.92;
+}
+/* 지구본 — 오른쪽 아래에서 반쯤 걸친다 */
+body.insight-home.is-night .hm-deco-globe{
+  right:-4%; bottom:-28%; width:clamp(140px, 16vw, 260px); opacity:.85;
+}
+/* 전광판 — 오른쪽 끝. 세로로 길어 히어로 높이를 넘지 않게 잡는다 */
+body.insight-home.is-night .hm-deco-board{
+  top:-6%; right:1%; width:clamp(46px, 5vw, 78px); opacity:.9;
+}
+/* 좁아지면 글자가 먼저다. 1180px 아래에서는 걷는다 */
+@media (max-width:1180px){
+  body.insight-home.is-night .hm-deco{display:none}
+}
+
+/* ── 히어로 세로 간격 ───────────────────────────────────────
+   그림의 투명 여백을 굽는 단계에서 잘라냈다(손글씨는 높이의 69%가 빈칸이었다).
+   이제 CSS 값이 곧 눈에 보이는 간격이라 시안처럼 바짝 붙인다. */
+body.insight-home.is-night .hm-hello{margin:0 0 10px}
+body.insight-home.is-night .hm-hero h1{margin:0}
+body.insight-home.is-night .hm-hero-sub{margin:10px 0 0}
+body.insight-home.is-night .hm-cta.is-art{margin-top:16px}
