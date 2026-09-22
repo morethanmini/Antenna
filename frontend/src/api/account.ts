@@ -91,15 +91,29 @@ const PLATFORM_HOSTS: [ChannelPlatform, string[]][] = [
 ]
 
 /**
+ * 스킴이 없는 주소에 https:// 를 붙인다. "youtube.com/@ant" 처럼 적는 사람이 많고, 서버는
+ * https 만 받는다(400). 붙여 주면 될 것을 "https 로 시작해야 합니다" 로 돌려보내지 않는다.
+ *
+ * 이미 스킴이 있으면(http:// 포함) 손대지 않는다 — http 를 몰래 https 로 바꾸면 그 주소로
+ * 정말 열리는지 우리가 보증하는 꼴이다. 그건 저장 때 오류로 알린다.
+ */
+export function withScheme(url: string) {
+  const trimmed = url.trim()
+  if (trimmed === '' || /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)) return trimmed
+  return `https://${trimmed}`
+}
+
+/**
  * 주소에서 플랫폼을 되짚는다. 표에 없는 호스트거나 아직 주소가 아니면 null 이다.
  *
  * 편집 폼이 주소를 칠 때마다 부른다 — 유튜브 링크를 붙여 넣었는데 플랫폼을 따로 고르게
  * 하면 그걸 빼먹고 저장해 "직접 입력" 아이콘에 유튜브 주소가 붙는다(2026-09-22).
+ * 스킴 없이 치는 중에도 잡히도록 withScheme 을 거친다.
  */
 export function detectPlatform(url: string): ChannelPlatform | null {
   let host: string
   try {
-    host = new URL(url.trim()).hostname.toLowerCase()
+    host = new URL(withScheme(url)).hostname.toLowerCase()
   } catch {
     return null
   }
