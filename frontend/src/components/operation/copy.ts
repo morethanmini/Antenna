@@ -22,27 +22,27 @@ type Copy = {
 
 export const OPERATION_COPY: Record<OperationKind, Copy> = {
   PREDICTION_BURN: {
-    waiting: '예측 등록을 체인에서 확인하고 있습니다',
-    done: '예측이 등록됐습니다',
-    failed: '예측 등록이 체인에서 실패했습니다',
+    waiting: '블록체인에서 예측 등록을 확인 중이에요',
+    done: '예측을 등록했어요',
+    failed: '블록체인에 예측을 등록하지 못했어요',
     go: '예측 보기',
   },
   SUBSCRIBE: {
-    waiting: '결제를 체인에서 확인하고 있습니다',
-    done: '구독이 시작됐습니다',
-    failed: '결제가 체인에서 실패했습니다',
+    waiting: '블록체인에서 결제를 확인 중이에요',
+    done: '구독이 시작됐어요',
+    failed: '블록체인 결제에 실패했어요',
     go: '내 구독 보기',
   },
   AD: {
-    waiting: '등록을 체인에서 확인하고 있습니다',
-    done: '배너 등록이 끝났습니다',
-    failed: '등록이 체인에서 실패했습니다',
+    waiting: '블록체인에서 배너 등록을 확인 중이에요',
+    done: '배너를 등록했어요',
+    failed: '블록체인에 배너를 등록하지 못했어요',
     go: '홈에서 보기',
   },
   SEASON_JOIN: {
-    waiting: '참가 신청을 체인에서 확인하고 있습니다',
-    done: '시즌에 참가했습니다',
-    failed: '참가 신청이 체인에서 실패했습니다',
+    waiting: '블록체인에서 참가 신청을 확인 중이에요',
+    done: '시즌에 참가했어요',
+    failed: '블록체인 참가 신청에 실패했어요',
     go: '시즌으로 가기',
   },
   /* 대회 배팅(ANT-EVENT-08). **배팅 한 건 = 작업 한 건**이라 묶음으로 등록해도 종목
@@ -56,9 +56,9 @@ export const OPERATION_COPY: Record<OperationKind, Copy> = {
      C-01 대회 경로(PredictTab, eventPath)가 접수 뒤 이 kind 로 OperationModal 을 띄운다
      (2026-09-19). 그전에는 PREDICTION_BURN 을 넘겨 소각 문구가 떴다. */
   EVENT_BET: {
-    waiting: '배팅을 체인에서 확인하고 있습니다',
-    done: '배팅이 등록됐습니다',
-    failed: '배팅이 체인에서 실패했습니다',
+    waiting: '블록체인에서 배팅을 확인 중이에요',
+    done: '배팅을 등록했어요',
+    failed: '블록체인 배팅에 실패했어요',
     go: '예측 보기',
   },
 }
@@ -69,7 +69,7 @@ export const OPERATION_COPY: Record<OperationKind, Copy> = {
  * 네 흐름 모두 토큰을 쓰는 작업이고, 체인에서 실패했다는 것은 트랜잭션이 되돌아갔다는
  * 뜻이라 차감도 없다. 이 한 줄이 없으면 사용자는 돈이 사라졌는지부터 걱정한다.
  */
-export const REFUND_NOTE = '토큰은 소각되지 않았습니다.'
+export const REFUND_NOTE = '토큰은 소각되지 않았어요.'
 
 /**
  * SUCCEEDED 일 때 갈 곳. "사용자가 스스로 결과를 찾아가게 두지 않는다"(티켓 제약).

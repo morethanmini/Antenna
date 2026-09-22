@@ -75,7 +75,7 @@ function composeBody(text: string, images: BodyImage[]): string {
 }
 
 const VISIBILITY_OPTIONS = [
-  { value: true, label: '공개', desc: '누구나 전문을 읽을 수 있습니다' },
+  { value: true, label: '공개', desc: '누구나 전문을 볼 수 있어요' },
   { value: false, label: '구독자 전용', desc: '구독자만 본문을 읽고, 나머지는 제목만 봅니다' },
 ] as const
 
@@ -237,7 +237,7 @@ export default function ReportNew() {
       <div className="main-inner">
         <div className="page-head">
           <h1>리포트 작성</h1>
-          <p>지갑으로 서명해 발행합니다. 발행하면 수정하거나 지울 수 없습니다</p>
+          <p>지갑으로 서명해 발행해요. 발행 후에는 수정하거나 지울 수 없어요</p>
         </div>
 
         {/* 지갑 없이 들어왔으면 쓰기 **전에** 연동부터 권한다(ANT-FE-WALLET-PRELINK). 긴 글을 다 쓰고
@@ -395,11 +395,11 @@ export default function ReportNew() {
           </div>
 
           {!ready && !submitting && (
-            <p className="rn-hint">제목 · 본문 · 공개 범위를 모두 채우면 발행할 수 있습니다.</p>
+            <p className="rn-hint">제목·본문·공개 범위를 채워 주세요.</p>
           )}
           {ready && !submitting && (
             <p className="rn-hint">
-              근거 조작 방지 — 발행하면 이 글은 블록체인에 남아 지울 수 없습니다. 지갑 서명이 내가 썼다는 증거가 됩니다.
+              발행한 글은 블록체인에 기록돼 수정하거나 지울 수 없어요. 지갑 서명으로 작성자를 확인해요.
             </p>
           )}
         </form>

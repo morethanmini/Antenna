@@ -96,7 +96,7 @@ export default function OperationModal({ operationId, kind, onClose, to }: Props
 
         {/* 닫아도 계속된다는 사실은 기다리는 동안에만 말한다. 끝난 뒤엔 할 말이 아니다 */}
         {op.polling && (
-          <p className="op-foot">창을 닫아도 처리는 계속됩니다. 취소되지 않습니다.</p>
+          <p className="op-foot">창을 닫아도 처리는 계속돼요.</p>
         )}
       </div>
     </div>

@@ -87,7 +87,7 @@ const EMPTY: Record<Stage, { title: string; hint: string }> = {
   },
   ANCHOR: {
     title: '블록체인 기록을 기다리는 예측이 없습니다',
-    hint: `등록한 예측은 ${ANCHOR_BATCH_CYCLE} 도는 배치가 묶어서 블록체인에 기록합니다.`,
+    hint: `등록한 예측은 ${ANCHOR_BATCH_CYCLE} 도는 배치가 블록체인에 기록해요.`,
   },
   OPEN: {
     title: '진행 중인 예측이 없습니다',
@@ -237,9 +237,9 @@ function Panel({ p, count = 1 }: { p: MyPrediction; count?: number }) {
        줄 안다 — 등록은 서버가 받은 순간 이미 끝났고, 앵커는 주기적으로 도는
        배치가 나중에 묶는 별개의 일이다. */
     const copy = p.anchorStatus === 'PENDING'
-      ? { lead: '블록 확정을 기다리는 중이에요.', sub: '배치가 트랜잭션을 보냈어요. 잠시 뒤 기록이 확정됩니다.' }
+      ? { lead: '블록 확정을 기다리는 중이에요.', sub: '블록체인에 기록을 보냈어요. 잠시 뒤 확정돼요.' }
       : p.anchorStatus === 'FAILED'
-        ? { lead: '기록에 실패해 다시 시도해요.', sub: '다음 회차 배치가 재시도합니다. 예측 자체는 그대로 남아 있어요.' }
+        ? { lead: '기록에 실패해 다시 시도해요.', sub: '다음 회차에 다시 시도해요. 예측은 그대로 남아 있어요.' }
         : {
             /* 한 회차가 그때까지 쌓인 봉인을 통째로 묶으므로, 묶인 줄들은 정말로
                함께 올라간다.

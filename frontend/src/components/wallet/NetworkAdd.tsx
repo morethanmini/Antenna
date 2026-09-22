@@ -73,7 +73,7 @@ export default function NetworkAdd({ chainId }: {
       {phase === 'conflict' && (
         <div className="wl-token-warn" role="alert">
           <p>
-            같은 RPC 주소를 쓰는 네트워크가 지갑에 <b>이미 있습니다.</b> 지우고 다시 넣어야 합니다.
+            같은 RPC 주소의 네트워크가 지갑에 <b>이미 있어요.</b> 기존 항목을 지우고 다시 추가해 주세요.
           </p>
           <ol>
             <li>지갑에서 <b>네트워크 선택</b> → 목록에서 그 네트워크의 점 세 개(⋮) 또는 <b>편집</b></li>

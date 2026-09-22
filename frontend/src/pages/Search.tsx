@@ -91,7 +91,7 @@ export default function Search() {
 
         {field}
 
-        {loading && <p className="sr-state">찾고 있습니다…</p>}
+        {loading && <p className="sr-state">찾는 중…</p>}
         {error && (
           <p className="sr-state err">
             검색에 실패했습니다.

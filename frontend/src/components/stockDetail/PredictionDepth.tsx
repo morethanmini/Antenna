@@ -69,7 +69,7 @@ function Rows({ d }: { d: PredictionDistribution }) {
              alt="" aria-hidden="true" width="42" height="42" />
         <p className="pd-bubble">
           등락률은 전일 종가 <b className="num">{won(d.basePrice)}원</b>({dot(d.asOf)}) 기준입니다.
-          개별 예측은 작성자 채널에서 볼 수 있습니다.
+          개별 예측은 작성자 채널에서 볼 수 있어요.
         </p>
       </div>
 

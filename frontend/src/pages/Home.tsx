@@ -173,7 +173,7 @@ function Hero() {
           <em>AI</em>가 시장을 분석하고,<br /><em>현명한 투자 결정</em>을 도와드려요.
         </h1>
         <p className="hm-hero-sub">
-          종가 데이터와 AI 인사이트로<br />투자의 방향을 제시합니다.
+          종가와 AI 분석으로<br />투자 판단을 도와드려요.
         </p>
         {/* 갈 곳은 종목 탐색이다 — 인사이트 홈에서 "인사이트 보기" 가 제자리를
             가리키지 않게. 버튼도 네온 그림이라 링크 안에 얹는다.
@@ -217,7 +217,7 @@ function BriefingTicker() {
       <div className="hm-ticker">
         <span className="hm-ticker-tag"><SparkIcon />AI 브리핑</span>
         <p className="hm-ticker-line is-muted">
-          오늘의 시장 브리핑이 아직 없습니다. 생성 기능이 준비되면 이 자리에 표시됩니다.
+          오늘의 시장 브리핑이 아직 없어요.
         </p>
       </div>
     )
@@ -291,7 +291,7 @@ function MarketOverview() {
         </ul>
       )}
       <BriefingTicker />
-      <p className="hm-foot">최근 30일 종가 흐름 · 실전 시세는 전일 종가만 제공됩니다</p>
+      <p className="hm-foot">최근 30일 종가 흐름 · 실전 시세는 전일 종가 기준</p>
     </section>
   )
 }
@@ -518,7 +518,7 @@ function Sponsored() {
           <div className="hm-showcase-track">
             <div className="hm-showcase-slide hm-t-a">
               <p className="hm-showcase-title">이 자리에 광고를 실어 보세요</p>
-              <p className="hm-showcase-sub">ANT 로 결제합니다.</p>
+              <p className="hm-showcase-sub">결제는 ANT로 해요.</p>
               <Link className="hm-showcase-btn" to="/ads/new">
                 광고 등록하기
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">

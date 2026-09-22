@@ -36,7 +36,7 @@ export function validateNickname(value: string): string | null {
     return `${NICKNAME_MIN}~${NICKNAME_MAX}자로 입력해 주세요.`
   }
   /* 문자 규칙이 공백도 거절하므로 옛 "앞뒤 공백" 검사는 이 안에 흡수됐다. 문구는 서버 message 와 같다 */
-  if (!NICKNAME_PATTERN.test(value)) return '닉네임은 한글·영문·숫자만 쓸 수 있습니다.'
+  if (!NICKNAME_PATTERN.test(value)) return '닉네임에는 한글·영문·숫자만 써 주세요.'
   return profanityError(value)
 }
 

@@ -247,14 +247,14 @@ export default function CommitProgressModal({ phase, result, onClose }: Props) {
         {settled && queued && (
           <p className="cp-note">
             블록이 확정되면 예측 목록에 나타납니다 — <b>창을 닫아도 그대로 진행되고</b>,
-            진행 상황은 확정 기록에서 확인할 수 있습니다.
+            진행 상황은 확정 기록에서 볼 수 있어요.
           </p>
         )}
         {settled && !queued && anchor !== 'CONFIRMED' && anchor !== 'FAILED' && (
           <p className="cp-note">
             이 예측은 이제 누구도, 나조차도 바꿀 수 없습니다.
             체인 기록은 잠시 뒤 배치가 묶어요 — <b>창을 닫아도 그대로 진행되고</b>,
-            결과는 내 예측 내역에서 확인할 수 있습니다.
+            결과는 내 예측 내역에서 볼 수 있어요.
           </p>
         )}
 

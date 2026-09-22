@@ -502,7 +502,7 @@ export default function SeasonResult() {
               <div className="rs-card-block">
               {card !== null ? null : !done ? (
                 <p className="rs-wait">
-                  마지막 게임일에 닿으면 성적표를 받을 수 있습니다.
+                  마지막 게임일까지 마치면 성적표가 나와요.
                   <small>시장 대비 · 최대 낙폭 · 손익비 · 평균 보유일</small>
                 </p>
               ) : null}

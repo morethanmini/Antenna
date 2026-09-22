@@ -94,7 +94,7 @@ export function EventBanner({ name, closesAt }: { name: string; closesAt: string
         <span className="ev-badge">EVENT</span>
         <h2>예측하고, <b>치킨</b> 먹자!</h2>
         <p className="ev-banner-sub">
-          <b>{name}</b> 기간에는 예측과 함께 ANT 를 걸 수 있습니다.
+          <b>{name}</b> 기간에는 예측과 함께 ANT를 걸 수 있어요.
         </p>
         <p className="ev-banner-fine">{`맞힌 쪽이 걸린 ANT 를 모두 나눠 갖습니다 · ${closesAt} 마감`}</p>
       </div>
@@ -255,11 +255,11 @@ export default function EventBet({
         <p className="sd-help">
           보유 <b className="num">{formatToken(wallet.balance)} ANT</b>
           {wallet.syncedAt ? '' : ' · 대사 전'}
-          {` · 한 종목에 한 번만 · ${BET_MIN_STOCKS}종목 이상 걸어야 합니다`}
+          {` · 종목마다 한 번 · ${BET_MIN_STOCKS}종목 이상 선택해 주세요`}
         </p>
       )}
       {tooSmall && (
-        <p className="sd-warn">{`배팅은 최소 ${BET_MIN.toLocaleString('ko-KR')} ANT 부터 걸 수 있습니다.`}</p>
+        <p className="sd-warn">{`배팅은 ${BET_MIN.toLocaleString('ko-KR')} ANT부터 가능해요.`}</p>
       )}
       {tooBig && (
         <p className="sd-warn">{`한 번에 걸 수 있는 최대 금액은 ${BET_MAX.toLocaleString('ko-KR')} ANT 입니다.`}</p>

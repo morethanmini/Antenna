@@ -15,8 +15,8 @@ export default function ChainFailureBanner({ onRetry }: { onRetry?: () => void }
         </svg>
       </i>
       <div>
-        <p className="state-banner-title">블록체인 네트워크가 불안정합니다</p>
-        <p className="state-banner-hint">처리는 계속 시도되며, 완료되면 알려드립니다</p>
+        <p className="state-banner-title">블록체인 연결이 불안정해요</p>
+        <p className="state-banner-hint">계속 시도하고 있어요. 완료되면 알려드릴게요</p>
       </div>
       {onRetry && (
         <button type="button" className="state-cta" onClick={onRetry}>

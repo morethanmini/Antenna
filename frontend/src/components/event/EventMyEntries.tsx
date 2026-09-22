@@ -118,7 +118,7 @@ export default function EventMyEntries({ eventId }: { eventId: number }) {
 
       {!s.qualified && data.entries.length > 0 && (
         <p className="ev-state is-quiet">
-          순위에 들려면 종목을 더 골라야 합니다.
+          순위에 들려면 종목을 더 골라 주세요.
         </p>
       )}
     </section>

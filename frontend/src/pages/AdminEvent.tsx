@@ -88,7 +88,7 @@ export default function AdminEvent() {
       <div className="main-inner">
         <div className="page-head">
           <h1>이벤트 회차 운영</h1>
-          <p>회차를 만들고, 봉인하고, 정산합니다. <b>봉인과 정산은 온체인 트랜잭션이라 되돌릴 수 없습니다.</b></p>
+          <p>회차 생성·봉인·정산을 관리해요. <b>봉인과 정산은 블록체인에 기록돼 되돌릴 수 없어요.</b></p>
         </div>
 
         {error && <div className="admin-error" role="alert">{error}</div>}
@@ -155,10 +155,10 @@ export default function AdminEvent() {
 
       {danger && (
         <ConfirmDialog
-          title={danger.kind === 'seal' ? '접수를 봉인합니다' : '정산을 시작합니다'}
+          title={danger.kind === 'seal' ? '접수 봉인' : '정산 시작'}
           description={danger.kind === 'seal'
             ? '더 이상 배팅을 받지 않고 온체인 seal 트랜잭션을 보냅니다. 되돌릴 수 없습니다.'
-            : '리빌 → 종목 판정 → 풀 배분 → 순위 굳힘이 실행됩니다. 되돌릴 수 없습니다.'}
+            : '리빌 → 종목 판정 → 풀 배분 → 순위 확정 순서로 진행해요. 되돌릴 수 없어요.'}
           confirmLabel={danger.kind === 'seal' ? '봉인' : '정산'}
           tone="danger"
           onConfirm={() => {

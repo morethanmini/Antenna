@@ -278,7 +278,7 @@ export default function InfoTab({ code, summary, picked, onPick, onGoPredict }: 
         error={prices.error}
         onRetry={prices.retry}
         isEmpty={(prices.data?.items.length ?? 0) < 2}
-        empty="이 구간에 쌓인 종가가 없습니다. 거래가 정지된 종목일 수 있습니다."
+        empty="이 구간에는 종가가 없어요. 거래가 정지됐을 수 있어요."
         actions={
           <div className="sd-range" role="group" aria-label="차트 기간">
             {RANGES.map((r) => (
@@ -591,7 +591,7 @@ const DOC_GROUPS = [
     key: 'news' as const,
     label: '뉴스',
     /* 조사를 붙이지 않는다 — "삼성물산와" 처럼 받침 있는 이름에서 틀린다(09-21 QA) */
-    desc: (name: string) => `${name} 관련 주요 언론 소식을 확인할 수 있습니다.`,
+    desc: (name: string) => `${name} 관련 주요 뉴스를 모았어요.`,
     empty: '아직 들어온 뉴스가 없습니다.',
     icon: (
       <>
@@ -604,7 +604,7 @@ const DOC_GROUPS = [
   {
     key: 'filing' as const,
     label: '공시',
-    desc: (name: string) => `${name}의 주요 공시와 투자자 안내사항을 확인할 수 있습니다.`,
+    desc: (name: string) => `${name}의 주요 공시와 투자자 안내를 모았어요.`,
     empty: '아직 들어온 공시가 없습니다.',
     icon: (
       <>

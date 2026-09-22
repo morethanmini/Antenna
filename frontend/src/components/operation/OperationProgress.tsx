@@ -40,7 +40,7 @@ export default function OperationProgress({ op, kind }: Props) {
       <div className="op" aria-live="polite">
         <p className="op-title">이 처리 내역을 볼 수 없습니다</p>
         {/* 재시도 버튼을 주지 않는다 — 다시 물어도 같은 답이고, 남의 작업이라 볼 방법이 없다 */}
-        <p className="op-sub">다른 사람의 처리 내역입니다. 링크를 잘못 받았을 수 있습니다.</p>
+        <p className="op-sub">다른 사람의 처리 내역이에요. 링크를 확인해 주세요.</p>
       </div>
     )
   }
@@ -51,7 +51,7 @@ export default function OperationProgress({ op, kind }: Props) {
     return (
       <div className="op" aria-live="polite">
         <p className="op-title">처리 내역이 남아 있지 않습니다</p>
-        <p className="op-sub">끝난 지 하루가 지난 작업은 조회할 수 없습니다. 결과는 그대로 반영돼 있습니다.</p>
+        <p className="op-sub">끝난 지 하루가 지나 조회할 수 없어요. 처리 결과는 유지돼요.</p>
       </div>
     )
   }
@@ -72,8 +72,8 @@ export default function OperationProgress({ op, kind }: Props) {
        되돌릴 방법이 없는 소각인데 사용자는 한 번 더 시도하게 된다. */
     return (
       <div className="op" aria-live="polite">
-        <p className="op-title">확인이 늦어지고 있습니다</p>
-        <p className="op-sub">취소된 것은 아닙니다. 체인이 붐비면 몇 분 더 걸릴 수 있습니다.</p>
+        <p className="op-title">확인이 늦어지고 있어요</p>
+        <p className="op-sub">처리는 계속되고 있어요. 체인이 붐비면 몇 분 더 걸릴 수 있어요.</p>
         <button type="button" className="op-btn" onClick={op.recheck}>다시 확인</button>
       </div>
     )
@@ -84,7 +84,7 @@ export default function OperationProgress({ op, kind }: Props) {
       <span className="op-spinner" aria-hidden="true" />
       <p className="op-title">{copy.waiting}</p>
       {/* PENDING 은 "블록 확정 대기" 다. 무엇을 기다리는지 한 줄 더 말한다(티켓 제약) */}
-      <p className="op-sub">블록에 담기기를 기다리는 중입니다. 이 화면을 떠나도 계속됩니다.</p>
+      <p className="op-sub">블록에 기록되기를 기다리는 중이에요. 화면을 떠나도 처리는 계속돼요.</p>
 
       {/* 체인 장애는 이 안에서만 말한다. 전역 배너로 번지게 하지 않는다(티켓 제약) */}
       {op.error && (

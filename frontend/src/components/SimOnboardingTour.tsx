@@ -121,7 +121,7 @@ const STEPS = [
     key: 'trade',
     eyebrow: '차트와 뉴스를 보고 판단해요',
     title: <>지표와 뉴스를 보며 <em>사고팔아요</em></>,
-    lead: '앞날은 가려져 있어요. 그날까지의 흐름만 보고 판단합니다.',
+    lead: '앞날은 가려져 있어요. 그날까지의 흐름만 보고 판단해요.',
     art: '/assets/character/black_ant/antenna-character-black.png',
     drift: ['buy', 'script', 'sell'],
     points: [

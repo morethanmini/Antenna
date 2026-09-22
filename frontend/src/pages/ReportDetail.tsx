@@ -124,7 +124,7 @@ export default function ReportDetail() {
                  "리포트 본문은(는) …" 이 된다. 이 화면은 label 이 고정이라 정확히 쓸 수 있다. */
               <LockedCard
                 label="리포트 본문"
-                title="리포트 본문은 구독자에게만 공개됩니다"
+                title="리포트 본문은 구독자만 볼 수 있어요"
                 channelId={String(report.data.author.userId)}
               />
             ) : (
