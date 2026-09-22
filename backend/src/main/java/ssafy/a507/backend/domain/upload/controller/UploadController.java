@@ -2,7 +2,9 @@ package ssafy.a507.backend.domain.upload.controller;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -69,11 +71,17 @@ public class UploadController {
      *
      * <p>저장 위치가 로컬 볼륨이라 서버가 직접 내려보낸다. CDN 으로 옮기면 이 엔드포인트는
      * 사라지고 {@code url} 이 외부 주소를 담는다.
+     *
+     * <p>캐시를 1년 · immutable 로 연다. 달지 않으면 스프링 시큐리티가 {@code no-store} 를 붙여
+     * 목록의 아바타를 볼 때마다 다시 받는다(QA 09-21 실측). 주소가 UUID 이고 같은 id 의 내용은
+     * 바뀌지 않으며 지우는 API 도 없다 — 프로필 "지우기" 는 참조만 끊는다. 이미지 삭제가 생기면
+     * 브라우저에 남은 사본이 1년 가므로, 그때는 이 값을 줄이거나 주소에 버전을 붙인다.
      */
     @GetMapping("/{fileId}")
     public ResponseEntity<byte[]> read(@PathVariable String fileId) {
         UploadService.StoredImage image = uploadService.load(fileId);
         return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(Duration.ofDays(365)).cachePublic().immutable())
                 .contentType(MediaType.parseMediaType(image.mime()))
                 .body(image.content());
     }

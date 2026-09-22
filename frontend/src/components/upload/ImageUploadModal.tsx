@@ -18,16 +18,19 @@
      전송이 끊김                → 같은 파일로 다시 시도하면 된다
      서버가 규격 위반으로 거절   → 다른 파일을 골라야 한다
 
-   ── 왜 로컬에서 미리 거르는가 ───────────────────────────────
-   서버가 최종 판정자다. 그래도 10MB 를 다 올린 뒤 400 을 받으면 사용자는 기다린 만큼을
-   잃는다. 같은 code 를 쓰므로 로컬에서 걸리든 서버에서 걸리든 문구가 같다. */
+   ── 로컬에서는 거르지 않고 **맞춘다** (QA 09-21) ─────────────
+   서버가 최종 판정자인 것은 그대로다. 전에는 서버가 거절할 그림을 여기서 미리 거절했는데,
+   사용자에게 남는 것은 "왜 안 올라가지" 뿐이었다. 지금은 브라우저가 읽을 수 있는 그림이면
+   서버 규격에 맞게 바꿔서(자르기 · 줄이기 · 형식 바꾸기) 보내고, 결과가 이상하게 보일 것
+   같으면 **막지 않고 경고**한다. 남는 거절은 브라우저가 못 읽는 파일뿐이다. */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, CLIENT_ERROR_CODE } from '../../api/errors'
 import {
   ACCEPT_ATTR, ASPECT_BY_PURPOSE, MAX_BYTES, MAX_EDGE_BY_PURPOSE,
-  checkPixels, checkSize, cropToAspect, formatAspect, formatBytes,
-  measure, precheck, uploadImage,
-  type AspectRule, type CropRect, type UploadPurpose, type UploadedImage,
+  checkSize, cropToAspect, formatAspect, formatBytes,
+  measure, needsRedraw, precheck, tooThinToCrop, uploadImage, warningsFor,
+  type AspectRule, type CropRect, type CroppedImage, type UploadPurpose,
+  type UploadWarning, type UploadedImage,
 } from '../../api/uploads'
 import CropStage from './CropStage'
 import { errorText } from '../state/errorText'
@@ -48,7 +51,21 @@ type Picked = {
   /** 자르거나 줄였다면 손대기 전 크기. 화면이 그 사실을 반드시 알려야 한다 */
   croppedFrom?: { width: number; height: number }
   /** 무엇을 했는지 — 문구가 갈린다 */
-  did?: { cropped: boolean; shrank: boolean }
+  did?: CroppedImage['did']
+  /** 자르기 UI 를 거치지 않고 가운데를 잡았다(너무 가는 그림). 안내 문구가 달라진다 */
+  auto?: boolean
+  /** 막지 않고 알리는 것. 올리기 버튼은 그대로 살아 있다 */
+  warnings: UploadWarning[]
+}
+
+/* 경고 문구. "안 된다" 가 아니라 "이렇게 보인다" 를 말한다 — 그대로 갈지는 사용자가 정한다 */
+const WARNING_TEXT: Record<UploadWarning, string> = {
+  CROP_LOSS: '그림의 절반 넘게 잘려 나갑니다. 미리보기를 확인해 주세요',
+  AD_SMALL: '배너 자리보다 작은 그림입니다. 늘어나서 흐리게 보일 수 있습니다',
+  STRETCHED: '너무 작은 그림이라 늘려서 넣었습니다. 깨져 보입니다',
+  TALL: '세로로 아주 긴 그림입니다. 본문이 그만큼 길어집니다',
+  FLAT: '가로로 아주 납작한 그림입니다. 본문에서 가는 줄처럼 보입니다',
+  GIF_STILL: 'GIF 는 첫 장면만 올라갑니다. 움직임은 사라집니다',
 }
 
 type Props = {
@@ -59,6 +76,11 @@ type Props = {
   onUploaded: (image: UploadedImage) => void
   /** 기본은 purpose 가 정한다. 화면이 다른 제약을 걸어야 하면 여기로 덮는다 */
   aspect?: AspectRule
+}
+
+/** 'image/webp' → 'WebP'. 바꾼 형식을 사람이 읽는 이름으로 */
+function formatType(mime: string) {
+  return ({ 'image/webp': 'WebP', 'image/png': 'PNG', 'image/jpeg': 'JPG' } as Record<string, string>)[mime] ?? mime
 }
 
 export default function ImageUploadModal({ purpose, onClose, onUploaded, aspect }: Props) {
@@ -111,12 +133,11 @@ export default function ImageUploadModal({ purpose, onClose, onUploaded, aspect 
   async function choose(file: File) {
     setError(null)
 
-    /* ① 파일만 보고 알 수 있는 것 — 디코딩 전에 거른다.
-       줄여서 올리는 용도는 원본 용량을 보지 않는다(precheck 머리말) */
-    const early = precheck(file, rule, maxEdge != null)
+    // ① 디코딩 전에 막는 것은 SVG 하나다(precheck 머리말). 형식·용량은 막지 않고 맞춘다
+    const early = precheck(file)
     if (early) { setError(early); return }
 
-    // ② 크기와 비율은 디코딩해야 안다
+    // ② 브라우저가 읽는지가 관문이다. 크기와 비율도 여기서 안다
     let measured
     try {
       measured = await measure(file)
@@ -124,75 +145,60 @@ export default function ImageUploadModal({ purpose, onClose, onUploaded, aspect 
       setError(e as ApiError)
       return
     }
+    URL.revokeObjectURL(measured.previewUrl)
+    releasePreview()
+    const src = { file, size: { width: measured.width, height: measured.height } }
 
-    // ③ 화소 수는 자르기 전에 본다 — 8천만 화소를 넘기면 캔버스에 올리는 것부터 실패한다
-    const tooBig = checkPixels(measured.width, measured.height)
-    if (tooBig) {
-      URL.revokeObjectURL(measured.previewUrl)
-      setError(tooBig)
+    /* ③ 너무 가는 그림(50×100000)은 자르기 화면에서 0.16px 폭으로 그려져 네모를 잡을 수 없다.
+       그 단계를 건너뛰고 가운데를 잡는다 — 비율이 없는 화면이면 원본 그대로다.
+       거절하지 않는다. 대신 얼마나 잘렸는지, 어떻게 보일지를 경고로 알린다. */
+    if (tooThinToCrop(src.size)) {
+      await finalize(src, undefined, true)
       return
     }
 
     /* ④ 어디를 남길지 사용자가 고른다(CropStage). 비율이 정해진 화면(광고 4:1 · 프로필 1:1)은
        네모가 그 비율로 잠기고, 리포트 본문처럼 비율이 없는 화면은 자유롭게 잡는다.
        손대지 않고 넘기면 — 비율이 있으면 예전처럼 가운데, 없으면 원본 그대로다. */
-    URL.revokeObjectURL(measured.previewUrl)
-    releasePreview()
-    setSource({ file, size: { width: measured.width, height: measured.height } })
+    setSource(src)
     setStep('crop')
   }
 
   /**
-   * 자르지 않고 넘긴다. 비율이 없는 화면에서만 열어 준다 — 자르면 캔버스로 다시 뽑는 셈이라
-   * PNG 는 오히려 용량이 늘 수 있고, 리포트 본문 그림은 원본 화질이 그대로여야 한다.
+   * 고른 그림을 올릴 파일로 만든다. 세 길이 여기로 모인다 — 고른 자리로 자르기(rect 있음),
+   * 원본 그대로(rect 없음 · 비율 없음), 너무 가늘어 자동으로 가운데 잡기(auto).
    *
-   * 쓰는 자리보다 큰 경우(용도별 maxEdge)는 여기서도 줄인다 — 그건 자르기가 아니다.
+   * 다시 그릴 일이 없으면 원본을 그대로 쓴다. 캔버스를 거치면 PNG 는 오히려 용량이 늘 수 있고
+   * 리포트 본문 그림은 원본 화질이어야 한다. 다시 그려야 하는 경우는 넷이다 — 자를 때, 형식이
+   * 서버 것이 아닐 때, 10MB·8천만 화소를 넘을 때, 쓰는 자리보다 클 때(needsRedraw).
    */
-  async function skipCrop() {
-    if (!source) return
+  async function finalize(src: NonNullable<typeof source>, rect: CropRect | undefined, auto: boolean) {
     setError(null)
-    const { file, size } = source
-    let next: Picked
-    if (maxEdge != null && Math.max(size.width, size.height) > maxEdge) {
-      try {
-        const cut = await cropToAspect(file, size, undefined, maxEdge)
+    const { file, size } = src
+    // 비율이 있는 화면은 rect 가 없어도 가운데를 자른다. 비율이 없으면 rect 가 있을 때만 자른다
+    const crops = rule != null || rect != null
+    try {
+      let next: Picked
+      if (crops || needsRedraw(file, size, maxEdge)) {
+        const cut = await cropToAspect(file, size, crops ? rule : undefined, maxEdge, rect)
+        /* 결과가 규격 안인지 마지막으로 본다. 비율은 이제 구조적으로 맞지만(cropToAspect),
+           서버와 같은 잣대로 한 번 재 두면 그 전제가 깨졌을 때 올리기 전에 안다 */
+        const stillBad = checkSize(cut.width, cut.height, crops ? rule : undefined)
+        if (stillBad) throw stillBad
         next = {
           file: cut.file, width: cut.width, height: cut.height,
-          previewUrl: URL.createObjectURL(cut.file), croppedFrom: cut.from, did: cut.did,
+          previewUrl: URL.createObjectURL(cut.file), croppedFrom: cut.from, did: cut.did, auto,
+          warnings: warningsFor(purpose, file, cut, cut, auto),
         }
-      } catch (e) {
-        setError(e as ApiError)
-        return
+      } else {
+        next = {
+          file, width: size.width, height: size.height, previewUrl: URL.createObjectURL(file),
+          warnings: warningsFor(purpose, file, size),
+        }
       }
-    } else {
-      next = { file, width: size.width, height: size.height, previewUrl: URL.createObjectURL(file) }
-    }
-
-    releasePreview()
-    previewRef.current = next.previewUrl
-    setPicked(next)
-    setSource(null)
-    setStep('ready')
-  }
-
-  /**
-   * 고른 자리로 자른다. 결과가 규격 안인지 여기서 마지막으로 본다 — 자르기 UI 는 화면
-   * 좌표로 놀고 실제 판정은 원본 좌표로 하므로, 반올림이 오차를 넘는 경우가 남는다.
-   */
-  async function applyCrop(rect: CropRect) {
-    if (!source) return
-    setError(null)
-    try {
-      const cut = await cropToAspect(source.file, source.size, rule, maxEdge, rect)
-      const stillBad = checkSize(cut.width, cut.height, rule)
-      if (stillBad) throw stillBad
       releasePreview()
-      const url = URL.createObjectURL(cut.file)
-      previewRef.current = url
-      setPicked({
-        file: cut.file, width: cut.width, height: cut.height,
-        previewUrl: url, croppedFrom: cut.from, did: cut.did,
-      })
+      previewRef.current = next.previewUrl
+      setPicked(next)
       setSource(null)
       setStep('ready')
     } catch (e) {
@@ -277,7 +283,8 @@ export default function ImageUploadModal({ purpose, onClose, onUploaded, aspect 
                   <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
                 </svg>
                 <b>이미지를 끌어다 놓거나 눌러서 고르세요</b>
-                <span>{`PNG · JPG · WebP · ${formatBytes(MAX_BYTES)} 이하`}</span>
+                {/* 막는 조건이 아니라 하는 일을 적는다 — GIF 도 큰 사진도 들어간다(QA 09-21) */}
+                <span>{`PNG · JPG · WebP 로 올라갑니다 · 다른 형식은 바꾸고, ${formatBytes(MAX_BYTES)} 를 넘으면 줄입니다`}</span>
                 {/* 비율 제약은 있을 때만 알린다. 없는 화면에 규칙을 만들어 보이지 않는다.
                     거절이 아니라 자른다는 것을 고르기 전에 말해 둔다 — 결과가 놀랍지 않게 */}
                 <span className="iu-rule">
@@ -307,9 +314,9 @@ export default function ImageUploadModal({ purpose, onClose, onUploaded, aspect 
               size={source.size}
               aspect={rule}
               onCancel={() => { setSource(null); setError(null); setStep('pick') }}
-              onDone={(rect) => void applyCrop(rect)}
+              onDone={(rect) => void finalize(source, rect, false)}
               /* 비율이 잠긴 화면은 자르지 않고 넘어갈 수 없다 — 규격이 곧 게재 조건이다 */
-              onSkip={rule ? undefined : () => void skipCrop()}
+              onSkip={rule ? undefined : () => void finalize(source, undefined, false)}
             />
           )}
 
@@ -336,15 +343,25 @@ export default function ImageUploadModal({ purpose, onClose, onUploaded, aspect 
                   밖으로 나간 부분이 없어지고, 줄이기는 크게 볼 때만 차이가 난다. */}
               {picked.croppedFrom && picked.did && (
                 <p className="iu-cropped">
-                  {picked.did.cropped && (rule
-                    ? `${formatAspect(rule)} 에 맞춰 고른 자리로 잘랐습니다`
-                    : '고른 자리로 잘랐습니다')}
-                  {picked.did.cropped && picked.did.shrank && ' · '}
-                  {picked.did.shrank && '화면에 쓰는 크기로 줄였습니다'}
+                  {[
+                    picked.did.cropped && (rule
+                      ? `${formatAspect(rule)} 에 맞춰 ${picked.auto ? '가운데를' : '고른 자리로'} 잘랐습니다`
+                      : '고른 자리로 잘랐습니다'),
+                    /* 줄인 이유가 둘이다. 쓰는 자리가 작아서(프로필)와 서버 상한을 넘어서 */
+                    picked.did.shrank && (maxEdge != null ? '화면에 쓰는 크기로 줄였습니다' : '올릴 수 있는 크기로 줄였습니다'),
+                    picked.did.converted && `${formatType(picked.file.type)} 로 바꿨습니다`,
+                  ].filter(Boolean).join(' · ')}
                   <span className="num">
                     {`${picked.croppedFrom.width} × ${picked.croppedFrom.height} → ${picked.width} × ${picked.height}`}
                   </span>
                 </p>
+              )}
+              {/* 경고는 막지 않는다 — 올리기 버튼은 그대로다. 오류(iu-error)와 색을 달리해
+                  "안 된다" 가 아니라 "이렇게 보인다" 로 읽히게 한다 */}
+              {picked.warnings.length > 0 && step === 'ready' && (
+                <ul className="iu-warn" role="status">
+                  {picked.warnings.map((w) => <li key={w}>{WARNING_TEXT[w]}</li>)}
+                </ul>
               )}
             </div>
           )}
