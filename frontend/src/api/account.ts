@@ -82,6 +82,33 @@ export function channelLabel(channel: { platform: string; label?: string | null 
   return channel.label?.trim() || platformLabel(channel.platform)
 }
 
+/* 주소의 호스트로 플랫폼을 되짚는 표. 서브도메인은 끝만 맞으면 된다(www.youtube.com,
+   m.blog.naver.com). 브런치·디스코드처럼 표에 없는 곳은 ETC 로 두고 이름을 직접 붙인다. */
+const PLATFORM_HOSTS: [ChannelPlatform, string[]][] = [
+  ['YOUTUBE', ['youtube.com', 'youtu.be']],
+  ['X', ['x.com', 'twitter.com']],
+  ['BLOG', ['blog.naver.com', 'tistory.com', 'velog.io', 'medium.com', 'blogspot.com', 'wordpress.com']],
+]
+
+/**
+ * 주소에서 플랫폼을 되짚는다. 표에 없는 호스트거나 아직 주소가 아니면 null 이다.
+ *
+ * 편집 폼이 주소를 칠 때마다 부른다 — 유튜브 링크를 붙여 넣었는데 플랫폼을 따로 고르게
+ * 하면 그걸 빼먹고 저장해 "직접 입력" 아이콘에 유튜브 주소가 붙는다(2026-09-22).
+ */
+export function detectPlatform(url: string): ChannelPlatform | null {
+  let host: string
+  try {
+    host = new URL(url.trim()).hostname.toLowerCase()
+  } catch {
+    return null
+  }
+  for (const [platform, hosts] of PLATFORM_HOSTS) {
+    if (hosts.some((h) => host === h || host.endsWith(`.${h}`))) return platform
+  }
+  return null
+}
+
 /**
  * 프로필 수정. **보내는 필드만 바뀐다** — 온보딩은 닉네임만, 소개만 고치는 자리는 소개만 보낸다.
  *
