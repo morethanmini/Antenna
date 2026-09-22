@@ -100,14 +100,16 @@ body.is-night.is-glass .nt-pop{
    없다 — 버튼 안 버튼이 되기 때문이다. 판을 li 로 내리니 본문과 버튼을 한 줄에
    나란히 둘 수 있고, 누를 자리는 덮개가 줄 전체에 깔아 준다.
 
-   오른쪽 34px 는 지우기(×) 자리다. 이 여백이 온 때(.nt-when)도 그만큼 왼쪽으로
-   밀어 준다 — 전에는 ×가 아래 구석에 있어 때와 겹칠 일이 없었지만, 이제 ×가
-   세로 가운데에 서므로 같은 높이에서 만난다. */
+   오른쪽 46px 는 지우기(×) 자리와 그 앞 여백이다. ×가 오른쪽 끝에서 8~30px 를
+   쓰므로 16px 이 뜬다. 글자가 ×에 바짝 붙으면 잘린 "…" 이나 [더보기] 가 아이콘과
+   한 덩어리로 읽힌다 — 처음에 34px(4px 뜸)로 두었다가 늘렸다(2026-09-22).
+   이 여백이 온 때(.nt-when)도 그만큼 왼쪽으로 밀어 준다 — 전에는 ×가 아래 구석에
+   있어 때와 겹칠 일이 없었지만, 이제 ×가 세로 가운데에 서므로 같은 높이에서 만난다. */
 .nt-row{
   position:relative;display:grid;
   grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto;
   gap:2px 8px;align-items:baseline;
-  padding:10px 34px 11px 10px;border-radius:10px;
+  padding:10px 46px 11px 10px;border-radius:10px;
   transition:background .12s;
 }
 .nt-row:hover{background:var(--surface-2)}
