@@ -159,12 +159,16 @@ function RunRow({ run, showMode }: { run: MyRun; showMode: boolean }) {
    마친 판 수 하나로 칠한다. 서버에 단계 같은 것은 없고, 이건 새로 받아온 값이 아니라
    **위 요약의 "마친 시즌" 을 다르게 보여 주는 것**이다 — 그래서 숫자를 다시 적지 않고
    칸만 칠한다. 문턱은 1 · 2 · 4 · 8 이다(한 판이라도 하면 첫 칸이 켜진다).
-   문턱을 바꾸면 여기 한 줄만 고치면 된다. */
+   문턱을 바꾸면 여기 한 줄만 고치면 된다.
+
+   **칸마다 달려 있던 설명 줄을 걷었다(2026-09-22).** 좁은 칸에서 두 줄씩 접혀
+   카드가 그만큼 길어졌고, 그 길이 때문에 오른쪽 기둥이 목록 아래로 내려갔다.
+   이름 넷이면 무엇을 말하는지는 위 한 줄(지금까지 n판…)이 이미 설명한다. */
 const STEPS = [
-  { at: 1, name: '시작', note: '첫 연습을 시작해요' },
-  { at: 2, name: '학습', note: '다양한 사례로 배워요' },
-  { at: 4, name: '경험', note: '스스로 판단하며 쌓아요' },
-  { at: 8, name: '투자왕', note: '꾸준함이 만든 자리' },
+  { at: 1, name: '시작' },
+  { at: 2, name: '학습' },
+  { at: 4, name: '경험' },
+  { at: 8, name: '투자왕' },
 ]
 
 function Journey({ done }: { done: number }) {
@@ -173,7 +177,14 @@ function Journey({ done }: { done: number }) {
   return (
     <section className="rc-side-card" aria-label="나의 성장 여정">
       <h2 className="rc-side-head"><ChartIcon />나의 성장 여정</h2>
-      <p className="rc-side-lead">여러 번의 연습이 모여, 더 좋은 투자자가 됩니다.</p>
+      {/* 격려 카드 아래에 따로 있던 "지금까지 n판" 줄을 여기로 합쳤다(2026-09-22).
+          이 카드가 곧 "내가 몇 판을 했나" 를 말하는 자리라 제자리이기도 하고,
+          오른쪽 기둥이 목록보다 104px 아래로 내려가던 것도 이걸로 줄였다. */}
+      <p className="rc-side-lead">
+        {done === 0
+          ? '첫 판을 끝내면 여기부터 채워져요.'
+          : `지금까지 ${done}판을 끝냈어요. 연습이 모여 더 좋은 투자자가 됩니다.`}
+      </p>
 
       <ol className="rc-steps" style={{ ['--reached' as string]: reached }}>
         {STEPS.map((s, i) => (
@@ -182,7 +193,6 @@ function Journey({ done }: { done: number }) {
               {i < reached && <Ico size={13}><path d="M5 13l4 4L19 7" /></Ico>}
             </span>
             <b>{s.name}</b>
-            <em>{s.note}</em>
           </li>
         ))}
       </ol>
@@ -299,6 +309,13 @@ export default function SeasonHistory() {
           </div>
         </header>
 
+        <div className="rc-body">
+          {/* 왼쪽 기둥 — 요약 4칸과 목록이 같은 폭으로 선다(2026-09-22).
+              요약이 화면 전체를 가로지르던 때는 오른쪽 기둥이 그 아래에서야 시작해,
+              격려 카드와 성장 여정이 통째로 한 칸 내려앉아 있었다. 요약을 왼쪽으로
+              들이면 오른쪽 기둥이 요약과 같은 높이에서 시작한다 — 화면 전체 높이는
+              그대로이고(덩어리 순서만 바뀐다) 오른쪽 위 빈자리만 없어진다. */}
+          <div className="rc-main">
         {/* ── 요약 4칸 ─────────────────────────────────── */}
         <section className="rc-figs" aria-label="기록 요약">
           <Figure
@@ -331,7 +348,6 @@ export default function SeasonHistory() {
           />
         </section>
 
-        <div className="rc-body">
           {/* ── 목록. 진행 중과 마친 시즌은 같은 목록의 두 상태다 ── */}
           <section className="rc-card">
             <div className="rc-tabs" role="tablist" aria-label="기록 종류">
@@ -388,6 +404,7 @@ export default function SeasonHistory() {
               )}
             </div>
           </section>
+          </div>
 
           {/* ── 오른쪽 기둥 ───────────────────────────── */}
           <aside className="rc-side">
@@ -403,13 +420,6 @@ export default function SeasonHistory() {
               />
               {/* 칭찬은 실제 기록에 따라 갈린다 — 한 판도 안 끝낸 사람에게
                   "잘하고 있어요" 라고 하면 빈말이 된다. */}
-              {/* 한 줄을 넘기지 않는다. 격려하는 말은 위 카드 그림이 이미 하고 있어
-                  여기서는 내 기록에서 나오는 사실만 적는다. */}
-              <p className="rc-cheer-say">
-                {done.length === 0
-                  ? '아직 끝까지 마친 판이 없어요.'
-                  : `지금까지 ${done.length}판을 끝냈어요.`}
-              </p>
             </section>
 
             <Journey done={done.length} />
