@@ -40,7 +40,7 @@ export default function RequireAccess({ access, children }: { access: Access; ch
             <h1>접근 권한이 없습니다</h1>
             <p>{'403 · 관리자 전용 화면입니다'}</p>
           </div>
-          <LockedCard label="이 화면" title="관리자 계정으로만 들어올 수 있습니다">
+          <LockedCard label="이 화면" title="관리자 계정만 들어올 수 있어요">
             <p className="state-hint">권한이 필요하면 운영자에게 문의해 주세요</p>
           </LockedCard>
         </div>

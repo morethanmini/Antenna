@@ -34,7 +34,7 @@ export default class ErrorBoundary extends Component<Props, State> {
         <div className="main-inner">
           <div className="page-head">
             <h1>화면을 표시할 수 없습니다</h1>
-            <p>이 화면에서 문제가 발생했습니다. 다른 화면은 그대로 쓸 수 있습니다.</p>
+            <p>이 화면에 문제가 생겼어요. 다른 화면은 계속 쓸 수 있어요.</p>
           </div>
           <div className="state" role="alert">
             <p className="state-title">예상하지 못한 오류가 발생했습니다</p>

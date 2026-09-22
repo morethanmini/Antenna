@@ -278,8 +278,8 @@ export default function ChannelProfile() {
                     )}
                     <p className="ch-sub-renew">
                       {sub.autoRenew
-                        ? '만료일에 자동으로 갱신됩니다'
-                        : '자동 갱신을 해지했습니다. 만료일에 종료됩니다'}
+                        ? '만료일에 자동 갱신돼요'
+                        : '자동 갱신을 껐어요. 만료일까지 이용할 수 있어요'}
                     </p>
                   </div>
                 ) : sub?.status === 'PENDING' ? (
@@ -287,7 +287,7 @@ export default function ChannelProfile() {
                   <div className="ch-sub-state">
                     <span className="ch-sub-badge is-pending">{SUB_LABEL.PENDING}</span>
                     <p className="ch-sub-until">
-                      결제가 체인에서 확정되면 구독이 시작됩니다. 완료되면 알림으로 알려 드립니다.
+                      체인에서 결제가 확정되면 구독이 시작돼요. 알림으로 알려드릴게요.
                     </p>
                   </div>
                 ) : channel.fee === null ? (
@@ -561,7 +561,7 @@ function ChannelBacktest({ userId }: { userId: string }) {
               /* 표본이 없으면 0% 를 그리지 않는다 — "손실 없음" 으로 읽힌다 */
               <EmptyState
                 title="아직 검증할 판정 결과가 없습니다"
-                hint="예측이 판정되면 이 채널을 따라갔을 때의 수익률을 계산합니다"
+                hint="예측이 판정되면 이 채널을 따라간 수익률을 보여줘요"
               />
             ) : back.data && (
               <div className="ch-backtest">

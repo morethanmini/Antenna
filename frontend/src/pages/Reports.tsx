@@ -168,7 +168,7 @@ function ReportFeed({ scope, sort }: { scope: ReportScope; sort: ReportSort }) {
       {!feed.error && feed.items.length === 0 && !feed.loading && (
         <EmptyState
           title={scope === 'SUBSCRIBED' ? '구독 중인 채널의 리포트가 없습니다' : '아직 발행된 리포트가 없습니다'}
-          hint={scope === 'SUBSCRIBED' ? '채널을 구독하면 여기에 모입니다' : '첫 리포트를 기다리고 있습니다'}
+          hint={scope === 'SUBSCRIBED' ? '구독한 채널의 리포트가 여기에 모여요' : '아직 리포트가 없어요'}
         />
       )}
 
@@ -237,7 +237,7 @@ function PredictionFeed({ scope }: { scope: ReportScope }) {
       {!feed.error && feed.items.length === 0 && !feed.loading && (
         <EmptyState
           title={scope === 'SUBSCRIBED' ? '구독 중인 채널의 예측이 없습니다' : '아직 등록된 예측이 없습니다'}
-          hint={scope === 'SUBSCRIBED' ? '채널을 구독하면 여기에 모입니다' : '첫 예측을 기다리고 있습니다'}
+          hint={scope === 'SUBSCRIBED' ? '구독한 채널의 예측이 여기에 모여요' : '아직 예측이 없어요'}
         />
       )}
 

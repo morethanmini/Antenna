@@ -109,7 +109,7 @@ export default function CloseChart({ series, height = 260, axis = true, label = 
         role="img"
         tabIndex={0}
         aria-label={`${label} 종가 추이. ${fmtDate(series[0].tradeDate)}부터 ${fmtDate(series[series.length - 1].tradeDate)}까지 ${
-          up ? '상승' : '하락'} ${Math.abs(rate).toFixed(2)}퍼센트. 좌우 화살표로 날짜별 종가를 읽을 수 있습니다.`}
+          up ? '상승' : '하락'} ${Math.abs(rate).toFixed(2)}퍼센트. 좌우 화살표로 날짜별 종가를 읽어 보세요.`}
         onPointerMove={(e) => pick(e.clientX)}
         onPointerLeave={() => setCursor(null)}
         onKeyDown={onKey}

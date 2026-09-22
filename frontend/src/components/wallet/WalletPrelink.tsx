@@ -34,7 +34,7 @@ export default function WalletPrelink({ purpose }: {
   return (
     <aside className="wl-prelink" aria-label="지갑 연동 안내">
       <p>
-        <b>{purpose} 지갑 서명이 필요합니다.</b>
+        <b>{purpose} 지갑 서명이 필요해요.</b>
         <span>먼저 연동해 두면 적은 내용을 잃지 않고, 가입 보너스 ANT 도 그사이 들어옵니다.</span>
       </p>
       <button type="button" className="wl-btn solid" onClick={() => setLinking(true)}>

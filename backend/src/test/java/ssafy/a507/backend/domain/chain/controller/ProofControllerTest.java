@@ -426,6 +426,85 @@ class ProofControllerTest {
                     + "\nnonce=" + nonce;
         }
 
+        /**
+         * 대회로 등록한 예측이면 서명 서식이 다르다 (ANT-CHAIN-20).
+         *
+         * <p>이 테스트가 없던 동안 운영에서 대회 예측 전부의 ③이 "서명자 불일치" 로 떠 있었다. 서명은 멀쩡했고,
+         * 화면이 단건 서식으로 조립하고 있었다 — ECDSA 는 틀린 메시지에도 실패하지 않고 엉뚱한 주소를 뱉는다.
+         * 그래서 위 단건 테스트와 <b>같은 방식으로</b> 한 번 더 본다: 응답 값만으로 event-entry 문자열을
+         * 다시 만들어 주소가 복원되는가.
+         */
+        @Test
+        @DisplayName("대회 등록 예측은 event-entry 서식으로 복원된다 — eventId·stake 가 응답에 온다")
+        void 대회_예측의_서명자를_복원한다() throws Exception {
+            Credentials wallet = Credentials.create(PRIVATE_KEY);
+            long pid = insertPrediction(authorId, "OPEN");
+            String noteHash = noteHashOf("seed");
+            long eventId = insertEvent();
+            insertBet(pid, eventId, authorId, 500, "005930", 0);
+            String payload = eventEntryPayload(eventId, noteHash, 500, signatureGuard.chainId(), NONCE);
+            String signature = WalletSignatures.sign(payload, wallet);
+            insertSignedCommit(pid, "seed", signature, wallet.getAddress(), NONCE);
+
+            String body = mockMvc.perform(get("/api/v1/predictions/{id}/proof", pid).with(user(str(authorId))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.eventEntry.eventId").value((int) eventId))
+                    .andExpect(jsonPath("$.eventEntry.stake").value(500))
+                    // 묶음이 아니라 이 커밋 혼자 — 화면이 ③을 계산해도 된다는 신호다
+                    .andExpect(jsonPath("$.eventEntry.itemCount").value(1))
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+
+            JsonNode res = JSON.readTree(body);
+            String rebuilt = eventEntryPayload(
+                    res.get("eventEntry").get("eventId").asLong(),
+                    res.get("payload").get("noteHash").asString(),
+                    res.get("eventEntry").get("stake").asLong(),
+                    res.get("chainId").asLong(),
+                    res.get("signNonce").asString());
+            assertThat(recover(rebuilt, res.get("signature").asString()))
+                    .isEqualToIgnoringCase(res.get("signerAddress").asString());
+        }
+
+        @Test
+        @DisplayName("단건 등록 예측이면 eventEntry 는 null — 화면이 예전 서식 그대로 조립한다")
+        void 단건_예측은_eventEntry_가_없다() throws Exception {
+            long pid = insertPrediction(authorId, "OPEN");
+            insertCommit(pid, "seed", null);
+
+            mockMvc.perform(get("/api/v1/predictions/{id}/proof", pid).with(user(str(authorId))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.eventEntry").value((Object) null));
+        }
+
+        @Test
+        @DisplayName("한 서명에 여러 종목이 묶이면 itemCount 가 그 수다 — 화면은 이 값으로 ③을 잠근다")
+        void 묶음_등록은_itemCount_가_여럿이다() throws Exception {
+            long eventId = insertEvent();
+            long first = insertPrediction(authorId, "OPEN");
+            long second = insertPrediction(authorId, "OPEN");
+            insertBet(first, eventId, authorId, 500, "005930", 0);
+            insertBet(second, eventId, authorId, 1000, "000660", 1);
+            // 묶음 등록은 서명 하나를 종목 수만큼 복사해 넣는다 — 같은 nonce 가 두 행에 들어간다
+            insertSignedCommit(first, "seed", "0x" + "cd".repeat(65), "0x" + "22".repeat(20), NONCE);
+            insertSignedCommit(second, "seed2", "0x" + "cd".repeat(65), "0x" + "22".repeat(20), NONCE);
+
+            mockMvc.perform(get("/api/v1/predictions/{id}/proof", first).with(user(str(authorId))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.eventEntry.itemCount").value(2));
+        }
+
+        /** 서버 {@code EventEntryService.Signed.signingPayload} 와 같은 문자열이어야 한다. 종목 한 줄짜리다. */
+        private String eventEntryPayload(
+                long eventId, String noteHash, long stake, long chainId, String nonce) {
+            return "antenna:event-entry:v1"
+                    + "\neventId=" + eventId
+                    + "\n005930/UP/80000.00/" + noteHash + "/" + stake
+                    + "\nchainId=" + chainId
+                    + "\nnonce=" + nonce;
+        }
+
         private String recover(String payload, String signature) throws Exception {
             byte[] raw = Numeric.hexStringToByteArray(signature);
             byte[] r = new byte[32];
@@ -494,6 +573,68 @@ class ProofControllerTest {
                 .setParameter(9, basedOn)
                 .executeUpdate();
         return ((Number) em.createNativeQuery("SELECT MAX(id) FROM predictions").getSingleResult()).longValue();
+    }
+
+    /**
+     * 대회 회차 하나 (ANT-CHAIN-20). 종목 슬롯은 {@link #insertBet} 이 자기 몫을 만든다 —
+     * 한 회차 안에서 슬롯은 종목마다 하나라({@code uq_event_stocks_code}) 배팅과 짝지어 만드는 편이 안 엉킨다.
+     *
+     * <p>값은 ③ 재료와 무관한 칸을 채우는 용도다. 서명 문자열에 들어가는 것은 {@code eventId} 하나뿐이다.
+     */
+    private long insertEvent() {
+        em.createNativeQuery(
+                        """
+                        INSERT INTO prediction_events
+                          (title, status, opens_at, seals_at, base_date, settle_date,
+                           min_stake, max_stake, min_stocks, created_at)
+                        VALUES ('리허설', 'OPEN', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?,
+                                100, 10000, 1, CURRENT_TIMESTAMP)
+                        """)
+                .setParameter(1, DAY)
+                .setParameter(2, DAY.plusDays(3))
+                .executeUpdate();
+        em.flush();
+        return ((Number) em.createNativeQuery("SELECT MAX(id) FROM prediction_events").getSingleResult())
+                .longValue();
+    }
+
+    /**
+     * 종목 슬롯 + 배팅 행 하나. proof 는 이 배팅 행의 존재로 "대회 등록" 을, {@code stake} 로 서명 줄의
+     * 마지막 칸을 안다.
+     *
+     * @param stockCode 슬롯을 딸 종목. 한 회차에 같은 종목은 한 번뿐이라 배팅을 둘 심을 때는 달라야 한다
+     */
+    private void insertBet(long pid, long eventId, long userId, long stake, String stockCode, int idx) {
+        em.createNativeQuery("MERGE INTO stocks (code, name, listed) KEY(code) VALUES (?, ?, true)")
+                .setParameter(1, stockCode)
+                .setParameter(2, stockCode)
+                .executeUpdate();
+        em.createNativeQuery(
+                        "INSERT INTO prediction_event_stocks (event_id, idx, stock_code) VALUES (?, ?, ?)")
+                .setParameter(1, eventId)
+                .setParameter(2, (short) idx)
+                .setParameter(3, stockCode)
+                .executeUpdate();
+        em.flush();
+        long stockId =
+                ((Number) em.createNativeQuery("SELECT MAX(id) FROM prediction_event_stocks").getSingleResult())
+                        .longValue();
+        em.createNativeQuery(
+                        """
+                        INSERT INTO prediction_event_bets
+                          (prediction_id, event_id, event_stock_id, user_id, stake, event_commit,
+                           bet_status, attempts, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, 'PENDING', 0, CURRENT_TIMESTAMP)
+                        """)
+                .setParameter(1, pid)
+                .setParameter(2, eventId)
+                .setParameter(3, stockId)
+                .setParameter(4, userId)
+                .setParameter(5, stake)
+                .setParameter(6, hashOf("bet" + pid))
+                .executeUpdate();
+        em.flush();
+        em.clear();
     }
 
     private void insertCommit(long pid, String seed, Instant revealedAt) {

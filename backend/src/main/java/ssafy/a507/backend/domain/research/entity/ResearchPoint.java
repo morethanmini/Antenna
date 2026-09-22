@@ -62,23 +62,31 @@ public class ResearchPoint {
     private Instant createdAt;
 
     /**
-     * 생성 (ANT-RESEARCH-04, 배치 B6).
+     * 만든 세대({@code app.ai.prompt-version}). 이 칸이 생기기 전(2026-09-23) 행은 NULL 이다.
      *
-     * <p>세대 태그를 두지 않는다. 브리핑은 프롬프트를 고치면 같은 행을 다시 썼지만, 포인트는
-     * 종목·날짜마다 여러 행이라 재생성이 곧 삭제 후 삽입이 된다. 그런데 사용자가 고른 포인트는
-     * {@code prediction_evidences} 가 FK 로 물고 있어, 배치가 지우면 남의 예측 근거가 사라진다.
-     * 포인트는 그날의 스냅샷으로 굳히고, 프롬프트 변경은 다음 영업일부터 반영한다.
+     * <p>프롬프트·모델을 바꾸고 값을 올리면 같은 종목·같은 기준일에도 다음 조회가 새 세대를 만든다.
+     * 옛 행은 지우지 않고 곁에 남긴다 — 사용자가 고른 포인트는 {@code prediction_evidences} 가 FK
+     * 로 물고 있어 지우면 남의 예측 근거가 사라진다. 화면은 그날 가장 나중에 만든 세대만 보여 준다.
+     */
+    @Column(name = "prompt_version", length = 16)
+    private String promptVersion;
+
+    /**
+     * 생성 (ANT-RESEARCH-04).
      *
      * @param document 근거가 된 원문 · null 이면 여러 재료를 묶은 종합 포인트다
+     * @param promptVersion 만든 세대 · {@code AiProperties.promptVersion()}
      */
     public static ResearchPoint of(
-            Stock stock, LocalDate targetDate, Kind kind, String body, ResearchDocument document) {
+            Stock stock, LocalDate targetDate, Kind kind, String body, ResearchDocument document,
+            String promptVersion) {
         ResearchPoint point = new ResearchPoint();
         point.stock = stock;
         point.targetDate = targetDate;
         point.kind = kind;
         point.body = body;
         point.document = document;
+        point.promptVersion = promptVersion;
         return point;
     }
 }

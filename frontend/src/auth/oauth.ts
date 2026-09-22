@@ -116,7 +116,7 @@ export async function completeLogin(
   const saved = takeState()
   // 프로바이더까지 대조한다 — 구글로 나갔는데 SSAFY 콜백으로 돌아오는 경로는 없다
   if (!saved || saved.provider !== provider || saved.state !== state) {
-    throw new Error('요청이 위조되었을 수 있습니다. 다시 로그인해 주세요.')
+    throw new Error('로그인 요청을 확인할 수 없어요. 다시 로그인해 주세요.')
   }
 
   const body = await request<LoginResponse>(`/auth/login/${provider}`, {

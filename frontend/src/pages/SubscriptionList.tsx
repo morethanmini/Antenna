@@ -86,7 +86,7 @@ export default function SubscriptionList() {
       <div className="main-inner">
         <div className="page-head">
           <h1>내 구독</h1>
-          <p>구독 중인 채널과 갱신 상태를 확인합니다</p>
+          <p>구독 중인 채널과 갱신 상태</p>
         </div>
 
         {list.error && <ErrorState error={list.error} onRetry={list.reload} />}
@@ -95,7 +95,7 @@ export default function SubscriptionList() {
         {list.data && items.length === 0 && (
           <EmptyState
             title="구독 중인 채널이 없습니다"
-            hint="예측가 랭킹이나 채널 프로필에서 구독할 수 있습니다"
+            hint="예측가 랭킹이나 채널 프로필에서 구독해 보세요"
           />
         )}
 
@@ -248,7 +248,7 @@ function Row({
           같은 이야기가 카드 두 곳에 나뉘어 있었다. */}
       {status === 'PENDING' && (
         <p className="sb-note">
-          결제가 체인에서 확정되면 구독이 시작됩니다. 완료되면 알림으로 알려 드립니다.
+          체인에서 결제가 확정되면 구독이 시작돼요. 알림으로 알려드릴게요.
         </p>
       )}
 
@@ -272,7 +272,7 @@ function Row({
         <div className="sb-renew">
           <p className="sb-note">
             <b className="sb-renew-state is-off">자동 갱신 꺼짐</b>
-            {expiresAt ? ` · ${formatExpiry(expiresAt)}까지 이용하고 종료됩니다.` : ' · 만료일까지 이용하고 종료됩니다.'}
+            {expiresAt ? ` · ${formatExpiry(expiresAt)}까지 이용할 수 있어요.` : ' · 만료일까지 이용할 수 있어요.'}
           </p>
           {/* 해지 번복. 잘못 눌렀거나 마음이 바뀐 사람이 만료 전에 되돌린다 */}
           <button type="button" className="sb-btn" onClick={onResume} disabled={resuming}>
@@ -290,8 +290,8 @@ function Row({
             <b className="sb-renew-state is-on">자동 갱신 켜짐</b>
             {/* 금액을 함께 적는다 — 박제값이라 채널의 현재가가 올라도 이 값이 빠진다 */}
             {expiresAt
-              ? ` · ${formatExpiry(expiresAt)}에 ${formatToken(fee)} ANT 가 결제됩니다.`
-              : ` · 만료일에 ${formatToken(fee)} ANT 가 결제됩니다.`}
+              ? ` · ${formatExpiry(expiresAt)}에 ${formatToken(fee)} ANT가 결제돼요.`
+              : ` · 만료일에 ${formatToken(fee)} ANT가 결제돼요.`}
           </p>
           {/* "구독 취소" 가 아니다. 지금 끊는 것이 아니라 다음 결제를 막는 것이다 */}
           <button type="button" className="sb-btn" onClick={onAsk}>자동 갱신 해지</button>
@@ -306,7 +306,7 @@ function Row({
               ? `구독은 지금 끊기지 않습니다. ${formatExpiry(expiresAt)}까지 그대로 이용하고, 그 뒤로 결제되지 않습니다.`
               : '구독은 지금 끊기지 않습니다. 만료일까지 그대로 이용하고, 그 뒤로 결제되지 않습니다.'}
           </p>
-          <p className="sb-confirm-warn">만료 전이면 이 화면에서 언제든 다시 켤 수 있습니다.</p>
+          <p className="sb-confirm-warn">만료 전에는 여기서 언제든 다시 켤 수 있어요.</p>
 
           {error && (
             <p className="sb-error" role="alert">해지하지 못했습니다. 잠시 후 다시 시도해 주세요.</p>

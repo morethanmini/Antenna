@@ -85,6 +85,8 @@ type StateProps = {
   onRetry?: () => void
   /** 로딩 자리 높이(px). 실제 내용 높이에 맞춰 주면 화면이 덜 튄다 */
   skeleton?: number
+  /** 로딩 자리에 띄울 문구. 오래 걸리는 원천만 준다 — 빈 회색 판은 몇 초 넘기면 고장으로 읽힌다 */
+  loadingText?: string
   /** 자료는 왔는데 보여 줄 게 없을 때의 문구 */
   empty?: string
   isEmpty?: boolean
@@ -93,8 +95,11 @@ type StateProps = {
 
 /** 실패한 원천은 자리를 지키고 그 안에서만 알린다 — 통째로 빠지면 "원래 없는 항목" 으로 오해한다. */
 export function BlockState({
-  loading, error, onRetry, skeleton = 110, empty, isEmpty, children,
+  loading, error, onRetry, skeleton = 110, loadingText, empty, isEmpty, children,
 }: StateProps) {
+  if (loading && loadingText) {
+    return <p className="sd-skel sd-skel-text" style={{ height: skeleton }} role="status">{loadingText}</p>
+  }
   if (loading) return <div className="sd-skel" style={{ height: skeleton }} aria-hidden="true" />
   if (error) return <ErrorState error={error} onRetry={onRetry} inline />
   if (isEmpty) return <p className="sd-block-empty">{empty ?? '아직 쌓인 자료가 없습니다'}</p>

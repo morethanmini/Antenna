@@ -32,7 +32,7 @@
      서버가 SIGNER_MISMATCH 로 거절한다. */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Panel } from './Block'
+import { BlockState, Panel } from './Block'
 import PredictionDepth from './PredictionDepth'
 import PointPicker from './PointPicker'
 import { useBlock } from '../../api/useBlock'
@@ -51,7 +51,7 @@ import EventBet, { EventBanner, betAmount, isOverBalance, BET_MIN, BET_MAX } fro
 import { CONTEST, CONTEST_HORIZON, CONTEST_PATH, dayStamp, stamp } from '../../event/contest'
 import ErrorState from '../state/ErrorState'
 import { ApiError } from '../../api/errors'
-import { POINT_KINDS, POINT_LABEL, getPoints } from '../../api/stockDetail'
+import { POINT_KINDS, POINT_LABEL, POINTS_LOADING, getPoints } from '../../api/stockDetail'
 import type { InvestPoint, PointKind, StockSummary } from '../../api/stockDetail'
 import {
   DIRECTIONS, HORIZON_MAX, HORIZON_MIN, HORIZON_TICKS, NOTE_MAX,
@@ -557,11 +557,11 @@ export default function PredictTab({
 
           {result.kind === 'created' ? (
             <>
-              <h2>예측을 등록했습니다</h2>
+              <h2>예측을 등록했어요</h2>
               {/* 기준가는 다음 영업일 종가로 배치가 채운다. 아직 없는 값을
                   0 으로 그리지 않고, 언제 정해지는지 말로 알린다 */}
               <p className="sd-done-sub">
-                기준가는 다음 영업일 종가로 확정됩니다. 그때까지 상태는 <b>BASE</b> 입니다.
+                기준가는 다음 영업일 종가로 정해져요. 그때까지 상태는 <b>BASE</b>예요.
               </p>
               {/* 커밋 해시는 적지 않는다 — 대회 완료와 같은 이유다(QA 09-18 권수 "이 코드는 뭐지, 에러
                   났나"). 발판 위의 원문·해시는 접었는데(c508578) 여기만 0x… 가 그대로 남아 있었다(QA 09-21).
@@ -576,10 +576,10 @@ export default function PredictTab({
                   들어온 사람이고, 남은 종목에 더 걸 곳도 거기다. 예측 상세는 M-02 가 확정 뒤에
                   안내한다(copy.ts EVENT_BET.go). 커밋 해시는 적지 않는다 — QA 에서 "이 코드는
                   뭐지, 에러 났나" 로 읽혔고, 상세 화면이 어차피 보여 준다. */}
-              <h2>대회에 배팅을 걸었습니다</h2>
+              <h2>대회 배팅을 접수했어요</h2>
               <p className="sd-done-sub">
-                배팅이 체인에서 확정되면 대회 종목 카드에 <b>예측함</b>으로 표시됩니다.
-                이 종목에는 다시 걸 수 없습니다.
+                체인에서 확정되면 대회 종목 카드에 <b>예측함</b>으로 표시돼요.
+                이 종목에는 다시 걸 수 없어요.
               </p>
               <p className="sd-done-cta">
                 <Link className="sd-cta" to={CONTEST_PATH}>대회로 돌아가기</Link>
@@ -588,9 +588,9 @@ export default function PredictTab({
           ) : (
             <>
               {/* 슬롯을 넘겨 소각으로 접수했다(202). 예측은 이미 저장됐고 소각 tx 확정만 남았다 */}
-              <h2>예측을 등록했습니다</h2>
+              <h2>예측을 등록했어요</h2>
               <p className="sd-done-sub">
-                무료 슬롯을 넘겨 {overCost ?? ''} ANT 소각으로 등록됩니다. 소각이 체인에서 확정되면 지갑 내역에 남습니다.
+                무료 슬롯을 넘어 {overCost ?? ''} ANT가 소각돼요. 체인에서 확정되면 지갑 내역에 남아요.
               </p>
               <dl className="sd-commit">
                 <div><dt>작업 번호</dt><dd className="num">{result.data.operationId}</dd></div>
@@ -648,7 +648,7 @@ export default function PredictTab({
           /* 무료 슬롯을 넘기면 등록마다 ANT 를 태운다(ANT-PRED-10). 발판 라벨에도 같은 금액을
              적고, 밀면 서명 전에 확인 창이 한 번 더 묻는다 */
           <p className="sd-slot-warn">
-            오늘 무료 슬롯을 모두 썼습니다. 지금부터는 <b>1건당 {overCost} ANT</b> 를 소각하고 등록합니다.
+            오늘 무료 슬롯을 모두 썼어요. 이제 예측 1건마다 <b>{overCost} ANT</b>를 소각해요.
             무료 슬롯은 내일 다시 채워집니다.
           </p>
         )}
@@ -758,18 +758,18 @@ export default function PredictTab({
                 1조를 넘길 때는 이유를 말해 주면서 0 에는 아무 말이 없었다. */}
             {zeroTarget && (
               <p className="sd-warn">
-                목표가는 <b>0보다 큰 값</b>이어야 합니다.
+                목표가는 <b>0보다 크게</b> 입력해 주세요.
               </p>
             )}
             {priceTooPrecise && (
               <p className="sd-warn">
-                목표가는 <b>소수 둘째 자리까지</b> 입력할 수 있습니다. 봉인되는 값이라 서버가
-                임의로 반올림하지 않습니다.
+                목표가는 <b>소수 둘째 자리까지</b> 입력해 주세요. 봉인되는 값이라 서버에서
+                반올림하지 않아요.
               </p>
             )}
             {priceTooLarge && (
               <p className="sd-warn">
-                목표가는 <b>10억 원 미만</b>으로 입력할 수 있습니다.
+                목표가는 <b>10억 원 미만</b>으로 입력해 주세요.
               </p>
             )}
             {/* 방향을 고를 수 없게 된 뒤로, 방향이 안 서는 경우는 이것 하나다. 말해 주지 않으면
@@ -801,12 +801,12 @@ export default function PredictTab({
               <p className="sd-warn">
                 {contest.data.phase !== 'ENTRY' ? '지금은 대회 등록 시간이 아닙니다.'
                   : !evCard ? '이 종목은 이번 회차에 없습니다.'
-                    : '이 종목에는 이미 걸었습니다. 한 종목에 한 번만 걸 수 있습니다.'}
+                    : '이 종목에는 이미 걸었어요. 종목마다 한 번만 걸 수 있어요.'}
                 {' '}예측만 등록하면 대회에는 잡히지 않습니다.
               </p>
             )}
             {betMissing && (
-              <p className="sd-warn">대회 종목은 배팅과 함께 등록합니다. 금액을 골라 주세요.</p>
+              <p className="sd-warn">대회 종목은 배팅 금액도 골라야 등록할 수 있어요.</p>
             )}
           </li>
 
@@ -870,7 +870,7 @@ export default function PredictTab({
                 이미 말하고 있어, 같은 말을 한 번 더 길게 적는 셈이다 */}
             {!eventMode && (
               <p className="sd-help">
-                <b className="num">{horizonPickLabel(horizon)}</b> · 만기 <b className="num">{dueLabel(horizon)}</b> · 기준일(다음 거래일)부터 셉니다(주말·휴장일 제외). 기준가는 기준일 종가로 확정됩니다.
+                <b className="num">{horizonPickLabel(horizon)}</b> · 만기 <b className="num">{dueLabel(horizon)}</b> · 다음 거래일부터 세요(주말·휴장일 제외). 기준가는 그날 종가로 정해져요.
               </p>
             )}
           </li>
@@ -915,8 +915,9 @@ export default function PredictTab({
                 적었는지 다시 찾는다. 같은 격자를 InfoTab 과 **한 컴포넌트로** 쓴다
                 (PointPicker) — 복사하면 라벨·출처·선택 규칙이 두 벌이 된다.
 
-                로딩·오류는 위 분기가 이미 맡는다. 목록이 안 왔으면 종류마다 "없음" 이
-                서고, 오류면 이 자리까지 오지 않는다. */}
+                오류는 위 분기가 이미 맡아 이 자리까지 오지 않는다. 로딩 동안은 격자 대신
+                안내를 띄운다 — 그날 처음 여는 종목은 서버가 AI 로 포인트를 만드느라 몇 초
+                걸리는데, 그 사이 격자를 그리면 종류마다 "없음" 이 서서 고장으로 보였다. */}
             {!points.error && (
               <div className="pf-points">
                 {/* 접어 둔다. 포인트가 열 개 넘게 오는 종목이면 격자가 폼을 반으로
@@ -939,7 +940,9 @@ export default function PredictTab({
                     체크박스 수십 개가 초점 순서에 남는다 */}
                 {pickerOpen && (
                   <div id="pf-point-picker">
-                    <PointPicker points={points.data} picked={picked} onPick={onPick} />
+                    <BlockState loading={points.loading} error={null} skeleton={230} loadingText={POINTS_LOADING}>
+                      <PointPicker points={points.data} picked={picked} onPick={onPick} />
+                    </BlockState>
                     <p className="pf-points-foot">
                       {/* 전문을 보려면 여전히 종목 정보가 낫다 — 여기는 고르는 자리다 */}
                       <button type="button" className="sd-link" onClick={onGoInfo}>
@@ -971,7 +974,7 @@ export default function PredictTab({
                  여기 적는 글은 대개 한두 줄이고 길게 쓰는 사람은 늘려 쓰면 된다
                  (resize:vertical). */
               rows={2}
-              placeholder="왜 이렇게 보는지 적어 두면, 만기 뒤에 스스로 판단을 되짚을 수 있습니다."
+              placeholder="왜 이렇게 보는지 적어 두세요. 만기 뒤에 판단을 돌아볼 수 있어요."
               onChange={(e) => setNote(e.target.value)}
             />
             {/* 평소에는 적지 않는다(2026-09-16). 5,000 자는 여기 적는 글의 길이와
@@ -1014,7 +1017,7 @@ export default function PredictTab({
                   "수정하거나 삭제할 수 없습니다" 가 같은 말을 이미 하고, 세 줄이 겹쳐
                   쌓이면 발판 위가 다시 시끄러워진다. 대회·일반이 갈리던 것도 그 문장
                   하나뿐이라 분기째 없앴다. */}
-              <p className="sd-seal"><b>예측이 봉인됩니다.</b></p>
+              <p className="sd-seal"><b>예측을 봉인해요.</b></p>
               <p className="sd-seal-sub">지갑 창이 열리면 서명을 눌러 주세요.</p>
 
               {/* 접힌 채로 시작한다. 궁금한 사람만 펼친다 — SeasonPractice 의 .pr-fold 와
@@ -1035,8 +1038,8 @@ export default function PredictTab({
                     그래서 그 경우에는 "원장에 남는 값과 같다" 고 말하지 않는다. */}
                 <p className="sd-help">
                   {eventPath
-                    ? '아래 줄에 서명합니다. 배팅 금액이 줄 안에 함께 봉인되고, 원장에 남을 커밋은 서버가 같은 재료로 만듭니다.'
-                    : '아래 내용에 서명합니다. 커밋 해시는 이 브라우저가 계산한 값이며, 등록 뒤 원장에 남는 값과 같습니다.'}
+                    ? '아래 내용에 서명해요. 배팅 금액도 함께 봉인하고, 서버가 이 내용으로 원장에 남길 해시를 만들어요.'
+                    : '아래 내용에 서명해요. 이 브라우저가 계산한 해시가 등록 뒤 원장에도 남아요.'}
                 </p>
                 <pre className="sd-payload num">
                   {eventPath

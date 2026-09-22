@@ -129,10 +129,10 @@ export const HERO = {
  * 날짜가 바뀌면 이 글과 그림이 어긋나므로 그림도 같이 다시 받아야 한다.
  */
 export const RULES: { k: string; v: string }[] = [
-  { k: '시작', v: `${dayStamp(CONTEST.startDate)} 시작합니다.` },
-  { k: '등록', v: `${stamp(CONTEST.opensAt)} ~ ${stamp(CONTEST.closesAt)} 사이에만 예측을 등록할 수 있습니다.` },
+  { k: '시작', v: `${dayStamp(CONTEST.startDate)} 시작해요.` },
+  { k: '등록', v: `${stamp(CONTEST.opensAt)} ~ ${stamp(CONTEST.closesAt)} 사이에 예측을 등록해 주세요.` },
   { k: '판정', v: `${dayStamp(CONTEST.targetDate)} 종가를 맞히는 대회입니다.` },
-  { k: '공개', v: `결과는 ${stamp(CONTEST.revealAt)}에 공개합니다.` },
+  { k: '공개', v: `결과는 ${stamp(CONTEST.revealAt)}에 공개해요.` },
 ]
 
 /** 단계와 무관하게 늘 깔리는 겹 */

@@ -173,7 +173,7 @@ export default function Ad() {
       <div className="main-inner adreg">
         <div className="page-head">
           <h1>광고 등록</h1>
-          <p>홈 상단 배너 자리에 노출됩니다</p>
+          <p>홈 상단 배너에 실려요</p>
         </div>
 
         {view === 'form' && (
@@ -200,7 +200,7 @@ export default function Ad() {
                         <span className={`adreg-mine-state${a.status === 'REJECTED' ? ' is-rejected' : ''}`}>
                           {a.status === 'REJECTED'
                             ? '반려 또는 취소됨 · 묶였던 게재료가 풀렸습니다'
-                            : a.burnPending ? '승인됨 · 소각 확정을 기다리는 중' : '심사 대기 · 게재료가 묶여 있습니다'}
+                            : a.burnPending ? '승인됨 · 소각 확정을 기다리는 중' : '심사 대기 · 게재료 묶임'}
                         </span>
                       </div>
                       {a.status === 'REJECTED' ? null : a.cancelable ? (
@@ -265,8 +265,8 @@ export default function Ad() {
               {/* https 제약은 입력 전에 알린다 — 다 쓰고 나서 거절하면 다시 써야 한다 */}
               <p className={`adreg-hint ${linkUrl !== '' && !linkOk ? 'is-bad' : ''}`}>
                 {linkUrl !== '' && !linkOk
-                  ? 'https 로 시작하는 주소만 등록할 수 있습니다'
-                  : 'https 주소만 등록할 수 있습니다'}
+                  ? 'https로 시작하는 주소만 등록할 수 있어요'
+                  : 'https 주소만 등록할 수 있어요'}
               </p>
             </section>
 
@@ -296,8 +296,8 @@ export default function Ad() {
               {/* 시작일 칸이 없는 이유를 적는다. 안 적으면 언제 걸리는지 모른다 */}
               <p className="adreg-hint">
                 {terms
-                  ? `${terms.minDays}~${terms.maxDays}일. 시작일은 고를 수 없고, 관리자가 승인하는 시점부터 시작합니다.`
-                  : '시작일은 고를 수 없고, 관리자가 승인하는 시점부터 시작합니다.'}
+                  ? `${terms.minDays}~${terms.maxDays}일. 관리자가 승인한 날부터 시작해요.`
+                  : '관리자가 승인한 날부터 시작해요.'}
               </p>
             </section>
 
@@ -317,8 +317,8 @@ export default function Ad() {
                   {/* 돈은 승인 때 나간다. 그 전까지 묶인다는 것과, 소각 뒤엔 되돌릴 수 없다는 것을 서명 전에 말한다 */}
                   <p className="adreg-cost-note">
                     {price === null
-                      ? '노출 기간을 정수 일수로 넣으면 금액이 계산됩니다.'
-                      : <>관리자가 승인하면 <b>{`${formatToken(price)} ANT 가 소각`}</b>됩니다. 승인 전에는 이 금액이 묶여 다른 곳에 쓸 수 없고, 취소하면 풀립니다. 소각 뒤에는 되돌릴 수 없습니다.</>}
+                      ? '노출 기간을 일수로 입력하면 금액이 나와요.'
+                      : <>승인되면 <b>{`${formatToken(price)} ANT가 소각`}</b>돼요. 승인 전에는 금액이 묶이고, 취소하면 풀려요. 소각 후에는 되돌릴 수 없어요.</>}
                     {' '}
                     {terms.slotCount === 1
                       ? '자리가 하나뿐이라 이미 게재 중인 광고가 있으면 등록되지 않습니다.'
@@ -337,8 +337,8 @@ export default function Ad() {
 
             {short && price !== null && balance && (
               <p className="adreg-error" role="alert">
-                <b>ANT 잔액이 부족합니다</b>
-                <span>{`보유 ${formatToken(balance)} ANT · 게재료 ${formatToken(price)} ANT. 방금 지갑을 연동했다면 가입 보너스가 들어오는 중일 수 있습니다 — 들어오면 버튼이 열립니다.`}</span>
+                <b>ANT 잔액이 부족해요</b>
+                <span>{`보유 ${formatToken(balance)} ANT · 게재료 ${formatToken(price)} ANT. 방금 지갑을 연동했다면 가입 보너스 입금을 기다려 주세요. 입금되면 다시 신청할 수 있어요.`}</span>
               </p>
             )}
 
@@ -358,7 +358,7 @@ export default function Ad() {
         {view === 'signing' && (
           <section className="adreg-progress" aria-live="polite">
             <span className="adreg-spinner" aria-hidden="true" />
-            <p className="adreg-progress-title">지갑에서 서명을 기다리고 있습니다</p>
+            <p className="adreg-progress-title">지갑 서명을 기다리는 중이에요</p>
             <p className="adreg-sub">지갑 창이 뜨지 않으면 확장 아이콘을 눌러 확인해 주세요.</p>
           </section>
         )}
@@ -381,7 +381,7 @@ export default function Ad() {
               <>
                 <p className="adreg-progress-title">심사 중입니다</p>
                 <p className="adreg-sub">
-                  {`관리자가 승인하면 ${price === null ? '' : `${formatToken(price)} ANT 가 `}소각되고 ${days}일간 홈 상단에 노출됩니다. 승인 전까지 이 금액은 묶여 있고, 취소하면 풀립니다.`}
+                  {`승인되면 ${price === null ? '' : `${formatToken(price)} ANT가 `}소각되고 홈 상단에 ${days}일간 실려요. 승인 전에는 금액이 묶이고, 취소하면 풀려요.`}
                 </p>
                 <div className="adreg-actions">
                   <Link className="adreg-btn solid" to="/">홈으로</Link>
@@ -394,8 +394,8 @@ export default function Ad() {
 
         {cancelling && (
           <ConfirmDialog
-            title="광고 신청을 취소합니다"
-            description="심사 대기 중인 신청이 닫히고, 묶여 있던 게재료가 풀립니다. 다시 신청하려면 지갑 서명을 다시 해야 합니다."
+            title="광고 신청 취소"
+            description="신청을 취소하면 묶인 게재료가 풀려요. 다시 신청할 때는 지갑 서명이 필요해요."
             confirmLabel="취소하기"
             tone="danger"
             onConfirm={() => { void cancel() }}

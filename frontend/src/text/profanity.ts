@@ -11,7 +11,7 @@
 import { ENCODED_BAD_WORDS } from './profanityWordlist'
 
 /** 서버 @NoProfanity 의 message 와 같은 문구 — 우회 요청이 400 으로 돌아와도 같은 말이 뜬다. */
-export const PROFANITY_MESSAGE = '사용할 수 없는 표현이 포함되어 있습니다.'
+export const PROFANITY_MESSAGE = '사용할 수 없는 표현이 있어요.'
 
 /** base64(UTF-8) → 문자열. atob 만 쓰면 한글이 깨진다. */
 function decodeBase64(b64: string): string {

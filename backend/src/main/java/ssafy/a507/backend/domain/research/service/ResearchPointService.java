@@ -3,6 +3,7 @@ package ssafy.a507.backend.domain.research.service;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -56,7 +57,7 @@ public class ResearchPointService {
             return new ResearchPointListResponse(List.of(), List.of(), List.of(), null);
         }
         Map<ResearchPoint.Kind, List<ResearchPointItemResponse>> byKind =
-                researchPointRepository.findOn(stockCode, targetDate).stream()
+                latestGeneration(researchPointRepository.findOn(stockCode, targetDate)).stream()
                         .collect(Collectors.groupingBy(
                                 ResearchPoint::getKind,
                                 Collectors.mapping(ResearchPointItemResponse::of, Collectors.toList())));
@@ -65,6 +66,20 @@ public class ResearchPointService {
                 byKind.getOrDefault(ResearchPoint.Kind.RISK, List.of()),
                 byKind.getOrDefault(ResearchPoint.Kind.CHECK, List.of()),
                 targetDate);
+    }
+
+    /**
+     * 같은 날에 세대가 둘 이상이면 가장 나중에 만든 세대만 남긴다.
+     *
+     * <p>세대를 올린 뒤 새로 만들다 전부 버려지면 새 세대 행이 없다 — 그때는 옛 세대가 가장 나중
+     * 것이라 그대로 나간다. 빈 3열보다 낫다. {@code rows} 는 id 오름차순이라 끝 행이 가장 나중이다.
+     */
+    static List<ResearchPoint> latestGeneration(List<ResearchPoint> rows) {
+        if (rows.isEmpty()) {
+            return rows;
+        }
+        String latest = rows.get(rows.size() - 1).getPromptVersion();
+        return rows.stream().filter(p -> Objects.equals(p.getPromptVersion(), latest)).toList();
     }
 
     private void generateOrThrow(Stock stock) {

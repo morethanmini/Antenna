@@ -158,7 +158,7 @@ const INDICATOR_HELP: { key: string; term: string; body: string }[] = [
   {
     key: 'MA',
     term: 'MA5 · MA15 · MA30',
-    body: '최근 5·15·30일 종가의 평균을 이은 선입니다. 선이 위를 향하면 오름세, 아래를 향하면 내림세로 읽습니다. 짧은 선이 긴 선을 뚫고 올라가는 자리를 흐름이 바뀌는 신호로 보기도 합니다.',
+    body: '최근 5·15·30일 평균 종가를 이은 선이에요. 위로 향하면 오름세, 아래로 향하면 내림세예요. 짧은 선이 긴 선을 뚫고 올라가면 흐름이 바뀌는 신호로 보기도 해요.',
   },
   {
     key: 'BOLL',
@@ -191,9 +191,9 @@ function chartFacts(warmupBars?: number) {
         '지표는 봉이 일정 개수 모여야 첫 값이 나옵니다 — MA5 는 5개, 볼린저는 20개, MA30 은 30개. '
         + '그래서 긴 지표일수록 왼쪽이 비어 보입니다. '
         + (warmupBars
-          ? `시즌은 첫 게임일 앞에 과거 봉을 최대 120개 붙여 두는데, 이 시즌은 ${warmupBars}개가 붙어 있습니다`
+          ? `첫 게임일 앞에 과거 봉을 최대 120개 붙여요. 이 시즌에는 ${warmupBars}개가 있어요`
           : '시즌은 첫 게임일 앞에 과거 봉을 최대 120개 붙여 둡니다')
-        + ' — 시작 지점이 모아 둔 시세의 맨 앞과 가까우면 붙일 봉이 그만큼 적어져, 긴 선일수록 늦게 시작합니다.',
+        + ' — 시작 지점이 시세의 맨 앞에 가까우면 붙일 봉이 적어서 긴 선일수록 늦게 시작해요.',
     },
     {
       key: 'data',
@@ -202,7 +202,7 @@ function chartFacts(warmupBars?: number) {
         '실제로 있었던 일봉을 그대로 옮긴 것입니다. 지어낸 값이 아니라서 아래 기사·공시와 앞뒤가 맞습니다. '
         + '종목은 그 구간 첫날 시가총액이 큰 순서로 담았고 이름도 실제 이름입니다. '
         + '서버는 지금 진행일까지의 봉만 내려줍니다 — 그 뒤 봉은 화면에 아예 오지 않아 앞질러 볼 수 없어요. '
-        + '지표는 받은 종가로 이 화면에서 계산합니다(볼린저 20·2 · RSI 14).',
+        + '지표는 이 화면에서 종가로 계산해요(볼린저 20·2 · RSI 14).',
     },
   ]
 }
@@ -250,7 +250,7 @@ function IndicatorHelp({ warmupBars }: { warmupBars?: number }) {
 
 /* 서버가 막은 이유를 사람 말로 바꾼다. 훅이 오류 코드를 이 몇 가지로 좁혀 준다 */
 const REJECT_TEXT: Record<string, string> = {
-  CASH: '남은 모의투자금이 부족합니다',
+  CASH: '모의투자금이 부족해요',
   QTY: '수량을 확인해 주세요',
   NO_PRICE: '이 게임일의 가격이 아직 없습니다',
   NOT_JOINED: '참가하지 않은 시즌입니다',
@@ -516,7 +516,7 @@ export default function SeasonPlay() {
             <p className="sp-none">
               <b>{s.title}</b>
               아직 이 연습에 참가하지 않았습니다.
-              <small>참가하면 예수금 {won(s.initialCash)} 으로 DAY 1 부터 시작합니다.</small>
+              <small>참가하면 예수금 {won(s.initialCash)}으로 DAY 1부터 시작해요.</small>
               <button type="button" className="sp-join" disabled={sim.pending}
                       onClick={() => { void sim.join() }}>
                 {sim.pending ? '참가 중…' : '참가하기'}
@@ -965,7 +965,7 @@ export default function SeasonPlay() {
                   ? '끝난 시즌입니다. 주문과 진행은 닫혔습니다.'
                   : sim.isLastDay
                   ? '마지막 게임일입니다. 진행은 여기까지입니다.'
-                  : '주문은 그 게임일 종가로 한 번에 체결됩니다.'}
+                  : '주문은 그 게임일 종가로 한 번에 체결돼요.'}
               </p>
 
               {/* 종료 확인. 네이티브 dialog — 포커스 가둠·Esc·배경막을 브라우저가 준다.
@@ -986,17 +986,17 @@ export default function SeasonPlay() {
                     평가되는지 — 이걸 모르고 누르면 "오늘 값으로 끝나는 줄 알았다" 가 된다. */}
                 {!sim.isLastDay && (
                   <p>
-                    남은 게임일은 <b>주문 없이 지나간 것으로</b> 처리합니다.
+                    남은 게임일은 <b>주문 없이 지나가요.</b>
                     <br />
-                    지금 보유한 종목은 <b>마지막 게임일 종가</b>로 평가됩니다.
+                    보유 종목은 <b>마지막 게임일 종가</b>로 평가해요.
                   </p>
                 )}
                 <p>
                   종료하면 더 이상 주문도 진행도 할 수 없습니다.
                   <br />
-                  성적표와 AI 복기를 만들어 기록에 저장합니다.
+                  성적표와 AI 복기를 기록에 남겨요.
                 </p>
-                <small>AI 복기를 만드는 데 몇십 초가 걸릴 수 있습니다.</small>
+                <small>AI 복기는 몇십 초 걸릴 수 있어요.</small>
                 <div className="sp-dialog-actions">
                   <button
                     type="button" className="sp-dialog-btn" disabled={sim.pending}

@@ -42,7 +42,7 @@ import PointPicker from './PointPicker'
 import { useBlock } from '../../api/useBlock'
 import { useCursorList } from '../../api/useCursorList'
 import {
-  POINT_KINDS, SOURCE_LABEL,
+  POINT_KINDS, POINTS_LOADING, SOURCE_LABEL,
   getFinancials, getPeers, getPoints,
   getPrices, getProfile, getValuation,
 } from '../../api/stockDetail'
@@ -278,7 +278,7 @@ export default function InfoTab({ code, summary, picked, onPick, onGoPredict }: 
         error={prices.error}
         onRetry={prices.retry}
         isEmpty={(prices.data?.items.length ?? 0) < 2}
-        empty="이 구간에 쌓인 종가가 없습니다. 거래가 정지된 종목일 수 있습니다."
+        empty="이 구간에는 종가가 없어요. 거래가 정지됐을 수 있어요."
         actions={
           <div className="sd-range" role="group" aria-label="차트 기간">
             {RANGES.map((r) => (
@@ -306,11 +306,12 @@ export default function InfoTab({ code, summary, picked, onPick, onGoPredict }: 
         open={open.points}
         onToggle={() => toggle('points')}
         skeleton={230}
+        loadingText={POINTS_LOADING}
         loading={points.loading}
         error={points.error}
         onRetry={points.retry}
         isEmpty={points.data !== null && pointCount === 0}
-        empty="투자 포인트가 아직 없습니다. 공시·뉴스를 요약하는 기능이 준비되면 이 자리에 채워집니다."
+        empty="오늘 기준 투자 포인트를 만들지 못했습니다. 잠시 뒤 다시 열면 한 번 더 만들어 봅니다."
       >
         {/* 격자는 PointPicker 가 그린다 — 예측 등록(C-01) ③이 같은 것을 쓴다 */}
         <PointPicker points={points.data} picked={picked} onPick={onPick} />
@@ -591,7 +592,7 @@ const DOC_GROUPS = [
     key: 'news' as const,
     label: '뉴스',
     /* 조사를 붙이지 않는다 — "삼성물산와" 처럼 받침 있는 이름에서 틀린다(09-21 QA) */
-    desc: (name: string) => `${name} 관련 주요 언론 소식을 확인할 수 있습니다.`,
+    desc: (name: string) => `${name} 관련 주요 뉴스를 모았어요.`,
     empty: '아직 들어온 뉴스가 없습니다.',
     icon: (
       <>
@@ -604,7 +605,7 @@ const DOC_GROUPS = [
   {
     key: 'filing' as const,
     label: '공시',
-    desc: (name: string) => `${name}의 주요 공시와 투자자 안내사항을 확인할 수 있습니다.`,
+    desc: (name: string) => `${name}의 주요 공시와 투자자 안내를 모았어요.`,
     empty: '아직 들어온 공시가 없습니다.',
     icon: (
       <>
