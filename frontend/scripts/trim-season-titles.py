@@ -26,6 +26,8 @@ from PIL import Image
 SRC = Path(__file__).resolve().parent.parent / 'public' / 'assets' / 'page_train'
 ALPHA_MIN = 32   # 이보다 옅은 픽셀은 글자가 아니라 번짐으로 본다
 PAD = 8          # 자른 뒤 남길 숨통(원본 픽셀)
+QUALITY = 80     # 다시 저장할 때의 webp 품질. 원본(q92 추정)보다 낮춰 용량을 지킨다 —
+                 # 글자에 두꺼운 외곽선이 그려져 있어 이 아래로도 티가 안 난다
 
 for path in sorted(SRC.glob('*-title.webp')):
     im = Image.open(path).convert('RGBA')
@@ -41,5 +43,5 @@ for path in sorted(SRC.glob('*-title.webp')):
         continue
     y0 = max(0, box[1] - PAD)
     y1 = min(h, box[3] + PAD)
-    im.crop((0, y0, w, y1)).save(path, 'WEBP', quality=92, method=6)
+    im.crop((0, y0, w, y1)).save(path, 'WEBP', quality=QUALITY, method=6)
     print(f'{path.name}: {w}x{h} -> {w}x{y1 - y0}  (위 {top} · 아래 {bottom} 걷음)')
