@@ -16,7 +16,7 @@
    대부분의 종목이 왼쪽 끝 몇 px 안에 뭉쳐 고를 수가 없다. 그래서 상한을 적당한
    데서 끊고, 손잡이가 **끝에 있으면 "그 위로는 제한 없음"** 으로 친다.
    같은 이유로 왼쪽 끝은 "아래로 제한 없음" 이다. 둘 다 끝이면 조건이 없는 것과 같다. */
-import { useId } from 'react'
+import { useEffect, useId, useState } from 'react'
 
 export type Range = { min?: number; max?: number }
 
@@ -45,16 +45,34 @@ export default function RangeSlider({
   const pct = (v: number) => ((v - from) / (to - from)) * 100
   const fmt = (v: number) => v.toFixed(digits)
 
-  /* 손잡이가 서로를 지나치지 못하게 막는다. 지나치게 두면 min > max 가 되어
-     서버가 400 을 준다(StockService 가 perMin 으로 거절한다). */
-  const setLo = (v: number) => onChange({
-    min: v <= from ? undefined : Math.min(v, hi),
-    max: value.max,
-  })
-  const setHi = (v: number) => onChange({
-    min: value.min,
-    max: v >= to ? undefined : Math.max(v, lo),
-  })
+  /* **두 input 은 자기 값을 직접 든다.** 부모가 주는 것은 정렬된 min·max 라,
+     그걸 그대로 두 input 에 꽂으면 끌던 손잡이가 상대를 지나간 순간 제 값을
+     빼앗긴다 — 끌던 쪽에는 늘 큰 값이 돌아오므로 **왼쪽으로 더 못 갔다.**
+     겹쳐 서면 위에 깔린 상한만 잡히는데 그것이 하한 밑으로 못 내려가서,
+     둘이 맞닿으면 벌리는 쪽으로만 움직이는 잠김이 됐다(2026-09-22에 고쳤다).
+
+     그래서 여기서는 손잡이가 서로를 **지나가게 둔다.** a 가 b 보다 커지면
+     역할이 그대로 뒤집힌다(a 가 상한, b 가 하한). 부모에게는 늘 크기순으로
+     세워 보내므로 min > max 는 나가지 않는다(서버는 400 으로 거절한다). */
+  const [a, setA] = useState(lo)
+  const [b, setB] = useState(hi)
+  /* 밖에서 값이 바뀌면(필터 초기화 · 주소로 들어온 조건) 다시 맞춘다.
+     크기순으로 비교하는 까닭 — 지나간 뒤에는 a 가 max 를 들고 있을 수 있는데,
+     그것은 부모와 어긋난 게 아니라 같은 범위를 뒤집어 든 것뿐이다. 그대로
+     비교하면 끌 때마다 손잡이가 제자리로 튄다. */
+  useEffect(() => {
+    if (Math.min(a, b) !== lo || Math.max(a, b) !== hi) { setA(lo); setB(hi) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lo, hi])
+
+  const commit = (x: number, y: number) => {
+    const min = Math.min(x, y)
+    const max = Math.max(x, y)
+    onChange({
+      min: min <= from ? undefined : min,
+      max: max >= to ? undefined : max,
+    })
+  }
 
   /* 지금 고른 범위를 말로 적는다 — 손잡이 위치만으로는 끝이 "제한 없음" 인지
      "딱 그 값" 인지 구별되지 않는다 */
@@ -65,6 +83,17 @@ export default function RangeSlider({
       : value.min === undefined
         ? `${fmt(hi)}${unit} 이하`
         : `${fmt(lo)} ~ ${fmt(hi)}${unit}`
+
+  /* 두 input 의 이름표는 값에 따라 붙인다. 지나간 뒤에는 a 가 상한이 된다 */
+  const part = (self: number, other: number) => {
+    const upper = self > other || (self === other && self === b)
+    const bound = self >= to ? '제한 없음' : `${fmt(self)}${unit}`
+    const lower = self <= from ? '제한 없음' : `${fmt(self)}${unit}`
+    return {
+      'aria-label': `${label} ${upper ? '상한' : '하한'}`,
+      'aria-valuetext': upper ? bound : lower,
+    }
+  }
 
   return (
     <div className="st-slider">
@@ -78,21 +107,19 @@ export default function RangeSlider({
         <span className="st-slider-track" aria-hidden="true" />
         <span
           className="st-slider-fill" aria-hidden="true"
-          style={{ left: `${pct(lo)}%`, right: `${100 - pct(hi)}%` }}
+          style={{ left: `${pct(Math.min(a, b))}%`, right: `${100 - pct(Math.max(a, b))}%` }}
         />
         <input
           type="range" className="st-slider-input"
-          id={`${id}-lo`} min={from} max={to} step={step} value={lo}
-          aria-label={`${label} 하한`}
-          aria-valuetext={value.min === undefined ? '제한 없음' : `${fmt(lo)}${unit}`}
-          onChange={(e) => setLo(Number(e.target.value))}
+          id={`${id}-a`} min={from} max={to} step={step} value={a}
+          {...part(a, b)}
+          onChange={(e) => { const v = Number(e.target.value); setA(v); commit(v, b) }}
         />
         <input
           type="range" className="st-slider-input"
-          id={`${id}-hi`} min={from} max={to} step={step} value={hi}
-          aria-label={`${label} 상한`}
-          aria-valuetext={value.max === undefined ? '제한 없음' : `${fmt(hi)}${unit}`}
-          onChange={(e) => setHi(Number(e.target.value))}
+          id={`${id}-b`} min={from} max={to} step={step} value={b}
+          {...part(b, a)}
+          onChange={(e) => { const v = Number(e.target.value); setB(v); commit(a, v) }}
         />
       </div>
 

@@ -84,7 +84,7 @@ export default function OAuthCallback() {
       <main className="cb-shell">
         <Link className="auth-brand cb-brand" to="/">
           <BrandMark />
-          <span className="name">ANTENA</span>
+          <span className="name">ANTENNA</span>
         </Link>
 
         {/* 상태가 바뀌는 곳만 읽어 준다 — 성공하면 곧바로 다른 화면으로 넘어간다 */}

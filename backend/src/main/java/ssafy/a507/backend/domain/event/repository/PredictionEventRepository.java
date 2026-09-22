@@ -12,6 +12,18 @@ public interface PredictionEventRepository extends JpaRepository<PredictionEvent
     /** 같은 slug 가 둘이면 화면이 어느 회차를 열지 갈린다. UNIQUE 가 최종 방어선이고 이건 409 로 돌려주기 위한 것이다. */
     boolean existsBySlug(String slug);
 
+    /**
+     * 같은 기준일로 아직 끝나지 않은 회차가 있는가 — 생성 연타 방어(2026-09-22 QA).
+     *
+     * <p>마지막 방어선은 부분 UNIQUE 인덱스({@code uq_prediction_events_live_base_date},
+     * db/append-only.sql)다. 이 검사는 그 전에 409 로 돌려주려는 것이다 — 인덱스에 걸리면
+     * DataIntegrityViolation → 500 이라 관리자에게는 서버 오류로 보인다(slug 와 같은 판단).
+     *
+     * <p>끝난 회차(SEALED 이후)는 세지 않는다. 같은 기준일로 다시 열 수 있어야 한다.
+     */
+    boolean existsByBaseDateAndStatusIn(
+            java.time.LocalDate baseDate, java.util.Collection<PredictionEvent.Status> statuses);
+
     /** 목록. 최근 회차가 위다 — 이번엔 하나뿐이지만 다음 회차가 생겨도 배너가 옛것을 집지 않는다. */
     List<PredictionEvent> findAllByOrderByIdDesc();
 

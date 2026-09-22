@@ -31,6 +31,7 @@ import EmptyState from '../state/EmptyState'
 import ErrorState from '../state/ErrorState'
 import RangeSlider from './RangeSlider'
 import StockLogo from './StockLogo'
+import { Q_MAX } from './stockFilterParams'
 
 const won = (n: number) => n.toLocaleString('ko-KR')
 /* 0 에는 부호를 붙이지 않고 색도 주지 않는다 — 근거는 Watchlist.tsx(B-04). */
@@ -83,6 +84,8 @@ const EDGE_SLACK = 1
 /** 이만큼 넘게 움직였으면 "끌었다" 로 본다(px). 누를 때 손이 조금 떨리는 것까지
  *  끌기로 치면, 칩을 고르려던 클릭이 삼켜져 아무 일도 안 일어난 것처럼 보인다 */
 const DRAG_SLOP = 4
+/** 가로 휠이 멈췄다고 보는 간격(ms). 그 뒤에 스냅을 되켜 가까운 칩에 붙인다 */
+const WHEEL_IDLE_MS = 150
 
 /** 슬라이더에서 손을 멈췄다고 볼 시간(ms). 짧으면 끄는 도중에 요청이 나가고,
  *  길면 놓고 나서도 목록이 안 바뀌어 고장 난 줄 안다 */
@@ -208,20 +211,34 @@ function SectorChips({ current = [], onPick }: {
      shift+휠은 브라우저가 이미 deltaX 로 바꿔 주므로 여기로 들어온다.
 
      React 의 onWheel 은 수동(passive) 리스너라 preventDefault 가 안 먹는다.
-     그래서 직접 붙인다. */
+     그래서 직접 붙인다.
+
+     **즉시 옮기고, 미는 동안은 스냅을 끈다**(2026-09-22). scrollLeft 에 값을 넣으면
+     트랙의 scroll-behavior:smooth 때문에 매번 애니메이션이 새로 시작되는데, 트랙패드는
+     16ms 마다 몇 px 씩 보내서 한 칸도 가기 전에 다음 신호가 와 다시 제자리에서 출발했다 —
+     6px × 60번을 보내도 0 에서 안 움직였다(화면에 보이는 탭 실측). instant 로 옮기면
+     손가락을 1:1 로 따라간다. 스냅을 켜 둔 채 조금씩 옮기면 매번 가까운 칩으로 되돌려지므로
+     미는 동안은 끄고, 150ms 입력이 없으면 되켜 한 번만 붙인다(브라우저 기본 스크롤과 같은 모양). */
   useEffect(() => {
     const el = trackRef.current
     if (!el) return
+    let idle: number | undefined
     const onWheel = (e: WheelEvent) => {
       if (e.ctrlKey || !e.deltaX) return   // ctrl+휠은 확대/축소다
       const max = el.scrollWidth - el.clientWidth
       /* 끝에 닿았으면 넘기지 않는다 — 브라우저의 뒤로가기 제스처를 막지 않는다 */
       if ((e.deltaX < 0 && el.scrollLeft <= 0) || (e.deltaX > 0 && el.scrollLeft >= max)) return
       e.preventDefault()
-      el.scrollLeft = Math.max(0, Math.min(max, el.scrollLeft + e.deltaX))
+      el.style.scrollSnapType = 'none'
+      el.scrollBy({ left: e.deltaX, behavior: 'instant' })
+      window.clearTimeout(idle)
+      idle = window.setTimeout(() => el.style.removeProperty('scroll-snap-type'), WHEEL_IDLE_MS)
     }
     el.addEventListener('wheel', onWheel, { passive: false })
-    return () => el.removeEventListener('wheel', onWheel)
+    return () => {
+      el.removeEventListener('wheel', onWheel)
+      window.clearTimeout(idle)
+    }
   }, [data])
 
   const page = useCallback((dir: -1 | 1) => {
@@ -468,8 +485,7 @@ export default function StockTable({ filter, setFilter }: Props) {
             <input
               type="search" className="st-search" placeholder="종목명 또는 코드"
               aria-label="종목명 또는 종목코드로 찾기"
-              // 서버 StockService.MAX_QUERY_LENGTH 와 같은 값이다 — 넘기면 400 이다
-              maxLength={50}
+              maxLength={Q_MAX}
               value={draft.q ?? ''}
               onChange={(e) => {
                 const v = e.target.value

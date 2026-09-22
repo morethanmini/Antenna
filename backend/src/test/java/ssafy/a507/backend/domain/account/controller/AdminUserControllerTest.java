@@ -1,6 +1,7 @@
 package ssafy.a507.backend.domain.account.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.lessThan;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -18,6 +19,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import ssafy.a507.backend.domain.auth.service.RefreshTokenStore;
 
 /**
  * 관리자 회원 제재 — ANT-ADMIN-01.
@@ -37,6 +39,9 @@ class AdminUserControllerTest {
 
     @Autowired
     EntityManager em;
+
+    @Autowired
+    RefreshTokenStore refreshTokenStore;
 
     private Long adminId;
     private Long memberId;
@@ -95,6 +100,58 @@ class AdminUserControllerTest {
         flush();
 
         assertThat(회원상태(adminId)).isEqualTo("ACTIVE");
+    }
+
+    @Test
+    @DisplayName("다른 관리자를 차단하려 하면 409 ADMIN_TARGET_ADMIN — 관리자끼리 서로 잠그지 못하게 막는다")
+    void 다른_관리자_차단은_409() throws Exception {
+        Long otherAdmin = insertUser("부운영자", "ADMIN");
+        flush();
+
+        mockMvc.perform(patch(URL + "/" + otherAdmin + "/status")
+                        .with(user(String.valueOf(adminId))).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body("BANNED", null)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ADMIN_TARGET_ADMIN"));
+        flush();
+
+        assertThat(회원상태(otherAdmin)).isEqualTo("ACTIVE");
+    }
+
+    @Test
+    @DisplayName("차단하면 그 회원의 refresh 토큰이 바로 폐기된다 — access 만료까지 기다리지 않는다")
+    void 차단하면_refresh_폐기() throws Exception {
+        String token = refreshTokenStore.issue(memberId);
+
+        상태변경(memberId, "BANNED");
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> refreshTokenStore.rotate(token))
+                .isInstanceOf(RefreshTokenStore.InvalidRefreshTokenException.class);
+    }
+
+    @Test
+    @DisplayName("50명을 넘으면 nextBefore 가 붙고, 그 값을 before 로 넘기면 나머지가 나온다")
+    void 페이지네이션() throws Exception {
+        for (int i = 0; i < 51; i++) insertUser("회원" + i, "USER");
+        flush();
+        // setUp 의 둘까지 53명. 첫 쪽 50, 둘째 쪽 3.
+
+        String first = mockMvc.perform(get(URL).with(user(String.valueOf(adminId))).with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(50))
+                .andExpect(jsonPath("$.nextBefore").isNumber())
+                .andReturn().getResponse().getContentAsString();
+        long nextBefore = com.fasterxml.jackson.databind.json.JsonMapper.builder().build()
+                .readTree(first).get("nextBefore").asLong();
+
+        mockMvc.perform(get(URL).param("before", String.valueOf(nextBefore))
+                        .with(user(String.valueOf(adminId))).with(csrf()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(3))
+                // JSON 정수는 Integer 로 읽힌다 — Long 과 비교하면 ClassCastException 이라 int 로 맞춘다
+                .andExpect(jsonPath("$.items[0].id").value(lessThan((int) nextBefore)))
+                .andExpect(jsonPath("$.nextBefore").value(org.hamcrest.Matchers.nullValue()));
     }
 
     @Test

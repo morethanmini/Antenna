@@ -48,9 +48,9 @@ class AdminUserSearchPostgresTest {
         insertWithoutNickname();
 
         List<String> 대문자로찾음 =
-                users.searchForAdmin("ANT", Limit.of(50)).stream().map(User::getNickname).toList();
+                users.searchForAdmin("ANT", Long.MAX_VALUE, Limit.of(50)).stream().map(User::getNickname).toList();
         List<String> 소문자로찾음 =
-                users.searchForAdmin("ant", Limit.of(50)).stream().map(User::getNickname).toList();
+                users.searchForAdmin("ant", Long.MAX_VALUE, Limit.of(50)).stream().map(User::getNickname).toList();
 
         assertThat(대문자로찾음).containsExactlyInAnyOrder("ant운영", "ANT관리");
         assertThat(소문자로찾음).containsExactlyInAnyOrder("ant운영", "ANT관리");
@@ -61,7 +61,7 @@ class AdminUserSearchPostgresTest {
            컨테이너가 클래스 단위라 다른 테스트가 넣은 행이 함께 보인다. 그래서 "정확히 이 셋" 이
            아니라 "이 셋이 있고, 닉네임 없는 계정은 없다" 로 본다. */
         List<String> 전체 =
-                users.searchForAdmin("", Limit.of(50)).stream().map(User::getNickname).toList();
+                users.searchForAdmin("", Long.MAX_VALUE, Limit.of(50)).stream().map(User::getNickname).toList();
         assertThat(전체).contains("ant운영", "ANT관리", "전혀다른사람");
         assertThat(전체).doesNotContainNull();
         Integer 닉네임있는행 =
@@ -74,7 +74,7 @@ class AdminUserSearchPostgresTest {
     void 상한이_걸린다() {
         for (int i = 0; i < 5; i++) insert("회원" + i);
 
-        assertThat(users.searchForAdmin("", Limit.of(2))).hasSize(2);
+        assertThat(users.searchForAdmin("", Long.MAX_VALUE, Limit.of(2))).hasSize(2);
     }
 
     private void insert(String nickname) {

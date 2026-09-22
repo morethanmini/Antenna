@@ -81,7 +81,7 @@ export default function PredictionCard({ data }: { data: PredictionCardData }) {
         {direction === null
           ? <span className="pc-dir is-hidden">가려짐</span>
           : <span className={`pc-dir is-${direction.toLowerCase()}`}>{DIRECTION_LABEL[direction]}</span>}
-        <PredictionStatus status={status} />
+        <PredictionStatus status={status} overdue={isAwaitingVerdict(dday)} />
       </div>
 
       {author && (

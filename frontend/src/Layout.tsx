@@ -1,4 +1,4 @@
-/* ANTENA 공용 셸 — 상단 네비게이션 바 한 줄.
+/* ANTENNA 공용 셸 — 상단 네비게이션 바 한 줄.
 
    **사이드바(레일)를 걷어냈다(2026-09-17).** 왼쪽에 늘 떠 있던 레일이 본문을 56px
    밀고 있었고, 펼침/접힘 때문에 상단바·본문·가운데 정렬 보정이 서로를 따라다녀야 했다
@@ -336,6 +336,17 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
                     {/* 넓을 때는 톱니 아이콘이 바에 있으므로 여기서는 숨는다 —
                         같은 길이 두 곳에 보이면 어느 쪽을 눌러야 하는지가 생긴다 */}
                     <Link role="menuitem" className="only-narrow" to="/settings" onClick={() => closeMenu()}>환경 설정</Link>
+                    {/* 관리자 화면 4개의 유일한 입구(2026-09-22). 상단 메뉴 줄에는 두지 않는다 —
+                        모드마다 다른 줄이라 두 모드에 다 걸어야 하고, 관리자 한둘이 하루에
+                        몇 번 여는 자리라 계정 메뉴가 맞다. 비관리자에게는 그리지 않는다. */}
+                    {user?.role === 'ADMIN' && (
+                      <>
+                        <Link role="menuitem" to="/admin/abuse-reports" onClick={() => closeMenu()}>신고 처리</Link>
+                        <Link role="menuitem" to="/admin/users" onClick={() => closeMenu()}>회원 제재</Link>
+                        <Link role="menuitem" to="/admin/events" onClick={() => closeMenu()}>이벤트 운영</Link>
+                        <Link role="menuitem" to="/admin/ads" onClick={() => closeMenu()}>광고 승인</Link>
+                      </>
+                    )}
                     {/* 바로 나가지 않고 한 번 더 묻는다 — 되돌리려면 OAuth 를 다시 타야 한다.
                         refresh 는 httpOnly 쿠키라 브라우저가 직접 못 지우고, 서버에 폐기를
                         요청하는 이 버튼이 유일한 정리 수단이다. */}

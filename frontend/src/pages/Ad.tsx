@@ -31,7 +31,8 @@ import { useCallback, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   LINK_MAX,
-  cancelAd, createAd, adSigningPayload, fetchAdPricing, isValidLink, priceOf, type AdDraft,
+  cancelAd, createAd, adSigningPayload, fetchAdPricing, fetchMyAds, isValidLink, priceOf,
+  type AdDraft, type MyAd,
 } from '../api/ads'
 import type { ApiError } from '../api/errors'
 import { useAsync } from '../api/useAsync'
@@ -75,6 +76,7 @@ export default function Ad() {
 
   /* 단가 · 일수 범위 · 자리 수는 서버에서만 온다. 못 받은 동안 terms 가 null 이라 등록이 잠긴다 */
   const pricing = useAsync(fetchAdPricing)
+
   const terms = pricing.data
 
   const linkOk = isValidLink(linkUrl)
@@ -91,6 +93,24 @@ export default function Ad() {
      ponytail: 이 숫자는 원장 합이라 서버의 가용잔액(심사 중인 다른 광고 등을 뺀 값)과 어긋날 수 있다 —
      GET /wallet/balance 가 가용잔액을 내리면 그걸로 바꾼다(ANT-TOKEN-12). */
   const wallet = useWalletBalance({ fresh: true })
+
+  /* 내가 낸 신청. 신청하면 게재료가 묶이는데 그 뒤로 이 화면이 빈 폼으로 돌아와
+     **묶인 ANT 를 스스로 풀 길이 없었다**(2026-09-22 QA · ANT-FE-AD).
+     목록 화면을 새로 내지 않고 되돌아오는 자리인 여기에 건다. */
+  const mine = useAsync(fetchMyAds)
+  const [canceling, setCanceling] = useState<number | null>(null)
+  /* 취소하면 묶인 금액이 풀린다 — 목록과 잔액을 같이 다시 읽는다. 하나만 읽으면
+     "취소했는데 잔액은 그대로" 로 보인다. */
+  const cancelMine = useCallback(async (adId: number) => {
+    setCanceling(adId)
+    try {
+      await cancelAd(adId)
+      mine.reload()
+      wallet.reload()
+    } finally {
+      setCanceling(null)
+    }
+  }, [mine, wallet])
   const balance = wallet.data?.balance
   const short = Boolean(user?.walletLinked) && price !== null && !!balance
     && /^\d+$/.test(balance) && BigInt(balance) < BigInt(price)
@@ -158,6 +178,47 @@ export default function Ad() {
 
         {view === 'form' && (
           <>
+            {/* ── 내 신청 ──────────────────────────────────
+                심사 중인 건이 있으면 **폼보다 먼저** 보여 준다. 여기 없으면 사용자는
+                자기 신청을 다시 볼 자리가 없고, 묶인 게재료를 풀 길도 없다
+                (2026-09-22 QA · ANT-FE-AD). 끝난 신청은 되돌릴 것이 없어 심사 중인
+                것만 세운다 — 목록이 길어지면 이 화면이 등록 화면이 아니게 된다. */}
+            {mine.data && mine.data.items.some((a) => a.status === 'PENDING') && (
+              <section className="ad-card ad-mine" aria-label="내 광고 신청">
+                <h2>심사 중인 내 광고</h2>
+                <p className="ad-hint">
+                  관리자가 승인하면 게재료가 소각되고, 취소하거나 반려되면 묶인 금액이 풀립니다.
+                </p>
+                <ul className="ad-mine-list">
+                  {mine.data.items.filter((a: MyAd) => a.status === 'PENDING').map((a: MyAd) => (
+                    <li key={a.id}>
+                      <img src={a.imageUrl} alt="" />
+                      <div className="ad-mine-body">
+                        <b className="num">{formatToken(a.price)} ANT</b>
+                        <span className="ad-mine-link">{a.linkUrl}</span>
+                        <span className="ad-mine-state">
+                          {a.burnPending ? '승인됨 · 소각 확정을 기다리는 중' : '심사 대기 · 게재료가 묶여 있습니다'}
+                        </span>
+                      </div>
+                      {a.cancelable ? (
+                        <button
+                          type="button"
+                          className="ad-mine-cancel"
+                          disabled={canceling === a.id}
+                          onClick={() => void cancelMine(a.id)}
+                        >
+                          {canceling === a.id ? '취소하는 중…' : '신청 취소'}
+                        </button>
+                      ) : (
+                        /* 소각이 나가는 중에는 못 되돌린다 — 서버도 AD_ALREADY_HANDLED 로 막는다 */
+                        <span className="ad-mine-locked">취소할 수 없습니다</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
             {/* 지갑 없이 들어왔으면 적기 **전에** 연동부터 권한다(ANT-FE-WALLET-PRELINK) */}
             <WalletPrelink purpose="광고를 등록하려면" />
 
@@ -215,9 +276,16 @@ export default function Ad() {
                 <input
                   type="number" className="ad-input is-num"
                   value={days} min={terms?.minDays} max={terms?.maxDays}
-                  /* 위로만 자른다 — 아래까지 자르면 칸을 비우고 새로 칠 수가 없다. 모자란 값은 daysOk 가 막는다.
-                     안 자르면 99999999일 → 99,999,999,000 ANT 가 그대로 그려졌다(QA 09-21, 서버는 maxDays 로 막는다). */
-                  onChange={(e) => setDays(Math.min(Number(e.target.value), terms?.maxDays ?? Infinity))}
+                  /* 위로 자르고, 아래로는 **0 까지만** 둔다 — 0 은 칸을 비웠을 때의 값이라
+                     1 로 올려 버리면 지우고 새로 칠 수가 없다. 모자란 값은 daysOk 가 막고,
+                     금액은 priceOf 가 days < 1 이면 안 만든다(2026-09-22 QA: -5 일이
+                     "-5,000 ANT 가 소각됩니다" 로 그려졌다).
+                     안 자르면 99999999일 → 99,999,999,000 ANT 가 그대로 그려졌다(QA 09-21, 서버는 maxDays 로 막는다).
+                     소수를 버리는 것은 서버가 일수를 정수로만 받기 때문이다 — 1.5 일은 칸에서 1 이 된다. */
+                  onChange={(e) => setDays(Math.min(
+                    Math.max(0, Math.trunc(Number(e.target.value) || 0)),
+                    terms?.maxDays ?? Infinity,
+                  ))}
                 />
                 <span>일</span>
               </div>

@@ -22,7 +22,7 @@ function Page({ meta }: { meta: PageMeta }) {
   const nav = params.get('event') ? '' : (meta.nav ?? 'home')
 
   useEffect(() => {
-    document.title = `${meta.title} · ANTENA`
+    document.title = `${meta.title} · ANTENNA`
     if (meta.mode) document.body.dataset.mode = meta.mode
     else {
       delete document.body.dataset.mode
