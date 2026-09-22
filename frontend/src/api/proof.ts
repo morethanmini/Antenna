@@ -8,6 +8,7 @@
    앵커 전(anchorStatus WAITING)에도 200 이다 — anchor 가 null 로 올 뿐이다.
    화면은 그때 ②를 잠근 채 ①만 계산한다. */
 import { api } from './client'
+import { eventEntryLine, eventEntryPayload } from './events'
 import { commitHash, commitPayload, predictionSigningPayload } from './predictions'
 
 /** 배치 상태 + "아직 배치에 안 들어감". 서버 ProofResponse.AnchorStatus 와 짝이다. */
@@ -77,6 +78,28 @@ export type ProofSettle = {
   sourceUrl: string | null
 }
 
+/**
+ * 대회(이벤트)로 등록한 예측의 서명 재료 (ANT-CHAIN-20).
+ *
+ * 대회 등록은 서명 문자열이 다르다 — 첫 줄이 `antenna:event-entry:v1` 이고 `eventId` 줄과
+ * `종목/방향/목표가/noteHash/stake` 줄이 들어간다. 그런데 그 서명이 단건 등록과 **같은 칸**에
+ * 저장돼서, 이 객체가 없던 시절의 화면은 무조건 단건 서식으로 조립했다. ECDSA 는 틀린 메시지에도
+ * 실패하지 않고 **엉뚱한 주소를 뱉으므로** 대회 예측 전부가 "서명자 불일치" 로 떴다.
+ */
+export type ProofEventEntry = {
+  eventId: number
+  /** 그 종목에 건 ANT. **서명 줄의 마지막 칸**이라 검산에 반드시 필요하다 */
+  stake: number
+  /**
+   * 같은 서명을 공유하는 커밋 수. 1이면 문자열을 복원할 수 있다.
+   *
+   * 2 이상은 묶음 등록(한 번의 서명에 여러 종목)이고, 형제 종목 줄이 이 응답에 없어 복원이
+   * 불가능하다 — 그때 ③은 실패가 아니라 **잠김**이다. 등록 화면이 2026-09-17 부터 종목마다
+   * 따로 서명하므로 묶음은 그 이전 회차에만 남아 있다.
+   */
+  itemCount: number
+}
+
 /** 서버 ProofResponse 와 짝이다. */
 export type Proof = {
   predictionId: number
@@ -115,6 +138,8 @@ export type Proof = {
    * 사용자 손에 남긴다(③과 같은 이유).
    */
   salt: string | null
+  /** 대회로 등록한 예측일 때만. 단건 등록이면 null — ③의 서식을 이 한 칸으로 가른다 */
+  eventEntry: ProofEventEntry | null
   anchor: ProofAnchor | null
   anchorStatus: ProofAnchorStatus
   settle: ProofSettle | null
@@ -165,18 +190,30 @@ export const recomputeCommitHash = commitHash
  * 서명 문자열을 다시 만든다. 재료가 덜 왔으면 null 이다.
  *
  * 리포트 검산(D-04)보다 쉽다 — 저쪽은 `keccak256(body)` 를 만들려고 본문을 따로 불러와야
- * 하는데, 예측은 서명 대상 다섯 줄이 이 응답 안에 이미 있다.
+ * 하는데, 예측은 서명 대상 줄이 이 응답 안에 이미 있다.
  *
- * null 이 되는 경우 셋: 아직 서명 nonce 를 저장하지 않던 시절의 예측, 커밋 전(noteHash 없음),
- * 종목이 지워진 예측(stockCode 없음). 셋 다 실패가 아니라 "재료가 없다" 다.
+ * **서식이 둘이다**(ANT-CHAIN-20). 대회로 등록한 예측은 `antenna:event-entry:v1` 로 서명됐고,
+ * 그 서명이 단건 등록과 같은 칸에 저장된다. 그래서 `eventEntry` 유무로 서식을 가른다 —
+ * 한쪽 서식으로만 조립하면 다른 쪽은 **엉뚱한 주소가 복원돼 "불일치" 로 뜬다**(실제 사고).
+ *
+ * null 이 되는 경우: 아직 서명 nonce 를 저장하지 않던 시절의 예측, 커밋 전(noteHash 없음),
+ * 종목이 지워진 예측(stockCode 없음), 그리고 **묶음 등록**(itemCount ≥ 2 — 형제 종목 줄이
+ * 이 응답에 없다). 전부 실패가 아니라 "재료가 없다" 다.
  */
 export function signingPreimage(proof: Proof): string | null {
   const { stockCode, noteHash, direction, targetPrice, horizon } = proof.payload
   if (!proof.signNonce || stockCode === null || noteHash === null) return null
-  return predictionSigningPayload(
-    { stockCode, direction, targetPrice, horizon, noteHash },
-    { nonce: proof.signNonce, chainId: proof.chainId },
-  )
+  const nonce = { nonce: proof.signNonce, chainId: proof.chainId }
+
+  const entry = proof.eventEntry
+  if (entry) {
+    // 묶음은 이 한 종목만으로 문자열을 만들 수 없다 — 억지로 만들면 반드시 불일치가 나온다
+    if (entry.itemCount !== 1) return null
+    const line = eventEntryLine({ stockCode, direction, targetPrice, stake: entry.stake }, noteHash)
+    return eventEntryPayload(entry.eventId, [line], nonce)
+  }
+
+  return predictionSigningPayload({ stockCode, direction, targetPrice, horizon, noteHash }, nonce)
 }
 
 /** 서명에서 주소를 복원한다. 리포트 검산과 같은 함수다 — 규칙을 두 벌로 두지 않는다. */

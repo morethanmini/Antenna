@@ -76,6 +76,16 @@ public interface PredictionCommitRepository extends JpaRepository<PredictionComm
     List<PredictionCommit> findLedgerPage(
             @Param("at") Instant at, @Param("cursorId") Long cursorId, Limit limit);
 
+    /**
+     * 같은 서명 nonce 를 공유하는 커밋 수 (ANT-CHAIN-20).
+     *
+     * <p>대회 묶음 등록은 서명 하나를 종목 수만큼의 커밋 행에 복사해 넣는다({@code EventEntryService}).
+     * 검산 ③은 서명 원문을 통째로 다시 만들어야 하는데, 묶음이면 형제 종목 줄이 전부 있어야 한다 —
+     * 그 재료가 proof 응답에 없으므로 <b>몇 건이 묶였는지</b>를 화면에 알려 ③을 잠그게 한다.
+     * 1이면 그 커밋 혼자라 복원이 된다.
+     */
+    int countBySignNonce(String signNonce);
+
     /** 리빌 대상 — 판정이 끝났는데 salt 가 아직 비공개인 커밋 (결정 A9: 판정 기준). */
     @Query(
             "select c from PredictionCommit c join c.prediction p"

@@ -453,6 +453,14 @@ export default function Verify() {
                 브라우저가 등록 당시 서명한 문자열을 다시 만들고, 서명에서 지갑 주소를 복원해요.
                 복원한 주소가 아래 주소와 같으면 <b>이 지갑의 주인이 서명했다</b>는 뜻이에요.
               </p>
+              {/* 대회 등록은 서명 문자열이 다르다(ANT-CHAIN-20). 아래 펼쳐진 문자열에 회차 번호와
+                  배팅액이 보이는데, 설명이 없으면 "왜 여기 배팅액이 있지" 가 된다 */}
+              {data.eventEntry && (
+                <p className="vf-lead">
+                  대회로 등록한 예측이라 <b>회차 번호와 배팅액까지 한 문자열에 함께 서명</b>돼
+                  있습니다. 그래서 걸었던 금액도 서명의 일부로 남아 나중에 바꿀 수 없습니다.
+                </p>
+              )}
 
               <ul className="vf-checks">
                 {!data.signature ? (
@@ -465,6 +473,15 @@ export default function Verify() {
                   <CheckLine verdict="locked" label="이 예측에는 서명 문자열을 복원할 재료가 없습니다">
                     서명에 쓰인 nonce 를 함께 저장하기 시작한 것이 2026-09-15 입니다.
                     그전에 등록된 예측은 이 단계만 잠기고 나머지는 그대로 계산해요.
+                  </CheckLine>
+                ) : data.eventEntry && data.eventEntry.itemCount !== 1 ? (
+                  /* 여러 종목을 한 번에 서명하던 시절(2026-09-17 이전)의 대회 등록. 형제 종목 줄이
+                     이 응답에 없어 문자열을 만들 수 없다. 이 한 종목만으로 조립하면 반드시 불일치가
+                     나오므로, 억지로 계산하지 않고 못 한다고 적는다. */
+                  <CheckLine verdict="locked" label="여러 종목을 한 번에 서명한 예측입니다">
+                    이 서명은 {data.eventEntry.itemCount}개 종목을 한 문자열로 덮고 있어, 그중 한
+                    종목만으로는 원래 문자열을 되살릴 수 없습니다. 지금은 종목마다 따로 서명하므로
+                    이후에 등록된 예측은 이 단계까지 계산됩니다.
                   </CheckLine>
                 ) : !signer.preimage ? (
                   <CheckLine verdict="locked" label="서명 문자열을 다시 만들 재료가 오지 않았습니다">

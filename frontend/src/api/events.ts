@@ -433,12 +433,30 @@ export async function eventEntrySigningPayload(
   nonce: WalletNonce,
 ) {
   const hashes = await Promise.all(items.map((it) => noteHash(it.note, it.noteSalt)))
+  return eventEntryPayload(eventId, items.map((it, i) => eventEntryLine(it, hashes[i])), nonce)
+}
+
+/**
+ * 항목 한 줄. **검산(D-03)이 이 함수를 그대로 쓴다**(ANT-CHAIN-20).
+ *
+ * 등록은 note·noteSalt 에서 noteHash 를 만들어야 해서 비동기인데, 검산에는 noteHash 가
+ * 이미 와 있다. 그래서 해시 계산과 줄 조립을 갈라 두고 **조립 규칙만 공유**한다 —
+ * 검산이 자기 조립을 따로 가지면 규격이 바뀔 때 한쪽만 고쳐지고, 화면에는 원인 없는
+ * "서명자 불일치" 만 뜬다(실제로 그 사고가 났다).
+ */
+export function eventEntryLine(
+  f: { stockCode: string; direction: BetDirection; targetPrice: number; stake: number },
+  hash: string,
+) {
+  return [f.stockCode, f.direction, formatTargetPrice(f.targetPrice), hash, f.stake].join('/')
+}
+
+/** 줄들을 감싸는 서명 문자열. 줄 순서는 **요청 items 순서 그대로** — 서버가 정렬하지 않는다. */
+export function eventEntryPayload(eventId: number, lines: string[], nonce: WalletNonce) {
   return [
     'antenna:event-entry:v1',
     `eventId=${eventId}`,
-    ...items.map((it, i) =>
-      [it.stockCode, it.direction, formatTargetPrice(it.targetPrice), hashes[i], it.stake].join('/'),
-    ),
+    ...lines,
     `chainId=${nonce.chainId}`,
     `nonce=${nonce.nonce}`,
   ].join('\n')
