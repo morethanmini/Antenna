@@ -741,7 +741,7 @@
    **바닥에 직접 앉는 판은 빠짐없이 적어야 한다.** 처음에 .sp-card 만 적었더니
    차트 · AI 한줄 요약 · 당시 주요 이슈가 어두운 판으로 남아 화면이 반반이 됐다.
    판 이름이 하나가 아니다 — 요약 칸 · 일반 카드 · 차트 · 접히는 상자 · 확인창 ·
-   코치 말풍선 · 도움말 팝오버. 카드 **안쪽** 상자들(.sp-stepper · .sp-indpop ·
+   코치 말풍선 · 도움말 팝오버 · 화면 안내 말풍선(.spc-card). 카드 **안쪽** 상자들(.sp-stepper · .sp-indpop ·
    주문 패널 …)은 이 판들의 자손이라 저절로 따라온다.
    판을 새로 만들면 여기에 이름을 더한다. */
 body.sim-play-page .sp-stat,
@@ -750,7 +750,8 @@ body.sim-play-page .sp-chart-card,
 body.sim-play-page .sp-fold,
 body.sim-play-page .sp-dialog,
 body.sim-play-page .sp-help .ms-say,
-body.sim-play-page .sp-help-pop{
+body.sim-play-page .sp-help-pop,
+body.sim-play-page .spc-card{
   --ground:#fff;
   --surface:#fff;
   --surface-2:#f0f2f7;
@@ -880,3 +881,12 @@ body.sim-play-page .sp-fold-body{padding:10px 18px 12px}
   body.sim-play-page .sp-steps{margin-top:6px;margin-bottom:8px}
   body.sim-play-page .sp-amount .sp-total dd{font-size:var(--fs-2xl)}
 }
+
+/* 화면 안내(코치마크) 말풍선. 뒤에 어두운 덮개가 깔리는데 말풍선 바탕이 옅은 흰색
+   이면 그 덮개와 아래 주문 패널이 그대로 비쳐 글자를 못 읽는다 — 위에서 토큰을
+   되돌려 흰 판으로 세우고, 여기서는 어두운 판 위에 뜨도록 그림자만 깊게 준다.
+   꼬리도 같은 흰색이어야 판에서 떨어져 나가지 않는다. */
+body.sim-play-page .spc-card{
+  box-shadow:0 26px 54px -16px rgba(0,0,0,.72), 0 0 0 1px rgba(255,255,255,.28);
+}
+body.sim-play-page .spc-card::before{background:#fff}
