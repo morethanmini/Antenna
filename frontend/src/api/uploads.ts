@@ -576,7 +576,8 @@ function parse(text: string): unknown {
 export function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes}B`
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)}KB`
-  return `${(bytes / 1024 / 1024).toFixed(1)}MB`
+  /* 10.0MB 처럼 딱 떨어지는 값에서 .0 은 읽는 데 방해만 된다 */
+  return `${(bytes / 1024 / 1024).toFixed(1).replace(/\.0$/, '')}MB`
 }
 
 /** "4:1" 처럼 읽히게. 비율 제약을 숫자로만 적으면 무엇을 맞춰야 하는지 모른다 */
