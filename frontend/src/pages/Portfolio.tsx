@@ -68,7 +68,7 @@ export default function Portfolio() {
               </dl>
               {/* 분모가 판정된 것뿐임을 적는다 — 대기가 많을수록 적중률이 낮아진다고 오해한다 */}
               <p className="fc-note">
-                판정이 끝난 예측만 센 값입니다. 판정 대기 {d.pending}건은 빠져 있습니다.
+                판정 대기 {d.pending}건 제외
               </p>
             </section>
 
@@ -93,7 +93,7 @@ export default function Portfolio() {
               </ul>
               {/* 기록 대기를 실패로 읽지 않게 한다 — 앵커는 주기적으로 도는 배치다 */}
               <p className="fc-note">
-                봉인된 예측은 10분마다 도는 배치로 묶여 체인에 올라갑니다. 대기는 실패가 아닙니다.
+                10분에 한 번씩 묶여 체인에 올라갑니다.
               </p>
               <Link className="fc-more" to="/ledger">확정 기록에서 확인 ›</Link>
             </section>
