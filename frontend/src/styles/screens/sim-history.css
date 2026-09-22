@@ -188,7 +188,10 @@ body.sim-record-page .main::before{
 
 /* 격려 카드. 그림 한 장이 판 전체다 — 그림에 이미 테두리와 빛이 있어서 판의
    여백을 줄이고 유리 테두리도 걷는다. 둘 다 있으면 테두리가 두 겹으로 보인다. */
-.rc-cheer{padding:7px;background:none;border-color:transparent;box-shadow:none}
+/* 그림 한 장이 판 전체다. **여백을 두지 않는다** — 그림이 자기 네온 테두리와
+   번짐을 이미 들고 있어서, 판의 여백까지 주면 위아래로 빈 자리가 두 겹이 된다.
+   원본 PNG 에 있던 투명 여백(위 85 · 아래 62px)도 구우면서 잘라 냈다. */
+.rc-cheer{padding:0;background:none;border-color:transparent;box-shadow:none}
 .rc-cheer-card{display:block;width:100%;height:auto;border-radius:14px}
 
 /* ── 성장 여정 ────────────────────────────────────── */
