@@ -176,50 +176,74 @@ export default function NotificationPopover({
       {!loading && !error && items.length > 0 && (
         <ul className="nt-list" ref={listRef}>
           {items.map((n) => (
-            <li key={n.id} className={`nt-row${openIds.includes(n.id) ? ' is-open' : ''}`}>
+            /* ── 줄 하나 (2026-09-22 구조 바꿈) ─────────────────────
+               전에는 줄 전체가 <button> 이고 지우기만 그 바깥에 얹혀 있었다.
+               [더보기] 를 본문 바로 뒤에 붙이려니 그 구조로는 안 됐다 — 버튼 안에
+               버튼을 넣을 수 없어 본문 밖에 띄워 놓을 수밖에 없었고, 그러면 글자와
+               떨어져 "…" 와 [더보기] 사이가 벌어진다.
+
+               그래서 줄을 판(li)으로 두고, **누를 자리는 덮개 버튼(.nt-main)이**
+               inset:0 으로 깔아 준다. 글자는 제자리에 흐르므로 본문과 [더보기] 를
+               한 줄(flex)에 나란히 놓을 수 있다. 줄 아무 데나 눌러도 알림이 열리는
+               것은 그대로다 — 덮개가 줄 전체를 덮기 때문이다.
+
+               덮개를 **맨 앞**에 둔다. Tab 순서를 줄 → 더보기 → 삭제 로 맞추기
+               위해서다. 그리는 순서는 DOM 순서와 무관하다 — 자리를 잡은(positioned)
+               덮개가 흐르는 글자보다 늘 위에 그려지므로, 글자를 가리지 않으면서도
+               클릭을 받는다. */
+            <li
+              key={n.id}
+              className={`nt-row${n.read ? '' : ' is-unread'}${openIds.includes(n.id) ? ' is-open' : ''}`}
+            >
+              {/* 줄 전체를 덮는 누름판. 보이는 글자는 따로 흐르므로, 읽어 주는
+                  기기를 위해 이름을 여기 모아 준다 — 종류 · 제목 · 본문 · 온 때,
+                  그리고 안 읽었으면 그 말까지. 점을 뺀 뒤로 안 읽음을 알리는 것이
+                  바탕색 하나뿐이라, 색을 못 보는 사람에게는 이 말이 유일한 단서다. */}
               <button
                 type="button"
-                className={`nt-item${n.read ? '' : ' is-unread'}${n.linkPath ? '' : ' is-flat'}`}
+                className={`nt-main${n.linkPath ? '' : ' is-flat'}`}
+                aria-label={[
+                  TYPE_LABEL[n.type] ?? n.type,
+                  n.title,
+                  n.body,
+                  ago(n.createdAt),
+                  n.read ? '' : '읽지 않음',
+                ].filter(Boolean).join(' · ')}
                 onClick={() => open(n)}
                 /* 갈 곳이 없으면 읽음 처리만 한다. 눌러도 아무 데도 안 가는 것이
                    기본값이라, 커서까지 손가락으로 바꾸지는 않는다(.is-flat) */
-              >
-                {/* **종류 글자를 뺐다**(2026-09-22, 디자인). 남은 것은 동그라미 안의
-                    아이콘 하나다. 그림만으로는 종류를 못 읽으므로 글자를 두 군데로
-                    옮긴다 — 마우스에는 title, 스크린리더에는 .nt-sr.
-                    표에 없는 종류는 종류 문자열이 그대로 실린다. 이제 잘릴 칸이
-                    없으니 온전히 읽힌다(api/notifications.ts — 새 종류가 붙은 것을
-                    알아채라는 뜻이다). */}
-                <span className="nt-type" title={TYPE_LABEL[n.type] ?? n.type}>
-                  <NotificationTypeIcon type={n.type} />
-                  <span className="nt-sr">{TYPE_LABEL[n.type] ?? n.type}</span>
-                </span>
-                <b className="nt-title">{n.title}</b>
-                <span className="nt-body" data-id={n.id}>{n.body}</span>
-                <span className="nt-when num">{ago(n.createdAt)}</span>
-                {/* 파란 점을 뺐다(2026-09-18). 안 읽은 표시가 바탕색과 점 둘이라
-                    같은 말을 두 번 하고 있었다.
+              />
 
-                    **글자는 남긴다.** 점이 지던 몫이 눈에 보이는 표시만은 아니었다 —
-                    바탕색만 남기면 화면에 나오는 단서가 색 하나뿐이라, 색을 못 보는
-                    사람에게는 읽은 줄과 안 읽은 줄이 같아진다. 이 글자는 눈에는
-                    안 보이고 스크린리더만 읽는다. */}
-                {!n.read && <span className="nt-sr">읽지 않음</span>}
-              </button>
-              {/* 넘치는 줄에만 붙는다. 이것도 **항목 버튼 바깥**이다 — 안에 넣으면
-                  버튼 안 버튼이 되고, 더보기를 눌렀는데 그 알림으로 옮겨 가 버린다. */}
-              {longIds.includes(n.id) && (
-                <button
-                  type="button"
-                  className="nt-more"
-                  aria-expanded={openIds.includes(n.id)}
-                  onClick={() => toggleMore(n.id)}
-                >
-                  {openIds.includes(n.id) ? '접기' : '더보기'}
-                </button>
-              )}
-              {/* 항목 버튼 **바깥**에 둔다. 버튼 안에 버튼을 넣으면 마크업이 깨지고,
-                  지우기를 눌렀는데 그 알림으로 이동해 버린다 */}
+              {/* **종류 글자를 뺐다**(2026-09-22, 디자인). 남은 것은 동그라미 안의
+                  아이콘 하나다. 종류 이름은 마우스에 title 로, 읽어 주는 기기에는
+                  위 덮개의 aria-label 로 남는다 — 화면에서 지운 것이지 없앤 것이
+                  아니다. 표에 없는 새 종류도 그 두 곳에는 그대로 실린다. */}
+              <span className="nt-type" title={TYPE_LABEL[n.type] ?? n.type} aria-hidden="true">
+                <NotificationTypeIcon type={n.type} />
+              </span>
+              <b className="nt-title" aria-hidden="true">{n.title}</b>
+              <span className="nt-when num" aria-hidden="true">{ago(n.createdAt)}</span>
+
+              {/* 본문과 [더보기] 가 한 줄이다. 본문이 줄어들며 잘리고 그 **바로 뒤에**
+                  버튼이 선다 — "…미적중 · 오차 3 더보기" 처럼 이어 읽힌다.
+                  글자 쪽은 누름을 덮개로 흘려보내고(.nt-bodyline pointer-events:none)
+                  버튼만 다시 받는다. 안 그러면 본문을 눌렀을 때 알림이 안 열린다. */}
+              <span className="nt-bodyline" aria-hidden="true">
+                <span className="nt-body" data-id={n.id}>{n.body}</span>
+                {longIds.includes(n.id) && (
+                  <button
+                    type="button"
+                    className="nt-more"
+                    aria-hidden="false"
+                    aria-expanded={openIds.includes(n.id)}
+                    onClick={() => toggleMore(n.id)}
+                  >
+                    {openIds.includes(n.id) ? '접기' : '더보기'}
+                  </button>
+                )}
+              </span>
+
+              {/* 덮개 **위에** 선다(z-index). 여기를 눌렀는데 알림이 열리면 안 된다 */}
               <button
                 type="button"
                 className="nt-del"
