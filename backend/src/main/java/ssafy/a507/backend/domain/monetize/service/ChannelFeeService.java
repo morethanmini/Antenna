@@ -9,14 +9,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
+import ssafy.a507.backend.common.text.KoreanText;
 import ssafy.a507.backend.domain.account.entity.Notification;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.account.repository.NotificationRepository;
 import ssafy.a507.backend.domain.account.repository.UserRepository;
 import ssafy.a507.backend.domain.account.service.NotificationGate;
 import ssafy.a507.backend.domain.monetize.dto.ChannelFeeAppliedResponse;
-import ssafy.a507.backend.domain.monetize.dto.ChannelFeeResponse;
 import ssafy.a507.backend.domain.monetize.dto.ChannelFeeResponse.FeeChange;
+import ssafy.a507.backend.domain.monetize.dto.ChannelFeeResponse;
 import ssafy.a507.backend.domain.monetize.entity.PublisherFee;
 import ssafy.a507.backend.domain.monetize.entity.Subscription;
 import ssafy.a507.backend.domain.monetize.repository.PublisherFeeRepository;
@@ -112,10 +113,13 @@ public class ChannelFeeService {
         }
 
         // 닉네임은 nullable 이다(온보딩 미완료). 그대로 이어붙이면 "null 채널의…" 로 나간다.
+        // 대신할 말이 "구독 중인 채널" 이라 뒤에 "채널의" 를 또 붙이면 "채널 채널의" 가 됐다
+        // (2026-09-22). 채널을 가리키는 말까지 통째로 고른다.
         String nickname = publisher.getNickname();
+        String who = KoreanText.honorific(nickname, null);
         String body =
-                (nickname == null ? "구독 중인 채널" : nickname)
-                        + " 채널의 구독료가 "
+                (who == null ? "구독 중인 채널의" : who + "의 채널")
+                        + " 구독료가 "
                         + fee
                         + " ANT 로 바뀝니다. 지금 구독 중인 기간은 결제한 가격 그대로입니다.";
         String linkPath = "/channels/" + publisher.getId();

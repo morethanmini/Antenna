@@ -38,7 +38,7 @@ import { profanityError } from '../../text/profanity'
 import { getSectorSummary } from '../../api/stocks'
 import { useAsync } from '../../api/useAsync'
 import {
-  channelLabel, detectPlatform, type MyProfile, type ProfileUpdate, type UserChannel,
+  channelLabel, detectPlatform, withScheme, type MyProfile, type ProfileUpdate, type UserChannel,
 } from '../../api/account'
 import { useAuth } from '../../auth/context'
 import '../../styles/profile-edit.css'
@@ -256,8 +256,12 @@ function Form({ profile, heading, onClose, onSaved }: {
       setError(badText)
       return
     }
-    /* https 가 아니면 서버가 400 을 준다. 눌러 보고 알게 하지 않는다 */
-    if (rows.some((r) => !r.url.startsWith('https://'))) {
+    /* 스킴을 안 적은 주소는 https:// 를 붙여 준다(withScheme). blur 에서도 붙이지만
+       Enter 로 제출하면 blur 가 먼저 오지 않으므로 여기서 한 번 더 — 화면에도 붙은 값을 보인다 */
+    const channels = rows.map((r) => (r.url === withScheme(r.url) ? r : { ...r, url: withScheme(r.url) }))
+    if (channels.some((c, i) => c !== rows[i])) setRows(channels)
+    /* 그래도 https 가 아니면(http:// 를 직접 적은 경우) 서버가 400 을 준다. 눌러 보고 알게 하지 않는다 */
+    if (channels.some((r) => !r.url.startsWith('https://'))) {
       setError('채널 주소는 https 로 시작해야 합니다.')
       return
     }
@@ -267,7 +271,7 @@ function Form({ profile, heading, onClose, onSaved }: {
     if (nicknameChanged) patch.nickname = nickname
     if (introduceChanged) patch.introduce = introduce
     if (interestsChanged) patch.interests = interests
-    if (channelsChanged) patch.channels = rows
+    if (channelsChanged) patch.channels = channels
 
     setSaving(true)
     setError(null)
@@ -401,8 +405,12 @@ function Form({ profile, heading, onClose, onSaved }: {
                   )))}
                 />
               )}
+              {/* type="url" 이 아니다 — 브라우저 기본 검증이 "youtube.com" 을 "URL을 입력하세요" 로
+                  막아 submit 까지 오지 못했다(2026-09-23). 스킴은 우리가 붙이므로(withScheme)
+                  글자 칸으로 두고 키패드만 url 로 연다 */}
               <input
-                type="url"
+                type="text"
+                inputMode="url"
                 aria-label={`${i + 1}번째 채널 주소`}
                 value={row.url}
                 maxLength={CHANNEL_URL_MAX}
@@ -411,6 +419,10 @@ function Form({ profile, heading, onClose, onSaved }: {
                   setRows(rows.map((r, j) => (j === i ? withUrl(r, e.target.value) : r)))
                   setError(null)
                 }}
+                /* 칸을 떠날 때 https:// 를 붙여 보인다 — 저장 눌러서야 바뀌면 뭐가 붙었는지 모른다 */
+                onBlur={() => setRows(rows.map((r, j) => (
+                  j === i && r.url !== withScheme(r.url) ? { ...r, url: withScheme(r.url) } : r
+                )))}
               />
               <button type="button" className="ch-edit-drop" onClick={() => setRows(rows.filter((_, j) => j !== i))}>
                 삭제

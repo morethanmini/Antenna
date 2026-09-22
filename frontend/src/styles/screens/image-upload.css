@@ -61,7 +61,6 @@
 .iu-drop b{ font-size:var(--fs-lg); font-weight:var(--fw-bold); color:var(--ink); }
 .iu-drop span{ font-size:var(--fs-sm); }
 /* 비율 제약은 다른 줄보다 눈에 띄어야 한다 — 이걸 놓치면 올린 뒤 거절당한다 */
-.iu-rule{ color:var(--brand-ink) !important; font-weight:var(--fw-normal); }
 
 /* ── 자르기 ─────────────────────────────────────────
    그림은 전부 보이고, 그 위의 네모가 남길 자리다. 네모 밖을 어둡게 덮어 무엇이 잘려

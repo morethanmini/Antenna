@@ -21,6 +21,7 @@
    온체인 대조를 한다(ANT-CHAIN-09 결정). 여기서는 해시 복사만 둔다. */
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { useSharedHref } from '../sharedMode'
 import { useApiQuery } from '../api/useApiQuery'
 import {
   STATUS_LABEL, formatBusinessDate, formatConfirmedAt, type AnchorDetail,
@@ -36,6 +37,8 @@ const PAGE = 50
 
 export default function Anchor() {
   const { id } = useParams<{ id: string }>()
+  /* 원장 안을 오갈 때 모드를 잇는다 — 모의투자에서 들어왔으면 되돌아가기도 모의투자다 */
+  const href = useSharedHref()
   const anchor = useApiQuery<AnchorDetail>(`/anchors/${id}`)
   const [shown, setShown] = useState(PAGE)
 
@@ -56,7 +59,7 @@ export default function Anchor() {
   return (
     <main className="main">
       <div className="main-inner">
-        <Link className="ac-back" to="/ledger">
+        <Link className="ac-back" to={href('/ledger')}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M15 18l-6-6 6-6" />
           </svg>
@@ -194,7 +197,7 @@ export default function Anchor() {
                         {/* 이 커밋이 정말 루트에 들어 있는지 브라우저에서 직접 확인하는 화면으로.
                             리포트 검산 화면은 아직 없다 — 그 줄은 링크 없이 해시까지만 보여준다. */}
                         {c.kind === 'PREDICTION' ? (
-                          <Link className="ac-verify" to={`/ledger/verify/${c.predictionId}`}>
+                          <Link className="ac-verify" to={href(`/ledger/verify/${c.predictionId}`)}>
                             검산<em aria-hidden="true">›</em>
                           </Link>
                         ) : (

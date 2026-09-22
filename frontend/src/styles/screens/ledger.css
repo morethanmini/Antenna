@@ -1,5 +1,7 @@
 /* D-01 커밋 원장 — [ANT-FE-LEDGER-LIST] · 리디자인 S15P21A507-292
    색·간격은 app.css 의 토큰만 쓴다 — 단 하나, 어두운 체인 패널(.lg-chain)은 빼고.
+   (이 화면은 routes.ts 에서 늘 is-night 라, 글자색은 맨 아래 밤 블록이 한 번 더
+   덮는다. 흰 바탕용 값은 밤 블록을 뺐을 때의 기본값으로 남겨 둔다.)
 
    **어두운 패널 위에서는 토큰을 쓸 수 없다.** --ink · --body · --muted 는 전부
    흰 바탕을 전제로 고른 값이라 어두운 바탕에서는 대비가 무너진다. 그래서 그
@@ -63,6 +65,44 @@
   font-size:var(--fs-base); color:rgba(255,255,255,.66);
 }
 
+/* ══ 목록 판 ══════════════════════════════════════════════
+   **줄을 도시 사진 위에 바로 얹지 않는다**(2026-09-23 지적).
+   이 화면은 body 가 늘 is-night 이라 페이지 바탕이 도시 사진인데(night.css),
+   목록 줄은 흰 판을 전제로 고른 토큰(--ink · --muted · --faint · --brand-ink)을
+   그대로 쓰고 있었다. 사진 가운데가 밝은 구름·물빛 구간이라 해시(브랜드색 #4144c9)와
+   검산 링크가 거의 안 읽히고, 종목코드·공개일도 회색끼리 겹쳤다.
+
+   **판 안에서 토큰을 밤 값으로 바꿔치운다.** 줄 하나하나의 색을 고쳐 적는 대신
+   판에서 값을 갈면 안쪽(.lg-stock · .lg-code · .lg-horizon · 해시 · 검산 · 더 보기 ·
+   공용 칩)이 전부 var() 로 따라온다 — 종목 상세 머리(.stock-detail-page.is-night
+   .sd-head)가 쓰는 방법을 그대로 가져왔다. 값도 그 판의 것과 같다.
+
+   **판은 불투명에 가깝게 둔다.** 종목 상세 머리는 .62 짜리 유리인데, 저기는 표 한
+   칸짜리 머리라 글자가 성기다. 여기는 배치마다 줄이 쌓이는 빽빽한 목록이라
+   같은 농도로는 사진이 글자 사이로 계속 올라온다. 사진은 분위기로만 남긴다. */
+.lg-board{
+  margin:0 0 4px; padding:18px 22px 20px;
+  border-radius:16px;
+  /* 알파는 실측으로 정했다(2026-09-23). 사진에서 가장 밝은 구름 구간을 판 뒤에
+     두고 재면 .88 에서 종목코드 4.00 · 해시 4.20 으로 기준(4.5)에 못 미친다.
+     .94 에서 각각 6.96 · 10.29 가 된다 — 사진은 이 농도에서도 판 가장자리로 비친다. */
+  background:rgba(23,20,54,.94);
+  -webkit-backdrop-filter:blur(14px) saturate(140%);
+  backdrop-filter:blur(14px) saturate(140%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 16px 32px -20px rgba(8,6,28,.65);
+
+  /* **글자색은 여기서 정하지 않는다** — 아래 "밤 바탕 위의 글자" 블록 한 곳에 모여 있다.
+     여기서 바꾸는 것은 판 위에 얹히는 **면**뿐이다: 더 보기 버튼과 공용 칩(판정 대기 ·
+     앵커 배지)이 --surface 계열을 배경으로 쓰는데, 낮 값이면 어두운 판 위에서 흰
+     사각형으로 뜬다. 판보다 한 단 또렷한 고체색으로 준다. */
+  --surface:var(--night-2);
+  --surface-2:#2f2860;
+}
+
+@media (max-width: 560px){
+  .lg-board{ padding:14px 13px 16px; border-radius:14px; }
+}
+
 /* ══ 본문 — 배치 묶음 ════════════════════════════════════ */
 
 /* 좌측 세로선이 묶음을 관통한다(GitHub 커밋 목록).
@@ -107,9 +147,6 @@
 /* 대기 묶음. 실패가 아니므로 경고색을 쓰지 않는다 — 배지도 안 단다 */
 .lg-head.is-waiting .lg-head-text b{ color:var(--body); }
 
-/* 머클루트. 머리줄 오른쪽 끝에 붙는다 */
-.lg-head-hash{ margin-left:auto; }
-
 /* ── 줄 ───────────────────────────────────────────────── */
 .lg-rows{ margin:0; padding:0; list-style:none; }
 
@@ -132,7 +169,7 @@
    나머지가 보조다. 조사한 여섯 곳이 예외 없이 같았다.
 
    그래서 종목명은 굵기를 800 → 700 으로 내리고, 해시는 브랜드색 700 으로 올렸다
-   (아래 .lg-row .copy-hash). 크기는 종목 15 · 해시 14 로 한 칸 차이인데, 색이
+   (아래 .lg-hash). 크기는 종목 15 · 해시 14 로 한 칸 차이인데, 색이
    그 차이를 뒤집는다 — 먹색 15 보다 브랜드색 14 에 눈이 먼저 간다. */
 .lg-what{
   display:flex; align-items:center; flex-wrap:wrap;
@@ -156,14 +193,13 @@
 .lg-title:hover{ color:var(--brand-ink); text-decoration:underline; }
 
 /* ── 증거 — 이 줄의 주인공 ─────────────────────────────
-   공용 CopyHash(copy-hash.css)는 D-02 · D-03 도 함께 쓰므로 건드리지 않는다.
-   원장 줄 안에서만 덮어쓴다 — 저기서는 해시가 여러 값 중 하나지만
-   여기서는 줄이 존재하는 이유다. */
-.lg-row .copy-hash{ margin-left:-6px; }
-.lg-row .copy-hash code{
-  font-size:var(--fs-lg); font-weight:var(--fw-bold); color:var(--brand-ink);
+   복사 버튼(CopyHash)을 뺐다(2026-09-23). 이 목록에서 해시를 복사해 갈 곳이 없고,
+   줄마다 아이콘이 붙어 어수선했다. 전체 값·복사는 배치 상세(D-02)·검산(D-03)에
+   남아 있다. title 에 전체 값을 두어 마우스로는 확인할 수 있다. */
+.lg-hash{
+  display:block;
+  font-family:var(--mono); font-size:var(--fs-lg); font-weight:var(--fw-bold); color:var(--brand-ink);
 }
-.lg-row .copy-hash .copy-hash-icon{ color:var(--brand); }
 
 /* ── 공용 칩 두 개 ─────────────────────────────────────
    이 화면의 글자를 전체적으로 한 단계 키우면서(2026-09-18) 공용 칩만 제자리에
@@ -201,9 +237,56 @@
   .lg-group{ padding-left:30px; }
   .lg-group::before{ left:9px; }
   .lg-node{ width:20px; height:20px; top:10px; }
-  /* 머클루트가 머리줄을 밀어내지 않게 아래로 내린다 */
-  .lg-head-hash{ margin-left:0; flex-basis:100%; }
   .lg-row:hover{ box-shadow:none; }
+}
+
+/* ── 밤 바탕 위의 글자 (2026-09-23) ─────────────────────
+   이 화면은 routes.ts 에서 늘 is-night 다. 위 규칙들은 흰 바탕용 토큰(--ink · --body ·
+   --muted · --brand-ink)이라 어두운 바탕에서 배치 번호 · 해시 · 검산 링크가 보이지
+   않았다(QA 09-23 · 배치 번호는 #14141b on #171436 로 대비 1.1). 밤 한 벌(night.css)의
+   토큰으로 갈아 끼운다. night.css 의 "카드 밖 글자" 목록에 두지 않고 여기 모은다 —
+   이 화면의 밤 색이 두 파일에 나뉘면 한쪽만 고쳐진다.
+
+   ── 값을 한 단 올렸다 (2026-09-23, 목록이 .lg-board 판을 얻은 뒤) ──
+   판이 생기면서 뒤가 비치지 않게 되자 같은 값이어도 글자가 더 가라앉았고, "조금만
+   더 잘 보이면" 하는 요청을 받았다. 부연 --night-body → #c0bbe0 · 흐림 --night-faint
+   → #a49dc8 · 브랜드 링크 --glow → #cbbcff. 판 기준 실측 대비는 제목 16.06 ·
+   대기 머리 12.98 · 해시 10.29 · 부연 9.66 · 흐림 6.96 으로 단이 그대로 벌어져 있다.
+
+   해시·검산을 --glow(#8b7dff) 로 두지 않는 이유가 여기 있다 — 그 값은 판 위에서
+   공개일(부연)보다 어두워, 기준은 넘어도 **보조 정보가 주인공보다 또렷한** 역전이
+   생긴다. 값은 공유 화면 판(night.css 의 body.is-panel)과 맞춰 두었다. */
+body.is-night .lg-head-no,
+body.is-night .lg-head-text b,
+body.is-night .lg-stock,
+body.is-night .lg-title{ color:var(--night-ink); }
+body.is-night .lg-head-no:hover,
+body.is-night .lg-title:hover{ color:#fff; }
+/* 대기 묶음은 한 단 낮춘다 — 위 .is-waiting 규칙(--body)과 같은 뜻, 밤 값으로 */
+body.is-night .lg-head.is-waiting .lg-head-text b{ color:#ded9f5; }
+body.is-night .lg-head-text span,
+body.is-night .lg-horizon,
+body.is-night .lg-loading{ color:#c0bbe0; }
+body.is-night .lg-code,
+body.is-night .lg-stock.is-none{ color:#a49dc8; }
+/* 브랜드색 해시·링크. --brand-ink(#4144c9)는 어두운 바탕에서 대비 2:1 이 안 된다 —
+   밤 화면의 강조색 --glow(#8b7dff)로 올린다(기록 화면 sim-history 가 같은 자리에 같은 색). */
+body.is-night .lg-hash,
+body.is-night .lg-go{ color:#cbbcff; }
+body.is-night .lg-go:hover{ color:#fff; }
+/* 선과 짚은 줄. --rule(#e5e7ef)은 어두운 바탕에서 흰 줄로 튀고, 짚었을 때 깔리던
+   --brand-softer(#f4f3fe)는 거의 흰 판이라 밝게 바꾼 글자가 그 위에서 도로 사라진다. */
+body.is-night .lg-group::before{ background:var(--night-line); }
+body.is-night .lg-group:last-of-type::before{
+  background:linear-gradient(180deg, var(--night-line) 70%, transparent);
+}
+body.is-night .lg-row{ border-top-color:var(--night-line); }
+body.is-night .lg-row:hover{
+  background:var(--night-glass);
+  box-shadow:-14px 0 0 var(--night-glass), 14px 0 0 var(--night-glass);
+}
+@media (max-width: 560px){
+  body.is-night .lg-row:hover{ box-shadow:none; }
 }
 
 /* 움직이는 것이 없다. Bitfeed 식 사각형 무리를 걷어내면서 그 칸의 숨쉬기

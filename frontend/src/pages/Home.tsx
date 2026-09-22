@@ -112,29 +112,7 @@ const WalletIcon = () => (
     <circle cx="16.5" cy="14.5" r="1.4" fill="currentColor" />
   </svg>
 )
-const PenIcon = () => (
-  <svg {...ico} className="hm-ico">
-    <path d="M4 20h4.2L19 9.2a2.1 2.1 0 0 0-3-3L5 17.2V20z" stroke="currentColor"
-          strokeWidth="1.8" strokeLinejoin="round" />
-    <path d="M14.3 7.4l2.9 2.9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-  </svg>
-)
-const ChartIcon = () => (
-  <svg {...ico} className="hm-ico">
-    <path d="M4 19V5M4 19h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    <path d="M7.5 15l3.2-4.2 2.8 2.2L18 7" stroke="currentColor" strokeWidth="1.8"
-          strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-)
-const ListIcon = () => (
-  <svg {...ico} className="hm-ico">
-    <path d="M9 6.5h11M9 12h11M9 17.5h11" stroke="currentColor" strokeWidth="1.8"
-          strokeLinecap="round" />
-    <circle cx="4.6" cy="6.5" r="1.4" fill="currentColor" />
-    <circle cx="4.6" cy="12" r="1.4" fill="currentColor" />
-    <circle cx="4.6" cy="17.5" r="1.4" fill="currentColor" />
-  </svg>
-)
+
 const SparkIcon = () => (
   <svg {...ico} className="hm-ico">
     <path d="M12 3.5l1.7 4.3 4.3 1.7-4.3 1.7L12 15.5l-1.7-4.3L6 9.5l4.3-1.7z"
@@ -207,15 +185,11 @@ function Hero() {
           <img src="/assets/page_home/hero-cta.webp" alt="" aria-hidden="true" />
         </Link>
       </div>
-      {/* 망원경으로 시장을 살피는 개미(2026-09-22 밤 시안). 난간과 고양이까지 한 덩어리로
-          그려진 누끼라 카드 아래쪽에 세우면 시안의 "난간 위에서 내려다본다" 가 그대로 선다.
-
-          **차트판을 든 옛 그림(character/hero-ant.webp)은 지우지 않았다** — 밝은 판을
-          되살릴 때 쓸 수 있고, 다른 화면이 쓰는지 확인하지 않고 지울 파일이 아니다.
-
-          원본은 page_home 의 ChatGPT 시안이고, 웹용 webp 는 scripts/bake-home-night.mjs
-          가 굽는다(1448x1086 -> 900px · 1.57MB -> 142KB). */}
-      <img className="hm-hero-art is-scout" src="/assets/page_home/hero-scout.webp" alt=""
+      {/* 차트판과 코인을 든 개미. 밝은 판에서 쓰던 그림으로 되돌렸다(2026-09-23).
+          밤 시안의 망원경 개미(page_home/hero-scout.webp)는 난간과 고양이까지 한 덩어리로
+          그려진 누끼라 히어로 아래쪽을 꽉 채웠는데, 배치를 낮 것으로 되돌리면서 이쪽이
+          맞게 됐다. 그 파일은 지우지 않았다 — 다시 쓸 수 있다. */}
+      <img className="hm-hero-art is-one" src="/assets/character/hero-ant.webp" alt=""
            aria-hidden="true" />
 
     </section>
@@ -544,7 +518,7 @@ function Sponsored() {
           <div className="hm-showcase-track">
             <div className="hm-showcase-slide hm-t-a">
               <p className="hm-showcase-title">이 자리에 광고를 실어 보세요</p>
-              <p className="hm-showcase-sub">홈 첫 화면에 배너가 걸립니다. ANT 로 결제합니다.</p>
+              <p className="hm-showcase-sub">ANT 로 결제합니다.</p>
               <Link className="hm-showcase-btn" to="/ads/new">
                 광고 등록하기
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -626,10 +600,6 @@ function ContestBanner() {
      달면 스크린리더가 토막 난 문장을 읽는다. */
   return (
       <Link className="hm-event is-art" to={CONTEST_PATH} aria-label={art.alt}>
-        {/* 좁은 칸(시안의 가운데 자리)에서 쓰는 **완성본 한 장**. 아래 조각들은 9:1 띠
-            전용이라 폭이 줄면 서로 파고든다 — 어느 쪽을 보일지는 CSS 가 고른다.
-            조각 쌓기를 지우지 않는 이유는 넓은 자리에서 그쪽이 더 잘 맞아서다. */}
-        <img className="hm-ev-solo" src="/assets/page_home/contest-banner.webp" alt="" aria-hidden="true" />
         {/* 띠 안쪽 — 배경·차트·색종이는 여기서 잘린다 */}
         <span className="hm-ev-clip" aria-hidden="true">
           <img className="hm-ev-bg" src={BANNER_BASE.bg} alt="" />
@@ -666,18 +636,6 @@ function ContestBanner() {
 
    그 자리를 리포트 작성이 받는다. 예측과 함께 이 서비스의 두 가지 쓰기 행위
    중 하나인데, 지금은 리포트 피드 안으로 들어가야만 닿는다. */
-/* 지름길 셋. 시안(prototype.png)은 카드 한 장 안의 칸이 아니라 **따로 선 타일 셋**이다.
-   그래서 .card 를 벗기고 타일마다 제 테를 갖는다. */
-function QuickLinks() {
-  return (
-    <nav className="hm-quick" aria-label="바로가기">
-      <Link to="/reports"><PenIcon />리포트 보기</Link>
-      <Link to="/stocks"><ChartIcon />종목 탐색</Link>
-      <Link to="/me/predictions"><ListIcon />내 예측</Link>
-    </nav>
-  )
-}
-
 
 export default function Home() {
   /* M-09 온보딩 튜토리얼은 셸(Layout)이 띄운다. 홈에만 걸면 딥링크로 막혔다가
@@ -690,20 +648,15 @@ export default function Home() {
             순서가 곧 배치다 — 좌·우, 좌·우, 좌·우. */}
         <div className="hm-grid">
           <Hero />
-          {/* 배너는 제 높이만 쓰고, 남는 자리는 바로가기가 받는다 */}
-          <div className="hm-stack">
-            <Sponsored />
-            <QuickLinks />
-          </div>
-          {/* 시안의 가운데 줄은 **셋**이다 — 시장 현황이 넓게 왼쪽, 대회 배너가
-              가운데 좁게, 내 자산이 오른쪽. 2단 격자 안에서 두 칸을 가로지르고
-              제 안에서 다시 셋으로 나눈다. */}
-          <div className="hm-trio">
-            <MarketOverview />
-            <ContestBanner />
-            <MyAssets />
-          </div>
+          <Sponsored />
+          {/* 두 칸을 가로지른다 — 아래 카드 줄을 밀지 않고 한 줄만 쓴다 */}
+          <ContestBanner />
+          {/* 관심 종목을 시장 Overview 보다 위에 둔다 — 홈에 들어와 가장 먼저
+              보는 것이 "내가 담은 것" 이라는 코치 QA(2026-09-21). 시장 지표는
+              누구에게나 같은 값이라 한 줄 아래여도 손해가 없다. */}
           <Watchlist />
+          <MyAssets />
+          <MarketOverview />
           <TopPredictor />
         </div>
       </div>

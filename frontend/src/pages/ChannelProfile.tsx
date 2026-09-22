@@ -273,7 +273,7 @@ export default function ChannelProfile() {
                         결제 금액이 달라 보이는 이유를 알 수 없다 */}
                     {sub.paidFee && sub.paidFee !== channel.fee && (
                       <p className="ch-sub-locked-fee">
-                        {`${formatToken(sub.paidFee)} ANT 로 결제한 구독입니다. 만료까지 이 가격입니다.`}
+                        {`구독료가 바뀌었지만 만료까지 결제한 ${formatToken(sub.paidFee)} ANT 그대로입니다.`}
                       </p>
                     )}
                     <p className="ch-sub-renew">
@@ -589,7 +589,7 @@ function ChannelBacktest({ userId }: { userId: string }) {
                     값을 화면에 박지 않고 응답에서 받는 이유 — 기간이 바뀌면
                     문구와 계산 근거가 어긋난다 */}
                 <p className="ch-bt-terms">
-                  {`최근 ${back.data.months}개월 · 원금 ${back.data.principal.toLocaleString('ko-KR')}원 · 수수료 0 기준입니다. 무료로 제공합니다.`}
+                  {`최근 ${back.data.months}개월 · 원금 ${back.data.principal.toLocaleString('ko-KR')}원 · 수수료 0`}
                 </p>
               </div>
             )}

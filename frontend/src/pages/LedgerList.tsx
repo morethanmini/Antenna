@@ -35,12 +35,13 @@
    길도 있었지만(리포트 피드가 간 길) 이 화면에선 이득이 없다.
 
    앵커를 못 찾아도 머리줄은 그려진다 — 줄 자신이 businessDate·anchorStatus 를
-   들고 오기 때문이다. 앵커는 거기에 확정 시각과 머클루트를 얹어 줄 뿐이다.
+   들고 오기 때문이다. 앵커는 거기에 확정 시각과 건수를 얹어 줄 뿐이다.
 
    설계 제약
    - 상태 표시는 AnchorBadge 를 쓴다. C-01 · C-02 · M-02 와 같은 컴포넌트다.
-   - 커밋 해시는 잘라 보여주더라도 전체 값을 복사할 수 있어야 한다 → CopyHash.
-     체인 탐색기에 붙여 넣어 직접 확인하는 길을 막지 않는다.
+   - 커밋 해시는 잘라서 보여만 준다. 복사 버튼(CopyHash)은 뺐다(2026-09-23) — 이 목록에서
+     해시를 복사해 갈 곳이 없고, 줄마다 아이콘이 붙어 어수선했다. 머리줄의 머클루트도
+     같은 이유로 뺐다. 전체 값·복사는 배치 상세(D-02)·검산(D-03)에 남아 있다.
    - 앵커는 배치 B2 가 만든다. 실시간이 아니므로 갱신 주기를 오해하지 않게 표시한다.
 
    아직 배치에 안 묶인 커밋은 배치 자리가 비어 온다(anchorId 가 null).
@@ -55,17 +56,17 @@
    보여 주고 있었다 — 체인에 올라간 것의 절반만 보여 주는 원장은 서비스가 하는 주장을
    스스로 깎는다. 리포트 줄은 본문 없이 제목·공개범위까지만 온다. */
 import { Link } from 'react-router-dom'
+import { useSharedHref } from '../sharedMode'
 import { useCursorList } from '../api/useCursorList'
 import { useApiQuery } from '../api/useApiQuery'
 import {
-  formatAnchorAgo, formatBusinessDate,
+  formatAnchorAgo, formatBusinessDate, shortHash,
   type Anchor, type AnchorStatus, type LedgerCommit,
 } from '../api/anchors'
 import { phaseOf, revealLabel } from '../api/predictions'
 import type { CursorList } from '../api/types'
 import AnchorBadge from '../components/AnchorBadge'
 import { ANCHOR_BATCH_CYCLE } from '../components/prediction/AnchorStage'
-import CopyHash from '../components/CopyHash'
 import PredictionStatus from '../components/prediction/PredictionStatus'
 import EmptyState from '../components/state/EmptyState'
 import ErrorState from '../components/state/ErrorState'
@@ -88,7 +89,7 @@ const CUBE: Record<AnchorStatus | 'WAITING', string> = {
 /** 앵커를 한 번에 몇 개 받아 둘 것인가. 서버 상한이 100 이다(AnchorQueryService).
  *  ponytail: 커밋 목록을 계속 "더 보기" 하면 100회차보다 오래된 배치가 나올 수
  *  있다. 그때는 앵커를 못 찾지만 머리줄은 줄 자신의 businessDate·anchorStatus 로
- *  그려진다 — 확정 시각과 머클루트만 빠진다. 페이징이 필요해지면 그때 붙인다. */
+ *  그려진다 — 확정 시각과 건수만 빠진다. 페이징이 필요해지면 그때 붙인다. */
 const ANCHOR_PAGE = 100
 
 /** 연속된 같은 배치를 한 묶음으로. anchorId 가 null 이면 "다음 배치 대기" 묶음이다. */
@@ -165,26 +166,34 @@ export default function LedgerList() {
           />
         )}
 
-        {groups.map((g, i) => (
-          /* 같은 배치가 떨어져 두 번 나올 수 있어(위 groupByAnchor 주석) anchorId 만으로는
-             키가 겹친다. 자리(i)를 함께 쓴다 — 목록은 이어 붙기만 하고 순서가 바뀌지 않는다. */
-          <section className="lg-group" key={`${g.anchorId ?? 'wait'}-${i}`}>
-            <GroupHead group={g} anchor={g.anchorId === null ? undefined : byId.get(g.anchorId)} />
-            <ul className="lg-rows">
-              {g.rows.map((c) => (
-                <li key={`${c.kind}-${c.kind === 'PREDICTION' ? c.predictionId : c.reportId}`} className="lg-row">
-                  {c.kind === 'PREDICTION' ? <PredictionRow c={c} /> : <ReportRow c={c} />}
-                  <CopyHash value={c.commitHash} />
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
+        {/* 목록은 판 위에 올린다(2026-09-23). 판이 없을 때는 줄이 도시 사진에 바로 얹혀,
+            해시·검산 링크(브랜드색)와 종목코드·공개일(--faint·--muted)이 밝은 구름·물빛
+            구간에서 안 읽혔다. 판 안에서 토큰을 밤 값으로 바꿔치우므로 줄 안의 글자는
+            전부 따라온다 — 종목 상세 머리(.sd-head)가 쓰는 방법과 같다(ledger.css). */}
+        {(groups.length > 0 || loading) && (
+          <div className="lg-board">
+            {groups.map((g, i) => (
+              /* 같은 배치가 떨어져 두 번 나올 수 있어(위 groupByAnchor 주석) anchorId 만으로는
+                 키가 겹친다. 자리(i)를 함께 쓴다 — 목록은 이어 붙기만 하고 순서가 바뀌지 않는다. */
+              <section className="lg-group" key={`${g.anchorId ?? 'wait'}-${i}`}>
+                <GroupHead group={g} anchor={g.anchorId === null ? undefined : byId.get(g.anchorId)} />
+                <ul className="lg-rows">
+                  {g.rows.map((c) => (
+                    <li key={`${c.kind}-${c.kind === 'PREDICTION' ? c.predictionId : c.reportId}`} className="lg-row">
+                      {c.kind === 'PREDICTION' ? <PredictionRow c={c} /> : <ReportRow c={c} />}
+                      <code className="lg-hash" title={c.commitHash}>{shortHash(c.commitHash)}</code>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
 
-        {loading && <p className="lg-loading">불러오는 중…</p>}
+            {loading && <p className="lg-loading">불러오는 중…</p>}
 
-        {hasNext && !loading && (
-          <button type="button" className="lg-more" onClick={loadMore}>더 보기</button>
+            {hasNext && !loading && (
+              <button type="button" className="lg-more" onClick={loadMore}>더 보기</button>
+            )}
+          </div>
         )}
       </div>
     </main>
@@ -235,9 +244,12 @@ function ChainNote() {
    머리줄 전체가 D-02 로 가는 링크라, 전에 줄마다 반복되던 `#418` 링크는 사라진다.
 
    앵커(GET /anchors)를 못 찾아도 그려진다 — 줄 자신이 businessDate·anchorStatus 를
-   들고 오기 때문이다. 앵커는 확정 시각과 머클루트를 얹어 줄 뿐이다. */
+   들고 오기 때문이다. 앵커는 확정 시각과 건수를 얹어 줄 뿐이다. */
 function GroupHead({ group, anchor }: { group: Group; anchor?: Anchor }) {
   const rows = group.rows.length
+  /* 원장 안에서 옮겨 다닐 때 모드를 잇는다 — 모의투자에서 자물쇠로 들어왔으면
+     배치 상세도 모의투자다(sharedMode.ts) */
+  const href = useSharedHref()
 
   /* 대기 묶음 — 실패가 아니다. 봉인은 끝났고 묶이기를 기다리는 중이라
      경고색도 배치 번호도 쓰지 않는다. */
@@ -264,14 +276,14 @@ function GroupHead({ group, anchor }: { group: Group; anchor?: Anchor }) {
      앵커가 있으면 그쪽 commitCount 가 참이고, 없으면 건수를 적지 않는다. */
   const total = anchor?.commitCount
 
-  /* 머리줄 전체를 링크로 감싸지 않는다. 머클루트 복사(CopyHash)가 <button> 이라
-     <a> 안에 넣으면 유효하지 않은 HTML 이 되고, 복사하려다 화면이 D-02 로 넘어간다.
-     배치 번호만 링크로 둔다 — 탐색기들이 블록 번호를 링크로 두는 자리와 같다. */
+  /* 머리줄 전체를 링크로 감싸지 않는다. 배치 번호만 링크로 둔다 — 탐색기들이 블록
+     번호를 링크로 두는 자리와 같다. 머클루트는 여기 그리지 않는다(2026-09-23) —
+     배치 상세(D-02)에 있고, 이 목록에서는 줄마다 해시가 둘이라 읽기만 어려웠다. */
   return (
     <div className="lg-head">
       <img className="lg-node" src={CUBE[status ?? 'PENDING']} alt="" width="26" height="26" />
       <div className="lg-head-text">
-        <Link className="lg-head-no num" to={`/ledger/anchors/${group.anchorId}`}>
+        <Link className="lg-head-no num" to={href(`/ledger/anchors/${group.anchorId}`)}>
           {`배치 #${group.anchorId}`}
         </Link>
         <span>
@@ -288,12 +300,6 @@ function GroupHead({ group, anchor }: { group: Group; anchor?: Anchor }) {
         </span>
       </div>
       {status && <AnchorBadge status={status} />}
-      {/* 머클루트는 이 배치가 체인에 올린 값 자체다. 머리줄에서 바로 복사할 수 있게 둔다 */}
-      {anchor && (
-        <span className="lg-head-hash">
-          <CopyHash value={anchor.merkleRoot} head={8} tail={6} />
-        </span>
-      )}
     </div>
   )
 }
@@ -313,6 +319,7 @@ function GroupHead({ group, anchor }: { group: Group; anchor?: Anchor }) {
    경계는 phaseOf 를 쓴다. 상태 넷 중 무엇이 공개인지의 정의가 거기 한 벌로 있고
    (api/predictions.ts), 서버 게이팅이 갈리는 자리와 정확히 같다. */
 function PredictionRow({ c }: { c: Extract<LedgerCommit, { kind: 'PREDICTION' }> }) {
+  const href = useSharedHref()
   return (
     <div className="lg-what">
       {c.stockName || c.stockCode ? (
@@ -330,7 +337,7 @@ function PredictionRow({ c }: { c: Extract<LedgerCommit, { kind: 'PREDICTION' }>
       <PredictionStatus status={c.status} />
 
       {phaseOf(c.status) === 'JUDGED' && (
-        <Link className="lg-go" to={`/ledger/verify/${c.predictionId}`}>
+        <Link className="lg-go" to={href(`/ledger/verify/${c.predictionId}`)}>
           검산<em aria-hidden="true">›</em>
         </Link>
       )}
@@ -345,13 +352,14 @@ function PredictionRow({ c }: { c: Extract<LedgerCommit, { kind: 'PREDICTION' }>
    링크가 둘인 이유: 제목은 리포트 본문(F-02)으로, 오른쪽 검산은 D-04 로 간다.
    예측 줄이 검산(D-03)으로 가는 자리와 같은 자리다. */
 function ReportRow({ c }: { c: Extract<LedgerCommit, { kind: 'REPORT' }> }) {
+  const href = useSharedHref()
   return (
     <div className="lg-what">
       <b className="lg-stock">리포트</b>
       <Link className="lg-title" to={`/reports/${c.reportId}`}>{c.title}</Link>
       <span className="lg-horizon">{c.visibility ? '공개' : '구독자 전용'}</span>
 
-      <Link className="lg-go" to={`/ledger/verify/report/${c.reportId}`}>
+      <Link className="lg-go" to={href(`/ledger/verify/report/${c.reportId}`)}>
         검산<em aria-hidden="true">›</em>
       </Link>
     </div>

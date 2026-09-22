@@ -18,26 +18,8 @@
    auto 는 0 이라 평소 모습은 그대로다. */
 .hm-card > :last-child{margin-top:auto}
 
-/* 1행 오른쪽 칸. 배너는 제 높이(min-height)만 쓰고 아래끝이 히어로와
-   어긋나게 두는 것이 의도다. 그렇게 남는 자리는 바로가기가 받아 채운다. */
-.hm-stack{display:flex; flex-direction:column; gap:16px; min-width:0}
-.hm-stack > .hm-showcase{flex:0 0 auto}
-
-/* 지름길 세 칸. 칸 사이를 선으로만 나누고 배경은 카드 흰색을 그대로 쓴다.
-   .card 의 padding 20px 을 지워야 칸이 카드 끝까지 닿으므로 겹쳐 적는다. */
-.card.hm-quick{
-  flex:0 0 auto; min-height:48px;
-  display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
-  padding:0; overflow:hidden;
-}
-.hm-quick a{
-  display:flex; align-items:center; justify-content:center; gap:7px;
-  padding:8px; border-left:1px solid var(--rule);
-  color:var(--body); font-size:var(--fs-md); font-weight:var(--fw-bold); white-space:nowrap;
-}
-.hm-quick a:first-child{border-left:0}
-.hm-quick a:hover{background:var(--surface-2); color:var(--brand-ink)}
-.hm-quick .hm-ico{color:var(--brand)}
+/* 1행 오른쪽 칸은 스폰서드 배너 하나다. 아래에 지름길 셋을 세워 두었었는데
+   걷어냈다(2026-09-23) — 같은 길이 상단바 메뉴에 이미 다 있다. */
 .hm-card{display:flex; flex-direction:column; gap:14px; min-width:0}
 
 /* 눈에는 안 보이고 읽어 주는 기기에만 읽히는 1px 상자.

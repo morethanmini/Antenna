@@ -96,7 +96,7 @@ public class AdminAdService {
         tx.executeWithoutResult(s -> notifications.save(Notification.create(
                 users.getReferenceById(prepared.advertiserId()),
                 AD_APPROVED,
-                "광고가 승인됐습니다",
+                "광고가 승인되었습니다",
                 "게재료를 소각하는 중입니다. 확정되면 홈 배너에 게재됩니다.",
                 "/ads/new")));
         return new AdApproveResponse(prepared.operationId(), adId, Operation.Status.PENDING);
@@ -150,7 +150,7 @@ public class AdminAdService {
         notifications.save(Notification.create(
                 banner.getAdvertiser(),
                 AD_REJECTED,
-                "광고 신청이 반려됐습니다",
+                "광고 신청이 반려되었습니다",
                 "묶여 있던 게재료가 가용잔액으로 돌아왔습니다. 배너나 링크를 고쳐 다시 신청할 수 있습니다.",
                 "/ads/new"));
     }

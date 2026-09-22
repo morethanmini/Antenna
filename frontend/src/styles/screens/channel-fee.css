@@ -131,3 +131,17 @@
   border-radius:5px; background:var(--brand-soft); color:var(--brand);
   font-size:var(--fs-3xs); font-style:normal; font-weight:var(--fw-bold);
 }
+
+
+/* ── 불투명 판(is-panel)에서 되돌리는 것들 ────────────────
+   이 CSS 는 두 곳에서 쓴다 — 환경 설정(H-03)의 구독료 탭과 내 채널 설정(E-04).
+   is-panel 은 앞쪽에만 붙으므로 아래 규칙도 그쪽에서만 걸린다. E-04 는 흰 판
+   그대로다(그 화면은 두 모드가 같이 쓰는 화면이 아니다).
+
+   연한 색 블록 둘을 어두운 쪽으로 옮긴다 — 값을 토큰이 아니라 직접 박아 두어
+   판만 어두워지면 이 사각형들만 하얗게 뜬다. */
+body.is-panel .cf-error{ border-color:#6d3a4a; background:#3a2233; }
+body.is-panel .cf-done{ border-color:#2f6b49; background:#1d3b2c; }
+body.is-panel .cf-done-title{ color:var(--ok); }
+/* 내린 구독료 표시. #1d6fd0 은 어두운 판에서 가라앉는다 — 밤 파랑(--down)으로 */
+body.is-panel .cf-dir.is-down{ color:var(--down); }

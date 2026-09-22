@@ -45,7 +45,7 @@ import WalletLinkModal from '../components/wallet/WalletLinkModal'
 import WalletPrelink from '../components/wallet/WalletPrelink'
 import ErrorState from '../components/state/ErrorState'
 import ConfirmDialog from '../components/ConfirmDialog'
-import { MAX_BYTES, formatBytes } from '../api/uploads'
+import { UPLOAD_HINT } from '../api/uploads'
 import type { UploadedImage } from '../api/uploads'
 import { errorText } from '../components/state/errorText'
 import '../styles/screens/ad-new.css'
@@ -170,7 +170,7 @@ export default function Ad() {
 
   return (
     <main className="main">
-      <div className="main-inner ad">
+      <div className="main-inner adreg">
         <div className="page-head">
           <h1>광고 등록</h1>
           <p>홈 상단 배너 자리에 노출됩니다</p>
@@ -185,19 +185,19 @@ export default function Ad() {
                 사라져 반려인지 버그인지 모른다. 게재 중·끝난 것은 홈 배너가 보여 주므로 뺀다
                 — 목록이 길어지면 이 화면이 등록 화면이 아니게 된다. */}
             {mine.data && mine.data.items.some(isMineShown) && (
-              <section className="ad-card ad-mine" aria-label="내 광고 신청">
+              <section className="adreg-card adreg-mine" aria-label="내 광고 신청">
                 <h2>내 광고 신청</h2>
-                <p className="ad-hint">
+                <p className="adreg-hint">
                   관리자가 승인하면 게재료가 소각되고, 취소하거나 반려되면 묶인 금액이 풀립니다.
                 </p>
-                <ul className="ad-mine-list">
+                <ul className="adreg-mine-list">
                   {mine.data.items.filter(isMineShown).map((a: MyAd) => (
                     <li key={a.id}>
                       <img src={a.imageUrl} alt="" />
-                      <div className="ad-mine-body">
+                      <div className="adreg-mine-body">
                         <b className="num">{formatToken(a.price)} ANT</b>
-                        <span className="ad-mine-link">{a.linkUrl}</span>
-                        <span className={`ad-mine-state${a.status === 'REJECTED' ? ' is-rejected' : ''}`}>
+                        <span className="adreg-mine-link">{a.linkUrl}</span>
+                        <span className={`adreg-mine-state${a.status === 'REJECTED' ? ' is-rejected' : ''}`}>
                           {a.status === 'REJECTED'
                             ? '반려 또는 취소됨 · 묶였던 게재료가 풀렸습니다'
                             : a.burnPending ? '승인됨 · 소각 확정을 기다리는 중' : '심사 대기 · 게재료가 묶여 있습니다'}
@@ -206,7 +206,7 @@ export default function Ad() {
                       {a.status === 'REJECTED' ? null : a.cancelable ? (
                         <button
                           type="button"
-                          className="ad-mine-cancel"
+                          className="adreg-mine-cancel"
                           disabled={canceling === a.id}
                           onClick={() => void cancelMine(a.id)}
                         >
@@ -214,7 +214,7 @@ export default function Ad() {
                         </button>
                       ) : (
                         /* 소각이 나가는 중에는 못 되돌린다 — 서버도 AD_ALREADY_HANDLED 로 막는다 */
-                        <span className="ad-mine-locked">취소할 수 없습니다</span>
+                        <span className="adreg-mine-locked">취소할 수 없습니다</span>
                       )}
                     </li>
                   ))}
@@ -226,25 +226,23 @@ export default function Ad() {
             <WalletPrelink purpose="광고를 등록하려면" />
 
             {/* ── 배너 ─────────────────────────────────── */}
-            <section className="ad-card">
+            <section className="adreg-card">
               <h2>배너 이미지</h2>
-              {/* 비율이 어긋나면 모달이 가운데를 잘라 맞춘다(M-07). 미리 알려 둔다 */}
-              <p className="ad-hint">
-                {`${formatBytes(MAX_BYTES)} 이하의 PNG · JPG · WebP. 가로세로 4:1 로 자르며, 남길 자리는 올릴 때 고릅니다.`}
-              </p>
+              {/* 올리기 창과 같은 한 줄을 쓴다(api/uploads.ts 의 UPLOAD_HINT) */}
+              <p className="adreg-hint">{UPLOAD_HINT}</p>
 
               {banner ? (
-                <div className="ad-banner">
+                <div className="adreg-banner">
                   <img src={banner.url} alt="" />
-                  <div className="ad-banner-foot">
+                  <div className="adreg-banner-foot">
                     <span className="num">{`${banner.width} × ${banner.height}`}</span>
-                    <button type="button" className="ad-btn" onClick={() => setUploading(true)}>
+                    <button type="button" className="adreg-btn" onClick={() => setUploading(true)}>
                       바꾸기
                     </button>
                   </div>
                 </div>
               ) : (
-                <button type="button" className="ad-pick" onClick={() => setUploading(true)}>
+                <button type="button" className="adreg-pick" onClick={() => setUploading(true)}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M12 16V4" /><path d="m7 9 5-5 5 5" />
                     <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
@@ -255,17 +253,17 @@ export default function Ad() {
             </section>
 
             {/* ── 링크 ─────────────────────────────────── */}
-            <section className="ad-card">
+            <section className="adreg-card">
               <h2>이동할 주소</h2>
               <input
-                type="url" className="ad-input"
+                type="url" className="adreg-input"
                 value={linkUrl} maxLength={LINK_MAX}
                 placeholder="https://"
                 onChange={(e) => setLinkUrl(e.target.value)}
                 aria-invalid={linkUrl !== '' && !linkOk}
               />
               {/* https 제약은 입력 전에 알린다 — 다 쓰고 나서 거절하면 다시 써야 한다 */}
-              <p className={`ad-hint ${linkUrl !== '' && !linkOk ? 'is-bad' : ''}`}>
+              <p className={`adreg-hint ${linkUrl !== '' && !linkOk ? 'is-bad' : ''}`}>
                 {linkUrl !== '' && !linkOk
                   ? 'https 로 시작하는 주소만 등록할 수 있습니다'
                   : 'https 주소만 등록할 수 있습니다'}
@@ -273,14 +271,14 @@ export default function Ad() {
             </section>
 
             {/* ── 기간 ─────────────────────────────────── */}
-            <section className="ad-card">
+            <section className="adreg-card">
               <h2>노출 기간</h2>
-              <div className="ad-days">
+              <div className="adreg-days">
                 {/* type=number 를 쓰지 않는다 — '3-4-3' 처럼 숫자가 아닌 것을 치면 브라우저는
                     그 글자를 화면에 둔 채 value 로는 빈 문자열을 준다. 아래 손질이 돌지 않아
                     글자가 끝없이 쌓인다(환경 설정 구독료에서 실제로 나왔다). */}
                 <input
-                  type="text" inputMode="numeric" className="ad-input is-num"
+                  type="text" inputMode="numeric" className="adreg-input is-num"
                   value={days} maxLength={8}
                   /* 위로 자르고, 아래로는 **0 까지만** 둔다 — 0 은 칸을 비웠을 때의 값이라
                      1 로 올려 버리면 지우고 새로 칠 수가 없다. 모자란 값은 daysOk 가 막고,
@@ -296,7 +294,7 @@ export default function Ad() {
                 <span>일</span>
               </div>
               {/* 시작일 칸이 없는 이유를 적는다. 안 적으면 언제 걸리는지 모른다 */}
-              <p className="ad-hint">
+              <p className="adreg-hint">
                 {terms
                   ? `${terms.minDays}~${terms.maxDays}일. 시작일은 고를 수 없고, 관리자가 승인하는 시점부터 시작합니다.`
                   : '시작일은 고를 수 없고, 관리자가 승인하는 시점부터 시작합니다.'}
@@ -304,20 +302,20 @@ export default function Ad() {
             </section>
 
             {/* ── 비용 (SignConfirm) ───────────────────── */}
-            <section className="ad-cost">
+            <section className="adreg-cost">
               {pricing.error ? (
                 /* 단가를 못 받으면 금액을 짐작해 채우지 않는다. 이유를 말하고 등록을 잠근다 */
                 <ErrorState error={pricing.error} onRetry={pricing.reload} inline />
               ) : !terms ? (
-                <p className="ad-hint" aria-live="polite">게재 단가를 불러오는 중입니다…</p>
+                <p className="adreg-hint" aria-live="polite">게재 단가를 불러오는 중입니다…</p>
               ) : (
                 <>
-                  <div className="ad-cost-line">
+                  <div className="adreg-cost-line">
                     <span>{`${formatToken(terms.pricePerDay)} ANT × ${days}일`}</span>
                     <b className="num">{price === null ? '—' : `${formatToken(price)} ANT`}</b>
                   </div>
                   {/* 돈은 승인 때 나간다. 그 전까지 묶인다는 것과, 소각 뒤엔 되돌릴 수 없다는 것을 서명 전에 말한다 */}
-                  <p className="ad-cost-note">
+                  <p className="adreg-cost-note">
                     {price === null
                       ? '노출 기간을 정수 일수로 넣으면 금액이 계산됩니다.'
                       : <>관리자가 승인하면 <b>{`${formatToken(price)} ANT 가 소각`}</b>됩니다. 승인 전에는 이 금액이 묶여 다른 곳에 쓸 수 없고, 취소하면 풀립니다. 소각 뒤에는 되돌릴 수 없습니다.</>}
@@ -331,22 +329,22 @@ export default function Ad() {
             </section>
 
             {text && (
-              <p className="ad-error" role="alert">
+              <p className="adreg-error" role="alert">
                 <b>{text.title}</b>
                 {text.hint && <span>{text.hint}</span>}
               </p>
             )}
 
             {short && price !== null && balance && (
-              <p className="ad-error" role="alert">
+              <p className="adreg-error" role="alert">
                 <b>ANT 잔액이 부족합니다</b>
                 <span>{`보유 ${formatToken(balance)} ANT · 게재료 ${formatToken(price)} ANT. 방금 지갑을 연동했다면 가입 보너스가 들어오는 중일 수 있습니다 — 들어오면 버튼이 열립니다.`}</span>
               </p>
             )}
 
-            <div className="ad-actions">
+            <div className="adreg-actions">
               <button
-                type="button" className="ad-btn solid"
+                type="button" className="adreg-btn solid"
                 disabled={!ready || short}
                 onClick={() => void submit()}
               >
@@ -358,36 +356,36 @@ export default function Ad() {
 
         {/* ── 서명 · 대기 · 완료 ─────────────────────────── */}
         {view === 'signing' && (
-          <section className="ad-progress" aria-live="polite">
-            <span className="ad-spinner" aria-hidden="true" />
-            <p className="ad-progress-title">지갑에서 서명을 기다리고 있습니다</p>
-            <p className="ad-sub">지갑 창이 뜨지 않으면 확장 아이콘을 눌러 확인해 주세요.</p>
+          <section className="adreg-progress" aria-live="polite">
+            <span className="adreg-spinner" aria-hidden="true" />
+            <p className="adreg-progress-title">지갑에서 서명을 기다리고 있습니다</p>
+            <p className="adreg-sub">지갑 창이 뜨지 않으면 확장 아이콘을 눌러 확인해 주세요.</p>
           </section>
         )}
 
         {/* 심사 중. 폴링할 작업이 없다 — 돈은 승인 때 나간다. 취소는 여기서만 할 수 있다 */}
         {view === 'review' && (
-          <section className="ad-progress" aria-live="polite">
-            <span className="ad-check" aria-hidden="true">
+          <section className="adreg-progress" aria-live="polite">
+            <span className="adreg-check" aria-hidden="true">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="m5 12.5 4.5 4.5L19 7.5" />
               </svg>
             </span>
             {canceled ? (
               <>
-                <p className="ad-progress-title">신청을 취소했습니다</p>
-                <p className="ad-sub">묶여 있던 게재료가 풀렸습니다. 아무것도 소각되지 않았습니다.</p>
-                <button type="button" className="ad-btn solid" onClick={() => { setStep('form') }}>다시 신청하기</button>
+                <p className="adreg-progress-title">신청을 취소했습니다</p>
+                <p className="adreg-sub">묶여 있던 게재료가 풀렸습니다. 아무것도 소각되지 않았습니다.</p>
+                <button type="button" className="adreg-btn solid" onClick={() => { setStep('form') }}>다시 신청하기</button>
               </>
             ) : (
               <>
-                <p className="ad-progress-title">심사 중입니다</p>
-                <p className="ad-sub">
+                <p className="adreg-progress-title">심사 중입니다</p>
+                <p className="adreg-sub">
                   {`관리자가 승인하면 ${price === null ? '' : `${formatToken(price)} ANT 가 `}소각되고 ${days}일간 홈 상단에 노출됩니다. 승인 전까지 이 금액은 묶여 있고, 취소하면 풀립니다.`}
                 </p>
-                <div className="ad-actions">
-                  <Link className="ad-btn solid" to="/">홈으로</Link>
-                  <button type="button" className="ad-btn" onClick={() => { setCancelling(true) }}>신청 취소</button>
+                <div className="adreg-actions">
+                  <Link className="adreg-btn solid" to="/">홈으로</Link>
+                  <button type="button" className="adreg-btn" onClick={() => { setCancelling(true) }}>신청 취소</button>
                 </div>
               </>
             )}
