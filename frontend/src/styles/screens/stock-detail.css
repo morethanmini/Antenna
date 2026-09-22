@@ -335,6 +335,11 @@
   background-size:220% 100%;animation:sd-shine 1.25s linear infinite;
 }
 @keyframes sd-shine{to{background-position:-120% 0}}
+/* 오래 걸리는 로딩(투자 포인트 생성)은 판 위에 무엇을 기다리는지 적는다 */
+.stock-detail-page .sd-skel-text{
+  display:flex;align-items:center;justify-content:center;margin:0;padding:0 16px;
+  color:var(--muted);font-size:var(--fs-sm);text-align:center;
+}
 .stock-detail-page .sd-skel-title{display:block;width:210px;height:28px}
 .stock-detail-page .sd-skel-price{display:block;width:250px;height:32px}
 @media (prefers-reduced-motion:reduce){

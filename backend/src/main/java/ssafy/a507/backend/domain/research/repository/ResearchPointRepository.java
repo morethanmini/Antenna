@@ -11,7 +11,10 @@ import ssafy.a507.backend.domain.research.entity.ResearchPoint;
 public interface ResearchPointRepository extends JpaRepository<ResearchPoint, Long> {
 
     /**
-     * 그 종목·그 기준일 포인트를 이미 만들었는지 (배치 B6 의 멱등 키).
+     * 그 종목·그 기준일 포인트를 이 세대로 이미 만들었는지 (생성의 멱등 키).
+     *
+     * <p>세대가 다른 행은 없는 것으로 친다 — 프롬프트·모델을 바꾸고 {@code app.ai.prompt-version} 을
+     * 올리면 다음 조회가 같은 기준일에도 새로 만든다. 세대 태그가 생기기 전 행은 NULL 이라 늘 다르다.
      *
      * <p>UQ 로 못 막는다 — {@code document_id} 가 nullable 이라 Postgres UQ 는 NULL 행을 서로 다른
      * 값으로 보고, {@code body} 는 회차마다 문장이 달라 키가 되지 못한다. 종목·날짜 단위 존재
@@ -21,6 +24,10 @@ public interface ResearchPointRepository extends JpaRepository<ResearchPoint, Lo
      * 같은 밤에 돌면 둘 다 통과해 종목당 카드가 두 벌 쌓인다. 포인트는 예측 근거 FK 때문에 삭제
      * 경로가 없어 사후 정리도 못 한다. 스케일아웃하려면 그때 배치 락(예: Redis)을 먼저 둔다.
      */
+    boolean existsByStock_CodeAndTargetDateAndPromptVersion(
+            String stockCode, LocalDate targetDate, String promptVersion);
+
+    /** 세대와 무관하게 그 기준일 포인트가 있는지 — 새 세대 생성이 실패했을 때 옛 세대로 물러설 수 있는지 본다. */
     boolean existsByStock_CodeAndTargetDate(String stockCode, LocalDate targetDate);
 
     /** {@code date} 없이 들어온 조회의 기본값 — 그 종목 포인트가 있는 가장 최근 영업일. */
@@ -28,7 +35,7 @@ public interface ResearchPointRepository extends JpaRepository<ResearchPoint, Lo
     Optional<LocalDate> findLatestTargetDate(@Param("stockCode") String stockCode);
 
     /**
-     * 한 종목·한 날짜의 3열 전체.
+     * 한 종목·한 날짜의 3열 전체 — 세대가 섞여 있으면 모든 세대. 고르는 것은 서비스가 한다.
      *
      * <p>문서를 함께 읽어 온다 — 응답의 출처 태그가 {@code document.source} 파생이라 지연 로딩으로
      * 두면 포인트 수만큼 쿼리가 붙는다.

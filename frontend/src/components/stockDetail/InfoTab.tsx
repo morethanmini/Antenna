@@ -42,7 +42,7 @@ import PointPicker from './PointPicker'
 import { useBlock } from '../../api/useBlock'
 import { useCursorList } from '../../api/useCursorList'
 import {
-  POINT_KINDS, SOURCE_LABEL,
+  POINT_KINDS, POINTS_LOADING, SOURCE_LABEL,
   getFinancials, getPeers, getPoints,
   getPrices, getProfile, getValuation,
 } from '../../api/stockDetail'
@@ -306,11 +306,12 @@ export default function InfoTab({ code, summary, picked, onPick, onGoPredict }: 
         open={open.points}
         onToggle={() => toggle('points')}
         skeleton={230}
+        loadingText={POINTS_LOADING}
         loading={points.loading}
         error={points.error}
         onRetry={points.retry}
         isEmpty={points.data !== null && pointCount === 0}
-        empty="투자 포인트가 아직 없습니다. 공시·뉴스를 요약하는 기능이 준비되면 이 자리에 채워집니다."
+        empty="오늘 기준 투자 포인트를 만들지 못했습니다. 잠시 뒤 다시 열면 한 번 더 만들어 봅니다."
       >
         {/* 격자는 PointPicker 가 그린다 — 예측 등록(C-01) ③이 같은 것을 쓴다 */}
         <PointPicker points={points.data} picked={picked} onPick={onPick} />

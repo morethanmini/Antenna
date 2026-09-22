@@ -117,8 +117,28 @@ class ResearchPointServiceTest {
                 .isEqualTo(ErrorCode.STOCK_NOT_FOUND);
     }
 
+    @Test
+    @DisplayName("같은 날에 세대가 둘이면 나중에 만든 세대만 보여 준다 — 옛 세대는 예측 근거로 남는다")
+    void 세대() {
+        saveVersion(D2, ResearchPoint.Kind.CHECK, "새 세대 확인", "v3");
+        saveVersion(D2, ResearchPoint.Kind.RISK, "새 세대 위험", "v3");
+        em.flush();
+
+        ResearchPointListResponse response = researchPointService.points(SAMSUNG, D2);
+
+        assertThat(response.positive()).as("옛 세대(NULL)의 긍정은 빠진다").isEmpty();
+        assertThat(response.risk()).extracting(ResearchPointItemResponse::body).containsExactly("새 세대 위험");
+        assertThat(response.check()).extracting(ResearchPointItemResponse::body).containsExactly("새 세대 확인");
+        assertThat(researchPointRepository.findOn(SAMSUNG, D2)).as("옛 행은 지우지 않는다").hasSize(4);
+    }
+
     private void save(LocalDate targetDate, ResearchPoint.Kind kind, String body, ResearchDocument document) {
         researchPointRepository.save(ResearchPoint.of(
-                stockRepository.getReferenceById(SAMSUNG), targetDate, kind, body, document));
+                stockRepository.getReferenceById(SAMSUNG), targetDate, kind, body, document, null));
+    }
+
+    private void saveVersion(LocalDate targetDate, ResearchPoint.Kind kind, String body, String promptVersion) {
+        researchPointRepository.save(ResearchPoint.of(
+                stockRepository.getReferenceById(SAMSUNG), targetDate, kind, body, null, promptVersion));
     }
 }
