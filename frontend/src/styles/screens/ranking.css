@@ -72,8 +72,11 @@
 .rk-page.is-event .rk-sky-bg{ display:none; }
 .rk-sky-bg{
   position:fixed; left:0; right:0;
-  /* 상단 바는 고정이라 그 아래부터. 화면 높이를 꽉 채워 액자가 끊기지 않는다 */
-  top:var(--topbar-h); height:calc(100vh - var(--topbar-h));
+  /* **상단 바 밑까지 끌어올린다**(2026-09-22). 전에는 바 아래(top:--topbar-h)부터
+     깔았는데, 바가 반투명 유리라 그 띠만 흰 판으로 남아 그림이 바 높이에서 뚝
+     끊겼다. 화면 꼭대기부터 깔면 바 너머로 그림이 은은히 비쳐 한 덩어리가 된다.
+     .main 이 padding-top 으로 본문을 이미 내려 두어 글이 바에 가리지는 않는다. */
+  top:0; height:100vh;
   /* 흔들릴 여유만큼 넘겨 깐다 — 딱 맞게 깔면 움직이는 순간 가장자리에 빈 틈이 보인다 */
   width:106%; margin-left:-3%;
   object-fit:cover; object-position:center center;
