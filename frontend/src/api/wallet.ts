@@ -39,15 +39,15 @@ export type WalletBalance = {
 }
 
 /* 필터로 고를 수 있는 사유는 서버 TokenReason 어휘 그대로다. 임의 사유를 만들지 않는다.
-   대회 배팅 세 가지(EVENT_*)가 빠져 있어 단타대회 내역이 전부 "기타" 로 보였다(QA 09-21). */
+   대회 배팅 세 가지(EVENT_*)가 빠져 있어 단타대회 내역이 전부 "기타" 로 보였다(QA 09-21).
+   모의투자 대회(SEASON_ENTRY · SEASON_REWARD)는 아이디어째 접어서 뺐다(09-23) — 옛 줄이
+   남아 있어도 reasonLabel 이 "기타" 로 그린다. */
 export const LEDGER_REASONS = [
   'SIGNUP_BONUS',
   'SLOT_OVER',
   'SUBSCRIBE',
   'SUBSCRIBE_INCOME',
   'AD_PAY',
-  'SEASON_ENTRY',
-  'SEASON_REWARD',
   'EVENT_STAKE',
   'EVENT_PAYOUT',
   'EVENT_REFUND',
@@ -73,9 +73,6 @@ export const REASON_LABEL: Record<LedgerReason, string> = {
   SUBSCRIBE: '구독 결제',
   SUBSCRIBE_INCOME: '구독 수익',
   AD_PAY: '광고 비용',
-  // 대회 모드는 접었다(09-11 팀 결정). 서버 사유 이름(SEASON_*)대로 시즌으로 부른다
-  SEASON_ENTRY: '시즌 참가비',
-  SEASON_REWARD: '시즌 보상',
   EVENT_STAKE: '대회 배팅',
   EVENT_PAYOUT: '대회 배당',
   EVENT_REFUND: '대회 환불',
