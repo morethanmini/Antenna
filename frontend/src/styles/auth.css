@@ -162,6 +162,7 @@
   box-shadow:none;opacity:1;cursor:not-allowed;
 }
 .auth .sso-note{margin:9px 0 0;text-align:center;color:var(--faint);font-size:var(--fs-sm)}
+.sso-note.is-error{ color:var(--danger) }
 
 /* A-01 복귀 구간 — /oauth/callback/:provider
    로그인 화면에서 넘어와 잠깐 머무는 자리다. 카드 하나만 가운데 두고, 배경과

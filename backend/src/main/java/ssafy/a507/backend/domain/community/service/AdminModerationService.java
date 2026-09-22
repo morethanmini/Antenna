@@ -8,7 +8,9 @@ import org.springframework.transaction.annotation.Transactional;
 import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
 import ssafy.a507.backend.common.security.CurrentUserProvider;
+import ssafy.a507.backend.domain.account.entity.Notification;
 import ssafy.a507.backend.domain.account.entity.User;
+import ssafy.a507.backend.domain.account.repository.NotificationRepository;
 import ssafy.a507.backend.domain.account.repository.UserRepository;
 import ssafy.a507.backend.domain.community.dto.AdminModerationDtos.AbuseReportHandleRequest;
 import ssafy.a507.backend.domain.community.dto.AdminModerationDtos.AbuseReportItem;
@@ -46,6 +48,11 @@ public class AdminModerationService {
     private final ReportCommentRepository reportCommentRepository;
     private final UserRepository userRepository;
     private final CurrentUserProvider currentUserProvider;
+    private final NotificationRepository notificationRepository;
+
+    /** 신고자에게 결과를, 가려진 쪽 작성자에게 사실을 알린다. 둘 다 없으면 신고가 조용히 사라진다(2026-09-22 QA). */
+    static final String REPORT_HANDLED = "REPORT_HANDLED";
+    static final String CONTENT_BLOCKED = "CONTENT_BLOCKED";
 
     @Transactional(readOnly = true)
     public AbuseReportListResponse list(AbuseReport.Status status) {
@@ -79,22 +86,67 @@ public class AdminModerationService {
             throw new BusinessException(ErrorCode.REPORT_ALREADY_HANDLED);
         }
 
+        String what = targetLabel(report);
+        String link = reportLink(report);
+
         if (request.action() == AbuseReportHandleRequest.Action.REJECT) {
             report.reject(admin);
+            notificationRepository.save(Notification.create(
+                    report.getReporter(), REPORT_HANDLED,
+                    "신고가 기각됐습니다",
+                    "신고하신 " + what + "은(는) 검토 결과 운영 정책 위반으로 보지 않았습니다.",
+                    link));
             return;
         }
 
         report.accept(admin);
+        User author = null;
         if (report.getTargetPost() != null) {
             report.getTargetPost().changeStatus(FeedPost.Status.BLOCKED);
+            author = report.getTargetPost().getUser();
         } else if (report.getTargetComment() != null) {
             report.getTargetComment().changeStatus(PostComment.Status.BLOCKED);
+            author = report.getTargetComment().getUser();
         } else if (report.getTargetReport() != null) {
             // 행은 남긴다 — 봉인·앵커된 리포트라 지우면 원장 잎이 사라진다(Report.Status 주석).
             report.getTargetReport().changeStatus(Report.Status.BLOCKED);
+            author = report.getTargetReport().getUser();
         } else if (report.getTargetReportComment() != null) {
             report.getTargetReportComment().changeStatus(ReportComment.Status.BLOCKED);
+            author = report.getTargetReportComment().getUser();
         }
+
+        /* 회원 신고는 가리는 것이 없다 — 제재는 별도 API 라 "확인했다" 까지만. 가려진 리포트는
+           신고자에게도 410 이라 링크를 주지 않는다. */
+        boolean hidden = author != null;
+        notificationRepository.save(Notification.create(
+                report.getReporter(), REPORT_HANDLED,
+                hidden ? "신고가 받아들여졌습니다" : "신고를 확인했습니다",
+                hidden ? "신고하신 " + what + "을(를) 가렸습니다."
+                       : "신고하신 회원을 확인했습니다. 제재는 운영 정책에 따라 따로 진행됩니다.",
+                null));
+        if (author != null && !author.getId().equals(report.getReporter().getId())) {
+            notificationRepository.save(Notification.create(
+                    author, CONTENT_BLOCKED,
+                    what + "이(가) 신고로 가려졌습니다",
+                    "운영 정책에 따라 다른 회원에게 보이지 않습니다. 문의는 운영자에게 해 주세요.",
+                    null));
+        }
+    }
+
+    private static String targetLabel(AbuseReport r) {
+        if (r.getTargetReport() != null) return "리포트";
+        if (r.getTargetReportComment() != null) return "리포트 댓글";
+        if (r.getTargetPost() != null) return "글";
+        if (r.getTargetComment() != null) return "댓글";
+        return "회원";
+    }
+
+    /** 기각이면 대상이 그대로 보이므로 리포트로 돌아갈 길을 준다. 커뮤니티 글·댓글은 화면이 없다. */
+    private static String reportLink(AbuseReport r) {
+        if (r.getTargetReport() != null) return "/reports/" + r.getTargetReport().getId();
+        if (r.getTargetReportComment() != null) return "/reports/" + r.getTargetReportComment().getReport().getId();
+        return null;
     }
 
     @Transactional

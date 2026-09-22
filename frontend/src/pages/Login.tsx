@@ -10,7 +10,9 @@
 
    회원가입 화면은 없다 — 설계서 §2 상 최초 로그인 시 회원이 자동 생성되므로
    SSO 버튼이 로그인과 가입을 겸한다. */
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { AUTH_NOTICE_KEY } from '../api/client'
 import { isConfigured, startLogin } from '../auth/oauth'
 import '../styles/auth.css'
 
@@ -61,6 +63,14 @@ export default function Login() {
   /* 자격증명이 env 에 들어왔는지로 버튼을 연다. 빌드 시점에 정해지는 값이라
      렌더마다 다시 계산할 이유가 없다. */
   const ssafyReady = isConfigured('ssafy')
+  /* 차단돼서 튕긴 사람에게만 한 줄. 한 번 읽고 지운다 — 새로고침하면 사라져도 된다 */
+  const [notice] = useState<string | null>(() => {
+    try {
+      const v = sessionStorage.getItem(AUTH_NOTICE_KEY)
+      sessionStorage.removeItem(AUTH_NOTICE_KEY)
+      return v
+    } catch { return null }
+  })
 
   return (
     <div className="auth">
@@ -143,6 +153,11 @@ export default function Login() {
         <section className="sso" aria-label="로그인">
           <h2>로그인</h2>
           <p className="sub">계정을 선택하여 간편하게 로그인하세요.</p>
+          {notice === 'ACCOUNT_BANNED' && (
+            <p className="sso-note is-error" role="alert">
+              이용이 제한된 계정입니다. 다시 로그인해도 풀리지 않습니다 — 문의는 운영자에게 해 주세요.
+            </p>
+          )}
 
           {/* 구글로 나갔다가 /oauth/callback/google 로 전체 페이지 로드로 돌아온다.
               돌아온 뒤에는 늘 인사이트 홈으로 보낸다(2026-09-17). */}
