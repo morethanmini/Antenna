@@ -9,6 +9,7 @@
    레이아웃은 좌(넓음)·우(좁음) 두 줄기로 세운다. 카드를 그리드 칸에 직접
    넣지 않고 칼럼 안에 쌓는 이유는, 카드 높이가 서로 달라도 좌우 경계가
    어긋나지 않게 하려는 것이다. */
+import { DEFAULT_AVATAR } from '../auth/context'
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getMarketIndices, getWatchlist } from '../api/insight'
@@ -19,11 +20,10 @@ import { fetchRankings, formatComputedAt, metric } from '../api/rankings'
 import { getBriefings } from '../api/briefings'
 import { useBriefingParam } from '../components/briefingParam'
 import { useAsync } from '../api/useAsync'
-import { DEFAULT_AVATAR, useAuth } from '../auth/context'
 import Sparkline from '../components/Sparkline'
 import { BANNER, BANNER_BASE, CONTEST_PATH, phaseAt } from '../event/contest'
 import StockLogo from '../components/stocks/StockLogo'
-import '../styles/night.css'
+import '../styles/home-night.css'
 import '../styles/home.css'
 
 const INDEX_LABEL: Record<string, string> = {
@@ -112,14 +112,6 @@ const WalletIcon = () => (
     <circle cx="16.5" cy="14.5" r="1.4" fill="currentColor" />
   </svg>
 )
-const TrophyIcon = () => (
-  <svg {...ico} className="hm-ico">
-    <path d="M7 4h10v4a5 5 0 01-10 0V4z" stroke="currentColor" strokeWidth="1.8"
-          strokeLinejoin="round" />
-    <path d="M7 6H4.8a3 3 0 003 3M17 6h2.2a3 3 0 01-3 3M12 13v3M9 20h6M10 20l.4-4h3.2l.4 4"
-          stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-)
 const PenIcon = () => (
   <svg {...ico} className="hm-ico">
     <path d="M4 20h4.2L19 9.2a2.1 2.1 0 0 0-3-3L5 17.2V20z" stroke="currentColor"
@@ -152,8 +144,19 @@ const SparkIcon = () => (
 )
 
 /** 섹션 안의 로딩·실패·빈 상태. A-04 [ANT-FE-ERROR] 가 공용 컴포넌트를 만들면 그걸로 교체한다. */
-function State({ loading, error, empty, onRetry }: {
-  loading: boolean; error: unknown; empty?: boolean; onRetry?: () => void
+/**
+ * 카드 안의 세 상태(읽는 중 · 못 읽음 · 빈 목록).
+ *
+ * 빈 목록만 **카드마다 다르게** 그린다(2026-09-22 시안). 한 줄짜리 "아직 표시할
+ * 내용이 없습니다" 는 무엇을 하면 되는지 말해 주지 않는다 — 그림 · 제목 · 한 줄 ·
+ * 갈 곳까지 주는 편이 낫고, 그 넷은 카드마다 다르다. 넘기지 않으면 예전처럼 한
+ * 줄로 떨어지므로 다른 호출부는 그대로다.
+ */
+type EmptyLook = { art: string; title: string; hint: string; to: string; cta: string }
+
+function State({ loading, error, empty, emptyLook, onRetry }: {
+  loading: boolean; error: unknown; empty?: boolean
+  emptyLook?: EmptyLook; onRetry?: () => void
 }) {
   if (loading) return <p className="hm-state">불러오는 중…</p>
   if (error) return (
@@ -162,20 +165,30 @@ function State({ loading, error, empty, onRetry }: {
       {onRetry && <button type="button" className="hm-retry" onClick={onRetry}>다시 시도</button>}
     </p>
   )
+  if (empty && emptyLook) return (
+    <div className="hm-empty">
+      <img className="hm-empty-art" src={emptyLook.art} alt="" aria-hidden="true" />
+      <p className="hm-empty-title">{emptyLook.title}</p>
+      <p className="hm-empty-hint">{emptyLook.hint}</p>
+      <Link className="hm-btn" to={emptyLook.to}>{emptyLook.cta} ›</Link>
+    </div>
+  )
   if (empty) return <p className="hm-state">아직 표시할 내용이 없습니다.</p>
   return null
 }
 
-/* 화면 맨 위 인사. 데이터를 쓰지 않는 정적 배너라 상태 처리가 없다.
+/* 화면 맨 위 히어로. 데이터를 쓰지 않는 정적 배너라 상태 처리가 없다.
    "실시간" 이라고 쓰지 않는 이유는 실전 시세가 전일 종가뿐이기 때문이다. */
 function Hero() {
-  const { user } = useAuth()
-
   return (
     <section className="hm-hero" aria-labelledby="hm-hero-h">
       <div className="hm-hero-text">
+        {/* 시안의 윗줄. **손글씨 네온이라 그림으로 받았다** — 번짐과 획 끝의 빛을
+            폰트로는 못 흉내 낸다. 글자는 읽어 주는 기기를 위해 남겨 두고(hm-sr),
+            그림 쪽은 장식으로 비운다. */}
         <p className="hm-hello">
-          {user?.nickname ? `${user.nickname}님, 환영합니다.` : '환영합니다.'}
+          <img src="/assets/page_home/hero-eyebrow.webp" alt="" aria-hidden="true" />
+          <span className="hm-sr">더 넓은 시각을, 더 깊은 인사이트로</span>
         </p>
         {/* 페이지 제목 자리다. 위에 따로 머리글을 두지 않으므로 h1 이다. */}
         <h1 id="hm-hero-h">
@@ -184,12 +197,14 @@ function Hero() {
         <p className="hm-hero-sub">
           종가 데이터와 AI 인사이트로<br />투자의 방향을 제시합니다.
         </p>
-        <Link className="hm-cta" to="/predict">
-          예측 시작하기
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M5 12h13M13 6.5l5.5 5.5L13 17.5" stroke="currentColor" strokeWidth="2"
-                  strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+        {/* 갈 곳은 종목 탐색이다 — 인사이트 홈에서 "인사이트 보기" 가 제자리를
+            가리키지 않게. 버튼도 네온 그림이라 링크 안에 얹는다.
+
+            **그림이지만 링크는 진짜다.** 이름은 aria-label 이 들고, 초점 테두리와
+            짚었을 때의 반응은 CSS 가 준다. 그림 한 장으로 갈음하면 키보드로 쓸 수
+            없고 글자 크기 설정도 안 따라간다. */}
+        <Link className="hm-cta is-art" to="/stocks" aria-label="인사이트 보기">
+          <img src="/assets/page_home/hero-cta.webp" alt="" aria-hidden="true" />
         </Link>
       </div>
       {/* 망원경으로 시장을 살피는 개미(2026-09-22 밤 시안). 난간과 고양이까지 한 덩어리로
@@ -202,6 +217,7 @@ function Hero() {
           가 굽는다(1448x1086 -> 900px · 1.57MB -> 142KB). */}
       <img className="hm-hero-art is-scout" src="/assets/page_home/hero-scout.webp" alt=""
            aria-hidden="true" />
+
     </section>
   )
 }
@@ -274,7 +290,9 @@ function MarketOverview() {
   return (
     <section className="card hm-card" aria-labelledby="hm-market">
       <header className="hm-head">
-        <h2 id="hm-market">시장 Overview</h2>
+        {/* 시안(docs/market-status-component.html · prototype.png)이 둘 다 "시장 현황" 이다.
+            "Overview" 만 영어라 한 줄 안에서 결이 갈렸다. */}
+        <h2 id="hm-market"><img className="hm-head-ico" src="/assets/page_home/ui/icon-bars-earned.webp" alt="" />시장 현황</h2>
         <Link to="/stocks">더보기 ›</Link>
       </header>
       <State loading={loading} error={error} onRetry={reload} />
@@ -317,7 +335,7 @@ function MyAssets() {
   return (
     <section className="card hm-card hm-wallet" aria-labelledby="hm-assets">
       <header className="hm-head">
-        <h2 id="hm-assets">내 자산 현황</h2>
+        <h2 id="hm-assets"><img className="hm-head-ico" src="/assets/page_home/ui/icon-wallet.webp" alt="" />내 자산 현황</h2>
         <Link to="/me/wallet">지갑 ›</Link>
       </header>
       <State loading={loading} error={error} onRetry={reload} />
@@ -372,10 +390,18 @@ function Watchlist() {
   return (
     <section className="card hm-card" aria-labelledby="hm-watch">
       <header className="hm-head">
-        <h2 id="hm-watch"><StarIcon />관심 종목</h2>
+        <h2 id="hm-watch"><img className="hm-head-ico" src="/assets/page_home/ui/icon-star.webp" alt="" />관심 종목</h2>
         <Link to="/watchlist">더보기 ›</Link>
       </header>
-      <State loading={loading} error={error} empty={data?.items.length === 0} onRetry={reload} />
+      <State
+        loading={loading} error={error} empty={data?.items.length === 0} onRetry={reload}
+        emptyLook={{
+          art: '/assets/page_home/ui/empty-watchlist.webp',
+          title: '아직 관심 종목이 없어요!',
+          hint: '관심 있는 종목을 추가하고, 매일 흐름을 확인해보세요.',
+          to: '/stocks', cta: '종목 탐색하기',
+        }}
+      />
       {data && data.items.length > 0 && (
         <div className="hm-table-wrap">
           <table className="hm-table">
@@ -440,10 +466,18 @@ function TopPredictor() {
   return (
     <section className="card hm-card" aria-labelledby="hm-top">
       <header className="hm-head">
-        <h2 id="hm-top"><TrophyIcon />주목할 예측가</h2>
+        <h2 id="hm-top"><img className="hm-head-ico" src="/assets/page_home/ui/icon-trophy.webp" alt="" />주목할 예측가</h2>
         <Link to="/rankings">랭킹 ›</Link>
       </header>
-      <State loading={loading} error={error} empty={data?.items.length === 0} onRetry={reload} />
+      <State
+        loading={loading} error={error} empty={data?.items.length === 0} onRetry={reload}
+        emptyLook={{
+          art: '/assets/page_home/ui/empty-predictors.webp',
+          title: '아직 주목할 예측가가 없습니다.',
+          hint: '지금, 실력 있는 예측가들의 수익률을 확인해보세요!',
+          to: '/rankings', cta: '주가 예측 랭킹 보기',
+        }}
+      />
       {lead && (
         <>
           <div className="hm-lead">
@@ -592,6 +626,10 @@ function ContestBanner() {
      달면 스크린리더가 토막 난 문장을 읽는다. */
   return (
       <Link className="hm-event is-art" to={CONTEST_PATH} aria-label={art.alt}>
+        {/* 좁은 칸(시안의 가운데 자리)에서 쓰는 **완성본 한 장**. 아래 조각들은 9:1 띠
+            전용이라 폭이 줄면 서로 파고든다 — 어느 쪽을 보일지는 CSS 가 고른다.
+            조각 쌓기를 지우지 않는 이유는 넓은 자리에서 그쪽이 더 잘 맞아서다. */}
+        <img className="hm-ev-solo" src="/assets/page_home/contest-banner.webp" alt="" aria-hidden="true" />
         {/* 띠 안쪽 — 배경·차트·색종이는 여기서 잘린다 */}
         <span className="hm-ev-clip" aria-hidden="true">
           <img className="hm-ev-bg" src={BANNER_BASE.bg} alt="" />
@@ -628,15 +666,18 @@ function ContestBanner() {
 
    그 자리를 리포트 작성이 받는다. 예측과 함께 이 서비스의 두 가지 쓰기 행위
    중 하나인데, 지금은 리포트 피드 안으로 들어가야만 닿는다. */
+/* 지름길 셋. 시안(prototype.png)은 카드 한 장 안의 칸이 아니라 **따로 선 타일 셋**이다.
+   그래서 .card 를 벗기고 타일마다 제 테를 갖는다. */
 function QuickLinks() {
   return (
-    <nav className="card hm-quick" aria-label="바로가기">
-      <Link to="/reports/new"><PenIcon />리포트 쓰기</Link>
+    <nav className="hm-quick" aria-label="바로가기">
+      <Link to="/reports"><PenIcon />리포트 보기</Link>
       <Link to="/stocks"><ChartIcon />종목 탐색</Link>
       <Link to="/me/predictions"><ListIcon />내 예측</Link>
     </nav>
   )
 }
+
 
 export default function Home() {
   /* M-09 온보딩 튜토리얼은 셸(Layout)이 띄운다. 홈에만 걸면 딥링크로 막혔다가
@@ -654,14 +695,15 @@ export default function Home() {
             <Sponsored />
             <QuickLinks />
           </div>
-          {/* 두 칸을 가로지른다 — 아래 카드 줄을 밀지 않고 한 줄만 쓴다 */}
-          <ContestBanner />
-          {/* 관심 종목을 시장 Overview 보다 위에 둔다 — 홈에 들어와 가장 먼저
-              보는 것이 "내가 담은 것" 이라는 코치 QA(2026-09-21). 시장 지표는
-              누구에게나 같은 값이라 한 줄 아래여도 손해가 없다. */}
+          {/* 시안의 가운데 줄은 **셋**이다 — 시장 현황이 넓게 왼쪽, 대회 배너가
+              가운데 좁게, 내 자산이 오른쪽. 2단 격자 안에서 두 칸을 가로지르고
+              제 안에서 다시 셋으로 나눈다. */}
+          <div className="hm-trio">
+            <MarketOverview />
+            <ContestBanner />
+            <MyAssets />
+          </div>
           <Watchlist />
-          <MyAssets />
-          <MarketOverview />
           <TopPredictor />
         </div>
       </div>

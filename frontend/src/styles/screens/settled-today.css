@@ -8,6 +8,11 @@
   /* 카드 한 장의 높이. 컴포넌트의 CARD_H 와 **같은 값이어야** 세로 이동이 맞는다 */
   --st-h:36px;
   flex:none;display:grid;gap:6px;min-width:0;
+  /* 종목명 줄 안에서 혼자 오른쪽 끝까지 민다(2026-09-22, 관심 종목이 섹터 칩
+     옆으로 옮겨가며 이 상자를 감싸던 .sd-ident-right 가 없어졌다 — 그 자리에서
+     하던 일을 이 요소가 직접 한다). 카드가 종목명 줄보다 높아서 align-self 로
+     윗변을 맞춘다 — stock-detail.css 의 옛 .sd-ident-right 설명 참고. */
+  margin-left:auto;align-self:flex-start;
 }
 .stock-detail-page .st-lane{display:flex;align-items:center;gap:8px;min-width:0}
 

@@ -24,7 +24,8 @@ public final class AdminUserDtos {
         }
     }
 
-    public record AdminUserListResponse(List<AdminUserItem> items) {}
+    /** {@code nextBefore} 가 있으면 뒤가 더 있다 — 그 값을 {@code before} 로 다시 부른다. 없으면 끝이다. */
+    public record AdminUserListResponse(List<AdminUserItem> items, Long nextBefore) {}
 
     /**
      * 회원 상태 전이.

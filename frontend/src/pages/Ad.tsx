@@ -181,26 +181,29 @@ export default function Ad() {
             {/* ── 내 신청 ──────────────────────────────────
                 심사 중인 건이 있으면 **폼보다 먼저** 보여 준다. 여기 없으면 사용자는
                 자기 신청을 다시 볼 자리가 없고, 묶인 게재료를 풀 길도 없다
-                (2026-09-22 QA · ANT-FE-AD). 끝난 신청은 되돌릴 것이 없어 심사 중인
-                것만 세운다 — 목록이 길어지면 이 화면이 등록 화면이 아니게 된다. */}
-            {mine.data && mine.data.items.some((a) => a.status === 'PENDING') && (
+                (2026-09-22 QA · ANT-FE-AD). 반려된 것도 세운다 — 안 세우면 줄이 말없이
+                사라져 반려인지 버그인지 모른다. 게재 중·끝난 것은 홈 배너가 보여 주므로 뺀다
+                — 목록이 길어지면 이 화면이 등록 화면이 아니게 된다. */}
+            {mine.data && mine.data.items.some(isMineShown) && (
               <section className="ad-card ad-mine" aria-label="내 광고 신청">
-                <h2>심사 중인 내 광고</h2>
+                <h2>내 광고 신청</h2>
                 <p className="ad-hint">
                   관리자가 승인하면 게재료가 소각되고, 취소하거나 반려되면 묶인 금액이 풀립니다.
                 </p>
                 <ul className="ad-mine-list">
-                  {mine.data.items.filter((a: MyAd) => a.status === 'PENDING').map((a: MyAd) => (
+                  {mine.data.items.filter(isMineShown).map((a: MyAd) => (
                     <li key={a.id}>
                       <img src={a.imageUrl} alt="" />
                       <div className="ad-mine-body">
                         <b className="num">{formatToken(a.price)} ANT</b>
                         <span className="ad-mine-link">{a.linkUrl}</span>
-                        <span className="ad-mine-state">
-                          {a.burnPending ? '승인됨 · 소각 확정을 기다리는 중' : '심사 대기 · 게재료가 묶여 있습니다'}
+                        <span className={`ad-mine-state${a.status === 'REJECTED' ? ' is-rejected' : ''}`}>
+                          {a.status === 'REJECTED'
+                            ? '반려 또는 취소됨 · 묶였던 게재료가 풀렸습니다'
+                            : a.burnPending ? '승인됨 · 소각 확정을 기다리는 중' : '심사 대기 · 게재료가 묶여 있습니다'}
                         </span>
                       </div>
-                      {a.cancelable ? (
+                      {a.status === 'REJECTED' ? null : a.cancelable ? (
                         <button
                           type="button"
                           className="ad-mine-cancel"
@@ -421,4 +424,9 @@ export default function Ad() {
       </div>
     </main>
   )
+}
+
+/** 등록 화면 머리에 세우는 신청 — 심사 중과 반려. 게재 중·끝난 것은 홈 배너 몫이다 */
+function isMineShown(a: MyAd) {
+  return a.status === 'PENDING' || a.status === 'REJECTED'
 }

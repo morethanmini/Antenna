@@ -141,6 +141,7 @@
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 .ad-mine-state{ font-size:var(--fs-xs); color:var(--faint) }
+.ad-mine-state.is-rejected{ color:var(--danger) }
 .ad-mine-cancel{
   flex:0 0 auto; padding:7px 12px;
   border:1px solid var(--rule); border-radius:8px; background:var(--surface);

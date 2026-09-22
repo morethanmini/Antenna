@@ -717,6 +717,6 @@ body.is-night .hm-cta{box-shadow:0 0 0 1px rgba(255,255,255,.14), 0 10px 30px -1
    칸은 다시 이 그림을 물어보는 순환이 된다 — 실제로 칸이 0 으로 무너져 제목이
    스물두 줄이 됐다. 창 기준(vw)은 그 고리를 만들지 않는다. */
 .hm-hero-art.is-scout{
-  align-self:end;width:clamp(170px,18vw,300px);height:auto;margin:0 0 -6px;
+  align-self:end;width:clamp(150px,15vw,250px);height:auto;margin:0 0 -6px;
   filter:drop-shadow(0 18px 30px rgba(8,6,28,.55));
 }

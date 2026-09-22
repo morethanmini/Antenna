@@ -76,7 +76,6 @@ export default function Reports() {
         <div className="page-head rp-page-head">
           <div>
             <h1>리포트</h1>
-            <p>예측가가 내놓은 리서치와 예측을 모아 봅니다</p>
           </div>
           {/* F-03 진입점. 이게 없으면 /reports/new 에 갈 길이 없다 */}
           <Link className="rp-new" to="/reports/new">리포트 작성</Link>

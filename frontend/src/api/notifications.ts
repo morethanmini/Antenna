@@ -35,6 +35,9 @@ import { api } from './client'
 export const NOTIFICATION_TYPES = [
   'VERDICT', 'SEASON', 'SUBSCRIBE', 'FEE_CHANGED', 'RENEW_FAILED', 'REPORT_PUBLISHED',
   'PREDICTION_REGISTERED', 'REPORT_COMMENT', 'REPORT_LIKE',
+  /* 관리자 처리 결과(2026-09-22): 광고 승인·반려는 신청자에게, 신고 처리는 신고자에게,
+     가려짐은 그 글·댓글 작성자에게 */
+  'AD_APPROVED', 'AD_REJECTED', 'REPORT_HANDLED', 'CONTENT_BLOCKED',
 ] as const
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]
 
@@ -83,6 +86,10 @@ export const TYPE_LABEL: Record<NotificationType, string> = {
   PREDICTION_REGISTERED: '예측',
   REPORT_COMMENT: '댓글',
   REPORT_LIKE: '좋아요',
+  AD_APPROVED: '광고',
+  AD_REJECTED: '광고',
+  REPORT_HANDLED: '신고',
+  CONTENT_BLOCKED: '신고',
 }
 
 /** 알림 목록. 페이지가 아니라 팝업이라 커서 페이징을 두지 않는다 —
