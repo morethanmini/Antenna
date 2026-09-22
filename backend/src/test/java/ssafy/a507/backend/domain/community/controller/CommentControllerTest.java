@@ -59,6 +59,19 @@ class CommentControllerTest {
     // ── POST /posts/{postId}/comments ───────────────────────
 
     @Test
+    @DisplayName("댓글에 비속어가 있으면 400 body — 화면 선검사를 우회한 요청만 여기 온다 (ANT-COMMUNITY-09)")
+    void 댓글_비속어_400() throws Exception {
+        String bad = new String(java.util.Base64.getDecoder().decode("7Iuc67Cc"), java.nio.charset.StandardCharsets.UTF_8);
+        mockMvc.perform(post(commentsUrl(postId))
+                        .with(user(String.valueOf(viewerId))).with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"body\": \"아 " + bad + " 진짜\" }"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+                .andExpect(jsonPath("$.field").value("body"));
+    }
+
+    @Test
     @DisplayName("댓글을 쓰면 201 과 id 를 받는다")
     void 댓글_작성_성공() throws Exception {
         mockMvc.perform(post(commentsUrl(postId))
