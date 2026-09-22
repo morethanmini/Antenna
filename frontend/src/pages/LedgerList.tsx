@@ -92,7 +92,12 @@ const CUBE: Record<AnchorStatus | 'WAITING', string> = {
 const ANCHOR_PAGE = 100
 
 /** 연속된 같은 배치를 한 묶음으로. anchorId 가 null 이면 "다음 배치 대기" 묶음이다. */
-type Group = { anchorId: number | null; rows: LedgerCommit[] }
+type Group = {
+  anchorId: number | null
+  rows: LedgerCommit[]
+  /** 같은 배치가 위에 이미 한 번 나왔다 — 발행 순서 때문에 쪼개진 두 번째 이후 묶음 */
+  continued: boolean
+}
 
 /**
  * 목록을 배치 묶음으로 자른다.
@@ -111,10 +116,19 @@ type Group = { anchorId: number | null; rows: LedgerCommit[] }
  */
 function groupByAnchor(items: LedgerCommit[]): Group[] {
   const groups: Group[] = []
+  /* 이미 나온 배치를 기억해 둔다. 쪼개진 두 번째 묶음에 "배치 #1 · 18건" 이 그대로
+     한 번 더 적히면, 아래 줄이 둘뿐인데 18건이라 적힌 머리말이 두 개 보인다
+     (2026-09-22 QA). 건수는 배치의 진실이라 바꾸지 않고, 이어진 묶음이라고 말한다. */
+  const seen = new Set<number>()
   for (const row of items) {
     const last = groups[groups.length - 1]
-    if (last && last.anchorId === row.anchorId) last.rows.push(row)
-    else groups.push({ anchorId: row.anchorId, rows: [row] })
+    if (last && last.anchorId === row.anchorId) {
+      last.rows.push(row)
+      continue
+    }
+    const continued = row.anchorId !== null && seen.has(row.anchorId)
+    if (row.anchorId !== null) seen.add(row.anchorId)
+    groups.push({ anchorId: row.anchorId, rows: [row], continued })
   }
   return groups
 }
@@ -265,7 +279,12 @@ function GroupHead({ group, anchor }: { group: Group; anchor?: Anchor }) {
           {anchor?.confirmedAt
             ? formatAnchorAgo(anchor.confirmedAt)
             : date && formatBusinessDate(date)}
-          {total !== undefined && ` · ${total.toLocaleString('ko-KR')}건`}
+          {/* 쪼개진 두 번째 묶음에서는 건수를 되풀이하지 않는다 — 같은 수가 두 번
+              보이면 배치가 둘인 것처럼 읽힌다. 왜 나뉘었는지를 대신 말한다.
+              (목록이 발행 시각 순이라 앵커가 늦은 커밋이 사이에 끼어든다) */}
+          {group.continued
+            ? ' · 위 배치에서 이어집니다'
+            : total !== undefined && ` · ${total.toLocaleString('ko-KR')}건`}
         </span>
       </div>
       {status && <AnchorBadge status={status} />}

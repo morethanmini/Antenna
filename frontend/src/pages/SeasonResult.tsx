@@ -258,7 +258,13 @@ export default function SeasonResult() {
           <div>
             <h1>{s.title}</h1>
             <p>
-              {done ? '끝까지 마쳤습니다' : `아직 진행 중입니다 · DAY ${sim.day}`}
+              {/* "끝까지 마쳤습니다" 라고 말하지 않는다 — DAY 1 에서 "남은 43일 건너뛰고
+                  종료" 한 회차도 여기로 오기 때문이다(2026-09-22 QA). 서버가 끝낼 때
+                  진행일을 길이로 올려 버려서(SeasonPlayService.commit 의 skipTo) 화면에는
+                  둘을 가를 단서가 없다.
+                  ponytail: 지금은 문구를 중립으로 둔다. 둘을 갈라 보여 주려면 결과에
+                  "실제로 민 게임일" 을 남겨야 한다(season_results 에 칸 하나). */}
+              {done ? '종료된 회차입니다' : `아직 진행 중입니다 · DAY ${sim.day}`}
               <span> · 총 {s.lengthDays}게임일</span>
             </p>
           </div>

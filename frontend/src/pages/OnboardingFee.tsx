@@ -20,13 +20,24 @@
    **필수 단계는 아니다** — RequireAccess 는 닉네임만 보므로(그 파일 참고) 이
    화면을 지나지 않아도 아무 데도 걸리지 않는다.
 
+   ── 이미 정한 사람은 들여보내지 않는다 (2026-09-22 QA) ────
+   같은 이유로 **온보딩을 마친 계정도 이 주소로 되돌아올 수 있다.** 그런데 이 화면은
+   현재 값을 읽지 않고 늘 0 에서 시작하므로, 구독료가 500 인 채널에도 "0 · 무료 채널이
+   됩니다" 를 보여 주고 그대로 저장하면 유료 채널이 무료로 떨어졌다. 위 머리말의 전제
+   ("가입 때는 구독자가 0명이라 알림도 이력 부담도 없다")가 그때 깨진다 — 구독자에게
+   FEE_CHANGED 가 나가고 이력에도 행이 남는다.
+
+   그래서 **값이 이미 있으면 홈으로 돌려보낸다.** 여기서 현재 값을 읽어 채우는 길도
+   있지만, 그러면 동일값 차단·구독자 알림 확인까지 이 화면이 다시 갖춰야 한다 — 그건
+   이미 설정(ChannelFeeSection)이 하는 일이고, 바꾸는 자리는 거기 하나면 된다.
+
    ── 끝나면 홈으로 ────────────────────────────────────────
    저장하든 건너뛰든 인사이트 홈으로 보낸다. 전에는 로그인 전에 막혔던 경로로 되돌려
    보냈는데(auth/returnTo.ts) 그 장치를 통째로 걷어냈다(2026-09-17) — 가입 절차를 막
    끝낸 사람을 맥락 없는 화면에 떨어뜨리는 편이 오히려 헷갈린다. */
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FEE_MAX, isValidFee, updateChannelFee } from '../api/channelFee'
+import { FEE_MAX, fetchChannelFee, isValidFee, updateChannelFee } from '../api/channelFee'
 import { ApiError } from '../api/client'
 import { formatToken } from '../api/wallet'
 import '../styles/auth.css'
@@ -41,6 +52,22 @@ export default function OnboardingFee() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  /* 이미 정해 둔 값이 있으면 이 화면은 보여 주지 않는다(위 머리말). 다 읽기 전에
+     폼을 그리면 0 이 한 번 번쩍이고, 그 사이에 저장을 누를 수도 있다.
+     **못 읽으면 신규로 친다** — 조회가 실패했다고 가입 절차를 막을 이유는 없다. */
+  const [ready, setReady] = useState(false)
+  useEffect(() => {
+    let alive = true
+    fetchChannelFee()
+      .then((c) => {
+        if (!alive) return
+        if (c.fee !== null) navigate('/', { replace: true })
+        else setReady(true)
+      })
+      .catch(() => { if (alive) setReady(true) })
+    return () => { alive = false }
+  }, [navigate])
+
   /* 들어오자마자 0 을 통째로 잡아 둔다. autoFocus 만으로는 커서가 0 뒤에 서서
      바로 "5000" 을 치면 "05000" 이 된다 — 초점이 오는 순간에는 브라우저가 커서
      자리를 나중에 정하므로 onFocus 안에서 select() 해도 풀린다. 그래서 초점을
@@ -51,7 +78,7 @@ export default function OnboardingFee() {
     if (!el) return
     el.focus()
     el.select()
-  }, [])
+  }, [ready])
 
   /* 칸을 비우면 "아직 안 정함" 이라 오류가 아니다 — 저장만 잠기고 값은 다시
      적을 수 있다. 뭔가 적었을 때만 형식을 본다. */
@@ -62,10 +89,16 @@ export default function OnboardingFee() {
     navigate('/', { replace: true })
   }
 
+  /* 같은 틱에 두 번 들어오는 것을 막는다. disabled={submitting} 은 state 라 다음
+     커밋에야 서는데, 그 전에 두 번째 호출이 닿으면 PUT 이 두 번 나가고 구독자에게
+     같은 알림이 두 번 간다(2026-09-22 QA). */
+  const sending = useRef(false)
+
   async function submit(event: React.FormEvent) {
     event.preventDefault()
-    if (!valid) return
+    if (!valid || sending.current) return
 
+    sending.current = true
     setSubmitting(true)
     setError(null)
     try {
@@ -80,6 +113,7 @@ export default function OnboardingFee() {
           : '구독료를 저장하지 못했습니다. 잠시 후 다시 시도하거나 나중에 정할 수 있습니다.',
       )
     } finally {
+      sending.current = false
       setSubmitting(false)
     }
   }
@@ -95,6 +129,10 @@ export default function OnboardingFee() {
         /* 0 을 서버가 받는다. 실수로 둔 것인지 일부러 무료로 여는 것인지 구분해 준다 */
         ? '무료 채널이 됩니다 — 누구나 구독해서 전문을 볼 수 있습니다.'
         : `구독자는 30일에 ${formatToken(value)} ANT 를 냅니다.`
+
+  /* 조회가 끝나기 전에는 아무것도 그리지 않는다 — 여기서 잠깐 보이는 것은
+     "0 · 무료 채널이 됩니다" 라, 이미 유료인 사람에게는 틀린 말이다. */
+  if (!ready) return null
 
   return (
     <div className="auth">

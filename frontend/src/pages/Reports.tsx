@@ -33,6 +33,7 @@
    설계서 §10 도 "scope 2종뿐"으로 적고 있어 문서 안에서 이미 어긋난 항목이다.
    reports.sector 가 신설되면 그때 칩을 붙인다. */
 import { useState } from 'react'
+import { useUrlState } from '../urlState'
 import { Link } from 'react-router-dom'
 import { useCursorList } from '../api/useCursorList'
 import {
@@ -64,9 +65,10 @@ const FALLBACK_THUMB = [
 ]
 
 export default function Reports() {
-  const [kind, setKind] = useState<Kind>('REPORT')
-  const [scope, setScope] = useState<ReportScope>('ALL')
-  const [sort, setSort] = useState<ReportSort>('RECENT')
+  /* 주소에 둔다 — 리포트를 열었다 뒤로 오면 보던 탭·정렬이 살아 있어야 한다(2026-09-22 QA) */
+  const [kind, setKind] = useUrlState<Kind>('kind', 'REPORT', KINDS)
+  const [scope, setScope] = useUrlState<ReportScope>('scope', 'ALL', REPORT_SCOPES)
+  const [sort, setSort] = useUrlState<ReportSort>('sort', 'RECENT', REPORT_SORTS)
 
   return (
     <main className="main">

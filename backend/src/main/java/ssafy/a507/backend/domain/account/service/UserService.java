@@ -36,8 +36,19 @@ public class UserService {
         return toResponse(find(userId));
     }
 
+    /**
+     * 이 닉네임을 쓸 수 있는가 — <b>내 현재 닉네임은 쓸 수 있는 것으로 친다.</b>
+     *
+     * <p>자기 자신을 제외하지 않으면 "내 이름 그대로 두기" 가 막힌다. 온보딩 닉네임 화면은 이 응답으로
+     * 버튼을 여는데, 온보딩을 마친 계정이 다시 들어와 자기 닉네임을 넣으면 "이미 사용 중" 으로 잠겨
+     * 진행이 안 됐다(2026-09-22 QA). 저장 경로({@code applyNickname})는 이미 같은 값을 통과시키므로
+     * 검사와 저장이 서로 다른 말을 하고 있었다 — 저장 쪽에 맞춘다.
+     */
     @Transactional(readOnly = true)
-    public boolean isNicknameAvailable(String nickname) {
+    public boolean isNicknameAvailable(Long userId, String nickname) {
+        if (nickname.equals(find(userId).getNickname())) {
+            return true;
+        }
         return !users.existsByNickname(nickname);
     }
 

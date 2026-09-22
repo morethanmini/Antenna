@@ -27,11 +27,21 @@ const HINT: Record<PredictionStatus, string> = {
   MISS: '만기 종가가 목표가에 닿지 못했습니다.',
 }
 
+/* 만기가 지난 OPEN 은 기다리는 것이 다르다. 위 HINT 의 "만기일 종가가 나오면" 은 만기
+   **전**의 이야기인데, 만기가 지난 뒤에도 같은 말이 나왔다 — 그러면 왜 아직 안 끝났는지
+   알 수 없다(2026-09-22 QA: 시세 수집이 이틀 비어 7건이 이 상태로 멈춰 있었는데 화면은
+   평소와 똑같았다). 운영에서 수집이 한 번 실패해도 아무도 눈치채지 못한다. */
+const OVERDUE_HINT =
+  '만기일이 지났는데 그날 종가가 아직 들어오지 않았습니다. 시세가 들어오는 대로 판정합니다.'
+
 /* 이 파일은 컴포넌트만 내보낸다. 상태를 판정 여부로 가르는 일은 도메인 쪽 일이라
    api/predictions.ts 의 phaseOf 를 쓴다 — 같은 개념을 두 곳에 두지 않는다. */
-export default function PredictionStatus({ status }: { status: PredictionStatus }) {
+export default function PredictionStatus(
+  { status, overdue = false }: { status: PredictionStatus; overdue?: boolean },
+) {
+  const hint = status === 'OPEN' && overdue ? OVERDUE_HINT : HINT[status]
   return (
-    <span className={`pred-status is-${status.toLowerCase()}`} title={HINT[status]}>
+    <span className={`pred-status is-${status.toLowerCase()}`} title={hint}>
       {LABEL[status]}
     </span>
   )

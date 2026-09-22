@@ -27,8 +27,11 @@ export default function ErrorState({ error, onRetry, inline }: Props) {
         </button>
       )}
 
-      {/* 개발 중 원인 추적용. 사용자에게는 code 만 보이고 서버 message 는 나가지 않는다 */}
-      <p className="state-code">{error.code}</p>
+      {/* 원인 추적용 — **개발 빌드에서만** 보인다. 서버 message 는 어디서도 나가지 않는다.
+          배포본에서도 보였던 탓에 "체인 기록을 찾을 수 없습니다" 아래에 ANCHOR_NOT_FOUND 가
+          한 줄 더 붙었다(2026-09-22 QA). 사람 말로 이미 설명한 것을 코드로 한 번 더 말하면
+          고칠 수 있는 것처럼 읽히고, 내부 어휘가 그대로 드러난다. */}
+      {import.meta.env.DEV && <p className="state-code">{error.code}</p>}
     </div>
   )
 }

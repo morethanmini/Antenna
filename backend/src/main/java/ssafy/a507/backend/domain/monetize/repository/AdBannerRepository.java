@@ -20,6 +20,12 @@ public interface AdBannerRepository extends JpaRepository<AdBanner, Long> {
             AdBanner.Status status, Instant at, Instant sameAt);
 
     /**
+     * 내가 낸 신청 — 최신순. 심사 중인 건을 다시 찾을 자리가 등록 화면뿐이라 거기서 쓴다
+     * (2026-09-22 QA: 신청 뒤 화면에서 사라져 묶인 ANT 를 스스로 풀 길이 없었다).
+     */
+    List<AdBanner> findByAdvertiser_IdOrderByIdDesc(Long advertiserId);
+
+    /**
      * 요청 기간에서 자리를 차지하고 있는 신청 수. 선착순 슬롯 판정에 쓴다.
      *
      * <p>PENDING 도 센다. 심사·확정을 기다리는 신청을 비어 있는 것으로 보면, 확정되는 순간

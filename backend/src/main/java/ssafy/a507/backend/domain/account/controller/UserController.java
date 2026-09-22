@@ -36,7 +36,8 @@ public class UserController {
     @GetMapping("/nickname/availability")
     public NicknameAvailability availability(
             @RequestParam @NotBlank @Size(min = 2, max = 30) String nickname) {
-        return new NicknameAvailability(userService.isNicknameAvailable(nickname));
+        return new NicknameAvailability(
+                userService.isNicknameAvailable(currentUser.currentUserId(), nickname));
     }
 
     /**

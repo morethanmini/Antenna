@@ -32,7 +32,7 @@ public record EventListResponse(List<Item> items) {
                     e.getSlug(),
                     e.getTitle(),
                     e.getStatus(),
-                    EventPhase.of(e.getStatus()),
+                    EventPhase.of(e),
                     e.getOpensAt(),
                     e.getSealsAt(),
                     e.getBaseDate(),

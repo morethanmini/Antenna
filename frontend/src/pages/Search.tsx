@@ -6,8 +6,14 @@
    책임이라 "더보기" 로 넘긴다(명세서 §검색).
 
    상단바 자동완성 드롭다운도 이 스토리 몫이지만 Layout.tsx 를 고쳐야 해서
-   이번 커밋에는 넣지 않았다. 지금도 엔터로 이 화면까지는 온다. */
-import { useCallback } from 'react'
+   이번 커밋에는 넣지 않았다. 지금도 엔터로 이 화면까지는 온다.
+
+   ── 화면이 자기 검색칸을 갖는다 (2026-09-22) ─────────────
+   셸 검색줄이 09-21 에 걷혔다(Layout.tsx 주석). 그런데 이 화면은 여전히 "위쪽
+   검색창에 입력해 주세요" 라고 **없는 UI 를 가리키고** 있었다 — 주소를 직접 치고
+   들어온 사람은 아무것도 할 수 없었다. 셸 결정을 되돌리는 대신 화면이 혼자 서게
+   한다. 검색어는 그대로 주소(`?q=`)에 두어 뒤로가기·새로고침·공유가 살아 있다. */
+import { useCallback, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { search } from '../api/insight'
 import { useAsync } from '../api/useAsync'
@@ -15,9 +21,41 @@ import '../styles/search.css'
 
 const won = (n: number) => n.toLocaleString('ko-KR')
 
+/** 서버 검색어 상한과 같은 값. 넘기면 500 이 아니라 여기서 막는다 */
+const Q_MAX = 50
+
 export default function Search() {
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const q = (params.get('q') ?? '').trim()
+
+  /* 칸은 주소를 따라간다 — 뒤로가기로 옛 검색어가 돌아오면 칸도 같이 돌아와야 한다.
+     매 글자마다 주소를 갈면 히스토리가 쌓이므로 제출할 때만 옮긴다(replace). */
+  const [draft, setDraft] = useState(q)
+  const [seenQ, setSeenQ] = useState(q)
+  if (seenQ !== q) {
+    setSeenQ(q)
+    setDraft(q)
+  }
+
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault()
+    const next = draft.trim()
+    setParams(next ? { q: next } : {}, { replace: true })
+  }
+
+  const field = (
+    <form className="sr-form" onSubmit={submit} role="search">
+      <input
+        type="search"
+        value={draft}
+        maxLength={Q_MAX}
+        placeholder="종목명 · 코드 · 예측가 · 리포트 제목"
+        aria-label="통합 검색어"
+        onChange={(e) => setDraft(e.target.value)}
+      />
+      <button type="submit">찾기</button>
+    </form>
+  )
 
   // q 가 바뀌면 다시 읽는다. 빈 검색어면 서버를 부르지 않는다.
   const load = useCallback(
@@ -36,7 +74,8 @@ export default function Search() {
             <h1>통합 검색</h1>
             <p>종목명 · 종목코드 · 예측가 닉네임 · 리포트 제목으로 찾습니다</p>
           </div>
-          <p className="sr-empty">위쪽 검색창에 찾을 내용을 입력해 주세요.</p>
+          {field}
+          <p className="sr-empty">찾을 내용을 입력해 주세요.</p>
         </div>
       </main>
     )
@@ -49,6 +88,8 @@ export default function Search() {
           <h1>{'‘'}{q}{'’'} 검색 결과</h1>
           {!loading && !error && <p>{total > 0 ? `${total}건을 찾았습니다` : '일치하는 결과가 없습니다'}</p>}
         </div>
+
+        {field}
 
         {loading && <p className="sr-state">찾고 있습니다…</p>}
         {error && (

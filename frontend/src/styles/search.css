@@ -57,3 +57,18 @@
   .sr-card{padding:16px 16px 6px}
   .sr-side{display:none}
 }
+
+/* 화면 자체 검색칸 (2026-09-22). 셸 검색줄이 걷힌 뒤로 이 화면에 들어오면 아무것도
+   칠 수 없었다 — 안내문은 없는 UI 를 가리키고 있었다. */
+.sr-form{ display:flex; gap:8px; margin:0 0 16px }
+.sr-form input{
+  flex:1; min-width:0; padding:10px 12px;
+  border:1px solid var(--rule); border-radius:10px; background:var(--surface);
+  font:inherit; color:var(--ink);
+}
+.sr-form input:focus-visible{ outline:2px solid var(--brand); outline-offset:1px }
+.sr-form button{
+  flex:0 0 auto; padding:10px 16px;
+  border:1px solid var(--brand); border-radius:10px; background:var(--brand); color:#fff;
+  font:inherit; font-weight:var(--fw-bold); cursor:pointer;
+}
