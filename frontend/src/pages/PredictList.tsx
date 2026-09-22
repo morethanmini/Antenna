@@ -629,7 +629,6 @@ export default function PredictList() {
         <div className="mp-layout">
           <header className="mp-head">
             <h1>내 예측 현황</h1>
-            <p>등록한 예측이 지금 어디까지 왔는지 한눈에 확인해보세요.</p>
           </header>
 
           <div className="mp-toolbar">

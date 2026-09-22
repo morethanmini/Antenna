@@ -93,10 +93,17 @@
   .rk-sky-bg{ animation:none; }
 }
 
-/* 그림 위에 글이 올라온다. 연한 바탕이라 회색 소개 줄이 묻힌다 —
-   --muted 도 --body 도 얇게 뜬다. 본문색에 한 단 굵기를 더해 또렷하게 세운다 */
-.rk-page .page-head{ padding-top:14px; }
-.rk-page .page-head p{ color:var(--ink); font-weight:var(--fw-normal); }
+/* 종목 탐색·내 예측·리포트와 같은 목록 화면 크기로 맞춘다(2026-09-22) —
+   여기만 .page-head 기본값(24px)에 남아 나란히 오갈 때 제목이 들쭉날쭉했다.
+
+   line-height 도 함께 준다 — 안 주면 body 의 1.6 비율을 물려받아(30px 기준
+   48px) 제목 상자가 커져 다른 세 화면(1.15, 34.5px)과 높이가 달라진다.
+   padding-top:14px 도 걷었다 — 다른 세 화면은 본문 여백(28px)뿐인데 여기만
+   더해 제목이 한 단 아래에서 시작했다. */
+.rk-page .page-head h1{
+  font-size:var(--fs-title-lg); font-weight:var(--fw-black); letter-spacing:-.03em;
+  line-height:1.15;
+}
 
 /* 표는 그림 위에 얹힌 카드다. 살짝 띄워야 배경에 눌어붙어 보이지 않는다 */
 .rk-page .rk-table-wrap{ box-shadow:0 14px 34px -24px rgba(60,40,140,.6); }

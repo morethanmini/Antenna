@@ -45,7 +45,6 @@ import EventRanking from '../components/ranking/EventRanking'
 import EmptyState from '../components/state/EmptyState'
 import ErrorState from '../components/state/ErrorState'
 import SnapshotStamp from '../components/SnapshotStamp'
-import { CONTEST } from '../event/contest'
 import '../styles/screens/ranking.css'
 
 const PAGE = 20
@@ -265,10 +264,10 @@ const ART = {
 } as const
 type Tab = keyof typeof ART
 
-/** 보고 있는 쪽의 제목과 한 줄 소개. 한 머리를 둘이 나눠 쓴다 */
-const HEAD: Record<Tab, { h1: string; p: string }> = {
-  accuracy: { h1: '주가 예측 랭킹', p: '판정이 끝난 예측만 집계합니다' },
-  event: { h1: '이벤트 랭킹', p: `${CONTEST.name} 참가자의 베팅 손익률 순위입니다` },
+/** 보고 있는 쪽의 제목. 한 머리를 둘이 나눠 쓴다 */
+const HEAD: Record<Tab, { h1: string }> = {
+  accuracy: { h1: '주가 예측 랭킹' },
+  event: { h1: '이벤트 랭킹' },
 }
 
 export default function Ranking() {
@@ -313,7 +312,6 @@ export default function Ranking() {
         <div className="page-head rk-head">
           <div>
             <h1>{HEAD[tab].h1}</h1>
-            <p>{HEAD[tab].p}</p>
           </div>
 
           <button type="button" className="rk-switch" onClick={() => go(other)}>
