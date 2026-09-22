@@ -15,7 +15,7 @@
    ConfirmDialog 와 같은 판단이다. 이건 길을 막는 창이 아니라 곁창이라, Tab 이
    새어 나가면 그대로 페이지를 계속 쓰면 된다. 대신 열 때 목록으로 초점을 옮겨
    키보드만 쓰는 사람도 바로 읽을 수 있게 한다. */
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { TYPE_LABEL } from '../api/notifications'
 import type { Notification } from '../api/notifications'
@@ -98,6 +98,39 @@ export default function NotificationPopover({
 
   const unread = items.filter((n) => !n.read).length
 
+  /* ── 본문 한 줄 · [더보기] ────────────────────────────
+     전에는 두 줄까지 보이고 그 뒤를 잘랐다(-webkit-line-clamp:2). 줄 수가
+     들쭉날쭉해 목록이 층계처럼 보였고, 두 줄째가 잘린 알림은 어차피 다 못 읽는다.
+     한 줄로 고정하고 넘치는 것만 펼칠 수 있게 한다.
+
+     **넘치는지는 재서 안다.** 글자 수로 어림하면 팝업 폭(380px)·글꼴·언어가
+     바뀔 때마다 어긋난다. 그린 뒤 scrollWidth 와 clientWidth 를 비교한다 —
+     한 줄로 잘려 있을 때만 뜻이 있는 값이라, **펼쳐 둔 것은 재지 않고**
+     이미 길다고 판정된 것을 그대로 들고 간다. */
+  const listRef = useRef<HTMLUListElement>(null)
+  const [longIds, setLongIds] = useState<number[]>([])
+  const [openIds, setOpenIds] = useState<number[]>([])
+
+  useLayoutEffect(() => {
+    const el = listRef.current
+    if (!el) return
+    const next: number[] = []
+    el.querySelectorAll<HTMLElement>('.nt-body').forEach((b) => {
+      const id = Number(b.dataset.id)
+      if (!Number.isFinite(id)) return
+      /* 펼쳐 둔 줄은 잴 수 없다 — 판정을 그대로 잇는다 */
+      if (openIds.includes(id)) { if (longIds.includes(id)) next.push(id); return }
+      if (b.scrollWidth > b.clientWidth + 1) next.push(id)
+    })
+    /* 같은 값이면 새 배열을 넣지 않는다 — 넣으면 이 효과가 스스로를 다시 부른다 */
+    setLongIds((prev) =>
+      prev.length === next.length && prev.every((v, i) => v === next[i]) ? prev : next)
+  }, [items, openIds, longIds])
+
+  const toggleMore = useCallback((id: number) => {
+    setOpenIds((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]))
+  }, [])
+
   return (
     <div
       className="nt-pop"
@@ -141,9 +174,9 @@ export default function NotificationPopover({
       )}
 
       {!loading && !error && items.length > 0 && (
-        <ul className="nt-list">
+        <ul className="nt-list" ref={listRef}>
           {items.map((n) => (
-            <li key={n.id} className="nt-row">
+            <li key={n.id} className={`nt-row${openIds.includes(n.id) ? ' is-open' : ''}`}>
               <button
                 type="button"
                 className={`nt-item${n.read ? '' : ' is-unread'}${n.linkPath ? '' : ' is-flat'}`}
@@ -151,17 +184,18 @@ export default function NotificationPopover({
                 /* 갈 곳이 없으면 읽음 처리만 한다. 눌러도 아무 데도 안 가는 것이
                    기본값이라, 커서까지 손가락으로 바꾸지는 않는다(.is-flat) */
               >
-                {/* 서버가 새 종류를 보내면 표에 없다. 빈 칸보다 종류 이름이 낫다 */}
-                {/* 표에 없는 종류는 종류 문자열이 그대로 보인다 — 새 종류가 붙은 것을
-                    알아채라는 뜻이다(api/notifications.ts). 그 값이 길면 이름표 폭에서
-                    잘리므로(notification.css) 온전한 값을 title 로 남긴다.
-                    아이콘은 글자를 대신하지 않는다 — 까닭은 NotificationTypeIcon 머리말. */}
+                {/* **종류 글자를 뺐다**(2026-09-22, 디자인). 남은 것은 동그라미 안의
+                    아이콘 하나다. 그림만으로는 종류를 못 읽으므로 글자를 두 군데로
+                    옮긴다 — 마우스에는 title, 스크린리더에는 .nt-sr.
+                    표에 없는 종류는 종류 문자열이 그대로 실린다. 이제 잘릴 칸이
+                    없으니 온전히 읽힌다(api/notifications.ts — 새 종류가 붙은 것을
+                    알아채라는 뜻이다). */}
                 <span className="nt-type" title={TYPE_LABEL[n.type] ?? n.type}>
                   <NotificationTypeIcon type={n.type} />
-                  <span className="nt-type-txt">{TYPE_LABEL[n.type] ?? n.type}</span>
+                  <span className="nt-sr">{TYPE_LABEL[n.type] ?? n.type}</span>
                 </span>
                 <b className="nt-title">{n.title}</b>
-                <span className="nt-body">{n.body}</span>
+                <span className="nt-body" data-id={n.id}>{n.body}</span>
                 <span className="nt-when num">{ago(n.createdAt)}</span>
                 {/* 파란 점을 뺐다(2026-09-18). 안 읽은 표시가 바탕색과 점 둘이라
                     같은 말을 두 번 하고 있었다.
@@ -172,6 +206,18 @@ export default function NotificationPopover({
                     안 보이고 스크린리더만 읽는다. */}
                 {!n.read && <span className="nt-sr">읽지 않음</span>}
               </button>
+              {/* 넘치는 줄에만 붙는다. 이것도 **항목 버튼 바깥**이다 — 안에 넣으면
+                  버튼 안 버튼이 되고, 더보기를 눌렀는데 그 알림으로 옮겨 가 버린다. */}
+              {longIds.includes(n.id) && (
+                <button
+                  type="button"
+                  className="nt-more"
+                  aria-expanded={openIds.includes(n.id)}
+                  onClick={() => toggleMore(n.id)}
+                >
+                  {openIds.includes(n.id) ? '접기' : '더보기'}
+                </button>
+              )}
               {/* 항목 버튼 **바깥**에 둔다. 버튼 안에 버튼을 넣으면 마크업이 깨지고,
                   지우기를 눌렀는데 그 알림으로 이동해 버린다 */}
               <button
