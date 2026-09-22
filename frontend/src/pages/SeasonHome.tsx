@@ -160,7 +160,6 @@ function Hero({ lead, practice, ongoing, done, startAt, myError, myLoading, onRe
       {/* 책상에 앉은 개미. 시안 원본(page_train)을 여백만 잘라 webp 로 구웠다.
           말풍선("오늘도 조금 더 성장!") 이 그림 안에 있어 따로 얹지 않는다. */}
       <div className="sh-stage" aria-hidden="true">
-        <img className="sh-bubble" src="/assets/pageset/bubble.webp" alt="" />
         <img className="sh-hero-art" src="/assets/page_train/ant-desk.webp" alt="" />
       </div>
 
