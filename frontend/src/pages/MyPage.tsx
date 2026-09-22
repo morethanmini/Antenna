@@ -26,6 +26,7 @@
    티어(다이아·플래티넘·골드)도 두지 않는다 — GET /rankings/me 의 tier 는 리플레이
    트랙에서만 채워진다. 이 화면은 실전이므로 항상 null 이다. */
 import { Link } from 'react-router-dom'
+import { useSharedHref } from '../sharedMode'
 import { useApiQuery } from '../api/useApiQuery'
 import { type BadgeList as BadgeListResponse, type MyProfile } from '../api/account'
 import { type Portfolio } from '../api/predictions'
@@ -41,18 +42,28 @@ import '../styles/screens/mypage.css'
    커뮤니티는 개발 범위에서 빠졌다(2026-09-14) — 그 진입점 이야기도 함께 지웠다.
    전에는 타일 넷(내 활동)과 버튼 둘(내 채널·포트폴리오)로 갈려 있었는데, 둘 다
    "여기서 나가는 길" 이라 한 줄로 합쳤다. 순서는 자주 쓰는 것부터다. */
-const LINKS = [
+type HubLink = {
+  to: string
+  label: string
+  icon: string
+  /** 두 모드가 같이 쓰는 화면. 모의투자에서 온 마이페이지라면 그 모드를 주소에 이어
+      보낸다(sharedMode.ts) — 안 이으면 여기까지는 모의투자였다가 다음 화면에서
+      인사이트로 넘어간다. 나머지는 인사이트 전용 화면이라 붙일 것이 없다. */
+  shared?: true
+}
+
+const LINKS: HubLink[] = [
   { to: '/me/predictions', label: '내 예측', icon: 'chart' },
   { to: '/me/portfolio', label: '예측 포트폴리오', icon: 'target' },
   { to: '/me/subscriptions', label: '내 구독', icon: 'people' },
-  { to: '/me/wallet', label: '지갑 · 토큰', icon: 'wallet' },
+  { to: '/me/wallet', label: '지갑 · 토큰', icon: 'wallet', shared: true },
   /* 커밋 원장(D-01)의 임시 진입점이 여기 있었다. 사이드바에 '원장 내역' 이 생겨
      정본이 그쪽으로 갔으므로 뺀다. 애초에 원장은 개인 기록이 아니라 서비스 전체
      기록이라, 내 활동 목록보다 사이드바가 맞는 자리였다(S15P21A507-181). */
   /* 채널 설정(E-04)을 환경 설정 안으로 합쳤다 — 둘 다 내 계정을 손보는 곳인데
      진입점이 둘로 갈려 있었고 아이콘까지 같아 구분되지 않았다. */
-  { to: '/settings', label: '설정', icon: 'gear' },
-] as const
+  { to: '/settings', label: '설정', icon: 'gear', shared: true },
+]
 
 const ICON: Record<string, React.ReactNode> = {
   chart: <><path d="M3 3v18h18" /><path d="M7 15l4-5 3 3 5-7" /></>,
@@ -93,6 +104,7 @@ function Stat({ value, label }: { value: string; label: string }) {
 }
 
 export default function MyPage() {
+  const href = useSharedHref()
   const profile = useApiQuery<MyProfile>('/users/me')
   /* 랭킹은 실전(REAL) 고정이다. 리플레이 순위는 모의투자 안에서 보는 값이고,
      여기에 트랙 탭을 두면 이 화면이 랭킹 화면(G-09)을 반쯤 베끼게 된다.
@@ -224,7 +236,7 @@ export default function MyPage() {
             </Link>
           )}
           {LINKS.map((l) => (
-            <Link key={l.to} className="mp-pill" to={l.to}>
+            <Link key={l.to} className="mp-pill" to={l.shared ? href(l.to) : l.to}>
               <Icon name={l.icon} />{l.label}
             </Link>
           ))}

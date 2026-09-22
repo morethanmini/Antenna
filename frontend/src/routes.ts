@@ -65,6 +65,12 @@ export type PageMeta = {
   access: Access
   /** 셸 모드. 없으면 셸 없이 단독 렌더한다(로그인) */
   mode?: Mode
+  /** 두 모드에 다 속한 화면(환경 설정 · 마이페이지 · 지갑처럼 어느 쪽 상단바에서도 여는 곳).
+      `?mode=sim` 으로 들어오면 셸이 그 모드를 유지하고, mode 는 주소에 아무 말이
+      없을 때의 기본값이 된다. 그 밖의 화면은 주소의 mode 를 무시한다 — 종목 탐색이
+      모의투자 상단바를 달고 나오면 안 된다. 읽는 곳은 App.tsx 의 Page, 주소 규칙은
+      sharedMode.ts 다. */
+  sharedMode?: true
   /** 사이드바에서 활성으로 표시할 메뉴 키 */
   nav?: string
   bodyClass?: string
@@ -120,7 +126,8 @@ export const ROUTES: PageMeta[] = [
      계정 메뉴로 들어오는 화면이라 아무것도 활성이 아닌 것이 맞다. 전에는 'portfolio' 라
      /me 에 있는데 예측 포트폴리오에 불이 들어왔다.
      App.tsx 가 `meta.nav ?? 'home'` 으로 기본값을 주므로 비우면 이번엔 홈이 켜진다. */
-  { screen: 'E-05', element: MyPage, path: '/me', title: '마이페이지', access: 'user', mode: 'insight', nav: 'me', bodyClass: 'mypage-page is-night', story: 'ANT-FE-MYPAGE' },
+  /* 상단 계정 메뉴로 **어느 모드에서든** 들어온다 — 환경 설정(H-03)과 같은 sharedMode 다. */
+  { screen: 'E-05', element: MyPage, path: '/me', title: '마이페이지', access: 'user', mode: 'insight', sharedMode: true, nav: 'me', bodyClass: 'mypage-page is-night', story: 'ANT-FE-MYPAGE' },
 
   // ── F. 리포트 ───────────────────────────────────────
   // 커뮤니티(F-04 피드 · F-05 글 상세 · F-06 글 작성)는 개발 범위에서 뺐다
@@ -157,13 +164,19 @@ export const ROUTES: PageMeta[] = [
   { screen: 'G-09', element: SeasonHistory, path: '/sim/history', title: '기록 · 배지', access: 'user', mode: 'sim', nav: 'portfolio', bodyClass: 'sim-record-page is-night', story: 'ANT-FE-SEASON-HISTORY' },
 
   // ── H. 지갑 · 알림 · 설정 · 광고 ─────────────────────
-  { screen: 'H-01', element: Wallet, path: '/me/wallet', title: '지갑 · 토큰', access: 'user', mode: 'insight', nav: 'portfolio', bodyClass: 'is-night', story: 'ANT-FE-WALLET' },
+  /* 상단바 잔액 칩 · 계정 메뉴로 **어느 모드에서든** 들어온다 — 환경 설정(H-03)과 같은
+     sharedMode 다. nav 'portfolio' 는 인사이트 줄 기준이고, 모의투자로 들어오면 App.tsx 가
+     아무것도 칠하지 않는다(같은 키가 그 줄에서는 '투자 포트폴리오' 다). */
+  { screen: 'H-01', element: Wallet, path: '/me/wallet', title: '지갑 · 토큰', access: 'user', mode: 'insight', sharedMode: true, nav: 'portfolio', bodyClass: 'is-night', story: 'ANT-FE-WALLET' },
   /* H-02 알림함은 **라우트를 두지 않는다**(2026-09-16). 알림은 보러 가는 것이
      아니라 하던 일 옆에서 확인하고 닫는 것이라, 상단바 종에서 여는 팝업
      하나로 끝낸다(components/NotificationBell). 설계서 §3 H-02 에는 이 경로가
      적혀 있지만 문서는 팀 공용이라 손대지 않았고, 이 주석이 그 차이를 적어
      두는 자리다. */
-  { screen: 'H-03', element: Settings, path: '/settings', title: '환경 설정', access: 'user', mode: 'insight', nav: 'home', bodyClass: 'is-night', story: 'ANT-FE-SETTINGS' },
+  /* 상단바 톱니로 **어느 모드에서든** 들어온다. 모의투자에서 눌렀는데 상단바 토글이
+     인사이트로 넘어가 있었다(2026-09-22) — 들어온 모드를 ?mode= 로 받아 유지한다
+     (sharedMode · sharedMode.ts). 주소에 없으면 인사이트다. 마이페이지(E-05)·지갑(H-01)도 같다. */
+  { screen: 'H-03', element: Settings, path: '/settings', title: '환경 설정', access: 'user', mode: 'insight', sharedMode: true, nav: 'home', bodyClass: 'is-night', story: 'ANT-FE-SETTINGS' },
   { screen: 'H-04', element: Ad, path: '/ads/new', title: '광고 등록', access: 'user', mode: 'insight', nav: 'home', bodyClass: 'is-night', story: 'ANT-FE-AD' },
 
   /* ── I. 관리자 ────────────────────────────────────────
