@@ -386,19 +386,47 @@ body.sim-join-page .sj-card{padding:14px 26px}
 body.sim-join-page .sj-hero-body{padding:16px 32px 22px;gap:12px}
 body.sim-join-page .sj-head{gap:10px}
 
-/* 머리. 본문 제목(26px)을 쓰고 있었는데 이 띠에서는 이름표에 가깝다 */
 body.sim-join-page .sj-rules{gap:10px}
-body.sim-join-page .sj-rules h2{font-size:var(--fs-4xl)}
 body.sim-join-page .sj-rules-kicker{margin-bottom:0}
-body.sim-join-page .sj-rules-lead{font-size:var(--fs-md)}
 
-/* 네 칸. 여백·아이콘·글자를 한 단계씩 내린다 */
-body.sim-join-page .sj-steps{gap:10px}
-body.sim-join-page .sj-steps li{padding:12px 14px 13px;gap:4px;border-radius:13px}
-body.sim-join-page .sj-steps svg{width:18px;height:18px;margin:0}
-body.sim-join-page .sj-steps b{font-size:var(--fs-lg);line-height:1.35}
-body.sim-join-page .sj-steps p{font-size:var(--fs-sm);line-height:1.5}
-body.sim-join-page .sj-step-no{font-size:var(--fs-3xs)}
+/* ── 네 칸을 판 한 장으로 ──────────────────────────────────
+   **글자는 줄이지 않는다.** 한 번 한 단계씩 내려 봤는데 읽기만 나빠지고 얻은
+   높이는 얼마 안 됐다 — 네 칸은 나란히 서 있어서 구역 높이는 칸 하나의 높이지,
+   네 개의 합이 아니다. 줄여야 할 것은 글자가 아니라 **칸 안의 줄 수**였다.
+
+   그래서 판을 하나로 합치고(테두리 넷 → 하나, 가운데는 세로 줄로 가른다),
+   아이콘을 제목 옆으로 옮겨 한 줄을 없앴다. 번호 · 아이콘+제목 · 설명 세 줄이다.
+   글자 크기는 본문 기준 그대로다. */
+body.sim-join-page .sj-steps{
+  gap:0;padding:0;
+  border:1px solid var(--rule);border-radius:16px;
+  background:var(--surface);box-shadow:var(--shadow);
+  -webkit-backdrop-filter:blur(12px) saturate(140%);
+  backdrop-filter:blur(12px) saturate(140%);
+  overflow:hidden;
+}
+body.sim-join-page .sj-steps li{
+  display:grid;grid-template-columns:auto minmax(0,1fr);
+  column-gap:9px;row-gap:4px;align-items:start;
+  padding:15px 18px 16px;
+  border:0;border-left:1px solid var(--rule);border-radius:0;
+  background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;
+}
+body.sim-join-page .sj-steps li:first-child{border-left:0}
+/* 격자가 접히면 칸막이 방향도 같이 접는다 — 세로 줄만 남으면 한 줄로 쌓인
+   항목들 왼쪽에 쓸모없는 선이 그어진다(2열 2줄 · 1열 4줄 둘 다). */
+@media(max-width:1100px){
+  body.sim-join-page .sj-steps li:nth-child(odd){border-left:0}
+  body.sim-join-page .sj-steps li:nth-child(n+3){border-top:1px solid var(--rule)}
+}
+@media(max-width:600px){
+  body.sim-join-page .sj-steps li{border-left:0}
+  body.sim-join-page .sj-steps li + li{border-top:1px solid var(--rule)}
+}
+body.sim-join-page .sj-step-no{grid-column:1/-1}
+body.sim-join-page .sj-steps svg{grid-column:1;grid-row:2;margin:0;align-self:center}
+body.sim-join-page .sj-steps b{grid-column:2;grid-row:2;align-self:center}
+body.sim-join-page .sj-steps p{grid-column:2;grid-row:3}
 
 /* 화면이 낮으면 **그때는** 제목 그림도 같이 줄인다. 1920×1080 에서는 원래 크기
    (660×493)를 그대로 두고, 그 아래에서만 손댄다 — 여백은 이미 다 걷어서 더 내줄
@@ -407,7 +435,7 @@ body.sim-join-page .sj-step-no{font-size:var(--fs-3xs)}
    (.sj-note-sm)이 따로 깔리므로 못 읽는 구간이 남지는 않는다. */
 @media (max-height:900px){          /* 표시 배율 125% (1920 → 1536×864) */
   body.sim-join-page{--lockup-h:clamp(200px,40vh,380px)}
-  body.sim-join-page .sj-steps li{padding:10px 13px 11px}
+  body.sim-join-page .sj-steps li{padding:12px 15px 13px}
   body.sim-join-page .sj-card{padding:12px 22px}
 }
 @media (max-height:800px){          /* 1366×768 같은 낮은 노트북 */
