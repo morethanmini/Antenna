@@ -97,12 +97,13 @@ function WalletChip() {
    되살릴 때는 git 역사에서 이 블록(NavSearch · SEARCH_MAX)과 상단바의 버튼을 함께
    꺼내면 된다. 화면(A-03)과 API(GET /search)는 그대로 살아 있다. */
 
-/* 상단바가 어두워지는 화면. 여기 적힌 것은 **로고 파일을 고르기 위한 목록**이고,
-   바와 버튼의 색은 그 화면의 CSS 가 같은 body 클래스로 칠한다(sim-home.css).
-   어두운 화면을 새로 만들면 여기에 그 bodyClass 를 더한다 — 빠뜨리면 바만 어둡고
-   로고는 짙은 남색 글자 그대로라 사라진다.
+/* 상단바가 어두워지는 화면을 가리키는 표시. 색은 styles/night.css 가 같은 토큰으로
+   칠하고, 여기서는 **로고 파일을 고르는 데만** 쓴다 — <img src> 는 조상 클래스로
+   못 고르기 때문이다.
+   어두운 화면을 새로 만들면 routes.ts 의 bodyClass 에 이 토큰만 더하면 둘이 함께
+   따라온다. 빠뜨리면 바만 어둡고 로고는 짙은 남색 글자 그대로라 사라진다.
    마크 파일(600px 아래)은 마스코트뿐이라 어느 바탕에서도 읽혀 갈아 끼우지 않는다. */
-const NIGHT_PAGES = new Set(['sim-home-page'])
+const NIGHT_CLASS = 'is-night'
 
 export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode; nav: string; bodyClass: string; children: React.ReactNode }) {
   const { authed, user, signOut } = useAuth()
@@ -187,7 +188,7 @@ export default function Layout({ mode, nav, bodyClass, children }: { mode: Mode;
   /* 상단바까지 어두운 화면인가. 색은 그 화면의 CSS 가 body 클래스로 칠하지만
      **로고만은 여기서 갈아 끼워야 한다** — <img src> 는 조상 클래스로 못 고른다.
      한 장만 내려받게 하려고(아래 <picture> 주석) 겹쳐 두고 감추는 대신 주소를 바꾼다. */
-  const night = NIGHT_PAGES.has(bodyClass)
+  const night = bodyClass.split(' ').includes(NIGHT_CLASS)
 
   return (
     <>
