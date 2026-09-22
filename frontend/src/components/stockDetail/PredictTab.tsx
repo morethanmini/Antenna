@@ -56,7 +56,7 @@ import type { InvestPoint, PointKind, StockSummary } from '../../api/stockDetail
 import {
   DIRECTIONS, HORIZON_MAX, HORIZON_MIN, HORIZON_TICKS, NOTE_MAX,
   commitHash, commitPayload, createPrediction, getSlots, horizonLabel, horizonPickLabel, newNoteSalt, noteHash,
-  cleanTargetPrice, formatTargetPrice, predictionSigningPayload, targetPriceInRange, targetPriceInScale,
+  formatTargetInput, formatTargetPrice, predictionSigningPayload, targetPriceInRange, targetPriceInScale,
 } from '../../api/predictions'
 import type {
   CommitFields, Direction, Horizon, PredictionDraft,
@@ -241,10 +241,35 @@ export default function PredictTab({
 
   /* 고른 비율로 목표가를 채운다. 원 단위로 반올림한다 — 소수 셋째 자리가 남으면
      서버가 400 으로 거절하고(numeric(14,2)), 호가 단위가 아닌 값도 사람이 읽기 어렵다. */
+  /* 목표가 입력. 세 자리마다 쉼표를 넣어 보여 주고, **커서는 사람이 둔 자리에 남긴다.**
+     다시 그린 값을 그냥 넣으면 브라우저가 커서를 끝으로 보내, 가운데를 고치려고 누른
+     사람은 글자가 뒤에 붙는다. 쉼표를 뺀 글자 수로 자리를 세었다가 새 문자열에서 같은
+     수만큼 지난 곳으로 되돌린다.
+
+     값을 읽는 쪽(targetPrice)은 쉼표를 다시 떼므로 서명·커밋에는 영향이 없다. */
+  const onTargetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const el = e.target
+    const caret = el.selectionStart ?? el.value.length
+    const kept = el.value.slice(0, caret).replace(/[^0-9.]/g, '').length
+    const next = formatTargetInput(el.value)
+    setTarget(next)
+
+    let pos = 0
+    if (kept > 0) {
+      let seen = 0
+      for (pos = 0; pos < next.length; pos++) {
+        if (/[0-9.]/.test(next[pos])) seen += 1
+        if (seen === kept) { pos += 1; break }
+      }
+    }
+    /* 리액트가 값을 다시 그린 뒤라야 커서를 옮길 수 있다 */
+    requestAnimationFrame(() => el.setSelectionRange(pos, pos))
+  }
+
   const applyPct = (pct: number) => {
     const bases = summary?.prevClose
     if (!bases) return
-    setTarget(String(Math.round(bases * (1 + pct / 100))))
+    setTarget(formatTargetInput(String(Math.round(bases * (1 + pct / 100)))))
     setPctOpen(false)
   }
 
@@ -677,15 +702,16 @@ export default function PredictTab({
                   inputMode="numeric"
                   className="num"
                   value={target}
-                  placeholder={summary?.prevClose ? String(summary.prevClose) : '0'}
+                  /* 아래 안내(전일 종가)와 같은 모양으로 찍는다 — 예시값만 쉼표가 없으면
+                     치기 전과 친 뒤의 자릿수 감각이 끊긴다 */
+                  placeholder={summary?.prevClose ? summary.prevClose.toLocaleString('ko-KR') : '0'}
                   aria-label="목표가"
                   aria-describedby="pf-target-help"
-                  /* 폼이 받는 가장 긴 값 '999999999.99' 의 길이다(상한 10억 · 소수 둘째 자리).
-                     값 검증은 따로 하지만, 여기서 막으면 못 쓸 자릿수가 아예 안 쌓인다 */
-                  maxLength={12}
-                  /* 숫자와 소수점 하나만 남긴다(api/predictions.ts 의 cleanTargetPrice).
-                     거르지 않으면 '12301230--123232323' 이 그대로 남았다(QA 09-22). */
-                  onChange={(e) => setTarget(cleanTargetPrice(e.target.value))}
+                  /* 폼이 받는 가장 긴 값 '999,999,999.99' 의 길이다(상한 10억 · 소수 둘째
+                     자리 · 쉼표 셋). 값 검증은 따로 하지만, 여기서 막으면 못 쓸 자릿수가
+                     아예 안 쌓인다 */
+                  maxLength={14}
+                  onChange={onTargetChange}
                 />
                 <span className="sd-unit">원</span>
 
