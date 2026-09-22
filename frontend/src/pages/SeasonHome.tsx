@@ -110,17 +110,17 @@ function Hero({ lead, practice, ongoing, done, startAt, myError, myLoading, onRe
       </div>
 
       <div className="sh-hero-copy">
-        <span className="sh-hand">가상으로 시작하는<br />진짜 투자 감각</span>
+        {/* 손글씨 한 줄("가상으로 시작하는 진짜 투자 감각")은 걷어냈다(2026-09-23).
+            어느 서비스에나 붙일 수 있는 말이라 이 화면이 무엇을 하는 곳인지 말해
+            주지 못했다. 제목이 그 일을 한다.
 
-        {/* 연습 주제가 전부 사건 이름(코로나 · 전쟁 · 재당선 · 계엄)이다. 제목도 그
-            말을 그대로 쓴다 — "투자 감각을 깨워보세요" 같은 문구는 어느 서비스에나
-            붙일 수 있어 이 화면이 무엇을 하는 곳인지 말해 주지 못했다.
-            어느 시장인지는 아래 카드 다섯 장이 이미 말하고 있어 제목에서 뺀다.
-            강조는 "순간" 에 건다 — 이 화면이 파는 것은 기간이 아니라 그 며칠이다. */}
+            연습 주제가 전부 사건 이름(코로나 · 전쟁 · 재당선 · 계엄)이라 제목도 그
+            말을 그대로 쓴다. 강조는 "순간" 에 건다 — 이 화면이 파는 것은 기간이
+            아니라 그 며칠이다. */}
         <h1 className="sh-title" id="sh-hero-h">
-          역사적인 <em>순간</em>을
+          모의투자로
           <br />
-          연습해보세요
+          역사적인 <em>순간</em>을
         </h1>
 
         <div className="sh-cta">
@@ -302,10 +302,6 @@ function Facts({ practice }: { practice: OpenRun[] | undefined }) {
         )}
         <li><BarsIcon /><span>실제 데이터 기반 시뮬레이션</span></li>
       </ul>
-      <p className="sh-quote">
-        <span className="sh-hand">"연습이 더 나은 투자를 만든다."</span>
-        <small>— ANTENNA</small>
-      </p>
     </footer>
   )
 }

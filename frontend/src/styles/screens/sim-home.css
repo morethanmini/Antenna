@@ -117,18 +117,10 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
 
 /* 카피 */
 .sh-hero-copy{position:relative;z-index:1;display:flex;flex-direction:column;align-items:flex-start;min-width:0}
-.sh-hand{
-  display:inline-block;font-family:var(--hand);font-weight:400;line-height:1.05;
-  color:#d9d4ff;letter-spacing:.01em;
-}
-.sh-hero-copy > .sh-hand{
-  font-size:30px;margin:0 0 14px;transform:rotate(-4deg);transform-origin:left bottom;
-  text-shadow:0 0 18px rgba(139,125,255,.5);
-}
-.sh-hero-copy > .sh-hand::after{
-  content:"";display:block;width:70%;height:2px;margin-top:2px;border-radius:2px;
-  background:linear-gradient(90deg, var(--glow), transparent);
-}
+/* 손글씨 두 줄("가상으로 시작하는 진짜 투자 감각" · "연습이 더 나은 투자를 만든다")과
+   그 서체 규칙(.sh-hand)은 통째로 걷어냈다(2026-09-23). 어느 서비스에나 붙일 수 있는
+   말이라 이 화면이 무엇을 하는 곳인지 말해 주지 못했다 — 그 일은 제목과 주제 카드
+   다섯 장이 한다. 기록 화면(G-09)은 자기 손글씨(.rc-hand)를 따로 갖고 있어 영향이 없다. */
 /* 아래 여백이 큰 것은 제목과 버튼 사이에 아무것도 없어서다 — 설명 줄을 걷어낸
    뒤로 둘이 바로 붙어 한 덩어리로 읽혔다(2026-09-21). */
 .sh-title{
@@ -141,23 +133,26 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
   -webkit-background-clip:text;background-clip:text;color:transparent;
 }
 .sh-cta{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+/* 캡슐이다. 질감 한 벌(--cap-*)은 night.css 에 있다 — 모의투자 화면들이 같은
+   버튼을 쓴다. 여기서는 크기만 정한다. */
 .sh-btn{
-  display:inline-flex;align-items:center;gap:10px;height:var(--btn-h);padding:0 26px;
-  border-radius:14px;border:1px solid transparent;
+  display:inline-flex;align-items:center;gap:10px;height:var(--btn-h);padding:0 28px;
+  border-radius:999px;border:0;
   font-size:var(--fs-2xl);font-weight:var(--fw-bold);letter-spacing:-.01em;
   cursor:pointer;transition:transform .15s,box-shadow .15s,background .15s;
 }
-.sh-btn:active{transform:translateY(1px)}
+.sh-btn:active{transform:translateY(1px);box-shadow:var(--cap-press)}
 .sh-btn.solid{
-  background:linear-gradient(180deg,#6d6bff 0%,#5457e8 100%);color:#fff;
-  box-shadow:0 10px 26px -10px rgba(109,107,255,.8), inset 0 1px 0 rgba(255,255,255,.25);
+  background:var(--cap-fill);color:#fff;
+  box-shadow:var(--cap-edge), var(--cap-glow);
 }
-.sh-btn.solid:hover{box-shadow:0 14px 30px -10px rgba(109,107,255,.95)}
+.sh-btn.solid:hover{background:var(--cap-fill-hi);box-shadow:var(--cap-edge), var(--cap-glow-hi)}
 .sh-btn.line{
-  background:var(--night-glass);border-color:var(--night-line);color:var(--night-ink);
+  background:var(--cap-glass);color:#fff;
+  box-shadow:var(--cap-edge-soft);
   backdrop-filter:blur(8px);
 }
-.sh-btn.line:hover{background:var(--night-glass-hi)}
+.sh-btn.line:hover{background:var(--cap-glass-hi);box-shadow:var(--cap-edge)}
 .sh-btn svg:last-child{margin-right:-4px}
 
 .sh-topic{margin:16px 0 0;font-size:var(--fs-xl);color:var(--night-body);font-weight:var(--fw-normal)}
@@ -253,19 +248,24 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
 }
 .sh-topic-go{
   display:inline-flex;align-items:center;gap:8px;align-self:flex-start;
-  height:38px;padding:0 18px;border-radius:999px;
-  background:var(--night-glass);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(8px);
-  color:#fff;font-size:var(--fs-lg);font-weight:var(--fw-normal);transition:background .15s,gap .15s;
+  height:38px;padding:0 18px;border-radius:999px;border:0;
+  background:var(--cap-glass);box-shadow:var(--cap-edge-soft);backdrop-filter:blur(8px);
+  color:#fff;font-size:var(--fs-lg);font-weight:var(--fw-normal);
+  transition:background .15s,box-shadow .15s,gap .15s;
 }
-.sh-topic-go:hover{background:var(--night-glass-hi);gap:12px}
-.sh-topic-card.is-live .sh-topic-go{background:var(--brand);border-color:var(--brand)}
+.sh-topic-go:hover{background:var(--cap-glass-hi);box-shadow:var(--cap-edge);gap:12px}
+/* 지금 하고 있는 주제만 채운 캡슐이다 — 다섯 장 중 어디로 돌아가면 되는지 */
+.sh-topic-card.is-live .sh-topic-go{
+  background:var(--cap-fill);box-shadow:var(--cap-edge), var(--cap-glow);
+}
+.sh-topic-card.is-live .sh-topic-go:hover{background:var(--cap-fill-hi);box-shadow:var(--cap-edge), var(--cap-glow-hi)}
 
 .sh-nav{
-  display:none;flex:none;width:40px;height:40px;border-radius:50%;
-  border:1px solid var(--night-line);background:var(--night-glass);color:#fff;
+  display:none;flex:none;width:40px;height:40px;border-radius:50%;border:0;
+  background:var(--cap-glass);box-shadow:var(--cap-edge-soft);color:#fff;
   place-items:center;cursor:pointer;backdrop-filter:blur(8px);
 }
-.sh-nav:hover{background:var(--night-glass-hi);border-color:var(--glow)}
+.sh-nav:hover{background:var(--cap-glass-hi);box-shadow:var(--cap-edge)}
 
 .sh-state{flex:1;margin:0;padding:28px;text-align:center;color:var(--night-body);font-weight:var(--fw-normal)}
 
@@ -274,7 +274,12 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
   display:flex;align-items:center;justify-content:space-between;gap:24px;
   padding:16px 28px;border-radius:18px;
 }
-.sh-facts ul{display:flex;align-items:center;gap:0;margin:0;padding:0;list-style:none;flex-wrap:wrap}
+/* 인용을 걷어낸 뒤로 이 띠에는 목록 하나만 남는다. 왼쪽에 몰아 두면 오른쪽이
+   통째로 비어 띠가 잘린 것처럼 보이므로, 네 칸을 띠 너비에 고르게 편다. */
+.sh-facts ul{
+  flex:1;display:flex;align-items:center;justify-content:space-between;
+  gap:0;margin:0;padding:0;list-style:none;flex-wrap:wrap;
+}
 .sh-facts li{
   display:flex;align-items:center;gap:10px;padding:4px var(--fact-gap);
   font-size:var(--fact);font-weight:var(--fw-normal);color:var(--night-body);white-space:nowrap;
@@ -283,9 +288,6 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
 .sh-facts li:first-child{padding-left:0}
 .sh-facts li svg{color:var(--glow);flex:none;width:24px;height:24px}
 .sh-facts li b{color:#fff;font-weight:var(--fw-bold)}
-.sh-quote{display:flex;align-items:baseline;gap:12px;margin:0;white-space:nowrap}
-.sh-quote .sh-hand{font-size:var(--quote);color:#e6e2ff}
-.sh-quote small{font-size:var(--fs-xl);color:var(--night-body);font-weight:var(--fw-normal)}
 
 /* ── 반응형 ───────────────────────────────────────── */
 /* 카드가 한 줄에 안 서면 넘겨 보기로 바꾸고 화살표를 낸다 */
@@ -316,12 +318,10 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
   .sh-hero{grid-template-columns:1fr}
   .sh-stage{order:2;min-height:0}
   .sh-side{order:3;flex-direction:column}
-  .sh-hero-copy > .sh-hand{font-size:26px}
   .sh-topic-track{grid-auto-columns:minmax(240px,84%)}
   .sh-nav{display:none}
   .sh-facts{padding:16px 18px}
   .sh-facts li{padding:4px 14px;white-space:normal}
-  .sh-quote{white-space:normal}
 }
 
 /* ── 낮은 뷰포트(표시 배율 125%·노트북) ──────────────── */
@@ -338,7 +338,6 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
 }
 @media (min-width:1041px) and (max-height:740px){
   body.sim-home-page{--hero-min:330px;--art:290px;--card-h:184px;--block-gap:10px}
-  .sh-hero-copy > .sh-hand{font-size:24px;margin-bottom:8px}
   .sh-title{margin-bottom:22px}
   .sh-topic-card h2{font-size:var(--fs-3xl)}
 }
