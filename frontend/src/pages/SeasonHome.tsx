@@ -108,7 +108,6 @@ function Hero({ lead, practice, ongoing, done, startAt, myError, myLoading, onRe
       <div className="sh-backdrop" aria-hidden="true">
         <img className="sh-bd-wave" src="/assets/pageset/wave-thin.webp" alt="" />
         <img className="sh-bd-spark" src="/assets/pageset/sparks.webp" alt="" />
-        <img className="sh-bd-candles" src="/assets/pageset/candles.webp" alt="" />
       </div>
 
       <div className="sh-hero-copy">
