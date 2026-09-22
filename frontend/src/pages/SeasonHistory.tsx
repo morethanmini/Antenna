@@ -159,12 +159,16 @@ function RunRow({ run, showMode }: { run: MyRun; showMode: boolean }) {
    마친 판 수 하나로 칠한다. 서버에 단계 같은 것은 없고, 이건 새로 받아온 값이 아니라
    **위 요약의 "마친 시즌" 을 다르게 보여 주는 것**이다 — 그래서 숫자를 다시 적지 않고
    칸만 칠한다. 문턱은 1 · 2 · 4 · 8 이다(한 판이라도 하면 첫 칸이 켜진다).
-   문턱을 바꾸면 여기 한 줄만 고치면 된다. */
+   문턱을 바꾸면 여기 한 줄만 고치면 된다.
+
+   **칸마다 달려 있던 설명 줄을 걷었다(2026-09-22).** 좁은 칸에서 두 줄씩 접혀
+   카드가 그만큼 길어졌고, 그 길이 때문에 오른쪽 기둥이 목록 아래로 내려갔다.
+   이름 넷이면 무엇을 말하는지는 위 한 줄(지금까지 n판…)이 이미 설명한다. */
 const STEPS = [
-  { at: 1, name: '시작', note: '첫 연습을 시작해요' },
-  { at: 2, name: '학습', note: '다양한 사례로 배워요' },
-  { at: 4, name: '경험', note: '스스로 판단하며 쌓아요' },
-  { at: 8, name: '투자왕', note: '꾸준함이 만든 자리' },
+  { at: 1, name: '시작' },
+  { at: 2, name: '학습' },
+  { at: 4, name: '경험' },
+  { at: 8, name: '투자왕' },
 ]
 
 function Journey({ done }: { done: number }) {
@@ -189,7 +193,6 @@ function Journey({ done }: { done: number }) {
               {i < reached && <Ico size={13}><path d="M5 13l4 4L19 7" /></Ico>}
             </span>
             <b>{s.name}</b>
-            <em>{s.note}</em>
           </li>
         ))}
       </ol>

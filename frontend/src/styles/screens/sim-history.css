@@ -214,9 +214,8 @@ body.sim-record-page .main::before{
   background:var(--night-1);border:2px solid rgba(255,255,255,.2);color:#fff;
 }
 .rc-steps li.on .rc-step-dot{background:var(--brand);border-color:var(--brand);box-shadow:0 0 0 4px rgba(84,87,232,.22)}
-.rc-steps li b{margin-top:5px;font-size:var(--fs-lg);font-weight:var(--fw-heavy);color:var(--night-faint)}
+.rc-steps li b{margin-top:6px;font-size:var(--fs-lg);font-weight:var(--fw-heavy);color:var(--night-faint)}
 .rc-steps li.on b{color:#fff}
-.rc-steps li em{font-style:normal;font-size:var(--fs-sm);line-height:1.35;color:var(--night-faint)}
 
 /* ── 버튼 ─────────────────────────────────────────── */
 .rc-go{
@@ -258,7 +257,6 @@ body.sim-record-page .main::before{
   .rc-thumb{display:none}
   /* 썸네일까지 빠져 제목 · 성적 · 화살표 셋이다 */
   .rc-row{grid-template-columns:minmax(0,1fr) 78px 30px}
-  .rc-steps li em{display:none}
 }
 
 /* ── 낮은 뷰포트(표시 배율 125% · 노트북) ─────────────────
@@ -268,7 +266,7 @@ body.sim-record-page .main::before{
   body.sim-record-page{
     --rc-gap:11px;--rc-band:230px;--rc-title:30px;--rc-quote:19px;
     --rc-fig-pad:11px;--rc-fig-ico:36px;--rc-fig-val:var(--fs-5xl);
-    --rc-row-py:6px;--rc-side-pad:12px;--page-pb:10px;
+    --rc-row-py:6px;--rc-side-pad:12px;--page-pb:6px;
     /* 기둥을 좁혀 격려 카드 그림을 같이 줄인다. 이 단계는 표시 배율이 125% 인
        화면이 대부분이라, CSS 폭이 줄어도 눈에 보이는 크기는 크게 달라지지 않는다. */
     --rc-side-w:300px;
