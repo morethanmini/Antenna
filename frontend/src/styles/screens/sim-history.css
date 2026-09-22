@@ -7,16 +7,36 @@
    전역이라 두 화면을 오가면 나중에 실린 쪽이 이긴다 — 실제로 .sh-bar 가 겹쳐서
    홈이 기록 화면의 막대를 뒤집어썼다. 이름을 갈라 두면 그 종류의 버그가 아예 없다.
 
-   ── 이 화면은 스크롤을 허용한다 ───────────────────────────
-   홈은 한 화면에 담는 것이 규칙이지만 여기는 목록이라 길이가 사람마다 다르다.
-   머리 + 요약 4칸까지는 첫 화면에 들어오고, 목록은 그 아래로 흐른다. */
+   ── 한 화면에 담기 ───────────────────────────────────────
+   목록이라 길이가 사람마다 다르지만, **흔한 경우(이어서 할 연습 6줄)는 1920×1080
+   ·100% 배율에서 스크롤 없이 들어오게** 잡았다. 높이를 만드는 값은 전부 변수로 빼서
+   뷰포트가 낮을 때 한 단계 더 조인다(파일 끝 @media (max-height:…)).
+   숫자를 고칠 때는 개별 규칙이 아니라 변수를 고친다.
+
+   줄이 더 많으면 당연히 넘친다 — 그때는 스크롤이 맞다. 여기서 맞추는 것은
+   "머리가 화면 절반을 먹어 목록이 접혀 보이는" 상태를 없애는 것까지다. */
 
 body.sim-record-page{
-  --rc-gap:18px;          /* 덩어리 사이 */
-  --rc-pad:22px;          /* 판 안쪽 여백 */
-  --rc-band:300px;        /* 머리 위 도시 띠 높이 */
+  --rc-gap:14px;          /* 덩어리 사이 */
+  --rc-pad:20px;          /* 판 안쪽 여백 */
+  --rc-band:260px;        /* 머리 위 도시 띠 높이 */
   --rc-thumb:62px;        /* 줄 썸네일 */
+  --rc-title:34px;        /* 제목 */
+  --rc-quote:21px;        /* 머리 오른쪽 손글씨 */
+  --rc-fig-pad:14px;      /* 요약 칸 위아래 */
+  --rc-fig-ico:40px;
+  --rc-fig-val:var(--fs-6xl);
+  --rc-row-py:8px;        /* 목록 한 줄 위아래 */
+  --rc-side-pad:14px;     /* 오른쪽 카드 안쪽 */
+  /* 오른쪽 기둥 폭. **격려 카드 그림의 크기가 여기서 따라온다** — 그림이 세로로
+     제일 큰 덩어리라, 한 화면에 담느냐 마느냐가 사실상 이 한 값에 달려 있다.
+     400 은 그림 속 본문이 100% 배율에서 읽히는 폭이다(실측 13px). */
+  --rc-side-w:400px;
+  /* 본문 아래 여백. 셸 기본 64 는 이 화면에서 너무 길다 — 여기를 줄인 만큼이
+     그대로 "한 화면에 들어오느냐" 의 여유가 된다(1900×945 에서 5px 차이였다). */
+  --page-pb:22px;
 }
+body.sim-record-page .main-inner{padding-bottom:var(--page-pb)}
 
 /* 머리 위 도시 띠. 홈은 카드 뒤 아래쪽에 도시를 깔지만 여기는 제목 뒤가 하늘이다.
    사진에 글자가 없어 그대로 쓴다(page_train2 원본을 위 430px 만 잘라 구웠다).
@@ -42,28 +62,28 @@ body.sim-record-page .main::before{
 }
 
 /* ── 머리 ─────────────────────────────────────────── */
-.rc-head{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;padding-top:6px}
-.rc-crumb{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:var(--fs-lg);font-weight:var(--fw-bold);color:#a49ecb;text-shadow:0 1px 10px rgba(6,5,24,.8)}
+.rc-head{display:flex;align-items:flex-start;justify-content:space-between;gap:24px}
+.rc-crumb{display:flex;align-items:center;gap:8px;margin-bottom:7px;font-size:var(--fs-lg);font-weight:var(--fw-bold);color:#a49ecb;text-shadow:0 1px 10px rgba(6,5,24,.8)}
 .rc-crumb a{color:var(--night-body)}
 .rc-crumb a:hover{color:#fff}
 .rc-head h1{
-  margin:0 0 6px;font-size:40px;font-weight:var(--fw-black);letter-spacing:-.035em;color:#fff;
+  margin:0 0 5px;font-size:var(--rc-title);font-weight:var(--fw-black);letter-spacing:-.035em;color:#fff;
   text-shadow:0 2px 16px rgba(6,5,24,.75);
 }
 .rc-head > div > p{margin:0;font-size:var(--fs-xl);font-weight:var(--fw-bold);color:#cdc8e6;text-shadow:0 1px 10px rgba(6,5,24,.8)}
 
 .rc-hand{font-family:var(--hand);font-weight:400;line-height:1.15;color:#e6e2ff}
-.rc-head-side{display:flex;flex-direction:column;align-items:flex-end;gap:14px;flex:none}
+.rc-head-side{display:flex;flex-direction:column;align-items:flex-end;gap:10px;flex:none}
 .rc-quote{margin:0;text-align:right;white-space:nowrap}
-.rc-quote .rc-hand{display:block;font-size:26px;text-shadow:0 2px 14px rgba(6,5,24,.85)}
+.rc-quote .rc-hand{display:block;font-size:var(--rc-quote);text-shadow:0 2px 14px rgba(6,5,24,.85)}
 .rc-quote small{display:block;margin-top:4px;font-size:var(--fs-lg);font-weight:var(--fw-bold);color:#a49ecb;text-shadow:0 1px 10px rgba(6,5,24,.8)}
 
 /* ── 요약 4칸 ─────────────────────────────────────── */
 .rc-figs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--rc-gap)}
-.rc-fig{display:flex;align-items:center;gap:15px;padding:18px var(--rc-pad)}
+.rc-fig{display:flex;align-items:center;gap:14px;padding:var(--rc-fig-pad) var(--rc-pad)}
 /* 아이콘 타일이 칸을 가른다. 어두운 판에서는 테두리 하나로는 넷이 한 덩어리로 뭉친다 */
 .rc-fig-ico{
-  display:grid;place-items:center;width:46px;height:46px;flex:none;border-radius:14px;
+  display:grid;place-items:center;width:var(--rc-fig-ico);height:var(--rc-fig-ico);flex:none;border-radius:13px;
   background:rgba(139,125,255,.16);color:var(--glow);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.14);
 }
@@ -71,7 +91,7 @@ body.sim-record-page .main::before{
 .rc-fig-ico.down{background:rgba(88,150,255,.16);color:#8fbaff}
 .rc-fig-body{min-width:0}
 .rc-fig-label{display:block;font-size:var(--fs-lg);font-weight:var(--fw-bold);color:var(--night-body)}
-.rc-fig-val{display:block;margin:2px 0 3px;font-size:var(--fs-7xl);font-weight:var(--fw-black);letter-spacing:-.03em;color:#fff;line-height:1.1}
+.rc-fig-val{display:block;margin:1px 0 2px;font-size:var(--rc-fig-val);font-weight:var(--fw-black);letter-spacing:-.03em;color:#fff;line-height:1.1}
 /* 수익률 색은 화면 전체 규칙을 따른다 — 오르면 빨강, 내리면 파랑 */
 .rc-fig-val.up{color:#ff8080}
 .rc-fig-val.down{color:#6aa8ff}
@@ -80,13 +100,13 @@ body.sim-record-page .main::before{
 
 /* ── 본문 2열 ─────────────────────────────────────── */
 /* 오른쪽 기둥 폭은 격려 카드 그림에서 나왔다 — 그림 속 본문이 읽히는 최소 폭이다 */
-.rc-body{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:var(--rc-gap);align-items:start}
+.rc-body{display:grid;grid-template-columns:minmax(0,1fr) var(--rc-side-w);gap:var(--rc-gap);align-items:start}
 
 /* ── 목록 판 ──────────────────────────────────────── */
 .rc-card{overflow:hidden}
 .rc-tabs{display:flex;gap:6px;padding:10px 12px 0;border-bottom:1px solid var(--night-line)}
 .rc-tabs button{
-  display:flex;align-items:center;gap:8px;padding:12px 16px 13px;
+  display:flex;align-items:center;gap:8px;padding:10px 15px 11px;
   border-bottom:2px solid transparent;
   font-size:var(--fs-xl);font-weight:var(--fw-bold);color:var(--night-faint);
   transition:color .15s,border-color .15s;
@@ -100,7 +120,7 @@ body.sim-record-page .main::before{
 }
 .rc-tabs button.on em{background:var(--brand);color:#fff}
 
-.rc-panel{padding:6px var(--rc-pad) var(--rc-pad)}
+.rc-panel{padding:4px var(--rc-pad) 14px}
 
 .rc-sorts{display:flex;gap:6px;padding:12px 0 6px}
 .rc-sorts button{
@@ -113,7 +133,7 @@ body.sim-record-page .main::before{
 .rc-list{margin:0;padding:0;list-style:none}
 .rc-row{
   display:grid;grid-template-columns:var(--rc-thumb) minmax(0,1fr) auto 128px 30px;
-  align-items:center;gap:14px;padding:11px 8px;border-radius:14px;
+  align-items:center;gap:14px;padding:var(--rc-row-py) 8px;border-radius:14px;
   transition:background .15s;
 }
 .rc-row:hover{background:rgba(255,255,255,.06)}
@@ -160,18 +180,18 @@ body.sim-record-page .main::before{
 .rc-empty small{font-size:var(--fs-lg);font-weight:var(--fw-normal);color:var(--night-faint)}
 
 /* ── 오른쪽 기둥 ──────────────────────────────────── */
-.rc-side{display:flex;flex-direction:column;gap:14px;min-width:0}
-.rc-side-card{padding:18px var(--rc-pad)}
+.rc-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.rc-side-card{padding:var(--rc-side-pad) var(--rc-pad)}
 .rc-side-head{display:flex;align-items:center;gap:9px;margin:0 0 6px;font-size:var(--fs-3xl);font-weight:var(--fw-black);color:#fff;letter-spacing:-.025em}
 .rc-side-head svg{color:var(--glow)}
-.rc-side-lead{margin:0 0 13px;font-size:var(--fs-lg);font-weight:var(--fw-bold);color:var(--night-body)}
+.rc-side-lead{margin:0 0 11px;font-size:var(--fs-lg);font-weight:var(--fw-bold);color:var(--night-body)}
 
 /* 격려 카드. 그림 한 장이 판 전체다 — 그림에 이미 테두리와 빛이 있어서 판의
    여백을 줄이고 유리 테두리도 걷는다. 둘 다 있으면 테두리가 두 겹으로 보인다. */
-.rc-cheer{padding:10px 10px 12px;background:none;border-color:transparent;box-shadow:none}
+.rc-cheer{padding:8px 8px 10px;background:none;border-color:transparent;box-shadow:none}
 .rc-cheer-card{display:block;width:100%;height:auto;border-radius:14px}
 .rc-cheer-say{
-  margin:10px 2px 0;padding:10px 13px;border-radius:12px;
+  margin:8px 2px 0;padding:8px 12px;border-radius:11px;
   background:rgba(255,255,255,.07);border:1px solid var(--night-line);
   font-size:var(--fs-md);line-height:1.6;font-weight:var(--fw-bold);color:var(--night-ink);
 }
@@ -201,7 +221,7 @@ body.sim-record-page .main::before{
 .rc-steps li.on .rc-step-dot{background:var(--brand);border-color:var(--brand);box-shadow:0 0 0 4px rgba(84,87,232,.22)}
 .rc-steps li b{margin-top:5px;font-size:var(--fs-lg);font-weight:var(--fw-heavy);color:var(--night-faint)}
 .rc-steps li.on b{color:#fff}
-.rc-steps li em{font-style:normal;font-size:var(--fs-sm);line-height:1.45;color:var(--night-faint)}
+.rc-steps li em{font-style:normal;font-size:var(--fs-sm);line-height:1.35;color:var(--night-faint)}
 
 /* ── 버튼 ─────────────────────────────────────────── */
 .rc-go{
@@ -244,4 +264,20 @@ body.sim-record-page .main::before{
   /* 썸네일까지 빠져 제목 · 성적 · 화살표 셋이다 */
   .rc-row{grid-template-columns:minmax(0,1fr) 78px 30px}
   .rc-steps li em{display:none}
+}
+
+/* ── 낮은 뷰포트(표시 배율 125% · 노트북) ─────────────────
+   위에서 이미 조였으므로 여기서는 한 단계만 더 간다. 목록 줄이 제일 크게 먹으므로
+   줄 높이부터 줄인다 — 줄이 여섯이면 1px 이 6px 이다. */
+@media (min-width:1281px) and (max-height:900px){
+  body.sim-record-page{
+    --rc-gap:11px;--rc-band:230px;--rc-title:30px;--rc-quote:19px;
+    --rc-fig-pad:11px;--rc-fig-ico:36px;--rc-fig-val:var(--fs-5xl);
+    --rc-row-py:6px;--rc-side-pad:12px;--page-pb:10px;
+    /* 기둥을 좁혀 격려 카드 그림을 같이 줄인다. 이 단계는 표시 배율이 125% 인
+       화면이 대부분이라, CSS 폭이 줄어도 눈에 보이는 크기는 크게 달라지지 않는다. */
+    --rc-side-w:315px;
+  }
+  .rc-thumb{height:38px}
+  .rc-name b{font-size:var(--fs-xl)}
 }

@@ -40,9 +40,6 @@ import { seasonArt } from '../sim/seasonArt'
 import '../styles/night.css'
 import '../styles/screens/sim-history.css'
 
-
-
-
 type Sort = 'RECENT' | 'BEST' | 'WORST'
 type Tab = 'ONGOING' | 'DONE'
 
