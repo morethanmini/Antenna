@@ -106,7 +106,7 @@ export const ROUTES: PageMeta[] = [
   { screen: 'D-04', element: VerifyReport, path: '/ledger/verify/report/:reportId', title: '리포트 검산', access: 'user', mode: 'insight', nav: 'ledger', story: 'ANT-CHAIN-17' },
 
   // ── E. 채널 · 구독 ───────────────────────────────────
-  { screen: 'E-01', element: Ranking, path: '/rankings', title: '주가 예측 랭킹', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'predictor-market-page is-night', story: 'ANT-FE-RANKING' },
+  { screen: 'E-01', element: Ranking, path: '/rankings', title: '주가 예측 랭킹', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'predictor-market-page', story: 'ANT-FE-RANKING' },
   /* 모의투자 랭킹(/sim/rankings)은 뺐다(2026-09-16). REPLAY 트랙 누적 순위인데,
      "한 시즌 안의 순위는 G-07 시즌 리더보드가 이미 보여 준다" 가 그때의 근거였다.
 

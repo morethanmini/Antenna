@@ -261,16 +261,8 @@ body.is-night:not(.is-glass) .main-inner > header h1{color:var(--night-ink)}
 body.is-night:not(.is-glass) .page-head p,
 body.is-night:not(.is-glass) .main-inner > header p{color:var(--night-body)}
 
-/* 주가 예측 랭킹은 **자기 그림이 있다.** 화면을 꽉 채우는 무대(.rk-sky-bg)가 있어
-   그 위에 도시를 또 깔면 그림 위에 그림이 된다 — 도시는 여기 깔지 않고 그 그림을
-   어둡게 눕힌다. 밝은 파스텔 그대로 두면 흰 글자가 통째로 묻힌다.
-   그림을 지우지 않는 이유는 그 화면의 세계관이라서다(ranking.css 머리말). */
-body.predictor-market-page.is-night .rk-sky-bg{
-  filter:brightness(.5) saturate(.85) contrast(1.05);
-}
-/* 이벤트 탭은 그림 대신 색만 깐다 — 그 색도 같이 눕힌다 */
-body.predictor-market-page.is-night .rk-page.is-event .rk-sky{
-  background:linear-gradient(180deg, #14123a 0%, #100e2e 40%, var(--night-0) 100%);
-}
-/* 화면 바탕이 어두워졌으니 하늘 상자 바깥도 같은 색이어야 경계가 안 생긴다 */
-body.predictor-market-page.is-night .rk-sky{background-color:var(--night-0)}
+/* 주가 예측 랭킹은 밤으로 바꾸지 않는다(팀 결정 2026-09-22).
+   이 화면은 제 세계를 이미 갖고 있다 — 화면을 꽉 채우는 무대 그림(.rk-sky-bg)이
+   밝은 파스텔이고, 시상대와 캐릭터가 그 위에 선다. 어둡게 눕혀 보았지만 그림이
+   말하려던 밝은 분위기가 죽었다. 상단바까지 밝은 판으로 둔다 — 옆 화면과 결이
+   달라지지만, 이 화면은 원래 다른 화면이다. */
