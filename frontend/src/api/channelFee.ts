@@ -78,5 +78,9 @@ export function isValidFee(text: string) {
 export function formatDay(iso: string) {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return iso
-  return d.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })
+  /* 끝 마침표를 뗀다 — ko-KR 형식이 '2026. 09. 22.' 로 끝나서 조사가 붙으면
+     '2026. 09. 22.부터' 가 된다. 홀로 설 때(변경 이력 칸)도 없는 편이 깔끔하다. */
+  return d
+    .toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })
+    .replace(/\.$/, '')
 }

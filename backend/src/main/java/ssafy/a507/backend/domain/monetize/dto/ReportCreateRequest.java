@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import ssafy.a507.backend.common.security.SignatureScope;
 import ssafy.a507.backend.common.security.WalletSigned;
+import ssafy.a507.backend.common.validation.NoProfanity;
 import ssafy.a507.backend.domain.prediction.commit.CommitHashes;
 
 /**
@@ -24,10 +25,12 @@ public record ReportCreateRequest(
 
         @NotBlank(message = "제목을 입력해야 합니다.")
         @Size(max = 100, message = "제목은 100자를 넘을 수 없습니다.")
+        @NoProfanity
         String title,
 
         @NotBlank(message = "본문을 입력해야 합니다.")
         @Size(max = 20000, message = "본문은 20000자를 넘을 수 없습니다.")
+        @NoProfanity
         String body,
 
         @NotNull(message = "공개 여부를 지정해야 합니다.")

@@ -252,8 +252,9 @@ export default function PredictDetail() {
           <section className="pd-card">
             <h2>조작 불가 근거</h2>
             <p className="pd-hint">
-              등록 시점에 남긴 값입니다. 커밋 해시는 서버 salt 와 결합해 만들어지며,
-              체인 기록이 확정되면 블록체인에 올라가 뒤에서 바꿀 수 없습니다.
+              등록하는 순간 남은 값입니다. 커밋 해시는 이 브라우저가 예측 내용으로
+              계산한 값이라, 한 글자만 달라져도 값이 달라집니다. 체인 기록이 확정되면
+              블록체인에 올라가 누구도 고칠 수 없습니다.
             </p>
 
             <dl className="pd-proof">

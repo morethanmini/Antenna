@@ -533,14 +533,14 @@ export default function StockTable({ filter, setFilter }: Props) {
                      onChange={(e) => apply({
                        ...draft, hasOpenPrediction: e.target.checked || undefined,
                      })} />
-              내가 진행 중인 예측 있음
+              내 예측 진행 종목
             </label>
             <label className="st-check">
               <input type="checkbox" checked={draft.watchedOnly ?? false}
                      onChange={(e) => apply({
                        ...draft, watchedOnly: e.target.checked || undefined,
                      })} />
-              관심 종목만 보기
+              관심 종목
             </label>
           </fieldset>
 

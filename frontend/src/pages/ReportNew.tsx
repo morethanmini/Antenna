@@ -38,6 +38,7 @@ import { errorText } from '../components/state/errorText'
 import FieldError from '../components/state/FieldError'
 import ImageUploadModal from '../components/upload/ImageUploadModal'
 import Markdown from '../components/report/Markdown'
+import { containsProfanity, PROFANITY_MESSAGE } from '../text/profanity'
 import '../styles/screens/report-new.css'
 
 /* 서버는 boolean 하나를 받지만 화면은 "고르지 않음"을 구분해야 한다.
@@ -73,6 +74,8 @@ export default function ReportNew() {
   const [signing, setSigning] = useState(false)
   const [linking, setLinking] = useState(false)
   const [error, setError] = useState<ApiError | null>(null)
+  /** 화면 선검사에서 비속어가 걸린 입력란. 서버 400 의 fieldError 와 같은 자리에 붙인다 */
+  const [profanityField, setProfanityField] = useState<'title' | 'body' | null>(null)
   /* 지갑 쪽 실패는 서버 오류가 아니라 ApiError 가 아니다 — 거부·확장 미설치 등.
      ApiError 자리에 억지로 끼우지 않고 따로 문장 하나를 둔다(PredictTab 과 같은 판단). */
   const [localMsg, setLocalMsg] = useState<string | null>(null)
@@ -131,6 +134,7 @@ export default function ReportNew() {
   function edited() {
     releaseIdempotencyKey(REPORT_CREATE_SCOPE)
     setError(null)
+    setProfanityField(null)
   }
 
   /**
@@ -148,6 +152,13 @@ export default function ReportNew() {
 
     if (!hasWallet() || !user?.walletLinked) {
       setLinking(true)
+      return
+    }
+    /* 비속어는 지갑 서명 **전에** 거른다 (ANT-COMMUNITY-09). 제목은 서명 payload 에, 본문은 봉인 해시에
+       들어가서 서버가 글자를 고쳐 줄 수 없다 — 400 을 받으면 서명부터 다시 해야 하니 여기서 튕긴다 */
+    const bad = containsProfanity(title) ? 'title' : containsProfanity(body) ? 'body' : null
+    if (bad) {
+      setProfanityField(bad)
       return
     }
     /* 서명으로 가기 전에 한 번 묻는다(2026-09-19, QA 09-18). 발행은 되돌릴 수 없는데 버튼 하나로
@@ -221,10 +232,11 @@ export default function ReportNew() {
               onChange={(e) => { setTitle(e.target.value); edited() }}
               maxLength={TITLE_MAX}
               disabled={submitting}
-              aria-invalid={fieldError === 'title'}
+              aria-invalid={fieldError === 'title' || profanityField === 'title'}
               placeholder="무엇에 대한 리포트인가요?"
             />
             {fieldError === 'title' && <FieldError>제목을 다시 확인해 주세요.</FieldError>}
+            {profanityField === 'title' && <FieldError>{PROFANITY_MESSAGE}</FieldError>}
           </div>
 
           <div className="rn-field">
@@ -272,7 +284,7 @@ export default function ReportNew() {
                 maxLength={BODY_MAX}
                 disabled={submitting}
                 rows={16}
-                aria-invalid={fieldError === 'body'}
+                aria-invalid={fieldError === 'body' || profanityField === 'body'}
                 placeholder={'근거와 판단을 적어 주세요.\n\n마크다운을 씁니다 — ## 제목, **굵게**, - 목록.\n엔터는 그대로 줄바꿈이 됩니다.'}
               />
             ) : (
@@ -290,6 +302,7 @@ export default function ReportNew() {
 
             {tooLong && <FieldError>본문이 상한에 닿아 이미지를 넣지 못했습니다.</FieldError>}
             {fieldError === 'body' && <FieldError>본문을 다시 확인해 주세요.</FieldError>}
+            {profanityField === 'body' && <FieldError>{PROFANITY_MESSAGE}</FieldError>}
           </div>
 
           {/* 두 선택지를 반드시 노출한다. 기본값을 미리 골라 두지 않는다

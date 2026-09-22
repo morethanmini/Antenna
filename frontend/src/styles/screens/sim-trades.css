@@ -121,6 +121,10 @@
   padding:0 13px 2px;background:none;
 }
 .st-row-head span{color:var(--faint);font-size:var(--fs-xs);font-weight:var(--fw-bold)}
+/* 앞 세 칸은 데이터가 왼쪽 정렬이다 — 게임일·구분은 .st-day·.st-side 라 위 규칙에서
+   빠지고, 종목은 <b> 라 span 을 겨냥한 그 규칙에 아예 안 걸린다. 그런데 머리줄은 셋 다
+   맨 span 이라 혼자 오른쪽에 서 있었다. 위 규칙과 같은 명시도로 맞춰 뒤에서 덮는다. */
+.st-row.st-row-head > span:nth-child(-n+3){text-align:left}
 
 .st-day{color:var(--brand-ink);font-size:var(--fs-md);font-weight:var(--fw-heavy)}
 .st-side{

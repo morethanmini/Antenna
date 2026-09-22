@@ -1,7 +1,18 @@
 /* 확인·알림 창 공용 스타일. M-08 세션 만료에서 시작했고 [ANT-FE-SESSION]
    ConfirmDialog(로그아웃 확인 등)가 같은 se-* 를 쓴다. 같은 자리에 같은 크기로
    뜨는 같은 종류의 창이라 스타일시트를 나누면 둘이 조금씩 어긋난다.
-   설계서 §3 M · §6 */
+   설계서 §3 M · §6
+
+   ── 판 색을 토큰에 맡기지 않는다(2026-09-22) ─────────────
+   원래 --surface 를 썼는데, 밤 화면(body.is-night.is-glass)에서 그 토큰이
+   rgba(255,255,255,.07) 로 뒤집힌다 — 유리 카드용 값이다. 그래서 로그아웃 확인
+   창이 **거의 투명하게** 떠서 뒤 화면의 그림과 글자가 그대로 비쳤고, 제목도
+   설명도 읽히지 않았다(실측 2026-09-22).
+
+   이 창은 body 로 포털되어 **어느 화면 위에도** 뜬다. 어느 페이지의 토큰이
+   물려올지 알 수 없으므로 제 색을 제가 들고 있어야 한다. 아래에서 밝은 판을
+   기본으로 적고, 밤 화면만 body.is-night 로 한 벌 더 덮는다 — 랭킹처럼 밝게
+   남는 화면이 아직 있어 어두운 판 하나로 통일할 수는 없다. */
 
 .se-backdrop{
   /* 다른 모달(60)보다 위다. 구독·업로드 창을 띄운 채로도 세션은 끊길 수 있고,
@@ -11,17 +22,34 @@
   padding:20px;
   background:rgba(20,20,27,.5);
 }
+body.is-night .se-backdrop{
+  background:rgba(8,5,26,.6);
+  -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
+}
 
 /* 치수는 M-01 wallet-link · M-03 subscribe 와 같다 — 잇달아 뜰 수 있어
    크기가 다르면 화면이 튄다. 다만 글만 있는 창이라 조금 좁힌다 */
 .se-modal{
   width:100%; max-width:400px;
-  background:var(--surface);
+  /* 토큰이 아니라 흰색이다 — 머리말 참고 */
+  background:#fff;
   border-radius:14px;
   box-shadow:0 24px 60px -20px rgba(20,20,27,.45);
   outline:none;
   display:flex; flex-direction:column;
 }
+/* 밤 화면 한 벌. 온보딩 카드와 같은 계열의 보라 판에 가는 테 하나 — 작은 창이라
+   두 겹 테·빛줄기까지 옮기지 않는다. 여기서 필요한 것은 "읽힌다" 뿐이다. */
+body.is-night .se-modal{
+  background:linear-gradient(150deg,#241d57 0%,#1b1542 55%,#141030 100%);
+  border:1px solid rgba(190,176,255,.34);
+  box-shadow:
+    0 26px 60px -20px rgba(0,0,0,.8),
+    0 0 22px rgba(110,100,255,.28),
+    inset 0 1px 0 rgba(255,255,255,.12);
+}
+body.is-night .se-body h2{color:#fff}
+body.is-night .se-sub{color:#cdc5ee}
 
 .se-body{ padding:22px 20px 4px; }
 
@@ -42,6 +70,8 @@
   font-size:var(--fs-md); line-height:1.6; color:var(--body);
 }
 .se-note b{ font-weight:var(--fw-bold); color:var(--ink); }
+body.is-night .se-note{background:rgba(255,255,255,.07); color:#cdc5ee}
+body.is-night .se-note b{color:#fff}
 
 .se-actions{
   display:flex; justify-content:flex-end; gap:8px;
@@ -52,7 +82,7 @@
   display:inline-flex; align-items:center; justify-content:center;
   height:36px; padding:0 15px;
   border:1px solid var(--rule); border-radius:9px;
-  background:var(--surface); color:var(--ink);
+  background:#fff; color:var(--ink);
   font-size:var(--fs-base); font-weight:var(--fw-bold); text-decoration:none;
   cursor:pointer;
 }
@@ -61,6 +91,22 @@
 .se-btn.solid:hover{ filter:brightness(.96); }
 /* 되돌릴 수 없는 행동. 브랜드색 확인 버튼과 같은 자리에 서므로 색으로만 가른다 */
 .se-btn.solid.danger{ background:var(--danger); }
+
+/* 밤 화면의 버튼. 취소는 유리, 확인은 채움이다 — 밝은 판에서와 같은 무게 차이를
+   어두운 판의 재료로 다시 만든다. 빨강도 한 단 밝힌다(원래 값은 어두운 판에서
+   가라앉아 "되돌릴 수 없다" 가 전해지지 않는다). */
+body.is-night .se-btn{
+  border-color:rgba(190,176,255,.3); background:rgba(255,255,255,.07); color:#f4f1ff;
+}
+body.is-night .se-btn:hover{ background:rgba(255,255,255,.14); }
+body.is-night .se-btn.solid{
+  background:linear-gradient(92deg,#8b7dff 0%,#6d6bff 100%);
+  box-shadow:0 0 14px rgba(139,125,255,.45), inset 0 1px 0 rgba(255,255,255,.26);
+}
+body.is-night .se-btn.solid.danger{
+  background:linear-gradient(92deg,#ff6b6b 0%,#e4485c 100%);
+  box-shadow:0 0 14px rgba(255,107,107,.4), inset 0 1px 0 rgba(255,255,255,.26);
+}
 
 @media (max-width:560px){
   .se-actions{ flex-direction:column-reverse; }
