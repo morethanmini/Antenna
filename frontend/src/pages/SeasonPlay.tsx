@@ -627,7 +627,7 @@ export default function SeasonPlay() {
                 자동으로는 다시 뜨지 않으므로 여는 자리를 화면 안에 둔다 */}
             <p>
               연습 시즌 · 종목 {s.tickerCount}개
-              {' · '}
+              {' '}
               <button type="button" className="sp-coach-again" onClick={() => setCoach(true)}>
                 화면 안내 보기
               </button>

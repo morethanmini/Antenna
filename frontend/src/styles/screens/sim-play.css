@@ -792,6 +792,10 @@ body.sim-play-page .spc-card{
 body.sim-play-page .main::before{
   content:"";position:absolute;inset:0 0 auto;height:300px;z-index:-1;pointer-events:none;
   background:
+    /* 왼쪽 그늘. 제목과 소제목이 앉는 자리다 — 사진에 구름·불빛이 밝게 지나가는
+       구간이 있어 글자 그림자만으로는 자리마다 읽히는 정도가 달라진다.
+       오른쪽(DAY 진행 쪽)은 열어 두어 사진이 살아 있게 한다. */
+    linear-gradient(100deg, rgba(8,9,20,.9) 0%, rgba(8,9,20,.72) 26%, rgba(8,9,20,.16) 60%, transparent 80%),
     linear-gradient(180deg, rgba(13,12,34,.52) 0%, rgba(13,12,34,.38) 45%, rgba(13,12,34,.9) 100%),
     url("/assets/page_train2/city-skyline.webp") center top / cover no-repeat;
   mask:linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
@@ -802,8 +806,10 @@ body.sim-play-page .main::before{
 body.sim-play-page .sp-crumb{color:var(--night-body)}
 body.sim-play-page .sp-crumb a:hover{color:#fff}
 body.sim-play-page .sp-crumb i{color:var(--night-faint)}
-body.sim-play-page .sp-title h1{color:var(--night-ink);text-shadow:0 2px 14px rgba(0,0,0,.45)}
-body.sim-play-page .sp-title p{color:var(--night-body)}
+body.sim-play-page .sp-title h1{color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.7)}
+/* 소제목은 흰색을 조금만 낮춘다. --night-body(#bdb8dc)는 어두운 판 위에서는
+   맞는 값이지만 사진 위에서는 밝은 구간을 만나면 그대로 묻힌다. */
+body.sim-play-page .sp-title p{color:rgba(255,255,255,.92);text-shadow:0 1px 10px rgba(0,0,0,.7)}
 body.sim-play-page .sp-dayof{color:var(--night-body)}
 
 /* DAY 알약과 진행 바. 밝은 화면에서는 옅은 보라 판이었는데 어두운 바닥에서는
@@ -902,14 +908,28 @@ body.sim-play-page .spc-card::before{background:#fff}
    밤에서만 알약 하나로 세운다 — 옆 설명과 같은 줄에 있으므로 크기는 그대로 두고
    테두리와 옅은 채움으로 "누르는 것" 만 말한다. */
 body.sim-play-page .sp-coach-again{
-  display:inline-flex;align-items:center;
-  margin-left:2px;padding:0 9px;
-  border:1px solid rgba(255,255,255,.3);border-radius:999px;
-  background:rgba(255,255,255,.13);
+  display:inline-flex;align-items:center;gap:5px;
+  margin-left:4px;padding:1px 11px 1px 9px;
+  border:1px solid rgba(186,173,255,.55);border-radius:999px;
+  /* 연보라 유리. 위쪽이 밝고 아래로 가라앉아 볼록해 보인다 — 밤 화면의 다른
+     누르는 것들과 같은 방향이다(안쪽 윗선의 빛). */
+  background:linear-gradient(180deg, rgba(167,152,255,.42) 0%, rgba(124,108,232,.3) 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45), 0 0 14px -4px rgba(150,130,255,.75);
   color:#fff;font-weight:var(--fw-bold);
-  transition:background .14s,border-color .14s;
+  transition:background .16s, border-color .16s, box-shadow .16s;
+}
+/* 앞의 작은 빛. 눌러 보라고 눈길을 한 번 끌되, 계속 깜빡이지는 않는다 */
+body.sim-play-page .sp-coach-again::before{
+  content:"";flex:none;width:5px;height:5px;border-radius:50%;
+  background:#efeaff;box-shadow:0 0 7px 1px rgba(200,186,255,.95);
 }
 body.sim-play-page .sp-coach-again:hover{
-  background:rgba(255,255,255,.24);border-color:rgba(255,255,255,.5);text-decoration:none;
+  background:linear-gradient(180deg, rgba(190,178,255,.62) 0%, rgba(140,124,245,.46) 100%);
+  border-color:rgba(214,205,255,.85);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.6), 0 0 20px -3px rgba(168,150,255,.9);
+  text-decoration:none;
 }
-body.sim-play-page .sp-coach-again:focus-visible{outline:2px solid #fff;outline-offset:2px}
+body.sim-play-page .sp-coach-again:active{
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.35);
+}
+body.sim-play-page .sp-coach-again:focus-visible{outline:2px solid #cfc6ff;outline-offset:2px}
