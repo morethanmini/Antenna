@@ -43,14 +43,6 @@ const JOBS = [
   [path.join(DIR, 'src-hero-eyebrow.png'), path.join(DIR, 'hero-eyebrow.webp'), 760, 0.92, true],
   [path.join(DIR, 'src-hero-cta.png'), path.join(DIR, 'hero-cta.webp'), 520, 0.92, true],
 
-  /* 배경 장식 셋. 시안(prototype.png)에서 하늘에 떠 있는 조각들인데, 낱개 모음
-     한 장(09_04_44 (10))에 같이 그려져 있다. 빛이 서로 닿아 자동으로는 안 갈라져
-     자리를 적어 오려낸다 — 오린 뒤 trim 이 빈칸을 다시 다듬으므로 네모가 조금
-     넉넉해도 결과는 딱 맞는다. 원본 1448x1086 기준. */
-  [path.join(DIR, 'ChatGPT Image 2026년 9월 22일 오전 09_04_44 (10).png'), path.join(DIR, 'deco-airship.webp'), 420, 0.9, true, [60, 20, 610, 350]],
-  [path.join(DIR, 'ChatGPT Image 2026년 9월 22일 오전 09_04_44 (10).png'), path.join(DIR, 'deco-globe.webp'), 420, 0.9, true, [720, 130, 470, 500]],
-  [path.join(DIR, 'ChatGPT Image 2026년 9월 22일 오전 09_04_44 (10).png'), path.join(DIR, 'deco-billboard.webp'), 220, 0.9, true, [1225, 10, 215, 540]],
-
   [path.join(DOCS, 'illustration-coins-v2.png'), path.join(UI, 'coins.webp'), 520, 0.9],
   [path.join(DOCS, 'illustration-watchlist-v2.png'), path.join(UI, 'empty-watchlist.webp'), 380, 0.9],
   [path.join(DOCS, 'illustration-predictors-v2.png'), path.join(UI, 'empty-predictors.webp'), 380, 0.9],
@@ -118,6 +110,13 @@ await send('Page.enable')
 await send('Runtime.enable')
 
 for (const [i, [src, out, width, quality, trim, rect]] of JOBS.entries()) {
+  /* 원본이 없으면 건너뛴다. 큰 PNG 는 굽고 지우는 것이 방침이라(레포에 4MB 를
+     남길 이유가 없다) 이 목록에는 이미 없는 원본이 섞인다 — 죽는 대신 지나간다.
+     다시 구워야 하면 그 원본만 제자리에 두고 이 스크립트를 돌리면 된다. */
+  if (!fs.existsSync(src)) {
+    console.log(`건너뜀  ${path.basename(out).padEnd(22)} 원본이 없다 (${path.basename(src)})`)
+    continue
+  }
   const url = `http://127.0.0.1:${PORT}/${i}`
   const data = await evalJs(`(async () => {
     const img = new Image()

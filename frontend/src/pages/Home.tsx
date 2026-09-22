@@ -219,19 +219,6 @@ function Hero() {
       <img className="hm-hero-art is-scout" src="/assets/page_home/hero-scout.webp" alt=""
            aria-hidden="true" />
 
-      {/* 하늘에 떠 있는 장식 셋(시안 prototype.png). 낱개 모음 한 장에서 오려 구웠다
-          — scripts/bake-home-night.mjs 의 rect 를 보라.
-
-          **전부 장식이고 클릭을 받지 않는다.** 읽어 주는 기기에서도 건너뛴다 —
-          전광판의 "SMALL INSIGHT BIG CHANGE" 까지 읽히면 화면의 첫 문장이
-          엉뚱한 표어가 된다.
-
-          좁은 화면에서는 CSS 가 감춘다. 글자 자리를 먼저 내주어야 해서다. */}
-      <span className="hm-deco" aria-hidden="true">
-        <img className="hm-deco-airship" src="/assets/page_home/deco-airship.webp" alt="" />
-        <img className="hm-deco-globe" src="/assets/page_home/deco-globe.webp" alt="" />
-        <img className="hm-deco-board" src="/assets/page_home/deco-billboard.webp" alt="" />
-      </span>
     </section>
   )
 }
@@ -692,16 +679,6 @@ function QuickLinks() {
   )
 }
 
-/* 히어로와 카드 줄 사이의 띠. 시안에서는 강을 건너는 다리 위에 적힌 글귀다.
-   그림을 잘라 쓰지 않고 글자로 둔다 — 잘라 두면 글씨가 흐려지고 번역도 못 한다.
-   장식이라 읽어 주는 기기에서는 건너뛴다. */
-function BridgeBand() {
-  return (
-    <p className="hm-bridge" aria-hidden="true">
-      <span>IDEAS</span><i>›</i><span>BETTER INVESTORS</span><i>›</i><span>A BRIGHTER TOMORROW</span>
-    </p>
-  )
-}
 
 export default function Home() {
   /* M-09 온보딩 튜토리얼은 셸(Layout)이 띄운다. 홈에만 걸면 딥링크로 막혔다가
@@ -719,8 +696,6 @@ export default function Home() {
             <Sponsored />
             <QuickLinks />
           </div>
-          {/* 두 칸을 가로지르는 띠 */}
-          <BridgeBand />
           {/* 시안의 가운데 줄은 **셋**이다 — 시장 현황이 넓게 왼쪽, 대회 배너가
               가운데 좁게, 내 자산이 오른쪽. 2단 격자 안에서 두 칸을 가로지르고
               제 안에서 다시 셋으로 나눈다. */}

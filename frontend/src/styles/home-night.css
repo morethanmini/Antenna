@@ -364,21 +364,6 @@ body.insight-home.is-night .hm-trio{
   align-items:stretch;
 }
 
-/* ── 다리 띠 ────────────────────────────────────────────────
-   시안에서 강을 건너는 다리 위에 적힌 글귀다. 카드가 아니라 **배경 위의 글자**라
-   판을 깔지 않는다 — 깔면 카드 한 장이 더 생겨 줄이 다섯이 된다. */
-body.insight-home.is-night .hm-bridge{
-  grid-column:1 / -1;
-  display:flex; align-items:center; justify-content:center; gap:14px;
-  margin:2px 0; padding:9px 16px;
-  color:#d7e2ff; font-size:var(--fs-base); font-weight:var(--fw-bold);
-  letter-spacing:.14em; text-transform:uppercase; white-space:nowrap;
-  overflow:hidden; text-overflow:ellipsis;
-  text-shadow:0 0 14px rgba(140,175,255,.55);
-}
-body.insight-home.is-night .hm-bridge i{
-  font-style:normal; color:#8fb3ff; opacity:.8;
-}
 
 /* ── 지름길 타일 셋 ─────────────────────────────────────────
    시안은 카드 한 장 안의 칸이 아니라 따로 선 유리 타일 셋이다(에셋 4).
@@ -509,32 +494,6 @@ body.insight-home.is-night .hm-cta.is-art:focus-visible{outline:2px solid #fff; 
   body.insight-home.is-night .hm-cta.is-art:hover{transform:none}
 }
 
-/* ── 하늘 장식 셋 ───────────────────────────────────────────
-   히어로 상자 안에 절대 위치로 띄운다. 히어로가 overflow:hidden 이라 밖으로는
-   못 나가고, z-index:-1 로 글자 뒤에 선다.
-   비율은 창 기준(vw)으로 잰다 — 히어로 칸은 격자가 정하는데 그 폭을 퍼센트로
-   물으면 칸과 서로를 물어보는 고리가 된다(개미에서 한 번 겪었다). */
-body.insight-home.is-night .hm-deco{
-  position:absolute; inset:0; z-index:-1; pointer-events:none; overflow:hidden;
-}
-body.insight-home.is-night .hm-deco img{position:absolute; height:auto}
-/* 비행선 — 시안에서 도시 위를 가로지른다 */
-body.insight-home.is-night .hm-deco-airship{
-  top:6%; right:20%; width:clamp(120px, 13vw, 210px); opacity:.92;
-}
-/* 지구본 — 오른쪽 아래에서 반쯤 걸친다 */
-body.insight-home.is-night .hm-deco-globe{
-  right:-4%; bottom:-28%; width:clamp(140px, 16vw, 260px); opacity:.85;
-}
-/* 전광판 — 오른쪽 끝. 세로로 길어 히어로 높이를 넘지 않게 잡는다 */
-body.insight-home.is-night .hm-deco-board{
-  top:-6%; right:1%; width:clamp(46px, 5vw, 78px); opacity:.9;
-}
-/* 좁아지면 글자가 먼저다. 1180px 아래에서는 걷는다 */
-@media (max-width:1180px){
-  body.insight-home.is-night .hm-deco{display:none}
-}
-
 /* ── 히어로 세로 간격 ───────────────────────────────────────
    그림의 투명 여백을 굽는 단계에서 잘라냈다(손글씨는 높이의 69%가 빈칸이었다).
    이제 CSS 값이 곧 눈에 보이는 간격이라 시안처럼 바짝 붙인다. */
@@ -542,3 +501,11 @@ body.insight-home.is-night .hm-hello{margin:0 0 10px}
 body.insight-home.is-night .hm-hero h1{margin:0}
 body.insight-home.is-night .hm-hero-sub{margin:8px 0 0}
 body.insight-home.is-night .hm-cta.is-art{margin-top:8px}
+
+/* ── 카드 사이 여백 ─────────────────────────────────────────
+   밝은 판에서는 16px 이면 넉넉했다. 밤 카드는 테 바깥으로 빛이 다섯 겹 퍼지는데
+   (0 0 0 5px · 7px · 0 0 26px …) 그 빛이 이웃 카드 자리까지 번져, 같은 16px 인데도
+   카드끼리 맞닿은 것처럼 보였다. 빛이 퍼지는 만큼 더 벌린다. */
+body.insight-home.is-night .hm-grid{gap:30px}
+body.insight-home.is-night .hm-trio{gap:30px}
+body.insight-home.is-night .hm-stack{gap:22px}
