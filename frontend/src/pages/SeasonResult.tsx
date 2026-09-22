@@ -219,13 +219,13 @@ export default function SeasonResult() {
   const fromPeak = peak > 0 ? ((sim.totalAsset - peak) / peak) * 100 : 0
   const cashWeight = sim.totalAsset > 0 ? (sim.cash / sim.totalAsset) * 100 : 100
 
-  /* 한 줄 요약. AI 가 쓴 문장이 아니라 위 값들로 만든 사실 문장이다 —
-     목업을 넣지 않기로 했으므로 없는 리포트를 흉내 내지 않는다. */
+  /* 접힌 줄에 싣는 요약. 펴지 않아도 결론이 보여야 하는 자리다.
+     문장으로 쓰지 않는다 — 이 화면은 값을 칸으로 세우는 화면이라 요약도 같은 모양이어야
+     하고, 문장으로 만들면 소수 자리를 따로 굴리게 되어 펴면 나오는 '최고점 대비 마감'
+     과 다른 수가 뜬다(5.5% 대 -5.45%). 같은 rate() 를 쓴다. */
   const oneLine =
-    `${byTicker.length}종목을 ${sim.trades.length}회 매매해 ${rate(sim.pnlRate)} 로 마쳤습니다.` +
-    (Math.abs(fromPeak) >= 0.05
-      ? ` 최고점보다 ${Math.abs(fromPeak).toFixed(1)}% 낮습니다.`
-      : ' 최고점에서 끝났습니다.')
+    `${byTicker.length}종목 · ${sim.trades.length}회 매매 · ${rate(sim.pnlRate)}` +
+    (Math.abs(fromPeak) >= 0.05 ? ` · 최고점 대비 ${rate(fromPeak)}` : ' · 최고점 마감')
 
   const sorted = [...sim.positions].sort((a, b) => b.value - a.value)
   const top = sorted.slice(0, PIE_TOP)
@@ -591,8 +591,8 @@ export default function SeasonResult() {
                     )}
                   </div>
                   <p className="rs-note">
-                    시장 대비는 <b>이 시즌 종목을 똑같이 나눠 사서 끝까지 들고 있었다면</b>과
-                    견준 것입니다. 코스피 지수가 아니라 그 시즌 종목으로 만든 기준입니다.
+                    시장 대비의 기준은 <b>이 시즌 종목을 똑같이 나눠 사서 끝까지 들고
+                    있었을 때</b>입니다. 코스피 지수가 아닙니다.
                   </p>
                 </>
               )}
