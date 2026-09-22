@@ -179,7 +179,35 @@ button{border:0;background:none;cursor:pointer}
 .navbar{
   position:fixed;inset:0 0 auto 0;height:var(--topbar-h);z-index:30;
   display:flex;align-items:center;gap:18px;padding:0 20px;
-  background:var(--surface);border-bottom:1px solid var(--nav-line);
+  /* 채움과 아래 경계는 ::before 가 그린다 — 아래를 흐리게 지워야 해서다 */
+  background:none;border-bottom:0;
+}
+
+/* ── 바 아래를 그러데이션으로 지운다(2026-09-22) ─────────────
+   전에는 아래에 1px 실선이 있었다. 선은 "여기까지가 바" 를 분명히 하지만, 본문이
+   그 선 밑으로 지나가면 바와 화면이 **다른 두 판**으로 갈린다. 배경이 그림인 화면
+   (밤 홈의 도시)에서 특히 두드러졌다 — 도시가 선에서 잘려 붙여 놓은 띠가 된다.
+
+   그래서 선을 걷고 채움을 아래로 갈수록 지운다. 글자와 버튼이 앉는 위쪽 절반은
+   그대로 불투명하고, 아래로 내려가며 사라져 본문에 녹는다.
+
+   **바 높이보다 아래로 22px 더 내려 그린다.** 72px 에서 딱 끊으면 지워지다 만
+   자리에서 다시 경계가 생긴다 — 녹을 자리를 바 밖에 마련해 준다.
+
+   **::before 로 옮긴 이유.** 블러까지 함께 지워야 해서다. 마스크를 바 자체에
+   걸면 로고·메뉴 글자까지 같이 흐려진다.
+   덤으로 backdrop-filter 가 바에서 내려간다 — filter 가 걸린 상자는 그 안의
+   position:fixed 자손에게 컨테이닝 블록이 되는데(ConfirmDialog 머리말), 이제
+   그 상자가 내용이 없는 ::before 라 아무도 갇히지 않는다. */
+.navbar::before{
+  content:'';position:absolute;inset:0 0 -22px;z-index:-1;pointer-events:none;
+  /* 지원하지 않는 브라우저용 대비책. 알파로만 지운다.
+     **color-mix 를 쓰지 않는다** — backdrop-filter 가 없는 브라우저는 그것도 없을
+     확률이 높고, 값이 무효가 되면 이 줄이 통째로 버려져 바에 배경이 사라진다.
+     밤 화면의 색은 night.css 가 같은 자리를 덮어쓴다. */
+  background:linear-gradient(180deg,
+    rgba(255,255,255,.97) 0%, rgba(255,255,255,.95) 52%,
+    rgba(255,255,255,.5) 78%, rgba(255,255,255,0) 100%);
 }
 /* **바를 반투명 프로스트로 둔다(2026-09-17).** 위의 불투명 흰색은 지원하지 않는
    브라우저용 대비책이다.
@@ -193,10 +221,14 @@ button{border:0;background:none;cursor:pointer}
    재료와 같은 이유다 — 블러만 걸면 비친 색이 잿빛으로 바래서, 채도를 되살려야
    유리 너머로 본 색이 된다. */
 @supports (backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px)){
-  .navbar{
+  /* 채움은 고르게 깔고 **마스크가 지운다** — 알파 그러데이션만 쓰면 블러는 끝까지
+     고르게 남아, 채움이 사라진 자리에서 흐려진 띠가 도로 경계가 된다. */
+  .navbar::before{
     background:rgba(255,255,255,.72);
     -webkit-backdrop-filter:blur(20px) saturate(180%);
     backdrop-filter:blur(20px) saturate(180%);
+    -webkit-mask-image:linear-gradient(180deg,#000 0%,#000 52%,rgba(0,0,0,.5) 78%,transparent 100%);
+    mask-image:linear-gradient(180deg,#000 0%,#000 52%,rgba(0,0,0,.5) 78%,transparent 100%);
   }
 }
 

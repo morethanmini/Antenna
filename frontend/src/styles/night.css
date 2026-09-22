@@ -72,14 +72,16 @@ body.is-night{
    두 판으로 갈려 경계에 가로 줄이 생겼다. 본문의 그러데이션·도시가 바 밑으로
    그대로 지나가므로(.main 은 top:0 에서 시작하고 padding-top 으로 밀린다) 알파를
    내리면 그 그림이 비쳐 한 덩어리가 된다.
-   아래 실선도 뺀다 — 비치는 바에 선을 그으면 그 선만 남아 다시 두 판이 된다.
-   대신 아주 옅은 흰 줄 하나로 바닥을 표시한다. */
-body.is-night .navbar{
-  background:rgba(18,16,44,.55);
-  border-bottom-color:rgba(255,255,255,.07);
+   아래 실선도 없다 — 비치는 바에 선을 그으면 그 선만 남아 다시 두 판이 된다.
+   바닥은 app.css 의 .navbar::before 가 그러데이션으로 지운다(2026-09-22). 여기서는
+   그 판의 색만 어두운 쪽으로 갈아 끼운다 — 지우는 모양(마스크)은 셸이 들고 있다. */
+body.is-night .navbar::before{
+  background:linear-gradient(180deg,
+    rgba(18,16,44,.55) 0%, rgba(18,16,44,.55) 52%,
+    rgba(18,16,44,.3) 78%, transparent 100%);
 }
 @supports (backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px)){
-  body.is-night .navbar{
+  body.is-night .navbar::before{
     background:rgba(18,16,44,.34);
     -webkit-backdrop-filter:blur(16px) saturate(150%);
     backdrop-filter:blur(16px) saturate(150%);
