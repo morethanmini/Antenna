@@ -208,9 +208,18 @@ body.sim-trades-page .st-note{border-top-color:var(--night-line)}
 
 /* 머리줄 버튼 둘. 채운 쪽(진행으로 가기)은 브랜드색이라 어두운 바닥에서도 읽히지만,
    테두리만 있는 쪽은 브랜드 잉크 글자라 그대로 가라앉는다 — 유리 한 겹으로 세운다. */
+/* 머리줄 버튼 둘. 모의투자의 캡슐 한 벌(--cap-*, night.css)을 쓴다 —
+   채운 쪽이 다음 걸음이고 유리 쪽이 되돌아가는 길이다. */
+body.sim-trades-page .st-go,
+body.sim-trades-page .st-back{border-radius:999px;border:0}
+body.sim-trades-page .st-go{
+  background:var(--cap-fill);box-shadow:var(--cap-edge), var(--cap-glow);
+}
+body.sim-trades-page .st-go:hover{background:var(--cap-fill-hi);box-shadow:var(--cap-edge), var(--cap-glow-hi)}
 body.sim-trades-page .st-back{
-  border-color:rgba(255,255,255,.28);background:rgba(255,255,255,.12);color:#fff;
+  background:var(--cap-glass);box-shadow:var(--cap-edge-soft);color:#fff;
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
 }
-body.sim-trades-page .st-back:hover{
-  border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.22);
-}
+body.sim-trades-page .st-back:hover{background:var(--cap-glass-hi);box-shadow:var(--cap-edge)}
+body.sim-trades-page .st-go:active,
+body.sim-trades-page .st-back:active{box-shadow:var(--cap-press)}

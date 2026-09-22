@@ -363,17 +363,19 @@ body.sim-join-page .sj-steps li{
    같은 결로 — 위가 밝은 그러데이션 + 아래로 번지는 빛 — 맞춘다. 세 화면의 "지금
    시작하기 · 새로 시작하기 · 연습 참여하기" 가 같은 버튼으로 읽혀야 한다. */
 body.sim-join-page .sj-cta{
-  background:linear-gradient(180deg,#6d6bff 0%,#5457e8 100%);
-  box-shadow:0 12px 28px -12px rgba(109,107,255,.9), inset 0 1px 0 rgba(255,255,255,.25);
+  border-radius:999px;
+  background:var(--cap-fill);
+  box-shadow:var(--cap-edge), var(--cap-glow);
 }
 body.sim-join-page .sj-cta:hover{
-  background:linear-gradient(180deg,#7b79ff 0%,#5f62f0 100%);
-  box-shadow:0 16px 32px -12px rgba(109,107,255,1), inset 0 1px 0 rgba(255,255,255,.3);
+  background:var(--cap-fill-hi);
+  box-shadow:var(--cap-edge), var(--cap-glow-hi);
 }
+body.sim-join-page .sj-cta:active{box-shadow:var(--cap-press)}
 /* 누를 수 없는 상태는 반대로 빛을 뺀다 — 빛이 남으면 꺼진 버튼이 눌릴 것처럼 보인다 */
 body.sim-join-page .sj-cta.is-off,
 body.sim-join-page .sj-cta.is-off:hover{
-  background:rgba(255,255,255,.07);box-shadow:none;color:var(--night-faint);
+  background:rgba(255,255,255,.07);box-shadow:none;color:var(--night-faint);border-radius:999px;
 }
 
 /* 브랜드 보라(#5457e8)를 쓰던 작은 글자·아이콘. 버튼 채움처럼 넓은 면에서는

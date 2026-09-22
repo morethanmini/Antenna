@@ -118,7 +118,7 @@ function Hero({ lead, practice, ongoing, done, startAt, myError, myLoading, onRe
             말을 그대로 쓴다. 강조는 "순간" 에 건다 — 이 화면이 파는 것은 기간이
             아니라 그 며칠이다. */}
         <h1 className="sh-title" id="sh-hero-h">
-          모의투자로 역사적인 <em>순간</em>을
+          <em>모의투자</em>로 역사적인 <em>순간</em>을
           <br />
           연습해보세요
         </h1>
@@ -203,6 +203,12 @@ function Hero({ lead, practice, ongoing, done, startAt, myError, myLoading, onRe
           )}
         </dl>
       </aside>
+
+      {/* 연습이 어떤 것인지 말하는 네 줄. 한동안 화면 맨 아래에 판 하나로 따로 서
+          있었는데, 주제 카드를 다 보고 내려간 뒤에야 나와서 "무엇을 하는 곳인지"
+          를 제일 늦게 말했다. 히어로 바닥으로 올려 제목 · 버튼과 한 덩어리로
+          읽히게 한다(2026-09-23). 판을 걷었으므로 높이도 그만큼 줄었다. */}
+      <Facts practice={practice} />
     </section>
   )
 }
@@ -299,7 +305,7 @@ function Facts({ practice }: { practice: OpenRun[] | undefined }) {
         )}
         <li><ClockIcon /><span>각기 다른 시기와 시장 상황</span></li>
         {cash !== undefined && (
-          <li><CoinsIcon /><span>가상의 <b className="num">{manwon(cash)}</b>으로 진행</span></li>
+          <li><CoinsIcon /><span><b className="num">{manwon(cash)}</b>으로 진행</span></li>
         )}
         <li><BarsIcon /><span>실제 데이터 기반 시뮬레이션</span></li>
       </ul>
@@ -342,7 +348,6 @@ export default function SeasonHome() {
           practice={topics ?? []} ongoing={live}
           loading={openLoading} error={openError} onRetry={reloadOpen}
         />
-        <Facts practice={topics} />
       </div>
     </main>
   )

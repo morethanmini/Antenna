@@ -370,12 +370,20 @@ body.sim-result-page .eq-dot{stroke:var(--night-1)}
 body.sim-result-page .eq-empty span{color:var(--night-faint)}
 
 /* 테두리만 있는 버튼은 브랜드 잉크 글자라 어두운 바닥에서 가라앉는다 */
+/* 머리줄 버튼 둘 — 모의투자의 캡슐 한 벌(--cap-*, night.css) */
+body.sim-result-page .rs-go,
+body.sim-result-page .rs-back{border-radius:999px;border:0}
+body.sim-result-page .rs-go{
+  background:var(--cap-fill);box-shadow:var(--cap-edge), var(--cap-glow);
+}
+body.sim-result-page .rs-go:hover{background:var(--cap-fill-hi);box-shadow:var(--cap-edge), var(--cap-glow-hi)}
 body.sim-result-page .rs-back{
-  border-color:rgba(255,255,255,.28);background:rgba(255,255,255,.12);color:#fff;
+  background:var(--cap-glass);box-shadow:var(--cap-edge-soft);color:#fff;
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
 }
-body.sim-result-page .rs-back:hover{
-  border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.22);
-}
+body.sim-result-page .rs-back:hover{background:var(--cap-glass-hi);box-shadow:var(--cap-edge)}
+body.sim-result-page .rs-go:active,
+body.sim-result-page .rs-back:active{box-shadow:var(--cap-press)}
 
 /* ── 낮은 화면에서 한 화면에 담는다(2026-09-22) ─────────────
    배율 100% 에서 성적표 줄까지 들어와야 한다. 1410x712 에서 100px 넘쳐 있었다 —
