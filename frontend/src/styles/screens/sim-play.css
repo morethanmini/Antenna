@@ -453,6 +453,11 @@
   display:flex;align-items:center;gap:8px;
   min-height:54px;padding:0 18px;list-style:none;cursor:pointer;border-radius:16px;
   color:var(--ink);font-size:var(--fs-xl);font-weight:var(--fw-heavy);letter-spacing:-.02em;
+  /* 줄 전체가 누르는 자리다. 글자를 고를 수 있게 두면 두 번 누르거나 조금 끌린
+     순간 제목과 한 마디가 파랗게 잡혀, 접었다 폈다 하는 동안 화면이 어지럽다.
+     읽을 본문은 펴진 안쪽에 있으므로 여기서 글자를 고를 일이 없다. */
+  user-select:none;-webkit-user-select:none;
+  -webkit-tap-highlight-color:transparent;
 }
 .sp-fold > summary::-webkit-details-marker{display:none}
 .sp-fold > summary::marker{content:''}
@@ -474,7 +479,12 @@
 .sp-fold > summary:hover i:not(.sp-dot){
   border-color:var(--brand);background:var(--brand-softer);color:var(--brand);
 }
-.sp-fold[open] > summary i:not(.sp-dot){transform:rotate(180deg)}
+/* 펴진 동안에는 칸도 켜 둔다 — 짚었을 때만 색이 들어오면 지금 펴져 있는지는
+   꺾쇠 방향 하나로만 말해야 한다. 방향과 색 둘로 말한다. */
+.sp-fold[open] > summary i:not(.sp-dot){
+  transform:rotate(180deg);
+  border-color:var(--brand);background:var(--brand-softer);color:var(--brand);
+}
 .sp-fold[open] > summary{border-radius:16px 16px 0 0;border-bottom:1px solid #eef0f6}
 .sp-fold-body{padding:16px 18px 18px}
 
