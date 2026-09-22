@@ -257,12 +257,30 @@ body.my-predictions-page.is-night .main::before{
    것들만 밤 글자색으로 되돌린다 — 카드 안은 흰 판이라 원래 색이 맞다. */
 body.is-night:not(.is-glass) .page-head h1,
 body.is-night:not(.is-glass) .main-inner > h1,
-body.is-night:not(.is-glass) .main-inner > header h1{color:var(--night-ink)}
+body.is-night:not(.is-glass) .main-inner > header h1,
+/* 내 예측(C-02)의 머리는 .mp-head 라 위 셋 어디에도 안 걸렸다. 직계 자식만 잡는
+   선택자였던 탓에 "내 예측 현황" 이 #14141b 로 남아 바탕(#0d0c22)과 대비 1.0,
+   사실상 보이지 않았다(2026-09-22 실측). */
+body.is-night:not(.is-glass) .mp-head h1{color:var(--night-ink)}
 body.is-night:not(.is-glass) .page-head p,
-body.is-night:not(.is-glass) .main-inner > header p{color:var(--night-body)}
+body.is-night:not(.is-glass) .main-inner > header p,
+body.is-night:not(.is-glass) .mp-head > p{color:var(--night-body)}
 
 /* 주가 예측 랭킹은 밤으로 바꾸지 않는다(팀 결정 2026-09-22).
    이 화면은 제 세계를 이미 갖고 있다 — 화면을 꽉 채우는 무대 그림(.rk-sky-bg)이
    밝은 파스텔이고, 시상대와 캐릭터가 그 위에 선다. 어둡게 눕혀 보았지만 그림이
    말하려던 밝은 분위기가 죽었다. 상단바까지 밝은 판으로 둔다 — 옆 화면과 결이
    달라지지만, 이 화면은 원래 다른 화면이다. */
+
+/* 카드 밖에 바로 선 칩·토글. 꺼진 상태가 --muted(#6b7280)인데, 카드가 흰 판으로
+   남는 화면에서는 그 색이 그대로라 어두운 바탕 위에서 대비 4.0 까지 떨어진다
+   (기준 4.5). 켜진 쪽은 제 판을 갖고 있어 그대로 두고 **꺼진 쪽만** 밝힌다.
+   리포트 피드의 리포트/예측 · 전체/구독 중 · 최신순/인기순이 이 자리다. */
+body.is-night:not(.is-glass) .rp-kinds button:not(.on),
+body.is-night:not(.is-glass) .rp-tabs button:not(.on),
+body.is-night:not(.is-glass) .rp-sorts button:not(.on){color:var(--night-body)}
+body.is-night:not(.is-glass) .rp-kinds button:not(.on):hover,
+body.is-night:not(.is-glass) .rp-tabs button:not(.on):hover,
+body.is-night:not(.is-glass) .rp-sorts button:not(.on):hover{
+  background:rgba(255,255,255,.12); color:#fff;
+}
