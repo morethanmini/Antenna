@@ -230,7 +230,8 @@ body.is-night.is-glass .card{
 }
 
 /* ── 읽는 화면의 밤 바탕 (2026-09-22) ────────────────────────
-   종목 탐색 · 주가 예측 랭킹 · 리포트 · 내 예측. 홈과 같은 도시 사진을 깔되
+   종목 탐색 · 종목 상세 · 리포트 · 내 예측(주가 예측 랭킹은 제 세계가 있어 밤으로
+   바꾸지 않는다, 아래 참고). 홈과 같은 도시 사진을 깔되
    **반투명 검정을 한 겹 덮는다** — 이 넷은 표와 글이 빽빽한 화면이라 사진이
    그대로 보이면 글자와 싸운다. 홈은 첫인상이 목적이라 사진을 밝게 두지만
    (opacity .55 · 아래를 마스크로 지움) 여기서는 분위기만 남긴다.
@@ -244,7 +245,8 @@ body.is-night.is-glass .card{
    (styles/home.css 의 .main::before). */
 body.stocks-page.is-night .main::before,
 body.reports-page.is-night .main::before,
-body.my-predictions-page.is-night .main::before{
+body.my-predictions-page.is-night .main::before,
+body.stock-detail-page.is-night .main::before{
   content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
   background:
     linear-gradient(180deg, rgba(8,6,28,.52) 0%, rgba(8,6,28,.62) 55%, rgba(8,6,28,.74) 100%),
@@ -316,6 +318,9 @@ body.is-night:not(.is-glass) .pd-title h1,
 body.is-night:not(.is-glass) .pd-by,
 body.is-night:not(.is-glass) .pd-by a,
 body.is-night:not(.is-glass) .pd-back,
+/* 종목 상세(B-03) — "종목 탐색" 뒤로가기는 sd-head(흰 판) **밖**, 바탕에 바로 선다.
+   .sd-head 안(h1 등)은 위 되물린 이유대로 손대지 않는다. */
+body.is-night:not(.is-glass) .sd-back,
 body.is-night:not(.is-glass) .wallet-ledger-head h2,
 /* 확정 기록(D-01) — 묶음 머리와 종목 이름이 판 없이 바탕에 놓인다 */
 body.is-night:not(.is-glass) .lg-head-text b,

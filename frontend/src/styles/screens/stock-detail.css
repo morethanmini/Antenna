@@ -27,6 +27,45 @@
   background:var(--ground);
 }
 
+/* 밤에는 흰 판이 아니라 유리다(2026-09-22, 사용자 확인). 처음엔 다른 읽는 화면처럼
+   불투명 흰 판으로 뒀는데, 도시 사진 위에 막 잘린 흰 사각형이 얹혀 안 어우러진다는
+   지적을 받았다 — 여기는 표 한 칸짜리 머리라 텍스트 밀도가 낮아 홈처럼 유리로
+   가도 읽기에 지장이 없다(다른 셋은 표·글이 빽빽해 불투명을 그대로 둔다).
+
+   **토큰을 여기서 바꿔치기한다.** --ink · --surface 같은 토큰을 이 판 위에서
+   다시 정의하면, 안의 h1 · sd-chip · sd-watch · 예측 미니카드(.st-card 등)가
+   전부 var() 로 그 값을 참조하고 있어 따로 하나씩 고치지 않아도 전부 따라온다
+   (body.is-night.is-glass 가 같은 방식을 쓴다 — 그 값을 그대로 옮겨 왔다).
+
+   아래쪽은 그대로 각지게 둔다 — 스크롤되는 본문이 그 밑으로 지나가는데, 아래를
+   둥글리면 모서리 틈으로 지나가는 글자가 비친다. */
+.stock-detail-page.is-night .sd-head{
+  --ground:rgba(255,255,255,.07);
+  --surface:rgba(255,255,255,.07);
+  --surface-2:rgba(255,255,255,.12);
+  --ink:var(--night-ink);
+  --body:#cfcbe8;
+  --muted:#a9a4cc;
+  --faint:var(--night-faint);
+  --rule:var(--night-line);
+  --brand-soft:rgba(139,125,255,.22);
+  --brand-softer:rgba(139,125,255,.12);
+  --up:#ff6b6b;
+  --up-vivid:#ff8080;
+  --down:#7aa7ff;
+  --down-vivid:#7aa7ff;
+  --gold:#ffd464;
+
+  background:var(--ground);
+  -webkit-backdrop-filter:blur(14px) saturate(140%);
+  backdrop-filter:blur(14px) saturate(140%);
+  border-radius:16px 16px 0 0;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 16px 32px -20px rgba(8,6,28,.65);
+}
+/* 관심 종목을 이미 눌러 둔 상태의 크림색 판은 낮 전용 색을 박아 뒀다(#fffaf0) —
+   토큰이 아니라 밤에는 안 바뀐다. 골든 배지로 바꾼다. */
+.stock-detail-page.is-night .sd-watch.is-on{background:rgba(255,212,100,.16)}
+
 /* 헤더가 끝나는 자리에서만 부드럽게 흐린다 — 잘린 듯 보이지 않게 */
 .stock-detail-page .sd-head::after{
   content:"";position:absolute;left:0;right:0;top:100%;height:10px;
@@ -45,6 +84,9 @@
 }
 .stock-detail-page .sd-back:hover{color:var(--ink)}
 .stock-detail-page .sd-back:focus-visible{outline:2px solid var(--brand);outline-offset:3px}
+/* 밤에는 색을 night.css 가 준다(카드 밖 글자). hover 도 그 톤 위에서 밝아져야 한다 —
+   --ink 로 가면 밤에도 어두운 색이라 눌러도 그대로 안 보인다. */
+.stock-detail-page.is-night .sd-back:hover{color:#fff}
 
 .stock-detail-page .sd-ident{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 /* 회사 로고(2026-09-15). 목록·홈과 같은 StockLogo 를 쓰고 크기만 여기서 정한다 —
@@ -71,14 +113,17 @@
 
 /* 오른쪽 끝 묶음 — 오늘 판정 카드 + 관심 담기.
 
-   카드가 두 칸이라 종목명 줄보다 높다. 그대로 두면 줄이 카드 높이만큼 부풀어
-   종목명과 종가 사이가 벌어진다. **높이를 0 으로 잡아 줄 높이에 기여하지 않게**
-   하고 아래로 흘려보낸다 — 폭은 그대로 차지하므로 긴 종목명이 카드 밑으로
-   파고들지도 않는다.
+   카드가 두 칸이라 종목명 줄보다 높다. 예전에는 height:0 으로 줄 높이에 안
+   잡히게 하고 아래로 흘려보냈는데(폭만 차지, 높이는 무시) — **중간 폭에서
+   이 묶음이 종목명 줄에 못 붙고 둘째 줄로 접힐 때, 높이가 0 이라 그 접힌
+   내용이 밑에 있던 종가 줄 위로 그대로 겹쳤다**(2026-09-22, 실측). 높이를
+   포기하고 제 높이만큼 제대로 차지하게 둔다 — 넓은 화면에서는 어차피 한
+   줄에 붙어 5px 안팎의 차이뿐이고, 접히는 폭에서는 종가 줄이 밀려나
+   겹치지 않는다.
 
    align-items:flex-start 로 카드와 관심 담기의 **윗변을 맞춘다**. */
 .stock-detail-page .sd-ident-right{
-  margin-left:auto;align-self:flex-start;height:0;
+  margin-left:auto;align-self:flex-start;
   display:flex;align-items:flex-start;gap:12px;min-width:0;
 }
 
