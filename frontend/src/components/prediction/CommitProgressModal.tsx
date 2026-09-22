@@ -37,15 +37,6 @@ type Props = {
 
 type StepState = 'done' | 'busy' | 'wait' | 'fail'
 
-/** 봉인이 그려진 뒤 이 창이 스스로 비켜서기까지(ms).
- *
- *  BlockchainScene 이 onSealed 를 부르는 시점부터 장면의 마무리가 2.5초쯤
- *  더 이어진다 — 받침대가 완성 슬롯으로 바뀌어 무대 가운데로 옮겨 가는 데
- *  1.6초, 자리 잡는 순간의 반짝임이 0.8초. 3.2초면 마무리를 보자마자 창이
- *  닫혔다. 5초로 두면 끝난 그림을 잠깐 보고 넘어간다.
- *  장면의 시간을 바꾸면 이 값도 같이 봐야 한다. */
-const CLOSE_MS = 5000
-
 function Mark({ state }: { state: StepState }) {
   if (state === 'done') {
     return (
@@ -160,20 +151,13 @@ export default function CommitProgressModal({ phase, result, onClose }: Props) {
 
   useEffect(() => { dialogRef.current?.focus() }, [])
 
-  /* 봉인까지 보여 줬으면 이 창의 할 일은 끝났다. 남은 앵커는 배치가 묶는 일이라
-     여기서 기다릴 수 없는데, 창이 계속 떠 있으면 아직 안 끝난 것처럼 보인다.
-     뒤에는 이미 등록 완료 화면(커밋 해시·다음 걸음)이 그려져 있으므로,
-     봉인을 잠깐 보여 준 뒤 비켜서서 그 화면으로 넘겨준다.
+  /* **봉인 뒤에도 스스로 닫지 않는다**(2026-09-22, ANT-FE-PREDICT-BURN-MODAL).
+     전에는 봉인 5초 뒤 창이 비켜서며 내 예측으로 넘어갔다. 그런데 이 장면은
+     "예측을 블록에 남긴다" 를 설명하는 거의 유일한 그림인데, 다 그려지자마자
+     치워 버리면 읽을 틈이 없다. 무엇보다 **사용자가 넘기지 않았는데 화면이 넘어간다.**
 
-     다만 그 사이에 서버가 확정이나 실패를 알려 오면 물러나지 않는다 —
-     사용자가 기다리지 않아도 될 뿐이지, 마침 도착한 결과를 가릴 이유는 없다. */
-  const [sealed, setSealed] = useState(false)
-  const decided = anchor === 'CONFIRMED' || anchor === 'FAILED'
-  useEffect(() => {
-    if (!sealed || decided) return
-    const t = window.setTimeout(onClose, CLOSE_MS)
-    return () => window.clearTimeout(t)
-  }, [sealed, decided, onClose])
+     기다리게 두는 것과는 다르다 — 닫기·Esc·"예측 현황 보러가기" 가 처음부터 열려 있고,
+     아래 안내가 "창을 닫아도 그대로 진행된다" 를 말한다. 언제 넘어갈지는 사용자가 정한다. */
 
   const steps: { key: string; label: string; state: StepState }[] = [
     {
@@ -246,7 +230,8 @@ export default function CommitProgressModal({ phase, result, onClose }: Props) {
 
         {/* 장면은 phase 와 anchor 만 따라간다. 시간이 지났다고 다음 단계로
             넘어가지 않는다 — 서버가 말한 것만 그린다 */}
-        <BlockchainScene phase={phase} anchor={anchor} onSealed={() => setSealed(true)} />
+        {/* onSealed 는 넘기지 않는다 — 봉인을 신호로 할 일이 없어졌다(위 주석) */}
+        <BlockchainScene phase={phase} anchor={anchor} />
 
         <ol className="cp-steps">
           {steps.map((s) => (

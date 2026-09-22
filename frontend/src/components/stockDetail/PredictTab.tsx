@@ -15,8 +15,10 @@
    - evidencePointIds 는 B-03 투자 포인트에서 인계받은 것만 쓴다. 리포트·재무지표는 근거가 못 된다.
    - 기준가는 배치 B2 가 기준일 종가로 확정한다. 등록 직후 basePrice 가 비어 있고,
      빈 값을 0 으로 그리지 않는다.
-   - 응답: 201 슬롯 내 · 401 서명 불일치 · 409 오늘 슬롯 소진.
-     202 소각 경로는 소각할 토큰(ANT-CHAIN-03)이 아직 없어 서버에 없다(명세 v0.41).
+   - 응답: 201 슬롯 내 · 202 슬롯 초과 소각 · 401 서명 불일치.
+     **201 과 202 는 같은 창으로 끝난다**(ANT-FE-PREDICT-BURN-MODAL). 예전에는 202 를 받으면
+     봉인 창을 걷고 M-02 로 갈아끼웠는데, 개미가 걸어가던 창이 도중에 바뀌어 같은 등록인데
+     다른 제품처럼 보였다. CommitProgressModal 이 202 문구를 이미 갖고 있었다.
 
    왼쪽 패널 (설계 변경 2026-09-10)
    - 개별 예측 목록이 아니라 **구간별 인원(호가창)** 이다. 누가 걸었는지는 이 화면에서
@@ -40,6 +42,7 @@ import WalletLinkModal from '../wallet/WalletLinkModal'
 import WalletPrelink from '../wallet/WalletPrelink'
 import ConfirmDialog from '../ConfirmDialog'
 import OperationModal from '../operation/OperationModal'
+import { useOperation } from '../../api/operations'
 import { formatToken } from '../../api/wallet'
 import { useWalletBalance } from '../../api/walletBalance'
 import CommitProgressModal, { type CommitPhase } from '../prediction/CommitProgressModal'
@@ -159,8 +162,18 @@ export default function PredictTab({
   /* 슬롯을 넘긴 등록은 서명 전에 한 번 묻는다 — 서명 문자열에는 금액이 없어(명세 "무료·소각 공통")
      이 확인 창이 곧 소각 동의다. 확인하면 sign() 으로 이어진다. */
   const [confirmingBurn, setConfirmingBurn] = useState(false)
-  /* 202 로 접수된 소각·배팅 작업. M-02 가 폴링하고 확정되면 예측 상세로 보낸다 */
+  /* 202 로 접수된 **대회 배팅** 작업. M-02 가 폴링하고 확정되면 예측 상세로 보낸다.
+     소각(슬롯 초과)은 여기 오지 않는다 — 봉인 창이 끝까지 서고 아래 burnWatch 만 건다 */
   const [burnOp, setBurnOp] = useState<string | null>(null)
+  /* 소각 작업을 **화면 없이** 지켜본다. 창을 띄우려는 게 아니라 잔액 때문이다 —
+     소각이 체인에서 확정되는 순간 상단 잔액 칩이 줄어야 하는데(ANT-FE-WALLET-SYNC),
+     그 재조회를 하던 것이 M-02 창 안의 이 훅이었다(useOperation → refreshWalletBalance).
+     창을 안 띄우게 됐다고 훅까지 뺄 이유는 없다. 훅은 아무것도 그리지 않는다. */
+  const [burnWatch, setBurnWatch] = useState<string | null>(null)
+  /* 반환값을 쓰지 않는다. 확정을 화면에 알리지 않기로 했고(낙관적 등록: 202 시점에 예측은
+     이미 저장돼 있고 소각이 실패해도 토큰은 안 탄다), 확정 전에 이 화면을 떠나면 훅의
+     정리 함수가 expectWalletChange 로 넘겨 준다. */
+  useOperation(burnWatch)
   const [failure, setFailure] = useState<ApiError | null>(null)
   /* 지갑 승인 뒤 서버 응답까지 빈 시간이 있다. 그 사이 화면이 그대로면 승인이
      먹혔는지 알 수 없고, 응답이 오는 순간 완료 화면이 튀어나온다.
@@ -460,13 +473,16 @@ export default function PredictTab({
          (EventBet.tsx 머리말). 서버가 칸을 열면 draft 옆에 나란히 넘긴다. */
       const created = await createPrediction(draft, signature)
       onResult(created)
+      /* **무료든 소각이든 같은 봉인 창으로 끝난다**(ANT-FE-PREDICT-BURN-MODAL).
+         전에는 202 에서 setPhase(null) 로 창을 걷고 M-02 를 띄웠는데, 서명·커밋 동안
+         이미 돌고 있던 개미 장면이 응답 한 번에 글자만 있는 다른 창으로 바뀌었다.
+         CommitProgressModal 이 201/202 문구를 이미 갈라 놓고 있어 붙이기만 하면 됐다. */
+      setPhase('settled')
       if (created.kind === 'queued') {
-        /* 소각으로 접수됐다(202). 커밋 진행 창 대신 M-02 로 넘긴다 — 여기서 기다리는 것은
-           앵커가 아니라 소각 tx 확정이고, 그 폴링·문구·실패 처리는 M-02 가 이미 갖고 있다 */
-        setPhase(null)
-        setBurnOp(created.data.operationId)
-      } else {
-        setPhase('settled')
+        /* 소각은 화면 없이 지켜본다 — 확정을 알리려는 게 아니라 잔액을 제때 줄이려는 것이다.
+           창이 하나여야 해서 M-02 를 띄우지 않는다(OperationModal 머리말: 두 겹으로 띄우면
+           사용자가 뒤 창을 모른 채 앞 창을 닫는다). */
+        setBurnWatch(created.data.operationId)
       }
       /* 폼을 통째로 비운다(2026-09-21). 전에는 noteSalt 만 갈고 목표가·근거를 남겼는데,
          결과가 부모로 올라간 지금은 이 화면으로 되돌아올 길이 없어 남겨 둘 이유가 없고,
@@ -500,8 +516,9 @@ export default function PredictTab({
   )
 
   /* 진행 모달. 완료 화면과 입력 화면 두 갈래가 같은 것을 띄우므로 한 번만
-     만들어 둔다. 닫히는 길은 셋이다 — 닫기·Esc, 봉인 장면 뒤 스스로 비켜서기,
-     "예측 현황 보러가기" 링크. 어느 길이든 내 예측으로 간다(goMine). 진행 중에는
+     만들어 둔다. 닫히는 길은 둘이다 — 닫기·Esc, "예측 현황 보러가기" 링크.
+     **스스로 비켜서던 길은 없앴다**(ANT-FE-PREDICT-BURN-MODAL). 어느 길이든 내 예측으로
+     간다(goMine). 진행 중에는
      모달이 닫히지 않으므로(CommitProgressModal) 여기 오면 등록은 이미 끝난 것이다. */
   const closeProgress = useCallback(() => {
     setPhase(null)
@@ -576,22 +593,18 @@ export default function PredictTab({
           )}
         </section>
 
-        {/* 소각·배팅 접수(202) 폴링 — 확정되면 예측 상세로. **완료 화면 위에** 띄운다(2026-09-19).
-            전에는 입력 화면 쪽에 있어 결과가 서는 순간 같이 사라졌다 — 소각 접수는 모달을
-            한 번도 못 보고, 대회 접수는 폼이 남은 채 모달만 떴다. 여기서는 닫아도 뒤에
-            남는 것이 완료 화면이라 같은 종목에 다시 걸 길이 없다.
-            kind 는 서버가 만드는 Operation.Kind 와 맞춘다 — 대회는 EVENT_BET 이다.
-            PREDICTION_BURN 으로 넘기면 "토큰은 소각되지 않았습니다" 같은 소각 문구가 뜬다. */}
+        {/* 대회 배팅 접수(202) 폴링. **완료 화면 위에** 띄운다(2026-09-19) — 전에는 입력 화면
+            쪽에 있어 결과가 서는 순간 폼이 남은 채 모달만 떴다. 닫아도 뒤에 남는 것이 완료
+            화면이라 같은 종목에 다시 걸 길이 없다.
+            **소각(슬롯 초과)은 여기 오지 않는다**(ANT-FE-PREDICT-BURN-MODAL). 그쪽은 봉인 창이
+            끝까지 서고, 잔액은 burnWatch 가 화면 없이 챙긴다. 그래서 kind 도 분기가 없다 —
+            서버 Operation.Kind 와 맞춘 EVENT_BET 하나뿐이다. */}
         {burnOp && (
           <OperationModal
             operationId={burnOp}
-            kind={result.kind === 'event' ? 'EVENT_BET' : 'PREDICTION_BURN'}
-            /* 소각 접수(202)는 닫으면 내 예측으로 — 확정 전이라도 예측은 이미 저장돼
-               목록에 선다. 대회는 완료 화면에 남는다(goMine 주석). */
-            onClose={() => {
-              setBurnOp(null)
-              if (result.kind !== 'event') goMine()
-            }}
+            kind="EVENT_BET"
+            /* 대회는 닫아도 완료 화면에 남는다 — 갈 곳이 대회이고 그 링크가 화면에 있다(goMine 주석) */
+            onClose={() => setBurnOp(null)}
           />
         )}
       </div>
@@ -1086,7 +1099,7 @@ export default function PredictTab({
         />
       )}
 
-      {/* 소각·배팅 접수(202) 모달은 완료 화면 쪽에 있다 — result 없이 burnOp 만 서는 길이 없다 */}
+      {/* 대회 배팅 접수(202) 모달은 완료 화면 쪽에 있다 — result 없이 burnOp 만 서는 길이 없다 */}
 
       {/* 지갑이 없으면 먼저 연동하고, 끝나면 하던 등록을 이어 간다 */}
       {linking && (
