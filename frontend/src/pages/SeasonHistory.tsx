@@ -42,6 +42,7 @@ import '../styles/screens/sim-history.css'
 
 
 
+
 type Sort = 'RECENT' | 'BEST' | 'WORST'
 type Tab = 'ONGOING' | 'DONE'
 
@@ -166,7 +167,7 @@ const STEPS = [
   { at: 1, name: '시작', note: '첫 연습을 시작해요' },
   { at: 2, name: '학습', note: '다양한 사례로 배워요' },
   { at: 4, name: '경험', note: '스스로 판단하며 쌓아요' },
-  { at: 8, name: '더 나은 나', note: '꾸준한 연습으로 성장해요' },
+  { at: 8, name: '투자왕', note: '꾸준함이 만든 자리' },
 ]
 
 function Journey({ done }: { done: number }) {
@@ -288,10 +289,17 @@ export default function SeasonHistory() {
             <p>내가 참가한 시즌과 성과입니다</p>
           </div>
 
-          <p className="rc-quote" aria-hidden="true">
-            <span className="rc-hand">“오늘의 연습이<br />더 나은 투자자를 만든다.”</span>
-            <small>— ANTENNA</small>
-          </p>
+          {/* 손글씨와 시작 버튼이 한 덩어리로 오른쪽에 선다. 버튼은 원래 여기 있었는데
+              격려 카드 안으로 옮겼다가 되돌렸다(2026-09-22) — 오른쪽 기둥이 목록보다
+              181px 아래로 흘러서, 기둥에서 덜어 낼 것 중 제자리가 있는 것이 이것이다.
+              이 화면의 으뜸 행동이기도 해서 머리에 있는 편이 찾기도 쉽다. */}
+          <div className="rc-head-side">
+            <p className="rc-quote" aria-hidden="true">
+              <span className="rc-hand">“오늘의 연습이<br />더 나은 투자자를 만든다.”</span>
+              <small>— ANTENNA</small>
+            </p>
+            <Link className="rc-go" to="/sim">새로 시작하기</Link>
+          </div>
         </header>
 
         {/* ── 요약 4칸 ─────────────────────────────────── */}
@@ -398,12 +406,13 @@ export default function SeasonHistory() {
               />
               {/* 칭찬은 실제 기록에 따라 갈린다 — 한 판도 안 끝낸 사람에게
                   "잘하고 있어요" 라고 하면 빈말이 된다. */}
+              {/* 한 줄을 넘기지 않는다. 격려하는 말은 위 카드 그림이 이미 하고 있어
+                  여기서는 내 기록에서 나오는 사실만 적는다. */}
               <p className="rc-cheer-say">
                 {done.length === 0
-                  ? '첫 판을 끝내면 성적표가 여기에 쌓여요. 지금 시작해도 늦지 않아요.'
-                  : `지금까지 ${done.length}판을 끝냈어요. 꾸준히 연습하면 더 멋진 투자자가 될 거예요.`}
+                  ? '아직 끝까지 마친 판이 없어요.'
+                  : `지금까지 ${done.length}판을 끝냈어요.`}
               </p>
-              <Link className="rc-go" to="/sim">새로 시작하기</Link>
             </section>
 
             <Journey done={done.length} />

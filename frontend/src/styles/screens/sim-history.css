@@ -53,6 +53,7 @@ body.sim-record-page .main::before{
 .rc-head > div > p{margin:0;font-size:var(--fs-xl);font-weight:var(--fw-bold);color:#cdc8e6;text-shadow:0 1px 10px rgba(6,5,24,.8)}
 
 .rc-hand{font-family:var(--hand);font-weight:400;line-height:1.15;color:#e6e2ff}
+.rc-head-side{display:flex;flex-direction:column;align-items:flex-end;gap:14px;flex:none}
 .rc-quote{margin:0;text-align:right;white-space:nowrap}
 .rc-quote .rc-hand{display:block;font-size:26px;text-shadow:0 2px 14px rgba(6,5,24,.85)}
 .rc-quote small{display:block;margin-top:4px;font-size:var(--fs-lg);font-weight:var(--fw-bold);color:#a49ecb;text-shadow:0 1px 10px rgba(6,5,24,.8)}
@@ -159,22 +160,21 @@ body.sim-record-page .main::before{
 .rc-empty small{font-size:var(--fs-lg);font-weight:var(--fw-normal);color:var(--night-faint)}
 
 /* ── 오른쪽 기둥 ──────────────────────────────────── */
-.rc-side{display:flex;flex-direction:column;gap:var(--rc-gap);min-width:0}
-.rc-side-card{padding:var(--rc-pad)}
+.rc-side{display:flex;flex-direction:column;gap:14px;min-width:0}
+.rc-side-card{padding:18px var(--rc-pad)}
 .rc-side-head{display:flex;align-items:center;gap:9px;margin:0 0 6px;font-size:var(--fs-3xl);font-weight:var(--fw-black);color:#fff;letter-spacing:-.025em}
 .rc-side-head svg{color:var(--glow)}
-.rc-side-lead{margin:0 0 18px;font-size:var(--fs-lg);font-weight:var(--fw-bold);color:var(--night-body)}
+.rc-side-lead{margin:0 0 13px;font-size:var(--fs-lg);font-weight:var(--fw-bold);color:var(--night-body)}
 
 /* 격려 카드. 그림 한 장이 판 전체다 — 그림에 이미 테두리와 빛이 있어서 판의
    여백을 줄이고 유리 테두리도 걷는다. 둘 다 있으면 테두리가 두 겹으로 보인다. */
-.rc-cheer{padding:12px 12px 16px;background:none;border-color:transparent;box-shadow:none}
+.rc-cheer{padding:10px 10px 12px;background:none;border-color:transparent;box-shadow:none}
 .rc-cheer-card{display:block;width:100%;height:auto;border-radius:14px}
 .rc-cheer-say{
-  margin:12px 2px 14px;padding:12px 14px;border-radius:12px;
+  margin:10px 2px 0;padding:10px 13px;border-radius:12px;
   background:rgba(255,255,255,.07);border:1px solid var(--night-line);
   font-size:var(--fs-md);line-height:1.6;font-weight:var(--fw-bold);color:var(--night-ink);
 }
-.rc-cheer .rc-go{margin-left:2px}
 
 /* ── 성장 여정 ────────────────────────────────────── */
 /* 가로 한 줄에 네 칸. 점 사이를 잇는 선은 ::before 하나로 깔고, 지나온 만큼만
@@ -226,6 +226,9 @@ body.sim-record-page .main::before{
   body.sim-record-page{--rc-band:210px}
   .rc-head{flex-direction:column;gap:12px}
   .rc-head h1{font-size:32px}
+  /* 머리가 세로로 쌓이면 오른쪽 묶음도 왼쪽 줄에 맞춘다 — 글은 왼쪽인데 상자만
+     오른쪽 끝에 붙어 있으면 버튼이 혼자 떨어져 보인다. */
+  .rc-head-side{align-items:flex-start}
   .rc-quote{text-align:left;white-space:normal}
   .rc-side{flex-direction:column}
   /* 끝낸 날짜(.rc-when)를 감춘다 — 좁은 폭에서 다섯 칸은 서로를 민다.
