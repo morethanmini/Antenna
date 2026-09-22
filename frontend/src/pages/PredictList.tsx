@@ -35,6 +35,7 @@
      기준일과 진행률이 settleDate · horizon · dday 에서 정확히 나온다.
    - **수정·삭제 버튼을 두지 않는다.** 해당 API 가 없고, 예측은 등록 후 불변이다. */
 import { useEffect, useMemo, useState } from 'react'
+import { useUrlState } from '../urlState'
 import { Link } from 'react-router-dom'
 import { useCursorList } from '../api/useCursorList'
 import { fetchMyPredictions, hitRatePercent, isAwaitingVerdict, phaseOf, revealLabel } from '../api/predictions'
@@ -537,8 +538,9 @@ function Who({ p }: { p: MyPrediction }) {
 }
 
 export default function PredictList() {
-  const [stage, setStage] = useState<Stage>('ALL')
-  const [sort, setSort] = useState<Sort>('LATEST')
+  /* 주소에 둔다 — 상세로 갔다 뒤로 오면 고른 것이 살아 있어야 한다(2026-09-22 QA) */
+  const [stage, setStage] = useUrlState<Stage>('stage', 'ALL', STAGES)
+  const [sort, setSort] = useUrlState<Sort>('sort', 'LATEST', SORTS)
 
   /* filter 를 붙이지 않은 전량을 받는다. 단계는 화면이 가르므로 서버 거르개가
      필요 없고, 칸을 바꿔도 다시 부르지 않는다.
