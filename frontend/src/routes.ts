@@ -83,27 +83,27 @@ export const ROUTES: PageMeta[] = [
   { screen: 'A-02', element: OnboardingNickname, path: '/onboarding/nickname', title: '닉네임 설정', access: 'user', story: 'ANT-AUTH-03' },
   /* 닉네임 다음 단계. **건너뛸 수 있다** — RequireAccess 는 닉네임만 보므로 가드가 따로 없다 */
   { screen: 'A-02', element: OnboardingFee, path: '/onboarding/fee', title: '구독료 설정', access: 'user', story: 'ANT-AUTH-03' },
-  { screen: 'A-03', element: Search, path: '/search', title: '통합 검색', access: 'user', mode: 'insight', nav: 'stocks', story: 'ANT-FE-SEARCH' },
+  { screen: 'A-03', element: Search, path: '/search', title: '통합 검색', access: 'user', mode: 'insight', nav: 'stocks', bodyClass: 'is-night', story: 'ANT-FE-SEARCH' },
 
   // ── B. 인사이트 ──────────────────────────────────────
-  { screen: 'B-01', element: Home, path: '/', title: '인사이트 홈', access: 'user', mode: 'insight', nav: 'home', bodyClass: 'insight-home is-night', story: 'ANT-FE-HOME' },
-  { screen: 'B-02', element: Stocks, path: '/stocks', title: '종목 탐색', access: 'user', mode: 'insight', nav: 'stocks', bodyClass: 'stocks-page', story: 'ANT-FE-STOCKS' },
-  { screen: 'B-03', element: StockDetail, path: '/stocks/:code', title: '종목 상세', access: 'user', mode: 'insight', nav: 'stocks', bodyClass: 'stock-detail-page', story: 'ANT-FE-STOCK-DETAIL' },
-  { screen: 'B-04', element: Watchlist, path: '/watchlist', title: '관심 종목', access: 'user', mode: 'insight', nav: 'stocks', bodyClass: 'watchlist-page', story: 'ANT-FE-WATCHLIST' },
+  { screen: 'B-01', element: Home, path: '/', title: '인사이트 홈', access: 'user', mode: 'insight', nav: 'home', bodyClass: 'insight-home is-night is-glass', story: 'ANT-FE-HOME' },
+  { screen: 'B-02', element: Stocks, path: '/stocks', title: '종목 탐색', access: 'user', mode: 'insight', nav: 'stocks', bodyClass: 'stocks-page is-night', story: 'ANT-FE-STOCKS' },
+  { screen: 'B-03', element: StockDetail, path: '/stocks/:code', title: '종목 상세', access: 'user', mode: 'insight', nav: 'stocks', bodyClass: 'stock-detail-page is-night', story: 'ANT-FE-STOCK-DETAIL' },
+  { screen: 'B-04', element: Watchlist, path: '/watchlist', title: '관심 종목', access: 'user', mode: 'insight', nav: 'stocks', bodyClass: 'watchlist-page is-night', story: 'ANT-FE-WATCHLIST' },
 
   // ── C. 예측 ──────────────────────────────────────────
-  { screen: 'C-01', element: PredictNew, path: '/predict', title: '예측 등록', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'prediction-create-page', story: 'ANT-FE-PREDICT-NEW' },
-  { screen: 'C-02', element: PredictList, path: '/me/predictions', title: '내 예측 현황', access: 'user', mode: 'insight', nav: 'portfolio', bodyClass: 'my-predictions-page', story: 'ANT-FE-PREDICT-LIST' },
-  { screen: 'C-03', element: PredictDetail, path: '/predictions/:id', title: '예측 상세', access: 'user', mode: 'insight', nav: 'portfolio', bodyClass: 'prediction-detail-page', story: 'ANT-FE-PREDICT-DETAIL' },
-  { screen: 'C-04', element: Portfolio, path: '/me/portfolio', title: '예측 포트폴리오', access: 'user', mode: 'insight', nav: 'portfolio', bodyClass: 'forecast-page', story: 'ANT-FE-PORTFOLIO' },
+  { screen: 'C-01', element: PredictNew, path: '/predict', title: '예측 등록', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'prediction-create-page is-night', story: 'ANT-FE-PREDICT-NEW' },
+  { screen: 'C-02', element: PredictList, path: '/me/predictions', title: '내 예측 현황', access: 'user', mode: 'insight', nav: 'portfolio', bodyClass: 'my-predictions-page is-night', story: 'ANT-FE-PREDICT-LIST' },
+  { screen: 'C-03', element: PredictDetail, path: '/predictions/:id', title: '예측 상세', access: 'user', mode: 'insight', nav: 'portfolio', bodyClass: 'prediction-detail-page is-night', story: 'ANT-FE-PREDICT-DETAIL' },
+  { screen: 'C-04', element: Portfolio, path: '/me/portfolio', title: '예측 포트폴리오', access: 'user', mode: 'insight', nav: 'portfolio', bodyClass: 'forecast-page is-night', story: 'ANT-FE-PORTFOLIO' },
 
   // ── D. 온체인 검증 ───────────────────────────────────
-  { screen: 'D-01', element: LedgerList, path: '/ledger', title: '확정 기록', access: 'user', mode: 'insight', nav: 'ledger', story: 'ANT-FE-LEDGER-LIST' },
-  { screen: 'D-02', element: Anchor, path: '/ledger/anchors/:id', title: '체인 기록 상세', access: 'user', mode: 'insight', nav: 'ledger', story: 'ANT-FE-ANCHOR' },
-  { screen: 'D-03', element: Verify, path: '/ledger/verify/:predictionId', title: '4단계 검산', access: 'user', mode: 'insight', nav: 'ledger', story: 'ANT-FE-VERIFY' },
+  { screen: 'D-01', element: LedgerList, path: '/ledger', title: '확정 기록', access: 'user', mode: 'insight', nav: 'ledger', bodyClass: 'is-night', story: 'ANT-FE-LEDGER-LIST' },
+  { screen: 'D-02', element: Anchor, path: '/ledger/anchors/:id', title: '체인 기록 상세', access: 'user', mode: 'insight', nav: 'ledger', bodyClass: 'is-night', story: 'ANT-FE-ANCHOR' },
+  { screen: 'D-03', element: Verify, path: '/ledger/verify/:predictionId', title: '4단계 검산', access: 'user', mode: 'insight', nav: 'ledger', bodyClass: 'is-night', story: 'ANT-FE-VERIFY' },
   /* 리포트 검산. 예측 검산과 경로를 나눈 이유는 id 가 다른 시퀀스라서다 —
      /ledger/verify/:id 하나로 두면 12 가 예측인지 리포트인지 알 수 없다. */
-  { screen: 'D-04', element: VerifyReport, path: '/ledger/verify/report/:reportId', title: '리포트 검산', access: 'user', mode: 'insight', nav: 'ledger', story: 'ANT-CHAIN-17' },
+  { screen: 'D-04', element: VerifyReport, path: '/ledger/verify/report/:reportId', title: '리포트 검산', access: 'user', mode: 'insight', nav: 'ledger', bodyClass: 'is-night', story: 'ANT-CHAIN-17' },
 
   // ── E. 채널 · 구독 ───────────────────────────────────
   { screen: 'E-01', element: Ranking, path: '/rankings', title: '주가 예측 랭킹', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'predictor-market-page', story: 'ANT-FE-RANKING' },
@@ -113,21 +113,21 @@ export const ROUTES: PageMeta[] = [
      ⚠ **그 G-07 이 빈 자리표시자였고 2026-09-17 에 지웠다.** 그래서 지금은 모의투자
      순위를 볼 화면이 하나도 없다. 순위를 되살려야 한다면 여기가 아니라 그 결정부터
      다시 봐야 한다. 실전 랭킹(/rankings)은 그대로다. */
-  { screen: 'E-02', element: ChannelProfile, path: '/channels/:userId', title: '채널 프로필', access: 'user', mode: 'insight', nav: 'market', story: 'ANT-FE-CHANNEL-PROFILE' },
-  { screen: 'E-03', element: SubscriptionList, path: '/me/subscriptions', title: '내 구독', access: 'user', mode: 'insight', nav: 'portfolio', story: 'ANT-FE-SUBSCRIPTION-LIST' },
-  { screen: 'E-04', element: ChannelFee, path: '/me/channel', title: '내 채널 설정', access: 'user', mode: 'insight', nav: 'portfolio', story: 'ANT-FE-CHANNEL-FEE' },
+  { screen: 'E-02', element: ChannelProfile, path: '/channels/:userId', title: '채널 프로필', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'is-night', story: 'ANT-FE-CHANNEL-PROFILE' },
+  { screen: 'E-03', element: SubscriptionList, path: '/me/subscriptions', title: '내 구독', access: 'user', mode: 'insight', nav: 'portfolio', bodyClass: 'is-night', story: 'ANT-FE-SUBSCRIPTION-LIST' },
+  { screen: 'E-04', element: ChannelFee, path: '/me/channel', title: '내 채널 설정', access: 'user', mode: 'insight', nav: 'portfolio', bodyClass: 'is-night', story: 'ANT-FE-CHANNEL-FEE' },
   /* nav 가 사이드바 어느 키와도 겹치지 않는다 — 마이페이지는 사이드바가 아니라 상단
      계정 메뉴로 들어오는 화면이라 아무것도 활성이 아닌 것이 맞다. 전에는 'portfolio' 라
      /me 에 있는데 예측 포트폴리오에 불이 들어왔다.
      App.tsx 가 `meta.nav ?? 'home'` 으로 기본값을 주므로 비우면 이번엔 홈이 켜진다. */
-  { screen: 'E-05', element: MyPage, path: '/me', title: '마이페이지', access: 'user', mode: 'insight', nav: 'me', bodyClass: 'mypage-page', story: 'ANT-FE-MYPAGE' },
+  { screen: 'E-05', element: MyPage, path: '/me', title: '마이페이지', access: 'user', mode: 'insight', nav: 'me', bodyClass: 'mypage-page is-night', story: 'ANT-FE-MYPAGE' },
 
   // ── F. 리포트 ───────────────────────────────────────
   // 커뮤니티(F-04 피드 · F-05 글 상세 · F-06 글 작성)는 개발 범위에서 뺐다
   // (2026-09-14). 화면과 라우트를 지웠고, 서버 API 는 그대로 남아 있다.
-  { screen: 'F-01', element: Reports, path: '/reports', title: '리포트 피드', access: 'user', mode: 'insight', nav: 'report', bodyClass: 'reports-page', story: 'ANT-FE-REPORTS' },
-  { screen: 'F-02', element: ReportDetail, path: '/reports/:id', title: '리포트 상세', access: 'user', mode: 'insight', nav: 'report', story: 'ANT-FE-REPORT-DETAIL' },
-  { screen: 'F-03', element: ReportNew, path: '/reports/new', title: '리포트 작성', access: 'user', mode: 'insight', nav: 'report', story: 'ANT-FE-REPORT-NEW' },
+  { screen: 'F-01', element: Reports, path: '/reports', title: '리포트 피드', access: 'user', mode: 'insight', nav: 'report', bodyClass: 'reports-page is-night', story: 'ANT-FE-REPORTS' },
+  { screen: 'F-02', element: ReportDetail, path: '/reports/:id', title: '리포트 상세', access: 'user', mode: 'insight', nav: 'report', bodyClass: 'is-night', story: 'ANT-FE-REPORT-DETAIL' },
+  { screen: 'F-03', element: ReportNew, path: '/reports/new', title: '리포트 작성', access: 'user', mode: 'insight', nav: 'report', bodyClass: 'is-night', story: 'ANT-FE-REPORT-NEW' },
 
   // ── G. 모의투자 ──────────────────────────────────────
   /* G-00 모의투자 온보딩은 라우트가 없다 — M-09 와 같이 셸 위 오버레이다
@@ -157,32 +157,32 @@ export const ROUTES: PageMeta[] = [
   { screen: 'G-09', element: SeasonHistory, path: '/sim/history', title: '기록 · 배지', access: 'user', mode: 'sim', nav: 'portfolio', bodyClass: 'sim-record-page is-night', story: 'ANT-FE-SEASON-HISTORY' },
 
   // ── H. 지갑 · 알림 · 설정 · 광고 ─────────────────────
-  { screen: 'H-01', element: Wallet, path: '/me/wallet', title: '지갑 · 토큰', access: 'user', mode: 'insight', nav: 'portfolio', story: 'ANT-FE-WALLET' },
+  { screen: 'H-01', element: Wallet, path: '/me/wallet', title: '지갑 · 토큰', access: 'user', mode: 'insight', nav: 'portfolio', bodyClass: 'is-night', story: 'ANT-FE-WALLET' },
   /* H-02 알림함은 **라우트를 두지 않는다**(2026-09-16). 알림은 보러 가는 것이
      아니라 하던 일 옆에서 확인하고 닫는 것이라, 상단바 종에서 여는 팝업
      하나로 끝낸다(components/NotificationBell). 설계서 §3 H-02 에는 이 경로가
      적혀 있지만 문서는 팀 공용이라 손대지 않았고, 이 주석이 그 차이를 적어
      두는 자리다. */
-  { screen: 'H-03', element: Settings, path: '/settings', title: '환경 설정', access: 'user', mode: 'insight', nav: 'home', story: 'ANT-FE-SETTINGS' },
-  { screen: 'H-04', element: Ad, path: '/ads/new', title: '광고 등록', access: 'user', mode: 'insight', nav: 'home', story: 'ANT-FE-AD' },
+  { screen: 'H-03', element: Settings, path: '/settings', title: '환경 설정', access: 'user', mode: 'insight', nav: 'home', bodyClass: 'is-night', story: 'ANT-FE-SETTINGS' },
+  { screen: 'H-04', element: Ad, path: '/ads/new', title: '광고 등록', access: 'user', mode: 'insight', nav: 'home', bodyClass: 'is-night', story: 'ANT-FE-AD' },
 
   /* ── I. 관리자 ────────────────────────────────────────
      I-01 신고 처리 · I-02 회원 제재는 dev 에서 한 줄짜리 자리표시자라 라우트째 지워졌다가(2026-09-17),
      이 브랜치에서 실제 화면으로 되살아났다(ANT-FE-ADMIN-MODERATION · 서버 ANT-ADMIN-01).
      I-03 시즌 운영은 지라 폐기 그대로 — 되살리지 않는다. 설계서 §3 I 에는 남아 있다(문서는 팀 공용).
      access:'admin' 은 RequireAccess 의 ADMIN 가지가 지킨다. */
-  { screen: 'I-01', element: AdminAbuse, path: '/admin/abuse-reports', title: '신고 처리', access: 'admin', mode: 'insight', nav: 'home', story: 'ANT-FE-ADMIN-MODERATION' },
-  { screen: 'I-02', element: AdminUser, path: '/admin/users', title: '회원 제재', access: 'admin', mode: 'insight', nav: 'home', story: 'ANT-FE-ADMIN-MODERATION' },
+  { screen: 'I-01', element: AdminAbuse, path: '/admin/abuse-reports', title: '신고 처리', access: 'admin', mode: 'insight', nav: 'home', bodyClass: 'is-night', story: 'ANT-FE-ADMIN-MODERATION' },
+  { screen: 'I-02', element: AdminUser, path: '/admin/users', title: '회원 제재', access: 'admin', mode: 'insight', nav: 'home', bodyClass: 'is-night', story: 'ANT-FE-ADMIN-MODERATION' },
   /* I-04 는 설계서에 없다. 이벤트 관리자 API 6종(ANT-EVENT-04·06)이 열려 있는데 부르는
      화면이 없어 붙였다. nav 는 home 으로 둔다 — 사이드바에 메뉴를 만들지 않는다. */
-  { screen: 'I-04', element: AdminEvent, path: '/admin/events', title: '이벤트 운영', access: 'admin', mode: 'insight', nav: 'home', story: 'ANT-FE-ADMIN-EVENT' },
+  { screen: 'I-04', element: AdminEvent, path: '/admin/events', title: '이벤트 운영', access: 'admin', mode: 'insight', nav: 'home', bodyClass: 'is-night', story: 'ANT-FE-ADMIN-EVENT' },
   /* I-05 광고 승인(ANT-ADMIN-03). 명세가 "관리자 승인은 2차" 로 미뤄 뒀던 것을 여기서 한다 — 승인 버튼이 곧 소각 tx 다. */
-  { screen: 'I-05', element: AdminAd, path: '/admin/ads', title: '광고 승인', access: 'admin', mode: 'insight', nav: 'home', story: 'ANT-ADMIN-03' },
+  { screen: 'I-05', element: AdminAd, path: '/admin/ads', title: '광고 승인', access: 'admin', mode: 'insight', nav: 'home', bodyClass: 'is-night', story: 'ANT-ADMIN-03' },
 
   /* ── J. 이벤트 ───────────────────────────────────────
      설계서 §3 에 없는 화면이다. 이벤트용으로 뒤에 붙은 것이라 A~I 를 밀지 않으려고
      새 글자를 쓴다 — 설계서는 그대로 두고 여기만 늘린다.
      **nav 가 없다.** 사이드바에 메뉴를 만들지 않는 화면이라, 어느 메뉴를 켤지
      정할 것이 없다. 들어오는 길은 링크와 홈 배너뿐이다. */
-  { screen: 'J-01', element: EventContest, path: '/events/scalping', title: '천하제일 단타대회', access: 'user', mode: 'insight', bodyClass: 'event-contest-page', story: 'ANT-FE-EVENT-CONTEST' },
+  { screen: 'J-01', element: EventContest, path: '/events/scalping', title: '천하제일 단타대회', access: 'user', mode: 'insight', bodyClass: 'event-contest-page is-night', story: 'ANT-FE-EVENT-CONTEST' },
 ]
