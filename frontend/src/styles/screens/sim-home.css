@@ -155,7 +155,17 @@ body.sim-home-page .main-inner{padding-top:var(--page-pt);padding-bottom:var(--p
 .sh-btn.line:hover{background:var(--cap-glass-hi);box-shadow:var(--cap-edge)}
 .sh-btn svg:last-child{margin-right:-4px}
 
-.sh-topic{margin:16px 0 0;font-size:var(--fs-xl);color:var(--night-body);font-weight:var(--fw-normal)}
+/* 어디까지 하다 말았는지 알려 주는 한 줄. 히어로 바닥에 그냥 얹어 두면 뒤로
+   빛줄기가 지나가는 자리라 글자가 자리마다 흐려졌다 — 자기 바닥(유리 알약)을
+   갖게 해서 뒤에 무엇이 지나가든 같은 곳에서 읽히게 한다(2026-09-23). */
+.sh-topic{
+  display:inline-flex;align-items:center;gap:8px;
+  margin:16px 0 0;padding:7px 16px;border-radius:999px;
+  background:var(--cap-glass);box-shadow:var(--cap-edge-soft);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  font-size:var(--fs-lg);
+}
+.sh-topic span{color:var(--night-body);font-weight:var(--fw-normal)}
 .sh-topic b{color:#fff;font-weight:var(--fw-bold)}
 
 /* 개미 무대. 그림이 판 아래로 살짝 내려가 책상에 앉은 것처럼 보인다. */

@@ -118,9 +118,9 @@ function Hero({ lead, practice, ongoing, done, startAt, myError, myLoading, onRe
             말을 그대로 쓴다. 강조는 "순간" 에 건다 — 이 화면이 파는 것은 기간이
             아니라 그 며칠이다. */}
         <h1 className="sh-title" id="sh-hero-h">
-          모의투자로
+          모의투자로 역사적인 <em>순간</em>을
           <br />
-          역사적인 <em>순간</em>을
+          연습해보세요
         </h1>
 
         <div className="sh-cta">
@@ -152,7 +152,8 @@ function Hero({ lead, practice, ongoing, done, startAt, myError, myLoading, onRe
             눌러 봐야 알았다. */}
         {lead && (
           <p className="sh-topic">
-            플레이 중인 주제 <b>{lead.title}</b>
+            <span>가장 최근 플레이:</span>
+            <b>{lead.title}</b>
           </p>
         )}
       </div>
