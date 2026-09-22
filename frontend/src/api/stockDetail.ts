@@ -81,6 +81,11 @@ export const POINT_LABEL: Record<PointKind, string> = {
   check: '확인할 점',
 }
 
+/* 그날 처음 여는 종목은 서버가 /points 요청 안에서 AI 를 불러 포인트를 만든다 — gpt-5.6-luna 로
+   로컬에서 10초 남짓 걸렸다(2026-09-23). 그동안 격자를 그리면 종류마다 "없음" 이 서서 기능이 고장 난
+   것처럼 보였다(QA 09-23). 종목 정보·예측 두 화면이 같은 문구를 쓰게 여기 둔다. */
+export const POINTS_LOADING = 'AI가 오늘 기준 투자 포인트를 정리하고 있습니다… 처음 여는 종목은 10초 안팎 걸릴 수 있습니다.'
+
 /**
  * 포인트 한 장. 여기서 고른 id 가 C-01 의 evidencePointIds 로 넘어간다.
  *

@@ -76,7 +76,7 @@ const POINT_FACE: Record<PointKind, string> = {
 }
 
 type Props = {
-  /** 아직 안 왔으면 null — 그때는 종류마다 "없음" 이 선다 */
+  /** 아직 안 왔으면 null — 그때는 종류마다 "없음" 이 선다. 부르는 쪽이 로딩 동안은 그리지 않는다 */
   points: PointGroups | null
   picked: number[]
   onPick: (id: number) => void

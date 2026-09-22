@@ -32,7 +32,7 @@
      서버가 SIGNER_MISMATCH 로 거절한다. */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Panel } from './Block'
+import { BlockState, Panel } from './Block'
 import PredictionDepth from './PredictionDepth'
 import PointPicker from './PointPicker'
 import { useBlock } from '../../api/useBlock'
@@ -51,7 +51,7 @@ import EventBet, { EventBanner, betAmount, isOverBalance, BET_MIN, BET_MAX } fro
 import { CONTEST, CONTEST_HORIZON, CONTEST_PATH, dayStamp, stamp } from '../../event/contest'
 import ErrorState from '../state/ErrorState'
 import { ApiError } from '../../api/errors'
-import { POINT_KINDS, POINT_LABEL, getPoints } from '../../api/stockDetail'
+import { POINT_KINDS, POINT_LABEL, POINTS_LOADING, getPoints } from '../../api/stockDetail'
 import type { InvestPoint, PointKind, StockSummary } from '../../api/stockDetail'
 import {
   DIRECTIONS, HORIZON_MAX, HORIZON_MIN, HORIZON_TICKS, NOTE_MAX,
@@ -915,8 +915,9 @@ export default function PredictTab({
                 적었는지 다시 찾는다. 같은 격자를 InfoTab 과 **한 컴포넌트로** 쓴다
                 (PointPicker) — 복사하면 라벨·출처·선택 규칙이 두 벌이 된다.
 
-                로딩·오류는 위 분기가 이미 맡는다. 목록이 안 왔으면 종류마다 "없음" 이
-                서고, 오류면 이 자리까지 오지 않는다. */}
+                오류는 위 분기가 이미 맡아 이 자리까지 오지 않는다. 로딩 동안은 격자 대신
+                안내를 띄운다 — 그날 처음 여는 종목은 서버가 AI 로 포인트를 만드느라 몇 초
+                걸리는데, 그 사이 격자를 그리면 종류마다 "없음" 이 서서 고장으로 보였다. */}
             {!points.error && (
               <div className="pf-points">
                 {/* 접어 둔다. 포인트가 열 개 넘게 오는 종목이면 격자가 폼을 반으로
@@ -939,7 +940,9 @@ export default function PredictTab({
                     체크박스 수십 개가 초점 순서에 남는다 */}
                 {pickerOpen && (
                   <div id="pf-point-picker">
-                    <PointPicker points={points.data} picked={picked} onPick={onPick} />
+                    <BlockState loading={points.loading} error={null} skeleton={230} loadingText={POINTS_LOADING}>
+                      <PointPicker points={points.data} picked={picked} onPick={onPick} />
+                    </BlockState>
                     <p className="pf-points-foot">
                       {/* 전문을 보려면 여전히 종목 정보가 낫다 — 여기는 고르는 자리다 */}
                       <button type="button" className="sd-link" onClick={onGoInfo}>
