@@ -224,7 +224,7 @@ export default function SeasonResult() {
   const oneLine =
     `${byTicker.length}종목을 ${sim.trades.length}회 매매해 ${rate(sim.pnlRate)} 로 마쳤습니다.` +
     (Math.abs(fromPeak) >= 0.05
-      ? ` 최고점보다 ${Math.abs(fromPeak).toFixed(1)}% 낮은 자리에서 끝났습니다.`
+      ? ` 최고점보다 ${Math.abs(fromPeak).toFixed(1)}% 낮습니다.`
       : ' 최고점에서 끝났습니다.')
 
   const sorted = [...sim.positions].sort((a, b) => b.value - a.value)
@@ -318,13 +318,9 @@ export default function SeasonResult() {
                 tone="rate"
                 label="매도 승률"
                 value={winRate === null ? '—' : `${winRate.toFixed(0)}%`}
-                sub={
-                  <span className="rs-dim">
-                    {sells.length === 0
-                      ? '판 것 없음'
-                      : `매도 ${sells.length}건 중 ${wins}건 이익`}
-                  </span>
-                }
+                sub={sells.length > 0
+                  ? <span className="rs-dim">매도 {sells.length}건 중 {wins}건 이익</span>
+                  : undefined}
                 icon={<Ico><circle cx="12" cy="14" r="6" /><path d="M9 4h6M12 8V4" /></Ico>}
               />
             </section>
@@ -374,7 +370,7 @@ export default function SeasonResult() {
                   </div>
                 </dl>
                 <p className="rs-note">
-                  아직 들고 있으면 값이 계속 움직입니다. 실현 손익만 확정된 몫입니다.
+                  평가 손익은 팔기 전까지 계속 바뀝니다.
                 </p>
               </section>
             </div>
@@ -536,7 +532,7 @@ export default function SeasonResult() {
               ) : null}
               {card !== null && (
                 <>
-                  <p className="rs-sub">서버가 굳힌 값</p>
+                  <p className="rs-sub">시즌 종료 때 확정된 값</p>
                   <dl className="rs-facts">
                     <div>
                       <dt>시장 대비</dt>
@@ -558,7 +554,7 @@ export default function SeasonResult() {
                     <div>
                       <dt>최대 낙폭</dt>
                       <dd className="num down">-{card.maxDrawdown.toFixed(2)}%</dd>
-                      <small>최고점에서 가장 깊게 파인 곳</small>
+                      <small>최고점에서 가장 많이 내려간 폭</small>
                     </div>
                     <div>
                       <dt>손익비</dt>
@@ -580,9 +576,7 @@ export default function SeasonResult() {
                       <dd className="num">
                         {card.avgHoldingDays === null ? '—' : `${card.avgHoldingDays.toFixed(1)}일`}
                       </dd>
-                      <small>
-                        {card.avgHoldingDays === null ? '판 것 없음' : '사서 팔 때까지'}
-                      </small>
+                      {card.avgHoldingDays !== null && <small>사서 팔 때까지</small>}
                     </div>
                   </dl>
 
