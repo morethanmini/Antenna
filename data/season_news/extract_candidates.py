@@ -12,6 +12,10 @@ GPU 관련도 판정에 넘길 파일을 만든다. 판정은 gpu_judge.py.
 - 이름 매칭은 운영 NewsIngestService.mentions() 보다 엄격하다. 띄어쓰기를 지우지 않고("얘기 아냐"→기아),
   이름 바로 앞이 한글·영숫자면 버린다("실효성"→효성, "현대상선"→대상). 영문으로 끝나는 이름은 바로
   뒤도 영문자면 버린다("GST"→GS, "KTX"→KT). 한 제목에서 종목은 앞에서부터 셋까지.
+- 제목 끝 증권사 꼬리표("…"-키움증권, -NH투자증권, -신한금융투자)는 매칭에서 뺀다. 리포트를 낸 증권사일 뿐
+  기사 주인공이 아닌데, 키움증권·대신증권 같은 증권사가 상장 종목이라 다른 회사 리포트가 그 종목 뉴스로
+  붙었다(2026-09-22, 25건 — "LG전자, 1분기가 투자 기회"-키움증권 → 키움증권). "신한금융"(신한지주 별칭)도
+  "신한금융투자" 앞부분에 걸렸다. 제목 본문에 그 증권사가 나오면("삼성증권, IB 실적 양호"-한국투자증권) 그대로 잡는다.
 """
 import csv, json, re, sys, bisect, collections, html
 from datetime import datetime, date, time
@@ -31,6 +35,7 @@ PUBLISHED = re.compile(r"^(\d{4})[-.](\d{2})[-.](\d{2})\s+(?:(오전|오후)\s*)
 BEFORE_BAD = re.compile(r"[가-힣A-Za-z0-9]")
 LATIN = re.compile(r"[A-Za-z0-9]")
 BROKEN_ENTITY = re.compile(r"(?<!&)(#0?39|quot|apos|amp|lt|gt|nbsp);")   # 원본에 '&' 가 떨어져 나간 조각 — "#039;전 키움#039;"
+BROKER_TAIL = re.compile(r"\s*[-–—]\s*[가-힣A-Za-z]+(증권|금융투자)\s*$")   # 제목 끝 "-키움증권" · "-신한금융투자"
 DOUBLE_AMP = re.compile(r"(?<!&)amp;(?=(#0?39|quot|apos|lt|gt|nbsp);)")    # 두 번 이스케이프된 조각 — "amp;quot;"
 
 
@@ -83,6 +88,7 @@ def game_day(cutoffs, t):
 
 
 def match_tickers(season, title):
+    title = BROKER_TAIL.sub("", title)
     found = []
     for m in season["pattern"].finditer(title):
         name, s, e = m.group(0), m.start(), m.end()
