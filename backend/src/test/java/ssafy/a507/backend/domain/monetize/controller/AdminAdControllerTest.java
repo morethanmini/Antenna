@@ -79,6 +79,7 @@ class AdminAdControllerTest {
         tx.executeWithoutResult(s -> {
             for (String delete : List.of(
                     "DELETE FROM operations WHERE user_id IN (:ids)",
+                    "DELETE FROM notifications WHERE user_id IN (:ids)",
                     "DELETE FROM ad_banners WHERE advertiser_id IN (:ids)",
                     "DELETE FROM users WHERE id IN (:ids)")) {
                 em.createNativeQuery(delete).setParameter("ids", userIds).executeUpdate();
@@ -254,6 +255,18 @@ class AdminAdControllerTest {
         assertThat(banners.findById(ad.getId()).orElseThrow().getStatus()).isEqualTo(AdBanner.Status.REJECTED);
         assertThat(relayer.calls()).isEmpty();
         assertThat(operationsOf(advertiser)).isEmpty();
+        assertThat(알림수(advertiser, "AD_REJECTED")).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("승인하면 신청자에게 AD_APPROVED 알림이 간다 — 전송이 나간 뒤에")
+    void 승인하면_알림() throws Exception {
+        AdBanner ad = insertPending(advertiser, PRICE, 7);
+
+        mockMvc.perform(handle(ad.getId(), "APPROVE").with(user(String.valueOf(adminId))))
+                .andExpect(status().isAccepted());
+
+        assertThat(알림수(advertiser, "AD_APPROVED")).isEqualTo(1);
     }
 
     @Test
@@ -375,6 +388,12 @@ class AdminAdControllerTest {
                 .setParameter(2, java.sql.Timestamp.from(endsAt))
                 .setParameter(3, banner.getId())
                 .executeUpdate());
+    }
+
+    private long 알림수(User owner, String type) {
+        return tx.execute(s -> ((Number) em.createNativeQuery(
+                        "SELECT count(*) FROM notifications WHERE user_id = ? AND type = ?")
+                .setParameter(1, owner.getId()).setParameter(2, type).getSingleResult()).longValue());
     }
 
     private List<Operation> operationsOf(User owner) {

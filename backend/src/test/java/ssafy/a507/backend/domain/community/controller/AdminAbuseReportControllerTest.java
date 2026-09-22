@@ -135,6 +135,9 @@ class AdminAbuseReportControllerTest {
         assertThat(처리시각_있나(postReportId)).isTrue();
         assertThat(글상태(postId)).isEqualTo("BLOCKED");
         assertThat(글_행_수(postId)).isEqualTo(1); // 행 삭제 없음
+        // 신고자는 결과를, 작성자는 가려진 사실을 안다
+        assertThat(알림수(reporterId, "REPORT_HANDLED")).isEqualTo(1);
+        assertThat(알림수(authorId, "CONTENT_BLOCKED")).isEqualTo(1);
     }
 
     @Test
@@ -155,6 +158,9 @@ class AdminAbuseReportControllerTest {
         assertThat(신고상태(postReportId)).isEqualTo("REJECTED");
         assertThat(처리자(postReportId)).isEqualTo(adminId);
         assertThat(글상태(postId)).isEqualTo("VISIBLE");
+        // 기각은 신고자만 안다 — 작성자는 아무 일도 없었다
+        assertThat(알림수(reporterId, "REPORT_HANDLED")).isEqualTo(1);
+        assertThat(알림수(authorId, "CONTENT_BLOCKED")).isEqualTo(0);
     }
 
     @Test
@@ -462,6 +468,12 @@ class AdminAbuseReportControllerTest {
     private boolean 처리시각_있나(Long id) {
         return em.createNativeQuery("SELECT handled_at FROM abuse_reports WHERE id = ?")
                 .setParameter(1, id).getSingleResult() != null;
+    }
+
+    private long 알림수(Long userId, String type) {
+        return ((Number) em.createNativeQuery(
+                        "SELECT count(*) FROM notifications WHERE user_id = ? AND type = ?")
+                .setParameter(1, userId).setParameter(2, type).getSingleResult()).longValue();
     }
 
     private String 글상태(Long id) {

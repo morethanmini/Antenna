@@ -15,7 +15,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
 import ssafy.a507.backend.common.security.CurrentUserProvider;
+import ssafy.a507.backend.domain.account.entity.Notification;
 import ssafy.a507.backend.domain.account.entity.User;
+import ssafy.a507.backend.domain.account.repository.NotificationRepository;
 import ssafy.a507.backend.domain.account.repository.UserRepository;
 import ssafy.a507.backend.domain.chain.entity.Operation;
 import ssafy.a507.backend.domain.chain.relay.TokenReason;
@@ -47,8 +49,13 @@ import ssafy.a507.backend.domain.monetize.repository.AdBannerRepository;
 @RequiredArgsConstructor
 public class AdminAdService {
 
+    /** 신청자에게 가는 알림 종류. 광고주가 자기 신청의 결과를 알 길이 이것뿐이다(2026-09-22 QA). */
+    static final String AD_APPROVED = "AD_APPROVED";
+    static final String AD_REJECTED = "AD_REJECTED";
+
     private final AdBannerRepository banners;
     private final UserRepository users;
+    private final NotificationRepository notifications;
     private final AdService adService;
     private final CurrentUserProvider currentUserProvider;
     private final OperationService operationService;
@@ -85,6 +92,13 @@ public class AdminAdService {
         // 실패하면 TokenOperationService 가 작업을 FAILED 로 닫고 예외를 던진다. 배너는 손대지 않는다 — PENDING 으로
         // 남아 자리와 홀드를 유지하고, 관리자가 다시 누르면 새 작업으로 다시 보낸다. 기간은 그때 다시 잡힌다.
         tokenOperationService.dispatchBurn(prepared.operationId(), prepared.price(), TokenReason.AD_PAY);
+        // 전송이 나간 뒤에야 알린다 — 앞에서 409 로 끝나면 "승인됐다" 는 알림만 남는다.
+        tx.executeWithoutResult(s -> notifications.save(Notification.create(
+                users.getReferenceById(prepared.advertiserId()),
+                AD_APPROVED,
+                "광고가 승인됐습니다",
+                "게재료를 소각하는 중입니다. 확정되면 홈 배너에 게재됩니다.",
+                "/ads/new")));
         return new AdApproveResponse(prepared.operationId(), adId, Operation.Status.PENDING);
     }
 
@@ -120,7 +134,7 @@ public class AdminAdService {
 
         Operation operation =
                 operationService.accept(advertiser, Operation.Kind.AD, Operation.ResourceType.AD, adId);
-        return new Prepared(operation.getId(), price);
+        return new Prepared(operation.getId(), price, advertiser.getId());
     }
 
     /** 반려 — 아무것도 태우지 않는다. 배너를 닫으면 자리와 가용잔액 홀드가 풀린다. */
@@ -133,6 +147,12 @@ public class AdminAdService {
             throw new BusinessException(ErrorCode.AD_ALREADY_HANDLED);
         }
         banner.reject();
+        notifications.save(Notification.create(
+                banner.getAdvertiser(),
+                AD_REJECTED,
+                "광고 신청이 반려됐습니다",
+                "묶여 있던 게재료가 가용잔액으로 돌아왔습니다. 배너나 링크를 고쳐 다시 신청할 수 있습니다.",
+                "/ads/new"));
     }
 
     /** 목록용. 체인이 꺼져 있거나 지갑이 없으면 값 대신 null — 목록 전체가 503 이 되면 안 된다. */
@@ -155,5 +175,5 @@ public class AdminAdService {
     }
 
     /** 승인 트랜잭션이 커밋한 것 중 소각 전송에 필요한 둘. */
-    private record Prepared(String operationId, BigInteger price) {}
+    private record Prepared(String operationId, BigInteger price, Long advertiserId) {}
 }
