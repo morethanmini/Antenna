@@ -69,38 +69,74 @@ public class ResearchPointGenerationService {
     /** 응답을 읽기만 하는 용도라 앱의 직렬화 설정을 물려받지 않는다(AiClient 와 같은 이유). */
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /**
+     * v3(2026-09-23): 문장을 "사실 + 그것이 왜 긍정·위험·확인거리인지" 로 쓰게 바꿨다.
+     *
+     * <p>v2 는 교내 GPU 의 양자화 모델(Qwen2.5-32B-AWQ)이 숫자를 잘못 옮기고 전망어를 붙이던 때에 맞춰
+     * 평가 어휘를 통째로 막고 예시도 "부채비율이 1084.2%다." 한 줄이었다. 모델이 그 예시를 따라 입력
+     * 한 줄씩을 옮겨 적기만 했고, "kind 마다 2~3개" 를 채우느라 거래량 0.7배 같은 평범한 값까지 칸을
+     * 메웠다(QA 09-23 "성의가 없다"). 포인트는 이제 {@link AiClient}(GMS·Gemini·OpenAI)로 만들고 자체
+     * 서빙은 관련도 판정 전용이라 문체를 푼다. 지어낸 숫자는 여전히 {@link #numbersGrounded} 가,
+     * 확률·방향 예측은 {@code BriefingGenerationService.FORBIDDEN} 이 막는다.
+     */
     private static final String INSTRUCTION =
             """
-            너는 한국 주식 리서치 화면의 "긍정 · 위험 · 확인" 3열 포인트를 만든다. 주어진 수치는
-            서버가 계산한 값이다. 아래 규칙을 반드시 지켜라.
+            너는 한국 주식 리서치 화면의 "긍정 · 위험 · 확인" 3열 포인트를 만든다. 개인 투자자가 한 줄씩
+            읽고 "그래서 이게 왜 중요한지"를 알 수 있게 쓴다. 주어진 수치는 서버가 계산한 값이다.
 
+            [형식]
             - JSON 배열 하나만 출력한다. 설명·머리말·마크다운 코드펜스를 붙이지 않는다.
             - 원소는 {"kind": "POSITIVE" | "RISK" | "CHECK", "body": "...", "documentId": 숫자 또는 null} 이다.
-            - kind 마다 2~3개씩, 전체 9개를 넘기지 않는다.
-            - kind 의 뜻 — POSITIVE: 투자 판단에 우호적인 사실, RISK: 불리하거나 부담이 되는 사실,
-              CHECK: 아직 결론이 나지 않아 앞으로 지켜볼 점.
-            - body 는 한국어 평서문 한 문장, 120자 이내로 쓴다. 이모지·목록 기호를 쓰지 않는다.
+            - kind 마다 1~3개, 전체 9개를 넘기지 않는다. 두 번째·세 번째는 근거가 충분할 때만 쓴다.
+              칸을 채우려고 쓰지 않는다.
             - documentId 는 아래 "문서" 목록에 있는 번호만 쓴다. 목록에 없는 번호를 지어내지 않는다.
               특정 문서가 아니라 시세·재무 수치에서 나온 포인트는 null 로 둔다.
-            - 문서 중 이 회사의 사업과 무관한 것(같은 이름의 스포츠 구단·지역·인물 소식 등)은 근거로
-              쓰지 않는다. 회사 실적·공시·수급·사업에 관한 문서만 쓴다.
-            - 주어진 수치와 문서 내용에 있는 사실만 쓴다. 새 수치를 계산하거나 지어내지 않는다.
-            - 숫자는 주어진 값을 단위까지 그대로 옮긴다. 억원·%·원 단위를 바꾸거나 환산하지 않는다.
-              입력에 없는 숫자가 한 개라도 들어간 원소는 버려진다.
-            - 평가·전망 어휘를 쓰지 않는다 — "높다", "낮다", "양호", "부담", "기대된다", "우려된다",
-              "상회", "하회", "시장 기대치" 를 쓰지 않는다. 수치와 사실만 적고 판단은 kind 로만 나타낸다.
-            - 매수·매도 권유, 목표주가, 주가 방향 예측을 쓰지 않는다.
-            - 상승·하락의 확률이나 가능성을 수치로 쓰지 않는다. "확률"이라는 단어를 쓰지 않는다.
+
+            [무엇을 쓰나]
+            - POSITIVE: 투자 판단에 우호적인 사실. RISK: 불리하거나 부담이 되는 사실. CHECK: 아직 결론이
+              나지 않아 앞으로 확인할 일 — 계약·수주의 이행, 실적 발표, 공시 후속 절차, 흐름이 이어지는지.
+              이미 끝난 수치를 늘어놓는 것은 CHECK 가 아니다. 어느 쪽인지 애매한 사실은 CHECK 로 둔다.
+            - 문서(뉴스·공시)에 근거한 포인트를 먼저 쓴다. 재무·시세 수치는 문서가 없거나 수치 자체가
+              눈에 띌 때 쓴다.
+            - 눈에 띄지 않는 수치는 쓰지 않는다 — 거래량이 평균의 0.5~1.5배, 52주 범위 내 위치가 20~80%,
+              1영업일 등락이 2% 미만인 것처럼 평범한 값.
+            - 이 회사의 사업과 무관한 문서(같은 이름의 스포츠 구단·지역·인물 소식 등)는 쓰지 않는다.
+
+            [어떻게 쓰나]
+            - body 는 한국어 평서문 한 문장, 100자 이내. 이모지·목록 기호를 쓰지 않는다.
+            - 사실과 그 사실이 왜 긍정·위험·확인거리인지를 한 문장에 함께 쓴다.
+              나쁜 예: "2025년 부채비율은 149.2%이고 ROE는 4.1%다." (입력을 옮겨 적기만 했다)
+              좋은 예: "2025년 영업이익이 전년보다 24.10% 줄어 영업이익률이 12.3%에서 9.1%로 낮아졌다."
+            - 관련된 수치는 한 포인트로 묶는다(매출·영업이익·영업이익률, 계약 금액·기간).
+            - 방향을 풀어 쓰는 말은 쓴다 — 늘었다, 줄었다, 개선됐다, 악화됐다, 낮아졌다, 전환했다.
+              평가는 입력 안의 비교(전년 대비·기간 등락·52주 범위)에 기대어서만 한다. 비교 대상 없이
+              "높다", "낮다", "양호하다" 로 판정하지 않는다.
+            - 입력에 없는 비교 대상을 끌어오지 않는다 — "시장 기대치", "컨센서스", "업종 평균", "동종업계".
+            - 입력에 없는 인과를 지어내지 않는다. 문서가 원인을 말하지 않으면 "~때문에" 로 잇지 않는다.
+
+            [숫자]
+            - 숫자는 주어진 값을 표기·단위까지 그대로 옮긴다(쉼표 포함). 억원을 조원으로 바꾸거나
+              반올림·환산하지 않는다. 입력에 없는 숫자가 한 개라도 들어간 원소는 버려진다.
+            - 음수 금액은 부호를 떼고 손실로 쓴다 — 입력 "영업이익 -1,568" 은 "영업손실 1,568억원".
+            - 입력에 없는 셈(횟수·기간)은 숫자 대신 우리말로 쓴다 — "두 해 연속".
             - 등락률을 인용할 때는 "3.2% 상승했다"처럼 수치를 앞에 쓴다. "상승 3.2%" 처럼 방향을
               앞세우지 않는다.
 
+            [금지]
+            - 매수·매도 권유, 목표주가, 주가 방향 예측, 전망 — "기대된다", "우려된다", "~할 것이다".
+            - 상승·하락의 확률이나 가능성을 수치로 쓰지 않는다. "확률"이라는 단어를 쓰지 않는다.
+
             예시 — 입력(일부):
-            종가 31000원 · 1영업일 -1.90% · 20영업일 +9.73%
-            부채비율 1084.2% · ROE 11.8% (2025년 기준)
+            종가 31,000원 · 1영업일 -1.90% · 5영업일 +0.65% · 20영업일 +9.73%
+            거래량 1,204,331주 · 최근 20영업일 평균의 2.4배
+            연간 재무(CFS, 억원): 2025년 매출 52,310 영업이익 4,120 순이익 2,980; 2024년 매출 48,775 영업이익 5,406 순이익 3,870
+            2025년 전년 대비: 매출 +7.25% · 영업이익 -23.79% · 순이익 -23.00% · 영업이익률 7.9% (2024년 11.1%)
+            부채비율 84.6% · ROE 6.2% (2025년 기준)
             문서(번호 · 날짜 · 원천 · 내용):
-            - [7] 2026-09-03 · 뉴스 · 금융지주와 은행주에 매수세가 몰리며 JB금융지주는 5% 넘게 올랐다.
+            - [7] 2026-09-03 · 뉴스 · 북미 완성차 업체와 배터리 소재 장기 공급 계약 · 2027년부터 5년간 공급한다.
+            - [9] 2026-09-01 · 공시 · 단일판매ㆍ공급계약체결 · 계약금액 20,145억원, 계약기간 2027-01-01~2031-12-31
             예시 — 출력:
-            [{"kind":"POSITIVE","body":"2026-09-03 금융지주와 은행주에 매수세가 몰리며 JB금융지주가 5% 넘게 올랐다.","documentId":7},{"kind":"RISK","body":"2025년 부채비율이 1084.2%다.","documentId":null},{"kind":"CHECK","body":"기준일 종가가 1영업일 전보다 1.90% 하락했고 20영업일 기준으로는 9.73% 올랐다.","documentId":null}]
+            [{"kind":"POSITIVE","body":"북미 완성차 업체와 20,145억원 규모 공급 계약을 맺어 2027년부터 5년간 이어질 매출처를 확보했다.","documentId":9},{"kind":"RISK","body":"2025년 영업이익이 전년보다 23.79% 줄어 영업이익률이 11.1%에서 7.9%로 낮아졌다.","documentId":null},{"kind":"RISK","body":"2025년 매출은 7.25% 늘었지만 순이익은 23.00% 줄어 외형 성장이 이익으로 이어지지 않았다.","documentId":null},{"kind":"CHECK","body":"공급 계약이 2027-01-01부터 이행되므로 2027년 실적에 실제로 반영되는지 확인할 필요가 있다.","documentId":9},{"kind":"CHECK","body":"기준일 거래량이 최근 20영업일 평균의 2.4배로 늘어 이런 거래가 이어지는지 지켜볼 만하다.","documentId":null}]
             """;
 
     /** 본문에서 숫자를 뽑는다 — 쉼표 천 단위, 소수점 포함. */
@@ -146,9 +182,11 @@ public class ResearchPointGenerationService {
     }
 
     private int generateStock(Stock stock, LocalDate targetDate) {
-        if (researchPointRepository.existsByStock_CodeAndTargetDate(stock.getCode(), targetDate)) {
-            // 한 건이라도 있으면 넘어간다. 아홉 건 중 일부가 버려져 열이 비었어도 다시 부르지
-            // 않는다 — 재시도를 열어 두면 포인트가 적게 나오는 종목을 매 회차 다시 불러 한도를
+        String promptVersion = aiProperties.promptVersion();
+        if (researchPointRepository.existsByStock_CodeAndTargetDateAndPromptVersion(
+                stock.getCode(), targetDate, promptVersion)) {
+            // 이 세대로 한 건이라도 있으면 넘어간다. 아홉 건 중 일부가 버려져 열이 비었어도 다시
+            // 부르지 않는다 — 재시도를 열어 두면 포인트가 적게 나오는 종목을 매 회차 다시 불러 한도를
             // 태운다. 다음 영업일이 새 기준일로 다시 만든다.
             return 0;
         }
@@ -160,7 +198,19 @@ public class ResearchPointGenerationService {
         Map<Long, ResearchDocument> documents = documents(stock.getCode(), targetDate);
         String input = facts + documentBlock(documents);
 
-        List<ResearchPoint> points = parse(aiClient.complete(INSTRUCTION, input), input, stock, targetDate, documents);
+        String text;
+        try {
+            text = aiClient.complete(INSTRUCTION, input);
+        } catch (AiException e) {
+            if (researchPointRepository.existsByStock_CodeAndTargetDate(stock.getCode(), targetDate)) {
+                // 세대를 올린 뒤 다시 만들다 실패했다. 같은 기준일의 옛 세대가 있으니 그것을 보여 주고
+                // 다음 조회가 다시 해 본다 — 503 을 내면 멀쩡히 보이던 포인트가 오류로 바뀐다.
+                log.warn("[POINT] 새 세대 생성 실패 — 옛 세대를 그대로 둔다 stock={} — {}", stock.getCode(), e.getMessage());
+                return 0;
+            }
+            throw e;
+        }
+        List<ResearchPoint> points = parse(text, input, stock, targetDate, documents, promptVersion);
         if (points.isEmpty()) {
             // 전부 버려졌으면 저장하지 않는다 — 빈 채로 두면 다음 요청이 다시 만들어 본다.
             log.warn("[POINT] 쓸 수 있는 포인트가 없어 저장하지 않는다 stock={}", stock.getCode());
@@ -210,7 +260,8 @@ public class ResearchPointGenerationService {
 
     /** 배열 밖의 군말은 무시하고, 규칙을 어긴 원소는 그 건만 버린다. */
     private List<ResearchPoint> parse(
-            String text, String input, Stock stock, LocalDate targetDate, Map<Long, ResearchDocument> documents) {
+            String text, String input, Stock stock, LocalDate targetDate, Map<Long, ResearchDocument> documents,
+            String promptVersion) {
         JsonNode array = array(text, stock.getCode());
         if (array == null) {
             return List.of();
@@ -243,7 +294,7 @@ public class ResearchPointGenerationService {
             if (counts.merge(kind, 1, Integer::sum) > MAX_PER_KIND) {
                 continue;
             }
-            points.add(ResearchPoint.of(stock, targetDate, kind, body, document));
+            points.add(ResearchPoint.of(stock, targetDate, kind, body, document, promptVersion));
         }
         return points;
     }
