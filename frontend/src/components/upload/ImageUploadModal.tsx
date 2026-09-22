@@ -26,7 +26,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, CLIENT_ERROR_CODE } from '../../api/errors'
 import {
-  ACCEPT_ATTR, ASPECT_BY_PURPOSE, MAX_BYTES, MAX_EDGE_BY_PURPOSE,
+  ACCEPT_ATTR, ASPECT_BY_PURPOSE, MAX_EDGE_BY_PURPOSE, UPLOAD_HINT,
   checkSize, cropToAspect, formatAspect, formatBytes,
   measure, needsRedraw, precheck, tooThinToCrop, uploadImage, warningsFor,
   type AspectRule, type CropRect, type CroppedImage, type UploadPurpose,
@@ -282,16 +282,11 @@ export default function ImageUploadModal({ purpose, onClose, onUploaded, aspect 
                   <path d="M12 16V4" /><path d="m7 9 5-5 5 5" />
                   <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
                 </svg>
-                <b>이미지를 끌어다 놓거나 눌러서 고르세요</b>
-                {/* 막는 조건이 아니라 하는 일을 적는다 — GIF 도 큰 사진도 들어간다(QA 09-21) */}
-                <span>{`PNG · JPG · WebP 로 올라갑니다 · 다른 형식은 바꾸고, ${formatBytes(MAX_BYTES)} 를 넘으면 줄입니다`}</span>
-                {/* 비율 제약은 있을 때만 알린다. 없는 화면에 규칙을 만들어 보이지 않는다.
-                    거절이 아니라 자른다는 것을 고르기 전에 말해 둔다 — 결과가 놀랍지 않게 */}
-                <span className="iu-rule">
-                  {rule
-                    ? `${formatAspect(rule)} 로 자릅니다 — 어디를 남길지 다음 화면에서 고릅니다`
-                    : '다음 화면에서 자를 자리를 고르거나, 원본 그대로 올릴 수 있습니다'}
-                </span>
+                <b>끌어다 놓거나 눌러서 고르세요</b>
+                {/* 안내는 크기 하나뿐이다(api/uploads.ts 의 UPLOAD_HINT). 형식 변환도
+                    자르기도 이 창이 알아서 하고 다음 단계에서 결과를 보여 주므로,
+                    고르기 전에 미리 읽힐 이유가 없다. */}
+                <span>{UPLOAD_HINT}</span>
               </button>
 
               <input
