@@ -682,7 +682,9 @@ export default function PredictTab({
                   aria-describedby="pf-target-help"
                   // 서버가 받는 가장 긴 값(정수 12자리 + 소수 2자리)에 쉼표를 친 길이다. 값 검증은 따로 한다
                   maxLength={19}
-                  onChange={(e) => setTarget(e.target.value)}
+                  /* 앞자리 0 을 지운다 — '0000100' 이 그대로 남았다. 소수는 건드리지
+                     않는다('0.5' 의 0 은 뒤가 숫자가 아니라 그대로고, '00.5' 는 '0.5') */
+                  onChange={(e) => setTarget(e.target.value.replace(/^0+(?=\d)/, ''))}
                 />
                 <span className="sd-unit">원</span>
 

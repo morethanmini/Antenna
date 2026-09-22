@@ -191,7 +191,11 @@ export default function EventBet({
             aria-label="배팅 금액 직접 입력"
             // 범위는 회차가 정하고(서버 검사) 여기는 칸이 끝없이 늘어나지 않게만 막는다
             maxLength={9}
-            onChange={(e) => onChange(e.target.value.replace(/[^0-9]/g, ''))}
+            /* 숫자만 남기고 앞자리 0 도 지운다 — 0 을 계속 치면 '000000' 이 그대로 쌓였다.
+               0 하나는 남긴다(칸을 비운 상태의 값이다) */
+            onChange={(e) => onChange(
+              e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, ''),
+            )}
           />
           <span className="ev-bet-unit">ANT</span>
         </label>
