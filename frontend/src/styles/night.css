@@ -284,3 +284,16 @@ body.is-night:not(.is-glass) .rp-tabs button:not(.on):hover,
 body.is-night:not(.is-glass) .rp-sorts button:not(.on):hover{
   background:rgba(255,255,255,.12); color:#fff;
 }
+
+/* 마켓맵(B-02 지도 보기)의 카드 밖 글자 셋. 판 없이 어두운 바탕에 바로 서는데
+   각각 --body · --muted · --faint 를 쓰고 있어 그대로면 안 읽힌다
+   (실측 #3b3f4a · #6b7280 · #9ca3af on #0d0c22).
+   제목과 같은 색으로 맞춘다 — 같은 층에 선 글자는 같은 색이어야 한다. */
+body.stocks-page.is-night .st-check,
+body.stocks-page.is-night .mm-legend-label,
+body.stocks-page.is-night .mm-foot{color:var(--night-ink)}
+
+/* 화면 제목 굵기를 850 -> 600(세미볼드)으로 내린다(2026-09-22). 어두운 바탕에서는
+   흰 글자가 이미 도드라져 850 까지 주면 획이 서로 붙어 뭉쳐 보인다. 400 까지
+   내려 보았지만 제목의 무게가 사라져 본문과 구분이 안 됐다 — 그 사이가 세미볼드다. */
+body.is-night .main-inner h1{font-weight:var(--fw-normal)}
