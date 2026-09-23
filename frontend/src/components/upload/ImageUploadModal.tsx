@@ -157,7 +157,7 @@ export default function ImageUploadModal({ purpose, onClose, onUploaded, aspect 
       return
     }
 
-    /* ④ 어디를 남길지 사용자가 고른다(CropStage). 비율이 정해진 화면(광고 4:1 · 프로필 1:1)은
+    /* ④ 어디를 남길지 사용자가 고른다(CropStage). 비율이 정해진 화면(광고 8:5 · 프로필 1:1)은
        네모가 그 비율로 잠기고, 리포트 본문처럼 비율이 없는 화면은 자유롭게 잡는다.
        손대지 않고 넘기면 — 비율이 있으면 예전처럼 가운데, 없으면 원본 그대로다. */
     setSource(src)

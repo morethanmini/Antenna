@@ -27,7 +27,7 @@ public record UploadProperties(
     public UploadProperties {
         maxBytes = maxBytes == null ? 10 * 1024 * 1024 : maxBytes;
         maxPixels = maxPixels == null ? 80_000_000L : maxPixels;
-        adAspectRatio = adAspectRatio == null ? 4.0 : adAspectRatio;
+        adAspectRatio = adAspectRatio == null ? 1.6 : adAspectRatio;
         adAspectTolerance = adAspectTolerance == null ? 0.05 : adAspectTolerance;
     }
 }
