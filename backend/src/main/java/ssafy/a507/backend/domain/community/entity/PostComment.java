@@ -8,6 +8,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -20,7 +21,11 @@ import ssafy.a507.backend.domain.account.entity.User;
 
 /** 댓글. 대댓글은 두지 않는다(필요해지면 parent_id를 붙인다). */
 @Entity
-@Table(name = "post_comments")
+/* 피드 목록의 댓글 수 집계가 `where post_id in (...) and status = ? group by post_id` 다. FK 는 참조하는
+   쪽에 인덱스를 만들어 주지 않아 20만 행을 매번 전부 읽었다(09-16 측정, 37ms → 0.7ms). */
+@Table(
+        name = "post_comments",
+        indexes = @Index(name = "ix_post_comments_post_status", columnList = "post_id, status"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PostComment {
