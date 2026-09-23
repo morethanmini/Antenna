@@ -614,6 +614,19 @@ export function cleanTargetPrice(raw: string) {
 }
 
 /**
+ * 입력칸에 보일 목표가 — 위 규칙으로 거른 뒤 정수부에 세 자리마다 쉼표를 넣는다.
+ *
+ * 값을 읽는 쪽은 쉼표를 다시 떼므로(PredictTab 의 targetPrice) 서명·커밋에는 영향이 없다.
+ * 소수부는 건드리지 않는다 — 자리 수가 뜻을 갖는 자리라 묶으면 안 된다.
+ */
+export function formatTargetInput(raw: string) {
+  const clean = cleanTargetPrice(raw)
+  const [head, tail] = clean.split('.')
+  const grouped = head.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  return tail === undefined ? grouped : `${grouped}.${tail}`
+}
+
+/**
  * 목표가 상한. **서버보다 좁게 잡는다.**
  *
  * 서버는 정수부 12자리까지 받는다(PredictionCreateRequest 의 @Digits(integer = 12) · DB numeric(14,2)).
