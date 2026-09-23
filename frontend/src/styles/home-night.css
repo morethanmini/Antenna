@@ -228,15 +228,24 @@ body.insight-home.is-night .hm-ant-box{
 }
 /* 코인 그림은 배경으로 얹는다 — 마크업을 건드리지 않고 시안의 자리를 잡는다 */
 body.insight-home.is-night .hm-ant-box::after{
-  /* **그림과 버튼을 한 줄에 세운다**(2026-09-23). 전에는 그림이 right:14 · 폭 150,
+  /* **그림과 버튼이 한 줄에 선다**(2026-09-23). 전에는 그림이 right:14 · 폭 150,
      버튼이 right:16 · 폭 92 라 가운데가 어긋났고, 그림이 top:-10 이라 판 위 경계에
-     걸쳐 잘려 보였다. 둘에게 **같은 폭(104)과 같은 오른쪽(18)** 을 주면 가운데가
-     저절로 맞는다 — 폭이 같으면 가운데도 같다.
+     걸쳐 잘려 보였다.
 
-     그림을 판 안으로 들인다(top:11). 잘리지 않으므로 background 도 right 가 아니라
-     center 로 놓아야 104 폭 안에서 가운데에 선다. */
-  content:""; position:absolute; top:11px; right:18px;
-  width:104px; height:52px; pointer-events:none;
+     가운데는 **그림의 가운데와 버튼의 가운데를 같은 자리에** 두어 맞춘다 —
+     그림 right + 폭/2 = 버튼 right + 폭/2 이면 된다(6+74 = 28+52 = 80).
+
+     **그림은 버튼과 겹쳐도 되지만 위 경계에는 닿지 않는다**(요청). top 을 8 로만
+     띄우고 아래로 키워 8~83 이 된다. 버튼이 66~100 이라 17px 겹치고, 그림이 버튼
+     위에 얹힌 모양이 된다.
+
+     키우면서 버튼도 왼쪽으로 옮긴 까닭 — 버튼을 right:18 에 두면 가운데를 맞추는
+     그림 right 가 0 이 되어 이번엔 오른쪽 경계에 닿는다. 둘을 함께 옮기면 가운데도
+     유지되고 어느 경계에도 안 닿는다.
+
+     잘리지 않으므로 background 는 right 가 아니라 center 로 놓는다. */
+  content:""; position:absolute; top:8px; right:6px;
+  width:148px; height:75px; pointer-events:none;
   background:url(/assets/page_home/ui/coins.webp) center/contain no-repeat;
   filter:drop-shadow(0 0 14px rgba(154,108,255,.7));
 }
@@ -249,7 +258,7 @@ body.insight-home.is-night .hm-ant b{
 body.insight-home.is-night .hm-ant-btn{
   /* 그림과 같은 폭·같은 오른쪽이다(위 ::after 참고). 크기도 한 단 줄였다 —
      판이 112px 인데 버튼이 38px 이면 판의 3분의 1을 버튼이 먹었다. */
-  position:absolute; right:18px; bottom:12px;
+  position:absolute; right:28px; bottom:12px;
   display:inline-flex; align-items:center; justify-content:center; gap:6px;
   width:104px; min-height:31px; padding:5px 0;
   border:2px solid rgba(255,211,255,.9); border-radius:999px;
