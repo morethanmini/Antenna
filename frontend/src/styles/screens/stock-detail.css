@@ -683,7 +683,18 @@
 .stock-detail-page .sd-doc-nav button:hover:not(:disabled){border-color:var(--brand-soft);color:var(--brand-ink,var(--brand))}
 .stock-detail-page .sd-doc-nav button:disabled{color:var(--faint);cursor:default}
 .stock-detail-page .sd-doc-nav button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
-.stock-detail-page .sd-doc-dots{display:inline-flex;align-items:center;gap:5px}
+/* **줄어들 수 있어야 한다.** flex 항목은 기본이 min-width:auto 라 내용보다 좁아지지
+   않는다 — 점이 박스보다 길어지면 가운데 정렬된 채 좌우로 삐져나가면서 화살표까지
+   박스 밖으로 밀어냈다(2026-09-23 실측: 박스 343px 에 점 35개 = 390px, 화살표가
+   좌우 52px 씩 밖). 쪽수는 MAX_DOTS(InfoTab.tsx)에서 이미 잘라 두었고, 이건 그보다
+   더 좁은 화면에서도 화살표가 제자리를 지키게 하는 마지막 빗장이다 — 점이 잘릴지언정
+   누를 것은 박스 안에 남는다. */
+.stock-detail-page .sd-doc-dots{display:inline-flex;align-items:center;gap:5px;min-width:0;overflow:hidden}
+/* 열두 쪽을 넘으면 점 대신 이 숫자다. 점 서른 개는 어디쯤인지 읽히지 않는다 */
+.stock-detail-page .sd-doc-count{
+  min-width:0;color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold);
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
 .stock-detail-page .sd-doc-dots i{
   width:6px;height:6px;border-radius:999px;background:var(--rule);transition:background .14s,width .14s;
 }

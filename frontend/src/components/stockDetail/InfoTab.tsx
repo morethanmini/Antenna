@@ -705,6 +705,9 @@ function DocumentList({ code, name }: { code: string; name: string }) {
  * 점과 화살표는 스크롤 값에서 되읽는다 — 화면이 쪽 번호를 따로 들면, 손으로 민
  * 뒤에 그 값이 실제와 어긋난다.
  */
+/** 점으로 보여 줄 최대 쪽수. 넘으면 "3 / 34" 숫자로 바뀐다 */
+const MAX_DOTS = 12
+
 function DocumentRail({
   group, name, items, hasNext, loading, onMore,
 }: {
@@ -792,11 +795,19 @@ function DocumentRail({
               >
                 &lsaquo;
               </button>
-              <span className="sd-doc-dots" aria-hidden="true">
-                {Array.from({ length: pages }, (_, i) => (
-                  <i key={i} className={i === page ? 'is-on' : undefined} />
-                ))}
-              </span>
+              {/* 점은 쪽수만큼 늘어난다 — 더보기를 몇 번 누르면 서른 쪽이 넘어가고,
+                  그 줄이 박스보다 길어져 화살표까지 밖으로 밀려났다(2026-09-23 지적,
+                  삼성전자 뉴스 68건 = 점 34개에서 실측). 열두 쪽을 넘기면 점을 걷고
+                  숫자로 바꾼다 — 서른 개짜리 점줄은 어차피 어디쯤인지 못 읽는다. */}
+              {pages <= MAX_DOTS ? (
+                <span className="sd-doc-dots" aria-hidden="true">
+                  {Array.from({ length: pages }, (_, i) => (
+                    <i key={i} className={i === page ? 'is-on' : undefined} />
+                  ))}
+                </span>
+              ) : (
+                <span className="sd-doc-count num" aria-hidden="true">{page + 1} / {pages}</span>
+              )}
               <button
                 type="button" aria-label={`${group.label} 다음`}
                 disabled={atEnd && !hasNext}
