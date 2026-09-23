@@ -58,9 +58,14 @@ body.insight-home.is-night .hm-card{
     inset 0 0 44px rgba(88,132,255,.22);
   -webkit-backdrop-filter:none; backdrop-filter:none;
 }
+/* **안쪽 선을 걷었다**(2026-09-23). 시안은 카드가 화면을 다 쓰는 데모라 두 겹 테가
+   장식으로 읽혔는데, 실제 홈은 카드 넷이 2단으로 모여 선이 여덟 줄이 된다 — 그게
+   번잡해 보이는 주된 까닭이었다(사용자 지적). 바깥 테(2px)만 남긴다.
+
+   **빛은 남긴다.** 이 겹이 들고 있던 것은 선 하나와 안쪽 발광 하나인데, 걷어낸
+   것은 선뿐이다 — 발광은 그대로 두어 판 안쪽이 여전히 은은하다. */
 body.insight-home.is-night .hm-card::before{
   content:""; position:absolute; z-index:-1; inset:10px; pointer-events:none;
-  border:1px solid rgba(205,224,255,.7);
   border-radius:17px;
   box-shadow:inset 0 0 18px rgba(122,166,255,.32);
 }
