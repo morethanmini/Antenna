@@ -90,7 +90,7 @@ body.insight-home.is-night .hm-head{
   display:flex; align-items:center; justify-content:space-between; gap:16px;
   /* 시안은 위 39 / 아래 27 인데 그건 카드가 화면 폭을 다 쓰는 데모에서다.
      2단 격자에서는 머리 한 줄(글자 31px)에 껍데기가 36px 붙어 내용보다 컸다. */
-  margin:0; padding:16px 22px 12px;
+  margin:0; padding:13px 22px 10px;
 }
 body.insight-home.is-night .hm-head h2{
   display:flex; align-items:center; gap:10px;
@@ -142,6 +142,12 @@ body.insight-home.is-night .hm-btn:hover{transform:translateY(-2px); filter:brig
 /* ── 카드 안쪽 여백 ─────────────────────────────────────────
    .hm-card 에서 패딩을 걷었으므로 각 부분이 제 몫을 갖는다. 빈 상태 판처럼 넓게
    깔려야 하는 것과 글줄처럼 좁게 들어와야 하는 것이 섞여 있어서다. */
+/* 표 줄 높이. home.css 가 11px 을 주는데 그 값은 밝은 판 기준이고, 여기서는
+   카드 넷이 한 화면에 모여 세 줄만으로 카드가 길어진다. 밤 홈에서만 줄인다 —
+   낮 판은 그대로다. */
+body.insight-home.is-night .hm-table th,
+body.insight-home.is-night .hm-table td{padding-top:8px; padding-bottom:8px}
+
 body.insight-home.is-night .hm-indices,
 body.insight-home.is-night .hm-ant-box,
 body.insight-home.is-night .hm-flow,
@@ -154,7 +160,7 @@ body.insight-home.is-night .hm-card > :last-child{margin-bottom:16px}
 /* 카드 맨 아래 한 줄(기준 시각 · 안내). 시안은 가는 선 위에 시계 아이콘을 둔다 */
 body.insight-home.is-night .hm-foot{
   display:flex; align-items:center; gap:8px;
-  margin:10px 20px 0; padding:9px 0 0;
+  margin:8px 20px 0; padding:8px 0 0;
   border-top:1px solid rgba(131,169,255,.55);
   color:var(--nc-sub); font-size:var(--fs-sm);
 }
@@ -215,7 +221,9 @@ body.insight-home.is-night .hm-ticker-no{color:var(--nc-sub)}
    시안은 잔액 판 오른쪽 위에 코인 그림, 그 아래 알약 버튼이다. */
 body.insight-home.is-night .hm-ant-box{
   position:relative; overflow:hidden;
-  min-height:132px; padding:15px 18px;
+  /* 시안 값은 132px 인데 그건 카드가 화면 폭을 다 쓰는 데모에서다. 2단 격자에서는
+     내용(잔액 29 + 버튼 41)이 100px 남짓이라 나머지가 빈 자리로 남았다(실측). */
+  min-height:112px; padding:13px 18px;
   border:1px solid var(--nc-line); border-radius:20px;
   background:
     radial-gradient(circle at 78% 35%, rgba(120,70,255,.38), transparent 35%),
@@ -224,8 +232,11 @@ body.insight-home.is-night .hm-ant-box{
 }
 /* 코인 그림은 배경으로 얹는다 — 마크업을 건드리지 않고 시안의 자리를 잡는다 */
 body.insight-home.is-night .hm-ant-box::after{
+  /* 판을 132 → 112px 로 줄이면서 그림도 같이 줄였다(2026-09-23). 그림은 위에서
+     내려오고 버튼은 아래에 붙어 있어, 판만 줄이면 둘이 겹친다 — 실측으로 겹침이
+     9px 에서 29px 로 늘었다. 높이를 96 → 76 으로 내려 원래의 9px 로 돌린다. */
   content:""; position:absolute; top:-10px; right:14px;
-  width:min(46%,178px); height:96px; pointer-events:none;
+  width:min(42%,150px); height:76px; pointer-events:none;
   background:url(/assets/page_home/ui/coins.webp) right top/contain no-repeat;
   filter:drop-shadow(0 0 14px rgba(154,108,255,.7));
 }
@@ -252,7 +263,7 @@ body.insight-home.is-night .hm-flow{
   display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:10px;
 }
 body.insight-home.is-night .hm-flow > div{
-  position:relative; overflow:hidden; min-height:76px; padding:12px 14px;
+  position:relative; overflow:hidden; min-height:64px; padding:10px 14px;
   border:1px solid var(--nc-line); border-radius:16px;
   background:linear-gradient(125deg, rgba(34,70,161,.74), rgba(20,43,117,.61));
   box-shadow:inset 0 0 26px rgba(101,137,255,.12);
