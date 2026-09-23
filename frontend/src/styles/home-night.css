@@ -45,10 +45,15 @@ body.insight-home.is-night .hm-card{
   border:2px solid rgba(180, 182, 237,.89);
   border-radius:26px;
   color:var(--nc-ink);
+  /* 면 색은 사용자가 준 견본(짙은 남보라)에 맞춘 값이다(2026-09-23). 채도만
+     낮췄을 때는 아직 쨍했다 — 밝기까지 내려야 눈이 편해진다. 번짐 두 겹도
+     알파를 .62/.44 → .16/.12 로 줄였다. 번짐이 세면 면을 아무리 어둡게 잡아도
+     실제로 보이는 색은 그 위로 뜬다 — 처음 잡은 #221d3f 가 화면에서는
+     #2e2850 로 찍혔다(실측). */
   background:
-    radial-gradient(circle at 70% -15%, rgba(135, 115, 222,.62), transparent 34%),
-    radial-gradient(circle at 6% 33%, rgba(71, 66, 188,.44), transparent 34%),
-    linear-gradient(132deg, #292461 0%, #252053 47%, #3a3182 100%);
+    radial-gradient(circle at 70% -15%, rgba(135, 115, 222,.16), transparent 34%),
+    radial-gradient(circle at 6% 33%, rgba(71, 66, 188,.12), transparent 34%),
+    linear-gradient(132deg, #1c1833 0%, #19152e 47%, #221d42 100%);
   /* 시안은 다섯 겹이었다. **테를 감싸던 두 겹(halo)을 걷었다**(2026-09-23) —
      0 0 0 5px · 7px 은 퍼지지 않는 고체 띠라, 카드마다 테가 세 줄로 보였다.
      안쪽 선을 걷은 것과 같은 까닭이다(바로 앞 커밋).
@@ -59,9 +64,9 @@ body.insight-home.is-night .hm-card{
      볼 때 알맞던 세기가 모아 놓으면 화면 전체가 떠 보였다. 바닥 그늘은
      그대로 둔다 — 그건 빛이 아니라 카드를 바닥에서 띄우는 깊이다. */
   box-shadow:
-    0 0 18px rgba(99, 87, 216,.3),
+    0 0 18px rgba(99, 87, 216,.22),
     0 20px 46px rgba(8, 0, 48,.5),
-    inset 0 0 34px rgba(130, 120, 223,.12);
+    inset 0 0 34px rgba(130, 120, 223,.05);
   -webkit-backdrop-filter:none; backdrop-filter:none;
 }
 /* **안쪽 겹을 통째로 걷었다**(2026-09-23). 시안은 카드가 화면 폭을 다 쓰는 데모라
