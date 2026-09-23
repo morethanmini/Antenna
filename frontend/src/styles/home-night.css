@@ -256,19 +256,19 @@ body.insight-home.is-night .hm-ant b{
 }
 /* 내역 보기 — 시안은 판 오른쪽 아래 알약이다 */
 body.insight-home.is-night .hm-ant-btn{
-  /* 그림과 같은 폭·같은 오른쪽이다(위 ::after 참고). 크기도 한 단 줄였다 —
-     판이 112px 인데 버튼이 38px 이면 판의 3분의 1을 버튼이 먹었다. */
+  /* 그림과 가운데가 맞다. 그림 가운데가 6+74=80 이므로 버튼도 36+44=80 이다 —
+     폭을 줄이면 오른쪽도 같이 옮겨야 이 값이 유지된다. */
   /* **버튼이 그림보다 앞이다.** 그림(::after)은 자식들 뒤에 그려지는 것이 아니라
      뒤에 오므로, 둘 다 z-index 가 auto 면 그림이 버튼을 덮는다. 버튼에 z-index 를
      줘서 앞으로 올린다. */
-  position:absolute; right:28px; bottom:12px; z-index:1;
-  display:inline-flex; align-items:center; justify-content:center; gap:6px;
-  width:104px; min-height:31px; padding:5px 0;
+  position:absolute; right:36px; bottom:12px; z-index:1;
+  display:inline-flex; align-items:center; justify-content:center; gap:5px;
+  width:88px; min-height:26px; padding:4px 0; line-height:1.1;
   border:2px solid rgba(255,211,255,.9); border-radius:999px;
   color:#fff; background:linear-gradient(90deg, rgba(122,78,255,.9), rgba(105,81,250,.9));
-  box-shadow:0 0 0 3px rgba(151,95,255,.22), 0 0 14px rgba(241,117,255,.5),
+  box-shadow:0 0 0 2px rgba(151,95,255,.22), 0 0 12px rgba(241,117,255,.5),
              inset 0 0 18px rgba(255,255,255,.15);
-  font-size:var(--fs-md); font-weight:var(--fw-bold);
+  font-size:var(--fs-sm); font-weight:var(--fw-bold);
 }
 body.insight-home.is-night .hm-ant-btn:hover{filter:brightness(1.09)}
 
@@ -325,7 +325,7 @@ body.insight-home.is-night .hm-lead-btn{
   min-height:36px; padding:7px 22px;
   border:2px solid rgba(255,211,255,.9); border-radius:999px;
   color:#fff; background:linear-gradient(90deg, rgba(122,78,255,.9), rgba(105,81,250,.9));
-  box-shadow:0 0 0 3px rgba(151,95,255,.22), 0 0 14px rgba(241,117,255,.5),
+  box-shadow:0 0 0 2px rgba(151,95,255,.22), 0 0 12px rgba(241,117,255,.5),
              inset 0 0 18px rgba(255,255,255,.15);
   font-weight:var(--fw-bold);
 }
