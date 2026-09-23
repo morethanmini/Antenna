@@ -57,6 +57,14 @@ const RANGES = [
 ] as const
 type RangeKey = (typeof RANGES)[number]['key']
 
+/* 공시·뉴스를 한 번에 받는 건수. 서버 상한이 50 이다(ResearchDocumentService
+   의 MAX_PAGE_SIZE). 커서 끝까지 이어 받으므로 왕복 수를 줄이는 값이다. */
+const DOC_PAGE_SIZE = 50
+
+/* 전량 적재 상한. "더보기" 를 걷어 자동으로 이어 받으므로, 문서가 유난히 많은
+   종목에서 브라우저가 끝없이 요청하지 않게 막는다. 삼성전자 실측이 120건대다. */
+const DOC_LOAD_CAP = 400
+
 /* 같은 업종 한 쪽에 담는 줄 수. 서버가 같은 업종 전 종목을 한 번에 주는데
    (Pageable 이 없다) 업종에 따라 백 줄이 넘어 카드가 세로로 한없이 길어진다.
    옆에 선 재무 카드가 3행 고정이라 그 높이에 맞춘 값이다. */
@@ -662,33 +670,46 @@ const DOC_GROUPS = [
  */
 function DocumentList({ code, name }: { code: string; name: string }) {
   /* 경로를 그대로 넘긴다 — 다른 목록 화면(커밋 원장 · 리포트 피드 · 지갑 원장)과
-     같은 방식이고, cursor·size 를 훅이 알아서 실어 보낸다. */
-  const list = useCursorList<StockDocument>(`/stocks/${code}/documents`)
+     같은 방식이고, cursor·size 를 훅이 알아서 실어 보낸다.
+
+     size 를 서버 상한(MAX_PAGE_SIZE=50, ResearchDocumentService)까지 올린다.
+     기본값 20 으로 전량을 받으면 왕복이 그만큼 늘어난다. */
+  const list = useCursorList<StockDocument>(`/stocks/${code}/documents`, { size: DOC_PAGE_SIZE })
+
+  /* 커서 끝까지 이어서 받는다(2026-09-23). "더보기" 단추를 걷었기 때문이다 —
+     쪽 표시가 "1 / 26" 인데 그 26 이 누를 때마다 늘어나면 총 쪽수라고 할 수 없다.
+     전량을 받아 두면 처음부터 맞는 수가 선다.
+
+     C-02(PredictList)가 같은 방식이고 주의점도 같다 — **list 를 통째로 의존성에
+     넣지 않는다.** 훅이 돌려주는 객체는 매 렌더 새로 만들어져, 넣으면 effect 가
+     렌더마다 다시 돈다. loadMore 는 훅에서 useCallback 으로 굳혀 두었고
+     hasNext·loading 을 스스로 보므로 겹쳐 부를 일은 없다. */
+  const capped = list.items.length >= DOC_LOAD_CAP
+  const { hasNext, loading, error, loadMore } = list
+  useEffect(() => {
+    if (hasNext && !loading && !error && !capped) loadMore()
+  }, [hasNext, loading, error, capped, loadMore])
 
   const grouped = {
     news: list.items.filter((d) => d.source === 'NEWS'),
     filing: list.items.filter((d) => d.source !== 'NEWS'),
   }
 
+  /* 다 받기 전에는 띠를 그리지 않는다. 반쯤 받은 상태로 그리면 쪽수가 눈앞에서
+     늘어나고, 그 수를 믿을 수 없게 된다(C-02 와 같은 판단). */
+  const settling = loading || (hasNext && !capped)
+
   return (
     <BlockState
-      loading={list.loading && list.items.length === 0}
-      error={list.error}
+      loading={settling}
+      error={error}
       onRetry={list.reload}
       skeleton={220}
-      isEmpty={!list.loading && list.items.length === 0}
+      isEmpty={list.items.length === 0}
     >
       <div className="sd-doc-groups">
         {DOC_GROUPS.map((g) => (
-          <DocumentRail
-            key={g.key}
-            group={g}
-            name={name}
-            items={grouped[g.key]}
-            hasNext={list.hasNext}
-            loading={list.loading}
-            onMore={list.loadMore}
-          />
+          <DocumentRail key={g.key} group={g} name={name} items={grouped[g.key]} />
         ))}
       </div>
     </BlockState>
@@ -705,15 +726,10 @@ function DocumentList({ code, name }: { code: string; name: string }) {
  * 점과 화살표는 스크롤 값에서 되읽는다 — 화면이 쪽 번호를 따로 들면, 손으로 민
  * 뒤에 그 값이 실제와 어긋난다.
  */
-function DocumentRail({
-  group, name, items, hasNext, loading, onMore,
-}: {
+function DocumentRail({ group, name, items }: {
   group: (typeof DOC_GROUPS)[number]
   name: string
   items: StockDocument[]
-  hasNext: boolean
-  loading: boolean
-  onMore: () => void
 }) {
   const railRef = useRef<HTMLUListElement>(null)
   const [page, setPage] = useState(0)
@@ -740,12 +756,6 @@ function DocumentRail({
   const step = (dir: -1 | 1) => {
     const el = railRef.current
     if (!el) return
-    /* 마지막 쪽에서 더 밀면 다음 쪽을 불러온다 — 화살표가 회색으로 죽어 있으면
-       서버에 더 있다는 것을 알 길이 없다 */
-    if (dir === 1 && atEnd) {
-      if (hasNext) onMore()
-      return
-    }
     el.scrollBy({ left: dir * el.clientWidth, behavior: 'smooth' })
   }
 
@@ -762,15 +772,6 @@ function DocumentRail({
           <h3>{group.label}</h3>
           <p>{group.desc(name)}</p>
         </div>
-        {hasNext && (
-          <button type="button" className="sd-doc-more" onClick={onMore} disabled={loading}>
-            {loading ? '…' : '더보기'}
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="m9 6 6 6-6 6" />
-            </svg>
-          </button>
-        )}
       </header>
 
       {items.length === 0 ? (
@@ -783,7 +784,7 @@ function DocumentRail({
             {items.map((d) => <DocCard key={d.id} doc={d} />)}
           </ul>
 
-          {(pages > 1 || hasNext) && (
+          {pages > 1 && (
             <div className="sd-doc-nav">
               <button
                 type="button" aria-label={`${group.label} 이전`}
@@ -799,7 +800,7 @@ function DocumentRail({
               <span className="sd-doc-count num" aria-hidden="true">{page + 1} / {pages}</span>
               <button
                 type="button" aria-label={`${group.label} 다음`}
-                disabled={atEnd && !hasNext}
+                disabled={atEnd}
                 onClick={() => step(1)}
               >
                 &rsaquo;
