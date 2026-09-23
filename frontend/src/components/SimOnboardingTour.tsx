@@ -102,15 +102,15 @@ const BackIcon = () => <Ico><path d="M19 12H6M11 18l-6-6 6-6" /></Ico>
 const STEPS = [
   {
     key: 'practice',
-    eyebrow: '투자의 첫걸음, 연습으로',
-    title: <>실제 시장으로 <em>부담 없이 연습</em>해요</>,
-    lead: '시장을 흔든 실제 구간을 골라, 그날의 주가 그대로 하루씩 되짚어요.',
+    eyebrow: '실제 돈 없는 모의투자',
+    title: <>과거 시장으로<br /><em>투자 감각을 익혀요</em></>,
+    lead: '그날의 시세를 보고 다음 날을 예측해 보세요.',
     art: '/assets/pageset/ant-chart.webp',
-    drift: ['card-practice', 'arrow'],
+    drift: [],
     points: [
       { icon: <BarsIcon />, text: '실제 과거 일봉으로 진행해요' },
-      { icon: <CalendarIcon />, text: '하루씩 직접 넘기며 내 속도로' },
-      { icon: <ScaleIcon />, text: '잃을 돈이 없으니 마음껏 시도해요' },
+      { icon: <CalendarIcon />, text: '하루씩 내 속도로 넘겨요' },
+      { icon: <ScaleIcon />, text: '가상 자금이라 마음껏 시도해요' },
     ],
   },
   {
@@ -119,15 +119,16 @@ const STEPS = [
        (tickerId, side, qty) 뿐이라 이유를 적을 자리가 없다(api/seasonPlay.ts 의 order).
        메모 필드가 생기면 그때 이 걸음에 한 줄 더한다. */
     key: 'trade',
-    eyebrow: '차트와 뉴스를 보고 판단해요',
-    title: <>지표와 뉴스를 보며 <em>사고팔아요</em></>,
-    lead: '앞날은 가려져 있어요. 그날까지의 흐름만 보고 판단해요.',
+    eyebrow: '보고, 고르고, 사고팔기',
+    title: <>그날의 정보만 보고<br /><em>직접 결정해요</em></>,
+    lead: '다음 날은 가려져 있어요. 차트와 뉴스로 내 판단을 만들어 보세요.',
     art: '/assets/character/black_ant/antenna-character-black.png',
-    drift: ['buy', 'script', 'sell'],
+    sprite: true,
+    drift: ['buy', 'sell'],
     points: [
-      { icon: <IndicatorIcon />, text: '이동평균 · 볼린저 · RSI · MACD' },
-      { icon: <NewsIcon />, text: '그날의 뉴스로 무슨 일이 있었는지 확인' },
-      { icon: <NoteIcon />, text: '모든 체결이 매매일지에 남아요' },
+      { icon: <IndicatorIcon />, text: '이동평균 · RSI 같은 보조지표' },
+      { icon: <NewsIcon />, text: '그날까지 공개된 뉴스' },
+      { icon: <NoteIcon />, text: '매수 · 매도 기록은 자동 저장' },
     ],
   },
   {
@@ -136,15 +137,15 @@ const STEPS = [
        "시장" 은 코스피가 아니라 그 시즌 종목을 똑같이 나눠 사서 들고 있었을 때다 —
        지수 이름을 쓰면 틀린 말이 되므로 "시장 대비" 까지만 쓴다. */
     key: 'review',
-    eyebrow: '끝나면 성적표와 AI 복기',
-    title: <>시장과 비교하며 <em>복기</em>해요</>,
-    lead: '같은 구간을 그대로 들고 있었을 때와 내 결과를 나란히 봅니다.',
-    art: '/assets/character/black_ant/antenna-character-black-run.png',
-    drift: ['card-market', 'arrow'],
+    eyebrow: '끝나면 차분히 복기',
+    title: <><em>내 선택을 돌아봐요</em></>,
+    lead: '시장 흐름과 내 수익을 함께 보고, 잘한 판단과 놓친 신호를 확인해요.',
+    art: '/assets/character/black_ant/antenna-character-black-trophy.png',
+    drift: ['panel-line', 'panel-pie'],
     points: [
-      { icon: <CurveIcon />, text: '자산 곡선과 시장 대비 수익률' },
-      { icon: <ShieldIcon />, text: '최대 낙폭 · 승률 · 손익비 · 평균 보유일' },
-      { icon: <BulbIcon />, text: 'AI 복기 — 잘한 판단 · 아쉬운 판단 · 개선 제안' },
+      { icon: <CurveIcon />, text: '자산 곡선과 시장 수익률 비교' },
+      { icon: <ShieldIcon />, text: '승률 · 낙폭 · 손익비를 한눈에' },
+      { icon: <BulbIcon />, text: '다음 연습에서 바꿀 점 정리' },
     ],
   },
 ] as const
@@ -286,7 +287,11 @@ export default function SimOnboardingTour({ onClose, onStart }: Props) {
             {step.drift.map((name, i) => (
               <img key={name} className={`sot-drift d${i + 1}`} src={`/assets/pageset/${name}.webp`} alt="" />
             ))}
-            <img className="sot-art" src={step.art} alt="" />
+            {'sprite' in step && step.sprite ? (
+              <span className="sot-play-sprite" />
+            ) : (
+              <img className="sot-art" src={step.art} alt="" />
+            )}
           </div>
         </div>
 
