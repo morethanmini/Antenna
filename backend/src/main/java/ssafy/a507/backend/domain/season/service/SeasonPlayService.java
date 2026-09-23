@@ -164,17 +164,17 @@ public class SeasonPlayService {
             positionRepository
                     .findByParticipant_IdAndTicker_Id(me.getId(), ticker.getId())
                     .ifPresentOrElse(
-                            p -> p.buy(qty, price),
-                            () -> positionRepository.save(SeasonPosition.open(me, ticker, qty, price)));
+                            p -> p.buy(qty, price, fee),
+                            () -> positionRepository.save(SeasonPosition.open(me, ticker, qty, price, fee)));
         } else {
             SeasonPosition held = positionRepository
                     .findByParticipant_IdAndTicker_Id(me.getId(), ticker.getId())
                     .filter(p -> p.getQty() >= qty)
                     .orElseThrow(() -> new BusinessException(ErrorCode.SEASON_INSUFFICIENT_QTY));
             tax = fees.sellTax(amount);
-            realizedPnl = realizedPnlOf(price, held.getAvgPrice(), qty, fee, tax);
+            BigDecimal boughtFee = held.sell(qty);
+            realizedPnl = realizedPnlOf(price, held.getAvgPrice(), qty, fee.add(tax).add(boughtFee));
             me.credit(amount.subtract(fee).subtract(tax));
-            held.sell(qty);
             if (held.getQty() == 0) {
                 positionRepository.delete(held);
             }
@@ -186,20 +186,15 @@ public class SeasonPlayService {
     }
 
     /**
-     * 매도의 실현손익 — <b>왕복 비용을 뺀 순액</b>이다(2026-09-23).
+     * 매도의 실현손익 — <b>왕복 비용을 뺀 순액</b>이다(2026-09-23). {@code cost} 는 이 매도의
+     * 수수료·거래세와, 판 수량이 살 때 실제로 낸 수수료의 몫({@link SeasonPosition#sell})이다.
      *
-     * <p>매수 쪽 수수료는 평단에서 되살린다: 평단 × 수량 × 요율. 실제로 물었던 수수료를 체결마다
-     * 되짚지 않는 이유는 평단 자체가 이미 수량 가중 평균이라(lot 을 나누지 않는다) 어느 매수의
-     * 몫인지 가를 수 없어서다. 요율이 같은 한 합계는 같고, 평단의 반올림(소수 둘째 자리)만큼만 다르다.
-     *
-     * <p>이 정의 덕에 전량을 정리하면 <b>실현손익의 합 = 예수금의 변화</b> 가 된다 —
-     * 매매일지의 "실현손익" 합계와 현황의 예수금이 서로를 검산한다.
+     * <p>매수 수수료를 요율로 되짚지 않는다 — 수수료를 붙이기 전에 산 물량은 공짜였으므로 그 몫은 0 이다.
+     * 그래서 전량을 정리하면 <b>실현손익의 합 = 예수금의 변화</b> 가 평단의 반올림(소수 둘째 자리)만큼의
+     * 오차 안에서 맞는다 — 매매일지의 "실현손익" 합계와 현황의 예수금이 서로를 검산한다.
      */
-    private BigDecimal realizedPnlOf(
-            BigDecimal price, BigDecimal avgPrice, int qty, BigDecimal sellFee, BigDecimal sellTax) {
-        BigDecimal gross = price.subtract(avgPrice).multiply(BigDecimal.valueOf(qty));
-        BigDecimal buyFee = fees.commission(avgPrice.multiply(BigDecimal.valueOf(qty)));
-        return gross.subtract(sellFee).subtract(sellTax).subtract(buyFee);
+    private static BigDecimal realizedPnlOf(BigDecimal price, BigDecimal avgPrice, int qty, BigDecimal cost) {
+        return price.subtract(avgPrice).multiply(BigDecimal.valueOf(qty)).subtract(cost);
     }
 
     /** 체결 내역. 최근 체결이 먼저고 커서는 id 다. */

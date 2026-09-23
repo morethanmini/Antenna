@@ -251,6 +251,38 @@ class SeasonPlayControllerTest {
     }
 
     @Test
+    @DisplayName("나눠 팔면 매수 수수료를 수량 비례로 떼고 마지막 매도가 남은 몫을 다 가져간다 — 실현손익의 합이 예수금의 변화와 1원까지 같다")
+    void 나눠_팔아도_매수_수수료_합이_맞다() throws Exception {
+        // 대금 700,000 · 수수료 105
+        order("k-1", tickerA, "BUY", 10).andExpect(status().isCreated());
+        // 280,000 − 42 − 420 − 매수 수수료 몫 floor(105 × 4/10) = 42
+        order("k-2", tickerA, "SELL", 4).andExpect(status().isCreated());
+        // 420,000 − 63 − 630 − 남은 몫 63
+        order("k-3", tickerA, "SELL", 6).andExpect(status().isCreated());
+
+        List<Object[]> trades = trades();
+        assertThat((BigDecimal) trades.get(0)[1]).isEqualByComparingTo("-756");
+        assertThat((BigDecimal) trades.get(1)[1]).isEqualByComparingTo("-504");
+        assertThat(cash().subtract(new BigDecimal("30000000"))).isEqualByComparingTo("-1260");
+    }
+
+    @Test
+    @DisplayName("수수료를 붙이기 전에 산 물량(buy_fee NULL)을 팔면 매수 수수료를 빼지 않는다 — 그때는 실제로 무료였다")
+    void 수수료_전_보유분_매도() throws Exception {
+        em.createNativeQuery(
+                        "INSERT INTO season_positions (participant_id, ticker_id, qty, avg_price) VALUES (?, ?, 10, 70000)")
+                .setParameter(1, participantId)
+                .setParameter(2, tickerA)
+                .executeUpdate();
+        setCurrentDay(2);
+
+        order("k-1", tickerA, "SELL", 10).andExpect(status().isCreated());
+
+        // 100,000 − 120(매도 수수료) − 1,200(거래세). 매수 수수료 105 는 낸 적이 없다
+        assertThat((BigDecimal) trades().get(0)[1]).isEqualByComparingTo("98680");
+    }
+
+    @Test
     @DisplayName("보유보다 많이 팔거나 없는 종목을 팔면 409 SEASON_INSUFFICIENT_QTY")
     void 수량_부족_409() throws Exception {
         order("k-0", tickerA, "SELL", 1)
