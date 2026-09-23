@@ -259,14 +259,9 @@
 
    배경막도 한 단 짙게. .38 은 밝은 화면 기준이라 이미 어두운 바탕 위에서는
    창이 떠 있다는 느낌을 못 준다. */
-body.is-night .sj-dialog{
-  background:linear-gradient(150deg,#241d57 0%,#1b1542 55%,#141030 100%);
-  border:1px solid rgba(190,176,255,.34);
-  box-shadow:
-    0 26px 60px -20px rgba(0,0,0,.8),
-    0 0 22px rgba(110,100,255,.28),
-    inset 0 1px 0 rgba(255,255,255,.12);
-}
+/* 판 색은 app.css 의 토큰 섬이 든다 — 밤에서도 흰 판이다. 여기서는 배경막만
+   한 단 짙게 한다. .38 은 밝은 화면 기준이라 이미 어두운 바탕 위에서는 창이
+   떠 있다는 느낌을 못 준다. */
 body.is-night .sj-dialog::backdrop{background:rgba(8,5,26,.6)}
 .sj-dialog h2{margin:0 0 10px;color:var(--ink);font-size:var(--fs-3xl);font-weight:var(--fw-heavy);letter-spacing:-.02em}
 .sj-dialog p{margin:0 0 8px;font-size:var(--fs-lg);line-height:1.65}

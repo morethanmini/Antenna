@@ -82,6 +82,9 @@ public class PredictionRegisterService {
     /** 직전 종가를 찾는 창. 상장 종목은 D+1 수집이 돌아 보통 1~4일 안에 있다. */
     private static final int QUOTE_LOOKBACK_DAYS = 30;
 
+    /** 중복 검사 대상 — 판정이 끝난(HIT/MISS) 예측은 기록이라 같은 예측을 다시 걸 수 있다. */
+    private static final Set<Prediction.Status> UNSETTLED = Set.of(Prediction.Status.BASE, Prediction.Status.OPEN);
+
     private final EntityManager em;
     private final PredictionRepository predictions;
     private final PredictionNoteRepository notes;
@@ -226,6 +229,12 @@ public class PredictionRegisterService {
         requireDirectionMatches(req.direction(), req.targetPrice(), refClose);
         List<ResearchPoint> points = loadEvidences(req.evidencePointIdsOrEmpty(), stock);
         CommitHashes.requireNoteSalt(req.noteSalt());
+        /* 판정 전인 같은 예측(종목·방향·목표가·기간)은 두 번 받지 않는다(QA 09-23). 하나라도 다르면 받는다 — 목표가를 고쳐 다시 거는 것은
+           막지 않는다. 무료 경로는 ① 잠금 안에서 저장까지 가 빈틈이 없다. 소각 경로는 저장이 tx 전송 뒤라 같은 요청 두 건이 동시에
+           ① 을 지나면 둘 다 들어간다 — 서명을 두 번 해야 생기는 일이라 받아들인다. */
+        if (predictions.existsSame(userId, stock.getCode(), req.direction(), req.targetPrice(), req.horizon(), UNSETTLED)) {
+            throw new BusinessException(ErrorCode.PREDICTION_DUPLICATED);
+        }
 
         /* ③ 슬롯 — 잠금 안에서 센다. 넘겼으면 소각 경로(ANT-PRED-10): 체인이 켜져 있고 가용잔액이 소각액 이상이어야
            한다. 둘 다 서명(nonce 소비) 앞이다 — 어차피 못 보낼 요청이 지갑 팝업을 한 번 더 겪게 하지 않는다.

@@ -15,6 +15,8 @@ import { api } from './client'
 export type IndexQuote = {
   /** KOSPI · KOSDAQ · USDKRW */
   code: string
+  /** close 의 영업일 YYYY-MM-DD. 지수와 환율은 수집이 따로라 지수끼리 날짜가 다를 수 있다 */
+  tradeDate: string
   close: number
   changeRate: number
   series: number[]

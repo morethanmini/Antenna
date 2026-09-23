@@ -425,7 +425,11 @@ export default function StockTable({ filter, setFilter }: Props) {
   /* filter 가 바뀔 때만 새 조회 함수를 만든다. 매 렌더 새로 만들면 훅이
      끝없이 다시 읽는다. filter 는 주소 쿼리가 바뀔 때만 새 객체라 참조가 안정적이다. */
   const source = useMemo(() => fetchStocks(filter), [filter])
-  const list = useCursorList<StockListItem, StockListMeta>(source)
+  /* 화면을 떠나도 펼쳐 둔 줄과 스크롤 위치를 들고 있는다(2026-09-23) — "더 보기" 로
+     내려가다 종목 하나에 다녀오면 열 줄로 돌아가 처음부터 다시 눌러야 했다.
+     조건마다 따로 들고 있어야 필터를 바꿨을 때 남의 결과가 되살아나지 않는다. */
+  const cacheKey = useMemo(() => `stocks:${JSON.stringify(filter)}`, [filter])
+  const list = useCursorList<StockListItem, StockListMeta>(source, undefined, cacheKey)
 
   const baseDate = list.meta?.baseDate ?? null
   const isEmpty = !list.loading && !list.error && list.items.length === 0

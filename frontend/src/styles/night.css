@@ -24,6 +24,17 @@ body.is-night{
   --night-glass-hi:rgba(255,255,255,.12);
   --glow:#8b7dff;
   --hand:"Nanum Pen Script","Nanum Pen",cursive;
+
+  /* 밤 유리 판 한 벌(2026-09-23). 종목 상세 머리 · 설정 · 마이페이지 · 지갑이
+     **같은 값을 봐야 한다** — 한때 세 파일이 rgba(16,14,40,.62) 를 각자 적어
+     두었는데, 종목 상세만 알파를 내리자 나머지와 갈렸다. 값이 아니라 이름을
+     공유하면 한쪽만 바뀌는 일이 생기지 않는다.
+
+     확정 기록(.lg-board)은 여기 끼지 않는다 — 줄이 빽빽해 알파를 따로 잡았고,
+     실측으로도 이 값(.5)에서는 종목코드가 4.72 → 3.94 로 기준 아래다
+     (ledger.css 의 그 자리 주석 참고). */
+  --glass-panel:rgba(16,14,40,.5);
+  --glass-blur:blur(14px) saturate(140%);
 }
 
 /* ── 페이지 전체가 밤이다(2026-09-21) ──────────────────────
@@ -144,80 +155,14 @@ body.is-night .iconbtn[aria-expanded="true"]{
 body.is-night .avatarbtn{box-shadow:var(--nav-raise)}
 body.is-night .avatarbtn:hover{box-shadow:var(--nav-raise-hi)}
 
-/* ── 바에 매달린 곁창 셋 (2026-09-22) ──────────────────────
-   햄버거 · 계정 · **알림**. 전에는 알림만 빼 두었는데("메뉴가 아니라 읽을거리가
-   담긴 판이다"), 그 결과 같은 바에서 같은 방식으로 내려오는 창인데 계정은 어둡고
-   알림은 흰 판이라 둘이 다른 제품처럼 보였다. 셋을 한 벌로 묶는다.
+/* **바에 매달린 곁창 셋은 여기서 칠하지 않는다**(2026-09-23). 한때 알림 · 계정 ·
+   햄버거를 한 벌로 묶어 어두운 유리로 만들었는데(039c7747), 셋 다 읽고 고르는
+   자리라 흰 판으로 간다 — 종목 탐색 · 리포트 · 내 예측이 같은 이유로 이미 흰
+   카드다. 색은 app.css 의 토큰 섬 한 벌이 든다.
 
-   **판 색을 토큰에 맡기지 않는다.** 셋 다 --surface 를 쓰는데 그 토큰은 is-glass
-   화면에서 rgba(255,255,255,.07) 로 뒤집힌다 — 같은 곁창이 홈(is-glass)에서는
-   비치고 종목 탐색(is-night 만)에서는 흰 판이었다. 여기서 값을 못 박는다.
-
-   **반투명 + 블러다.** 불투명(.96)으로 두면 바 아래에 판때기 하나가 얹힌 것처럼
-   보인다. 뒤의 도시가 은은히 비쳐야 상단바와 한 몸으로 읽힌다 — 상단바 자신도
-   같은 방식이다(.navbar::before). 블러를 못 쓰는 브라우저를 위해 아래에
-   불투명한 값을 먼저 적고, @supports 안에서 알파를 내린다.
-
-   ── 모드마다 색이 다르다 ───────────────────────────────────
-   같은 곁창이지만 인사이트에서는 보라 쪽, 모의투자에서는 파랑 쪽으로 기운다.
-   각 모드의 온보딩 카드가 끝나는 색과 같은 계열이다(인사이트 #8b7dff ·
-   모의투자 #6d6bff). 두 모드를 스위치 하나로 오가는 제품이라, 지금 어느 쪽에
-   있는지를 바에 매달린 창까지 같이 말해 준다.
-
-   가르는 것은 **body[data-mode]** 다 — App.tsx 가 화면마다 붙인다. 지갑 · 설정처럼
-   두 모드가 같이 쓰는 화면(설정 · 마이페이지 · 지갑)은 들어온 모드를 주소로 이어
-   받으므로(sharedMode.ts), 모의투자에서 연 지갑은 곁창도 파랑을 유지한다.
-   기본값은 인사이트다: data-mode 가 없는 순간(첫 그림)에도 색이 비지 않게 한다. */
-body.is-night{
-  --pop-fill:52,42,104;
-  --pop-line:rgba(198,182,255,.3);
-  --pop-accent:#bcaeff;
-  --pop-unread:rgba(139,125,255,.2);
-  --pop-unread-hi:rgba(139,125,255,.28);
-}
-body.is-night[data-mode="sim"]{
-  --pop-fill:38,40,112;
-  --pop-line:rgba(170,176,255,.3);
-  --pop-accent:#a8acff;
-  --pop-unread:rgba(109,107,255,.22);
-  --pop-unread-hi:rgba(109,107,255,.3);
-}
-body.is-night .navburger-pop,
-body.is-night .accountmenu-pop{
-  background:rgba(var(--pop-fill),.95);
-  border:1px solid var(--pop-line);
-  box-shadow:0 22px 50px -20px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.14);
-}
-@supports (backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px)){
-  body.is-night .navburger-pop,
-  body.is-night .accountmenu-pop{
-    background:rgba(var(--pop-fill),.72);
-    -webkit-backdrop-filter:blur(18px) saturate(140%);
-    backdrop-filter:blur(18px) saturate(140%);
-  }
-}
-
-/* **알림 곁창은 여기서 칠하지 않는다**(2026-09-23). 한때 계정 · 햄버거와 한 벌로
-   묶어 어두운 유리로 만들었는데(039c7747), 알림은 목록을 읽는 창이라 흰 판으로
-   가기로 했다 — 종목 탐색 · 리포트 · 내 예측이 같은 이유로 이미 흰 판이다.
-   색은 notification.css 가 제 안에서 토큰 한 벌을 되돌려 직접 든다. 여기에 다시
-   적으면 특정도(0,2,1)가 그쪽(0,1,0)을 눌러 조용히 덮어쓴다 — 실제로 그렇게
-   제목이 흰 판에 흰 글씨가 됐다. 계정 · 햄버거는 위 규칙 그대로 어두운 유리다. */
-body.is-night .navburger-pop a,
-body.is-night .accountmenu-pop a,
-body.is-night .accountmenu-pop button{color:var(--night-body)}
-body.is-night .navburger-pop a:hover,
-body.is-night .accountmenu-pop a:hover,
-body.is-night .accountmenu-pop button:hover{background:rgba(255,255,255,.09);color:#fff}
-/* 지금 있는 자리는 한 줄일 때(.navmenu a.on)와 같은 음각이다 */
-body.is-night .navburger-pop a.on{
-  background-color:rgba(0,0,0,.3);color:#fff;box-shadow:var(--nav-inset);
-}
-body.is-night .navburger-pop a.on:hover{background-color:rgba(0,0,0,.36);box-shadow:var(--nav-inset)}
-/* 로그아웃은 색으로 구분한다는 규칙을 어두운 판에서도 지킨다 — 기본 --danger 는
-   어두운 바탕에서 가라앉아 한 단계 밝힌다. */
-body.is-night .accountmenu-pop .is-danger{color:#ff8b8b}
-body.is-night .accountmenu-pop .is-danger:hover{background:rgba(255,107,107,.14);color:#ffa3a3}
+   여기에 다시 적으면 특정도(0,2,1)가 그쪽(0,1,0)을 눌러 **조용히 덮는다** —
+   실제로 그렇게 알림창 제목이 흰 판에 흰 글씨가 됐다. 색은 app.css 한 군데서만
+   정한다. 아래 --pop-* 값은 모드를 가르는 데 쓰던 것인데 쓰는 곳이 없어졌다. */
 
 /* 비로그인 상태의 두 버튼. 로그인 쪽이 흰 판(#fff)이라 어두운 바에서 혼자 튄다. */
 body.is-night .navbar-login{
@@ -337,6 +282,29 @@ body.is-night.is-panel{
   --hit:#5ee89b;
   --danger:#ff8b8b;
   --gold:#ffd464;
+}
+
+/* ── 판은 유리다 (2026-09-23 요청) ───────────────────────
+   종목 상세 머리(.sd-head, stock-detail.css)가 먼저 간 길이다 — 뒤에 도시 사진이
+   고정으로 깔리는데(아래 .main::before) 그 위에 불투명 사각형을 얹으면 화면에
+   붙여 놓은 것처럼 보인다. 사진이 판을 통해 비쳐야 한 덩어리로 읽힌다.
+   값은 --glass-panel · --glass-blur 한 벌을 그 판과 **같이 본다**(2026-09-23).
+   전에는 숫자를 그대로 옮겨 적었는데, 그러면 한쪽만 바뀌었을 때 조용히 갈린다.
+
+   **여기 적는 것은 판뿐이다.** 판 안의 캡슐 — 알약(.mp-pill) · 배지(.badge-chip) ·
+   거르개 단추(.wallet-filters button) · 토글 손잡이 — 은 --surface(#231d4d)를
+   그대로 써서 불투명하게 남는다. 판과 같이 투명해지면 유리 위에서 형태가 사라진다.
+
+   .lg-board(확정 기록)는 여기 없다 — 줄이 빽빽한 목록이라 알파를 실측으로 따로
+   잡았다(ledger.css 의 그 자리 주석 참고). */
+body.is-night .st-block,
+body.is-night .mp-hero,
+body.is-night .mp-score-card,
+body.is-night .wallet-card,
+body.is-night .wallet-ledger{
+  background:var(--glass-panel);
+  -webkit-backdrop-filter:var(--glass-blur);
+  backdrop-filter:var(--glass-blur);
 }
 
 /* 브랜드색을 **글자**로 쓰는 자리. 위에서 토큰을 그대로 둔 탓에 낮 값(#5457e8 ·

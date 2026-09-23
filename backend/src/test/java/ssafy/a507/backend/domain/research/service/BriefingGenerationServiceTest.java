@@ -87,6 +87,26 @@ class BriefingGenerationServiceTest {
     }
 
     @Test
+    @DisplayName("업종별 상승 종목 수와 평균 등락을 재료에 넣는다 — 종목이 3개 미만인 업종은 뺀다")
+    void 업종_집계() {
+        seedQuotes(3);
+        seedIndex();
+        seedSector("반도체", new int[] {1100, 1050, 950});
+        seedSector("보험", new int[] {1200, 800});
+        given(aiClient.complete(anyString(), anyString())).willReturn(REPLY);
+
+        assertThat(generationService.generate()).isEqualTo(1);
+
+        ArgumentCaptor<String> input = ArgumentCaptor.forClass(String.class);
+        verify(aiClient).complete(anyString(), input.capture());
+        assertThat(input.getValue())
+                .contains("업종 평균 등락 상위")
+                .contains("반도체 3종목 중 2종목 상승 · 평균 +3.33%")
+                // 상승 상위 줄에는 종목 이름으로 남는다 — 빠지는 것은 업종 집계다
+                .doesNotContain("보험 2종목");
+    }
+
+    @Test
     @DisplayName("같은 기준일·같은 세대가 이미 있으면 다시 부르지 않는다 — 주말에 도는 회차가 한도를 태우지 않는다")
     void 재실행_멱등() {
         seedQuotes(3);
@@ -214,5 +234,35 @@ class BriefingGenerationServiceTest {
                     .executeUpdate();
         }
         em.flush();
+    }
+
+    /**
+     * 한 업종에 종목을 심는다. 전일 종가는 1000 으로 같고 {@code closes} 가 기준일 종가다 —
+     * 업종 평균이 손으로 검산된다.
+     */
+    private void seedSector(String sector, int[] closes) {
+        for (int i = 0; i < closes.length; i++) {
+            String code = String.format("9%s%02d", sector.length(), i);
+            em.createNativeQuery("INSERT INTO stocks (code, name, sector, listed) VALUES (?, ?, ?, TRUE)")
+                    .setParameter(1, code)
+                    .setParameter(2, sector + i)
+                    .setParameter(3, sector)
+                    .executeUpdate();
+            seedQuote(code, TARGET.minusDays(1), 1000);
+            seedQuote(code, TARGET, closes[i]);
+        }
+        em.flush();
+    }
+
+    private void seedQuote(String code, LocalDate date, int close) {
+        em.createNativeQuery(
+                        "INSERT INTO daily_quotes (stock_code, trade_date, close, volume, collected_at)"
+                                + " VALUES (?, ?, ?, ?, ?)")
+                .setParameter(1, code)
+                .setParameter(2, date)
+                .setParameter(3, new BigDecimal(close))
+                .setParameter(4, 10_000_000L)
+                .setParameter(5, Instant.now())
+                .executeUpdate();
     }
 }

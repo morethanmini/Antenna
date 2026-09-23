@@ -35,15 +35,6 @@ const INDEX_LABEL: Record<string, string> = {
 const BRIEF_ROTATE_MS = 4500
 const AD_ROTATE_MS = 2600
 
-/* 광고마다 다른 인상을 주려고 화면 쪽에 둔 임시 프리셋이다.
-   ActiveAd 스키마에는 이미지·링크뿐이라 문구와 색을 담을 자리가 없다.
-   백엔드에 필드가 생기면 이 배열을 지우고 응답 값을 그대로 쓰면 된다. */
-const AD_THEMES = [
-  { tone: 'a', title: '내 예측을 더 많은 사람에게!', sub: 'ANT로 홍보하고 성과를 키우세요.', cta: '지금 홍보하기' },
-  { tone: 'b', title: '검증된 예측가를 구독해 보세요', sub: '적중률 높은 분석을 놓치지 않게.', cta: '구독 둘러보기' },
-  { tone: 'c', title: '모의투자 리그가 열렸습니다', sub: '실전에 앞서 전략을 시험해 보세요.', cta: '리그 참가하기' },
-]
-
 /* 홈은 요약이라 관심 종목을 몇 줄만 보여준다. 전체는 B-04 에서 본다. */
 const WATCH_ROWS = 3
 
@@ -260,6 +251,8 @@ function BriefingTicker() {
 function MarketOverview() {
   const load = useCallback(() => getMarketIndices(30), [])
   const { data, loading, error, reload } = useAsync(load)
+  /* ISO 문자열이라 사전순이 곧 날짜순이다 */
+  const asOf = data?.items.reduce<string | null>((a, it) => (a && a > it.tradeDate ? a : it.tradeDate), null)
 
   return (
     <section className="card hm-card" aria-labelledby="hm-market">
@@ -291,7 +284,11 @@ function MarketOverview() {
         </ul>
       )}
       <BriefingTicker />
-      <p className="hm-foot">최근 30일 종가 흐름 · 실전 시세는 전일 종가 기준</p>
+      {/* 배치가 넣은 종가다. 며칠 전 값이 실시간으로 읽히지 않게 기준일을 밝힌다(§7).
+          지수끼리 날짜가 다를 수 있어(환율은 따로 수집) 가장 최근 날짜 하나를 적는다. */}
+      <p className="hm-foot">
+        최근 30일 종가 흐름 · {asOf ? `${asOf} 종가 기준` : '실전 시세는 전일 종가 기준'}
+      </p>
     </section>
   )
 }
@@ -310,7 +307,8 @@ function MyAssets() {
     <section className="card hm-card hm-wallet" aria-labelledby="hm-assets">
       <header className="hm-head">
         <h2 id="hm-assets"><img className="hm-head-ico" src="/assets/page_home/ui/icon-wallet.webp" alt="" />내 자산 현황</h2>
-        <Link to="/me/wallet">지갑 ›</Link>
+        {/* 머리의 '지갑 ›' 을 뺐다 — 아래 '내역 보기' 가 같은 /me/wallet 로 가므로
+            한 카드에 같은 곳으로 가는 길이 둘이었다. */}
       </header>
       <State loading={loading} error={error} onRetry={reload} />
       {data && (
@@ -487,23 +485,25 @@ function TopPredictor() {
 
 /* 우측 맨 위 광고 배너. 어두운 면으로 두어 흰 카드 흐름과 구분한다.
    여러 장이 오면 한 장씩 자동으로 넘기고, 점을 눌러 곧바로 고를 수도 있다.
-   문구는 ActiveAd 스키마에 없어(이미지·링크뿐) 장마다 같은 안내가 나간다. */
+   ActiveAd 스키마는 이미지·링크뿐이라 장에는 배너 그림만 걸린다. */
 function Sponsored() {
   const load = useCallback(() => fetchActiveAds(), [])
   const { data, loading, error } = useAsync(load)
   const items = data?.items ?? []
-  const { index, setIndex, setPaused } = useRotate(items.length, AD_ROTATE_MS)
-  const ad = items[index]
 
-  /* 걸린 배너가 없으면 **우리 배너**를 건다(2026-09-17). 목업을 걷어내고 나니 등록된
-     광고가 0건이라 이 칸이 통째로 비었는데, 빈 칸을 접어 버리면 광고 등록(H-04)으로
-     가는 길이 홈에서 사라진다 — 지금은 마이페이지 안쪽 메뉴뿐이다.
+  /* **맨 끝 장은 늘 우리 배너**다(2026-09-23). 광고가 0건이면 이 한 장만 남는다.
+     예전(09-17)에는 광고가 0건일 때만 걸었는데, 그러면 광고가 한 건이라도 걸리는 순간
+     홈에서 광고 등록(H-04)으로 가는 길이 사라진다 — 광고를 본 사람이 "나도" 할 자리가
+     정작 없어진다.
 
      목업이 아니다. 가짜 광고주를 지어내는 것이 아니라 "이 자리를 팝니다" 라고 우리가
-     말하는 것이고, 광고가 한 건이라도 승인되면 그 배너에 자리를 내준다.
+     말하는 것이다.
 
-     실패(error)일 때는 걸지 않는다. 불러오지 못한 것과 비어 있는 것은 다른 상태다. */
-  const house = !loading && !error && items.length === 0
+     실패(error)·읽는 중에는 넘김을 세우지 않는다. 불러오지 못한 것과 비어 있는 것은
+     다른 상태다. */
+  const ready = !loading && !error
+  const count = ready ? items.length + 1 : 0
+  const { index, setIndex, setPaused } = useRotate(count, AD_ROTATE_MS)
 
   return (
     <section className="hm-showcase" aria-labelledby="hm-showcase-h"
@@ -513,63 +513,45 @@ function Sponsored() {
       </header>
       <State loading={loading} error={error} />
 
-      {house && (
-        <div className="hm-showcase-viewport">
-          <div className="hm-showcase-track">
-            <div className="hm-showcase-slide hm-t-a">
-              <p className="hm-showcase-title">이 자리에 광고를 실어 보세요</p>
-              <p className="hm-showcase-sub">결제는 ANT로 해요.</p>
-              <Link className="hm-showcase-btn" to="/ads/new">
-                광고 등록하기
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M5 12h13M13 6.5l5.5 5.5L13 17.5" stroke="currentColor"
-                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
-      {ad && (
+      {ready && (
         <>
           {/* 창 하나를 두고 띠를 옆으로 민다. 보이지 않는 장은 읽기·탭 대상에서 뺀다. */}
           <div className="hm-showcase-viewport">
             <div className="hm-showcase-track"
                  style={{ transform: `translateX(-${index * 100}%)` }}>
-              {items.map((it, i) => {
-                const t = AD_THEMES[i % AD_THEMES.length]
-                /* 색 이름에 hm- 를 붙인다(2026-09-14). 전에는 `t-b` 였는데 모의투자
-                   연습 화면(sim-practice.css)에 범위 없는 `.t-b{background:#e8f1fe}` 가
-                   있어, 화면별 CSS 가 전역으로 함께 올라가며 이 슬라이드를 덮었다 —
-                   두 번째 광고만 배경이 연하늘색이 되고 흰 글씨가 안 읽혔다. */
-                return (
-                  <div className={`hm-showcase-slide hm-t-${t.tone}`} key={it.id} aria-hidden={i !== index}>
-                    <p className="hm-showcase-title">{t.title}</p>
-                    <p className="hm-showcase-sub">{t.sub}</p>
-                    <Link className="hm-showcase-btn" to={it.linkUrl}
-                          tabIndex={i === index ? undefined : -1}>
-                      {t.cta}
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M5 12h13M13 6.5l5.5 5.5L13 17.5" stroke="currentColor"
-                              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </Link>
-                    {/* 그림을 빼 뒀다(2026-09-17). 되살리려면 이 한 줄이다:
-                          <img className="hm-showcase-art" src={it.imageUrl} alt="" aria-hidden="true" />
+              {items.map((it, i) => (
+                /* 광고 = 광고주가 올린 배너 그림 그 자체다(2026-09-23). 카드에 그림을 깔고
+                   카드 전체가 링크다. 배지·점은 그 위에 뜬다.
+                   09-17 에 그림을 빼고 프리셋 문구만 남겼더니 광고가 걸려도 우리 홍보 문구만
+                   보여 "신청이 안 들어온 것" 처럼 읽혔다.
 
-                        **여기가 광고에서 유일하게 진짜인 자리였다.** /ads/active 가 주는 것은
-                        imageUrl 과 linkUrl 뿐이고 제목·설명·버튼 글자는 화면이 들고 있는
-                        AD_THEMES 프리셋이다. 그림까지 빼면 이 카드에 광고주의 것은 링크만
-                        남는다 — 문구 필드가 생기거나 라벨을 고치기 전까지 알고 있어야 한다. */}
-                  </div>
-                )
-              })}
+                   카드는 옆 히어로 높이에 맞춰 늘어나서 비율이 화면 폭마다 다르다. 그림은
+                   업로드 비율(8:5) 그대로 가운데에 두고, 남는 자리는 카드 바탕이 채운다(home.css).
+                   문구 필드가 없어 대체 텍스트는 줄 게 없다 — 링크에 이름을 따로 붙인다. */
+                <Link className="hm-showcase-slide hm-showcase-ad" key={it.id} to={it.linkUrl}
+                      aria-hidden={i !== index} aria-label={`${i + 1}번째 광고 열기`}
+                      tabIndex={i === index ? undefined : -1}>
+                  <img src={it.imageUrl} alt="" />
+                </Link>
+              ))}
+              <div className="hm-showcase-slide hm-t-a" aria-hidden={index !== items.length}>
+                <p className="hm-showcase-title">이 자리에 광고를 실어 보세요</p>
+                <p className="hm-showcase-sub">결제는 ANT로 해요.</p>
+                <Link className="hm-showcase-btn" to="/ads/new"
+                      tabIndex={index === items.length ? undefined : -1}>
+                  광고 등록하기
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M5 12h13M13 6.5l5.5 5.5L13 17.5" stroke="currentColor"
+                          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </Link>
+              </div>
             </div>
           </div>
-          {items.length > 1 && (
+          {count > 1 && (
             <span className="hm-showcase-dots">
-              {items.map((d, i) => (
-                <button key={d.id} type="button" className={i === index ? 'on' : undefined}
+              {Array.from({ length: count }, (_, i) => (
+                <button key={i} type="button" className={i === index ? 'on' : undefined}
                         onClick={() => setIndex(i)}
                         aria-label={`${i + 1}번째 광고 보기`}
                         aria-current={i === index || undefined} />

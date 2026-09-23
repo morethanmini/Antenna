@@ -15,6 +15,10 @@ import ssafy.a507.backend.domain.season.entity.SeasonTrade;
  *
  * <p><b>보유일.</b> 포지션이 0 에서 열린 게임일을 기억하고, 매도마다 (매도일 − 연 날) 을 샘플로 모은다.
  * 추가 매수는 연 날을 바꾸지 않는다 — 평단이 가중 평균이라 lot 을 나누지 않는 것과 같은 단순화다.
+ *
+ * <p><b>매매 비용은 체결 행에서 읽는다</b>(2026-09-23). 요율을 다시 곱하지 않는다 — 요율이 바뀌면
+ * 이미 차감된 예수금과 여기서 재생한 현금이 어긋나고, 성적표가 원장과 다른 숫자를 말하게 된다.
+ * 수수료가 없던 때의 체결은 {@code fee}·{@code tax} 가 NULL 이고 {@code cost()} 가 0 으로 읽는다.
  */
 public final class SeasonResultCalculator {
 
@@ -72,16 +76,17 @@ public final class SeasonResultCalculator {
             while (cursor < trades.size() && trades.get(cursor).getGameDay() <= day) {
                 SeasonTrade tr = trades.get(cursor++);
                 Long ticker = tr.getTicker().getId();
-                BigDecimal amount = tr.getPrice().multiply(BigDecimal.valueOf(tr.getQty()));
+                BigDecimal amount = tr.amount();
                 int held = qty.getOrDefault(ticker, 0);
                 if (tr.getSide() == SeasonTrade.Side.BUY) {
-                    cash = cash.subtract(amount);
+                    // 매수는 대금에 비용을 더해 빼고, 매도는 대금에서 비용을 떼고 더한다 — order() 와 같은 식
+                    cash = cash.subtract(amount).subtract(tr.cost());
                     if (held == 0) {
                         openedDay.put(ticker, tr.getGameDay());
                     }
                     qty.put(ticker, held + tr.getQty());
                 } else {
-                    cash = cash.add(amount);
+                    cash = cash.add(amount).subtract(tr.cost());
                     qty.put(ticker, held - tr.getQty());
                     holdingDays.add(tr.getGameDay() - openedDay.getOrDefault(ticker, tr.getGameDay()));
                     sells++;

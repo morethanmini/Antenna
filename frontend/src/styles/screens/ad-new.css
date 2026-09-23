@@ -31,8 +31,8 @@
 .adreg-banner{ margin-top:10px; }
 .adreg-banner img{
   display:block; width:100%;
-  /* 4:1 자리에 그대로 들어갈 그림이라 잘라 보여주지 않는다 — 실제 노출 모양을 보여야 한다 */
-  aspect-ratio:4 / 1; object-fit:cover;
+  /* 8:5 자리에 그대로 들어갈 그림이라 잘라 보여주지 않는다 — 실제 노출 모양을 보여야 한다 */
+  aspect-ratio:8 / 5; object-fit:cover;
   border:1px solid var(--rule); border-radius:10px; background:var(--surface-2);
 }
 .adreg-banner-foot{
@@ -137,8 +137,8 @@
   padding:10px 12px;
   border:1px solid var(--rule); border-radius:10px; background:var(--surface);
 }
-/* 배너는 4:1 이라 폭을 고정하면 높이가 따라온다. 줄 높이를 배너가 정하게 두지 않는다 */
-.adreg-mine-list img{ flex:0 0 auto; width:96px; aspect-ratio:4/1; object-fit:cover; border-radius:6px }
+/* 배너는 8:5 라 폭을 고정하면 높이가 따라온다. 줄 높이를 배너가 정하게 두지 않는다 */
+.adreg-mine-list img{ flex:0 0 auto; width:96px; aspect-ratio:8/5; object-fit:cover; border-radius:6px }
 .adreg-mine-body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px }
 .adreg-mine-body b{ font-size:var(--fs-md); color:var(--ink) }
 /* 주소는 길면 줄이 무너진다 — 한 줄로 자른다 */

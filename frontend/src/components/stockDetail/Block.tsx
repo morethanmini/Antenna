@@ -98,7 +98,11 @@ export function BlockState({
   loading, error, onRetry, skeleton = 110, loadingText, empty, isEmpty, children,
 }: StateProps) {
   if (loading && loadingText) {
-    return <p className="sd-skel sd-skel-text" style={{ height: skeleton }} role="status">{loadingText}</p>
+    return (
+      <p className="sd-skel sd-skel-text" style={{ height: skeleton }} role="status">
+        <span className="waiting"><span className="spinner" aria-hidden="true" />{loadingText}</span>
+      </p>
+    )
   }
   if (loading) return <div className="sd-skel" style={{ height: skeleton }} aria-hidden="true" />
   if (error) return <ErrorState error={error} onRetry={onRetry} inline />

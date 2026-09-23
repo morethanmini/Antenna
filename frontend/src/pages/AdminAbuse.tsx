@@ -185,10 +185,12 @@ export default function AdminAbuse() {
                   <td className="admin-actions">
                     {r.status === 'PENDING' ? (
                       <>
+                        {/* 수락 = 대상을 가리고 신고를 닫는다. 운영자가 누르는 이유가 "가리기" 라서 그 이름으로 둔다.
+                            회원 신고는 가릴 것이 없어(차단은 회원 제재) 원래 이름 그대로다. */}
                         <button
                           type="button" className="se-btn solid danger" disabled={busy === r.id}
                           onClick={() => { setConfirming(r) }}
-                        >수락</button>
+                        >{r.targetType === 'USER' ? '수락' : '가리기'}</button>
                         <button
                           type="button" className="se-btn" disabled={busy === r.id}
                           onClick={() => { void 처리(r, 'REJECT') }}
@@ -196,8 +198,9 @@ export default function AdminAbuse() {
                       </>
                     ) : <span className="admin-dim">처리됨</span>}
 
-                    {/* 신고 상태와 무관하게, 대상 자체는 언제든 가리고 되돌릴 수 있다 */}
-                    {SET_STATUS[r.targetType] && (
+                    {/* 가려진 대상만 되돌린다. 신고를 닫지 않고 가리기만 하던 버튼은 뺐다 — 위 가리기(수락)와
+                        결과가 같아 무엇을 눌러야 하는지 헷갈렸고, 누르면 신고가 대기 목록에 그대로 남았다. */}
+                    {SET_STATUS[r.targetType] && r.targetBlocked && (
                       <button
                         type="button" className="se-btn" disabled={busy === r.id}
                         onClick={() => { void 블라인드토글(r) }}
@@ -213,13 +216,13 @@ export default function AdminAbuse() {
 
       {confirming && (
         <ConfirmDialog
-          title="신고 수락"
+          title={confirming.targetType === 'USER' ? '신고 수락' : '가리기'}
           description={
             confirming.targetType === 'USER'
               ? '신고를 닫아요. 계정을 차단하려면 회원 제재로 가세요.'
-              : `대상 ${withSubject(TARGET_LABEL[confirming.targetType])} 가려져요. 삭제되지는 않으며 나중에 복구할 수 있어요.`
+              : `대상 ${withSubject(TARGET_LABEL[confirming.targetType])} 가려지고 신고는 수락으로 닫혀요. 삭제되지는 않으며 복구 버튼으로 되돌릴 수 있어요.`
           }
-          confirmLabel="수락"
+          confirmLabel={confirming.targetType === 'USER' ? '수락' : '가리기'}
           tone="danger"
           onConfirm={() => {
             const target = confirming

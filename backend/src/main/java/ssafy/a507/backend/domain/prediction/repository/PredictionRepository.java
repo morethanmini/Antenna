@@ -105,6 +105,24 @@ public interface PredictionRepository extends JpaRepository<Prediction, Long> {
         return countFreeToday(userId, from, to, Operation.Kind.PREDICTION_BURN, Operation.ResourceType.PREDICTION);
     }
 
+    /** 등록 중복 검사(QA 09-23) — 판정 전인 내 예측 중 종목·방향·목표가·기간이 모두 같은 것이 있나. 목표가는 수로 비교한다. */
+    @Query("""
+            select count(p) > 0 from Prediction p
+             where p.user.id = :userId
+               and p.stock.code = :stockCode
+               and p.direction = :direction
+               and p.targetPrice = :targetPrice
+               and p.horizon = :horizon
+               and p.status in :statuses
+            """)
+    boolean existsSame(
+            @Param("userId") Long userId,
+            @Param("stockCode") String stockCode,
+            @Param("direction") Prediction.Direction direction,
+            @Param("targetPrice") BigDecimal targetPrice,
+            @Param("horizon") short horizon,
+            @Param("statuses") Collection<Prediction.Status> statuses);
+
     /**
      * 판정 배치(ANT-PRED-03·04)가 훑을 대상의 <b>id 만</b> 가져온다. 한 건이 트랜잭션 하나라 엔티티는 그 트랜잭션 안에서 다시 읽는다 —
      * 여기서 엔티티를 통째로 들고 나오면 루프 내내 준영속 상태로 붙들고 있게 된다.

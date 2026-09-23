@@ -21,8 +21,9 @@
       DAY n 만 센다 — 시즌 가격에 실제 날짜 자체가 없다(ERD).
    2. 제목의 연도·사건명(2008 금융위기). 같은 이유다. 시즌의 성격만 쓴다.
    3. 종목코드(005930)와 로고. GET /tickers 응답에 없다.
-   4. 수수료·목표가·손절가. 체결 규칙이 게임일 종가 단일가라 수수료도 예약도
-      없다(명세 §모의투자). 자리를 만들어 두면 있는 기능처럼 보인다.
+   4. 목표가·손절가. 체결 규칙이 게임일 종가 단일가라 예약 주문이 없다(명세 §모의투자).
+      자리를 만들어 두면 있는 기능처럼 보인다. 수수료·거래세는 2026-09-23 에 들어왔다 —
+      주문 패널의 비용 줄과 api/seasonPlay 의 요율.
    5. 주봉·월봉 탭. 서버가 일봉만 준다.
    6. 초보자 모드 · 심급적용 토글. 아직 정의가 없다.
 
@@ -37,7 +38,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ApiError } from '../api/errors'
 import {
-  getPrices, getTickers, maxBuyQty, orderAmount, rate, signOf,
+  getPrices, getTickers, maxBuyQty, orderAmount, orderCost, orderSettled, rate, signOf,
   type Candle, type SeasonNews, type Side, type Ticker,
 } from '../api/seasonPlay'
 import { useApiQuery } from '../api/useApiQuery'
@@ -409,8 +410,8 @@ export default function SeasonPlay() {
      바로 아래 useDayPanel 이 훅이라, return 아래로 내려가면 어떤 렌더에서는
      호출되고 어떤 렌더에서는 안 되어 훅 규칙이 깨진다. */
   const todayHint = hints.data?.items.find((n) => n.gameDay === sim.day) ?? null
-  /* 펼쳤을 때 나올 줄. **비어 있으면 아예 펼치지 않는다** — 요약 한 줄은 접힌 줄에
-     이미 다 나와 있어서, 펼치면 빈 상자만 열렸다(2026-09-23). */
+  /* 펼쳤을 때 나올 줄 — body 의 주요 사건 세 줄. **비어 있으면 아예 펼치지 않는다** —
+     접힌 줄의 한 문장 요약 말고는 보여 줄 것이 없다. */
   const hintLines = (todayHint?.body ?? '')
     .split('\n')
     .map((line) => line.replace(/^·\s*/, '').trim())
@@ -556,6 +557,11 @@ export default function SeasonPlay() {
   const qty = Math.min(qtyInput, maxQty)
   const changeQty = (n: number) => setQty(Math.min(maxQty, Math.max(0, Math.floor(n) || 0)))
   const amount = price === null ? 0 : orderAmount(price, qty)
+  /* 수수료(양쪽)와 거래세(매도만). 여기 값은 어디까지나 예상이고 진짜는 주문 응답이 준다 —
+     같은 요율·같은 절사라 어긋나지 않지만, 어긋나면 서버가 맞다 */
+  const cost = orderCost(side, amount)
+  /** 매수면 내는 총액, 매도면 받는 실수령액 */
+  const settled = orderSettled(side, amount)
   const percent = s.lengthDays > 0 ? Math.round((sim.day / s.lengthDays) * 100) : 0
   /** 남은 게임일. 건너뛰고 종료 버튼과 확인창이 같은 수를 말한다 */
   const left = Math.max(0, s.lengthDays - sim.day)
@@ -876,7 +882,10 @@ export default function SeasonPlay() {
               </div>
 
               {/* 예상 금액은 프론트 계산이다(명세 §모의투자). 종가 단일가라 곱하기 하나다.
-                  수수료 줄이 없는 게 맞다 — 이 게임에 수수료가 없다. */}
+                  비용 줄이 붙는다(2026-09-23) — 수수료 0.015%(양쪽) · 거래세 0.15%(매도만).
+                  굵게 적는 마지막 줄을 대금이 아니라 **실제로 오가는 돈**으로 둔 이유: 매수에서
+                  대금만 크게 보이면 그 값을 예수금에 맞춰 넣었을 때 수수료만큼 모자라 튕긴다.
+                  "매수 가능" 수량도 수수료를 포함해 구한다(maxBuyQty). */}
               <dl className="sp-amount">
                 <div>
                   <dt>{side === 'BUY' ? '매수 가능' : '보유 수량'}</dt>
@@ -885,9 +894,17 @@ export default function SeasonPlay() {
                     {side === 'SELL' && held && <small>평균 {won(held.avgPrice)}</small>}
                   </dd>
                 </div>
-                <div className="sp-total">
-                  <dt>예상 주문 금액</dt>
+                <div>
+                  <dt>주문 금액</dt>
                   <dd className="num">{won(amount)}</dd>
+                </div>
+                <div className="sp-fee">
+                  <dt>{side === 'BUY' ? '수수료' : '수수료·세금'}</dt>
+                  <dd className="num">{won(cost)}</dd>
+                </div>
+                <div className="sp-total">
+                  <dt>{side === 'BUY' ? '총 주문 금액' : '예상 수령액'}</dt>
+                  <dd className="num">{won(settled)}</dd>
                 </div>
               </dl>
 
@@ -1014,7 +1031,11 @@ export default function SeasonPlay() {
                     type="button" className="sp-dialog-btn solid" disabled={sim.pending}
                     onClick={() => { void finishAndGo() }}
                   >
-                    {sim.pending ? '성적표·복기 만드는 중…' : '종료하고 결과 보기'}
+                    {sim.pending ? (
+                      <span className="waiting">
+                        <span className="spinner" aria-hidden="true" />성적표·복기 만드는 중…
+                      </span>
+                    ) : '종료하고 결과 보기'}
                   </button>
                 </div>
               </dialog>
@@ -1030,9 +1051,9 @@ export default function SeasonPlay() {
             아래라, 차트 보고 주문하면 시선이 거기서 끝나 아래로 안 내려간다.
             접어 둔 사람에게는 그 게임일 동안 다시 펴지 않고 점만 찍는다. */}
         <div className="sp-later">
-          {/* **펼칠 것이 있을 때만 접이로 둔다(2026-09-23).** 요약은 한 줄이라
-              접힌 줄에 이미 다 나와 있다 — 그런데도 꺾쇠가 달려 있어서 눌러 보면
-              빈 상자만 열렸다. 펼칠 줄이 있으면 details, 없으면 같은 모양의 한 줄이다. */}
+          {/* **펼칠 것이 있을 때만 접이로 둔다(2026-09-23).** 접힌 줄에는 한 문장
+              요약, 펼치면 주요 사건 세 줄이다. body 가 비면 꺾쇠를 달아 봐야 빈 상자만
+              열리므로, 펼칠 줄이 있으면 details, 없으면 같은 모양의 한 줄이다. */}
           {hintLines.length > 0 ? (
             <details
               className="sp-fold" open={hintPanel.open}

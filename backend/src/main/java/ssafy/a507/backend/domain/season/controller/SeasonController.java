@@ -161,12 +161,24 @@ public class SeasonController {
                 IdempotencyStore.hash(request.toString()),
                 () -> {
                     SeasonOrderResponse r = seasonPlayService.order(userId, seasonId, request);
-                    return r.tradeId() + ":" + r.price().toPlainString() + ":" + r.gameDay();
+                    // 콜론으로 잇는다 — 숫자·BigDecimal 뿐이라 구분자와 부딪히지 않는다.
+                    // 재요청이 첫 응답을 그대로 돌려줘야 하므로 수수료·거래세도 함께 실어 둔다.
+                    return r.tradeId() + ":" + r.price().toPlainString() + ":" + r.gameDay()
+                            + ":" + r.fee().toPlainString() + ":" + r.tax().toPlainString();
                 });
         String[] parts = stored.split(":");
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new SeasonOrderResponse(
-                        Long.valueOf(parts[0]), new BigDecimal(parts[1]), Integer.parseInt(parts[2])));
+                        Long.valueOf(parts[0]), new BigDecimal(parts[1]), Integer.parseInt(parts[2]),
+                        part(parts, 3), part(parts, 4)));
+    }
+
+    /**
+     * 저장된 응답의 n 번째 조각. 없으면 0 이다 — 수수료를 붙이기 전(2026-09-23)에 저장된 키가
+     * TTL 24시간 안에 다시 오면 조각이 셋뿐이라, 그대로 읽으면 500 이 난다. 그 체결은 실제로 무료였다.
+     */
+    private static BigDecimal part(String[] parts, int index) {
+        return index < parts.length ? new BigDecimal(parts[index]) : BigDecimal.ZERO;
     }
 
     /**

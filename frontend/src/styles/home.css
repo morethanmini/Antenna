@@ -566,7 +566,9 @@
   color:#fff;
 }
 /* 배지·상태글·점은 창(절대배치) 위에 떠야 한다 */
-.hm-showcase-head{position:relative; z-index:2; display:flex; width:100%}
+/* 배지는 카드 모서리 쪽으로 당겨 둔다(2026-09-23) — 광고 그림이 카드를 덮으니 20px 안쪽에
+   떠 있으면 그림 한가운데를 가린다. 카드 여백은 그대로 두고 머리만 당긴다(점 자리는 그대로). */
+.hm-showcase-head{position:relative; z-index:2; display:flex; width:100%; margin:-10px 0 0 -10px}
 .hm-showcase .hm-state{position:relative; z-index:2}
 .hm-showcase .hm-badge{
   margin:0; border-color:rgba(255,255,255,.22);
@@ -600,6 +602,10 @@
 .hm-showcase-slide.hm-t-c{--ad-accent:rgba(236,116,168,.42)}
 /* 글자와 버튼이 마스코트 위로 오게 한 겹 올린다 */
 .hm-showcase-slide > *{position:relative; z-index:1}
+/* 넘김이 끝난 장은 숨긴다(2026-09-23). 카드 폭이 소수점(462.75px 등)이면 옆 장이 가장자리에
+   1px 비친다 — 글자 장끼리는 어두운 바탕이라 안 보였지만 광고 그림이 들어오며 드러났다.
+   숨김을 넘김 시간(.45s)만큼 늦춰, 나가는 장이 밀려나는 모습은 그대로 보인다. */
+.hm-showcase-slide[aria-hidden="true"]{visibility:hidden; transition:visibility 0s .45s}
 @media (prefers-reduced-motion:reduce){
   .hm-showcase-track{transition:none}
 }
@@ -612,18 +618,18 @@
   color:#fff; font-size:var(--fs-base); font-weight:var(--fw-bold);
 }
 .hm-showcase-btn:hover{background:rgba(255,255,255,.12)}
-/* 캐릭터는 배경 장식이라 글자 뒤로 깔고 클릭을 가로채지 않는다 */
-/* 슬라이드 안에 깔리는 장식. 위의 .hm-showcase-slide>* 규칙보다 뒤에 와야
-   z-index 0 이 살아 글자 뒤로 간다. */
-/* 슬라이드 높이(140px) 안에 통째로 들어오도록 상한을 둔다. 창이
-   overflow:hidden 이라 조금이라도 넘치면 발끝이 잘린다. */
-.hm-showcase-art{
-  position:absolute; right:6px; bottom:0; z-index:0;
-  /* 카드(239px)에서 배지가 앉은 위쪽을 뺀 만큼까지 키운다. 더 올리면
-     배지와 머리가 부딪힌다. */
-  width:auto; height:auto; max-width:46%; max-height:178px;
-  opacity:.95; pointer-events:none;
+/* 광고 장은 광고주 그림을 카드에 깐다(2026-09-23). 배지·점은 z-index 2 라 그 위에 뜬다.
+   그림 비율(8:5)은 고정이고 카드 비율은 옆 히어로 높이를 따라 화면 폭마다 바뀐다.
+   8:5 는 1280px 화면에서 카드가 갖는 비율(463×297 ≈ 1.56)에 맞춘 값이라 그때는 거의 꽉 차고,
+   화면이 넓어져 카드가 납작해지면 그림은 그대로 두고 좌우에 바탕이 남는다 — 자르지 않는다.
+   가운데 정렬은 object-position 기본값(50% 50%)이 맡는다.
+   위의 .hm-showcase-slide>* 가 img 를 relative 로 되돌리지 않도록 자식 선택자로 한 단계 올린다. */
+.hm-showcase-slide.hm-showcase-ad{padding:0; background:#141235}
+.hm-showcase-slide.hm-showcase-ad > img{
+  position:absolute; inset:0; z-index:0;
+  width:100%; height:100%; object-fit:contain;
 }
+.hm-showcase-ad:focus-visible{outline:2px solid #fff; outline-offset:-4px; border-radius:16px}
 /* 점은 장수를 알릴 뿐 아니라 눌러서 고르는 버튼이기도 하다.
    자동으로 넘어가는 콘텐츠에는 손으로 멈출 길이 있어야 한다. */
 .hm-showcase-dots{position:relative; z-index:2; display:flex; gap:6px; margin-top:auto}

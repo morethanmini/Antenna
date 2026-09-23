@@ -81,7 +81,7 @@ class UploadControllerTest {
     void 실제_INSERT_까지_확인() throws Exception {
         String fileId =
                 jsonValue(
-                        mockMvc.perform(upload(TestImages.png(400, 100), "AD", "key-flush"))
+                        mockMvc.perform(upload(TestImages.png(400, 250), "AD", "key-flush"))
                                 .andReturn(),
                         "fileId");
 
@@ -95,7 +95,7 @@ class UploadControllerTest {
     @Test
     @DisplayName("올린 이미지를 url 로 다시 받을 수 있다")
     void 업로드한_이미지_조회() throws Exception {
-        byte[] content = TestImages.png(400, 100);
+        byte[] content = TestImages.png(400, 250);
         MvcResult created =
                 mockMvc.perform(upload(content, "AD", "key-read")).andReturn();
         String fileId = jsonValue(created, "fileId");
@@ -164,7 +164,7 @@ class UploadControllerTest {
     @Test
     @DisplayName("같은 키로 같은 파일을 다시 올리면 처음 fileId 를 그대로 돌려준다")
     void 멱등_재요청() throws Exception {
-        byte[] content = TestImages.png(400, 100);
+        byte[] content = TestImages.png(400, 250);
 
         String first = jsonValue(mockMvc.perform(upload(content, "AD", "key-same")).andReturn(), "fileId");
         String second = jsonValue(mockMvc.perform(upload(content, "AD", "key-same")).andReturn(), "fileId");
@@ -175,10 +175,10 @@ class UploadControllerTest {
     @Test
     @DisplayName("같은 키에 다른 파일이면 409 IDEMPOTENCY_KEY_REUSED")
     void 멱등키_재사용() throws Exception {
-        mockMvc.perform(upload(TestImages.png(400, 100), "AD", "key-reuse"))
+        mockMvc.perform(upload(TestImages.png(400, 250), "AD", "key-reuse"))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(upload(TestImages.png(800, 200), "AD", "key-reuse"))
+        mockMvc.perform(upload(TestImages.png(800, 500), "AD", "key-reuse"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("IDEMPOTENCY_KEY_REUSED"));
     }
