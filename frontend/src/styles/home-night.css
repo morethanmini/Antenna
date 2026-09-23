@@ -258,7 +258,10 @@ body.insight-home.is-night .hm-ant b{
 body.insight-home.is-night .hm-ant-btn{
   /* 그림과 같은 폭·같은 오른쪽이다(위 ::after 참고). 크기도 한 단 줄였다 —
      판이 112px 인데 버튼이 38px 이면 판의 3분의 1을 버튼이 먹었다. */
-  position:absolute; right:28px; bottom:12px;
+  /* **버튼이 그림보다 앞이다.** 그림(::after)은 자식들 뒤에 그려지는 것이 아니라
+     뒤에 오므로, 둘 다 z-index 가 auto 면 그림이 버튼을 덮는다. 버튼에 z-index 를
+     줘서 앞으로 올린다. */
+  position:absolute; right:28px; bottom:12px; z-index:1;
   display:inline-flex; align-items:center; justify-content:center; gap:6px;
   width:104px; min-height:31px; padding:5px 0;
   border:2px solid rgba(255,211,255,.9); border-radius:999px;
