@@ -75,8 +75,15 @@
   background:linear-gradient(180deg,#f2f2fd 0%,#e6eafc 22%,#d8e4fc 48%,#e6eefd 72%,var(--ground) 100%);
 }
 /* 당기는 배율. 흔들림(rk-sway)이 transform 을 쓰므로 여기서 transform 을 또 주면
-   애니메이션이 덮어쓴다 — 값만 변수로 넘기고 곱하는 것은 키프레임이 한다. */
-.rk-page.is-event .rk-sky-bg{ --rk-zoom:1.5; opacity:.9; }
+   애니메이션이 덮어쓴다 — 값만 변수로 넘기고 곱하는 것은 키프레임이 한다.
+
+   **2.6 은 마스코트가 완전히 화면 밖으로 나가는 값이다.** cover 로 깔린 그림에서
+   scale(s) 는 가운데 1/s 만 보여 주므로, 보이는 구간은 좌우 (1-1/s)/2 부터다 —
+   2.6 이면 30.8%~69.2% 다. 마스코트는 왼쪽 3~25%, 순위 블록은 오른쪽 72% 부터라
+   양쪽 다 밖으로 밀린다. 1.5 로는 마스코트 머리가 걸쳤다(2026-09-23).
+   그만큼 원본을 확대해 쓰는 것이지만(1920px 중 740px 남짓), 남는 구간이 빛과
+   보케뿐이라 또렷할 것이 없다. */
+.rk-page.is-event .rk-sky-bg{ --rk-zoom:2.6; opacity:.9; }
 .rk-sky-bg{
   position:fixed; left:0; right:0;
   /* **상단 바 밑까지 끌어올린다**(2026-09-22). 전에는 바 아래(top:--topbar-h)부터
