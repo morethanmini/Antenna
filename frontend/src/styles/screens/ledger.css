@@ -120,9 +120,12 @@
 
 /* 좌측 세로선이 묶음을 관통한다(GitHub 커밋 목록).
    큐브 노드가 left:0~26 이므로 선은 그 한가운데인 13 - 1 = 12 에 선다. */
+/* 들여쓰기를 변수로 둔다 — 세로선 자리와 짚은 줄의 띠 폭이 이 값 하나에 매달려
+   있어서, 좁은 화면에서 30px 으로 줄일 때 셋이 함께 움직여야 한다. */
 .lg-group{
+  --lg-indent:38px;
   position:relative;
-  padding-left:38px;
+  padding-left:var(--lg-indent);
   margin-bottom:6px;
 }
 .lg-group::before{
@@ -164,12 +167,29 @@
 .lg-rows{ margin:0; padding:0; list-style:none; }
 
 .lg-row{
+  position:relative;
   padding:11px 0 12px;
   border-top:1px solid var(--rule);
 }
-.lg-row:hover{ background:var(--brand-softer); }
-/* 배경이 세로선까지 닿아 보이도록 왼쪽으로 늘린다 */
-.lg-row:hover{ box-shadow:-14px 0 0 var(--brand-softer), 14px 0 0 var(--brand-softer); }
+/* ── 짚은 줄 (2026-09-23 고침) ─────────────────────────
+   전에는 배경색에 좌우 ±14px box-shadow 를 더해 띠를 늘렸다. 그 14 는 아무 것과도
+   맞지 않는 수라, 760px 에서 재 보면 **왼쪽은 모자라고 오른쪽은 넘쳤다**:
+     판 안쪽 38~722 · 세로선 50~52 · 줄 76~722 인데 띠는 62~736.
+   왼쪽은 닿게 하려던 세로선에서 10px 못 미쳐 허공에서 시작하고, 오른쪽은 줄 끝을
+   14px 넘어 판의 여백(22px)을 파고들어 모서리 라운드까지 갔다. 두 색이 어긋나게
+   겹쳐 보이던 것이 이것이다.
+
+   대신 띠를 **판 안쪽 상자에 맞춘다** — 왼쪽은 묶음 들여쓰기만큼(--lg-indent)
+   되돌려 세로선 바깥까지, 오른쪽은 줄 끝까지. 좌우가 같은 상자 안에서 끝난다.
+   음수 z-index 라 세로선(.lg-group::before, 자리를 가진 요소)이 띠 위에 그대로
+   남는다 — GitHub 커밋 목록이 짚은 줄을 칠하는 방식과 같다.
+   위 1px 을 비우는 것은 줄 사이 구분선을 띠가 덮지 않게 하기 위해서다. */
+.lg-row:hover::before{
+  content:''; position:absolute; z-index:-1;
+  top:1px; right:0; bottom:0; left:calc(var(--lg-indent) * -1);
+  border-radius:10px;
+  background:var(--brand-softer);
+}
 
 /* ── 무엇을 봉인했나 — 줄의 머리 ───────────────────────
    **이 줄의 주인공은 아래 해시다.** 종목명·제목은 "무엇이 봉인됐나" 를 알려 주는
@@ -247,10 +267,9 @@
 /* ── 좁은 화면 ───────────────────────────────────────── */
 @media (max-width: 560px){
   .lg-chain{ padding:12px 13px; gap:9px; align-items:flex-start; }
-  .lg-group{ padding-left:30px; }
+  .lg-group{ --lg-indent:30px; }
   .lg-group::before{ left:9px; }
   .lg-node{ width:20px; height:20px; top:10px; }
-  .lg-row:hover{ box-shadow:none; }
 }
 
 /* ── 밤 바탕 위의 글자 (2026-09-23) ─────────────────────
@@ -294,13 +313,7 @@ body.is-night .lg-group:last-of-type::before{
   background:linear-gradient(180deg, var(--night-line) 70%, transparent);
 }
 body.is-night .lg-row{ border-top-color:var(--night-line); }
-body.is-night .lg-row:hover{
-  background:var(--night-glass);
-  box-shadow:-14px 0 0 var(--night-glass), 14px 0 0 var(--night-glass);
-}
-@media (max-width: 560px){
-  body.is-night .lg-row:hover{ box-shadow:none; }
-}
+body.is-night .lg-row:hover::before{ background:var(--night-glass); }
 
 /* 움직이는 것이 없다. Bitfeed 식 사각형 무리를 걷어내면서 그 칸의 숨쉬기
    애니메이션(lg-breathe)도 함께 사라졌다 — 이 화면에 prefers-reduced-motion 으로

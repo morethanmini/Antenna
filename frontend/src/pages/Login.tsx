@@ -58,6 +58,10 @@ const FEATURES = [
 /** 앞부분을 이만큼 건너뛴다(초). 첫 프레임 몇 장이 나머지보다 밝아 되감길 때마다
  *  한 번씩 튄다. 재생을 시작할 때와 되감을 때 **같은 값**을 써야 앞뒤가 맞는다. */
 const CLIP_START = 0.1
+/** 1181px 아래에서 <picture> 가 고를 것이 없을 때 받는 투명 1px. 주소가 data: 라
+ *  네트워크를 타지 않는다 — img 는 src 가 비면 그 자리에 깨진 그림 표시를 띄운다. */
+const BLANK_PNG =
+  'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
 
 export default function Login() {
   /* 자격증명이 env 에 들어왔는지로 버튼을 연다. 빌드 시점에 정해지는 값이라
@@ -143,10 +147,32 @@ export default function Login() {
               <source
                 src="/assets/character/white_ant/running-in-place.mp4"
                 type="video/mp4"
-                media="(min-width: 1181px)"
+                /* 움직임을 줄인 사람은 이 영상을 **보지 않는다**(아래 img 가 대신
+                   나온다). 그런데 조건이 폭뿐이면 그 사람도 10MB 를 받아 두고 숨긴다.
+                   조건에 함께 적어 둔다(2026-09-23). */
+                media="(min-width: 1181px) and (prefers-reduced-motion: no-preference)"
               />
             </video>
-            <img src="/assets/character/white_ant/antenna-character-transparent.png" alt="" aria-hidden="true" />
+            {/* 정지 그림도 영상과 같은 방법으로 막는다(2026-09-23).
+                display:none 은 내려받기를 막지 못한다 — 430px 에서 재 보니 보이지도
+                않는 PNG 950KB 를 매번 받고 있었다(영상은 위 source 의 media 로 이미
+                막혀 있었는데 이 그림만 남아 있었다). <picture> 의 source 도 같은 조건을
+                걸고, 아무것도 안 맞을 때 받을 것은 투명 1px 로 둔다.
+                이 그림은 "움직임 줄이기" 를 켠 사람에게만 보이고, 그 사람도 1181px
+                아래에서는 칸 자체가 숨으므로 볼 일이 없다. 그래서 조건에 그 설정도
+                함께 적는다 — 영상과 그림이 서로 반대 조건이라, 어느 쪽이든 실제로
+                보게 될 파일 하나만 받는다.
+
+                **불러올 때 한 번만 재는 값이다**(위 영상 source 와 같은 한계).
+                창을 좁혔다 넓히거나 OS 의 움직임 설정을 중간에 바꾸면 그 세션에서는
+                그림 자리가 빈다 — 새로고침이면 돌아온다. */}
+            <picture>
+              <source
+                srcSet="/assets/character/white_ant/antenna-character-transparent.png"
+                media="(min-width: 1181px) and (prefers-reduced-motion: reduce)"
+              />
+              <img src={BLANK_PNG} alt="" aria-hidden="true" />
+            </picture>
           </figure>
         </section>
 
