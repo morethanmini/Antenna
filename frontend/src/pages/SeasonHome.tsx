@@ -160,8 +160,15 @@ function Hero({ lead, practice, ongoing, done, startAt, myError, myLoading, onRe
 
       {/* 책상에 앉은 개미. 시안 원본(page_train)을 여백만 잘라 webp 로 구웠다.
           말풍선("오늘도 조금 더 성장!") 이 그림 안에 있어 따로 얹지 않는다. */}
+      {/* 1240 아래에는 480px 짜리를 내려보낸다(2026-09-23). 그 폭부터는 CSS 가 무대를
+          통째로 내리는데(sim-home.css 반응형), 숨긴 그림도 내려받기는 한다 — 보이지도
+          않는 장식에 원본 259KB 를 쓸 이유가 없어 60KB 짜리로 바꿔 받게 한다. */}
       <div className="sh-stage" aria-hidden="true">
-        <img className="sh-hero-art" src="/assets/page_train/ant-desk.webp" alt="" />
+        <picture>
+          <source media="(max-width:1240px)" srcSet="/assets/page_train/ant-desk-480.webp" />
+          <img className="sh-hero-art" src="/assets/page_train/ant-desk.webp" alt=""
+               width={1232} height={1080} />
+        </picture>
       </div>
 
       {/* 오른쪽 두 칸. 시작 자산은 연습 목록이 한 값으로 모일 때만 그린다(agreed) —
