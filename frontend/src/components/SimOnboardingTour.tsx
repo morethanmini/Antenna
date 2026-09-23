@@ -126,7 +126,7 @@ const STEPS = [
     sprite: true,
     drift: ['buy', 'sell'],
     points: [
-      { icon: <IndicatorIcon />, text: '이동평균 · RSI 같은 보조지표' },
+      { icon: <IndicatorIcon />, text: '이동평균 · RSI 보조지표' },
       { icon: <NewsIcon />, text: '그날까지 공개된 뉴스' },
       { icon: <NoteIcon />, text: '매수 · 매도 기록은 자동 저장' },
     ],
@@ -138,7 +138,7 @@ const STEPS = [
        지수 이름을 쓰면 틀린 말이 되므로 "시장 대비" 까지만 쓴다. */
     key: 'review',
     eyebrow: '끝나면 차분히 복기',
-    title: <><em>내 선택을 돌아봐요</em></>,
+    title: <>내 <em>선택</em>을 돌아봐요</>,
     lead: '시장 흐름과 내 수익을 함께 보고, 잘한 판단과 놓친 신호를 확인해요.',
     art: '/assets/character/black_ant/antenna-character-black-trophy.png',
     drift: ['panel-line', 'panel-pie'],
