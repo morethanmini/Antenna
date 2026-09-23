@@ -21,8 +21,9 @@
       DAY n 만 센다 — 시즌 가격에 실제 날짜 자체가 없다(ERD).
    2. 제목의 연도·사건명(2008 금융위기). 같은 이유다. 시즌의 성격만 쓴다.
    3. 종목코드(005930)와 로고. GET /tickers 응답에 없다.
-   4. 수수료·목표가·손절가. 체결 규칙이 게임일 종가 단일가라 수수료도 예약도
-      없다(명세 §모의투자). 자리를 만들어 두면 있는 기능처럼 보인다.
+   4. 목표가·손절가. 체결 규칙이 게임일 종가 단일가라 예약 주문이 없다(명세 §모의투자).
+      자리를 만들어 두면 있는 기능처럼 보인다. 수수료·거래세는 2026-09-23 에 들어왔다 —
+      주문 패널의 비용 줄과 api/seasonPlay 의 요율.
    5. 주봉·월봉 탭. 서버가 일봉만 준다.
    6. 초보자 모드 · 심급적용 토글. 아직 정의가 없다.
 
@@ -37,7 +38,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ApiError } from '../api/errors'
 import {
-  getPrices, getTickers, maxBuyQty, orderAmount, rate, signOf,
+  getPrices, getTickers, maxBuyQty, orderAmount, orderCost, orderSettled, rate, signOf,
   type Candle, type SeasonNews, type Side, type Ticker,
 } from '../api/seasonPlay'
 import { useApiQuery } from '../api/useApiQuery'
@@ -556,6 +557,11 @@ export default function SeasonPlay() {
   const qty = Math.min(qtyInput, maxQty)
   const changeQty = (n: number) => setQty(Math.min(maxQty, Math.max(0, Math.floor(n) || 0)))
   const amount = price === null ? 0 : orderAmount(price, qty)
+  /* 수수료(양쪽)와 거래세(매도만). 여기 값은 어디까지나 예상이고 진짜는 주문 응답이 준다 —
+     같은 요율·같은 절사라 어긋나지 않지만, 어긋나면 서버가 맞다 */
+  const cost = orderCost(side, amount)
+  /** 매수면 내는 총액, 매도면 받는 실수령액 */
+  const settled = orderSettled(side, amount)
   const percent = s.lengthDays > 0 ? Math.round((sim.day / s.lengthDays) * 100) : 0
   /** 남은 게임일. 건너뛰고 종료 버튼과 확인창이 같은 수를 말한다 */
   const left = Math.max(0, s.lengthDays - sim.day)
@@ -876,7 +882,10 @@ export default function SeasonPlay() {
               </div>
 
               {/* 예상 금액은 프론트 계산이다(명세 §모의투자). 종가 단일가라 곱하기 하나다.
-                  수수료 줄이 없는 게 맞다 — 이 게임에 수수료가 없다. */}
+                  비용 줄이 붙는다(2026-09-23) — 수수료 0.015%(양쪽) · 거래세 0.15%(매도만).
+                  굵게 적는 마지막 줄을 대금이 아니라 **실제로 오가는 돈**으로 둔 이유: 매수에서
+                  대금만 크게 보이면 그 값을 예수금에 맞춰 넣었을 때 수수료만큼 모자라 튕긴다.
+                  "매수 가능" 수량도 수수료를 포함해 구한다(maxBuyQty). */}
               <dl className="sp-amount">
                 <div>
                   <dt>{side === 'BUY' ? '매수 가능' : '보유 수량'}</dt>
@@ -885,9 +894,17 @@ export default function SeasonPlay() {
                     {side === 'SELL' && held && <small>평균 {won(held.avgPrice)}</small>}
                   </dd>
                 </div>
-                <div className="sp-total">
-                  <dt>예상 주문 금액</dt>
+                <div>
+                  <dt>주문 금액</dt>
                   <dd className="num">{won(amount)}</dd>
+                </div>
+                <div className="sp-fee">
+                  <dt>{side === 'BUY' ? '수수료' : '수수료·세금'}</dt>
+                  <dd className="num">{won(cost)}</dd>
+                </div>
+                <div className="sp-total">
+                  <dt>{side === 'BUY' ? '총 주문 금액' : '예상 수령액'}</dt>
+                  <dd className="num">{won(settled)}</dd>
                 </div>
               </dl>
 

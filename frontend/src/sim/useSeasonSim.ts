@@ -35,6 +35,7 @@ import {
   getTrades,
   join as joinApi,
   order as orderApi,
+  tradeCost,
   type Candle,
   type MyStatus,
   type SeasonFinishResult,
@@ -62,9 +63,12 @@ export type SimTrade = {
   qty: number
   /** 체결가 = 그 게임일 종가 */
   price: number
+  /** 체결 대금. 비용을 빼기 전이다 */
   amount: number
+  /** 위탁수수료 + 증권거래세. 옛 체결(수수료가 없던 때)은 0 이다 */
+  cost: number
   gameDay: number
-  /** 매도에만 값이 있다 */
+  /** 매도에만 값이 있다. 왕복 비용을 뺀 순액이다 */
   realizedPnl: number | null
 }
 
@@ -206,6 +210,7 @@ export function useSeasonSim({
         qty: t.qty,
         price: t.price,
         amount: t.amount,
+        cost: tradeCost(t),
         gameDay: t.gameDay,
         realizedPnl: t.realizedPnl,
       })),
@@ -246,12 +251,14 @@ export function useSeasonSim({
             qty: q,
             avgPrice: (cur.avgPrice * cur.qty + t.price * t.qty) / q,
           })
-          run -= t.amount
+          /* 비용까지 빼야 서버의 예수금과 같은 곡선이 된다 — 마지막 날만 서버 값으로
+             덮으므로, 여기서 빠뜨리면 그 전날들이 조금씩 부풀어 곡선이 끝에서 꺾인다 */
+          run -= t.amount + t.cost
         } else {
           const left = cur.qty - t.qty
           if (left <= 0) held.delete(t.tickerId)
           else held.set(t.tickerId, { qty: left, avgPrice: cur.avgPrice })
-          run += t.amount
+          run += t.amount - t.cost
         }
       })
 

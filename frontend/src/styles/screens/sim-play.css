@@ -348,6 +348,8 @@
 .sp-amount dd{margin:0;color:var(--body);font-size:var(--fs-lg);font-weight:var(--fw-heavy);text-align:right}
 .sp-amount dd small{display:block;margin-top:2px;color:var(--muted);font-size:var(--fs-xs);font-weight:var(--fw-bold)}
 /* 마지막 줄이 실제로 나갈 돈이다 — 위 줄들보다 크고 진하게 */
+/* 비용 줄은 대금보다 작고 흐리게 — 읽는 순서가 대금 → 비용 → 실제로 오가는 돈이다 */
+.sp-amount .sp-fee dt,.sp-amount .sp-fee dd{color:var(--muted);font-size:var(--fs-sm);font-weight:var(--fw-bold)}
 .sp-amount .sp-total{padding-top:9px;border-top:1px dashed var(--rule)}
 .sp-amount .sp-total dt{color:var(--body);font-size:var(--fs-base);font-weight:var(--fw-bold)}
 .sp-amount .sp-total dd{color:#0e1330;font-size:var(--fs-3xl);font-weight:var(--fw-black);letter-spacing:-.02em}

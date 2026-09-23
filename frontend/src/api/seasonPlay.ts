@@ -125,6 +125,10 @@ export type OrderResult = {
   /** 체결가 = 그 게임일 종가 */
   price: number
   gameDay: number
+  /** 위탁수수료. 매수·매도 양쪽에 붙는다 */
+  fee: number
+  /** 증권거래세. 매도에만 붙고 매수는 0 이다 */
+  tax: number
 }
 
 export const order = (seasonId: number, tickerId: number, side: Side, qty: number) => {
@@ -247,11 +251,23 @@ export type Trade = {
   side: Side
   qty: number
   price: number
+  /** 체결 대금. 비용을 빼기 전이다 — 실제로 오간 돈은 아래 fee·tax 를 더하거나 뺀 값이다 */
   amount: number
+  /** 위탁수수료. 수수료가 없던 때(2026-09-23 이전)의 체결은 null 이다 */
+  fee: number | null
+  /** 증권거래세. 매도에만 붙는다. 옛 체결은 null */
+  tax: number | null
   gameDay: number
-  /** 매도에만 값이 있다 */
+  /** 매도에만 값이 있다. **왕복 비용을 뺀 순액**이다 */
   realizedPnl: number | null
 }
+
+/** 이 체결에 든 비용(수수료 + 거래세). 옛 체결의 null 은 0 으로 본다 */
+export const tradeCost = (t: Pick<Trade, 'fee' | 'tax'>) => (t.fee ?? 0) + (t.tax ?? 0)
+
+/** 이 체결로 예수금이 움직인 크기. 매수는 나간 돈, 매도는 들어온 돈 */
+export const tradeSettled = (t: Pick<Trade, 'side' | 'amount' | 'fee' | 'tax'>) =>
+  t.side === 'BUY' ? t.amount + tradeCost(t) : t.amount - tradeCost(t)
 
 export type TradePage = { items: Trade[]; nextCursor: number | null; hasNext: boolean }
 
@@ -278,15 +294,62 @@ export const getTrades = (
 export const weightOf = (value: number, totalAsset: number) =>
   totalAsset > 0 ? (value / totalAsset) * 100 : 0
 
+/* ── 매매 비용 ─────────────────────────────────────────────
+
+   서버(app.season.fees)와 같은 값을 둔다. 화면은 "예상" 을 그리는 데만 쓰고 실제 금액은
+   주문 응답의 fee·tax 다 — 둘이 어긋나면 서버가 맞다. 그래도 같은 값이어야 하는 이유는
+   "최대" 수량이다: 화면이 수수료를 모르면 예수금을 꽉 채운 수량을 만들어 409 로 튕긴다. */
+
+/** 위탁수수료율 0.015%. 매수·매도 양쪽 */
+export const COMMISSION_RATE = 0.00015
+/** 증권거래세율 0.15%. 매도에만 */
+export const SELL_TAX_RATE = 0.0015
+
 /** 예상 주문 금액. 명세가 프론트 계산으로 지정한 값이다. 종가 단일가라 곱하기 하나다. */
 export const orderAmount = (price: number, qty: number) => price * qty
 
 /**
- * 이 가격에 최대 몇 주를 살 수 있는가. 수량 버튼의 "최대" 가 쓴다.
- * 내림이다 — 예수금을 넘기면 409 로 돌아온다.
+ * 원 단위 절사(서버의 SeasonFeeProperties 와 같은 방향). **요율을 그대로 곱하지 않는다** —
+ * 800,000 × 0.00015 가 자바스크립트에서 119.999…라 절사하면 119 가 되는데, 서버는 BigDecimal
+ * 이라 120 이다. 1원이 어긋나면 "예상 수령액이 실제와 다르다" 가 된다. 분자·분모로 나눠
+ * 곱셈을 정수 안에 두면 그 차이가 생기지 않는다(800,000 × 15 = 12,000,000 은 정확하다).
  */
-export const maxBuyQty = (cash: number, price: number) =>
-  price > 0 ? Math.floor(cash / price) : 0
+const floorRate = (amount: number, numerator: number, denominator: number) =>
+  Math.floor((amount * numerator) / denominator)
+
+/** 예상 위탁수수료. 0.015% = 15 / 100,000 */
+export const orderFee = (amount: number) => floorRate(amount, 15, 100_000)
+
+/** 예상 증권거래세. 0.15% = 15 / 10,000. 매수는 0 */
+export const orderTax = (side: Side, amount: number) =>
+  side === 'SELL' ? floorRate(amount, 15, 10_000) : 0
+
+/** 예상 비용 합계 */
+export const orderCost = (side: Side, amount: number) => orderFee(amount) + orderTax(side, amount)
+
+/** 실제로 오갈 돈. 매수는 내는 총액, 매도는 받는 실수령액 */
+export const orderSettled = (side: Side, amount: number) =>
+  side === 'BUY' ? amount + orderCost(side, amount) : amount - orderCost(side, amount)
+
+/**
+ * 이 가격에 최대 몇 주를 살 수 있는가. 수량 버튼의 "최대" 가 쓴다.
+ *
+ * 수수료까지 포함해 나눈다 — 대금만으로 나누면 예수금을 꽉 채운 수량이 나와 수수료만큼
+ * 모자라고, "최대" 를 누르는 족족 409 INSUFFICIENT_BALANCE 다.
+ *
+ * 나눈 값을 그대로 쓰지 않고 양쪽으로 한 번씩 맞춘다. 나눗셈은 수수료를 <b>절사하기 전</b>
+ * 요율로 하는데 서버는 원 단위로 버리므로, 실제로 낼 수수료가 조금 더 싸서 한두 주를 더 살 수
+ * 있다(싼 종목일수록 크다 — 1,000원짜리를 만 주 살 때 한 주 차이가 난다). 내려가는 쪽은
+ * 반대 방향의 경계를 막는다. 둘 다 서버가 받아 주는 수량(=orderSettled ≤ 예수금)만 남긴다.
+ */
+export const maxBuyQty = (cash: number, price: number) => {
+  if (price <= 0) return 0
+  const affordable = (q: number) => orderSettled('BUY', orderAmount(price, q)) <= cash
+  let qty = Math.floor(cash / (price * (1 + COMMISSION_RATE)))
+  while (qty > 0 && !affordable(qty)) qty -= 1
+  while (affordable(qty + 1)) qty += 1
+  return qty
+}
 
 /** 손익 부호. 색을 정하는 자리가 한 곳이어야 빨강·파랑이 화면마다 뒤집히지 않는다. */
 export const signOf = (n: number): 'up' | 'down' | 'flat' =>
