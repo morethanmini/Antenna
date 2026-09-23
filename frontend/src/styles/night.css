@@ -24,6 +24,17 @@ body.is-night{
   --night-glass-hi:rgba(255,255,255,.12);
   --glow:#8b7dff;
   --hand:"Nanum Pen Script","Nanum Pen",cursive;
+
+  /* 밤 유리 판 한 벌(2026-09-23). 종목 상세 머리 · 설정 · 마이페이지 · 지갑이
+     **같은 값을 봐야 한다** — 한때 세 파일이 rgba(16,14,40,.62) 를 각자 적어
+     두었는데, 종목 상세만 알파를 내리자 나머지와 갈렸다. 값이 아니라 이름을
+     공유하면 한쪽만 바뀌는 일이 생기지 않는다.
+
+     확정 기록(.lg-board)은 여기 끼지 않는다 — 줄이 빽빽해 알파를 따로 잡았고,
+     실측으로도 이 값(.5)에서는 종목코드가 4.72 → 3.94 로 기준 아래다
+     (ledger.css 의 그 자리 주석 참고). */
+  --glass-panel:rgba(16,14,40,.5);
+  --glass-blur:blur(14px) saturate(140%);
 }
 
 /* ── 페이지 전체가 밤이다(2026-09-21) ──────────────────────
@@ -277,7 +288,8 @@ body.is-night.is-panel{
    종목 상세 머리(.sd-head, stock-detail.css)가 먼저 간 길이다 — 뒤에 도시 사진이
    고정으로 깔리는데(아래 .main::before) 그 위에 불투명 사각형을 얹으면 화면에
    붙여 놓은 것처럼 보인다. 사진이 판을 통해 비쳐야 한 덩어리로 읽힌다.
-   값 세 개(알파 .62 · blur 14px · saturate 140%)는 그 판과 같다.
+   값은 --glass-panel · --glass-blur 한 벌을 그 판과 **같이 본다**(2026-09-23).
+   전에는 숫자를 그대로 옮겨 적었는데, 그러면 한쪽만 바뀌었을 때 조용히 갈린다.
 
    **여기 적는 것은 판뿐이다.** 판 안의 캡슐 — 알약(.mp-pill) · 배지(.badge-chip) ·
    거르개 단추(.wallet-filters button) · 토글 손잡이 — 은 --surface(#231d4d)를
@@ -290,9 +302,9 @@ body.is-night .mp-hero,
 body.is-night .mp-score-card,
 body.is-night .wallet-card,
 body.is-night .wallet-ledger{
-  background:rgba(16,14,40,.62);
-  -webkit-backdrop-filter:blur(14px) saturate(140%);
-  backdrop-filter:blur(14px) saturate(140%);
+  background:var(--glass-panel);
+  -webkit-backdrop-filter:var(--glass-blur);
+  backdrop-filter:var(--glass-blur);
 }
 
 /* 브랜드색을 **글자**로 쓰는 자리. 위에서 토큰을 그대로 둔 탓에 낮 값(#5457e8 ·
