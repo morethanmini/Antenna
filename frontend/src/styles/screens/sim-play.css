@@ -395,6 +395,17 @@
 .sp-skip:disabled{color:var(--faint);cursor:default;text-decoration:none}
 
 .sp-note{margin:8px 0 0;color:var(--muted);font-size:var(--fs-xs);font-weight:var(--fw-bold);text-align:center}
+/* 요율 한 줄. 금액을 다 읽은 뒤 "왜 이 값인지" 를 받쳐 주는 자리라 가장 작고 흐리게
+   둔다 — 다만 **숫자만은 진하게** 해서 훑을 때 퍼센트가 먼저 잡히게 한다.
+   괄호 대신 작은 글씨로 대상을 적는다: "0.015%(매수·매도)" 는 괄호가 숫자에 붙어
+   한 덩어리로 읽힌다. */
+.sp-rates{
+  display:flex;flex-wrap:wrap;align-items:baseline;justify-content:center;gap:0 5px;
+  margin:5px 0 0;color:var(--faint);font-size:var(--fs-2xs);font-weight:var(--fw-bold);text-align:center;
+}
+.sp-rates b{color:var(--body);font-weight:var(--fw-heavy)}
+.sp-rates span{color:var(--faint);font-weight:var(--fw-bold)}
+.sp-rates i{color:var(--rule);font-style:normal}
 
 /* ── 왼쪽 · 포트폴리오 ──────────────────────────────── */
 /* 접지 않는다. 주문을 정하는 동안 늘 옆에 있어야 하는 그림이라 접이식일 이유가 없다.
