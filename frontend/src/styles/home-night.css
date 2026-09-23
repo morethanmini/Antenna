@@ -228,12 +228,16 @@ body.insight-home.is-night .hm-ant-box{
 }
 /* 코인 그림은 배경으로 얹는다 — 마크업을 건드리지 않고 시안의 자리를 잡는다 */
 body.insight-home.is-night .hm-ant-box::after{
-  /* 판을 132 → 112px 로 줄이면서 그림도 같이 줄였다(2026-09-23). 그림은 위에서
-     내려오고 버튼은 아래에 붙어 있어, 판만 줄이면 둘이 겹친다 — 실측으로 겹침이
-     9px 에서 29px 로 늘었다. 높이를 96 → 76 으로 내려 원래의 9px 로 돌린다. */
-  content:""; position:absolute; top:-10px; right:14px;
-  width:min(42%,150px); height:76px; pointer-events:none;
-  background:url(/assets/page_home/ui/coins.webp) right top/contain no-repeat;
+  /* **그림과 버튼을 한 줄에 세운다**(2026-09-23). 전에는 그림이 right:14 · 폭 150,
+     버튼이 right:16 · 폭 92 라 가운데가 어긋났고, 그림이 top:-10 이라 판 위 경계에
+     걸쳐 잘려 보였다. 둘에게 **같은 폭(104)과 같은 오른쪽(18)** 을 주면 가운데가
+     저절로 맞는다 — 폭이 같으면 가운데도 같다.
+
+     그림을 판 안으로 들인다(top:11). 잘리지 않으므로 background 도 right 가 아니라
+     center 로 놓아야 104 폭 안에서 가운데에 선다. */
+  content:""; position:absolute; top:11px; right:18px;
+  width:104px; height:52px; pointer-events:none;
+  background:url(/assets/page_home/ui/coins.webp) center/contain no-repeat;
   filter:drop-shadow(0 0 14px rgba(154,108,255,.7));
 }
 body.insight-home.is-night .hm-ant-label{color:var(--nc-sub); font-weight:var(--fw-bold)}
@@ -243,14 +247,16 @@ body.insight-home.is-night .hm-ant b{
 }
 /* 내역 보기 — 시안은 판 오른쪽 아래 알약이다 */
 body.insight-home.is-night .hm-ant-btn{
-  position:absolute; right:16px; bottom:14px;
-  display:inline-flex; align-items:center; justify-content:center; gap:8px;
-  min-height:38px; padding:8px 20px;
+  /* 그림과 같은 폭·같은 오른쪽이다(위 ::after 참고). 크기도 한 단 줄였다 —
+     판이 112px 인데 버튼이 38px 이면 판의 3분의 1을 버튼이 먹었다. */
+  position:absolute; right:18px; bottom:12px;
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  width:104px; min-height:31px; padding:5px 0;
   border:2px solid rgba(255,211,255,.9); border-radius:999px;
   color:#fff; background:linear-gradient(90deg, rgba(122,78,255,.9), rgba(105,81,250,.9));
   box-shadow:0 0 0 3px rgba(151,95,255,.22), 0 0 14px rgba(241,117,255,.5),
              inset 0 0 18px rgba(255,255,255,.15);
-  font-size:var(--fs-base); font-weight:var(--fw-bold);
+  font-size:var(--fs-md); font-weight:var(--fw-bold);
 }
 body.insight-home.is-night .hm-ant-btn:hover{filter:brightness(1.09)}
 
