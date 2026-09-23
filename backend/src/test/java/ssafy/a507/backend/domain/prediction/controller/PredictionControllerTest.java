@@ -228,6 +228,30 @@ class PredictionControllerTest {
         assertThat(nonceStore.consume(userId, SignatureScope.PREDICTION)).isNotNull();
     }
 
+    // ── 중복 ──────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("판정 전인 같은 예측(종목·방향·목표가·기간)을 또 올리면 409 PREDICTION_DUPLICATED — 기간이 다르거나 판정이 끝났으면 받는다")
+    void 같은_예측_중복() throws Exception {
+        perform(signed(request(SAMSUNG, "DOWN", "79000", 3, List.of()), wallet), UUID.randomUUID().toString())
+                .andExpect(status().isCreated());
+
+        // 소수점 표기가 달라도 같은 목표가다
+        perform(signed(request(SAMSUNG, "DOWN", "79000.00", 3, List.of()), wallet), UUID.randomUUID().toString())
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("PREDICTION_DUPLICATED"));
+        // 서명 검증 앞에서 막는다 — nonce 가 남아 있어야 한다.
+        assertThat(nonceStore.consume(userId, SignatureScope.PREDICTION)).isNotNull();
+
+        perform(signed(request(SAMSUNG, "DOWN", "79000", 5, List.of()), wallet), UUID.randomUUID().toString())
+                .andExpect(status().isCreated());
+
+        em.flush();
+        em.createNativeQuery("UPDATE predictions SET status = 'MISS'").executeUpdate();
+        perform(signed(request(SAMSUNG, "DOWN", "79000", 3, List.of()), wallet), UUID.randomUUID().toString())
+                .andExpect(status().isCreated());
+    }
+
     // ── 서명 ──────────────────────────────────────────────────────
 
     @Nested
