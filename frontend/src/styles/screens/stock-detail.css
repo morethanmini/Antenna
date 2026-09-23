@@ -488,7 +488,25 @@
 .stock-detail-page .sd-point-col.is-check h3{color:var(--muted)}
 .stock-detail-page .sd-point-col ul{list-style:none;margin:0;padding:0;display:grid;gap:7px}
 .stock-detail-page .sd-point-text{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:5px}
-.stock-detail-page .sd-point-none{margin:0;color:var(--faint);font-size:var(--fs-sm)}
+/* 빈 열 — 목록이 아니라 "상태" 로 보이게 한다(2026-09-23).
+   왼쪽 위에 글 한 줄을 두면 포인트 본문처럼 읽힌다. 열 가운데로 모으고 체크 동그라미를
+   얹어, 칸이 비어 있는 게 아니라 **확인을 마친 결과** 라는 것이 먼저 보이게 한다.
+   글꼴은 그대로 두고 굵기·색으로만 본문과 가른다 — 한 화면에 글꼴이 둘이면 산만하다.
+   체크는 열의 방향 색(위험=파랑, 긍정=빨강)을 따라 어느 열의 판정인지 이어진다. */
+.stock-detail-page .sd-point-none{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  min-height:120px;padding:8px 0 16px;text-align:center;
+}
+.stock-detail-page .sd-point-none p{
+  margin:0;color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold);
+  letter-spacing:-.01em;word-break:keep-all;
+}
+.stock-detail-page .sd-point-none-ico{
+  display:flex;align-items:center;justify-content:center;
+  width:40px;height:40px;border-radius:50%;background:#fff;color:var(--muted);
+}
+.stock-detail-page .sd-point-col.is-positive .sd-point-none-ico{color:var(--up)}
+.stock-detail-page .sd-point-col.is-risk .sd-point-none-ico{color:var(--down)}
 /* 근거 문서의 출처(뉴스·리포트). 없는 포인트는 시세·재무에서 나온 종합이라
    배지도 없다. 칸 안쪽 글 밑에 붙인다 — 칸 밖에 두면 어느 포인트의 출처인지
    한 칸씩 밀려 보인다. */

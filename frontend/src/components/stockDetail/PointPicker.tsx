@@ -100,7 +100,18 @@ export default function PointPicker({ points, picked, onPick }: Props) {
               {POINT_LABEL[kind]}
             </h3>
             {list.length === 0 ? (
-              <p className="sd-point-none">없음</p>
+              /* "없음" 한 단어는 불러오다 만 것인지, 정말 없는 것인지 구분이 안 된다.
+                 AI 가 보고 **없다고 판정한** 것임을 말한다(2026-09-23). 세 라벨이 모두
+                 받침으로 끝나(요인·점) 조사는 '이' 하나로 된다 */
+              <div className="sd-point-none">
+                <span className="sd-point-none-ico" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12.5l4.5 4.5L19 7.5" />
+                  </svg>
+                </span>
+                <p>AI 판정 {POINT_LABEL[kind]}이 없어요</p>
+              </div>
             ) : (
               <ul>
                 {list.map((p) => {
