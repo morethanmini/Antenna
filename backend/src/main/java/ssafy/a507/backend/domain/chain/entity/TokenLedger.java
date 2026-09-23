@@ -6,6 +6,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -19,7 +20,8 @@ import ssafy.a507.backend.domain.account.entity.User;
 
 /** ANT 토큰 원장. append-only이며 잔액은 SUM(delta)로 구한다. */
 @Entity
-@Table(name = "token_ledger")
+/* 지갑 원장 목록이 `where user_id = ? order by id desc` 다. id 를 뒤에 붙여 거르기와 정렬을 한 인덱스로 끝낸다. */
+@Table(name = "token_ledger", indexes = @Index(name = "ix_token_ledger_user_id", columnList = "user_id, id"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TokenLedger {

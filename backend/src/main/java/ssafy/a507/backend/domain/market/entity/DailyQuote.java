@@ -6,6 +6,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -22,12 +23,15 @@ import lombok.NoArgsConstructor;
  * 주봉·월봉은 이 표를 GROUP BY로 집계하며 별도 테이블을 두지 않는다.
  */
 @Entity
+/* 종목 조회마다 `max(trade_date)` 로 최신 거래일을 찾는다. 유니크는 stock_code 가 선두라 trade_date 단독
+   조회에 못 쓰여 49만 행을 풀스캔했다(09-16 측정, 23ms → 0.09ms). */
 @Table(
         name = "daily_quotes",
         uniqueConstraints =
                 @UniqueConstraint(
                         name = "uq_daily_quotes_stock_date",
-                        columnNames = {"stock_code", "trade_date"}))
+                        columnNames = {"stock_code", "trade_date"}),
+        indexes = @Index(name = "idx_daily_quotes_trade_date", columnList = "trade_date"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class DailyQuote {
