@@ -140,6 +140,8 @@
 }
 .st-list span{color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold)}
 .st-amt{color:var(--body);font-weight:var(--fw-heavy)}
+/* 비용은 금액 아래 한 줄로 — 칸을 늘리지 않으려고 줄을 쌓는다(수량·체결가 칸 폭이 고정이다) */
+.st-amt small{display:block;margin-top:2px;color:var(--muted);font-size:var(--fs-xs);font-weight:var(--fw-bold)}
 .st-pnl{font-weight:var(--fw-black)}
 
 .st-empty{

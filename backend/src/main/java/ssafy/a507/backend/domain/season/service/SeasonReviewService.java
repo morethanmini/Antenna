@@ -38,7 +38,7 @@ public class SeasonReviewService {
     static final int MAX_TRADES = 60;
 
     /** 이 지시문의 세대. 고치면 올린다 — 어느 복기가 어느 지시문으로 쓰였는지 season_results 에 남는다. */
-    static final String PROMPT_VERSION = "review-3";
+    static final String PROMPT_VERSION = "review-4";
 
     /** 게임일별 시장 요약을 몇 줄까지 싣나. 시즌이 길어도 재료가 끝없이 늘지 않게 한다. */
     static final int MAX_HINTS = 60;
@@ -53,7 +53,8 @@ public class SeasonReviewService {
             단락마다 3~5문장, 전체 1,200~1,500자. 제목·머리말·불릿·마크다운 없이 문장만 쓰고 단락 사이에 빈 줄을 하나 둔다.
             내용: "시장 흐름" 은 이 시즌의 주제가 된 사건·이슈가 시장과 업종을 어떻게 움직였는지를 재료의 구간 등락 · \
             큰 움직임 · 게임일별 요약과 엮어 설명한다. "잘한 판단" 과 "아쉬운 판단" 은 참가자의 실제 체결을 게임일과 \
-            수치로 짚고, 그때 시장이 어떤 국면이었는지와 매매 뒤 주가가 어떻게 됐는지를 연결한다. 체결 옆의 \
+            수치로 짚고, 그때 시장이 어떤 국면이었는지와 매매 뒤 주가가 어떻게 됐는지를 연결한다. \
+            재료의 "매매 비용" 이 수익을 얼마나 깎았는지도 짚는다 — 잦은 매매일수록 크다. 체결 옆의 \
             "→ 마지막 날 종가까지 x%" 는 그 체결가 대비 시즌 마지막 날 종가의 등락이다. 체결이 없으면 어느 구간·업종에 \
             기회와 위험이 있었는지를 재료로 짚는다. "개선 제안" 은 이런 국면을 다시 만났을 때 해 볼 구체적인 행동 두세 가지다.
             규칙: 재료에 없는 사실·수치를 지어내지 않는다. 재료에 나온 사건·이슈의 이름은 말해도 된다. \
@@ -126,7 +127,9 @@ public class SeasonReviewService {
         // 종목별 집계 — [매수 횟수, 매도 횟수] 와 실현손익 합
         Map<String, int[]> counts = new LinkedHashMap<>();
         Map<String, BigDecimal> realized = new LinkedHashMap<>();
+        BigDecimal cost = BigDecimal.ZERO;
         for (SeasonTrade t : trades) {
+            cost = cost.add(t.cost());
             String name = t.getTicker().getDisplayName();
             int[] c = counts.computeIfAbsent(name, k -> new int[2]);
             c[t.getSide() == SeasonTrade.Side.BUY ? 0 : 1]++;
@@ -143,6 +146,9 @@ public class SeasonReviewService {
             sb.append(" ; ");
         });
         sb.append('\n');
+        // 실현손익·수익률은 이미 비용을 뺀 값이다. 따로 적는 것은 얼마가 비용으로 나갔는지가 배울 거리라서다
+        sb.append("매매 비용(수수료·거래세) 합계 ").append(won(cost)).append(" (")
+                .append(trades.size()).append("건) — 실현손익·수익률은 이 비용을 뺀 값이고, 시장 수익률에는 비용이 없습니다.\n");
 
         int from = Math.max(0, trades.size() - MAX_TRADES);
         sb.append("체결(오래된 순");

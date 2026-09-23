@@ -547,8 +547,14 @@
 /* 자격까지의 걸음. 칸 수는 최소 종목 수라 다섯을 채우면 줄이 끝난다 */
 /* 칸 사이 여백은 잇는 점이 이미 벌려 주므로 3px 만 준다 — 열 칸이면 칸 사이가
    열여덟 군데라, 5px 씩만 줘도 90px 가 그냥 날아간다 */
+/* **칸이 많으면 줄을 바꾼다**(2026-09-23). 위 주석은 "다섯을 채우면 줄이 끝난다" 고
+   적고 있지만 칸 수는 event.stocks.length 라 데이터가 정한다 — 실제 대회가 10종목이라
+   10×38 + 9×20 + 18×3 = 614px 로 뻗어, 375px 화면에서 문서가 통째로 276px 넘쳤다
+   (실측). flex:none 이라 줄어들지도, nowrap 이라 접히지도 않았다.
+   폭을 못 박지 않고 접게 두는 이유는 종목이 더 늘어도 따라오기 위해서다. */
 .event-contest-page .ev-steps{
   display:inline-flex;align-items:center;gap:3px;flex:none;
+  flex-wrap:wrap;max-width:100%;justify-content:flex-end;
 }
 .event-contest-page .ev-step{display:block;width:38px;height:38px}
 /* 잇는 점 셋. 반복 배경이라 칸 수가 늘어도 규칙은 하나다 */
@@ -562,4 +568,8 @@
 /* 좁아지면 제목 아래로 내려온다. 그때는 왼쪽 맞춤이 자연스럽다 */
 @media (max-width:560px){
   .event-contest-page .ev-progress{justify-items:start;text-align:left}
+  .event-contest-page .ev-steps{justify-content:flex-start}
+  /* 잇는 점은 줄이 바뀌면 줄 끝에 홀로 남는다. 칸 그림 자체가 찼는지를 말하므로
+     좁은 화면에서는 뺀다 — 뜻은 그대로고 한 줄에 더 많이 들어간다. */
+  .event-contest-page .ev-step-link{display:none}
 }

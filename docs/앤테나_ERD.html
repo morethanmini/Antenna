@@ -86,6 +86,7 @@
 <body>
 <div class="wrap">
 <h1>엔테나 테이블 맵</h1><div class="changelog" style="margin:0 0 20px;padding:12px 16px;border-left:5px solid #e8a13c;background:#fff8e6;border-radius:0 8px 8px 0;font-size:12.5px;line-height:1.7;font-family:system-ui,-apple-system,"Malgun Gothic",sans-serif;color:#3a3730;"><b style="display:block;margin-bottom:6px;font-size:13px;">변경 로그 (최신이 위)</b>
+<div><b>v0.20</b> · 2026-09-23 · 임대연(DY) · <code>DY_ANT-SEASON-FEE</code> — <b><code>season_trades.fee</code>·<code>tax numeric(14,2) NULL</code> 추가 · <code>realized_pnl</code> 이 순액이 됐다.</b> 위탁수수료 0.015%(매수·매도)와 증권거래세 0.15%(매도)를 원 단위로 절사해 <b>금액으로 박제</b>한다 — 성적 계산(<code>SeasonResultCalculator</code>)이 요율을 다시 곱하지 않고 이 금액을 읽으므로, 요율을 바꿔도 이미 차감된 <code>season_participants.cash</code> 와 재계산한 최종 자산이 어긋나지 않는다. <b>NULL 허용인 이유</b>: <code>season_trades</code> 는 append-only 트리거가 걸려 있어 기존 행을 백필할 수 없고, 백필해서도 안 된다 — 그때의 체결은 실제로 무료였다. 읽는 쪽이 NULL 을 0 으로 본다. 평단(<code>season_positions.avg_price</code>)에는 수수료를 얹지 않는다 — 화면에서 차트 가격과 나란히 읽히는 값이라 원가법으로 올리면 체결가와 달라 보인다. 요율은 서버 설정 <code>app.season.fees</code>. <b><code>season_positions.buy_fee numeric(14,2) NULL</code> 추가</b> — 남은 수량 몫의 매수 수수료(실제로 낸 금액). 매도가 수량 비례로 떼어 <code>realized_pnl</code> 에서 빼고, 전량이면 남은 몫을 다 가져간다. 요율로 되짚지 않는 이유: 수수료 전에 산 물량은 공짜였고(NULL = 0), 체결마다 버린 합은 평단 × 수량 × 요율과 몇 원 다르다.</div>
 <div><b>v0.19</b> · 2026-09-16 · 이상민(SM) · <code>SM_ANT-EVENT-08</code> — <b><code>prediction_events.slug</code>(varchar 40, nullable, UNIQUE) 추가.</b> 프론트 대회 화면이 <code>/events/scalping</code> 로 열리는데 응답에 숫자 id 와 제목뿐이라 어느 회차인지 가릴 수 없었다. nullable 인 이유는 <code>ddl-auto: update</code> 가 행 있는 표에 기본값 없는 NOT NULL 을 못 붙이고 운영 점검용 회차는 화면 주소가 필요 없어서다. UNIQUE 인 이유는 같은 slug 가 둘이면 화면이 어느 쪽을 열지 갈리기 때문이고, 겹친 입력은 500 대신 409 <code>EVENT_DUPLICATE_SLUG</code> 로 돌려준다. <code>ddl-auto</code> 로 번진다. 근거: 지라 S15P21A507-274</div>
 <div><b>v0.19</b> · 2026-09-16 · 이상민(SM) · <code>SM_ANT-EVENT-04~06</code> — <b>배팅 이벤트 표 5개 신설(스키마는 이미 배포됨 · 문서만 따라잡음).</b> <code>prediction_events</code> · <code>prediction_event_stocks</code> · <code>prediction_event_bets</code> 는 ANT-EVENT-02(김성령)가, <code>prediction_event_results</code> · <code>event_settlement_runs</code> 는 ANT-EVENT-03 이 만들었고 <code>ddl-auto: update</code> 로 이미 번져 있다.<br>
 <b><code>prediction_events.id</code> 가 곧 온체인 <code>eventId</code></b> 다 — 별도 매핑 칸을 두지 않았다(컨트랙트가 팩토리 없이 소스 하나에 회차를 쌓는다). <b><code>prediction_event_bets</code> 는 <code>predictions</code> 와 1:1</b> 이고, 배팅에 관한 것은 전부 그쪽에 둬 팀 전체가 쓰는 <code>predictions</code> 에 이벤트 전용 NULL 칸을 얹지 않았다 — <b>그 행의 유무가 "이벤트 예측이냐" 를 가르는 유일한 기준</b>이라 무료 슬롯 계산도 이걸로 한다.<br>
@@ -766,6 +767,7 @@ UNIQUE 넷(<code>uq_event_bets_user_stock</code> · <code>uq_event_bets_index</c
       <li><div class="row"><span class="k fk">FK</span><span class="c">ticker_id <em>→season_tickers</em></span><span class="t">int</span></div><div class="note">보유 종목 · 참가자·종목 조합당 1행</div></li>
       <li><div class="row"><span class="k no">·</span><span class="c">qty</span><span class="t">int</span></div><div class="note">보유 수량 · 전량 매도로 0이 되면 행 삭제</div></li>
       <li><div class="row"><span class="k no">·</span><span class="c">avg_price</span><span class="t">numeric(14,2)</span></div><div class="note">평균 매입단가 · 실현손익 계산 기준</div></li>
+      <li><div class="row"><span class="k no">·</span><span class="c">buy_fee</span><span class="t">numeric(14,2)</span></div><div class="note">남은 수량 몫의 매수 수수료(실제로 낸 금액) · 매도가 수량 비례로 떼고 전량이면 전부 · 수수료 전에 산 물량은 NULL(v0.20)</div></li>
     </ul>
     <div class="uqrow">UQ (participant_id, ticker_id)</div>
   </article>
@@ -779,7 +781,9 @@ UNIQUE 넷(<code>uq_event_bets_user_stock</code> · <code>uq_event_bets_index</c
       <li><div class="row"><span class="k no">·</span><span class="c">qty</span><span class="t">int</span></div><div class="note">체결 수량 · 0 초과</div></li>
       <li><div class="row"><span class="k no">·</span><span class="c">price</span><span class="t">numeric(14,2)</span></div><div class="note">체결가 = 그 게임일 종가 · 슬리피지 없음</div></li>
       <li><div class="row"><span class="k no">·</span><span class="c">game_day</span><span class="t">int</span></div><div class="note">체결 게임일</div></li>
-      <li><div class="row"><span class="k no">·</span><span class="c">realized_pnl</span><span class="t">numeric(14,2)</span></div><div class="note">실현손익 = (체결가 − 평단) × 수량 · 매도만, 매수는 NULL · 체결 시점 평단으로 굳힘(v0.9)</div></li>
+      <li><div class="row"><span class="k no">·</span><span class="c">fee</span><span class="t">numeric(14,2)</span></div><div class="note">위탁수수료 0.015% · 매수·매도 양쪽 · 원 단위 절사 · 요율이 아니라 금액을 박제한다 · 수수료가 없던 때의 체결은 NULL(v0.20)</div></li>
+      <li><div class="row"><span class="k no">·</span><span class="c">tax</span><span class="t">numeric(14,2)</span></div><div class="note">증권거래세 0.15% · <b>매도만</b>, 매수는 0 · 옛 체결은 NULL(v0.20)</div></li>
+      <li><div class="row"><span class="k no">·</span><span class="c">realized_pnl</span><span class="t">numeric(14,2)</span></div><div class="note">실현손익 · 매도만, 매수는 NULL · 체결 시점 평단으로 굳힘(v0.9) · <b>v0.20 부터 순액</b>: (체결가 − 평단) × 수량 − 매도 수수료 − 거래세 − 판 수량 몫의 매수 수수료(<code>season_positions.buy_fee</code>)</div></li>
       <li><div class="row"><span class="k no">·</span><span class="c">created_at</span><span class="t">timestamptz</span></div><div class="note">요청 시각 · 같은 게임일 안의 순서</div></li>
     </ul>
   </article>

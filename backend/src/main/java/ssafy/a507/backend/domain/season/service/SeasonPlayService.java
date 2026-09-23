@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Limit;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -20,6 +21,7 @@ import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.account.repository.UserRepository;
+import ssafy.a507.backend.domain.season.config.SeasonFeeProperties;
 import ssafy.a507.backend.domain.season.dto.MyPositionResponse;
 import ssafy.a507.backend.domain.season.dto.MySeasonStatusResponse;
 import ssafy.a507.backend.domain.season.dto.SeasonAdvanceResponse;
@@ -52,12 +54,17 @@ import ssafy.a507.backend.domain.season.repository.SeasonTradeRepository;
  * <p><b>체결 규칙(명세 §모의투자).</b> 게임일 종가 단일가, 부분 체결·슬리피지 없음. 체결가는
  * 서버가 내 진행일 봉에서 읽는다 — 요청에 가격이 없으니 커닝할 자리도 없다.
  *
+ * <p><b>매매 비용(2026-09-23).</b> 위탁수수료가 매수·매도 양쪽에, 증권거래세가 매도에 붙는다
+ * (요율은 {@link SeasonFeeProperties}). 금액은 체결 행에 박제한다 — 예수금은 원장이고 성적표는
+ * 체결 재생이라, 요율을 다시 곱하는 방식이면 둘이 어긋난다.
+ *
  * <p><b>예수금은 로컬 원장이다.</b> 금융망 출금·입금(ANT-SEASON-06)은 붙이지 않는다.
  * {@code season_participants.cash} 를 바로 더하고 뺀다.
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@EnableConfigurationProperties(SeasonFeeProperties.class)
 public class SeasonPlayService {
 
     private static final int DEFAULT_PAGE_SIZE = 20;
@@ -73,6 +80,7 @@ public class SeasonPlayService {
     private final SeasonResultRepository resultRepository;
     private final SeasonNewsRepository newsRepository;
     private final UserRepository userRepository;
+    private final SeasonFeeProperties fees;
     private final SeasonReviewService reviewService;
     private final BadgeService badgeService;
     /** finish 가 트랜잭션을 손으로 나누는 데 쓴다 — LLM 호출을 트랜잭션 밖에 두려고. */
@@ -122,6 +130,14 @@ public class SeasonPlayService {
     /**
      * 주문. 매수는 예수금, 매도는 보유 수량을 검사하고 409 로 거절한다.
      * 포지션은 수량 가중 평단으로 갱신하고 0 이 되면 지운다. 체결은 append 다.
+     *
+     * <p><b>비용은 대금 밖에서 더하고 뺀다.</b> 매수는 대금 + 수수료를 예수금에서 빼고
+     * (그래서 예수금과 <b>같은</b> 금액의 매수도 수수료만큼 모자라 409 다 — 화면의 "최대" 가
+     * 같은 식으로 수량을 구해야 하는 이유), 매도는 대금에서 수수료·거래세를 뗀 금액만 넣는다.
+     *
+     * <p><b>평단에는 수수료를 얹지 않는다.</b> 평단은 화면에서 차트의 가격과 나란히 읽히는
+     * 값이라, 원가법으로 올리면 "70,000 에 샀는데 평단이 70,010" 이 된다. 대신 그 몫을
+     * 실현손익에서 뺀다 — 아래 {@link #realizedPnlOf}.
      */
     @Transactional
     public SeasonOrderResponse order(Long userId, Long seasonId, SeasonOrderRequest request) {
@@ -136,34 +152,49 @@ public class SeasonPlayService {
 
         int qty = request.qty();
         BigDecimal amount = price.multiply(BigDecimal.valueOf(qty));
+        BigDecimal fee = fees.commission(amount);
+        BigDecimal tax = BigDecimal.ZERO;
         BigDecimal realizedPnl = null;
 
         if (request.side() == SeasonTrade.Side.BUY) {
-            if (me.getCash().compareTo(amount) < 0) {
+            if (me.getCash().compareTo(amount.add(fee)) < 0) {
                 throw new BusinessException(ErrorCode.INSUFFICIENT_BALANCE);
             }
-            me.debit(amount);
+            me.debit(amount.add(fee));
             positionRepository
                     .findByParticipant_IdAndTicker_Id(me.getId(), ticker.getId())
                     .ifPresentOrElse(
-                            p -> p.buy(qty, price),
-                            () -> positionRepository.save(SeasonPosition.open(me, ticker, qty, price)));
+                            p -> p.buy(qty, price, fee),
+                            () -> positionRepository.save(SeasonPosition.open(me, ticker, qty, price, fee)));
         } else {
             SeasonPosition held = positionRepository
                     .findByParticipant_IdAndTicker_Id(me.getId(), ticker.getId())
                     .filter(p -> p.getQty() >= qty)
                     .orElseThrow(() -> new BusinessException(ErrorCode.SEASON_INSUFFICIENT_QTY));
-            realizedPnl = price.subtract(held.getAvgPrice()).multiply(BigDecimal.valueOf(qty));
-            me.credit(amount);
-            held.sell(qty);
+            tax = fees.sellTax(amount);
+            BigDecimal boughtFee = held.sell(qty);
+            realizedPnl = realizedPnlOf(price, held.getAvgPrice(), qty, fee.add(tax).add(boughtFee));
+            me.credit(amount.subtract(fee).subtract(tax));
             if (held.getQty() == 0) {
                 positionRepository.delete(held);
             }
         }
 
         SeasonTrade trade = tradeRepository.save(SeasonTrade.of(
-                me, ticker, request.side(), qty, price, me.getCurrentDay(), realizedPnl));
-        return new SeasonOrderResponse(trade.getId(), price, trade.getGameDay());
+                me, ticker, request.side(), qty, price, me.getCurrentDay(), fee, tax, realizedPnl));
+        return new SeasonOrderResponse(trade.getId(), price, trade.getGameDay(), fee, tax);
+    }
+
+    /**
+     * 매도의 실현손익 — <b>왕복 비용을 뺀 순액</b>이다(2026-09-23). {@code cost} 는 이 매도의
+     * 수수료·거래세와, 판 수량이 살 때 실제로 낸 수수료의 몫({@link SeasonPosition#sell})이다.
+     *
+     * <p>매수 수수료를 요율로 되짚지 않는다 — 수수료를 붙이기 전에 산 물량은 공짜였으므로 그 몫은 0 이다.
+     * 그래서 전량을 정리하면 <b>실현손익의 합 = 예수금의 변화</b> 가 평단의 반올림(소수 둘째 자리)만큼의
+     * 오차 안에서 맞는다 — 매매일지의 "실현손익" 합계와 현황의 예수금이 서로를 검산한다.
+     */
+    private static BigDecimal realizedPnlOf(BigDecimal price, BigDecimal avgPrice, int qty, BigDecimal cost) {
+        return price.subtract(avgPrice).multiply(BigDecimal.valueOf(qty)).subtract(cost);
     }
 
     /** 체결 내역. 최근 체결이 먼저고 커서는 id 다. */
@@ -188,7 +219,9 @@ public class SeasonPlayService {
                         t.getSide(),
                         t.getQty(),
                         t.getPrice(),
-                        t.getPrice().multiply(BigDecimal.valueOf(t.getQty())),
+                        t.amount(),
+                        t.getFee(),
+                        t.getTax(),
                         t.getGameDay(),
                         t.getRealizedPnl()))
                 .toList();

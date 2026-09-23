@@ -71,7 +71,7 @@ export function isServerFormat(file: File) {
  * AD 에만 걸린다 — 노출 자리가 고정이라 어긋난 그림은 화면에서 잘리거나 늘어나는데,
  * 그때는 이미 광고비를 받은 뒤라 되돌릴 수단이 없다(서버 UploadService 주석).
  */
-export const AD_ASPECT = { ratio: 4, tolerance: 0.05 } as const
+export const AD_ASPECT = { ratio: 1.6, tolerance: 0.05 } as const
 
 export type AspectRule = { ratio: number; tolerance: number }
 
@@ -589,7 +589,23 @@ export function formatBytes(bytes: number) {
  */
 export const UPLOAD_HINT = `${formatBytes(MAX_BYTES)} 까지`
 
-/** "4:1" 처럼 읽히게. 비율 제약을 숫자로만 적으면 무엇을 맞춰야 하는지 모른다 */
+/**
+ * 광고 등록 화면(H-04)의 배너 안내. 위의 "크기 하나만" 에서 광고만 예외로 둔다(2026-09-23).
+ *
+ * 광고는 홈 카드에 그림 그대로 걸린다. 올리기 창이 8:5 로 잘라 주긴 하지만, 그걸 모르고
+ * 아무 그림이나 고르면 광고주가 넣은 글자가 잘린 채로 게재료가 나간다 — 고르기 **전에**
+ * 비율을 알아야 하는 유일한 용도다. 문구는 사용자 컨펌을 받은 그대로다(바꾸려면 다시 받는다).
+ * 1200×750 은 홈 카드(가장 넓을 때 폭 ~590px)를 2배 화면으로 채우는 크기다.
+ */
+export const AD_UPLOAD_HINT =
+  `${formatAspect(AD_ASPECT)} 1200×750px 권장, 최대 ${formatBytes(MAX_BYTES)}`
+
+/** "8:5" 처럼 읽히게. 비율 제약을 숫자로만 적으면 무엇을 맞춰야 하는지 모른다.
+ *  1.6 을 그대로 "1.6:1" 로 쓰면 읽는 사람이 다시 계산해야 해서, 가장 작은 정수비로 편다. */
 export function formatAspect(rule: AspectRule) {
+  for (let d = 1; d <= 20; d++) {
+    const n = rule.ratio * d
+    if (Math.abs(n - Math.round(n)) < 1e-9) return `${Math.round(n)}:${d}`
+  }
   return `${rule.ratio}:1`
 }

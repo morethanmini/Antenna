@@ -51,16 +51,8 @@
 
    유리로 맞추지 않고 흰 판을 고른 이유는 알림 팝오버(notification.css)와 같다 —
    다섯 문단까지 오는 읽는 창이고, 같은 창이 화면마다 색이 달라지면 더 어색하다. */
-body.is-night.is-glass .bf-modal{
-  --surface:#ffffff;
-  --surface-2:#f0f2f7;
-  --ink:#14141b;
-  --body:#3b3f4a;
-  --muted:#6b7280;
-  --faint:#9ca3af;
-  --rule:#e5e7ef;
-  background:var(--surface);
-  /* 어두운 바닥 위에 뜨므로 그늘을 한 단 진하게 — 밝은 화면용 값은 여기서 안 보인다 */
+/* 색 토큰 한 벌은 app.css 의 섬이 든다. 여기서는 이 창만의 그늘을 더한다. */
+body.is-night .bf-modal{
   box-shadow:0 28px 64px -18px rgba(0,0,0,.7);
 }
 
