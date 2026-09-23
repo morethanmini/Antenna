@@ -115,6 +115,9 @@
 
 /* ── 히어로 ──────────────────────────────────────────────── */
 .hm-hero{
+  /* 두 줄을 차지한다 — 오른쪽 칸에 스폰서드와 대회 배너가 위아래로 선다.
+     배너가 제 줄을 통째로 쓰던 것을 히어로 옆으로 들여 한 줄을 통째로 아꼈다. */
+  grid-row:span 2;
   position:relative; overflow:hidden;
   display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:16px;
   padding:28px 30px; border:1px solid var(--wash-line); border-radius:16px;
@@ -403,13 +406,19 @@
 .hm-lead-btn:hover{background:var(--brand-ink)}
 
 /* ── 대회 배너 ───────────────────────────────────────────
-   J-01 로 가는 유일한 화면 안 통로다. 좌우 두 칸을 통째로 가로질러 한 줄을
-   차지한다 — 카드 하나로 넣으면 옆 카드와 같은 무게로 읽혀, 이 줄이 이벤트라는
-   것이 안 보인다.
+   J-01 로 가는 유일한 화면 안 통로다.
+
+   **좌우 두 칸을 가로지르던 것을 오른쪽 칸 안으로 들였다(2026-09-23).** 한 줄을
+   통째로 쓰느라 아래 카드가 182px 밀려나 있었다. 옆 카드와 같은 무게로 읽힐까 봐
+   가로질러 두었던 것인데, 실제로는 카드가 아니라 **그림 띠**라 옆에 세워도 결이
+   다르다 — 무게는 자리가 아니라 그림이 준다.
    색은 히어로(연보라 --wash)와 같은 계열로 두되 진하게 간다. 옅으면 바로 위
    히어로와 한 덩어리로 붙어 보인다. */
 .hm-event{
-  grid-column:1 / -1;
+  /* 오른쪽 칸 아래, 스폰서드 밑이다. **늘리지 않는다** — 줄이 남으면 배너가
+     같이 높아지는데, 배너는 높아진 만큼 가로도 더 먹어서 조각이 서로 부딪친다.
+     남는 자리는 위의 스폰서드가 가져간다. */
+  grid-column:2; align-self:end;
   text-decoration:none;
   transition:transform .14s;
 }
@@ -432,7 +441,11 @@
    생기면서 글자 배너가 없어졌지만, 마크업과 짝이 맞아 그대로 둔다. */
 .hm-event.is-art{
   position:relative; display:block; padding:0; background:none;
-  aspect-ratio:9 / 1;
+  /* 9:1 은 두 칸을 가로지르던 시절의 값이다. 한 칸(526px)에서 9:1 이면 띠가
+     58px 이라 글자를 못 읽는다. **비율의 하한은 조각들이 정한다** — 들여쓰기
+     78 + 글묶음 364 + 캐릭터 126 = 568cqh 라, 5.6:1 보다 납작해지면 글묶음과
+     캐릭터가 겹친다(실측). */
+  aspect-ratio:5.6 / 1;
   container-type:size;
   /* **띠 밖으로는 아무것도 내보내지 않는다.** 캐릭터를 위로 넘치게 두었더니
      위 카드와 겹쳐 지저분했다. 조각들은 아래에서 안으로 들여놓았고, 이 줄은
@@ -539,6 +552,14 @@
   .hm-event.is-art .hm-ev-sticker{display:none}
   .hm-event.is-art .hm-ev-confetti.is-b{display:none}
 }
+/* 한 칸짜리 자리(526px → 94px 높이)에서는 문구가 11cqh = 10px 다. 원본이
+   900x61 인 글자 그림이라 그 크기에서는 획이 뭉개져 글자가 아니라 얼룩이 된다.
+   접고 제목만 남긴다 — 제목은 46px 이라 아직 크게 읽힌다.
+   들여쓰기도 줄인다. 폭이 빠듯해진 자리에서 78cqh 는 왼쪽에 버리는 여백이다. */
+@container (height <= 110px){
+  .hm-event.is-art .hm-ev-copy{display:none}
+  .hm-event.is-art .hm-ev-lead{left:30cqh}
+}
 
 
 .hm-top{list-style:none; margin:0; padding:0; display:grid; gap:2px}
@@ -557,8 +578,10 @@
 .hm-showcase{
   position:relative; overflow:hidden; isolation:isolate;
   display:flex; flex-direction:column; align-items:flex-start;
-  /* 배너에 조금 더 무게를 준다(이전 217px 대비 10%) */
-  min-height:239px;
+  /* 아래에 대회 배너가 붙으면서 이 카드 혼자 오른쪽 줄을 다 쓰지 않는다.
+     239px 이던 것을 줄여 배너 자리를 낸다 — 줄 높이는 왼쪽 히어로가 정하므로
+     남는 만큼은 어차피 이 카드가 늘어나 가져간다. */
+  min-height:176px;
   padding:20px; border-radius:16px; box-shadow:var(--shadow);
   background:
     radial-gradient(120% 130% at 82% 22%,#3d3aa8 0%,transparent 60%),
@@ -646,6 +669,14 @@
 }
 @media (max-width:1080px){
   .hm-grid{grid-template-columns:minmax(0,1fr)}
+  /* 한 줄로 쌓이면 2열이 없다. 그대로 두면 없는 칸을 만들어 붙는다 */
+  .hm-hero{grid-row:auto}
+  .hm-event{grid-column:1; align-self:stretch}
+  /* 다시 폭을 다 쓰는 자리다. 5.6:1 은 **조각이 겹치기 직전의 값**이라 좁은
+     칸에서만 쓴다 — 거기서는 문구를 접고 들여쓰기도 줄여 48cqh 를 벌어 두었다.
+     넓은 자리에서는 그 둘이 되살아나므로 같은 비율이면 제목이 캐릭터를 파고든다
+     (930px 에서 12px 겹쳤다). 납작하게 눕혀 자리를 준다. */
+  .hm-event.is-art{aspect-ratio:7.5 / 1}
 }
 @media (max-width:760px){
   .hm-indices{grid-template-columns:minmax(0,1fr)}
