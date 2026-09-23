@@ -48,8 +48,13 @@ import ssafy.a507.backend.domain.season.service.SeasonReviewService;
  *
  * <p>시즌은 3게임일. 종가: A = D+1 70,000 · D+2 80,000 · D+3 60,000, B = 10,000 · 12,000 · 9,000.
  * 시나리오 — D+1 A 100주 매수, D+2 50주 매도(+500,000), D+3 50주 매도(−500,000):
- * 자산 곡선 30,000,000 → 31,000,000 → 30,000,000 이라 최대 낙폭 3.226%, 승률 50%, 손익비 1,
- * 평균 보유일 (1 + 2) / 2 = 1.5. 벤치마크(등가중) = (−14.286% + −10%) / 2 = −12.143%.
+ * 승률 50%, 평균 보유일 (1 + 2) / 2 = 1.5. 벤치마크(등가중) = (−14.286% + −10%) / 2 = −12.143%.
+ *
+ * <p><b>매매 비용</b>(app.season.fees · 수수료 0.015% 양쪽, 거래세 0.15% 매도) 때문에 자산 곡선이
+ * 딱 떨어지지 않는다. 매수 7,000,000 에 수수료 1,050, 매도 4,000,000 에 600 + 6,000,
+ * 매도 3,000,000 에 450 + 4,500 이라 곡선은 29,998,950 → 30,992,350 → 29,987,400 이다.
+ * 비용이 없던 때의 0.0% · 3.226% · 손익비 1 이 여기서 −0.042% · 3.243% · 0.975 로 바뀐다 —
+ * 같은 값으로 사고팔아도 비용만큼 잃는다는 것이 이 지표들이 말하는 바다.
  *
  * <p>AI 복기(ANT-SEASON-09)는 AiClient 를 목으로 둔다. 키를 넣어 두어 finish 가 복기를 부르는
  * 경로를 탄다 — 키 없는 경로는 {@code SeasonReviewServiceTest} 가 본다.
@@ -182,8 +187,9 @@ class SeasonProgressControllerTest {
         // 1일차에서 바로 끝낸다. 보유 100주는 마지막 날(3일차) 종가 60,000 으로 평가된다
         mockMvc.perform(post(url("/finish")).param("skipRemaining", "true").with(user(me)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.finalAsset").value(29000000))
-                .andExpect(jsonPath("$.returnRate").value(-3.333));
+                // 22,998,950(= 30,000,000 − 7,000,000 − 1,050) + 100 × 60,000
+                .andExpect(jsonPath("$.finalAsset").value(28998950))
+                .andExpect(jsonPath("$.returnRate").value(-3.337));
 
         assertThat(participantStatus()).isEqualTo("DONE");
         assertThat(currentDay()).isEqualTo(3);
@@ -224,12 +230,14 @@ class SeasonProgressControllerTest {
         mockMvc.perform(post(url("/finish")).with(user(me)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.participantId").value(participantId))
-                .andExpect(jsonPath("$.finalAsset").value(30000000))
-                .andExpect(jsonPath("$.returnRate").value(0.0))
+                // 사고판 가격이 제자리로 돌아와도 비용 12,600 만큼 못 미친다
+                .andExpect(jsonPath("$.finalAsset").value(29987400))
+                .andExpect(jsonPath("$.returnRate").value(-0.042))
                 .andExpect(jsonPath("$.benchmarkReturn").value(-12.143))
-                .andExpect(jsonPath("$.maxDrawdown").value(3.226))
+                .andExpect(jsonPath("$.maxDrawdown").value(3.243))
                 .andExpect(jsonPath("$.winRate").value(50.0))
-                .andExpect(jsonPath("$.profitFactor").value(1.0))
+                // 이익 492,875 ÷ 손실 505,475 — 비용이 이익에서 빠지고 손실에 더해져 1 아래로 내려간다
+                .andExpect(jsonPath("$.profitFactor").value(0.975))
                 .andExpect(jsonPath("$.avgHoldingDays").value(1.5));
 
         assertThat(participantStatus()).isEqualTo("DONE");
@@ -338,7 +346,7 @@ class SeasonProgressControllerTest {
         mockMvc.perform(post(url("/finish")).with(user(me)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.participantId").value(participantId))
-                .andExpect(jsonPath("$.finalAsset").value(29900000));
+                .andExpect(jsonPath("$.finalAsset").value(29899895));
         // 복기가 이미 있으니 GMS 를 다시 부르지 않는다 — 회차당 1회
         then(aiClient).should(times(1)).complete(anyString(), anyString());
         order("k-2", tickerA, "SELL", 10)
@@ -353,12 +361,12 @@ class SeasonProgressControllerTest {
                 .andExpect(jsonPath("$.items[0].seasonId").value(seasonId))
                 .andExpect(jsonPath("$.items[0].title").value("급락과 반등"))
                 .andExpect(jsonPath("$.items[0].endedAt").isString())
-                .andExpect(jsonPath("$.items[0].returnRate").value(-0.333));
+                .andExpect(jsonPath("$.items[0].returnRate").value(-0.334));
         mockMvc.perform(get(url("/result/me")).with(user(me)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.participantId").value(participantId))
-                .andExpect(jsonPath("$.finalAsset").value(29900000))
-                .andExpect(jsonPath("$.returnRate").value(-0.333))
+                .andExpect(jsonPath("$.finalAsset").value(29899895))
+                .andExpect(jsonPath("$.returnRate").value(-0.334))
                 .andExpect(jsonPath("$.review").value(REVIEW))
                 .andExpect(jsonPath("$.closedAt").isString());
         mockMvc.perform(get("/api/v1/seasons/me").param("status", "ONGOING").with(user(me)))

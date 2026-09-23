@@ -133,7 +133,7 @@ class BadgeControllerTest {
 
     // ── helpers ──────────────────────────────────────────────
 
-    /** 400주를 70,000 에 사서 다음 날 80,000 에 전부 판다 — 수익률 13.333%. */
+    /** 400주를 70,000 에 사서 다음 날 80,000 에 전부 판다 — 매매 비용을 빼고 수익률 13.143%. */
     private void playProfitableRun(Long season, Long ticker) throws Exception {
         order(season, "b-" + season, ticker, "BUY", 400).andExpect(status().isCreated());
         advance(season, 1).andExpect(status().isOk());
