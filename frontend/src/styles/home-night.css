@@ -19,8 +19,8 @@
 body.insight-home.is-night{
   --nc-ink:#f8faff;
   --nc-sub:#cbd8ff;
-  --nc-line:rgba(153, 151, 255,.76);
-  --nc-panel:rgba(37, 25, 146,.55);
+  --nc-line:rgba(172, 171, 235,.76);
+  --nc-panel:rgba(55, 48, 123,.55);
   --nc-rise:#ff6479;
   --nc-fall:#77a8ff;
   --nc-flat:#cbd9ff;
@@ -42,13 +42,13 @@ body.insight-home.is-night .hm-card{
      또 주니 둘이 더해져 24px 이 됐다. 카드가 20~40px 씩 길어진 주된 까닭이다.
      간격을 한 군데서만 정하도록 gap 을 끄고 마진만 남긴다. */
   gap:0;
-  border:2px solid rgba(162, 165, 255,.89);
+  border:2px solid rgba(180, 182, 237,.89);
   border-radius:26px;
   color:var(--nc-ink);
   background:
-    radial-gradient(circle at 70% -15%, rgba(115, 82, 255,.62), transparent 34%),
-    radial-gradient(circle at 6% 33%, rgba(36, 29, 225,.44), transparent 34%),
-    linear-gradient(132deg, #1a1174 0%, #191063 47%, #27189b 100%);
+    radial-gradient(circle at 70% -15%, rgba(135, 115, 222,.62), transparent 34%),
+    radial-gradient(circle at 6% 33%, rgba(71, 66, 188,.44), transparent 34%),
+    linear-gradient(132deg, #292461 0%, #252053 47%, #3a3182 100%);
   /* 시안은 다섯 겹이었다. **테를 감싸던 두 겹(halo)을 걷었다**(2026-09-23) —
      0 0 0 5px · 7px 은 퍼지지 않는 고체 띠라, 카드마다 테가 세 줄로 보였다.
      안쪽 선을 걷은 것과 같은 까닭이다(바로 앞 커밋).
@@ -59,9 +59,9 @@ body.insight-home.is-night .hm-card{
      볼 때 알맞던 세기가 모아 놓으면 화면 전체가 떠 보였다. 바닥 그늘은
      그대로 둔다 — 그건 빛이 아니라 카드를 바닥에서 띄우는 깊이다. */
   box-shadow:
-    0 0 18px rgba(67, 48, 255,.3),
+    0 0 18px rgba(99, 87, 216,.3),
     0 20px 46px rgba(8, 0, 48,.5),
-    inset 0 0 34px rgba(105, 88, 255,.12);
+    inset 0 0 34px rgba(130, 120, 223,.12);
   -webkit-backdrop-filter:none; backdrop-filter:none;
 }
 /* **안쪽 겹을 통째로 걷었다**(2026-09-23). 시안은 카드가 화면 폭을 다 쓰는 데모라
@@ -79,7 +79,7 @@ body.insight-home.is-night .hm-card::after{
      남긴 둘은 자리에 머무는 번짐이라 줄로 읽히지 않는다. */
   background:
     radial-gradient(circle at 76% 14%, rgba(234,105,255,.1), transparent 17%),
-    radial-gradient(ellipse at 48% 102%, rgba(122, 98, 255,.13), transparent 55%);
+    radial-gradient(ellipse at 48% 102%, rgba(143, 128, 225,.13), transparent 55%);
   mix-blend-mode:screen;
 }
 
@@ -114,8 +114,8 @@ body.insight-home.is-night .hm-head a:hover{background:rgba(255,255,255,.08)}
 body.insight-home.is-night .hm-panel{
   position:relative; overflow:hidden;
   border:1px solid var(--nc-line); border-radius:18px;
-  background:linear-gradient(125deg, rgba(45, 34, 161,.74), rgba(33, 20, 117,.61));
-  box-shadow:inset 0 0 26px rgba(121, 101, 255,.12);
+  background:linear-gradient(125deg, rgba(65, 58, 137,.74), rgba(46, 38, 99,.61));
+  box-shadow:inset 0 0 26px rgba(143, 130, 226,.12);
 }
 
 /* 알약 버튼. 시안의 .neon-button 이다 — 보라 채움에 분홍 테, 바깥으로 빛.
@@ -161,7 +161,7 @@ body.insight-home.is-night .hm-card > :last-child{margin-bottom:16px}
 body.insight-home.is-night .hm-foot{
   display:flex; align-items:center; gap:8px;
   margin:8px 20px 0; padding:8px 0 0;
-  border-top:1px solid rgba(138, 131, 255,.55);
+  border-top:1px solid rgba(159, 155, 231,.55);
   color:var(--nc-sub); font-size:var(--fs-sm);
 }
 body.insight-home.is-night .hm-foot::before{
@@ -180,9 +180,9 @@ body.insight-home.is-night .hm-indices li{
   padding:12px 14px 9px;
   border:1px solid var(--nc-line); border-radius:16px;
   background:
-    linear-gradient(145deg, rgba(85, 72, 229,.32), rgba(19, 11, 111,.28)),
+    linear-gradient(145deg, rgba(110, 102, 199,.32), rgba(35, 30, 92,.28)),
     var(--nc-panel);
-  box-shadow:inset 0 1px 18px rgba(143, 134, 255,.13), 0 10px 26px rgba(12, 2, 63,.18);
+  box-shadow:inset 0 1px 18px rgba(163, 157, 232,.13), 0 10px 26px rgba(20, 14, 51,.18);
 }
 body.insight-home.is-night .hm-ix-name{
   display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
@@ -207,9 +207,9 @@ body.insight-home.is-night .hm-ix-delta:not(.up):not(.down){color:var(--nc-flat)
 body.insight-home.is-night .hm-ticker{
   display:flex; align-items:center; gap:14px;
   margin-top:10px; padding:9px 16px;
-  border:1px solid rgba(156, 159, 255,.78); border-radius:14px;
-  background:linear-gradient(95deg, rgba(49, 38, 193,.72), rgba(61, 45, 207,.48));
-  box-shadow:inset 0 0 20px rgba(115, 98, 255,.15);
+  border:1px solid rgba(175, 177, 236,.78); border-radius:14px;
+  background:linear-gradient(95deg, rgba(74, 67, 164,.72), rgba(86, 76, 176,.48));
+  box-shadow:inset 0 0 20px rgba(138, 128, 225,.15);
 }
 body.insight-home.is-night .hm-ticker-tag{
   color:var(--nc-ink); font-weight:var(--fw-heavy); white-space:nowrap;
@@ -226,9 +226,9 @@ body.insight-home.is-night .hm-ant-box{
   min-height:112px; padding:13px 18px;
   border:1px solid var(--nc-line); border-radius:20px;
   background:
-    radial-gradient(circle at 78% 35%, rgba(120,70,255,.38), transparent 35%),
-    linear-gradient(120deg, rgba(39, 28, 161,.76), rgba(31, 19, 125,.58));
-  box-shadow:inset 0 0 30px rgba(113, 91, 255,.15);
+    radial-gradient(circle at 78% 35%, rgba(136, 105, 220,.38), transparent 35%),
+    linear-gradient(120deg, rgba(60, 53, 136,.76), rgba(47, 39, 105,.58));
+  box-shadow:inset 0 0 30px rgba(136, 122, 224,.15);
 }
 /* 코인 그림은 배경으로 얹는다 — 마크업을 건드리지 않고 시안의 자리를 잡는다 */
 body.insight-home.is-night .hm-ant-box::after{
@@ -283,8 +283,8 @@ body.insight-home.is-night .hm-flow{
 body.insight-home.is-night .hm-flow > div{
   position:relative; overflow:hidden; min-height:64px; padding:10px 14px;
   border:1px solid var(--nc-line); border-radius:16px;
-  background:linear-gradient(125deg, rgba(45, 34, 161,.74), rgba(33, 20, 117,.61));
-  box-shadow:inset 0 0 26px rgba(121, 101, 255,.12);
+  background:linear-gradient(125deg, rgba(65, 58, 137,.74), rgba(46, 38, 99,.61));
+  box-shadow:inset 0 0 26px rgba(143, 130, 226,.12);
 }
 body.insight-home.is-night .hm-flow dt{color:#e1e8ff; font-weight:var(--fw-bold)}
 body.insight-home.is-night .hm-flow dd{
@@ -321,8 +321,8 @@ body.insight-home.is-night .hm-lead{
   padding:13px 16px; gap:9px 13px;
   border:1px solid var(--nc-line); border-radius:18px;
   background:
-    radial-gradient(circle at 50% 35%, rgba(124, 87, 250,.39), transparent 29%),
-    linear-gradient(130deg, rgba(47, 32, 164,.5), rgba(41, 26, 150,.34));
+    radial-gradient(circle at 50% 35%, rgba(141, 118, 219,.39), transparent 29%),
+    linear-gradient(130deg, rgba(66, 57, 139,.5), rgba(59, 50, 126,.34));
 }
 body.insight-home.is-night .hm-lead-btn{
   display:inline-flex; align-items:center; justify-content:center;
@@ -346,10 +346,10 @@ body.insight-home.is-night .hm-lead-rank{
 body.insight-home.is-night .hm-state,
 body.insight-home.is-night .hm-card .state{
   position:relative; overflow:hidden;
-  border:1px solid rgba(111, 103, 255,.48); border-radius:18px;
+  border:1px solid rgba(137, 132, 226,.48); border-radius:18px;
   background:
-    radial-gradient(circle at 50% 48%, rgba(129, 90, 255,.34), transparent 32%),
-    linear-gradient(130deg, rgba(41, 28, 170,.45), rgba(39, 23, 150,.28));
+    radial-gradient(circle at 50% 48%, rgba(146, 121, 224,.34), transparent 32%),
+    linear-gradient(130deg, rgba(63, 55, 143,.45), rgba(57, 47, 126,.28));
 }
 
 /* 빈 상태 판. 시안은 그림 · 제목 · 한 줄 · 알약 버튼이 판 한가운데 선다.
@@ -358,18 +358,18 @@ body.insight-home.is-night .hm-empty{
   position:relative; overflow:hidden;
   display:flex; flex-direction:column; align-items:center; justify-content:center;
   gap:2px; min-height:230px; margin:0 20px 20px; padding:22px;
-  border:1px solid rgba(111, 103, 255,.48); border-radius:18px;
+  border:1px solid rgba(137, 132, 226,.48); border-radius:18px;
   text-align:center;
   background:
-    radial-gradient(circle at 50% 48%, rgba(129, 90, 255,.34), transparent 32%),
-    linear-gradient(130deg, rgba(41, 28, 170,.45), rgba(39, 23, 150,.28));
+    radial-gradient(circle at 50% 48%, rgba(146, 121, 224,.34), transparent 32%),
+    linear-gradient(130deg, rgba(63, 55, 143,.45), rgba(57, 47, 126,.28));
 }
 /* 바닥의 옅은 격자·사선. 시안 .empty-state::before 를 그대로 옮겼다 */
 body.insight-home.is-night .hm-empty::before{
   content:""; position:absolute; inset:45% -3% -20%; pointer-events:none; opacity:.42;
   background:
-    linear-gradient(164deg, transparent 0 24%, rgba(129, 112, 255,.26) 24.4% 24.8%, transparent 25.2%),
-    repeating-linear-gradient(90deg, transparent 0 60px, rgba(98, 82, 244,.14) 61px 68px, transparent 69px 95px);
+    linear-gradient(164deg, transparent 0 24%, rgba(150, 139, 228,.26) 24.4% 24.8%, transparent 25.2%),
+    repeating-linear-gradient(90deg, transparent 0 60px, rgba(123, 113, 213,.14) 61px 68px, transparent 69px 95px);
   -webkit-mask-image:linear-gradient(to bottom, transparent, #000 45%);
   mask-image:linear-gradient(to bottom, transparent, #000 45%);
 }
