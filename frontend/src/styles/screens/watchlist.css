@@ -29,7 +29,8 @@
   margin:0 auto 18px;
 }
 .watchlist-page .wl-head h1{
-  margin:0 0 5px;line-height:1.2;color:var(--ink);
+  /* 행간은 app.css 의 제목 규칙(1.15)을 따른다 — 여기서 1.2 를 따로 주고 있었다 */
+  margin:0 0 6px;color:var(--ink);
 }
 .watchlist-page .wl-head p{
   margin:0;color:var(--muted);font-size:var(--fs-base);line-height:1.6;word-break:keep-all;
