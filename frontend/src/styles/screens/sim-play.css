@@ -348,8 +348,12 @@
 .sp-amount dd{margin:0;color:var(--body);font-size:var(--fs-lg);font-weight:var(--fw-heavy);text-align:right}
 .sp-amount dd small{display:block;margin-top:2px;color:var(--muted);font-size:var(--fs-xs);font-weight:var(--fw-bold)}
 /* 마지막 줄이 실제로 나갈 돈이다 — 위 줄들보다 크고 진하게 */
-/* 비용 줄은 대금보다 작고 흐리게 — 읽는 순서가 대금 → 비용 → 실제로 오가는 돈이다 */
-.sp-amount .sp-fee dt,.sp-amount .sp-fee dd{color:var(--muted);font-size:var(--fs-sm);font-weight:var(--fw-bold)}
+/* 비용 줄(수수료 · 거래세). 읽는 순서는 대금 → 비용 → 실제로 오가는 돈이라 마지막
+   줄보다는 약하게 두되, **금액은 읽히게** 한다(2026-09-23). 전에는 --fs-sm 에
+   --muted 라 "얼마인지" 를 보려면 눈을 가까이 대야 했다 — 라벨은 다른 줄과 같은
+   크기로, 금액은 본문색으로 올린다. 대금 줄(--fs-lg)보다 한 단 작은 것은 그대로다. */
+.sp-amount .sp-fee dt{color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold)}
+.sp-amount .sp-fee dd{color:var(--body);font-size:var(--fs-md);font-weight:var(--fw-bold)}
 .sp-amount .sp-total{padding-top:9px;border-top:1px dashed var(--rule)}
 .sp-amount .sp-total dt{color:var(--body);font-size:var(--fs-base);font-weight:var(--fw-bold)}
 .sp-amount .sp-total dd{color:#0e1330;font-size:var(--fs-3xl);font-weight:var(--fw-black);letter-spacing:-.02em}
