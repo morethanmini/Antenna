@@ -48,19 +48,9 @@
    상단바는 밤으로 두고 이 창만 되돌리는 이유: 알림 목록은 글이 빽빽한 읽는
    화면이다. 종목 탐색 · 리포트 · 내 예측이 같은 이유로 이미 흰 판을 골랐고
    (팀 결정 2026-09-22), 같은 창이 화면에 따라 색이 달라지면 그게 더 어색하다. */
-body.is-night.is-glass .nt-pop{
-  --surface:#ffffff;
-  --surface-2:#f0f2f7;
-  --ink:#14141b;
-  --body:#3b3f4a;
-  --muted:#6b7280;
-  --faint:#9ca3af;
-  --rule:#e5e7ef;
-  --brand-soft:#ece9fd;
-  --brand-softer:#f4f3fe;
-  --down:#0066ff;
-  background:var(--surface);
-  /* 어두운 바닥 위에 뜨므로 그늘을 한 단 진하게 — 밝은 화면용 값은 여기서 안 보인다 */
+/* 색 토큰 한 벌은 app.css 의 섬이 든다(떠 있는 창 여섯이 같이 쓴다). 여기서는
+   이 창만의 그늘을 더한다 — 어두운 바닥 위에 뜨므로 밝은 화면용 값은 안 보인다. */
+body.is-night .nt-pop{
   box-shadow:0 22px 52px -18px rgba(0,0,0,.66), 0 2px 10px rgba(0,0,0,.26);
 }
 
