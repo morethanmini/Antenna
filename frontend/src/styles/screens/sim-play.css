@@ -567,32 +567,65 @@
 .tp-chip.on em{color:rgba(255,255,255,.75)}
 
 .tp-filter{display:flex;align-items:center;justify-content:space-between;gap:10px}
+/* 업종 더 보기. 파란 밑줄 링크였다(2026-09-23 지적 — 안 예쁘다) — 바로 위 칩 무리를
+   여닫는 버튼인데 혼자 웹 초창기 링크 모양이라 같은 무리로 안 읽혔다.
+   칩과 같은 키·같은 모서리로 맞춘다. 다만 **테두리만 두고 채우지 않는다** — 업종을
+   고르는 칩과 나란히 서므로, 채우면 "이 업종이 골라져 있다" 로 잘못 읽힌다. */
 .tp-more{
-  padding:2px 0;color:var(--brand);font-size:var(--fs-sm);font-weight:var(--fw-bold);
-  text-decoration:underline;text-underline-offset:3px;
+  display:inline-flex;align-items:center;gap:5px;
+  height:30px;padding:0 12px;
+  border:1px dashed var(--rule);border-radius:999px;
+  color:var(--muted);font-size:var(--fs-sm);font-weight:var(--fw-bold);
 }
-.tp-more:hover{color:var(--brand-ink)}
+.tp-more:hover{border-color:var(--brand);border-style:solid;color:var(--brand-ink);background:var(--brand-softer)}
 
 .tp-count{margin:0;color:var(--muted);font-size:var(--fs-sm);font-weight:var(--fw-bold);white-space:nowrap}
 
+/* 좌우 여백을 이 칸이 아니라 **줄** 이 갖는다. 머리글이 sticky 로 붙는데 여백이
+   이 칸에 있으면 머리글 배경이 그 여백을 못 덮어, 구르는 줄이 좌우 틈으로 비쳐
+   지나간다(2026-09-23 지적). 위 여백도 뗀다 — 머리글이 top:0 에 붙는 자리다. */
 .tp-list{
   flex:1;min-height:0;overflow-y:auto;
-  margin:0;padding:6px 12px 14px;
+  margin:0;padding:0 0 14px;
 }
-.tp-list ul{list-style:none;margin:0;padding:0}
+.tp-list ul{list-style:none;margin:0;padding:0 12px}
 
 /* 업종 머리글. 구르는 동안 위에 붙어 있어 지금 어느 업종을 보고 있는지 잃지 않는다.
-   목록 칸 자체가 스크롤 상자라 sticky 의 기준도 그 칸이다. */
+   목록 칸 자체가 스크롤 상자라 sticky 의 기준도 그 칸이다.
+
+   **칸 폭을 꽉 덮는다.** 줄이 이 밑을 지나가므로 배경이 한 군데라도 비면 글자가
+   겹쳐 보인다 — 실제로 좌우 12px 여백이 비어 그리로 줄이 비쳤다(2026-09-23).
+   여백은 줄 쪽으로 옮겼고(위 .tp-list), 머리글은 제 padding 으로 글자를 맞춘다.
+
+   가운데를 가로지르던 줄(::after 의 1px 선)은 걷었다. 이름과 숫자 사이를 선으로
+   잇는 모양은 목록 구분선과 헷갈려 스크롤 중에 금 간 것처럼 보인다 — 구분은
+   머리글 **아래 한 줄**이 맡는다. 토스·네이버의 묶음 머리가 쓰는 방식이다. */
 .tp-gh{
-  position:sticky;top:0;z-index:1;
+  position:sticky;top:0;z-index:2;
   display:flex;align-items:center;gap:8px;
-  margin:0;padding:9px 12px 7px;
-  background:var(--surface);
+  margin:0;padding:10px 24px 9px;
+  /* **흰색이 아니라 톤 바탕이다.** 줄이 이 밑을 지나가며 글자가 중간에서 잘리는데,
+     머리글이 줄과 같은 흰 바탕이면 그 잘린 글자가 "판 밑으로 들어갔다" 가 아니라
+     "글자가 깨졌다" 로 읽힌다(2026-09-23 지적). 옅은 회색 띠를 깔면 눈이 먼저
+     띠를 보고, 그 아래로 내용이 지나간다고 읽는다 — iOS 연락처 · 토스의 묶음
+     목록이 쓰는 방식이다. 1px 선이나 그림자만으로는 부족했다(둘 다 해 봤다). */
+  background:var(--surface-2);
+  box-shadow:inset 0 -1px 0 var(--rule);
   color:var(--muted);font-size:var(--fs-sm);font-weight:var(--fw-heavy);letter-spacing:.01em;
 }
-.tp-gh::after{content:"";flex:1;height:1px;background:var(--rule)}
+.tp-gh::after{content:"";flex:1}
+/* 띠 **바로 밑**에 흰 그러데이션을 한 겹 깐다. 띠만으로는 부족했다 — 줄이 띠 밑에서
+   빠져나오는 순간 글자가 가로로 뚝 잘린 채 나타나, 그 한 줄만 깨져 보인다.
+   여기서 글자가 흐려지며 나오면 "밑에서 올라온다" 로 읽힌다.
+   줄 바탕이 흰색이라 흰색에서 투명으로 가는 그러데이션은 **글자만** 지운다.
+   sticky 인 이 요소의 쌓임 맥락 안이라 줄(z-index auto) 위에 그려진다. */
+.tp-gh::before{
+  content:"";position:absolute;left:0;right:0;top:100%;height:18px;
+  background:linear-gradient(var(--surface),rgba(255,255,255,0));
+  pointer-events:none;
+}
 .tp-gh em{order:1;font-style:normal;color:var(--faint);font-size:var(--fs-xs)}
-.tp-group + .tp-group{margin-top:2px}
+.tp-group + .tp-group{margin-top:10px}
 .tp-row{
   display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;
   align-items:center;gap:10px;width:100%;
