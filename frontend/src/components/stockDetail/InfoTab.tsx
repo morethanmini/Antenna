@@ -141,7 +141,26 @@ const TERMS: { term: string; body: string }[] = [
   { term: '순이익', body: '영업이익에서 이자·세금까지 다 빼고 최종으로 남은 것.' },
 ]
 
-function TermsHelp() {
+/* 문장이 부를 이름의 우선순위. 화면에 뜬 것 중 앞의 둘을 부른다 — PER·ROE 가
+   가장 자주 인용되는 둘이라 앞에 둔다. 이 종목에 그 둘이 없으면 다음 것으로
+   내려간다(지표는 종목마다 빈다 — 값이 null 이면 화면에 "—" 로 찍힌다). */
+const TERM_PRIORITY = ['PER', 'ROE', 'PBR', '부채비율', '매출액', '영업이익', '순이익']
+
+/* 부를 이름으로 문장을 만든다. 둘이면 둘, 하나면 하나, 없으면 이름 없이.
+   **이름을 고정으로 박아 두면 안 된다** — 그 지표가 없는 종목에서 "PER? ROE?" 라고
+   물어 놓고 정작 화면에는 그 줄이 "—" 로 비어 있어, 어디를 보라는 말인지 못 찾는다.
+
+   이름 뒤에 "무슨 말인지 모르겠다면" 을 둔다 — 물음표만 세우면 무엇을 묻는 것인지
+   가 아니라 그 말을 아느냐를 묻는 것임이 덜 드러난다. 부를 이름이 없을 때만
+   "숫자가 낯설다면" 으로 바꾼다. 가리킬 이름이 없는데 "무슨 말인지" 라고 하면
+   무엇을 두고 하는 말인지 없다. */
+function saying(terms: string[]) {
+  const pick = TERM_PRIORITY.filter((t) => terms.includes(t)).slice(0, 2)
+  if (pick.length === 0) return '숫자가 낯설다면, 제가 한 줄씩 풀어 드릴게요.'
+  return `${pick.map((t) => `${t}?`).join(' ')} 무슨 말인지 모르겠다면, 제가 한 줄씩 풀어 드릴게요.`
+}
+
+function TermsHelp({ terms }: { terms: string[] }) {
   const [shown, setShown] = useState(false)
   const btnRef = useRef<HTMLButtonElement>(null)
   const popRef = useRef<HTMLDivElement>(null)
@@ -174,7 +193,7 @@ function TermsHelp() {
           src="/assets/character/face_ant/face-smile.webp"
           alt="" aria-hidden="true" width="34" height="34"
         />
-        <p>PER·ROE 가 무슨 말인지 모르겠다면, 제가 한 줄씩 풀어 드릴게요.</p>
+        <p>{saying(terms)}</p>
         <button
           ref={btnRef}
           type="button"
@@ -257,6 +276,24 @@ export default function InfoTab({ code, summary, picked, onPick, onGoPredict }: 
     setPeerPage(0)
   }
   const peerItems = peers.data?.items ?? []
+  /* 용어 안내가 부를 이름. **값이 있는 것만 센다** — null 은 화면에 "—" 로 찍히므로
+     그 이름을 부르면 가리킬 곳이 없다. 재무는 한 해라도 값이 있으면 그 칸이 선다. */
+  const shownTerms = useMemo(() => {
+    const out: string[] = []
+    const v = valuation.data
+    if (v) {
+      if (v.per !== null) out.push('PER')
+      if (v.pbr !== null) out.push('PBR')
+      if (v.roe !== null) out.push('ROE')
+      if (v.debtRatio !== null) out.push('부채비율')
+    }
+    const fin = financials.data?.items ?? []
+    if (fin.some((f) => f.revenue !== null)) out.push('매출액')
+    if (fin.some((f) => f.operatingProfit !== null)) out.push('영업이익')
+    if (fin.some((f) => f.netIncome !== null)) out.push('순이익')
+    return out
+  }, [valuation.data, financials.data])
+
   const peerPages = Math.max(1, Math.ceil(peerItems.length / PEERS_PER_PAGE))
   const peerShown = peerItems.slice(peerPage * PEERS_PER_PAGE, (peerPage + 1) * PEERS_PER_PAGE)
 
@@ -335,7 +372,7 @@ export default function InfoTab({ code, summary, picked, onPick, onGoPredict }: 
         {/* 숫자를 읽기 전에 말을 한 번 걸어 준다. PER·ROE 는 아는 사람에게는
             군더더기라 본문에 풀어 쓸 수 없고, 모르는 사람에게는 이 카드 전체가
             읽히지 않는다 — 접어 둔 설명을 개미가 들고 있게 했다 */}
-        <TermsHelp />
+        <TermsHelp terms={shownTerms} />
 
         {/* 업종 평균 PER/PBR · EPS · 배당수익률은 두지 않는다(§9.2) —
             /valuation 에 없고 /peers 는 나열이지 평균이 아니다 */}
