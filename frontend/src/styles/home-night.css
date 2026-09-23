@@ -128,7 +128,8 @@ body.insight-home.is-night .hm-panel{
 body.insight-home.is-night .hm-btn{
   display:inline-flex; align-items:center; justify-content:center; gap:9px;
   min-height:42px; padding:9px 26px;
-  border:2px solid rgba(255,211,255,.9); border-radius:999px;
+  /* 테는 1px 이다 — 같은 화면의 '랭킹 1위' 칩이 1px 이라 결을 맞춘다 */
+  border:1px solid rgba(255,211,255,.9); border-radius:999px;
   color:#fff;
   background:linear-gradient(90deg, rgba(122,78,255,.9), rgba(105,81,250,.9));
   box-shadow:
@@ -273,7 +274,8 @@ body.insight-home.is-night .hm-ant-btn{
   position:absolute; right:36px; bottom:12px; z-index:1;
   display:inline-flex; align-items:center; justify-content:center; gap:5px;
   width:88px; min-height:26px; padding:4px 0; line-height:1.1;
-  border:2px solid rgba(255,211,255,.9); border-radius:999px;
+  /* 테는 1px 이다 — 같은 화면의 '랭킹 1위' 칩이 1px 이라 결을 맞춘다 */
+  border:1px solid rgba(255,211,255,.9); border-radius:999px;
   color:#fff; background:linear-gradient(90deg, rgba(122,78,255,.9), rgba(105,81,250,.9));
   box-shadow:0 0 0 2px rgba(151,95,255,.22), 0 0 12px rgba(241,117,255,.5),
              inset 0 0 18px rgba(255,255,255,.15);
@@ -332,7 +334,8 @@ body.insight-home.is-night .hm-lead{
 body.insight-home.is-night .hm-lead-btn{
   display:inline-flex; align-items:center; justify-content:center;
   min-height:36px; padding:7px 22px;
-  border:2px solid rgba(255,211,255,.9); border-radius:999px;
+  /* 테는 1px 이다 — 같은 화면의 '랭킹 1위' 칩이 1px 이라 결을 맞춘다 */
+  border:1px solid rgba(255,211,255,.9); border-radius:999px;
   color:#fff; background:linear-gradient(90deg, rgba(122,78,255,.9), rgba(105,81,250,.9));
   box-shadow:0 0 0 2px rgba(151,95,255,.22), 0 0 12px rgba(241,117,255,.5),
              inset 0 0 18px rgba(255,255,255,.15);
