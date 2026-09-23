@@ -277,7 +277,10 @@ function MarketOverview() {
                   {signedAmt(delta, 2)}
                   <em>({signed(it.changeRate)})</em>
                 </span>
-                <Sparkline series={it.series} up={risingOf(it.changeRate, it.series)} width={78} height={52} area grow />
+                {/* 판 폭을 꽉 채운다. viewBox 가 곧 그림의 가로세로비라 CSS 로 늘려도
+                    비율이 다르면 가운데만 그리고 양옆을 비운다 — 78x52 를 220 폭
+                    상자에 넣었더니 실제로 그려진 건 57px 뿐이었다(실측). */}
+                <Sparkline series={it.series} up={risingOf(it.changeRate, it.series)} width={220} height={64} area grow />
               </li>
             )
           })}
