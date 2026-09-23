@@ -108,7 +108,9 @@ app:
     # 죽기 때문이다.
     max-pixels: 80000000
     # 배너 가로/세로. 화면설계서로 확정되지 않아 조절 손잡이로 남긴다 — 시안이 나오면 이 값만 바꾼다.
-    ad-aspect-ratio: 4.0
+    # 8:5(1.6) — 홈 스폰서 카드가 1280px 화면에서 갖는 비율(463×297)에 맞췄다(2026-09-23, 전에는 4:1).
+    # 프론트 api/uploads.ts 의 AD_ASPECT 와 같이 움직인다.
+    ad-aspect-ratio: 1.6
     ad-aspect-tolerance: 0.05
 
   # 토큰 금액표(ANT-TOKEN-08) — TokenAmountProperties. ANT 가 들고 나는 금액은 전부 여기 한 곳이다.

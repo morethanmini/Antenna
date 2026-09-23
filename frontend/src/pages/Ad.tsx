@@ -45,7 +45,7 @@ import WalletLinkModal from '../components/wallet/WalletLinkModal'
 import WalletPrelink from '../components/wallet/WalletPrelink'
 import ErrorState from '../components/state/ErrorState'
 import ConfirmDialog from '../components/ConfirmDialog'
-import { UPLOAD_HINT } from '../api/uploads'
+import { AD_UPLOAD_HINT } from '../api/uploads'
 import type { UploadedImage } from '../api/uploads'
 import { errorText } from '../components/state/errorText'
 import '../styles/screens/ad-new.css'
@@ -228,8 +228,8 @@ export default function Ad() {
             {/* ── 배너 ─────────────────────────────────── */}
             <section className="adreg-card">
               <h2>배너 이미지</h2>
-              {/* 올리기 창과 같은 한 줄을 쓴다(api/uploads.ts 의 UPLOAD_HINT) */}
-              <p className="adreg-hint">{UPLOAD_HINT}</p>
+              {/* 광고만 비율까지 적는다(api/uploads.ts 의 AD_UPLOAD_HINT) */}
+              <p className="adreg-hint">{AD_UPLOAD_HINT}</p>
 
               {banner ? (
                 <div className="adreg-banner">
