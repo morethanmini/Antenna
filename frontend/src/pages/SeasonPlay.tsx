@@ -38,7 +38,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ApiError } from '../api/errors'
 import {
-  getPrices, getTickers, maxBuyQty, orderAmount, orderCost, orderSettled, rate, signOf,
+  getPrices, getTickers, maxBuyQty, orderAmount, orderFee, orderSettled, orderTax, rate, signOf,
   type Candle, type SeasonNews, type Side, type Ticker,
 } from '../api/seasonPlay'
 import { useApiQuery } from '../api/useApiQuery'
@@ -558,8 +558,11 @@ export default function SeasonPlay() {
   const changeQty = (n: number) => setQty(Math.min(maxQty, Math.max(0, Math.floor(n) || 0)))
   const amount = price === null ? 0 : orderAmount(price, qty)
   /* 수수료(양쪽)와 거래세(매도만). 여기 값은 어디까지나 예상이고 진짜는 주문 응답이 준다 —
-     같은 요율·같은 절사라 어긋나지 않지만, 어긋나면 서버가 맞다 */
-  const cost = orderCost(side, amount)
+     같은 요율·같은 절사라 어긋나지 않지만, 어긋나면 서버가 맞다.
+     **둘을 따로 그린다**(2026-09-23) — 합쳐서 "수수료·세금 N원" 으로 두면 어느 쪽이
+     얼마인지 알 수 없다. 매도에서는 거래세가 수수료의 열 배라 그 차이가 특히 크다. */
+  const fee = orderFee(amount)
+  const tax = orderTax(side, amount)
   /** 매수면 내는 총액, 매도면 받는 실수령액 */
   const settled = orderSettled(side, amount)
   const percent = s.lengthDays > 0 ? Math.round((sim.day / s.lengthDays) * 100) : 0
@@ -898,10 +901,22 @@ export default function SeasonPlay() {
                   <dt>주문 금액</dt>
                   <dd className="num">{won(amount)}</dd>
                 </div>
+                {/* 요율을 라벨 옆에 붙인다(2026-09-23). 아래 따로 한 줄로 두었더니
+                    "얼마" 와 "몇 %" 가 떨어져 있어 둘을 눈으로 이어야 했다. 한 줄에
+                    두면 "이 요율이라 이 금액" 이 그대로 읽힌다.
+                    요율은 라벨보다 한 단 흐리게 — 줄의 이름은 어디까지나 '수수료' 다. */}
                 <div className="sp-fee">
-                  <dt>{side === 'BUY' ? '수수료' : '수수료·세금'}</dt>
-                  <dd className="num">{won(cost)}</dd>
+                  <dt>수수료 <span>0.015%</span></dt>
+                  <dd className="num">{won(fee)}</dd>
                 </div>
+                {/* 거래세는 매도에만 붙는다. 매수에서 "거래세 0원" 을 그리면 없는 비용을
+                    있는 것처럼 세는 줄이 된다 */}
+                {side === 'SELL' && (
+                  <div className="sp-fee">
+                    <dt>거래세 <span>0.15%</span></dt>
+                    <dd className="num">{won(tax)}</dd>
+                  </div>
+                )}
                 <div className="sp-total">
                   <dt>{side === 'BUY' ? '총 주문 금액' : '예상 수령액'}</dt>
                   <dd className="num">{won(settled)}</dd>
