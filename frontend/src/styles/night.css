@@ -273,6 +273,28 @@ body.is-night.is-panel{
   --gold:#ffd464;
 }
 
+/* ── 판은 유리다 (2026-09-23 요청) ───────────────────────
+   종목 상세 머리(.sd-head, stock-detail.css)가 먼저 간 길이다 — 뒤에 도시 사진이
+   고정으로 깔리는데(아래 .main::before) 그 위에 불투명 사각형을 얹으면 화면에
+   붙여 놓은 것처럼 보인다. 사진이 판을 통해 비쳐야 한 덩어리로 읽힌다.
+   값 세 개(알파 .62 · blur 14px · saturate 140%)는 그 판과 같다.
+
+   **여기 적는 것은 판뿐이다.** 판 안의 캡슐 — 알약(.mp-pill) · 배지(.badge-chip) ·
+   거르개 단추(.wallet-filters button) · 토글 손잡이 — 은 --surface(#231d4d)를
+   그대로 써서 불투명하게 남는다. 판과 같이 투명해지면 유리 위에서 형태가 사라진다.
+
+   .lg-board(확정 기록)는 여기 없다 — 줄이 빽빽한 목록이라 알파를 실측으로 따로
+   잡았다(ledger.css 의 그 자리 주석 참고). */
+body.is-night .st-block,
+body.is-night .mp-hero,
+body.is-night .mp-score-card,
+body.is-night .wallet-card,
+body.is-night .wallet-ledger{
+  background:rgba(16,14,40,.62);
+  -webkit-backdrop-filter:blur(14px) saturate(140%);
+  backdrop-filter:blur(14px) saturate(140%);
+}
+
 /* 브랜드색을 **글자**로 쓰는 자리. 위에서 토큰을 그대로 둔 탓에 낮 값(#5457e8 ·
    #4144c9)이 어두운 판에 그대로 얹혀 가라앉는다 — 여기만 밝은 보라로 올린다.
    값은 확정 기록 목록(.lg-board)의 해시·검산 링크와 같다. 판 안 글자를 한 단
