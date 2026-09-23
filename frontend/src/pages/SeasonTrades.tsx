@@ -16,7 +16,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ApiError } from '../api/errors'
-import { getTrades, rate, signOf, type Side, type Trade } from '../api/seasonPlay'
+import { getTrades, rate, signOf, tradeCost, type Side, type Trade } from '../api/seasonPlay'
 import { useApiQuery } from '../api/useApiQuery'
 import ErrorState from '../components/state/ErrorState'
 import '../styles/screens/sim-trades.css'
@@ -128,6 +128,9 @@ export default function SeasonTrades() {
   const sells = all.filter((t) => t.side === 'SELL')
   const realized = sells.reduce((a, t) => a + (t.realizedPnl ?? 0), 0)
   const wins = sells.filter((t) => (t.realizedPnl ?? 0) > 0).length
+  /* 수수료·거래세의 합. 매수 쪽 수수료도 들어가므로 실현 손익(매도 기준)보다 넓다 —
+     "들고 있는 종목을 사느라 낸 돈" 까지 포함한 이 판의 총 매매 비용이다 */
+  const cost = all.reduce((a, t) => a + tradeCost(t), 0)
 
   if (season.loading || trades === null) {
     return (
@@ -201,6 +204,9 @@ export default function SeasonTrades() {
             tone={realized > 0 ? 'up' : realized < 0 ? 'down' : 'flat'}
             label="실현 손익"
             value={`${realized > 0 ? '+' : ''}${won(realized)}`}
+            /* 비용은 이미 실현 손익에서 빠져 있다. 따로 적는 것은 "얼마가 비용으로 나갔나" 가
+               수익률만큼이나 배울 거리라서다 — 자주 사고팔수록 이 줄이 커진다 */
+            sub={cost > 0 ? <span className="st-dim">비용 {won(cost)} 포함</span> : undefined}
             icon={<Ico><path d="M12 19V5M12 5l-5 5M12 5l5 5" /></Ico>}
           />
         </section>
@@ -276,7 +282,10 @@ export default function SeasonTrades() {
                   <b>{t.tickerName}</b>
                   <span className="num">{cut(t.qty)}주</span>
                   <span className="num">{cut(t.price)}</span>
-                  <span className="st-amt num">{won(t.amount)}</span>
+                  <span className="st-amt num">
+                    {won(t.amount)}
+                    {tradeCost(t) > 0 && <small>비용 {won(tradeCost(t))}</small>}
+                  </span>
                   {/* 매수는 아직 결과가 없다. 0 으로 채우면 "본전" 으로 읽힌다 */}
                   <span className={`st-pnl num ${
                     t.realizedPnl === null ? 'flat' : signOf(t.realizedPnl)}`}
@@ -291,9 +300,11 @@ export default function SeasonTrades() {
           )}
 
           <p className="st-note">
-            체결가는 그 게임일 종가 그대로입니다. 수수료는 없습니다.
+            체결가는 그 게임일 종가 그대로입니다. 수수료 0.015%가 매수·매도에,
+            증권거래세 0.15%가 매도에 붙습니다.
             {sells.length > 0 && (
-              <> 실현 손익은 평균 매입가 기준입니다. 매도 {sells.length}건 중 {wins}건이
+              <> 실현 손익은 평균 매입가 기준이고 왕복 비용을 뺀 금액입니다.
+                매도 {sells.length}건 중 {wins}건이
                 이익으로 건수 비율은 {rate((wins / sells.length) * 100).replace('+', '')}입니다.
                 나눠 팔면 한 판단이 여러 건이 되니 참고로만 보세요.</>
             )}

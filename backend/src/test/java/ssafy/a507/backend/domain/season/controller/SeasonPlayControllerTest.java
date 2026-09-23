@@ -38,6 +38,10 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>체결가는 내 진행일 종가다. 이 파일의 시세: A 는 D+1 70,000 · D+2 80,000, B 는 D+1 10,000.
  * 예수금 30,000,000 에서 시작한다.
  *
+ * <p><b>매매 비용</b>(app.season.fees) — 수수료 0.015% 가 매수·매도에, 거래세 0.15% 가 매도에
+ * 붙고 원 단위로 버린다. 매수는 대금 + 수수료가 나가고 매도는 대금 − 수수료 − 거래세가 들어온다.
+ * 그래서 아래 예수금은 전부 끝이 떨어지지 않는다 — 10주 @70,000 이면 700,000 + 105 다.
+ *
  * <p>Redis 는 띄우지 않는다. StringRedisTemplate 을 맵으로 대신한다(SeasonJoinControllerTest 와 같다).
  */
 @SpringBootTest
@@ -105,10 +109,10 @@ class SeasonPlayControllerTest {
 
         mockMvc.perform(get(url("/me")).with(user(me)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.cash").value(29300000))
+                .andExpect(jsonPath("$.cash").value(29299895))
                 .andExpect(jsonPath("$.stockValue").value(800000))
-                .andExpect(jsonPath("$.totalAsset").value(30100000))
-                .andExpect(jsonPath("$.pnl").value(100000))
+                .andExpect(jsonPath("$.totalAsset").value(30099895))
+                .andExpect(jsonPath("$.pnl").value(99895))
                 .andExpect(jsonPath("$.pnlRate").value(0.33))
                 .andExpect(jsonPath("$.currentDay").value(2))
                 .andExpect(jsonPath("$.positions[0].tickerId").value(tickerA))
@@ -142,15 +146,18 @@ class SeasonPlayControllerTest {
     // ── POST /orders ─────────────────────────────────────────
 
     @Test
-    @DisplayName("매수는 진행일 종가로 체결되고 예수금이 줄고 포지션이 생긴다")
+    @DisplayName("매수는 진행일 종가로 체결되고 대금 + 수수료가 예수금에서 빠지고 포지션이 생긴다")
     void 매수_체결() throws Exception {
+        // 700,000 × 0.015% = 105
         order("k-1", tickerA, "BUY", 10)
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.tradeId").isNumber())
                 .andExpect(jsonPath("$.price").value(70000))
-                .andExpect(jsonPath("$.gameDay").value(1));
+                .andExpect(jsonPath("$.gameDay").value(1))
+                .andExpect(jsonPath("$.fee").value(105))
+                .andExpect(jsonPath("$.tax").value(0));
 
-        assertThat(cash()).isEqualByComparingTo("29300000");
+        assertThat(cash()).isEqualByComparingTo("29299895");
         List<Object[]> positions = positions();
         assertThat(positions).hasSize(1);
         assertThat(((Number) positions.get(0)[1]).intValue()).isEqualTo(10);
@@ -158,7 +165,7 @@ class SeasonPlayControllerTest {
     }
 
     @Test
-    @DisplayName("추가 매수는 평단을 수량 가중으로 다시 구한다 — 10주@70,000 + 10주@80,000 = 75,000")
+    @DisplayName("추가 매수는 평단을 수량 가중으로 다시 구한다 — 10주@70,000 + 10주@80,000 = 75,000. 평단에 수수료를 얹지 않는다")
     void 추가_매수_평단() throws Exception {
         order("k-1", tickerA, "BUY", 10).andExpect(status().isCreated());
         setCurrentDay(2);
@@ -171,7 +178,8 @@ class SeasonPlayControllerTest {
         assertThat(positions).hasSize(1);
         assertThat(((Number) positions.get(0)[1]).intValue()).isEqualTo(20);
         assertThat((BigDecimal) positions.get(0)[2]).isEqualByComparingTo("75000");
-        assertThat(cash()).isEqualByComparingTo("28500000");
+        // 30,000,000 − (700,000 + 105) − (800,000 + 120)
+        assertThat(cash()).isEqualByComparingTo("28499775");
     }
 
     @Test
@@ -187,23 +195,48 @@ class SeasonPlayControllerTest {
     }
 
     @Test
-    @DisplayName("매도는 실현손익을 남기고 예수금을 늘린다 · 전량 매도면 포지션 행이 사라진다")
+    @DisplayName("예수금을 꽉 채운 매수는 수수료만큼 모자라 409 — 한 주 덜 사면 들어간다. 화면의 '최대' 가 맞춰야 하는 경계다")
+    void 수수료_때문에_한_주가_모자란다() throws Exception {
+        /* 10,000 짜리 3,000주 = 30,000,000 으로 예수금과 딱 같다. 대금만 보면 살 수 있지만
+           수수료 4,500 이 더 나가 모자란다 — maxBuyQty(api/seasonPlay)가 대금으로만 나누면
+           "최대" 를 누르는 족족 여기로 떨어진다. 2,999주면 29,990,000 + 4,498 로 들어간다. */
+        order("k-1", tickerB, "BUY", 3000)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("INSUFFICIENT_BALANCE"));
+        assertThat(cash()).isEqualByComparingTo("30000000");
+
+        order("k-2", tickerB, "BUY", 2999)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.fee").value(4498));
+        assertThat(cash()).isEqualByComparingTo("5502");
+    }
+
+    @Test
+    @DisplayName("매도는 수수료·거래세를 떼고 예수금을 늘린다 · 실현손익은 왕복 비용을 뺀 순액 · 전량이면 포지션 행이 사라진다")
     void 매도_체결_실현손익() throws Exception {
         order("k-1", tickerA, "BUY", 10).andExpect(status().isCreated());
         setCurrentDay(2);
+        // 대금 800,000 · 수수료 120 · 거래세 1,200
         order("k-2", tickerA, "SELL", 10)
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.price").value(80000));
+                .andExpect(jsonPath("$.price").value(80000))
+                .andExpect(jsonPath("$.fee").value(120))
+                .andExpect(jsonPath("$.tax").value(1200));
 
-        assertThat(cash()).isEqualByComparingTo("30100000");
+        // 29,299,895 + (800,000 − 120 − 1,200)
+        assertThat(cash()).isEqualByComparingTo("30098575");
         assertThat(positions()).isEmpty();
         List<Object[]> trades = trades();
         assertThat(trades).hasSize(2);
-        // 최근 체결(SELL)이 먼저
+        // 최근 체결(SELL)이 먼저. 100,000 − 120(매도 수수료) − 1,200(거래세) − 105(매수 수수료)
         assertThat(trades.get(0)[0]).isEqualTo("SELL");
-        assertThat((BigDecimal) trades.get(0)[1]).isEqualByComparingTo("100000");
+        assertThat((BigDecimal) trades.get(0)[1]).isEqualByComparingTo("98575");
         assertThat(trades.get(1)[0]).isEqualTo("BUY");
         assertThat(trades.get(1)[1]).isNull();
+
+        // 전량을 정리하면 실현손익의 합이 예수금의 변화와 같다 — 매매일지와 현황이 서로를 검산한다
+        assertThat(cash().subtract(new BigDecimal("30000000")))
+                .isEqualByComparingTo((BigDecimal) trades.get(0)[1]);
     }
 
     @Test
@@ -218,6 +251,38 @@ class SeasonPlayControllerTest {
     }
 
     @Test
+    @DisplayName("나눠 팔면 매수 수수료를 수량 비례로 떼고 마지막 매도가 남은 몫을 다 가져간다 — 실현손익의 합이 예수금의 변화와 1원까지 같다")
+    void 나눠_팔아도_매수_수수료_합이_맞다() throws Exception {
+        // 대금 700,000 · 수수료 105
+        order("k-1", tickerA, "BUY", 10).andExpect(status().isCreated());
+        // 280,000 − 42 − 420 − 매수 수수료 몫 floor(105 × 4/10) = 42
+        order("k-2", tickerA, "SELL", 4).andExpect(status().isCreated());
+        // 420,000 − 63 − 630 − 남은 몫 63
+        order("k-3", tickerA, "SELL", 6).andExpect(status().isCreated());
+
+        List<Object[]> trades = trades();
+        assertThat((BigDecimal) trades.get(0)[1]).isEqualByComparingTo("-756");
+        assertThat((BigDecimal) trades.get(1)[1]).isEqualByComparingTo("-504");
+        assertThat(cash().subtract(new BigDecimal("30000000"))).isEqualByComparingTo("-1260");
+    }
+
+    @Test
+    @DisplayName("수수료를 붙이기 전에 산 물량(buy_fee NULL)을 팔면 매수 수수료를 빼지 않는다 — 그때는 실제로 무료였다")
+    void 수수료_전_보유분_매도() throws Exception {
+        em.createNativeQuery(
+                        "INSERT INTO season_positions (participant_id, ticker_id, qty, avg_price) VALUES (?, ?, 10, 70000)")
+                .setParameter(1, participantId)
+                .setParameter(2, tickerA)
+                .executeUpdate();
+        setCurrentDay(2);
+
+        order("k-1", tickerA, "SELL", 10).andExpect(status().isCreated());
+
+        // 100,000 − 120(매도 수수료) − 1,200(거래세). 매수 수수료 105 는 낸 적이 없다
+        assertThat((BigDecimal) trades().get(0)[1]).isEqualByComparingTo("98680");
+    }
+
+    @Test
     @DisplayName("보유보다 많이 팔거나 없는 종목을 팔면 409 SEASON_INSUFFICIENT_QTY")
     void 수량_부족_409() throws Exception {
         order("k-0", tickerA, "SELL", 1)
@@ -228,7 +293,7 @@ class SeasonPlayControllerTest {
         order("k-2", tickerA, "SELL", 11)
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("SEASON_INSUFFICIENT_QTY"));
-        assertThat(cash()).isEqualByComparingTo("29300000");
+        assertThat(cash()).isEqualByComparingTo("29299895");
     }
 
     @Test
@@ -240,7 +305,7 @@ class SeasonPlayControllerTest {
                 .andExpect(jsonPath("$.price").value(70000));
 
         assertThat(trades()).hasSize(1);
-        assertThat(cash()).isEqualByComparingTo("29300000");
+        assertThat(cash()).isEqualByComparingTo("29299895");
     }
 
     @Test
@@ -289,7 +354,7 @@ class SeasonPlayControllerTest {
     // ── GET /trades ──────────────────────────────────────────
 
     @Test
-    @DisplayName("체결 내역은 최근이 먼저 · 금액 = 체결가 × 수량 · 매수의 realizedPnl 은 null")
+    @DisplayName("체결 내역은 최근이 먼저 · 금액 = 체결가 × 수량(비용 제외) · 비용은 fee·tax 로 따로 · 매수의 realizedPnl 은 null")
     void 체결_내역() throws Exception {
         order("k-1", tickerA, "BUY", 10).andExpect(status().isCreated());
         order("k-2", tickerB, "BUY", 5).andExpect(status().isCreated());
@@ -304,9 +369,15 @@ class SeasonPlayControllerTest {
                 .andExpect(jsonPath("$.items[0].tickerName").value("종목A"))
                 .andExpect(jsonPath("$.items[0].qty").value(3))
                 .andExpect(jsonPath("$.items[0].amount").value(210000))
-                .andExpect(jsonPath("$.items[0].realizedPnl").value(0))
+                .andExpect(jsonPath("$.items[0].fee").value(31))
+                .andExpect(jsonPath("$.items[0].tax").value(315))
+                // 같은 가격에 되팔아도 본전이 아니다 — 왕복 비용 31 + 315 + 31 만큼 손해다
+                .andExpect(jsonPath("$.items[0].realizedPnl").value(-377))
                 .andExpect(jsonPath("$.items[1].tickerName").value("종목B"))
                 .andExpect(jsonPath("$.items[1].amount").value(50000))
+                // 50,000 × 0.015% = 7.5 → 원 단위 절사로 7
+                .andExpect(jsonPath("$.items[1].fee").value(7))
+                .andExpect(jsonPath("$.items[1].tax").value(0))
                 .andExpect(jsonPath("$.items[1].realizedPnl").doesNotExist())
                 .andExpect(jsonPath("$.items[2].side").value("BUY"))
                 .andExpect(jsonPath("$.items[2].gameDay").value(1));

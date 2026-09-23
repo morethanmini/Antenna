@@ -396,7 +396,7 @@ export default function SeasonJoin() {
               <Ico><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v4h4" /><path d="M9 12h6M9 16h6" /></Ico>
               <b>언제인지는 알려주지 않아요</b>
             </li>
-            <li title="매수·매도와 수량만 정하세요. 수수료와 예약 주문은 없어요.">
+            <li title="매수·매도와 수량만 정하세요. 예약 주문은 없지만 수수료 0.015%와 매도 거래세 0.15%는 실제처럼 붙어요.">
               <Ico><path d="M4 8h13l-3-3M20 16H7l3 3" /></Ico>
               <b>그날 종가로 체결돼요</b>
             </li>
