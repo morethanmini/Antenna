@@ -5,7 +5,8 @@ import java.math.RoundingMode;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * 모의투자 매매 비용 — 위탁수수료와 증권거래세. 요율은 여기 한 곳이다.
+ * 모의투자 매매 비용 — 위탁수수료와 증권거래세. 서버의 요율은 여기 한 곳이고, 화면이 "예상" 비용과
+ * "최대" 수량을 그리려고 {@code frontend/src/api/seasonPlay.ts} 에 같은 값을 둔다 — 바꾸면 둘을 같이 고친다.
  *
  * <p><b>요율은 계산에 쓰고 결과는 체결 행에 박제한다.</b> {@code season_trades.fee}·{@code tax} 에
  * 남긴 금액이 단일 진실이고, 성적 계산({@link ssafy.a507.backend.domain.season.service.SeasonResultCalculator})은
@@ -39,14 +40,6 @@ public record SeasonFeeProperties(BigDecimal commissionRate, BigDecimal sellTaxR
     /** 증권거래세. 매도 대금 × 요율이고 매수는 0 이다. */
     public BigDecimal sellTax(BigDecimal amount) {
         return floorWon(amount.multiply(sellTaxRate));
-    }
-
-    /**
-     * 매수 1주당 비용을 얹은 단가. "최대 몇 주" 를 구할 때 나눌 값이다 —
-     * 화면의 {@code maxBuyQty} 와 같은 식이어야 "최대" 를 눌러 409 가 나지 않는다.
-     */
-    public BigDecimal buyUnitCost(BigDecimal price) {
-        return price.multiply(BigDecimal.ONE.add(commissionRate));
     }
 
     /** 원 단위 절사. 비용은 늘 버리는 방향이라 이론값을 넘지 않는다. */

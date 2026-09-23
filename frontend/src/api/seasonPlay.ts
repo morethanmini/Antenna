@@ -296,14 +296,17 @@ export const weightOf = (value: number, totalAsset: number) =>
 
 /* ── 매매 비용 ─────────────────────────────────────────────
 
-   서버(app.season.fees)와 같은 값을 둔다. 화면은 "예상" 을 그리는 데만 쓰고 실제 금액은
+   서버(application.yaml 의 app.season.fees)와 같은 값을 둔다 — 요율을 바꾸면 둘을 같이 고친다.
+   API 로 받지 않는 이유: 요율은 설정이 아니라 정책이라 배포로만 바뀌고 BE·FE 가 같이 나간다. 화면은 "예상" 을 그리는 데만 쓰고 실제 금액은
    주문 응답의 fee·tax 다 — 둘이 어긋나면 서버가 맞다. 그래도 같은 값이어야 하는 이유는
    "최대" 수량이다: 화면이 수수료를 모르면 예수금을 꽉 채운 수량을 만들어 409 로 튕긴다. */
 
+/** 요율은 분자·분모로 둔다 — 소수로 곱하면 1원이 어긋난다(floorRate). */
+type Rate = { num: number; den: number }
 /** 위탁수수료율 0.015%. 매수·매도 양쪽 */
-export const COMMISSION_RATE = 0.00015
+const COMMISSION: Rate = { num: 15, den: 100_000 }
 /** 증권거래세율 0.15%. 매도에만 */
-export const SELL_TAX_RATE = 0.0015
+const SELL_TAX: Rate = { num: 15, den: 10_000 }
 
 /** 예상 주문 금액. 명세가 프론트 계산으로 지정한 값이다. 종가 단일가라 곱하기 하나다. */
 export const orderAmount = (price: number, qty: number) => price * qty
@@ -314,15 +317,14 @@ export const orderAmount = (price: number, qty: number) => price * qty
  * 이라 120 이다. 1원이 어긋나면 "예상 수령액이 실제와 다르다" 가 된다. 분자·분모로 나눠
  * 곱셈을 정수 안에 두면 그 차이가 생기지 않는다(800,000 × 15 = 12,000,000 은 정확하다).
  */
-const floorRate = (amount: number, numerator: number, denominator: number) =>
-  Math.floor((amount * numerator) / denominator)
+const floorRate = (amount: number, rate: Rate) => Math.floor((amount * rate.num) / rate.den)
 
-/** 예상 위탁수수료. 0.015% = 15 / 100,000 */
-export const orderFee = (amount: number) => floorRate(amount, 15, 100_000)
+/** 예상 위탁수수료 */
+export const orderFee = (amount: number) => floorRate(amount, COMMISSION)
 
-/** 예상 증권거래세. 0.15% = 15 / 10,000. 매수는 0 */
+/** 예상 증권거래세. 매수는 0 */
 export const orderTax = (side: Side, amount: number) =>
-  side === 'SELL' ? floorRate(amount, 15, 10_000) : 0
+  side === 'SELL' ? floorRate(amount, SELL_TAX) : 0
 
 /** 예상 비용 합계 */
 export const orderCost = (side: Side, amount: number) => orderFee(amount) + orderTax(side, amount)
@@ -345,7 +347,7 @@ export const orderSettled = (side: Side, amount: number) =>
 export const maxBuyQty = (cash: number, price: number) => {
   if (price <= 0) return 0
   const affordable = (q: number) => orderSettled('BUY', orderAmount(price, q)) <= cash
-  let qty = Math.floor(cash / (price * (1 + COMMISSION_RATE)))
+  let qty = Math.floor((cash * COMMISSION.den) / (price * (COMMISSION.den + COMMISSION.num)))
   while (qty > 0 && !affordable(qty)) qty -= 1
   while (affordable(qty + 1)) qty += 1
   return qty
