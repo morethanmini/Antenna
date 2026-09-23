@@ -277,7 +277,10 @@ function MarketOverview() {
                   {signedAmt(delta, 2)}
                   <em>({signed(it.changeRate)})</em>
                 </span>
-                <Sparkline series={it.series} up={risingOf(it.changeRate, it.series)} width={78} height={52} area grow />
+                {/* 판 폭을 꽉 채운다. viewBox 가 곧 그림의 가로세로비라 CSS 로 늘려도
+                    비율이 다르면 가운데만 그리고 양옆을 비운다 — 78x52 를 220 폭
+                    상자에 넣었더니 실제로 그려진 건 57px 뿐이었다(실측). */}
+                <Sparkline series={it.series} up={risingOf(it.changeRate, it.series)} width={220} height={64} area grow />
               </li>
             )
           })}
@@ -307,7 +310,8 @@ function MyAssets() {
     <section className="card hm-card hm-wallet" aria-labelledby="hm-assets">
       <header className="hm-head">
         <h2 id="hm-assets"><img className="hm-head-ico" src="/assets/page_home/ui/icon-wallet.webp" alt="" />내 자산 현황</h2>
-        <Link to="/me/wallet">지갑 ›</Link>
+        {/* 머리의 '지갑 ›' 을 뺐다 — 아래 '내역 보기' 가 같은 /me/wallet 로 가므로
+            한 카드에 같은 곳으로 가는 길이 둘이었다. */}
       </header>
       <State loading={loading} error={error} onRetry={reload} />
       {data && (
@@ -629,9 +633,14 @@ export default function Home() {
             순서가 곧 배치다 — 좌·우, 좌·우, 좌·우. */}
         <div className="hm-grid">
           <Hero />
-          <Sponsored />
-          {/* 두 칸을 가로지른다 — 아래 카드 줄을 밀지 않고 한 줄만 쓴다 */}
-          <ContestBanner />
+          {/* 오른쪽 줄은 한 칸이다. 스폰서드와 대회 배너를 **한 칸 안에 세로로**
+              세운다 — 격자 줄로 나눠 놓으면 히어로가 키운 높이가 두 줄에 똑같이
+              나뉘어, 배너 줄에 배너보다 142px 큰 빈자리가 생겼다(실측).
+              칸 하나 안에서는 남는 자리를 스폰서드가 전부 가져간다. */}
+          <div className="hm-side">
+            <Sponsored />
+            <ContestBanner />
+          </div>
           {/* 관심 종목을 시장 Overview 보다 위에 둔다 — 홈에 들어와 가장 먼저
               보는 것이 "내가 담은 것" 이라는 코치 QA(2026-09-21). 시장 지표는
               누구에게나 같은 값이라 한 줄 아래여도 손해가 없다. */}

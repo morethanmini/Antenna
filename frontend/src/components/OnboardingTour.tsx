@@ -48,77 +48,45 @@ const Ico = ({ children }: { children: React.ReactNode }) => (
 )
 const ArrowIcon = () => <Ico><path d="M5 12h13M13 6l6 6-6 6" /></Ico>
 const BackIcon = () => <Ico><path d="M19 12H6M11 18l-6-6 6-6" /></Ico>
-/* 나침반 — "어디로 가면 되는지" 줄 앞에 선다 */
-const CompassIcon = () => (
-  <Ico><circle cx="12" cy="12" r="9" /><path d="m15.5 8.5-2 5-5 2 2-5z" /></Ico>
-)
 
 const STEPS = [
   {
     key: 'what',
-    eyebrow: '예측을 남기는 곳',
-    title: <>예측을 <em>기록</em>으로 남깁니다</>,
-    body: '종목의 방향과 목표가를 정해 예측을 등록하면, 그 순간의 판단이 그대로 잠깁니다. 나중에 고칠 수 없습니다.',
-    art: '/assets/character/white_ant/antenna-character-transparent.png',
-    drift: ['/assets/blockchain-animation/cube/cube-draft.webp',
-            '/assets/blockchain-animation/effect/spark-small.webp'],
+    eyebrow: '내 판단을 기록해요',
+    title: <>오를지, 내릴지<br /><em>내 판단을 남겨요</em></>,
+    body: '종목과 목표가를 고르면 끝.',
+    art: '/assets/character/black_ant/antenna-character-black-desk-plan.png',
+    drift: [],
   },
   {
-    /* 그림이 이 걸음의 설명을 대신한다 — 개미가 블록을 받침대에 올리는 장면이
-       곧 "커밋을 체인에 올린다" 다. */
+    /* 블록과 사슬을 함께 든 개미가 "고칠 수 없는 기록"을 글보다 먼저 설명한다. */
     key: 'proof',
-    eyebrow: '고칠 수 없다는 증거',
-    title: <>고치지 않았다는 걸 <em>증명</em>해요</>,
-    body: '등록한 예측은 해시로 봉인해 블록체인에 기록해요. 만기가 지나면 결과와 오차를 자동으로 판정해요.',
-    /* 이 걸음만 정지컷이 아니라 **실제 봉인 장면**이다. C-01 등록 진행 모달이
-       쓰는 BlockchainScene 을 그대로 가져온다 — 개미들이 블록을 안고 나와
-       받침대에 하나씩 놓고 빈손으로 나가고, 받침대 위 사슬이 그만큼 자란다.
-
-       phase 를 'signing' 으로 고정하는 것이 핵심이다. 그 값이면 **내 개미는
-       건물에서 나오지 않고 동료들만 도는** 상태라, 끝나지 않고 계속 반복된다.
-       'settled' 로 두면 내 개미가 블록을 놓고 이야기가 끝나 화면이 멎는다 —
-       온보딩은 읽는 동안 계속 살아 있어야 한다.
-
-       anchor 는 null 이다. 여기서는 서버에 물어본 앵커가 없고, 그 값이 없으면
-       장면이 확정 연출로 넘어가지 않는다.
-
-       정지컷을 쓰지 않는 이유: 이 장면이 우리가 말하는 "봉인" 그 자체다.
-       개미가 블록을 놓는 것을 보여 주면 글을 읽지 않아도 뜻이 전해진다. */
+    eyebrow: '나중에도 믿을 수 있게',
+    title: <>쓴 뒤에는<br /><em>고칠 수 없어요</em></>,
+    body: '예측은 블록체인에 저장돼요. 만기일이 되면 결과와 오차도 자동으로 계산됩니다.',
     scene: true,
-  },
-  {
-    /* 모의투자는 셸이 모드로 가르는 제품의 절반이다(Layout 의 modeswitch).
-       예측만 안내하고 끝내면 새 회원이 절반을 못 본 채 나간다.
-
-       **대회 이야기를 뺐다(QA 09-21).** 문구를 G-02 모드 선택 카드에서 옮겨 왔는데
-       그 화면이 없어지면서(2026-09-21) 대회로 들어가는 입구도 같이 사라졌다.
-       첫 화면에서 갈 수 없는 곳을 약속하지 않는다 — 대회가 다시 생기면 그때 적는다.
-
-       이 걸음만 검정 개미다. 가리키는 곳의 캐릭터가 그쪽이라, 흰 개미를 세우면
-       안내와 도착지가 어긋난다. */
-    key: 'sim',
-    eyebrow: '부담 없이 연습하기',
-    title: <>과거 시세로 먼저 <em>연습</em>해요</>,
-    body: '모의투자는 지난 장을 되돌려 매매해 보는 곳입니다. 주제를 고르고 원하는 때 하루씩 넘기며, 30일이 지나면 성적과 AI 복기를 받습니다.',
-    art: '/assets/pageset/ant-chart.webp',
-    drift: ['/assets/pageset/card-practice.webp', '/assets/pageset/arrow.webp'],
-    /* 자리를 방향으로 못 박지 않는다. 전에는 왼쪽 사이드바였고 지금은 위쪽
-       네비바라(2026-09-17) "왼쪽 위" 라고 적었으면 셸을 바꿀 때마다 틀린 안내가
-       된다. 메뉴 안에 있다는 것까지만 말하면 자리가 옮겨져도 계속 맞는다. */
-    where: '메뉴의 "모의 투자"에서 언제든 시작해 보세요.',
+    drift: [],
   },
   {
     key: 'wallet',
-    eyebrow: '마지막 한 걸음',
-    title: <>지갑을 <em>연동</em>해 주세요</>,
-    body: '예측을 등록할 때 지갑 서명이 필요해요. 지갑은 지금 또는 첫 예측 때 연동하면 돼요.',
-    art: '/assets/blockchain-animation/mascot/cheer-3.webp',
+    eyebrow: '이제 준비 끝',
+    title: <>지갑은 필요할 때<br /><em>연결해도 괜찮아요</em></>,
+    body: '예측을 등록할 때 한 번 서명해요. 지갑 연동은 언제든 할 수 있고, 1분이면 끝나요.',
+    art: '/assets/character/black_ant/antenna-character-black-coins-ticket.png',
     drift: ['/assets/blockchain-animation/cube/cube-anchored.webp',
             '/assets/blockchain-animation/effect/ring.webp'],
   },
+  {
+    key: 'sim',
+    eyebrow: '한 가지 더',
+    title: <>모의투자도<br /><em>따로 준비돼 있어요</em></>,
+    body: '실제 과거 시세로 연습하는 모의투자도 있어요. 들어가면 별도 안내가 시작됩니다.',
+    art: '/assets/pageset/ant-chart.webp',
+    drift: [],
+  },
 ] as const
 
-export default function OnboardingTour({ onClose, onLinkWallet }: Props) {
+export default function OnboardingTour({ onClose }: Props) {
   /* user 는 null 일 수 있는 타입이지만, 셸이 authed·nickname 을 확인한 뒤에만
      띄우므로 여기서는 이미 확정된 값이다. 그래도 타입을 우겨 넣지 않고 옵셔널로
      읽는다 — 그 조건이 바뀌면 여기서 터진다. */
@@ -149,17 +117,13 @@ export default function OnboardingTour({ onClose, onLinkWallet }: Props) {
     return () => document.removeEventListener('keydown', onKey)
   }, [close])
 
-  /* 2걸음 봉인 장면의 스프라이트를 **열리자마자** 받아 둔다.
-     BlockchainScene 도 자기 몫을 마운트 때 받지만, 그 시점은 이미 2걸음에
-     도착한 뒤다 — 40여 장이 오는 동안 개미 그림이 비어 있는데 위치 애니메이션은
-     그대로 돌아, 보이지 않는 무언가가 미끄러져 가는 것처럼 보였다.
-     1걸음을 읽는 몇 초가 그걸 받아 둘 시간이다. */
-  useEffect(() => {
-    SCENE_FRAMES.forEach((src) => { const im = new Image(); im.src = src })
-  }, [])
-
   // 오버레이가 열리면 초점을 안으로 들인다. 없으면 탭이 뒤 화면을 돌아다닌다.
   useEffect(() => { dialogRef.current?.focus() }, [])
+
+  // 두 번째 걸음에 도착했을 때 봉인 스프라이트가 바로 움직이도록 미리 받아 둔다.
+  useEffect(() => {
+    SCENE_FRAMES.forEach((src) => { const image = new Image(); image.src = src })
+  }, [])
 
   const next = useCallback(() => setAt((i) => Math.min(i + 1, STEPS.length - 1)), [])
   /* 되돌아갈 수 있게 한다. 전에는 앞으로만 갈 수 있어, 한 걸음 넘긴 뒤 다시
@@ -194,19 +158,9 @@ export default function OnboardingTour({ onClose, onLinkWallet }: Props) {
             <h2 id="ob-title">{step.title}</h2>
             <p className="ob-text">{step.body}</p>
 
-            {/* 어디로 가면 되는지. 여기서 링크로 보내면 튜토리얼이 중간에 끊겨
-                지갑 안내를 못 보고 나간다 — 그래서 자리만 알려 주고 걸음은
-                그대로 잇는다(라우트가 없어 되돌아올 수도 없다). */}
-            {'where' in step && (
-              <p className="ob-where">
-                <CompassIcon />
-                {step.where}
-              </p>
-            )}
-
-            {/* 마지막 걸음에서만 지금까지 마친 것과 남은 것을 보여준다.
+            {/* 지갑 걸음에서 지금까지 마친 것과 남은 것을 보여준다.
                 닉네임은 A-02 에서 이미 끝냈으므로 할 일이 아니라 확인이다. */}
-            {last && (
+            {step.key === 'wallet' && (
               <ul className="ob-checks">
                 <li className="is-done">
                   <span className="ob-mark" aria-hidden="true">✓</span>
@@ -253,22 +207,10 @@ export default function OnboardingTour({ onClose, onLinkWallet }: Props) {
               </button>
 
               {last ? (
-                walletLinked ? (
-                  /* 연동까지 끝난 회원은 바로 할 일로 보낸다 */
-                  <Link className="ob-btn solid" to="/stocks" onClick={close}>
-                    종목 둘러보기
-                    <ArrowIcon />
-                  </Link>
-                ) : (
-                  /* M-01 을 여기서 열지 않는다 — 호출부가 이걸 닫고 띄운다 */
-                  <button
-                    type="button" className="ob-btn solid"
-                    onClick={() => { setOnboardingOff(off); onLinkWallet() }}
-                  >
-                    지갑 연동하기
-                    <ArrowIcon />
-                  </button>
-                )
+                <Link className="ob-btn solid" to="/stocks" onClick={close}>
+                  인사이트 시작
+                  <ArrowIcon />
+                </Link>
               ) : (
                 <button type="button" className="ob-btn solid" onClick={next}>
                   다음
@@ -284,17 +226,15 @@ export default function OnboardingTour({ onClose, onLinkWallet }: Props) {
             레이어째 aria-hidden 으로 덮는다 — 왼쪽 글이 이미 같은 내용을 말한다. */}
         <div className={`ob-stage s${at + 1}`} key={`art-${step.key}`}>
           <div className="ob-art-layer" aria-hidden="true">
+            {step.drift.map((src, i) => (
+              <img key={src} className={`ob-drift d${i + 1}`} src={src} alt="" />
+            ))}
             {'scene' in step ? (
               <div className="ob-scene">
                 <BlockchainScene phase="signing" anchor={null} />
               </div>
             ) : (
-              <>
-                {step.drift.map((src, i) => (
-                  <img key={src} className={`ob-drift d${i + 1}`} src={src} alt="" />
-                ))}
-                <img className="ob-art" src={step.art} alt="" />
-              </>
+              <img className="ob-art" src={step.art} alt="" />
             )}
           </div>
         </div>

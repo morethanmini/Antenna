@@ -348,8 +348,12 @@
 .sp-amount dd{margin:0;color:var(--body);font-size:var(--fs-lg);font-weight:var(--fw-heavy);text-align:right}
 .sp-amount dd small{display:block;margin-top:2px;color:var(--muted);font-size:var(--fs-xs);font-weight:var(--fw-bold)}
 /* 마지막 줄이 실제로 나갈 돈이다 — 위 줄들보다 크고 진하게 */
-/* 비용 줄은 대금보다 작고 흐리게 — 읽는 순서가 대금 → 비용 → 실제로 오가는 돈이다 */
-.sp-amount .sp-fee dt,.sp-amount .sp-fee dd{color:var(--muted);font-size:var(--fs-sm);font-weight:var(--fw-bold)}
+/* 비용 줄(수수료 · 거래세). 읽는 순서는 대금 → 비용 → 실제로 오가는 돈이라 마지막
+   줄보다는 약하게 두되, **금액은 읽히게** 한다(2026-09-23). 전에는 --fs-sm 에
+   --muted 라 "얼마인지" 를 보려면 눈을 가까이 대야 했다 — 라벨은 다른 줄과 같은
+   크기로, 금액은 본문색으로 올린다. 대금 줄(--fs-lg)보다 한 단 작은 것은 그대로다. */
+.sp-amount .sp-fee dt{color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold)}
+.sp-amount .sp-fee dd{color:var(--body);font-size:var(--fs-md);font-weight:var(--fw-bold)}
 .sp-amount .sp-total{padding-top:9px;border-top:1px dashed var(--rule)}
 .sp-amount .sp-total dt{color:var(--body);font-size:var(--fs-base);font-weight:var(--fw-bold)}
 .sp-amount .sp-total dd{color:#0e1330;font-size:var(--fs-3xl);font-weight:var(--fw-black);letter-spacing:-.02em}
@@ -391,6 +395,9 @@
 .sp-skip:disabled{color:var(--faint);cursor:default;text-decoration:none}
 
 .sp-note{margin:8px 0 0;color:var(--muted);font-size:var(--fs-xs);font-weight:var(--fw-bold);text-align:center}
+/* 비용 줄의 요율. 라벨('수수료')보다 한 단 흐리게 둔다 — 줄의 이름이 먼저 읽히고
+   요율은 그 뒤에 붙는 단서다. 굵기도 한 단 내린다. */
+.sp-amount .sp-fee dt span{color:var(--faint);font-weight:var(--fw-bold)}
 
 /* ── 왼쪽 · 포트폴리오 ──────────────────────────────── */
 /* 접지 않는다. 주문을 정하는 동안 늘 옆에 있어야 하는 그림이라 접이식일 이유가 없다.
@@ -885,8 +892,6 @@ body.sim-play-page .sp-fold-body{padding:10px 18px 12px}
 /* 낮은 화면에서만 더 걷는다. 화면이 넉넉하면 원래 배치가 낫다 — 여기서 줄이는 것은
    전부 "있으면 좋은" 줄이라, 자리가 있을 때까지 남겨 둔다. */
 @media (max-height:900px){
-  /* 차트 아래 안내 한 줄. 마우스를 올려 보면 바로 아는 것이라 낮은 화면에서는 뺀다 */
-  body.sim-play-page .sp-hint{display:none}
   body.sim-play-page .sp-stat{padding:8px 13px}
   body.sim-play-page .sp-stat-ico{width:28px;height:28px}
 
