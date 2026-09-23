@@ -901,15 +901,19 @@ export default function SeasonPlay() {
                   <dt>주문 금액</dt>
                   <dd className="num">{won(amount)}</dd>
                 </div>
+                {/* 요율을 라벨 옆에 붙인다(2026-09-23). 아래 따로 한 줄로 두었더니
+                    "얼마" 와 "몇 %" 가 떨어져 있어 둘을 눈으로 이어야 했다. 한 줄에
+                    두면 "이 요율이라 이 금액" 이 그대로 읽힌다.
+                    요율은 라벨보다 한 단 흐리게 — 줄의 이름은 어디까지나 '수수료' 다. */}
                 <div className="sp-fee">
-                  <dt>수수료</dt>
+                  <dt>수수료 <span>0.015%</span></dt>
                   <dd className="num">{won(fee)}</dd>
                 </div>
                 {/* 거래세는 매도에만 붙는다. 매수에서 "거래세 0원" 을 그리면 없는 비용을
                     있는 것처럼 세는 줄이 된다 */}
                 {side === 'SELL' && (
                   <div className="sp-fee">
-                    <dt>거래세</dt>
+                    <dt>거래세 <span>0.15%</span></dt>
                     <dd className="num">{won(tax)}</dd>
                   </div>
                 )}
@@ -1001,22 +1005,6 @@ export default function SeasonPlay() {
                   ? '마지막 게임일입니다. 진행은 여기까지입니다.'
                   : '주문은 그 게임일 종가로 한 번에 체결돼요.'}
               </p>
-              {/* 요율은 **금액 줄이 아니라 여기** 적는다(2026-09-23). 위에서 알고 싶은 것은
-                  "이번 주문에 얼마" 이고, 요율은 그 숫자가 어디서 나왔는지를 뒤에서 받쳐
-                  주는 값이라 한 번만 조용히 있으면 된다 — 줄마다 붙이면 금액을 읽는 데
-                  방해가 된다.
-
-                  **이 요율은 우리가 정한 값이다.** 실제 증권사와 같지 않다(증권사는
-                  회사·계좌마다 다르고 유관기관 제비용도 따로 붙는다). 시즌 참가 화면과
-                  매매일지에도 같은 값이 적혀 있고, 서버는 application.yaml 의
-                  app.season.fees 한 곳에서 읽는다 — 셋이 같은 수를 말해야 한다. */}
-              {!sim.isDone && (
-                <p className="sp-rates">
-                  수수료 <b>0.015%</b> <span>매수·매도</span>
-                  <i aria-hidden="true">·</i>
-                  거래세 <b>0.15%</b> <span>매도만</span>
-                </p>
-              )}
 
               {/* 종료 확인. 네이티브 dialog — 포커스 가둠·Esc·배경막을 브라우저가 준다.
                   만드는 동안(pending)은 Esc 로도 못 닫는다 — 닫혀도 서버는 계속 돌아
