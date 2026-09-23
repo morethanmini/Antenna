@@ -410,8 +410,8 @@ export default function SeasonPlay() {
      바로 아래 useDayPanel 이 훅이라, return 아래로 내려가면 어떤 렌더에서는
      호출되고 어떤 렌더에서는 안 되어 훅 규칙이 깨진다. */
   const todayHint = hints.data?.items.find((n) => n.gameDay === sim.day) ?? null
-  /* 펼쳤을 때 나올 줄. **비어 있으면 아예 펼치지 않는다** — 요약 한 줄은 접힌 줄에
-     이미 다 나와 있어서, 펼치면 빈 상자만 열렸다(2026-09-23). */
+  /* 펼쳤을 때 나올 줄 — body 의 주요 사건 세 줄. **비어 있으면 아예 펼치지 않는다** —
+     접힌 줄의 한 문장 요약 말고는 보여 줄 것이 없다. */
   const hintLines = (todayHint?.body ?? '')
     .split('\n')
     .map((line) => line.replace(/^·\s*/, '').trim())
@@ -1051,9 +1051,9 @@ export default function SeasonPlay() {
             아래라, 차트 보고 주문하면 시선이 거기서 끝나 아래로 안 내려간다.
             접어 둔 사람에게는 그 게임일 동안 다시 펴지 않고 점만 찍는다. */}
         <div className="sp-later">
-          {/* **펼칠 것이 있을 때만 접이로 둔다(2026-09-23).** 요약은 한 줄이라
-              접힌 줄에 이미 다 나와 있다 — 그런데도 꺾쇠가 달려 있어서 눌러 보면
-              빈 상자만 열렸다. 펼칠 줄이 있으면 details, 없으면 같은 모양의 한 줄이다. */}
+          {/* **펼칠 것이 있을 때만 접이로 둔다(2026-09-23).** 접힌 줄에는 한 문장
+              요약, 펼치면 주요 사건 세 줄이다. body 가 비면 꺾쇠를 달아 봐야 빈 상자만
+              열리므로, 펼칠 줄이 있으면 details, 없으면 같은 모양의 한 줄이다. */}
           {hintLines.length > 0 ? (
             <details
               className="sp-fold" open={hintPanel.open}
