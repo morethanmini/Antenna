@@ -51,22 +51,16 @@ body.insight-home.is-night .hm-card{
      실제로 보이는 색은 그 위로 뜬다 — 처음 잡은 #221d3f 가 화면에서는
      #2e2850 로 찍혔다(실측). */
   background:
-    radial-gradient(circle at 70% -15%, rgba(135, 115, 222,.16), transparent 34%),
-    radial-gradient(circle at 6% 33%, rgba(71, 66, 188,.12), transparent 34%),
     linear-gradient(132deg, #1c1833 0%, #19152e 47%, #221d42 100%);
   /* 시안은 다섯 겹이었다. **테를 감싸던 두 겹(halo)을 걷었다**(2026-09-23) —
      0 0 0 5px · 7px 은 퍼지지 않는 고체 띠라, 카드마다 테가 세 줄로 보였다.
      안쪽 선을 걷은 것과 같은 까닭이다(바로 앞 커밋).
 
-     남은 셋은 다 **퍼지는 빛**이다 — 바깥 발광 · 바닥 그늘 · 안쪽 발광.
-
-     빛을 한 단 낮췄다(2026-09-23). 카드가 넷이라 발광도 넷이 겹쳐, 한 장만
-     볼 때 알맞던 세기가 모아 놓으면 화면 전체가 떠 보였다. 바닥 그늘은
-     그대로 둔다 — 그건 빛이 아니라 카드를 바닥에서 띄우는 깊이다. */
-  box-shadow:
-    0 0 18px rgba(99, 87, 216,.22),
-    0 20px 46px rgba(8, 0, 48,.5),
-    inset 0 0 34px rgba(130, 120, 223,.05);
+     **발광을 전부 걷었다(2026-09-23).** 한 단씩 낮추다 결국 0 이 됐다 —
+     세기를 줄여도 빛은 카드 경계를 흐려 놓는다. 면과 테로만 카드를 세운다.
+     남은 한 겹은 빛이 아니라 **바닥 그늘**이다. 카드를 배경에서 띄우는 깊이라
+     이것까지 빼면 카드가 배경에 붙어 판이 아니라 얼룩으로 읽힌다. */
+  box-shadow:0 20px 46px rgba(8, 0, 48,.5);
   -webkit-backdrop-filter:none; backdrop-filter:none;
 }
 /* **안쪽 겹을 통째로 걷었다**(2026-09-23). 시안은 카드가 화면 폭을 다 쓰는 데모라
@@ -76,17 +70,10 @@ body.insight-home.is-night .hm-card{
    처음엔 선만 빼고 안쪽 발광(inset 0 0 18px)을 남겼는데, 그 발광이 카드 10px
    안쪽에 **부드러운 사각형**으로 그려져 결국 테로 읽혔다. 선을 없앤 뜻이 살지
    않아 겹째로 뺀다. 카드 안쪽 빛은 .hm-card 의 inset 0 0 44px 가 이미 맡는다. */
-body.insight-home.is-night .hm-card::after{
-  content:""; position:absolute; z-index:-1; inset:0; pointer-events:none;
-  /* 사선 광택 한 줄(linear-gradient 105deg, 흰 4% 띠)을 걷었다(2026-09-23) —
-     카드 왼쪽 위를 비스듬히 가로지르던 빛줄기다. 유리에 반사가 스친 결을 내려던
-     것인데, 카드가 넷이 모이니 네 줄이 제각기 다른 각도로 보여 산만했다.
-     남긴 둘은 자리에 머무는 번짐이라 줄로 읽히지 않는다. */
-  background:
-    radial-gradient(circle at 76% 14%, rgba(234,105,255,.1), transparent 17%),
-    radial-gradient(ellipse at 48% 102%, rgba(143, 128, 225,.13), transparent 55%);
-  mix-blend-mode:screen;
-}
+/* 이 자리에 카드 위에 얹히는 번짐 두 겹(::after · mix-blend-mode:screen)이
+   있었다. 사선 광택 → 분홍 번짐 → 바닥 번짐 순으로 걷어 내다 2026-09-23 에
+   겹째로 뺐다. screen 합성은 아래 면을 **밝은 쪽으로만** 밀기 때문에, 면을
+   아무리 어둡게 잡아도 번짐이 얹힌 자리만 떠오른다. */
 
 /* 카드 안쪽 여백. 시안은 머리 48px · 본문 43px 인데 격자 폭이 절반이라 줄인다.
    패딩을 .hm-card 에서 걷고 각 부분이 제 몫을 갖는 것은, 빈 상태 판처럼 카드
@@ -101,7 +88,7 @@ body.insight-home.is-night .hm-head h2{
   display:flex; align-items:center; gap:10px;
   margin:0; color:var(--nc-ink);
   font-size:var(--fs-3xl); letter-spacing:-.035em; line-height:1.1;
-  text-shadow:0 0 11px rgba(210, 210, 255,.44);
+  /* 글자 뒤 빛도 걷었다(2026-09-23) — 획이 굵어 보여 제목이 번진다 */
 }
 body.insight-home.is-night .hm-head h2 svg,
 body.insight-home.is-night .hm-head-ico{
@@ -120,7 +107,6 @@ body.insight-home.is-night .hm-panel{
   position:relative; overflow:hidden;
   border:1px solid var(--nc-line); border-radius:18px;
   background:linear-gradient(125deg, rgba(65, 58, 137,.74), rgba(46, 38, 99,.61));
-  box-shadow:inset 0 0 26px rgba(143, 130, 226,.12);
 }
 
 /* 알약 버튼. 시안의 .neon-button 이다 — 보라 채움에 분홍 테, 바깥으로 빛.
@@ -132,10 +118,7 @@ body.insight-home.is-night .hm-btn{
   border:1px solid rgba(255,211,255,.9); border-radius:999px;
   color:#fff;
   background:linear-gradient(90deg, rgba(122,78,255,.9), rgba(105,81,250,.9));
-  box-shadow:
-    0 0 0 3px rgba(151,95,255,.22),
-    0 0 14px rgba(241,117,255,.5),
-    inset 0 0 18px rgba(255,255,255,.15);
+  /* 바깥 빛·안쪽 광택을 걷었다(2026-09-23) — 면과 테로만 선다 */
   font-size:var(--fs-lg); font-weight:var(--fw-bold);
   transition:transform .18s ease, filter .18s ease;
 }
@@ -188,7 +171,8 @@ body.insight-home.is-night .hm-indices li{
   background:
     linear-gradient(145deg, rgba(110, 102, 199,.32), rgba(35, 30, 92,.28)),
     var(--nc-panel);
-  box-shadow:inset 0 1px 18px rgba(163, 157, 232,.13), 0 10px 26px rgba(20, 14, 51,.18);
+  /* 안쪽 발광은 걷고 바닥 그늘만 남긴다 — 판을 띄우는 것은 그늘이다 */
+  box-shadow:0 10px 26px rgba(20, 14, 51,.18);
 }
 body.insight-home.is-night .hm-ix-name{
   display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
@@ -215,7 +199,6 @@ body.insight-home.is-night .hm-ticker{
   margin-top:10px; padding:9px 16px;
   border:1px solid rgba(175, 177, 236,.78); border-radius:14px;
   background:linear-gradient(95deg, rgba(74, 67, 164,.72), rgba(86, 76, 176,.48));
-  box-shadow:inset 0 0 20px rgba(138, 128, 225,.15);
 }
 body.insight-home.is-night .hm-ticker-tag{
   color:var(--nc-ink); font-weight:var(--fw-heavy); white-space:nowrap;
@@ -232,9 +215,7 @@ body.insight-home.is-night .hm-ant-box{
   min-height:112px; padding:13px 18px;
   border:1px solid var(--nc-line); border-radius:20px;
   background:
-    radial-gradient(circle at 78% 35%, rgba(136, 105, 220,.38), transparent 35%),
     linear-gradient(120deg, rgba(60, 53, 136,.76), rgba(47, 39, 105,.58));
-  box-shadow:inset 0 0 30px rgba(136, 122, 224,.15);
 }
 /* 코인 그림은 배경으로 얹는다 — 마크업을 건드리지 않고 시안의 자리를 잡는다 */
 body.insight-home.is-night .hm-ant-box::after{
@@ -257,7 +238,7 @@ body.insight-home.is-night .hm-ant-box::after{
   content:""; position:absolute; top:8px; right:6px;
   width:148px; height:75px; pointer-events:none;
   background:url(/assets/page_home/ui/coins.webp) center/contain no-repeat;
-  filter:drop-shadow(0 0 14px rgba(154,108,255,.7));
+  /* 코인 뒤 보라 발광도 걷었다 — 그림 자체가 이미 네온이다 */
 }
 body.insight-home.is-night .hm-ant-label{color:var(--nc-sub); font-weight:var(--fw-bold)}
 body.insight-home.is-night .hm-ant b{
@@ -277,8 +258,7 @@ body.insight-home.is-night .hm-ant-btn{
   /* 테는 1px 이다 — 같은 화면의 '랭킹 1위' 칩이 1px 이라 결을 맞춘다 */
   border:1px solid rgba(255,211,255,.9); border-radius:999px;
   color:#fff; background:linear-gradient(90deg, rgba(122,78,255,.9), rgba(105,81,250,.9));
-  box-shadow:0 0 0 2px rgba(151,95,255,.22), 0 0 12px rgba(241,117,255,.5),
-             inset 0 0 18px rgba(255,255,255,.15);
+  /* 바깥 빛·안쪽 광택을 걷었다(2026-09-23) — 면과 테로만 선다 */
   font-size:var(--fs-sm); font-weight:var(--fw-bold);
 }
 body.insight-home.is-night .hm-ant-btn:hover{filter:brightness(1.09)}
@@ -291,7 +271,6 @@ body.insight-home.is-night .hm-flow > div{
   position:relative; overflow:hidden; min-height:64px; padding:10px 14px;
   border:1px solid var(--nc-line); border-radius:16px;
   background:linear-gradient(125deg, rgba(65, 58, 137,.74), rgba(46, 38, 99,.61));
-  box-shadow:inset 0 0 26px rgba(143, 130, 226,.12);
 }
 body.insight-home.is-night .hm-flow dt{color:#e1e8ff; font-weight:var(--fw-bold)}
 body.insight-home.is-night .hm-flow dd{
@@ -299,8 +278,8 @@ body.insight-home.is-night .hm-flow dd{
   font-variant-numeric:tabular-nums;
 }
 /* 색은 시안 값이다. 등락색(--up/--down)을 쓰지 않는 이유는 Home.tsx 주석에 있다 */
-body.insight-home.is-night .hm-flow .is-in{color:#69e4ff; text-shadow:0 0 10px rgba(67,220,255,.28)}
-body.insight-home.is-night .hm-flow .is-out{color:#ffb0d2; text-shadow:0 0 10px rgba(255,115,182,.25)}
+body.insight-home.is-night .hm-flow .is-in{color:#69e4ff}
+body.insight-home.is-night .hm-flow .is-out{color:#ffb0d2}
 body.insight-home.is-night .hm-flow > div::after{
   content:""; position:absolute; right:14px; bottom:14px;
   width:36px; height:34px; opacity:.9;
@@ -328,7 +307,6 @@ body.insight-home.is-night .hm-lead{
   padding:13px 16px; gap:9px 13px;
   border:1px solid var(--nc-line); border-radius:18px;
   background:
-    radial-gradient(circle at 50% 35%, rgba(141, 118, 219,.39), transparent 29%),
     linear-gradient(130deg, rgba(66, 57, 139,.5), rgba(59, 50, 126,.34));
 }
 body.insight-home.is-night .hm-lead-btn{
@@ -337,15 +315,14 @@ body.insight-home.is-night .hm-lead-btn{
   /* 테는 1px 이다 — 같은 화면의 '랭킹 1위' 칩이 1px 이라 결을 맞춘다 */
   border:1px solid rgba(255,211,255,.9); border-radius:999px;
   color:#fff; background:linear-gradient(90deg, rgba(122,78,255,.9), rgba(105,81,250,.9));
-  box-shadow:0 0 0 2px rgba(151,95,255,.22), 0 0 12px rgba(241,117,255,.5),
-             inset 0 0 18px rgba(255,255,255,.15);
+  /* 바깥 빛·안쪽 광택을 걷었다(2026-09-23) — 면과 테로만 선다 */
   font-weight:var(--fw-bold);
 }
 body.insight-home.is-night .hm-lead-btn:hover{filter:brightness(1.09)}
 body.insight-home.is-night .hm-lead-rank{
   color:#fff; background:linear-gradient(90deg,#7958f2,#6e59e8);
   border:1px solid rgba(255,218,255,.94);
-  box-shadow:0 0 0 3px rgba(147,96,255,.21), 0 0 16px rgba(220,98,255,.45);
+  /* 바깥 빛·안쪽 광택을 걷었다(2026-09-23) — 면과 테로만 선다 */
 }
 
 /* ── 빈 상태 ────────────────────────────────────────────────
@@ -356,7 +333,6 @@ body.insight-home.is-night .hm-card .state{
   position:relative; overflow:hidden;
   border:1px solid rgba(137, 132, 226,.48); border-radius:18px;
   background:
-    radial-gradient(circle at 50% 48%, rgba(146, 121, 224,.34), transparent 32%),
     linear-gradient(130deg, rgba(63, 55, 143,.45), rgba(57, 47, 126,.28));
 }
 
@@ -369,7 +345,6 @@ body.insight-home.is-night .hm-empty{
   border:1px solid rgba(137, 132, 226,.48); border-radius:18px;
   text-align:center;
   background:
-    radial-gradient(circle at 50% 48%, rgba(146, 121, 224,.34), transparent 32%),
     linear-gradient(130deg, rgba(63, 55, 143,.45), rgba(57, 47, 126,.28));
 }
 /* 바닥의 옅은 격자·사선. 시안 .empty-state::before 를 그대로 옮겼다 */
