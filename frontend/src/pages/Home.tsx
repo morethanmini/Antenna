@@ -316,7 +316,8 @@ function MyAssets() {
     <section className="card hm-card hm-wallet" aria-labelledby="hm-assets">
       <header className="hm-head">
         <h2 id="hm-assets"><img className="hm-head-ico" src="/assets/page_home/ui/icon-wallet.webp" alt="" />내 자산 현황</h2>
-        <Link to="/me/wallet">지갑 ›</Link>
+        {/* 머리의 '지갑 ›' 을 뺐다 — 아래 '내역 보기' 가 같은 /me/wallet 로 가므로
+            한 카드에 같은 곳으로 가는 길이 둘이었다. */}
       </header>
       <State loading={loading} error={error} onRetry={reload} />
       {data && (
