@@ -49,25 +49,31 @@ body.insight-home.is-night .hm-card{
     radial-gradient(circle at 70% -15%, rgba(82,112,255,.94), transparent 34%),
     radial-gradient(circle at 6% 33%, rgba(29,94,225,.66), transparent 34%),
     linear-gradient(132deg, #112c74 0%, #102563 47%, #18399b 100%);
-  /* 시안의 다섯 겹 그대로. 퍼짐만 격자에 맞춰 줄였다(8/10 → 5/7, 30px → 20px) */
+  /* 시안은 다섯 겹이었다. **테를 감싸던 두 겹(halo)을 걷었다**(2026-09-23) —
+     0 0 0 5px · 7px 은 퍼지지 않는 고체 띠라, 카드마다 테가 세 줄로 보였다.
+     안쪽 선을 걷은 것과 같은 까닭이다(바로 앞 커밋).
+
+     남은 셋은 다 **퍼지는 빛**이다 — 바깥 발광 · 바닥 그늘 · 안쪽 발광. */
   box-shadow:
-    0 0 0 5px rgba(52,100,255,.18),
-    0 0 0 7px rgba(126,172,255,.17),
     0 0 26px rgba(48,105,255,.6),
     0 20px 46px rgba(0,10,48,.5),
     inset 0 0 44px rgba(88,132,255,.22);
   -webkit-backdrop-filter:none; backdrop-filter:none;
 }
-body.insight-home.is-night .hm-card::before{
-  content:""; position:absolute; z-index:-1; inset:10px; pointer-events:none;
-  border:1px solid rgba(205,224,255,.7);
-  border-radius:17px;
-  box-shadow:inset 0 0 18px rgba(122,166,255,.32);
-}
+/* **안쪽 겹을 통째로 걷었다**(2026-09-23). 시안은 카드가 화면 폭을 다 쓰는 데모라
+   두 겹 테가 장식으로 읽혔는데, 실제 홈은 카드 넷이 2단으로 모여 선이 여덟 줄이
+   된다 — 번잡해 보이는 주된 까닭이었다(사용자 지적).
+
+   처음엔 선만 빼고 안쪽 발광(inset 0 0 18px)을 남겼는데, 그 발광이 카드 10px
+   안쪽에 **부드러운 사각형**으로 그려져 결국 테로 읽혔다. 선을 없앤 뜻이 살지
+   않아 겹째로 뺀다. 카드 안쪽 빛은 .hm-card 의 inset 0 0 44px 가 이미 맡는다. */
 body.insight-home.is-night .hm-card::after{
   content:""; position:absolute; z-index:-1; inset:0; pointer-events:none;
+  /* 사선 광택 한 줄(linear-gradient 105deg, 흰 4% 띠)을 걷었다(2026-09-23) —
+     카드 왼쪽 위를 비스듬히 가로지르던 빛줄기다. 유리에 반사가 스친 결을 내려던
+     것인데, 카드가 넷이 모이니 네 줄이 제각기 다른 각도로 보여 산만했다.
+     남긴 둘은 자리에 머무는 번짐이라 줄로 읽히지 않는다. */
   background:
-    linear-gradient(105deg, transparent 2%, rgba(255,255,255,.19) 4%, transparent 8%),
     radial-gradient(circle at 76% 14%, rgba(234,105,255,.19), transparent 17%),
     radial-gradient(ellipse at 48% 102%, rgba(98,132,255,.25), transparent 55%);
   mix-blend-mode:screen;
@@ -80,7 +86,7 @@ body.insight-home.is-night .hm-head{
   display:flex; align-items:center; justify-content:space-between; gap:16px;
   /* 시안은 위 39 / 아래 27 인데 그건 카드가 화면 폭을 다 쓰는 데모에서다.
      2단 격자에서는 머리 한 줄(글자 31px)에 껍데기가 36px 붙어 내용보다 컸다. */
-  margin:0; padding:16px 22px 12px;
+  margin:0; padding:13px 22px 10px;
 }
 body.insight-home.is-night .hm-head h2{
   display:flex; align-items:center; gap:10px;
@@ -132,6 +138,12 @@ body.insight-home.is-night .hm-btn:hover{transform:translateY(-2px); filter:brig
 /* ── 카드 안쪽 여백 ─────────────────────────────────────────
    .hm-card 에서 패딩을 걷었으므로 각 부분이 제 몫을 갖는다. 빈 상태 판처럼 넓게
    깔려야 하는 것과 글줄처럼 좁게 들어와야 하는 것이 섞여 있어서다. */
+/* 표 줄 높이. home.css 가 11px 을 주는데 그 값은 밝은 판 기준이고, 여기서는
+   카드 넷이 한 화면에 모여 세 줄만으로 카드가 길어진다. 밤 홈에서만 줄인다 —
+   낮 판은 그대로다. */
+body.insight-home.is-night .hm-table th,
+body.insight-home.is-night .hm-table td{padding-top:8px; padding-bottom:8px}
+
 body.insight-home.is-night .hm-indices,
 body.insight-home.is-night .hm-ant-box,
 body.insight-home.is-night .hm-flow,
@@ -144,7 +156,7 @@ body.insight-home.is-night .hm-card > :last-child{margin-bottom:16px}
 /* 카드 맨 아래 한 줄(기준 시각 · 안내). 시안은 가는 선 위에 시계 아이콘을 둔다 */
 body.insight-home.is-night .hm-foot{
   display:flex; align-items:center; gap:8px;
-  margin:10px 20px 0; padding:9px 0 0;
+  margin:8px 20px 0; padding:8px 0 0;
   border-top:1px solid rgba(131,169,255,.55);
   color:var(--nc-sub); font-size:var(--fs-sm);
 }
@@ -205,7 +217,9 @@ body.insight-home.is-night .hm-ticker-no{color:var(--nc-sub)}
    시안은 잔액 판 오른쪽 위에 코인 그림, 그 아래 알약 버튼이다. */
 body.insight-home.is-night .hm-ant-box{
   position:relative; overflow:hidden;
-  min-height:132px; padding:15px 18px;
+  /* 시안 값은 132px 인데 그건 카드가 화면 폭을 다 쓰는 데모에서다. 2단 격자에서는
+     내용(잔액 29 + 버튼 41)이 100px 남짓이라 나머지가 빈 자리로 남았다(실측). */
+  min-height:112px; padding:13px 18px;
   border:1px solid var(--nc-line); border-radius:20px;
   background:
     radial-gradient(circle at 78% 35%, rgba(120,70,255,.38), transparent 35%),
@@ -214,9 +228,25 @@ body.insight-home.is-night .hm-ant-box{
 }
 /* 코인 그림은 배경으로 얹는다 — 마크업을 건드리지 않고 시안의 자리를 잡는다 */
 body.insight-home.is-night .hm-ant-box::after{
-  content:""; position:absolute; top:-10px; right:14px;
-  width:min(46%,178px); height:96px; pointer-events:none;
-  background:url(/assets/page_home/ui/coins.webp) right top/contain no-repeat;
+  /* **그림과 버튼이 한 줄에 선다**(2026-09-23). 전에는 그림이 right:14 · 폭 150,
+     버튼이 right:16 · 폭 92 라 가운데가 어긋났고, 그림이 top:-10 이라 판 위 경계에
+     걸쳐 잘려 보였다.
+
+     가운데는 **그림의 가운데와 버튼의 가운데를 같은 자리에** 두어 맞춘다 —
+     그림 right + 폭/2 = 버튼 right + 폭/2 이면 된다(6+74 = 28+52 = 80).
+
+     **그림은 버튼과 겹쳐도 되지만 위 경계에는 닿지 않는다**(요청). top 을 8 로만
+     띄우고 아래로 키워 8~83 이 된다. 버튼이 66~100 이라 17px 겹치고, 그림이 버튼
+     위에 얹힌 모양이 된다.
+
+     키우면서 버튼도 왼쪽으로 옮긴 까닭 — 버튼을 right:18 에 두면 가운데를 맞추는
+     그림 right 가 0 이 되어 이번엔 오른쪽 경계에 닿는다. 둘을 함께 옮기면 가운데도
+     유지되고 어느 경계에도 안 닿는다.
+
+     잘리지 않으므로 background 는 right 가 아니라 center 로 놓는다. */
+  content:""; position:absolute; top:8px; right:6px;
+  width:148px; height:75px; pointer-events:none;
+  background:url(/assets/page_home/ui/coins.webp) center/contain no-repeat;
   filter:drop-shadow(0 0 14px rgba(154,108,255,.7));
 }
 body.insight-home.is-night .hm-ant-label{color:var(--nc-sub); font-weight:var(--fw-bold)}
@@ -226,14 +256,19 @@ body.insight-home.is-night .hm-ant b{
 }
 /* 내역 보기 — 시안은 판 오른쪽 아래 알약이다 */
 body.insight-home.is-night .hm-ant-btn{
-  position:absolute; right:16px; bottom:14px;
-  display:inline-flex; align-items:center; justify-content:center; gap:8px;
-  min-height:38px; padding:8px 20px;
+  /* 그림과 가운데가 맞다. 그림 가운데가 6+74=80 이므로 버튼도 36+44=80 이다 —
+     폭을 줄이면 오른쪽도 같이 옮겨야 이 값이 유지된다. */
+  /* **버튼이 그림보다 앞이다.** 그림(::after)은 자식들 뒤에 그려지는 것이 아니라
+     뒤에 오므로, 둘 다 z-index 가 auto 면 그림이 버튼을 덮는다. 버튼에 z-index 를
+     줘서 앞으로 올린다. */
+  position:absolute; right:36px; bottom:12px; z-index:1;
+  display:inline-flex; align-items:center; justify-content:center; gap:5px;
+  width:88px; min-height:26px; padding:4px 0; line-height:1.1;
   border:2px solid rgba(255,211,255,.9); border-radius:999px;
   color:#fff; background:linear-gradient(90deg, rgba(122,78,255,.9), rgba(105,81,250,.9));
-  box-shadow:0 0 0 3px rgba(151,95,255,.22), 0 0 14px rgba(241,117,255,.5),
+  box-shadow:0 0 0 2px rgba(151,95,255,.22), 0 0 12px rgba(241,117,255,.5),
              inset 0 0 18px rgba(255,255,255,.15);
-  font-size:var(--fs-base); font-weight:var(--fw-bold);
+  font-size:var(--fs-sm); font-weight:var(--fw-bold);
 }
 body.insight-home.is-night .hm-ant-btn:hover{filter:brightness(1.09)}
 
@@ -242,7 +277,7 @@ body.insight-home.is-night .hm-flow{
   display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:10px;
 }
 body.insight-home.is-night .hm-flow > div{
-  position:relative; overflow:hidden; min-height:76px; padding:12px 14px;
+  position:relative; overflow:hidden; min-height:64px; padding:10px 14px;
   border:1px solid var(--nc-line); border-radius:16px;
   background:linear-gradient(125deg, rgba(34,70,161,.74), rgba(20,43,117,.61));
   box-shadow:inset 0 0 26px rgba(101,137,255,.12);
@@ -290,7 +325,7 @@ body.insight-home.is-night .hm-lead-btn{
   min-height:36px; padding:7px 22px;
   border:2px solid rgba(255,211,255,.9); border-radius:999px;
   color:#fff; background:linear-gradient(90deg, rgba(122,78,255,.9), rgba(105,81,250,.9));
-  box-shadow:0 0 0 3px rgba(151,95,255,.22), 0 0 14px rgba(241,117,255,.5),
+  box-shadow:0 0 0 2px rgba(151,95,255,.22), 0 0 12px rgba(241,117,255,.5),
              inset 0 0 18px rgba(255,255,255,.15);
   font-weight:var(--fw-bold);
 }
