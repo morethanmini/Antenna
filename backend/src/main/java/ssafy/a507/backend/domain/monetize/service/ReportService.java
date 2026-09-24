@@ -190,9 +190,15 @@ public class ReportService {
 
         // 채널 하나라 구독 판정도 한 번이면 된다.
         Set<Long> subscribed = reportAccess.subscribedAuthorIds(viewerId, reports);
+        // 피드와 같은 카드를 그리므로 반응 수도 같은 방식(페이지 단위 집계)으로 읽는다.
+        Social social = socialOf(viewerId, reports);
         List<ChannelReportItemResponse> items = reports.stream()
                 .map(report -> ChannelReportItemResponse.of(
-                        report, reportAccess.isLocked(report, viewerId, subscribed)))
+                        report,
+                        reportAccess.isLocked(report, viewerId, subscribed),
+                        social.likeCount(report.getId()),
+                        social.liked(report.getId()),
+                        social.commentCount(report.getId())))
                 .toList();
 
         Long nextCursor = hasNext ? reports.get(reports.size() - 1).getId() : null;
