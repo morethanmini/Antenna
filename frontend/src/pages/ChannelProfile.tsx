@@ -27,7 +27,7 @@ import {
   type Backtest, type Channel, type ChannelPrediction,
 } from '../api/channels'
 import { phaseOf } from '../api/predictions'
-import { fetchChannelReports, formatDate, type ChannelReportItem } from '../api/reports'
+import { fetchChannelReports, type ChannelReportItem } from '../api/reports'
 import { useAsync } from '../api/useAsync'
 import { formatToken } from '../api/wallet'
 import PredictionCard from '../components/prediction/PredictionCard'
@@ -36,6 +36,7 @@ import ProfileAvatar from '../components/channel/ProfileAvatar'
 import PredictionNote from '../components/channel/PredictionNote'
 import SubscribeModal from '../components/channel/SubscribeModal'
 import AbuseMenu from '../components/report/AbuseMenu'
+import ReportCard from '../components/report/ReportCard'
 import EmptyState from '../components/state/EmptyState'
 import ErrorState from '../components/state/ErrorState'
 import WalletLinkModal from '../components/wallet/WalletLinkModal'
@@ -515,31 +516,19 @@ function ChannelReports({ userId, relock }: { userId: string; relock: boolean })
               <EmptyState title="아직 발행한 리포트가 없습니다" />
             )}
             {reports.data && reports.data.items.length > 0 && (
-              <ul className="ch-reports">
+              /* 리포트 피드(F-01)와 같은 카드다 — 같은 글이 화면마다 다르게 보이지 않게 */
+              <ul className="rp-list">
                 {reports.data.items.map((r: ChannelReportItem) => {
                   /* 미리보기에서는 구독자 전용 글이 곧 잠긴 글이다 */
                   const locked = relock ? !r.visibility : r.locked
+                  /* 잠금 표시는 피드와 같다 — 잠겼을 때만 자물쇠가 뜨고, 구독 중이면 아무 표시도 없다.
+                     미리보기로 다시 잠글 때는 서버가 주인에게 준 표지·발췌를 걷어낸다 —
+                     비구독자는 그 둘을 받지 못하므로, 남겨 두면 미리보기가 거짓말이 된다. */
                   return (
-                  <li key={r.id}>
-                    <Link to={`/reports/${r.id}`}>
-                      <span className="ch-report-title">{r.title}</span>
-                      <span className="ch-report-meta">
-                        {/* 두 배지는 뜻이 다르다 — visibility 는 글의 속성,
-                            locked 는 내 권한이다(서버 주석). 합치지 않는다 */}
-                        {!r.visibility && <em className="ch-badge">구독자 전용</em>}
-                        {locked && (
-                          <em className="ch-badge is-locked">
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                              <rect x="4" y="10" width="16" height="10" rx="2" />
-                              <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-                            </svg>
-                            잠김
-                          </em>
-                        )}
-                        <span className="num">{formatDate(r.publishedAt)}</span>
-                      </span>
-                    </Link>
-                  </li>
+                    <ReportCard
+                      key={r.id}
+                      data={locked ? { ...r, locked, thumbnailUrl: null, summary: null } : r}
+                    />
                   )
                 })}
               </ul>

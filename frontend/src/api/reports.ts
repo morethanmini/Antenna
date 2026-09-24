@@ -201,6 +201,13 @@ export type ChannelReportItem = {
   locked: boolean
   publishedAt: string
   viewCount: number
+  /* 아래는 피드와 같은 카드를 그리려고 실린다(2026-09-25). 규칙도 ReportFeedItem 과 같다 —
+     통계는 잠겨도 오고, 표지·발췌는 잠기면 키 자체가 없다. */
+  likeCount: number
+  liked: boolean
+  commentCount: number
+  thumbnailUrl?: string | null
+  summary?: string | null
 }
 
 /** 최신순 고정이라 정렬 파라미터가 없다. 커서는 id 하나다 */

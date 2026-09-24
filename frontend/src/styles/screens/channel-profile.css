@@ -198,28 +198,6 @@
 
 .ch-cards{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:9px; }
 
-/* ── 리포트 목록 ─────────────────────────────────────── */
-.ch-reports{
-  margin:0; padding:0; list-style:none;
-  display:flex; flex-direction:column; gap:1px;
-  background:var(--rule); border:1px solid var(--rule); border-radius:11px; overflow:hidden;
-}
-.ch-reports a{
-  display:flex; align-items:center; justify-content:space-between; gap:12px;
-  padding:12px 15px; background:var(--surface);
-  text-decoration:none; color:inherit;
-}
-.ch-reports a:hover{ background:var(--brand-softer); }
-.ch-report-title{ font-size:var(--fs-lg); font-weight:var(--fw-bold); color:var(--ink); min-width:0; }
-.ch-report-meta{ flex:0 0 auto; display:flex; align-items:center; gap:7px; font-size:var(--fs-xs); color:var(--faint); }
-.ch-badge{
-  display:inline-flex; align-items:center; gap:3px;
-  padding:2px 7px; border-radius:999px;
-  background:var(--brand-soft); color:var(--brand-ink);
-  font-style:normal; font-size:var(--fs-3xs); font-weight:var(--fw-heavy);
-}
-.ch-badge.is-locked{ background:var(--surface-2); color:var(--muted); }
-
 /* ── 백테스트 ────────────────────────────────────────── */
 .ch-backtest{ padding:15px 18px; background:var(--surface); border:1px solid var(--rule); border-radius:12px; }
 .ch-bt-figures{ display:flex; flex-wrap:wrap; gap:8px 28px; }

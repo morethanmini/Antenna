@@ -730,6 +730,35 @@ class ReportSocialControllerTest {
         }
 
         @Test
+        @DisplayName("채널 목록에도 실린다. 통계는 잠겨도 오고, 본문에서 나온 발췌는 잠기면 빠진다")
+        void 채널_목록_통계() throws Exception {
+            Long reportId = insertReport(authorId, "채널 구독자 전용", false);
+            flush();
+            insertComment(reportId, authorId, "댓글", "VISIBLE");
+            flush();
+            mockMvc.perform(post(likeUrl(reportId)).with(user(str(authorId))).with(csrf()))
+                    .andExpect(status().isCreated());
+
+            String item = "$.items[?(@.id == " + reportId + ")]";
+
+            // 미구독자 — 잠겼지만 통계는 그대로, 발췌는 없다(피드와 같은 규칙)
+            mockMvc.perform(get("/api/v1/channels/" + authorId + "/reports").with(user(str(readerId))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath(item + ".locked").value(true))
+                    .andExpect(jsonPath(item + ".likeCount").value(1))
+                    .andExpect(jsonPath(item + ".liked").value(false))
+                    .andExpect(jsonPath(item + ".commentCount").value(1))
+                    .andExpect(jsonPath(item + ".summary").isEmpty());
+
+            // 작성자 본인 — 열려 있으니 발췌가 온다
+            mockMvc.perform(get("/api/v1/channels/" + authorId + "/reports").with(user(str(authorId))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath(item + ".locked").value(false))
+                    .andExpect(jsonPath(item + ".liked").value(true))
+                    .andExpect(jsonPath(item + ".summary").value("본문"));
+        }
+
+        @Test
         @DisplayName("반응이 없는 리포트는 0 이다 — 집계에 없는 행을 빠뜨리지 않는다")
         void 통계_기본값() throws Exception {
             Long reportId = insertReport(authorId, "조용한 리포트", true);
