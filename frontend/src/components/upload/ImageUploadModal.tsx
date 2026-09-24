@@ -24,6 +24,7 @@
    서버 규격에 맞게 바꿔서(자르기 · 줄이기 · 형식 바꾸기) 보내고, 결과가 이상하게 보일 것
    같으면 **막지 않고 경고**한다. 남는 거절은 브라우저가 못 읽는 파일뿐이다. */
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { ApiError, CLIENT_ERROR_CODE } from '../../api/errors'
 import {
   ACCEPT_ATTR, ASPECT_BY_PURPOSE, MAX_EDGE_BY_PURPOSE, UPLOAD_HINT,
@@ -246,7 +247,10 @@ export default function ImageUploadModal({ purpose, onClose, onUploaded, aspect 
 
   const text = error ? errorText(error) : null
 
-  return (
+  /* body 로 내보낸다 — ConfirmDialog 와 같은 이유다. 밤 화면의 유리 카드(마이페이지 머리 카드)에
+     backdrop-filter 가 걸려 있어, 그 안의 ProfileAvatar 에서 띄우면 position:fixed 가 화면이 아니라
+     카드에 맞춰진다. 창이 카드 높이에 갇혀 자르기 안내·버튼이 잘려 보였다(QA 09-24). */
+  return createPortal(
     <div className="iu-backdrop" onClick={close} role="presentation">
       <div
         className="iu-modal" role="dialog" aria-modal="true" aria-labelledby="iu-title"
@@ -420,6 +424,7 @@ export default function ImageUploadModal({ purpose, onClose, onUploaded, aspect 
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
