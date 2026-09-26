@@ -31,6 +31,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
@@ -41,6 +44,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 import ssafy.a507.backend.common.ai.AiClient;
 import ssafy.a507.backend.common.ai.AiException;
+import ssafy.a507.backend.domain.season.config.SeasonReviewExecutor;
 import ssafy.a507.backend.domain.season.service.SeasonReviewService;
 
 /**
@@ -57,7 +61,9 @@ import ssafy.a507.backend.domain.season.service.SeasonReviewService;
  * 같은 값으로 사고팔아도 비용만큼 잃는다는 것이 이 지표들이 말하는 바다.
  *
  * <p>AI 복기(ANT-SEASON-09)는 AiClient 를 목으로 둔다. 키를 넣어 두어 finish 가 복기를 부르는
- * 경로를 탄다 — 키 없는 경로는 {@code SeasonReviewServiceTest} 가 본다.
+ * 경로를 탄다 — 키 없는 경로는 {@code SeasonReviewServiceTest} 가 본다. 복기는 종료 뒤 다른 스레드가
+ * 만드는데(2026-09-26), 테스트 트랜잭션의 행은 그 스레드에서 보이지 않으므로 같은 스레드에서 바로
+ * 도는 {@link SeasonReviewExecutor} 를 끼운다 — finish 가 돌아오면 복기까지 끝나 있다.
  */
 @SpringBootTest(properties = "app.ai.api-key=test-key")
 @AutoConfigureMockMvc
@@ -65,6 +71,15 @@ import ssafy.a507.backend.domain.season.service.SeasonReviewService;
 class SeasonProgressControllerTest {
 
     private static final String KEY = "Idempotency-Key";
+
+    @TestConfiguration
+    static class InlineReview {
+        @Bean
+        @Primary
+        SeasonReviewExecutor inlineReviewExecutor() {
+            return Runnable::run;
+        }
+    }
 
     @Autowired MockMvc mockMvc;
     @Autowired EntityManager em;
@@ -199,7 +214,7 @@ class SeasonProgressControllerTest {
     }
 
     @Test
-    @DisplayName("건너뛰기 — 대회는 409 SEASON_ADVANCE_NOT_ALLOWED · 복기가 실패하면 게임일도 그대로다")
+    @DisplayName("건너뛰기 — 대회는 409 SEASON_ADVANCE_NOT_ALLOWED · 복기가 실패해도 종료와 게임일 이동은 굳는다")
     void 건너뛰기_거절과_실패() throws Exception {
         Long competition = insertSeason("COMPETITION", "대회", 3);
         insertParticipant(competition, Long.valueOf(me), 1, 1, "ONGOING");
@@ -212,10 +227,9 @@ class SeasonProgressControllerTest {
 
         willThrow(new AiException("GMS 호출 실패")).given(aiClient).complete(anyString(), anyString());
         mockMvc.perform(post(url("/finish")).param("skipRemaining", "true").with(user(me)))
-                .andExpect(status().isServiceUnavailable())
-                .andExpect(jsonPath("$.code").value("SEASON_REVIEW_FAILED"));
-        assertThat(participantStatus()).isEqualTo("ONGOING");
-        assertThat(currentDay()).isEqualTo(1);
+                .andExpect(status().isOk());
+        assertThat(participantStatus()).isEqualTo("DONE");
+        assertThat(currentDay()).isEqualTo(3);
     }
 
     @Test
@@ -252,7 +266,8 @@ class SeasonProgressControllerTest {
                 .complete(eq(SeasonReviewService.INSTRUCTION), contains("D+1 매수 종목A 100주 @70000원"));
         mockMvc.perform(get(url("/result/me")).with(user(me)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.review").value(REVIEW));
+                .andExpect(jsonPath("$.review").value(REVIEW))
+                .andExpect(jsonPath("$.reviewPending").value(false));
         assertThat(em.createNativeQuery(
                         "SELECT prompt_version FROM season_results WHERE participant_id = ?")
                 .setParameter(1, participantId).getSingleResult()).isEqualTo("review-4");
@@ -284,24 +299,34 @@ class SeasonProgressControllerTest {
     }
 
     @Test
-    @DisplayName("복기 생성이 실패하면 아무것도 저장하지 않는다 — 503 SEASON_REVIEW_FAILED · 회차 ONGOING · 결과 없음")
-    void 복기_실패면_종료도_없다() throws Exception {
+    @DisplayName("복기 생성이 실패해도 종료는 굳는다 — 성적표 저장 · 복기 null · reviewPending false · 다시 finish 하면 복기만 채운다")
+    void 복기_실패해도_종료는_굳는다() throws Exception {
         willThrow(new AiException("GMS 호출 실패")).given(aiClient).complete(anyString(), anyString());
         setCurrentDay(3);
 
         mockMvc.perform(post(url("/finish")).with(user(me)))
-                .andExpect(status().isServiceUnavailable())
-                .andExpect(jsonPath("$.code").value("SEASON_REVIEW_FAILED"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.finalAsset").value(30000000));
 
-        assertThat(participantStatus()).isEqualTo("ONGOING");
+        assertThat(participantStatus()).isEqualTo("DONE");
         assertThat(((Number) em.createNativeQuery(
                         "SELECT COUNT(*) FROM season_results WHERE participant_id = ?")
-                .setParameter(1, participantId).getSingleResult()).longValue()).isZero();
+                .setParameter(1, participantId).getSingleResult()).longValue()).isEqualTo(1);
+        // 복기 자리는 비어 있고, 만드는 중도 아니다 — 화면은 이 조합을 "다시 만들기" 로 그린다
+        mockMvc.perform(get(url("/result/me")).with(user(me)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.review").isEmpty())
+                .andExpect(jsonPath("$.reviewPending").value(false));
 
-        // 다시 시도하면 그때 끝난다
+        // 다시 부르면 지표는 그대로 두고 복기만 채운다
         willReturn(REVIEW).given(aiClient).complete(anyString(), anyString());
-        mockMvc.perform(post(url("/finish")).with(user(me))).andExpect(status().isOk());
-        assertThat(participantStatus()).isEqualTo("DONE");
+        mockMvc.perform(post(url("/finish")).with(user(me)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.finalAsset").value(30000000));
+        mockMvc.perform(get(url("/result/me")).with(user(me)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.review").value(REVIEW));
+        then(aiClient).should(times(2)).complete(anyString(), anyString());
     }
 
     @Test
