@@ -119,7 +119,7 @@ public class PredictionRegisterService {
             ResearchPointRepository researchPoints,
             SignatureGuard signatureGuard,
             PredictionCommitFactory commitFactory,
-            @Value("${app.prediction.slot.free-per-day:3}") int freePerDay,
+            @Value("${app.prediction.slot.free-per-day:10}") int freePerDay,
             TokenAmountProperties amounts,
             SubscriptionRepository subscriptions,
             NotificationRepository notifications,
