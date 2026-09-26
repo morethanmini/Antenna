@@ -7,7 +7,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,12 +18,12 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
-import ssafy.a507.backend.common.ai.AiException;
 import ssafy.a507.backend.common.error.BusinessException;
 import ssafy.a507.backend.common.error.ErrorCode;
 import ssafy.a507.backend.domain.account.entity.User;
 import ssafy.a507.backend.domain.account.repository.UserRepository;
 import ssafy.a507.backend.domain.season.config.SeasonFeeProperties;
+import ssafy.a507.backend.domain.season.config.SeasonReviewExecutor;
 import ssafy.a507.backend.domain.season.dto.MyPositionResponse;
 import ssafy.a507.backend.domain.season.dto.MySeasonStatusResponse;
 import ssafy.a507.backend.domain.season.dto.SeasonAdvanceResponse;
@@ -83,8 +85,11 @@ public class SeasonPlayService {
     private final SeasonFeeProperties fees;
     private final SeasonReviewService reviewService;
     private final BadgeService badgeService;
+    private final SeasonReviewExecutor reviewExecutor;
     /** finish 가 트랜잭션을 손으로 나누는 데 쓴다 — LLM 호출을 트랜잭션 밖에 두려고. */
     private final TransactionTemplate tx;
+    /** 복기를 만드는 중인 회차(participantId). {@link #scheduleReview} 가 넣고 끝나면 뺀다. */
+    private final Set<Long> reviewing = ConcurrentHashMap.newKeySet();
 
     /** 내 현황. 보유 종목은 내 진행일 종가로 평가한다. */
     @Transactional(readOnly = true)
@@ -252,36 +257,28 @@ public class SeasonPlayService {
     }
 
     /**
-     * 종료 — 마지막 게임일에서만. 회차를 DONE 으로 굳히고 {@code season_results} 를 1회 만든다.
-     * 성적표와 함께 AI 복기(ANT-SEASON-09)를 만들어 같이 저장한다. 이미 끝난 회차면 저장된
-     * 결과를 그대로 준다(멱등) — 단 복기가 비어 있고 키가 있으면 그때 채운다.
+     * 종료 — 회차를 DONE 으로 굳히고 {@code season_results} 를 1회 만든다. 이미 끝난 회차면 저장된
+     * 결과를 그대로 준다(멱등).
      *
-     * <p>트랜잭션을 셋으로 나눈다. GMS 호출은 길면 수십 초라 그동안 DB 커넥션을 잡고 있으면
-     * 안 된다. ① 읽기 — 상태 검증 · 지표 계산 · 프롬프트 재료 ② 트랜잭션 밖 — GMS ③ 쓰기 —
-     * 잠그고 다시 검증한 뒤 지표를 다시 계산해 복기와 함께 저장. 복기 생성이 실패하면 아무것도
-     * 저장하지 않는다(503 SEASON_REVIEW_FAILED) — 회차는 ONGOING 그대로라 다시 시도할 수 있다.
-     * 지표를 ③에서 다시 계산하는 이유는 ①과 ③ 사이에 주문이 끼어들 수 있어서다.
+     * <p><b>AI 복기(ANT-SEASON-09)는 여기서 기다리지 않는다(2026-09-26).</b> 전에는 성적표와 복기를 한
+     * 요청에서 만들어 GMS 가 답할 때까지(수십 초) 화면이 스피너로 서 있었고, 복기가 실패하면 종료 자체가
+     * 안 됐다. 지금은 ① 트랜잭션 하나로 지표를 굳히고 바로 돌아온 뒤 ② {@link SeasonReviewExecutor} 가
+     * 복기를 뒤따라 만들어 {@code review_body} 에 채운다. 화면은 성적표를 먼저 그리고 복기 자리만
+     * {@code GET /result/me} 를 다시 읽어 채운다({@code reviewPending}). 복기가 실패하면 null 로 남고,
+     * finish 를 다시 부르면 지표는 그대로 둔 채 복기만 다시 만든다(키가 없던 회차도 같다).
      *
      * <p><b>건너뛰고 종료</b>({@code skipRemaining}, 2026-09-19 · QA 09-18 "30일을 일일이 다 눌러야 함").
      * 마지막 게임일 전이어도 받는다 — 남은 날을 <b>주문 없이 넘긴 것으로 치고</b> 마지막 날 종가로
      * 정산한다(팀장 결정). "다음 영업일" 을 남은 만큼 누른 것과 결과가 같다: 성과 계산은 원래부터
-     * {@code lengthDays} 까지의 종가를 쓰므로({@link #compute}) 계산은 손대지 않고, 게임일만 ③에서
-     * 마지막 날로 옮긴다. ③에서 옮기는 이유는 복기가 실패하면 아무것도 바뀌지 않아야 해서다 —
-     * ①에서 옮기면 실패한 뒤 회차가 마지막 날에 가 있다. 수동 진행이 없는 대회는 건너뛸 수도 없다.
+     * {@code lengthDays} 까지의 종가를 쓰므로({@link #compute}) 계산은 손대지 않고, 게임일만 마지막 날로
+     * 옮긴다. 수동 진행이 없는 대회는 건너뛸 수도 없다.
      */
     public SeasonFinishResponse finish(Long userId, Long seasonId, boolean skipRemaining) {
-        Prepared p = tx.execute(status -> prepare(userId, seasonId, skipRemaining));
-        if (p.done()) {
-            return p.response();
+        Finished f = tx.execute(status -> commit(userId, seasonId, skipRemaining));
+        if (f.needsReview()) {
+            scheduleReview(f.response().participantId());
         }
-        String review;
-        try {
-            review = reviewService.review(p.aiInput());
-        } catch (AiException e) {
-            log.warn("[SEASON-09] 복기 생성 실패 user={} season={} — {}", userId, seasonId, e.getMessage());
-            throw new BusinessException(ErrorCode.SEASON_REVIEW_FAILED);
-        }
-        return tx.execute(status -> commit(userId, seasonId, review, skipRemaining));
+        return f.response();
     }
 
     /** 마지막 게임일 전인데 끝내려는가 — 건너뛰기가 아니면 409, 대회면 건너뛰기도 409. */
@@ -297,42 +294,17 @@ public class SeasonPlayService {
         }
     }
 
-    /** ①의 결과. done 이면 더 할 일이 없어 response 를 그대로 준다. 아니면 aiInput 이 있다. */
-    private record Prepared(boolean done, SeasonFinishResponse response, String aiInput) {}
+    /** 굳힌 성적표와, 복기를 뒤따라 만들어야 하는지(복기가 비어 있고 키가 있으면). */
+    private record Finished(SeasonFinishResponse response, boolean needsReview) {}
 
-    private Prepared prepare(Long userId, Long seasonId, boolean skipRemaining) {
-        SeasonParticipant me = myAttempt(userId, seasonId);
-        Season season = me.getSeason();
-        if (me.getStatus() == SeasonParticipant.Status.DONE) {
-            SeasonResult saved = resultRepository.findById(me.getId())
-                    .orElseThrow(() -> new BusinessException(ErrorCode.SEASON_ATTEMPT_ENDED));
-            if (saved.getReviewBody() != null || !reviewService.hasKey()) {
-                return new Prepared(true, toResponse(saved), null);
-            }
-            // 복기만 비어 있는 끝난 회차 — 저장된 지표로 재료를 만들어 채우러 간다
-            List<SeasonTrade> trades = tradeRepository.findByParticipant_IdOrderByIdAsc(me.getId());
-            return new Prepared(false, null, reviewInput(season, trades, toResult(saved)));
-        }
-        if (!me.isOngoing()) {
-            throw new BusinessException(ErrorCode.SEASON_ATTEMPT_ENDED);
-        }
-        requireLastDayOrSkip(me, season, skipRemaining);
-        List<SeasonTrade> trades = tradeRepository.findByParticipant_IdOrderByIdAsc(me.getId());
-        return new Prepared(false, null, reviewInput(season, trades, compute(season, trades)));
-    }
-
-    private SeasonFinishResponse commit(Long userId, Long seasonId, String review, boolean skipRemaining) {
+    private Finished commit(Long userId, Long seasonId, boolean skipRemaining) {
         SeasonParticipant me = participantRepository
                 .lockById(myAttempt(userId, seasonId).getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.SEASON_NOT_JOINED));
         if (me.getStatus() == SeasonParticipant.Status.DONE) {
-            // ①과 ③ 사이에 다른 요청이 먼저 끝냈거나, 복기만 채우러 온 경우
             SeasonResult saved = resultRepository.findById(me.getId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.SEASON_ATTEMPT_ENDED));
-            if (saved.getReviewBody() == null && review != null) {
-                saved.review(review, reviewService.promptVersion());
-            }
-            return toResponse(saved);
+            return new Finished(toResponse(saved), saved.getReviewBody() == null && reviewService.hasKey());
         }
         if (!me.isOngoing()) {
             throw new BusinessException(ErrorCode.SEASON_ATTEMPT_ENDED);
@@ -347,16 +319,56 @@ public class SeasonPlayService {
         SeasonResult result = SeasonResult.of(
                 me, r.finalAsset(), r.returnRate(), r.benchmarkReturn(), r.maxDrawdown(),
                 r.winRate(), r.profitFactor(), r.avgHoldingDays());
-        if (review != null) {
-            result.review(review, reviewService.promptVersion());
-        }
         SeasonFinishResponse response = toResponse(resultRepository.save(result));
         /* 배지는 여기서 준다 — 끝낸 자리에서 바로 보여야 하고, finish 는 끝난 회차를 다시 계산하지
            않으므로 이 지점을 놓치면 그 회차의 배지를 줄 기회가 없다. 승률의 분모와 같은 수를
            넘겨야 해 매도만 센다. */
         long sells = trades.stream().filter(t -> t.getSide() == SeasonTrade.Side.SELL).count();
         badgeService.award(me.getUser(), season, r, (int) sells);
-        return response;
+        return new Finished(response, reviewService.hasKey());
+    }
+
+    /**
+     * 복기를 뒤따라 만든다. 같은 회차가 이미 줄에 있으면(결과 화면이 finish 를 두 번 불렀거나 "다시
+     * 만들기" 를 연타) 더 넣지 않는다 — {@link #reviewing} 이 그 표시이고 {@link #result} 가 이 표시를
+     * {@code reviewPending} 으로 내린다. 트랜잭션은 둘로 나눈다 — GMS 호출이 수십 초라 그동안 DB
+     * 커넥션을 잡고 있으면 안 된다. ① 읽기 — 저장된 지표·체결로 프롬프트 재료 ② 트랜잭션 밖 — GMS
+     * ③ 쓰기 — 아직 비어 있으면 채운다.
+     * ponytail: 진행 표시가 메모리라 인스턴스가 하나일 때만 맞다. 여럿이면 season_results 에 상태 칸을 둔다.
+     */
+    private void scheduleReview(Long participantId) {
+        if (!reviewing.add(participantId)) {
+            return;
+        }
+        reviewExecutor.execute(() -> {
+            try {
+                generateReview(participantId);
+            } catch (RuntimeException e) {
+                log.warn("[SEASON-09] 복기 생성 실패 participant={} — {}", participantId, e.toString());
+            } finally {
+                reviewing.remove(participantId);
+            }
+        });
+    }
+
+    private void generateReview(Long participantId) {
+        String input = tx.execute(status -> resultRepository.findById(participantId)
+                .filter(saved -> saved.getReviewBody() == null)
+                .map(saved -> reviewInput(
+                        saved.getParticipant().getSeason(),
+                        tradeRepository.findByParticipant_IdOrderByIdAsc(participantId),
+                        toResult(saved)))
+                .orElse(null));
+        if (input == null) {
+            return;
+        }
+        String review = reviewService.review(input);
+        if (review == null) {
+            return;
+        }
+        tx.executeWithoutResult(status -> resultRepository.findById(participantId)
+                .filter(saved -> saved.getReviewBody() == null)
+                .ifPresent(saved -> saved.review(review, reviewService.promptVersion())));
     }
 
     /**
@@ -431,7 +443,8 @@ public class SeasonPlayService {
         return new SeasonResultResponse(
                 r.getParticipantId(), r.getFinalAsset(), r.getReturnRate(), r.getBenchmarkReturn(),
                 r.getMaxDrawdown(), r.getWinRate(), r.getProfitFactor(), r.getAvgHoldingDays(),
-                r.getScore(), r.getGrade(), r.getReviewBody(), r.getClosedAt());
+                r.getScore(), r.getGrade(), r.getReviewBody(), reviewing.contains(r.getParticipantId()),
+                r.getClosedAt());
     }
 
     private Map<Long, BigDecimal> closesOf(Long seasonId, int gameDay) {

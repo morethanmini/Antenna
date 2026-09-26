@@ -194,6 +194,9 @@ export type SeasonFinishResult = {
  * 마지막 게임일에서만 부를 수 있고(아니면 409 SEASON_NOT_LAST_DAY), 이미 끝난 회차면
  * 저장해 둔 같은 결과를 다시 준다.
  *
+ * <p>성적표만 굳히고 바로 돌아온다(2026-09-26). AI 복기는 서버가 뒤에서 만들어 result/me 의
+ * review 에 채운다 — 복기가 비어 있는 끝난 회차에 다시 부르면 지표는 그대로 두고 복기만 다시 만든다.
+ *
  * @param skipRemaining 건너뛰고 종료(v0.82). 마지막 게임일 전이어도 끝낸다 — 서버가 남은 날을
  *   주문 없이 넘긴 것으로 치고 **마지막 게임일 종가**로 정산한다. 하루씩 끝까지 넘긴 것과 같다.
  */
@@ -207,8 +210,10 @@ export const finish = (seasonId: number, skipRemaining = false) =>
 export type SeasonResultData = SeasonFinishResult & {
   score: number | null
   grade: string | null
-  /** AI 복기. 잘한 판단 / 아쉬운 판단 / 개선 제안 세 단락. 서버에 키가 없던 회차는 null */
+  /** AI 복기. 시장 흐름 / 잘한 판단 / 아쉬운 판단 / 개선 제안 네 단락. 아직 없으면 null */
   review: string | null
+  /** 서버가 복기를 만드는 중. review 가 null 이고 이 값도 false 면 만들지 못한 것(또는 키 없음) */
+  reviewPending: boolean
   closedAt: string
 }
 
