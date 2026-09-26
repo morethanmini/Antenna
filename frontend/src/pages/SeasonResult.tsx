@@ -13,17 +13,25 @@
    보통 몇 개다(200종목을 다 받으면 요청이 200번이라 전부 받지는 않는다).
 
    ── 성적표는 서버가 굳힌 값이다 ──────────────────────────
-   시장 대비·최대 낙폭·손익비·평균 보유일과 AI 복기는 POST /finish 가 만들어 저장하고
+   시장 대비·최대 낙폭·손익비·평균 보유일은 POST /finish 가 만들어 저장하고
    GET /seasons/{id}/result/me 가 그대로 내려준다. 이 화면에서 다시 계산하지 않는다 —
    나중에 열어도 같은 값이어야 한다. 아직 없는 것은 배지·순위뿐이고 자리도 잡지 않았다.
 
+   ── AI 복기는 뒤따라 온다(2026-09-26) ─────────────────────
+   전에는 finish 가 GMS 응답까지 기다렸다 돌아와, 종료를 누른 뒤 수십 초를 스피너로 서
+   있어야 포트폴리오도 체결 내역도 볼 수 있었다. 지금은 finish 가 성적표만 굳히고 바로
+   돌아오고 복기는 서버가 뒤에서 만든다. 화면은 성적표를 먼저 그리고 복기 자리에만
+   스피너를 두었다가 result/me 를 몇 초마다 다시 읽어 채운다 — 종목 상세의 투자 포인트가
+   AI 응답을 기다리는 것과 같은 모양이다. reviewPending 이 false 인데 복기가 없으면
+   만들지 못한 것이라 "다시 만들기" 를 둔다(finish 를 다시 부르면 복기만 다시 만든다).
+
    ── 접두어가 rs- 인 이유 ──────────────────────────────────
    sr- 는 검색 화면이 먼저 쓰고 있다. 자세한 사정은 sim-result.css 머리에 적었다. */
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ApiError } from '../api/errors'
 import {
-  getPrices, getTickers, rate, signOf,
+  finish as finishApi, getPrices, getTickers, rate, signOf,
   getResult, type Candle, type SeasonFinishResult, type Ticker,
 } from '../api/seasonPlay'
 import { useApiQuery } from '../api/useApiQuery'
@@ -43,6 +51,8 @@ type SeasonHead = {
 
 const won = (n: number) => `${Math.round(n).toLocaleString('ko-KR')}원`
 const PIE_TOP = 4
+/** 복기를 만드는 동안 result/me 를 다시 읽는 간격. GMS 는 수십 초라 이보다 잘게 물을 이유가 없다 */
+const REVIEW_POLL_MS = 3000
 
 const Ico = ({ size = 18, children }: { size?: number; children: ReactNode }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -80,8 +90,10 @@ export default function SeasonResult() {
   const [loadError, setLoadError] = useState<ApiError | null>(null)
   /** 서버 성적표. 회차를 끝내야 나온다 */
   const [card, setCard] = useState<SeasonFinishResult | null>(null)
-  /** AI 복기. 성적표와 함께 finish 가 만든다. 서버에 키가 없던 회차는 null */
+  /** AI 복기. 서버가 종료 뒤에 만든다 — 아직 없으면 null */
   const [review, setReview] = useState<string | null>(null)
+  /** 서버가 복기를 만드는 중이다. true 인 동안 result/me 를 다시 읽는다 */
+  const [reviewPending, setReviewPending] = useState(false)
   /** 성적표가 없다 — 마지막 날이면 자동으로 굳힌다 */
   const [needsFinish, setNeedsFinish] = useState(false)
   /** 자동 종료를 이미 한 번 시도했다 */
@@ -101,7 +113,7 @@ export default function SeasonResult() {
     if (!seasonId) return
     let alive = true
     getResult(seasonId)
-      .then((r) => { if (alive) { setCard(r); setReview(r.review) } })
+      .then((r) => { if (alive) { setCard(r); setReview(r.review); setReviewPending(r.reviewPending) } })
       .catch((e) => {
         if (!alive) return
         if (e instanceof ApiError && e.code === 'SEASON_RESULT_NOT_FOUND') {
@@ -113,14 +125,39 @@ export default function SeasonResult() {
     return () => { alive = false }
   }, [seasonId])
 
-  /* 버튼으로 끝낸 경우 — 성적표는 finish 응답에 있고 복기는 result/me 로 한 번 더 받는다 */
+  /* finish 응답에는 복기 자리가 없다 — 성적표를 그린 뒤 result/me 로 복기와 진행 여부를 받는다 */
+  const pullReview = useCallback(() => getResult(seasonId)
+    .then((d) => { setReview(d.review); setReviewPending(d.reviewPending) })
+    .catch(() => {}), [seasonId])
+
+  /* 버튼으로 끝낸 경우 — 성적표는 finish 응답에 있다 */
   function finishHere() {
     void sim.finish().then((r) => {
       if (!r) return
       setCard(r)
-      getResult(seasonId).then((d) => setReview(d.review)).catch(() => {})
+      void pullReview()
     })
   }
+
+  /* 복기만 다시 만든다. 끝난 회차의 finish 는 지표를 다시 계산하지 않고 복기만 채운다.
+     돌아오면 서버가 만드는 중이라 result/me 가 reviewPending 을 세워 주고, 아래 효과가 이어 읽는다 */
+  function retryReview() {
+    setReviewPending(true)
+    finishApi(seasonId).then(() => pullReview()).catch(() => setReviewPending(false))
+  }
+
+  /* 복기를 만드는 동안 몇 초마다 result/me 를 다시 읽는다. 안 보는 탭에서는 쉬고, 돌아오면 바로 읽는다.
+     ponytail: 폴링이다 — 최대 REVIEW_POLL_MS 만큼 늦다. 서버가 밀어 주면 걷는다. */
+  useEffect(() => {
+    if (!reviewPending || review !== null) return
+    const tick = () => { if (document.visibilityState === 'visible') void pullReview() }
+    const timer = window.setInterval(tick, REVIEW_POLL_MS)
+    document.addEventListener('visibilitychange', tick)
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', tick)
+    }
+  }, [reviewPending, review, pullReview])
 
   useEffect(() => {
     if (!seasonId) return
@@ -149,9 +186,9 @@ export default function SeasonResult() {
     void sim.finish().then((r) => {
       if (!r) return
       setCard(r)
-      getResult(seasonId).then((d) => setReview(d.review)).catch(() => {})
+      void pullReview()
     })
-  }, [needsFinish, card, sim, season.data, seasonId])
+  }, [needsFinish, card, sim, season.data, pullReview])
 
   /* 자산 곡선에 필요한 종목. 지금 들고 있는 것과 한 번이라도 매매한 것을 합친다 —
      중간에 사고팔았다 끝낸 종목도 그 구간의 곡선에는 들어가 있어야 한다. */
@@ -521,16 +558,12 @@ export default function SeasonResult() {
                   >
                     {sim.pending ? (
                       <span className="waiting">
-                        <span className="spinner" aria-hidden="true" />성적표·복기 만드는 중…
+                        <span className="spinner" aria-hidden="true" />성적표 만드는 중…
                       </span>
                     ) : '이 판 끝내고 성적표 받기'}
                   </button>
                   {sim.reject && (
-                    <b className="rs-reject" role="alert">
-                      {sim.reject === 'REVIEW'
-                        ? 'AI 복기를 만들지 못해 종료하지 않았습니다. 다시 시도해 주세요.'
-                        : '종료하지 못했습니다. 다시 시도해 주세요.'}
-                    </b>
+                    <b className="rs-reject" role="alert">종료하지 못했습니다. 다시 시도해 주세요.</b>
                   )}
                 </p>
               ) : null}
@@ -584,14 +617,25 @@ export default function SeasonResult() {
                     </div>
                   </dl>
 
-                  {/* AI 복기 — 서버가 finish 때 만들어 저장한 본문(ANT-SEASON-09).
-                      세 단락(잘한 판단 / 아쉬운 판단 / 개선 제안)이라 줄바꿈을 그대로 살린다. */}
+                  {/* AI 복기 — 서버가 종료 뒤 만들어 저장한 본문(ANT-SEASON-09).
+                      단락 사이 빈 줄이 있어 줄바꿈을 그대로 살린다. 오기 전에는 스피너,
+                      만들지 못했으면 다시 만들기 — 자리는 늘 지킨다(빠지면 "원래 없는 항목" 으로 읽힌다). */}
                   <div className="rs-review">
                     <h3>AI 복기</h3>
                     {review ? (
                       <p>{review}</p>
+                    ) : reviewPending ? (
+                      <p className="rs-review-none" role="status">
+                        <span className="waiting">
+                          <span className="spinner" aria-hidden="true" />
+                          AI가 이 판을 복기하고 있어요… 잠시만 기다려 주세요.
+                        </span>
+                      </p>
                     ) : (
-                      <p className="rs-review-none">이 회차에는 AI 복기가 없습니다.</p>
+                      <p className="rs-review-none">
+                        AI 복기를 만들지 못했습니다.
+                        <button type="button" className="rs-go" onClick={retryReview}>다시 만들기</button>
+                      </p>
                     )}
                   </div>
                   <p className="rs-note">

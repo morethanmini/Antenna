@@ -257,7 +257,6 @@ const REJECT_TEXT: Record<string, string> = {
   NOT_JOINED: '참가하지 않은 시즌입니다',
   ENDED: '이미 끝난 회차입니다',
   LAST_DAY: '마지막 게임일입니다',
-  REVIEW: 'AI 복기를 만들지 못해 종료하지 않았습니다. 다시 시도해 주세요',
   DAY_MISMATCH: '다른 창에서 진행됐습니다. 화면을 새로 맞췄습니다',
   STALE: '처리됐지만 바뀐 잔고를 불러오지 못했습니다. 새로고침해 주세요',
   /* 끊김·500 처럼 이유를 모르는 실패. 서버가 처리했을 수도 있어 "못 했다" 고 단정하지 않는다 —
@@ -297,7 +296,7 @@ export default function SeasonPlay() {
   const navigate = useNavigate()
   const season = useApiQuery<SeasonHead>(`/seasons/${id}`)
   const seasonId = Number(id)
-  /* 종료 확인창. 결과는 종료한 뒤에만 본다 — 종료가 성적표·복기를 만드는 순간이다 */
+  /* 종료 확인창. 결과는 종료한 뒤에만 본다 — 종료가 성적표를 굳히는 순간이다 */
   const finishDialog = useRef<HTMLDialogElement>(null)
 
   const [tickers, setTickers] = useState<Ticker[]>([])
@@ -617,8 +616,8 @@ export default function SeasonPlay() {
     }
   }
 
-  /* 종료가 서버에 박힌 뒤에만 결과로 간다. 서버는 finish 에서 성적표와 AI 복기를 같이
-     만들어 저장하고, 실패하면 아무것도 저장하지 않는다 — 그때는 창을 닫고 이유를 보인다. */
+  /* 종료가 서버에 박힌 뒤에만 결과로 간다. 서버는 finish 에서 성적표만 굳히고 바로 돌아온다 —
+     AI 복기는 뒤에서 만들어 결과 화면이 채운다(2026-09-26). 실패하면 창을 닫고 이유를 보인다. */
   async function finishAndGo() {
     /* 마지막 게임일 전에 이 창이 열렸다면 "건너뛰고 종료" 로 들어온 것이다 */
     if (await sim.finish(!sim.isLastDay)) navigate(`/sim/${seasonId}/result`)
@@ -957,7 +956,7 @@ export default function SeasonPlay() {
                   꺼진 버튼만 남아 흐름이 거기서 끊겼다 — 다 돌린 사람에게 다음 걸음이
                   없으면 얼마 벌었는지도 못 본다.
                   링크가 아니라 확인창이다(2026-09-09). 결과를 보는 것은 곧 종료이고, 종료가
-                  성적표와 AI 복기를 만들어 저장하는 순간이라 사람이 한 번 확인한다. */}
+                  성적표를 굳히는 순간이라 사람이 한 번 확인한다. */}
               {/* 이미 끝난 회차는 확인창을 거칠 것이 없다 — 성적표는 저장돼 있다 */}
               {sim.isDone ? (
                 <Link className="sp-advance is-done" to={`/sim/${seasonId}/result`}>
@@ -1034,7 +1033,7 @@ export default function SeasonPlay() {
                   <br />
                   성적표와 AI 복기를 기록에 남겨요.
                 </p>
-                <small>AI 복기는 몇십 초 걸릴 수 있어요.</small>
+                <small>성적표는 바로, AI 복기는 결과 화면에서 준비되는 대로 보여드려요.</small>
                 <div className="sp-dialog-actions">
                   <button
                     type="button" className="sp-dialog-btn" disabled={sim.pending}
@@ -1048,7 +1047,7 @@ export default function SeasonPlay() {
                   >
                     {sim.pending ? (
                       <span className="waiting">
-                        <span className="spinner" aria-hidden="true" />성적표·복기 만드는 중…
+                        <span className="spinner" aria-hidden="true" />종료하는 중…
                       </span>
                     ) : '종료하고 결과 보기'}
                   </button>
