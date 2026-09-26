@@ -132,6 +132,7 @@
 .rs-review h3{margin:0 0 8px;color:var(--ink);font-size:var(--fs-lg);font-weight:var(--fw-heavy);letter-spacing:-.01em}
 .rs-review p{margin:0;color:var(--body);font-size:var(--fs-lg);line-height:1.75;white-space:pre-wrap}
 .rs-review .rs-review-none{color:var(--muted);font-size:var(--fs-base);font-weight:var(--fw-bold)}
+.rs-review .rs-go{margin-left:10px;height:32px;padding:0 12px;font-size:var(--fs-base)}
 
 /* 아직 서버가 안 주는 것. 목업을 넣지 않는다 — 무엇이 올 자리인지만 적는다 */
 .rs-soon{
