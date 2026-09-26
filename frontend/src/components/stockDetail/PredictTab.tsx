@@ -1132,7 +1132,7 @@ export default function PredictTab({
       {confirmingBurn && (
         <ConfirmDialog
           title={`${overCost} ANT 를 사용해 추가로 등록할까요?`}
-          description={`오늘 무료 슬롯 ${slots.data?.freeLimit ?? 3}건을 모두 썼습니다. 이 예측은 ${overCost} ANT 를 소각하고 등록되며, 소각은 되돌릴 수 없습니다.`}
+          description={`오늘 무료 슬롯 ${slots.data?.freeLimit ?? 10}건을 모두 썼습니다. 이 예측은 ${overCost} ANT 를 소각하고 등록되며, 소각은 되돌릴 수 없습니다.`}
           confirmLabel={`${overCost} ANT 소각하고 등록`}
           tone="danger"
           onCancel={() => setConfirmingBurn(false)}
