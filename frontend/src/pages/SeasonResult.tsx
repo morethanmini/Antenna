@@ -372,7 +372,6 @@ export default function SeasonResult() {
                     <Ico size={15}><path d="M4 16.5 9 11l3.5 3.5L20 7" /></Ico>
                   </span>
                   자산 곡선
-                  <em>가로선은 시작 예수금 {won(s.initialCash)} · 위는 이익</em>
                 </h2>
                 {/* 폭이 넓어졌으니 높이를 줄인다. 꺾은선은 넓고 낮아야 오르내림의
                     기울기가 과장되지 않는다 — 좁고 높으면 작은 흔들림도 절벽처럼 보인다. */}
@@ -406,9 +405,6 @@ export default function SeasonResult() {
                     </dd>
                   </div>
                 </dl>
-                <p className="rs-note">
-                  평가 손익은 팔기 전까지 계속 바뀝니다.
-                </p>
               </section>
             </div>
 
@@ -487,14 +483,8 @@ export default function SeasonResult() {
                 <i aria-hidden="true">⌄</i>
               </summary>
               <div className="rs-fold-body">
-                {sim.positions.length === 0 ? (
-                  <p className="rs-empty">
-                    끝까지 현금으로 남았습니다.
-                    <small>전액 현금 {won(sim.cash)}</small>
-                  </p>
-                ) : (
-                  <PortfolioDonut slices={slices} total={sim.totalAsset} />
-                )}
+                {/* 끝까지 현금이어도 같은 원 그래프다 — 다른 판과 모양이 달라지면 "뭔가 빠졌나" 로 읽힌다 */}
+                <PortfolioDonut slices={slices} total={sim.totalAsset} />
               </div>
             </details>
             </div>
