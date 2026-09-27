@@ -663,6 +663,30 @@
 }
 .hm-showcase-dots button:hover{background:rgba(255,255,255,.6)}
 .hm-showcase-dots button.on{background:#fff}
+/* 재생/일시정지(오른쪽 위)와 좌우 화살표는 평소엔 숨기고, 카드에 마우스를 올리거나
+   키보드로 닿으면 보인다. 배지·점처럼 창 위(z-index 2)에 뜬다. */
+.hm-showcase-play{
+  position:absolute; top:10px; right:10px; z-index:2;
+  display:grid; place-items:center; width:30px; height:30px; padding:0;
+  border:0; border-radius:50%; background:rgba(0,0,0,.38); color:#fff; cursor:pointer;
+  opacity:0; transition:opacity .2s ease, background .2s ease;
+}
+.hm-showcase:hover .hm-showcase-play,
+.hm-showcase-play:focus-visible{opacity:1}
+.hm-showcase-play:hover{background:rgba(0,0,0,.58)}
+.hm-showcase-play:focus-visible{outline:2px solid #fff; outline-offset:2px}
+.hm-showcase-arrow{
+  position:absolute; top:50%; z-index:2; transform:translateY(-50%);
+  display:grid; place-items:center; width:34px; height:34px; padding:0;
+  border:0; border-radius:50%; background:rgba(0,0,0,.38); color:#fff; cursor:pointer;
+  opacity:0; transition:opacity .2s ease, background .2s ease;
+}
+.hm-showcase-arrow.prev{left:10px}
+.hm-showcase-arrow.next{right:10px}
+.hm-showcase:hover .hm-showcase-arrow,
+.hm-showcase-arrow:focus-visible{opacity:1}
+.hm-showcase-arrow:hover{background:rgba(0,0,0,.58)}
+.hm-showcase-arrow:focus-visible{outline:2px solid #fff; outline-offset:2px}
 
 /* ── 반응형 ─────────────────────────────────────────────── */
 @media (max-width:1180px){
