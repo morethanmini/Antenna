@@ -75,7 +75,7 @@ function useRotate(count: number, ms: number) {
   const [paused, setPaused] = useState(false)
 
   useEffect(() => {
-    if (count < 2 || paused) return
+    if (count < 2 || paused || !ms) return
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
     const timer = setInterval(() => setIndex((v) => (v + 1) % count), ms)
     return () => clearInterval(timer)
@@ -506,7 +506,12 @@ function Sponsored() {
      다른 상태다. */
   const ready = !loading && !error
   const count = ready ? items.length + 1 : 0
-  const { index, setIndex, setPaused } = useRotate(count, AD_ROTATE_MS)
+  /* 재생/일시정지 버튼(오른쪽 위)이 자동 넘김을 켜고 끈다. 끄면 간격을 0 으로 넘겨
+     타이머를 걸지 않는다. 점·화살표로 손으로 넘기는 것은 어느 쪽이든 된다.
+     TODO(시연 임시, 2026-09-27): 시연 동안 첫 광고에 멈춰 두려고 일시정지로 시작한다.
+     시연 끝나면 useState(true) 로 되돌려 처음부터 넘어가게 한다. */
+  const [playing, setPlaying] = useState(false)
+  const { index, setIndex, setPaused } = useRotate(count, playing ? AD_ROTATE_MS : 0)
 
   return (
     <section className="hm-showcase" aria-labelledby="hm-showcase-h"
@@ -551,6 +556,40 @@ function Sponsored() {
               </div>
             </div>
           </div>
+          {/* 재생/일시정지와 좌우 화살표. 카드에 마우스를 올리면 나타난다(home.css).
+              화살표는 끝에서 반대쪽 끝으로 돈다. */}
+          {count > 1 && (
+            <>
+              <button type="button" className="hm-showcase-play"
+                      aria-label={playing ? '광고 넘김 일시정지' : '광고 넘김 재생'}
+                      aria-pressed={playing} onClick={() => setPlaying((v) => !v)}>
+                {playing ? (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <rect x="6" y="5" width="4" height="14" rx="1" />
+                    <rect x="14" y="5" width="4" height="14" rx="1" />
+                  </svg>
+                ) : (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.2-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z" />
+                  </svg>
+                )}
+              </button>
+              <button type="button" className="hm-showcase-arrow prev" aria-label="이전 광고"
+                      onClick={() => setIndex((index - 1 + count) % count)}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M15 5.5 8.5 12l6.5 6.5" stroke="currentColor"
+                        strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <button type="button" className="hm-showcase-arrow next" aria-label="다음 광고"
+                      onClick={() => setIndex((index + 1) % count)}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M9 5.5 15.5 12 9 18.5" stroke="currentColor"
+                        strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </>
+          )}
           {count > 1 && (
             <span className="hm-showcase-dots">
               {Array.from({ length: count }, (_, i) => (
