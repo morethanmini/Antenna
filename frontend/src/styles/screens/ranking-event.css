@@ -7,9 +7,9 @@
    글자는 토큰을 못 쓴다 — 앱 토큰은 흰 바탕 기준이라 어두운 판에 올리면 안 읽힌다.
    그 자리만 배너 그림에서 뽑은 값을 직접 적는다(event-contest.css 의 .ev-rules 와 같다). */
 
-/* container-type 를 준다 — 아래 무대 단이 **뷰포트가 아니라 이 폭**으로 접혀야 한다
-   (이유는 판·시상대 겹침 구간 주석 참고). */
-.predictor-market-page .rke{ display:flex; flex-direction:column; gap:14px; container-type:inline-size; }
+/* container-type 를 걷었다(2026-09-27) — 이 값을 쓰던 유일한 규칙이 무대 겹침
+   분기였는데, 무대가 화면 폭으로 깔리면서 그쪽이 media query 로 돌아갔다. */
+.predictor-market-page .rke{ display:flex; flex-direction:column; gap:14px; }
 
 /* ── 시상대 무대 ──────────────────────────────────────────
    배경 그림 위에 시상대를 세운다. 그림이 무대 바닥을 아래쪽에 두고 있어, 받침을
@@ -20,22 +20,67 @@
    대신 좁아지면 겹칠 수밖에 없으므로 1000px 아래에서는 위아래로 나눈다(맨 아래). */
 .predictor-market-page .rke-stage{
   position:relative; overflow:hidden;
-  border-radius:18px;
+
+  /* **무대만 화면 끝에서 끝까지 깐다.** .main-inner 폭은 건드리지 않는다 — 폭을
+     바꾸면 오른쪽 위 전환 버튼이 탭마다 다른 자리에 서서 누르는 순간 옆으로
+     튄다(ccb9ae6 에서 고친 것). 마진만 음수로 주면 버튼·내 순위·표는 제자리고
+     무대만 넓어진다. 50% 는 이 요소의 담는 상자(.rke, 곧 본문 폭)의 절반이라
+     `50% - 50vw` 가 본문 왼쪽 끝에서 화면 왼쪽 끝까지의 거리다. */
+  margin-inline:calc(50% - 50vw);
+
+  /* **사진을 제목·버튼 줄까지 끌어올린다.** 머리와 무대는 형제라 하나의 그림으로
+     덮으려면 무대가 위로 올라가 머리를 품는 수밖에 없다. 올라간 만큼 위 여백을
+     되돌려 줘야 시상대가 같이 딸려 올라가지 않는다.
+
+     152px = .main-inner 위 여백 28 + 머리 99 + 머리 아래 여백 24. 실측값이라
+     머리 높이를 건드리면 여기도 같이 고쳐야 한다. 좁아져서 소개글이 두 줄이 되면
+     머리가 높아지므로, 아래 겹침 분기(1008px)와 같은 선에서 이 보정을 끈다. */
+  --rke-headpull:152px;
+  /* 화면 끝에 닿는 띠라 모서리를 굴리지 않는다 — 굴리면 양 끝에 빈 삼각형이 남는다 */
+  border-radius:0;
   /* 그림이 늦게 뜰 때 흰 네모가 번쩍이지 않게 바탕을 미리 깐다 */
   background:#241a63;
   padding:22px 24px 0;
-  min-height:360px;
+  /* 화면 폭으로 깔리면서 가로가 확 늘었다. 360 그대로 두면 1600px 창에서 4.4:1 띠가
+     되어 배경(1600x900)의 천장 조명과 관중석이 통째로 잘린다 — 무대가 아니라 바닥만
+     남는다. 폭을 키운 만큼 세로도 줘서 잘림을 되돌린다. */
+  min-height:clamp(360px, 30vw, 520px);
   display:flex; align-items:flex-end; justify-content:center;
 }
+/* 글자 받침. 제목·소개글이 무대 사진 위에 흰색으로 얹히는데, 사진 위쪽은 조명이라
+   밝은 자리가 섞여 있어 그냥 두면 글자가 묻힌다. 위에서 아래로 사라지는 어두운 막을
+   깔아 밝기를 눌러 둔다 — 아래쪽 시상대에는 닿지 않는다.
+   z-index 1 이라야 배경 그림(문서 순서상 뒤)에 덮이지 않는다. 시상대(1)와 판(2)은
+   뒤에 오거나 더 높아 그대로 이 막 위에 선다. */
+.predictor-market-page .rke-stage::before{
+  content:''; position:absolute; left:0; right:0; top:0; height:240px; z-index:1;
+  background:linear-gradient(180deg, rgba(18,8,56,.62), rgba(18,8,56,0));
+  pointer-events:none;
+}
+
 .predictor-market-page .rke-stage-bg{
   position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
   /* 바닥이 화면 아래에 오도록 아래쪽을 살려 자른다 */
   object-position:center 68%;
+
+  /* 아주 느리게 표류한다. 무대는 사진이라 조금만 크게 움직여도 멀미가 난다 —
+     서비스 탭 배경(rk-sway 22s)과 같은 결로 둔다.
+     **1 보다 크게 키워 두고 움직인다.** 등배에서 밀면 가장자리에 무대 밖이 비친다. */
+  animation:rke-stage-drift 26s ease-in-out infinite;
+  will-change:transform;
+}
+@keyframes rke-stage-drift{
+  0%,100%{ transform:scale(1.05) translate3d(0,0,0); }
+  50%    { transform:scale(1.07) translate3d(-1.1%,-.7%,0); }
 }
 
 /* 왼쪽 판 — 단계·회차·판정일. 어두운 무대 위라 색을 토큰으로 못 쓴다(파일 머리말).
    시상대를 가운데에 두려고 흐름에서 뺐다. 폭을 220 으로 묶어 값 카드와 부딪히지 않는다. */
 .predictor-market-page .rke-stage-card{
+  /* **무대 왼쪽 끝에 붙인다.** 본문 시작선에 맞춰 안쪽으로 들이면 시상대와 부딪힌다 —
+     판이 (W-520)/2 선을 넘어서기 때문인데, 계산해 보면 본문 폭이 1024px 을 넘어야만
+     피할 수 있어 거의 모든 화면에서 겹친다. 화면 끝까지 깔린 사진의 모서리에 두는
+     쪽이 겹침 문턱(아래 1008px)도 그대로 살아 있다. */
   position:absolute; left:24px; top:22px; z-index:2;
   width:220px;
   padding:14px 16px; border-radius:16px;
@@ -126,6 +171,39 @@
    흐림 81px 이 그대로 높이가 되어 3등이 1등보다 높아졌다. 이제 세로비가
    1등 .64 > 2등 .50 > 3등 .42 라, 폭을 같게 두면 높이가 저절로 계단이 된다 */
 .predictor-market-page .rke-pod-block{ width:100%; height:auto; display:block; }
+
+/* ── 시상대 부유 ───────────────────────────────────────
+   캐릭터와 그 위 값 카드가 **한 덩어리로** 오르내린다. 둘이 따로 놀면 이름표가
+   주인을 놓친 것처럼 보인다. 같은 keyframes · 같은 길이 · 같은 delay 라 붙어 다닌다.
+
+   **받침은 고정이다.** 바닥까지 흔들면 올라선 것이 아니라 통째로 떠 있는 것이 된다.
+
+   셋의 시작 시각을 어긋나게 둔다(음수 delay 라 첫 프레임부터 각자 다른 위상이다).
+   같이 움직이면 군무가 되어 무대가 아니라 체조가 된다. */
+@keyframes rke-pod-float{
+  0%,100%{ transform:translateY(0); }
+  50%    { transform:translateY(-7px); }
+}
+.predictor-market-page .rke-pod-card,
+.predictor-market-page .rke-pod-char{
+  animation:rke-pod-float 4.2s ease-in-out infinite;
+  will-change:transform;
+}
+/* 1 등이 가장 크게·느리게 뜬다 — 주인공이라 눈이 먼저 간다 */
+.predictor-market-page .rke-pod.is-1 .rke-pod-card,
+.predictor-market-page .rke-pod.is-1 .rke-pod-char{ animation-duration:4.8s; animation-delay:0s; }
+.predictor-market-page .rke-pod.is-2 .rke-pod-card,
+.predictor-market-page .rke-pod.is-2 .rke-pod-char{ animation-duration:4.2s; animation-delay:-1.5s; }
+.predictor-market-page .rke-pod.is-3 .rke-pod-card,
+.predictor-market-page .rke-pod.is-3 .rke-pod-char{ animation-duration:4.5s; animation-delay:-2.8s; }
+
+/* 움직임을 줄여 달라고 한 사람에게는 전부 멈춘다. 이 화면에 애니메이션이
+   생겼으니 여기서 받아야 한다 — 파일에 원래 이 블록이 없었다 */
+@media (prefers-reduced-motion: reduce){
+  .predictor-market-page .rke-stage-bg,
+  .predictor-market-page .rke-pod-card,
+  .predictor-market-page .rke-pod-char{ animation:none; }
+}
 
 /* ── 내 순위 ─────────────────────────────────────────────
    정확도 탭의 .rk-me 와 같은 모양이다. 탭을 오갈 때 "내 자리" 가 옮겨 다니지 않는다. */
@@ -304,15 +382,33 @@
    줄면, 시상대 첫 칸(2등)이 244px 선 안쪽으로 들어오는 지점이 (W-520)/2 < 244,
    즉 W < 1008 이다.
 
-   **뷰포트 media query 가 아니라 container query 다**(2026-09-22 정정). 처음엔
-   `@media(max-width:1100px)` 로 고쳤는데, 그건 이 화면 폭이 창 폭과 같다고 잘못
-   가정한 것이었다 — `.rk-page .main-inner` 가 배경 그림의 빈 가운데에 맞추려고
-   폭을 `clamp(820px, ..., 1080px)` 로 따로 잡아 둔다(ranking.css). 그 결과 이
-   무대는 **창이 아무리 넓어도 820~1080px 사이에 갇히고**, 그 범위 대부분(1008 미만)이
-   바로 겹침 구간이다 — 실측해 보니 1920px 창에서도 실제 폭이 989px 로 나와 여전히
-   가려졌다. 그래서 `.rke`(위)에 `container-type:inline-size` 를 주고, 창이 아니라
-   **이 요소 자신의 렌더 폭**을 기준으로 접는다. */
-@container (max-width: 1007px){
+   **다시 뷰포트 media query 다**(2026-09-27). 한때 container query 였다 — 무대가
+   본문 폭(clamp 820~1080px)에 갇혀 있어서 창 폭으로는 판단할 수 없었기 때문이다
+   (2026-09-22). 이제 무대가 화면 끝에서 끝까지 깔려 **무대 폭 = 창 폭**이므로,
+   창을 재는 것이 곧 무대를 재는 것이다.
+
+   문턱 1008 은 그대로다. 판(24+220=244px)과 시상대(가운데, 최대 520px)가 같은
+   줄에 있을 때 시상대 첫 칸이 244px 선 안으로 들어오는 지점이 (W-520)/2 < 244,
+   즉 W < 1008 이다. 재는 대상만 바뀌고 산식은 같다. */
+/* 머리를 품는 보정. 겹침 분기와 같은 선(1008px)에서만 건다 — 그 아래에서는 소개글이
+   두 줄로 접혀 머리 높이가 달라지므로 고정값이 맞지 않는다. */
+@media (min-width: 1008px){
+  .predictor-market-page .rke-stage{
+    margin-top:calc(var(--rke-headpull) * -1);
+    padding-top:calc(22px + var(--rke-headpull));
+  }
+  /* 판도 같이 내린다. 무대가 통째로 올라갔으므로 top:22px 를 그대로 두면 판이
+     제목 자리에 앉아 글자를 가린다. 글자 받침(::before)도 같이 늘려 제목 뒤를 덮는다 */
+  .predictor-market-page .rke-stage-card{ top:calc(22px + var(--rke-headpull)); }
+  .predictor-market-page .rke-stage::before{ height:calc(240px + var(--rke-headpull)); }
+  /* 머리는 사진 위로 올라온다. 안 올리면 그림에 덮여 제목이 사라진다 */
+  .rk-page.is-event .rk-head{ position:relative; z-index:1; }
+  /* 어두운 무대 사진 위라 앱 토큰(흰 바탕 기준)을 못 쓴다 — 파일 머리말과 같은 이유 */
+  .rk-page.is-event .rk-head h1{ color:#fff; text-shadow:0 2px 12px rgba(20,10,60,.55); }
+  .rk-page.is-event .rk-head p{ color:rgba(255,255,255,.82); text-shadow:0 1px 8px rgba(20,10,60,.5); }
+}
+
+@media (max-width: 1007px){
   .predictor-market-page .rke-stage{
     flex-direction:column; align-items:flex-start; gap:12px; padding:20px 18px 0;
   }
