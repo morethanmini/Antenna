@@ -2,7 +2,7 @@
 
    상태는 전부 await 뒤에서 건드린다 — effect 안에서 동기 setState 를 하면
    렌더가 한 번 더 돈다. loading 을 세우는 건 사용자 조작(reload)에서만 한다. */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from './client'
 import type { ApiError } from './errors'
 
@@ -19,15 +19,21 @@ export function useApiQuery<T>(path: string, query?: Query) {
   // 쿼리 객체는 매 렌더 새로 만들어지므로 문자열로 굳혀 의존성에 넣는다
   const queryKey = JSON.stringify(query ?? {})
 
+  /* 응답이 늦게 온 이전 요청이 최신 결과를 덮지 않게 세대를 센다(useAsync 와 같은 규칙).
+     쿼리가 연달아 바뀌면 요청이 겹치는데, 응답은 보낸 순서대로 오지 않는다 —
+     모의투자 화면에서 day=0 의 빈 응답이 마지막에 도착해 기사를 지웠다(2026-09-27). */
+  const gen = useRef(0)
+
   const load = useCallback(async () => {
     // 바로 위에서 stringify 한 값이라 파싱이 실패할 수 없다.
     // try 밖에 두어 동기 예외가 setState 로 이어지지 않게 한다.
     const parsed = JSON.parse(queryKey) as Query
+    const mine = ++gen.current
     try {
       const data = await api.get<T>(path, { query: parsed })
-      setState({ data, loading: false, error: null })
+      if (mine === gen.current) setState({ data, loading: false, error: null })
     } catch (e) {
-      setState({ data: null, loading: false, error: e as ApiError })
+      if (mine === gen.current) setState({ data: null, loading: false, error: e as ApiError })
     }
   }, [path, queryKey])
 
