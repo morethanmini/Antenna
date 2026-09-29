@@ -24,6 +24,7 @@
    같은 사실(linked)이 로그인·세션 복원에서 읽는 /users/me 에 이미 실려 있고
    셸이 walletLinked 로 들고 있다. 한 번 더 물으면 요청만 늘고, 두 값이 어긋날
    때 어느 쪽이 참인지 화면이 판단해야 한다. */
+import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/context'
@@ -130,7 +131,7 @@ export default function OnboardingTour({ onClose }: Props) {
      읽으려면 튜토리얼을 닫는 수밖에 없었다(닫으면 다시 뜨지 않는다). */
   const back = useCallback(() => setAt((i) => Math.max(0, i - 1)), [])
 
-  return (
+  return createPortal(
     <div className="ob-backdrop">
       <div
         className="ob-modal" role="dialog" aria-modal="true" aria-labelledby="ob-title"
@@ -248,5 +249,7 @@ export default function OnboardingTour({ onClose }: Props) {
         </button>
       </div>
     </div>
+    ,
+    document.body,
   )
 }

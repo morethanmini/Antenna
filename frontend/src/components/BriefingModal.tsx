@@ -19,6 +19,7 @@
    (엔티티 주석 "서술 문단만 담는다") 빈 줄로 문단만 갈라 텍스트로 그린다.
    문단마다 무엇을 말하는지(지수·업종·종목·확인해 볼 점) 알아보고 모양을 달리하는 것은
    BriefingBody 가 맡는다 — 거기서도 글자를 나눠 감쌀 뿐이다. */
+import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useRef } from 'react'
 import BriefingBody from './BriefingBody'
 import ErrorState from './state/ErrorState'
@@ -61,7 +62,7 @@ export default function BriefingModal({ id, onClose }: Props) {
 
   const body = data?.body?.trim() ? paragraphs(data.body) : null
 
-  return (
+  return createPortal(
     /* 배경을 눌러 닫는다. 창 안쪽 클릭이 새어 나가지 않게 target 을 확인한다 */
     <div
       className="bf-backdrop"
@@ -123,5 +124,7 @@ export default function BriefingModal({ id, onClose }: Props) {
         </div>
       </div>
     </div>
+    ,
+    document.body,
   )
 }

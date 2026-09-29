@@ -17,6 +17,7 @@
    201 과 202 는 두 번째 단계의 뜻이 다르다. 201 은 커밋 해시를 받은 것이고,
    202 는 슬롯을 넘겨 소각으로 접수된 것이라 아직 예측 id 가 없다. 문구를 하나로
    합치지 않는다 — 사용자가 받은 것이 서로 다르다. */
+import { createPortal } from 'react-dom'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PROOF_STATUS_LABEL, fetchProof, isAnchorSettling } from '../../api/proof'
@@ -193,7 +194,7 @@ export default function CommitProgressModal({ phase, result, onClose }: Props) {
     },
   ]
 
-  return (
+  return createPortal(
     <div className="cp-backdrop">
       <div
         className="cp-modal" role="dialog" aria-modal="true" aria-labelledby="cp-title"
@@ -285,5 +286,7 @@ export default function CommitProgressModal({ phase, result, onClose }: Props) {
         )}
       </div>
     </div>
+    ,
+    document.body,
   )
 }

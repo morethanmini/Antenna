@@ -25,6 +25,7 @@
    구멍의 좌표는 상태로 들고 있지 않고 rAF 로 매 프레임 재서 달라졌을 때만 넣는다.
    스크롤·창 크기 변경 이벤트만 듣게 하면 부드러운 스크롤이 도는 동안 구멍이 뒤처져
    따라오고, 차트가 봉을 그리며 높이가 바뀌는 순간에는 아예 어긋난다. */
+import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { markPlayCoachClosed } from '../../sim/onboardingSeen'
 import '../../styles/screens/sim-coach.css'
@@ -261,7 +262,7 @@ export default function PlayCoachMarks({ onClose, lengthDays }: { onClose: () =>
 
   const spot = placeCard(hole, step.place ?? ['bottom', 'top', 'right', 'left'], cardH)
 
-  return (
+  return createPortal(
     <div className="spc" role="dialog" aria-modal="true" aria-labelledby="spc-title">
       {/* 뒤 화면을 눌리지 않게 막는 판. 음영은 구멍의 그림자가 내지만 그림자는
           클릭을 받지 않아서, 막는 일은 이 투명한 판이 따로 맡는다 */}
@@ -317,5 +318,7 @@ export default function PlayCoachMarks({ onClose, lengthDays }: { onClose: () =>
         </div>
       </div>
     </div>
+    ,
+    document.body,
   )
 }

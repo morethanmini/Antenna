@@ -17,6 +17,7 @@
    ── 포커스 가둠(focus trap)은 없다 ─────────────────────
    SubscribeModal·ConfirmDialog 와 같은 판단이다. Escape 로 언제나 닫히고, 창 안 요소가
    적어 Tab 이 새어 나가도 곧 돌아온다. */
+import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ABUSE_DETAIL_MAX, ABUSE_REASONS, ABUSE_REASON_LABEL, reportAbuse,
@@ -84,7 +85,7 @@ export default function AbuseReportModal({
   /* 이미 신고한 건이면 빨강이 아니라 알림으로 그린다 — 실패가 아니다 */
   const duplicated = error?.code === ERROR_CODE.DUPLICATE_REPORT
 
-  return (
+  return createPortal(
     <div className="ab-backdrop" onClick={close} role="presentation">
       <div
         className="ab-modal" role="dialog" aria-modal="true" aria-labelledby="ab-title"
@@ -171,6 +172,8 @@ export default function AbuseReportModal({
         )}
       </div>
     </div>
+    ,
+    document.body,
   )
 }
 

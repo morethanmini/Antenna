@@ -24,6 +24,7 @@
    왜 waiting 에서 닫기를 허용하는가
    결제는 체인에서 진행 중이고 화면이 붙어 있을 이유가 없다. 닫지 못하게 하면
    3분짜리 대기에 사용자를 묶어 둔다. 서명 중(signing)만 잠근다. */
+import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { subscribe, subscribeSigningPayload, type Channel } from '../../api/channels'
 import { ERROR_CODE, type ApiError } from '../../api/errors'
@@ -146,7 +147,7 @@ export default function SubscribeModal({ channel, onClose, onSubscribed, onNeedW
   const short = channel.fee !== null && !!balance
     && /^\d+$/.test(balance) && /^\d+$/.test(channel.fee) && BigInt(balance) < BigInt(channel.fee)
 
-  return (
+  return createPortal(
     <div className="sub-backdrop" onClick={close} role="presentation">
       <div
         className="sub-modal" role="dialog" aria-modal="true" aria-labelledby="sub-title"
@@ -260,6 +261,8 @@ export default function SubscribeModal({ channel, onClose, onSubscribed, onNeedW
         )}
       </div>
     </div>
+    ,
+    document.body,
   )
 }
 
