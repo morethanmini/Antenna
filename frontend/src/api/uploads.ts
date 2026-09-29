@@ -24,7 +24,7 @@ import { ApiError, CLIENT_ERROR_CODE, toApiError } from './errors'
 import { idempotencyKey, releaseIdempotencyKey } from './idempotency'
 
 /** 서버 UploadFile.Purpose 와 짝이다. 화면마다 무엇에 쓰는 그림인지 서버가 알아야 한다. */
-export const UPLOAD_PURPOSES = ['AD', 'REPORT', 'POST', 'PROFILE'] as const
+export const UPLOAD_PURPOSES = ['AD', 'REPORT', 'POST', 'PROFILE', 'BANNER'] as const
 export type UploadPurpose = (typeof UPLOAD_PURPOSES)[number]
 
 /** 서버 UploadResponse 와 짝이다. */
@@ -79,9 +79,16 @@ export type AspectRule = { ratio: number; tolerance: number }
 /** 프로필 사진은 정사각이다 — 동그랗게 잘라 그리므로 가로세로가 다르면 한쪽이 잘린다 */
 export const PROFILE_ASPECT: AspectRule = { ratio: 1, tolerance: 0.05 }
 
+/**
+ * 채널 배너는 3:1 이다. 채널 카드 머리에 넓게 깔리는 자리라 가로세로가 다르면
+ * 위아래가 잘리거나 카드 높이가 그림에 끌려간다 — 프로필을 정사각으로 받는 것과 같은 까닭이다.
+ */
+export const BANNER_ASPECT: AspectRule = { ratio: 3, tolerance: 0.05 }
+
 export const ASPECT_BY_PURPOSE: Partial<Record<UploadPurpose, AspectRule>> = {
   AD: AD_ASPECT,
   PROFILE: PROFILE_ASPECT,
+  BANNER: BANNER_ASPECT,
 }
 
 /**
@@ -96,6 +103,9 @@ export const ASPECT_BY_PURPOSE: Partial<Record<UploadPurpose, AspectRule>> = {
  */
 export const MAX_EDGE_BY_PURPOSE: Partial<Record<UploadPurpose, number>> = {
   PROFILE: 256,
+  /* 배너는 카드 폭만큼(700px 안팎) 그린다. 2배 화면을 셈해 1600 으로 둔다 —
+     프로필의 256 을 그대로 쓰면 넓은 자리에서 흐려진다 */
+  BANNER: 1600,
 }
 
 /* ── 로컬 검증 ─────────────────────────────────────────── */

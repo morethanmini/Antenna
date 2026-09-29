@@ -31,13 +31,51 @@
 .ch-preview.is-owner .ch-preview-btn{ border-color:var(--rule); color:var(--body); }
 .ch-preview.is-owner .ch-preview-btn:hover{ border-color:var(--brand-soft); color:var(--brand-ink); }
 
-/* ── 헤더 ────────────────────────────────────────────── */
+/* ── 머리 세 칸 ───────────────────────────────────────
+   채널 · 실적 · 구독을 나란히 둔다(2026-09-29 시안). 왼쪽이 넓은 것은 배너와 소개가
+   거기 들어가서다 — 가운데와 오른쪽은 숫자 셋과 버튼 하나뿐이라 좁아도 된다.
+   align-items 를 건드리지 않아 세 칸이 같은 높이로 선다(기본 stretch). */
+.ch-top{
+  display:grid;
+  grid-template-columns:minmax(0,1.9fr) minmax(0,1fr) minmax(0,1fr);
+  gap:12px; margin-bottom:18px;
+}
+
+/* ── 채널 칸 ─────────────────────────────────────────
+   배너가 맨 위에 넓게 깔리고, 그 아래 줄에 사진·이름·소개가 온다. 사진은 두 겹의
+   경계에 걸쳐 앉는다 — 시안이 그렇고, 그래야 배너와 아래 줄이 한 카드로 읽힌다. */
 .ch-head{
-  display:flex; align-items:flex-start; gap:15px;
-  padding:18px 20px; margin-bottom:12px;
+  display:flex; flex-direction:column;
+  padding:0; overflow:hidden;
   background:var(--surface); border:1px solid var(--rule); border-radius:12px;
 }
-.ch-avatar{ flex:0 0 auto; width:56px; height:56px; border-radius:999px; object-fit:cover; background:var(--surface-2); }
+/* **배너보다 앞이다.** 배너가 position:relative 라 자리를 잡은 겹이고, 자리 잡은 겹은
+   그냥 블록보다 나중에 그려진다 — 그대로 두면 위로 걸쳐 앉은 사진의 윗부분을 배너가 덮어
+   반달이 된다(실측). 이 줄도 자리를 잡아 순서를 되돌린다. */
+.ch-head-body{ position:relative; z-index:1; display:flex; align-items:flex-start; gap:15px; padding:0 20px 18px; }
+/* **위로 걸쳐 앉는다.** 배너 높이의 절반쯤 올라가도록 음수 마진을 준다. 테두리는 카드
+   바탕색이라 배너 위에서도 사진이 동그라미로 또렷하게 끊긴다. */
+.ch-avatar{
+  flex:0 0 auto; width:56px; height:56px; border-radius:999px; object-fit:cover;
+  margin-top:-28px; border:3px solid var(--surface); background:var(--surface-2);
+}
+/* 사진을 바꾸는 단추 묶음(.pa)도 같이 올라가야 사진과 한 덩어리로 움직인다 */
+.ch-head-body .pa{ margin-top:-28px; }
+.ch-head-body .pa .ch-avatar{ margin-top:0; }
+
+/* ── 배너 ────────────────────────────────────────────
+   3:1 로 받아(uploads.ts BANNER_ASPECT) 그대로 깐다. 비율을 aspect-ratio 로 못 박는 것은
+   그림이 늦게 뜰 때 카드가 덜컥 커지지 않게 하기 위해서다 — 자리를 먼저 잡아 둔다. */
+.ch-banner{ position:relative; aspect-ratio:3 / 1; background:var(--surface-2); }
+.ch-banner-img{ display:block; width:100%; height:100%; object-fit:cover; }
+/* 안 올렸을 때. 기본 그림을 두지 않는 까닭은 ChannelBanner 머리말에 있다 */
+.ch-banner.is-empty{
+  background:
+    linear-gradient(135deg, var(--brand-softer) 0%, var(--surface-2) 100%);
+}
+/* 단추는 배너 오른쪽 위에 띄운다. 그림 위라 자체 배경을 갖는다(.pa-btn 이 이미 갖고 있다) */
+.ch-banner-acts{ position:absolute; top:10px; right:12px; display:flex; gap:6px; }
+.ch-banner .pa-error{ position:absolute; left:12px; bottom:8px; margin:0; }
 .ch-id{ min-width:0; }
 
 /* ── ⋯ 메뉴 (M-06 신고 진입) ──────────────────────────
@@ -47,21 +85,26 @@
 .ch-menu-wrap{ margin-left:auto; }
 .ch-id h1{ margin:0; font-size:var(--fs-3xl); font-weight:var(--fw-heavy); color:var(--ink); letter-spacing:-.02em; }
 /* ── 실적 통계 — 세 개 고정 ──────────────────────────── */
+/* 셋을 **세로로** 쌓는다(2026-09-29 시안). 가로로 두면 좁은 칸에서 "판정 완료" 가
+   두 줄이 되고 숫자가 라벨보다 작아 보인다. 사이는 1px 틈이고 그 틈으로 판 색이 보인다. */
 .ch-stats{
-  display:grid; grid-template-columns:repeat(3, 1fr); gap:1px;
-  margin-bottom:12px;
+  display:grid; grid-template-rows:repeat(3, 1fr); gap:1px;
   background:var(--rule); border:1px solid var(--rule); border-radius:12px;
   overflow:hidden;
 }
-.ch-stats > div{ padding:13px 16px; background:var(--surface); }
+.ch-stats > div{
+  display:flex; flex-direction:column; justify-content:center;
+  padding:12px 16px; background:var(--surface);
+}
 .ch-stats dt{ font-size:var(--fs-xs); color:var(--muted); }
 .ch-stats dd{ margin:3px 0 0; font-size:var(--fs-3xl); font-weight:var(--fw-heavy); color:var(--ink); letter-spacing:-.02em; }
 
 /* ── 구독 카드 ───────────────────────────────────────── */
+/* 오른쪽 칸. 세 칸 줄에 들어오면서 가로 배치를 세로로 바꿨다 — 폭이 좁아
+   구독료와 버튼이 한 줄에 서면 둘 다 끼인다. */
 .ch-sub{
-  display:flex; align-items:center; justify-content:space-between;
-  flex-wrap:wrap; gap:14px;
-  padding:16px 20px; margin-bottom:18px;
+  display:flex; flex-direction:column; justify-content:center; gap:12px;
+  padding:16px 20px;
   border:1px solid var(--brand-soft); border-radius:12px;
   background:var(--brand-softer);
 }

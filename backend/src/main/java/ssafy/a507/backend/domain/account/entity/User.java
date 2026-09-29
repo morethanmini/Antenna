@@ -61,6 +61,13 @@ public class User {
     @Column(name = "avatar_file_id", length = 36)
     private String avatarFileId;
 
+    /**
+     * 채널 배너 그림. avatar_file_id 와 같은 규칙이다 — FK 를 걸지 않고, 파일이 지워졌으면
+     * 없는 것으로 그린다. NULL 이면 한 번도 올리지 않았다는 뜻이다.
+     */
+    @Column(name = "banner_file_id", length = 36)
+    private String bannerFileId;
+
     /** SSAFY WALLET 연동 주소. 소문자로 정규화하며 NULL이면 예측을 등록할 수 없다. */
     @Column(name = "wallet_address", unique = true, length = 42)
     private String walletAddress;
@@ -111,6 +118,11 @@ public class User {
      */
     public void changeAvatar(String fileId) {
         this.avatarFileId = fileId;
+    }
+
+    /** 배너도 같다 — 내 파일인지, 용도가 BANNER 인지는 서비스가 먼저 본다. */
+    public void changeBanner(String fileId) {
+        this.bannerFileId = fileId;
     }
 
     /** false 면 온보딩을 마치지 않은 회원이다. */

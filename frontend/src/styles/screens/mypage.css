@@ -28,7 +28,12 @@
 }
 /* 배너. solved.ac 는 사용자가 고른 배경 이미지이고, 우리는 그런 값이 없으므로
    브랜드 톤 띠 하나다. 높이는 아바타가 절반쯤 걸치도록 잡았다. */
-.mp-banner{
+/* 배너 자리. 그림을 올리면 ChannelBanner 가 그 자리를 채우고, 안 올렸으면 예전
+   그러데이션이 그대로 보인다. 높이를 못 박는 것은 이 화면의 머리 띠가 비율이 아니라
+   **높이**로 설계돼 있어서다 — 채널 카드(3:1)와 달리 여기서는 폭이 화면을 다 쓴다. */
+.mp-hero > .ch-banner{ aspect-ratio:auto; height:104px; }
+.mp-banner,
+.mp-hero > .ch-banner.is-empty{
   height:104px;
   background:linear-gradient(115deg,var(--brand-soft),var(--brand-softer));
 }
@@ -158,5 +163,6 @@
   .mp-hero-body{padding:0 18px 20px;gap:12px}
   .mp-avatar{width:84px;height:84px;margin-top:-42px}
   .mp-who{padding-top:12px}
-  .mp-banner{height:88px}
+  .mp-banner,
+  .mp-hero > .ch-banner{height:88px}
 }

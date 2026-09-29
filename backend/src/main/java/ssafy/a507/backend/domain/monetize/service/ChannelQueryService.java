@@ -63,6 +63,7 @@ public class ChannelQueryService {
                 user.getId(),
                 user.getNickname(),
                 avatarUrls.of(user),
+                avatarUrls.bannerOf(user),
                 user.getIntroduce(),
                 interests.findByUserIdOrderByIdAsc(userId).stream()
                         .map(UserInterest::getSector)

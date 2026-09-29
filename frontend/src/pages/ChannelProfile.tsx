@@ -33,6 +33,7 @@ import { formatToken } from '../api/wallet'
 import PredictionCard from '../components/prediction/PredictionCard'
 import ChannelProfileEdit from '../components/channel/ChannelProfileEdit'
 import ProfileAvatar from '../components/channel/ProfileAvatar'
+import ChannelBanner from '../components/channel/ChannelBanner'
 import PredictionNote from '../components/channel/PredictionNote'
 import SubscribeModal from '../components/channel/SubscribeModal'
 import AbuseMenu from '../components/report/AbuseMenu'
@@ -175,8 +176,16 @@ export default function ChannelProfile() {
               </p>
             )}
 
-            {/* ── 채널 헤더 ─────────────────────────────── */}
+            {/* ── 채널 머리 세 칸 ────────────────────────
+                왼쪽에 채널(배너·사진·이름·소개), 가운데에 실적, 오른쪽에 구독을 나란히 둔다
+                (2026-09-29 시안). 전에는 셋이 세로로 쌓여 화면 한 장을 다 먹었고 정작
+                목록은 스크롤을 내려야 나왔다. 셋 다 짧은 묶음이라 나란히 선다. */}
+            <div className="ch-top">
             <header className="ch-head">
+              {/* 배너는 카드 맨 위에 넓게 깔린다. 안 올렸으면 빈 자리이고, 내 채널이면
+                  그 자리에서 바로 올린다 — 설정으로 보내면 자기 채널을 보다 말고 나가야 한다. */}
+              <ChannelBanner src={channel.bannerUrl} isMe={owner} onSaved={ch.reload} />
+              <div className="ch-head-body">
               {/* 사진은 값들과 다른 자리에 있어 ChannelProfileEdit 밖이다(ProfileAvatar 머리말).
                   안 올렸으면 서버가 null 을 주고 컴포넌트가 기본 그림을 쓴다 — 여기서 &&
                   로 감싸면 사진 없는 사람은 바꾸는 자리까지 사라진다. */}
@@ -213,6 +222,7 @@ export default function ChannelProfile() {
                   menuLabel="채널 메뉴"
                 />
               )}
+              </div>
             </header>
 
             {/* ── 실적 통계 — 세 개 고정 ────────────────── */}
@@ -321,6 +331,7 @@ export default function ChannelProfile() {
                 )}
               </section>
             )}
+            </div>
 
             {subscribing && (
               <SubscribeModal
