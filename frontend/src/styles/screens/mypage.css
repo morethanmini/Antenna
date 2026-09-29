@@ -48,7 +48,9 @@
 .mp-hero-body{position:relative;z-index:1;display:flex;flex-wrap:wrap;align-items:flex-start;gap:20px 36px;padding:0 28px 28px}
 /* 경계에 걸터앉는다 — 배너 높이의 절반쯤 위로 올린다 */
 .mp-avatar{
-  width:104px;height:104px;flex:none;margin-top:-52px;border-radius:50%;
+  /* 반(52px)을 올리면 선이 정확히 원 중앙이다. 42px 만 올려 한 단 위를 지나게 한다
+     — 채널 카드(.ch-avatar)와 같은 값의 비율이다(원 높이의 40%). */
+  width:104px;height:104px;flex:none;margin-top:-42px;border-radius:50%;
   object-fit:cover;background:var(--brand-soft);
   box-shadow:0 0 0 4px var(--surface);
 }
@@ -165,7 +167,7 @@
 
 @media(max-width:760px){
   .mp-hero-body{padding:0 18px 20px;gap:12px}
-  .mp-avatar{width:84px;height:84px;margin-top:-42px}
+  .mp-avatar{width:84px;height:84px;margin-top:-34px}
   .mp-who{padding-top:12px}
   .mp-banner,
   .mp-hero > .ch-banner{height:88px}
