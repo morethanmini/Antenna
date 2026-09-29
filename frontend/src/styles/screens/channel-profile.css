@@ -67,7 +67,10 @@
    3:1 로 받아(uploads.ts BANNER_ASPECT) 그대로 깐다. 비율을 aspect-ratio 로 못 박는 것은
    그림이 늦게 뜰 때 카드가 덜컥 커지지 않게 하기 위해서다 — 자리를 먼저 잡아 둔다. */
 .ch-banner{ position:relative; aspect-ratio:3 / 1; background:var(--surface-2); }
-.ch-banner-img{ display:block; width:100%; height:100%; object-fit:cover; }
+/* **그림을 흐름에서 뺀다.** 흐름에 두면 height:100% 가 auto 로 풀려 그림이 제 비율대로
+   높이를 차지하고, 그 높이가 위 aspect-ratio 를 이긴다 — 1.78:1 짜리 그림을 걸었더니 띠가
+   368px 이 됐다(실측, 3:1 이면 218px). 자리에서 빼면 높이는 상자가 정한다. */
+.ch-banner-img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 /* 안 올렸을 때. 기본 그림을 두지 않는 까닭은 ChannelBanner 머리말에 있다 */
 .ch-banner.is-empty{
   background:
