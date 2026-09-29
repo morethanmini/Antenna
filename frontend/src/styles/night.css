@@ -301,8 +301,36 @@ body.is-night .st-block,
 body.is-night .mp-hero,
 body.is-night .mp-score-card,
 body.is-night .wallet-card,
-body.is-night .wallet-ledger{
+body.is-night .wallet-ledger,
+/* 채널 프로필(E-02, 2026-09-29). 머리 · 통계 세 칸 · 구독 띠 · 백테스트 판,
+   그리고 예측 줄(.pc)까지 같은 유리다 — 이 화면은 판이 곧 목록이라 줄만 불투명하게
+   남기면 유리 판 위에 불투명 타일이 쌓여 결이 갈린다.
+   고른 칸(.ch-tabs)은 캡슐이라 위 주석대로 불투명하게 둔다. */
+body.is-panel .ch-head,
+body.is-panel .ch-stats > div,
+body.is-panel .ch-sub,
+body.is-panel .ch-backtest{
   background:var(--glass-panel);
+  -webkit-backdrop-filter:var(--glass-blur);
+  backdrop-filter:var(--glass-blur);
+}
+
+/* 목록에 들어가는 줄(.pc 예측 · .rp-card 리포트)만 한 단 진하다 —
+   **확정 기록 목록(.lg-board)과 같은 .62 다.**
+   같은 까닭이다: 줄이 빽빽해 사진이 글자 사이로 올라온다. .5 로 두고 판을 감춰
+   날것의 배경을 재 보면, 목록이 도시 불빛 위를 지나는 자리에서 종목코드(.pc-stock em)가
+   3.79 까지 내려갔다(기준 4.5). 위쪽 성긴 판 넷은 .5 에서 5.53 이라 그대로 둔다.
+
+   .lg-board 처럼 여기도 숫자를 적는다 — --glass-panel 을 따라가면 안 되는 자리라
+   이름을 공유하면 조용히 같이 내려간다. */
+/* 종목코드(.pc-stock em)는 --faint 11.5px 라 이 판에서 가장 약한 글자다. 판을
+   .62 로 올려도 3.90 이라 기준에 못 미쳐, 확정 기록 주석이 적어 둔 그 길로 간다 —
+   "더 내리려면 종목코드 색부터 올려야 한다". 한 단 위(--muted)로 올린다.
+   **--faint 토큰 자체는 안 건드린다** — 흐린 글자로 쓰는 다른 자리까지 같이 진해진다. */
+body.is-panel .pc-stock em{ color:var(--muted); }
+body.is-panel .pc,
+body.is-panel .rp-card{
+  background:rgba(16,14,40,.62);
   -webkit-backdrop-filter:var(--glass-blur);
   backdrop-filter:var(--glass-blur);
 }
