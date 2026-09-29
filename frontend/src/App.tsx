@@ -34,6 +34,12 @@ function Page({ meta }: { meta: PageMeta }) {
      같은 키가 '투자 포트폴리오' 라 엉뚱한 메뉴에 불이 들어간다. */
   const nav = params.get('event') || mode !== meta.mode ? '' : (meta.nav ?? 'home')
 
+  /* 이벤트 랭킹(/rankings?tab=event)은 무대 사진이 상단바 밑까지 올라온다. 밝은 바를 두면
+     사진 위에 흰 띠가 떠서 다른 밤 화면(종목 탐색 등)과 상단바가 달라 보였다(2026-09-29).
+     is-night 를 더하면 night.css 가 바를 비치는 어두운 유리로 칠하고 Layout 이 로고를 갈아 끼운다.
+     본문 배경은 이 화면의 .rk-sky 가 덮으므로 그대로다. */
+  const bodyClass = [meta.bodyClass, meta.nightWhen?.(params) && 'is-night'].filter(Boolean).join(' ')
+
   useEffect(() => {
     document.title = `${meta.title} · ANTENNA`
     if (mode) document.body.dataset.mode = mode
@@ -59,7 +65,7 @@ function Page({ meta }: { meta: PageMeta }) {
   )
 
   return mode
-    ? <Layout mode={mode} nav={nav} bodyClass={meta.bodyClass ?? ''}>{body}</Layout>
+    ? <Layout mode={mode} nav={nav} bodyClass={bodyClass}>{body}</Layout>
     : body
 }
 
