@@ -1,6 +1,12 @@
 /* F-02 리포트 상세 — [ANT-FE-REPORT-DETAIL]
    색·간격은 app.css 의 토큰만 쓴다. */
 
+/* 읽기 폭. 뒤로가기·카드·댓글을 한 폭으로 묶는다 — 카드만 좁히면 댓글과 가장자리가 어긋난다.
+   목차가 있으면 본문 약 710px + 목차 200px, 없으면 본문만 약 790px 이 되게 잡았다.
+   한글 본문은 한 줄 40~50자를 넘기면 다음 줄 첫머리를 놓친다. */
+.main-inner.rd-page{ max-width:1080px; }
+.main-inner.rd-page.no-toc{ max-width:880px; }
+
 .rd-back{
   display:inline-flex; align-items:center; gap:5px;
   margin-bottom:14px;
@@ -77,6 +83,45 @@
    남겨 두면 문단 사이 빈 줄이 두 번 세어져 간격이 벌어진다. */
 .rd-body{
   font-size:var(--fs-xl); line-height:1.85; color:var(--body);
+}
+
+/* 본문 + 목차. 좁은 화면에서는 목차를 걷고 본문만 남긴다 — 옆에 둘 자리가 없고,
+   위에 두면 본문이 한 화면 아래로 밀린다 */
+.rd-layout.has-toc{
+  display:grid; grid-template-columns:minmax(0,1fr) 200px; gap:48px;
+  align-items:start;
+}
+.rd-toc{
+  position:sticky; top:calc(var(--topbar-h) + 20px);
+  max-height:calc(100vh - var(--topbar-h) - 40px); overflow-y:auto;
+  padding-left:14px; border-left:1px solid var(--rule);
+}
+.rd-toc-title{
+  margin:0 0 8px;
+  font-size:var(--fs-sm); font-weight:var(--fw-bold); color:var(--faint);
+  letter-spacing:.04em;
+}
+.rd-toc ol{ list-style:none; margin:0; padding:0; }
+.rd-toc li{ margin:0; }
+.rd-toc a{
+  padding:5px 0 5px 10px; margin-left:-15px;
+  border-left:2px solid transparent;
+  font-size:var(--fs-base); line-height:1.5; color:var(--muted);
+  text-decoration:none;
+  /* 본문 첫 제목이 리포트 제목만큼 길 때가 많다. 목차는 길잡이라 두 줄에서 자른다 */
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden;
+}
+.rd-toc li.is-sub a{ padding-left:22px; font-size:var(--fs-md); }
+.rd-toc a:hover{ color:var(--ink); }
+/* 지금 읽는 섹션. 세로선 위에 브랜드색 막대를 겹쳐 목차 어디쯤인지 보이게 한다 */
+.rd-toc a.is-active{
+  border-left-color:var(--brand); color:var(--brand-ink); font-weight:var(--fw-bold);
+}
+
+@media (max-width: 1099px){
+  .rd-layout.has-toc{ display:block; }
+  .rd-toc{ display:none; }
+  .main-inner.rd-page{ max-width:880px; }
 }
 
 /* 검산 진입점. 버튼처럼 크게 두지 않는다 — 본문을 읽은 뒤의 다음 걸음이지

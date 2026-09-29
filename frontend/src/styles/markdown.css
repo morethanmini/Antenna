@@ -17,10 +17,17 @@
   margin:1.6em 0 .6em;
   line-height:1.4; font-weight:var(--fw-bold); color:var(--ink);
 }
-.md h1{ font-size:1.25em; }
-.md h2{ font-size:1.15em; }
-.md h3{ font-size:1.05em; }
+.md h1{ font-size:1.3em; }
+.md h2{ font-size:1.2em; }
+.md h3{ font-size:1.06em; }
 .md h4{ font-size:1em; }
+/* 큰 제목(h1·h2)은 새 섹션의 시작이다. 위에 선을 긋고 크게 띄워 한 덩어리 줄글로
+   이어 붙지 않게 한다. 첫 제목에는 긋지 않는다 — 카드 머리 아래 선이 이미 있다 */
+.md h1:not(:first-child), .md h2:not(:first-child){
+  margin-top:2.2em; padding-top:1.1em; border-top:1px solid var(--rule);
+}
+/* 목차로 뛰었을 때 제목이 네비바 밑에 숨지 않게 */
+.md h1, .md h2, .md h3, .md h4{ scroll-margin-top:calc(var(--topbar-h) + 16px); }
 
 .md ul, .md ol{ margin:0 0 1em; padding-left:1.4em; }
 .md li{ margin:.25em 0; }
@@ -29,11 +36,16 @@
 .md a{ color:var(--brand-ink); text-decoration:underline; text-underline-offset:2px; }
 .md a:hover{ color:var(--brand); }
 
+/* 인용은 이 서비스에서 대개 "한 줄 요약" 이다. 흐린 회색으로 두면 글에서 가장 중요한 줄이
+   가장 약해 보여서, 연보라 판 위에 본문 색으로 올린다 */
 .md blockquote{
-  margin:0 0 1em; padding:.1em 0 .1em 1em;
-  border-left:3px solid var(--brand-soft);
-  color:var(--muted);
+  margin:0 0 1.2em; padding:.85em 1.1em;
+  border-left:3px solid var(--brand); border-radius:0 9px 9px 0;
+  background:var(--brand-soft);
+  color:var(--body);
 }
+.md blockquote > :last-child{ margin-bottom:0; }
+.md blockquote strong{ color:var(--brand-ink); }
 
 .md code{
   font-family:var(--mono); font-size:.88em;
@@ -50,11 +62,133 @@
 
 .md hr{ margin:1.6em 0; border:0; border-top:1px solid var(--rule); }
 
-/* 표는 좁은 화면에서 본문을 밀어내므로 제 상자 안에서만 가로 스크롤한다 */
-.md-table-wrap{ margin:0 0 1em; overflow-x:auto; }
-.md table{ border-collapse:collapse; width:100%; font-size:.94em; }
-.md th, .md td{ border:1px solid var(--rule); padding:7px 10px; text-align:left; }
-.md th{ background:var(--surface-2); font-weight:var(--fw-bold); color:var(--ink); }
+/* 표는 좁은 화면에서 본문을 밀어내므로 제 상자 안에서만 가로 스크롤한다.
+   격자선은 걷고 줄 구분선만 둔다 — 칸마다 테두리를 두르면 숫자보다 선이 먼저 보인다.
+   바깥 테두리와 둥근 모서리는 상자(wrap)가 맡는다 */
+.md-table-wrap{
+  margin:0 0 1.2em; overflow-x:auto;
+  border:1px solid var(--rule); border-radius:10px;
+}
+.md table{
+  border-collapse:collapse; width:100%; font-size:.92em;
+  font-variant-numeric:tabular-nums;   /* 자릿수가 세로로 맞는다 */
+}
+.md th, .md td{ padding:9px 14px; text-align:left; border-bottom:1px solid var(--rule); }
+.md tr:last-child td{ border-bottom:0; }
+.md th{
+  background:var(--surface-2);
+  font-size:.92em; font-weight:var(--fw-bold); color:var(--muted);
+  white-space:nowrap;
+}
+.md tbody tr:hover td{ background:var(--surface-2); }
+/* rehypeReport 가 붙인다. 숫자 열은 오른쪽 정렬, 등락은 국내 관례 색 */
+.md th.is-num, .md td.is-num{ text-align:right; white-space:nowrap; }
+.md th.is-short, .md td.is-short{ white-space:nowrap; }   /* 32.45M 이 32.45 / M 으로 쪼개지지 않게 */
+.md td.is-up{ color:var(--up); }
+.md td.is-down{ color:var(--down); }
+/* 2열 표는 대개 "항목 | 내용" 요약표다. 왼쪽 칸은 이름표라 좁게·흐리게 두고
+   내용이 폭을 가져간다 — 반반 나누면 이름표 칸이 절반을 비워 둔다 */
+.md table:has(tr > :nth-child(2):last-child) td:first-child{
+  width:1%; white-space:nowrap; padding-right:28px;
+  color:var(--muted);
+}
+
+/* ───────── 거래량 차트 (blocks.tsx VolumeChart) ───────── */
+.md-vchart{
+  position:relative; margin:0 0 1.2em; padding:14px 14px 10px;
+  border:1px solid var(--rule); border-radius:12px;
+}
+.md-vchart svg{ display:block; overflow:visible; }
+.vc-band{ fill:var(--brand-soft); }
+.vc-band-note{ fill:var(--brand-ink); font-size:11.5px; font-weight:var(--fw-bold); }
+.vc-base{ stroke:var(--rule); }
+.vc-bar{ fill:var(--faint); transition:opacity .12s; }
+.vc-bar.is-up{ fill:var(--up); opacity:.78; }
+.vc-bar.is-down{ fill:var(--down); opacity:.72; }
+.vc-bar.is-hover{ opacity:1; }
+.vc-x{ fill:var(--faint); font-size:10.5px; font-variant-numeric:tabular-nums; }
+.vc-x.has-note{ fill:var(--ink); font-weight:var(--fw-bold); }
+.vc-note line{ stroke:var(--brand); stroke-width:1; }
+.vc-note text{ fill:var(--brand-ink); font-size:11.5px; font-weight:var(--fw-bold); }
+.vc-hit{ fill:transparent; cursor:default; }
+.vc-avg{ stroke:var(--muted); stroke-width:1; stroke-dasharray:4 4; }
+.vc-legend{
+  display:flex; flex-wrap:wrap; gap:14px; margin-top:6px;
+  font-size:11.5px; color:var(--muted);
+}
+.vc-legend span{ display:inline-flex; align-items:center; gap:5px; }
+.vc-legend i{ width:9px; height:9px; border-radius:2px; background:var(--faint); }
+.vc-legend i.is-up{ background:var(--up); opacity:.78; }
+.vc-legend i.is-down{ background:var(--down); opacity:.72; }
+.vc-read{ margin-left:auto; display:inline-flex; gap:7px; align-items:baseline; font-variant-numeric:tabular-nums; color:var(--body); }
+.vc-read b{ color:var(--ink); }
+.vc-read em{ font-style:normal; }
+.vc-read .is-up{ color:var(--up); }
+.vc-read .is-down{ color:var(--down); }
+.vc-read-hint{ color:var(--faint); }
+/* 터치 화면에는 마우스가 없다 */
+@media (hover: none){ .vc-read-hint{ display:none; } }
+.vc-legend i.is-avg{ width:14px; height:0; border-radius:0; background:none; border-top:1px dashed var(--muted); }
+
+/* ───────── 요약 카드 (blocks.tsx ReportSummary) ───────── */
+.md-summary{
+  margin:0 0 1.4em; padding:16px;
+  border:1px solid var(--rule); border-radius:12px;
+  background:var(--surface-2);
+}
+.ms-grid{
+  display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px;
+  margin:0;
+}
+.ms-tile{
+  margin:0; padding:12px 14px;
+  border-radius:10px; background:var(--surface);
+  border:1px solid var(--rule);
+}
+.ms-tile dt{ margin:0 0 4px; font-size:.8em; color:var(--muted); font-weight:var(--fw-bold); }
+.ms-tile dd{ margin:0; display:flex; flex-direction:column; gap:2px; }
+.ms-main{ font-size:1.02em; font-weight:var(--fw-bold); color:var(--ink); line-height:1.45; font-variant-numeric:tabular-nums; }
+.ms-sub{ font-size:.8em; color:var(--muted); line-height:1.45; }
+.ms-badge{
+  align-self:flex-start; padding:3px 10px; border-radius:999px;
+  font-size:.92em; font-weight:var(--fw-bold);
+  background:var(--surface-2); color:var(--body);
+}
+.ms-badge.is-up{ background:var(--up-soft); color:var(--up); }
+.ms-badge.is-down{ background:var(--down-soft); color:var(--down); }
+
+/* 가격 위치 막대: 지지 ─ 현재 ─ 저항 */
+.ms-gauge{ margin-top:14px; padding:14px 14px 6px; border-radius:10px; background:var(--surface); border:1px solid var(--rule); }
+.mg-track{ position:relative; height:6px; margin:0; border-radius:3px; background:var(--surface-2); }
+.mg-range{ position:absolute; top:0; height:100%; border-radius:3px; background:linear-gradient(90deg, var(--down-soft), var(--up-soft)); }
+.mg-pin{ position:absolute; top:50%; width:2px; height:14px; transform:translate(-50%,-50%); background:var(--faint); }
+.mg-pin.is-lo{ background:var(--down); }
+.mg-pin.is-hi{ background:var(--up); }
+.mg-now{
+  position:absolute; top:50%; width:14px; height:14px; transform:translate(-50%,-50%);
+  border-radius:50%; background:var(--brand); border:3px solid var(--surface);
+  box-shadow:0 0 0 1px var(--brand);
+}
+.mg-labels{ position:relative; height:78px; margin-top:8px; }
+.mg-labels.is-top{ height:34px; margin:0 0 4px; }
+.mg-labels.is-top span{ flex-direction:row; gap:6px; align-items:baseline; }
+.mg-labels span{
+  position:absolute; top:0; transform:translateX(-50%);
+  display:flex; flex-direction:column; align-items:center;
+  font-size:.82em; color:var(--body); white-space:nowrap; font-variant-numeric:tabular-nums;
+}
+.mg-labels b{ font-size:.9em; color:var(--muted); }
+.mg-labels strong{ font-weight:var(--fw-bold); color:var(--ink); }
+.mg-labels em{ font-style:normal; font-size:.9em; font-weight:var(--fw-bold); }
+.mg-labels small{ font-size:.85em; color:var(--muted); }
+/* 양끝 이름표는 가운데 정렬하면 상자 밖으로 나간다. 핀에서 안쪽으로 자라게 붙인다 */
+.mg-labels .is-lo{ transform:translateX(-10px); align-items:flex-start; }
+.mg-labels .is-hi{ transform:translateX(calc(-100% + 10px)); align-items:flex-end; }
+.mg-labels .is-lo em{ color:var(--down); }
+.mg-labels .is-hi em{ color:var(--up); }
+.mg-labels .is-now{ color:var(--brand-ink); font-weight:var(--fw-bold); }
+.ms-main{ overflow-wrap:normal; word-break:keep-all; }
+.mg-labels .is-now b{ color:var(--brand-ink); }
 
 /* 본문 이미지. 원본이 크더라도 폭을 넘지 않게 하고, 비율은 그대로 둔다 */
 .md-img{
