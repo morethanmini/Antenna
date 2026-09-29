@@ -331,7 +331,23 @@ body.is-panel .wallet-filters button:hover,
 body.is-panel .wallet-filters button.on,
 body.is-panel .wallet-more:hover,
 body.is-panel .cf-pending,
-body.is-panel .cf-soon{ color:#cbbcff; }
+body.is-panel .cf-soon,
+/* 채널 프로필(E-02)이 2026-09-29 에 이 테마로 들어왔다. 고른 칸·미리보기 띠가
+   --brand-ink 를 글자로 쓰는 자리다 — 켜진 칸은 어두운 판(#231d4d) 위에서 2.14 였다. */
+body.is-panel .ch-tabs button[aria-selected="true"],
+body.is-panel .ch-preview,
+body.is-panel .ch-preview-btn,
+body.is-panel .ch-sub-link{ color:#cbbcff; }
+
+/* 예측 방향 칩(.pc-dir, prediction-card.css). 낮에는 **연한 판에 진한 글자**라
+   판 색이 #fdeceb · #e9f0ff 로 박혀 있는데, 밤 판 위에서는 --up/--down 이 밝은
+   쪽으로 바뀌어 연한 판에 밝은 글자가 된다(상승 2.43 · 하락 2.09).
+
+   판을 낮 색으로 되돌리는 대신 **밤 결로 바꾼다** — 같은 색을 옅게 깐 판에 밝은
+   글자다. 이 화면의 다른 칩(적중·빗나감)과 결이 같고, --ok-soft 가 이미 쓰는 방식이다.
+   알파는 .12 다. .16 이면 상승이 4.47 로 기준(4.5) 바로 아래다. */
+body.is-panel .pc-dir.is-up{ background:rgba(255,107,107,.12); }
+body.is-panel .pc-dir.is-down{ background:rgba(122,167,255,.12); }
 
 /* ── 흰 판으로 두는 화면들 ────────────────────────────────
    시즌 진행(G-04) · 매매일지(G-06) · 결과(G-08) · 기록(G-09). 넷 다 is-glass 를

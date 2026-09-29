@@ -123,7 +123,7 @@ export const ROUTES: PageMeta[] = [
      ⚠ **그 G-07 이 빈 자리표시자였고 2026-09-17 에 지웠다.** 그래서 지금은 모의투자
      순위를 볼 화면이 하나도 없다. 순위를 되살려야 한다면 여기가 아니라 그 결정부터
      다시 봐야 한다. 실전 랭킹(/rankings)은 그대로다. */
-  { screen: 'E-02', element: ChannelProfile, path: '/channels/:userId', title: '채널 프로필', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'is-night', story: 'ANT-FE-CHANNEL-PROFILE' },
+  { screen: 'E-02', element: ChannelProfile, path: '/channels/:userId', title: '채널 프로필', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'is-night is-panel', story: 'ANT-FE-CHANNEL-PROFILE' },
   { screen: 'E-03', element: SubscriptionList, path: '/me/subscriptions', title: '내 구독', access: 'user', mode: 'insight', nav: 'portfolio', bodyClass: 'is-night', story: 'ANT-FE-SUBSCRIPTION-LIST' },
   { screen: 'E-04', element: ChannelFee, path: '/me/channel', title: '내 채널 설정', access: 'user', mode: 'insight', nav: 'portfolio', bodyClass: 'is-night', story: 'ANT-FE-CHANNEL-FEE' },
   /* nav 가 사이드바 어느 키와도 겹치지 않는다 — 마이페이지는 사이드바가 아니라 상단
