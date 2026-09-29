@@ -143,7 +143,8 @@ class UploadControllerTest {
     @Test
     @DisplayName("purpose 가 어휘에 없으면 400 INVALID_REQUEST")
     void 잘못된_purpose() throws Exception {
-        mockMvc.perform(upload(TestImages.png(400, 100), "BANNER", "key-purpose"))
+        // 실재할 법한 이름(BANNER 등)을 쓰면 그 용도가 생기는 날 이 테스트가 깨진다 — 실제로 한 번 깨졌다
+        mockMvc.perform(upload(TestImages.png(400, 100), "NOT_A_PURPOSE", "key-purpose"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
                 .andExpect(jsonPath("$.field").value("purpose"));
