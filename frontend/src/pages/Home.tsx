@@ -533,12 +533,20 @@ function Sponsored() {
                    09-17 에 그림을 빼고 프리셋 문구만 남겼더니 광고가 걸려도 우리 홍보 문구만
                    보여 "신청이 안 들어온 것" 처럼 읽혔다.
 
-                   카드는 옆 히어로 높이에 맞춰 늘어나서 비율이 화면 폭마다 다르다. 그림은
-                   업로드 비율(8:5) 그대로 가운데에 두고, 남는 자리는 카드 바탕이 채운다(home.css).
+                   카드는 옆 히어로 높이에 맞춰 늘어나서 **비율이 창 크기마다 다르다** —
+                   같은 폭에서도 창 높이만 바뀌면 1.01 ~ 2.47 사이를 오간다(실측). 업로드는
+                   8:5 한 가지라 어느 비율로 잘라 두든 어딘가는 남는다.
+
+                   그래서 **같은 그림을 두 장 건다.** 뒤의 것은 칸을 넘치게 채우고 흐리게
+                   뭉개 바탕이 되고(hm-showcase-ad-back), 앞의 것은 잘리지 않고 통째로
+                   앉는다. 광고주 그림을 자르지 않으면서 검은 띠도 안 남는다.
+                   같은 주소라 그림은 한 번만 받아 온다.
+
                    문구 필드가 없어 대체 텍스트는 줄 게 없다 — 링크에 이름을 따로 붙인다. */
                 <Link className="hm-showcase-slide hm-showcase-ad" key={it.id} to={it.linkUrl}
                       aria-hidden={i !== index} aria-label={`${i + 1}번째 광고 열기`}
                       tabIndex={i === index ? undefined : -1}>
+                  <img className="hm-showcase-ad-back" src={it.imageUrl} alt="" aria-hidden="true" />
                   <img src={it.imageUrl} alt="" />
                 </Link>
               ))}
