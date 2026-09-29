@@ -16,8 +16,11 @@
 
    본문을 innerHTML 로 넣지 않는다
    body 는 LLM 이 만든 문자열이다. 서버가 마크다운도 HTML 도 아니라고 했으므로
-   (엔티티 주석 "서술 문단만 담는다") 빈 줄로 문단만 갈라 텍스트로 그린다. */
+   (엔티티 주석 "서술 문단만 담는다") 빈 줄로 문단만 갈라 텍스트로 그린다.
+   문단마다 무엇을 말하는지(지수·업종·종목·확인해 볼 점) 알아보고 모양을 달리하는 것은
+   BriefingBody 가 맡는다 — 거기서도 글자를 나눠 감쌀 뿐이다. */
 import { useCallback, useEffect, useRef } from 'react'
+import BriefingBody from './BriefingBody'
 import ErrorState from './state/ErrorState'
 import SnapshotStamp from './SnapshotStamp'
 import { getBriefing } from '../api/briefings'
@@ -103,7 +106,7 @@ export default function BriefingModal({ id, onClose }: Props) {
 
               {body ? (
                 <div className="bf-text">
-                  {body.map((p, i) => <p key={i}>{p}</p>)}
+                  <BriefingBody paragraphs={body} />
                 </div>
               ) : (
                 /* body 는 엔티티에서 nullable 이다. 빈 문단을 지어내지 않는다 */
