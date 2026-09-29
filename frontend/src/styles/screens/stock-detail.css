@@ -532,8 +532,37 @@
   cursor:pointer;transition:border-color .14s,background .14s,box-shadow .14s;
 }
 .stock-detail-page .sd-point:hover{border-color:#c8ccdd}
-.stock-detail-page .sd-point.is-on{border-color:var(--brand);background:var(--brand-softer)}
-.stock-detail-page .sd-point input{margin:1px 0 0;flex:none;align-self:flex-start;accent-color:var(--brand)}
+/* 고른 칸(2026-09-29). 테두리 색만 바꾸던 때는 열 판 색(연빨강·연파랑) 위에서 연보라 채움이
+   묻혀 무엇을 골랐는지 훑어서는 안 보였다. 흰 바탕은 그대로 두고 **테두리를 굵게 · 살짝 띄우고 ·
+   고른 순서 번호**를 단다. 번호는 예측 근거로 넘어가는 차례와 같다 */
+.stock-detail-page .sd-point.is-on{
+  border-color:var(--brand);box-shadow:0 0 0 1px var(--brand), 0 8px 18px -12px rgba(91,77,224,.7);
+  transform:translateY(-1px);
+}
+.stock-detail-page .sd-point.is-on .sd-point-body{color:var(--ink)}
+/* 칸 안 오른쪽 위. 칸 밖 모서리에 걸면 스크롤 상자(예측 등록 창) 안에서 잘린다 */
+.stock-detail-page .sd-point-order{
+  flex:none;align-self:flex-start;margin-left:auto;
+  display:grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;
+  background:var(--brand);color:#fff;font-size:var(--fs-xs);font-weight:var(--fw-heavy);line-height:1;
+}
+/* 체크 칸. 기본 체크박스는 작고 옅어 판 색 위에서 고른 칸과 안 고른 칸이 비슷했다.
+   input 은 그대로 두고(키보드·보조기술이 상태를 읽는다) 겉모양만 바꾼다 */
+.stock-detail-page .sd-point input{
+  appearance:none;-webkit-appearance:none;
+  margin:1px 0 0;flex:none;align-self:flex-start;
+  width:18px;height:18px;border-radius:5px;
+  border:1.5px solid #c3c7d6;background:var(--surface);cursor:pointer;
+  transition:background .14s,border-color .14s;
+}
+.stock-detail-page .sd-point:hover input{border-color:var(--brand)}
+.stock-detail-page .sd-point input:checked{
+  border-color:var(--brand);
+  background:var(--brand) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / 13px no-repeat;
+}
+@media (prefers-reduced-motion:reduce){
+  .stock-detail-page .sd-point.is-on{transform:none}
+}
 .stock-detail-page .sd-point:focus-within{outline:2px solid var(--brand);outline-offset:2px}
 /* 포인트는 제목 없이 본문 한 덩어리다(서버 계약).
    줄간격을 1.6 에서 1.5 로 좁혔다 — 세 줄짜리 요약이 대부분이라, 넓은 줄간격이
@@ -541,6 +570,7 @@
 .stock-detail-page .sd-point-body{
   min-width:0;color:var(--body);font-size:var(--fs-md);line-height:1.5;word-break:keep-all;
 }
+.stock-detail-page .sd-point-body b{color:var(--ink);font-weight:var(--fw-heavy);font-variant-numeric:tabular-nums}
 
 .stock-detail-page .sd-point-foot{
   display:flex;align-items:center;justify-content:space-between;gap:12px;
