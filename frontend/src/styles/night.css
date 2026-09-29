@@ -301,8 +301,36 @@ body.is-night .st-block,
 body.is-night .mp-hero,
 body.is-night .mp-score-card,
 body.is-night .wallet-card,
-body.is-night .wallet-ledger{
+body.is-night .wallet-ledger,
+/* 채널 프로필(E-02, 2026-09-29). 머리 · 통계 세 칸 · 구독 띠 · 백테스트 판,
+   그리고 예측 줄(.pc)까지 같은 유리다 — 이 화면은 판이 곧 목록이라 줄만 불투명하게
+   남기면 유리 판 위에 불투명 타일이 쌓여 결이 갈린다.
+   고른 칸(.ch-tabs)은 캡슐이라 위 주석대로 불투명하게 둔다. */
+body.is-panel .ch-head,
+body.is-panel .ch-stats > div,
+body.is-panel .ch-sub,
+body.is-panel .ch-backtest{
   background:var(--glass-panel);
+  -webkit-backdrop-filter:var(--glass-blur);
+  backdrop-filter:var(--glass-blur);
+}
+
+/* 목록에 들어가는 줄(.pc 예측 · .rp-card 리포트)만 한 단 진하다 —
+   **확정 기록 목록(.lg-board)과 같은 .62 다.**
+   같은 까닭이다: 줄이 빽빽해 사진이 글자 사이로 올라온다. .5 로 두고 판을 감춰
+   날것의 배경을 재 보면, 목록이 도시 불빛 위를 지나는 자리에서 종목코드(.pc-stock em)가
+   3.79 까지 내려갔다(기준 4.5). 위쪽 성긴 판 넷은 .5 에서 5.53 이라 그대로 둔다.
+
+   .lg-board 처럼 여기도 숫자를 적는다 — --glass-panel 을 따라가면 안 되는 자리라
+   이름을 공유하면 조용히 같이 내려간다. */
+/* 종목코드(.pc-stock em)는 --faint 11.5px 라 이 판에서 가장 약한 글자다. 판을
+   .62 로 올려도 3.90 이라 기준에 못 미쳐, 확정 기록 주석이 적어 둔 그 길로 간다 —
+   "더 내리려면 종목코드 색부터 올려야 한다". 한 단 위(--muted)로 올린다.
+   **--faint 토큰 자체는 안 건드린다** — 흐린 글자로 쓰는 다른 자리까지 같이 진해진다. */
+body.is-panel .pc-stock em{ color:var(--muted); }
+body.is-panel .pc,
+body.is-panel .rp-card{
+  background:rgba(16,14,40,.62);
   -webkit-backdrop-filter:var(--glass-blur);
   backdrop-filter:var(--glass-blur);
 }
@@ -331,7 +359,23 @@ body.is-panel .wallet-filters button:hover,
 body.is-panel .wallet-filters button.on,
 body.is-panel .wallet-more:hover,
 body.is-panel .cf-pending,
-body.is-panel .cf-soon{ color:#cbbcff; }
+body.is-panel .cf-soon,
+/* 채널 프로필(E-02)이 2026-09-29 에 이 테마로 들어왔다. 고른 칸·미리보기 띠가
+   --brand-ink 를 글자로 쓰는 자리다 — 켜진 칸은 어두운 판(#231d4d) 위에서 2.14 였다. */
+body.is-panel .ch-tabs button[aria-selected="true"],
+body.is-panel .ch-preview,
+body.is-panel .ch-preview-btn,
+body.is-panel .ch-sub-link{ color:#cbbcff; }
+
+/* 예측 방향 칩(.pc-dir, prediction-card.css). 낮에는 **연한 판에 진한 글자**라
+   판 색이 #fdeceb · #e9f0ff 로 박혀 있는데, 밤 판 위에서는 --up/--down 이 밝은
+   쪽으로 바뀌어 연한 판에 밝은 글자가 된다(상승 2.43 · 하락 2.09).
+
+   판을 낮 색으로 되돌리는 대신 **밤 결로 바꾼다** — 같은 색을 옅게 깐 판에 밝은
+   글자다. 이 화면의 다른 칩(적중·빗나감)과 결이 같고, --ok-soft 가 이미 쓰는 방식이다.
+   알파는 .12 다. .16 이면 상승이 4.47 로 기준(4.5) 바로 아래다. */
+body.is-panel .pc-dir.is-up{ background:rgba(255,107,107,.12); }
+body.is-panel .pc-dir.is-down{ background:rgba(122,167,255,.12); }
 
 /* ── 흰 판으로 두는 화면들 ────────────────────────────────
    시즌 진행(G-04) · 매매일지(G-06) · 결과(G-08) · 기록(G-09). 넷 다 is-glass 를

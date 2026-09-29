@@ -35,6 +35,7 @@ import { useWalletBalance } from '../api/walletBalance'
 import BadgeList from '../components/BadgeList'
 import ChannelProfileEdit from '../components/channel/ChannelProfileEdit'
 import ProfileAvatar from '../components/channel/ProfileAvatar'
+import ChannelBanner from '../components/channel/ChannelBanner'
 import ErrorState from '../components/state/ErrorState'
 import '../styles/screens/mypage.css'
 
@@ -135,7 +136,15 @@ export default function MyPage() {
           <ErrorState error={profile.error} onRetry={profile.reload} />
         ) : (
           <section className="mp-hero">
-            <div className="mp-banner" aria-hidden="true" />
+            {/* 장식 띠였던 자리가 **채널 배너**가 됐다(2026-09-29). 채널 프로필(E-02)
+                머리에 걸리는 그 그림이고, 올리는 자리를 여기 둔 것은 배너가 내 채널의
+                외양이라 프로필 사진과 같은 자리에서 다루는 편이 찾기 쉬워서다.
+                안 올렸으면 예전 그 그러데이션이 그대로 보인다(.ch-banner.is-empty). */}
+            <ChannelBanner
+              src={profile.data?.bannerUrl ?? null}
+              isMe={profile.data != null}
+              onSaved={profile.reload}
+            />
 
             <div className="mp-hero-body">
               {/* 사진은 배너 경계에 걸터앉는다 — solved.ac·Letterboxd 가 같은 장치를 쓴다.

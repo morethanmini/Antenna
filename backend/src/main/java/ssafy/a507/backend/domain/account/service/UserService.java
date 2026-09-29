@@ -78,6 +78,9 @@ public class UserService {
         if (request.avatarFileId() != null) {
             applyAvatar(user, request.avatarFileId());
         }
+        if (request.bannerFileId() != null) {
+            applyBanner(user, request.bannerFileId());
+        }
         return toResponse(user);
     }
 
@@ -149,6 +152,21 @@ public class UserService {
         user.changeAvatar(file.getId());
     }
 
+    /** 배너도 같은 규칙이다 — 내 파일이어야 하고 용도가 BANNER 여야 한다(applyAvatar 머리말 참고) */
+    private void applyBanner(User user, String fileId) {
+        if (fileId.isBlank()) {
+            user.changeBanner(null);
+            return;
+        }
+        UploadFile file = uploads
+                .findByIdAndUserId(fileId, user.getId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_REQUEST));
+        if (file.getPurpose() != UploadFile.Purpose.BANNER) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST);
+        }
+        user.changeBanner(file.getId());
+    }
+
     /**
      * 파일이 지워졌으면 사진이 없는 것으로 본다 — 회원 조회가 깨지는 것보다 기본 그림이 낫다.
      * users.avatar_file_id 에 FK 를 걸지 않은 것과 같은 판단이다(User.avatarFileId).
@@ -158,6 +176,14 @@ public class UserService {
             return null;
         }
         return uploads.findById(user.getAvatarFileId()).map(UploadFile::getUrl).orElse(null);
+    }
+
+    /** 배너도 같다 — 파일이 지워졌으면 없는 것으로 본다 */
+    private String bannerUrl(User user) {
+        if (user.getBannerFileId() == null) {
+            return null;
+        }
+        return uploads.findById(user.getBannerFileId()).map(UploadFile::getUrl).orElse(null);
     }
 
     private User find(Long userId) {
@@ -171,6 +197,7 @@ public class UserService {
                 user.getNickname(),
                 user.getIntroduce(),
                 avatarUrl(user),
+                bannerUrl(user),
                 interests.findByUserIdOrderByIdAsc(user.getId()).stream()
                         .map(UserInterest::getSector)
                         .toList(),

@@ -22,6 +22,8 @@ public record ChannelProfileResponse(
         String nickname,
         /** 사진이 없거나 파일이 지워졌으면 null. 그때는 화면이 기본 그림을 쓴다 */
         String avatarUrl,
+        /** 채널 배너. 안 올렸거나 파일이 지워졌으면 null — 그때는 화면이 빈 자리를 그린다 */
+        String bannerUrl,
         /** 소개. 안 적었으면 null */
         String bio,
         /** 관심 섹터. 없으면 빈 배열 — null 을 내리면 화면마다 가드를 따로 써야 한다 */

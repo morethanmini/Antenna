@@ -28,7 +28,12 @@
 }
 /* 배너. solved.ac 는 사용자가 고른 배경 이미지이고, 우리는 그런 값이 없으므로
    브랜드 톤 띠 하나다. 높이는 아바타가 절반쯤 걸치도록 잡았다. */
-.mp-banner{
+/* 배너 자리. 그림을 올리면 ChannelBanner 가 그 자리를 채우고, 안 올렸으면 예전
+   그러데이션이 그대로 보인다. 높이를 못 박는 것은 이 화면의 머리 띠가 비율이 아니라
+   **높이**로 설계돼 있어서다 — 채널 카드(3:1)와 달리 여기서는 폭이 화면을 다 쓴다. */
+.mp-hero > .ch-banner{ aspect-ratio:auto; height:104px; }
+.mp-banner,
+.mp-hero > .ch-banner.is-empty{
   height:104px;
   background:linear-gradient(115deg,var(--brand-soft),var(--brand-softer));
 }
@@ -36,7 +41,11 @@
    순위·적중률·통계)을 세로로 쌓아 벽처럼 읽혔다 — 폭은 남는데 세로로만 쌓은 탓이다.
    격자가 아니라 flex 인 이유는 1차에서 겪었다: `auto|1fr|auto` 격자는 폭이 줄면
    가운데 칸을 0 으로 찌부러뜨린다. flex 는 성적 칸을 아랫줄로 내려보낸다. */
-.mp-hero-body{display:flex;flex-wrap:wrap;align-items:flex-start;gap:20px 36px;padding:0 28px 28px}
+/* **배너보다 앞이다.** 배너가 장식 div 였을 때는 그냥 블록이라 순서대로 그려졌는데,
+   ChannelBanner(position:relative)로 바뀌면서 자리 잡은 겹이 됐다 — 자리 잡은 겹은 그냥
+   블록보다 나중에 그려지므로, 위로 걸터앉은 사진의 윗부분을 배너가 덮었다.
+   채널 머리(.ch-head-body)와 같은 자리, 같은 고침이다. */
+.mp-hero-body{position:relative;z-index:1;display:flex;flex-wrap:wrap;align-items:flex-start;gap:20px 36px;padding:0 28px 28px}
 /* 경계에 걸터앉는다 — 배너 높이의 절반쯤 위로 올린다 */
 .mp-avatar{
   width:104px;height:104px;flex:none;margin-top:-52px;border-radius:50%;
@@ -158,5 +167,6 @@
   .mp-hero-body{padding:0 18px 20px;gap:12px}
   .mp-avatar{width:84px;height:84px;margin-top:-42px}
   .mp-who{padding-top:12px}
-  .mp-banner{height:88px}
+  .mp-banner,
+  .mp-hero > .ch-banner{height:88px}
 }

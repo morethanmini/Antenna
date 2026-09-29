@@ -24,6 +24,8 @@ export type MyProfile = {
   introduce: string | null
   /** 프로필 사진 주소. 안 올렸으면 null — 화면이 DEFAULT_AVATAR 를 쓴다 */
   avatarUrl: string | null
+  /** 채널 배너. 안 올렸으면 null */
+  bannerUrl: string | null
   /* 서버가 내려준다(ANT-AUTH-05). 없으면 **빈 배열**이라 옵셔널이 아니다 —
      null 을 내리지 않기로 서버와 맞췄다(MeResponse 머리말). */
   /** 관심 섹터. 배열 전체 교체 방식이라 부분 수정이 없다 */
