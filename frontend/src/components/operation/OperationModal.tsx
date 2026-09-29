@@ -14,6 +14,7 @@
    고 적었다. 그래서 ① 언제든 닫히고 ② 대기 중에는 그 사실을 바닥에 적어 둔다.
    업로드 모달(M-07)이 전송 중 닫기를 막는 것과 반대인데, 이유가 정확히 반대다 —
    그쪽은 닫아도 요청이 살아 있는 것이 사고였고, 여기서는 그게 정상이다. */
+import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useOperation, type OperationKind } from '../../api/operations'
@@ -54,7 +55,7 @@ export default function OperationModal({ operationId, kind, onClose, to }: Props
   // 모달이 열리면 초점을 안으로 들인다. 없으면 탭이 뒤 화면을 돌아다닌다.
   useEffect(() => { dialogRef.current?.focus() }, [])
 
-  return (
+  return createPortal(
     <div className="op-backdrop" onClick={close} role="presentation">
       <div
         className="op-modal" role="dialog" aria-modal="true" aria-labelledby="op-title"
@@ -100,5 +101,7 @@ export default function OperationModal({ operationId, kind, onClose, to }: Props
         )}
       </div>
     </div>
+    ,
+    document.body,
   )
 }

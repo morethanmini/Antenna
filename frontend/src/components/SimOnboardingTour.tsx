@@ -36,6 +36,7 @@
 
    그림은 전부 public/assets 에 있는 것만 쓴다. 모의투자는 검정 개미다 —
    인사이트 쪽 흰 개미(white_ant)는 이 화면에 오지 않는다. */
+import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { agreed, getPracticeRuns, isJoinable, manwon } from '../api/seasons'
 import { useAsync } from '../api/useAsync'
@@ -191,7 +192,7 @@ export default function SimOnboardingTour({ onClose, onStart }: Props) {
   // 열리면 초점을 안으로 들인다. 없으면 탭이 뒤 화면을 돌아다닌다.
   useEffect(() => { dialogRef.current?.focus() }, [])
 
-  return (
+  return createPortal(
     <div className="sot-backdrop">
       <div
         className="sot" role="dialog" aria-modal="true" aria-labelledby="sot-title"
@@ -304,5 +305,7 @@ export default function SimOnboardingTour({ onClose, onStart }: Props) {
         </button>
       </div>
     </div>
+    ,
+    document.body,
   )
 }

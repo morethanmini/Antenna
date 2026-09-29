@@ -17,6 +17,7 @@
    본문을 innerHTML 로 넣지 않는다
    body 는 LLM 이 만든 문자열이다. 서버가 마크다운도 HTML 도 아니라고 했으므로
    (엔티티 주석 "서술 문단만 담는다") 빈 줄로 문단만 갈라 텍스트로 그린다. */
+import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useRef } from 'react'
 import ErrorState from './state/ErrorState'
 import SnapshotStamp from './SnapshotStamp'
@@ -58,7 +59,7 @@ export default function BriefingModal({ id, onClose }: Props) {
 
   const body = data?.body?.trim() ? paragraphs(data.body) : null
 
-  return (
+  return createPortal(
     /* 배경을 눌러 닫는다. 창 안쪽 클릭이 새어 나가지 않게 target 을 확인한다 */
     <div
       className="bf-backdrop"
@@ -120,5 +121,7 @@ export default function BriefingModal({ id, onClose }: Props) {
         </div>
       </div>
     </div>
+    ,
+    document.body,
   )
 }

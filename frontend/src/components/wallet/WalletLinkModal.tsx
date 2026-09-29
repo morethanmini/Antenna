@@ -16,6 +16,7 @@
      직접 조회해 확정됐을 때만 과거형으로 쓴다(ANT-FE-WALLET-SYNC).
 
    두지 않는 것: 연동 해제 · 다중 지갑 관리. 해당 API 가 없다. */
+import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, ERROR_CODE } from '../../api/errors'
 import { useOperation } from '../../api/operations'
@@ -141,7 +142,7 @@ export default function WalletLinkModal({
   const [walletReady, setWalletReady] = useState(hasWallet)
   useEffect(() => onWalletReady(() => setWalletReady(true)), [])
 
-  return (
+  return createPortal(
     <div className="wl-backdrop" onClick={close}>
       <div
         className="wl-modal" role="dialog" aria-modal="true" aria-labelledby="wl-title"
@@ -308,5 +309,7 @@ export default function WalletLinkModal({
         )}
       </div>
     </div>
+    ,
+    document.body,
   )
 }

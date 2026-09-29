@@ -32,6 +32,7 @@
 
    모달 규칙은 M-01 지갑 연동(WalletLinkModal)과 같다 — Escape 로 닫고, 열리면 초점을
    안으로 들인다. 없으면 탭이 뒤 화면을 돌아다닌다. */
+import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Ticker } from '../../api/seasonPlay'
 import '../../styles/screens/sim-play.css'
@@ -144,7 +145,7 @@ export default function TickerPickerModal({
     )
   }
 
-  return (
+  return createPortal(
     <div className="tp-backdrop" onClick={close}>
       <div
         ref={dialogRef}
@@ -229,5 +230,7 @@ export default function TickerPickerModal({
         </div>
       </div>
     </div>
+    ,
+    document.body,
   )
 }

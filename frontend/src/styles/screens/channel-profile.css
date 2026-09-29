@@ -57,10 +57,13 @@
    바탕색이라 배너 위에서도 사진이 동그라미로 또렷하게 끊긴다. */
 .ch-avatar{
   flex:0 0 auto; width:56px; height:56px; border-radius:999px; object-fit:cover;
-  margin-top:-28px; border:3px solid var(--surface); background:var(--surface-2);
+  /* **경계선이 원의 한가운데가 아니라 한 단 위를 지난다**(2026-09-29 요청).
+     반(28px)만 올리면 선이 정확히 원 중앙이라 사진이 선에 꿰인 것처럼 보인다.
+     22px 만 올려 위 22 · 아래 34 로 둔다 — 선이 원의 40% 자리를 지난다. */
+  margin-top:-22px; border:3px solid var(--surface); background:var(--surface-2);
 }
 /* 사진을 바꾸는 단추 묶음(.pa)도 같이 올라가야 사진과 한 덩어리로 움직인다 */
-.ch-head-body .pa{ margin-top:-28px; }
+.ch-head-body .pa{ margin-top:-22px; }
 .ch-head-body .pa .ch-avatar{ margin-top:0; }
 
 /* ── 배너 ────────────────────────────────────────────
@@ -82,7 +85,9 @@
 /* 단추는 배너 오른쪽 위에 띄운다. 그림 위라 자체 배경을 갖는다(.pa-btn 이 이미 갖고 있다) */
 .ch-banner-acts{ position:absolute; top:10px; right:12px; display:flex; gap:6px; }
 .ch-banner .pa-error{ position:absolute; left:12px; bottom:8px; margin:0; }
-.ch-id{ min-width:0; }
+/* 닉네임을 경계선에서 한 뼘 내린다 — 선에 딱 붙으면 글자가 선 위에 얹힌 것처럼 읽힌다.
+   마이페이지(.mp-who)가 같은 자리에서 같은 장치를 쓴다. */
+.ch-id{ min-width:0; padding-top:10px; }
 
 /* ── ⋯ 메뉴 (M-06 신고 진입) ──────────────────────────
    모양은 공용 AbuseMenu(abuse-report.css 의 ab-menu-*)가 갖고, 여기는 자리만 잡는다.
