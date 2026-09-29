@@ -38,6 +38,7 @@ import { useApiQuery } from '../api/useApiQuery'
 import EquityChart from '../components/sim/EquityChart'
 import PortfolioDonut, { type DonutSlice } from '../components/sim/PortfolioDonut'
 import ErrorState from '../components/state/ErrorState'
+import SeasonReview from '../components/sim/SeasonReview'
 import { useSeasonSim } from '../sim/useSeasonSim'
 import '../styles/screens/sim-result.css'
 
@@ -608,12 +609,12 @@ export default function SeasonResult() {
                   </dl>
 
                   {/* AI 복기 — 서버가 종료 뒤 만들어 저장한 본문(ANT-SEASON-09).
-                      단락 사이 빈 줄이 있어 줄바꿈을 그대로 살린다. 오기 전에는 스피너,
+                      네 단락(시장 흐름·잘한·아쉬운·개선)을 카드로 나눠 그린다(SeasonReview). 오기 전에는 스피너,
                       만들지 못했으면 다시 만들기 — 자리는 늘 지킨다(빠지면 "원래 없는 항목" 으로 읽힌다). */}
                   <div className="rs-review">
                     <h3>AI 복기</h3>
                     {review ? (
-                      <p>{review}</p>
+                      <SeasonReview review={review} />
                     ) : reviewPending ? (
                       <p className="rs-review-none" role="status">
                         <span className="waiting">

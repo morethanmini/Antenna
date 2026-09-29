@@ -134,6 +134,77 @@
 .rs-review .rs-review-none{color:var(--muted);font-size:var(--fs-base);font-weight:var(--fw-bold)}
 .rs-review .rs-go{margin-left:10px;height:32px;padding:0 12px;font-size:var(--fs-base)}
 
+/* AI 복기 카드(components/sim/SeasonReview). 시장 흐름·개선 제안은 한 줄을 다 쓰고,
+   잘한·아쉬운 판단은 나란히 둔다 — 둘을 견줘 읽으라고 만든 단락이다.
+   색: 잘한 = 초록, 아쉬운 = 주황. 빨강·파랑은 등락 색이라 판단의 좋고 나쁨에 쓰지 않는다 */
+.rs-review .rv-plain{white-space:pre-wrap}
+.rv{
+  --rv-miss:#b45309; --rv-miss-soft:#fdf1e3;
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;
+}
+.rv-sec{
+  --rv-c:var(--brand-ink); --rv-soft:var(--brand-soft);
+  min-width:0;padding:16px 18px 18px;
+  border:1px solid var(--rule);border-top:3px solid var(--rv-c);border-radius:12px;
+  background:var(--surface);
+}
+.rv-sec.is-market,.rv-sec.is-next{grid-column:1 / -1}
+.rv-sec.is-good{--rv-c:var(--ok);--rv-soft:var(--ok-soft)}
+.rv-sec.is-miss{--rv-c:var(--rv-miss);--rv-soft:var(--rv-miss-soft)}
+.rv-sec.is-next{--rv-c:var(--ink);--rv-soft:var(--surface-2)}
+
+.rv-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.rv-icon{
+  display:inline-grid;place-items:center;flex:none;
+  width:28px;height:28px;border-radius:8px;
+  background:var(--rv-soft);color:var(--rv-c);
+}
+.rv-head h4{margin:0;font-size:var(--fs-lg);font-weight:var(--fw-heavy);color:var(--ink);letter-spacing:-.01em}
+.rv-hint{font-size:var(--fs-md);color:var(--faint)}
+
+/* 첫 문장 = 이 단락의 한 줄 요약 */
+.rs-review .rv-lead{
+  margin:0 0 8px;
+  font-size:var(--fs-xl);font-weight:var(--fw-bold);line-height:1.65;color:var(--ink);
+  white-space:normal;
+}
+.rs-review .rv-body{margin:0;font-size:var(--fs-lg);line-height:1.8;color:var(--body);white-space:normal}
+/* 한 줄을 다 쓰는 시장 흐름은 넓은 화면에서 두 단으로 — 한 줄이 1,800px 이면 줄을 놓친다 */
+@media (min-width:1100px){
+  .rv-sec.is-market .rv-body{columns:2;column-gap:36px}
+}
+
+/* 개선 제안: 문장마다 번호 카드 */
+.rv-steps{
+  list-style:none;margin:0;padding:0;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;
+}
+.rv-steps li{
+  display:flex;gap:10px;align-items:flex-start;
+  padding:12px 14px;border-radius:10px;background:var(--surface-2);
+}
+.rv-no{
+  display:inline-grid;place-items:center;flex:none;
+  width:22px;height:22px;border-radius:50%;
+  background:var(--ink);color:var(--surface);
+  font-size:var(--fs-sm);font-weight:var(--fw-heavy);
+}
+.rs-review .rv-steps p{margin:0;font-size:var(--fs-lg);line-height:1.7;color:var(--body);white-space:normal}
+
+/* 글 안의 숫자 표시 */
+.rv-day{
+  display:inline-block;padding:0 6px;margin:0 1px;border-radius:5px;
+  background:var(--surface-2);border:1px solid var(--rule);
+  font-family:var(--mono);font-size:.86em;line-height:1.5;color:var(--ink);white-space:nowrap;
+}
+.rv b.is-up{color:var(--up);font-weight:var(--fw-bold)}
+.rv b.is-down{color:var(--down);font-weight:var(--fw-bold)}
+.rv b.rv-won{color:var(--ink);font-weight:var(--fw-bold)}
+
+@media (max-width:720px){
+  .rv{grid-template-columns:1fr}
+}
+
 /* 아직 서버가 안 주는 것. 목업을 넣지 않는다 — 무엇이 올 자리인지만 적는다 */
 .rs-soon{
   margin:0;padding:22px;border:1px dashed var(--rule);border-radius:12px;
