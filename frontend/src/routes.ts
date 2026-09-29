@@ -74,6 +74,10 @@ export type PageMeta = {
   /** 사이드바에서 활성으로 표시할 메뉴 키 */
   nav?: string
   bodyClass?: string
+  /** 주소에 따라 상단바까지 밤이 되는 화면. 참이면 셸이 bodyClass 에 is-night 를 더한다 —
+      같은 화면이 탭에 따라 밝은 판·어두운 판을 오가서 정적인 bodyClass 로는 답할 수 없다.
+      읽는 곳은 App.tsx 의 Page(?event= · ?mode= 와 같은 자리) */
+  nightWhen?: (params: URLSearchParams) => boolean
   /** 이 화면을 구현할 Jira 스토리 슬러그 */
   story: string
 }
@@ -116,7 +120,7 @@ export const ROUTES: PageMeta[] = [
   { screen: 'D-04', element: VerifyReport, path: '/ledger/verify/report/:reportId', title: '리포트 검산', access: 'user', mode: 'insight', sharedMode: true, nav: 'ledger', bodyClass: 'is-night', story: 'ANT-CHAIN-17' },
 
   // ── E. 채널 · 구독 ───────────────────────────────────
-  { screen: 'E-01', element: Ranking, path: '/rankings', title: '주가 예측 랭킹', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'predictor-market-page', story: 'ANT-FE-RANKING' },
+  { screen: 'E-01', element: Ranking, path: '/rankings', title: '주가 예측 랭킹', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'predictor-market-page', nightWhen: (p) => p.get('tab') === 'event', story: 'ANT-FE-RANKING' },
   /* 모의투자 랭킹(/sim/rankings)은 뺐다(2026-09-16). REPLAY 트랙 누적 순위인데,
      "한 시즌 안의 순위는 G-07 시즌 리더보드가 이미 보여 준다" 가 그때의 근거였다.
 

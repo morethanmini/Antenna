@@ -33,7 +33,7 @@
 
    되살릴 때는 api/rankings.ts 의 sector 질의 인자가 그대로 살아 있으니 칩만 다시 그리면
    된다. 서버 쪽은 건드리지 않았다. */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useUrlState } from '../urlState'
 import { Link, useSearchParams } from 'react-router-dom'
 import type { ApiError } from '../api/errors'
@@ -299,9 +299,11 @@ export default function Ranking() {
     setParams(params, { replace: true })
   }
 
+  const [mainRef, headRef] = useHeadPull(tab === 'event')
+
   return (
     /* 배경이 탭마다 다르다 — 아래 CSS 가 이 클래스로 갈라 본다 */
-    <main className={`main rk-page ${tab === 'event' ? 'is-event' : 'is-accuracy'}`}>
+    <main ref={mainRef} className={`main rk-page ${tab === 'event' ? 'is-event' : 'is-accuracy'}`}>
       {/* ── 배경 ───────────────────────────────────────────────
           **탭마다 다르다.**
           - 서비스 랭킹: 액자 그림. 화면 안에 그림이 없는 쪽이라 배경이 그 몫을 한다.
@@ -316,7 +318,7 @@ export default function Ranking() {
       <div className="main-inner">
         {/* 제목과 전환 버튼이 한 줄이다. 버튼이 오른쪽 위에 서야 제목과 눈높이가 맞고,
             아래 목록과 겹치지 않는다 */}
-        <div className="page-head rk-head">
+        <div ref={headRef} className="page-head rk-head">
           <div>
             <h1>{HEAD[tab].h1}</h1>
           </div>
@@ -334,3 +336,33 @@ export default function Ranking() {
   )
 }
 
+/* 이벤트 탭의 무대 사진을 상단바 밑까지 끌어올릴 거리 = 화면 맨 위(바 밑)에서 무대가 원래
+   서는 자리까지. ranking-event.css 가 이 값(--rk-headpull)만큼 무대를 올리고 같은 만큼
+   안쪽 여백을 되돌린다 — 사진만 올라가고 시상대·판은 제자리다.
+
+   **재서 넘기는 이유.** 머리(제목 + 전환 버튼) 높이가 폭에 따라 바뀐다 — 좁으면 버튼이
+   제목 아래로 떨어진다. 고정값(152px)을 쓰던 때는 그래서 좁은 화면에서 끌어올리기를 꺼야 했고,
+   그 폭에서는 밤 유리 상단바 밑에 밝은 판이 비쳐 바와 무대가 두 판으로 갈렸다(2026-09-29).
+   머리가 무대보다 앞에 있어 무대를 올려도 머리 위치는 안 바뀐다 — 재는 값이 되먹임되지 않는다. */
+function useHeadPull(on: boolean) {
+  const main = useRef<HTMLElement>(null)
+  const head = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const m = main.current
+    const h = head.current
+    if (!on || !m || !h) return
+    const measure = () => {
+      const gap = parseFloat(getComputedStyle(h).marginBottom) || 0
+      const px = h.getBoundingClientRect().bottom - m.getBoundingClientRect().top + gap
+      m.style.setProperty('--rk-headpull', `${Math.round(px)}px`)
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(h)
+    ro.observe(m)
+    return () => { ro.disconnect(); m.style.removeProperty('--rk-headpull') }
+  }, [on])
+
+  return [main, head] as const
+}
