@@ -24,8 +24,16 @@
 
    신고 (M-06 · ANT-FE-ABUSE-REPORT)
    헤더 오른쪽 위의 ⋯ 에 접어 둔다(채널 프로필과 같은 자리). 내 리포트에는 그리지 않는다. 신고가 승인돼 가려진
-   리포트는 410 REPORT_BLOCKED 로 오고, 아래 ErrorState 가 그 문구를 그린다. */
+   리포트는 410 REPORT_BLOCKED 로 오고, 아래 ErrorState 가 그 문구를 그린다.
+
+   읽기 폭과 목차
+   본문 한 줄이 화면 폭을 다 쓰면 한글은 줄을 놓친다. 화면 전체(뒤로가기·카드·댓글)를
+   한 폭으로 묶고, 제목이 둘 이상인 글은 넓은 화면에서 오른쪽에 목차를 세운다.
+   목차가 없는 글은 폭을 더 좁혀 빈 오른쪽이 남지 않게 한다. */
+import { useMemo } from 'react'
 import Markdown from '../components/report/Markdown'
+import ReportToc from '../components/report/ReportToc'
+import { outline } from '../components/report/outline'
 import { Link, useParams } from 'react-router-dom'
 import { useApiQuery } from '../api/useApiQuery'
 import {
@@ -43,10 +51,12 @@ export default function ReportDetail() {
   const { id } = useParams<{ id: string }>()
   const report = useApiQuery<Report>(`/reports/${id}`)
   const { user } = useAuth()
+  const body = report.data?.locked ? '' : report.data?.body ?? ''
+  const toc = useMemo(() => outline(body), [body])
 
   return (
     <main className="main">
-      <div className="main-inner">
+      <div className={`main-inner rd-page${toc.length ? '' : ' no-toc'}`}>
         <Link className="rd-back" to="/reports">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M15 18l-6-6 6-6" />
@@ -130,7 +140,10 @@ export default function ReportDetail() {
             ) : (
               /* 본문은 마크다운이다(ANT-FE-REPORT-MD). 작성 화면의 미리보기와 같은
                  컴포넌트를 쓴다 — 규칙이 두 군데 있으면 미리보기가 거짓말이 된다. */
-              <Markdown text={report.data.body ?? ''} className="rd-body" />
+              <div className={toc.length ? 'rd-layout has-toc' : 'rd-layout'}>
+                <Markdown text={body} className="rd-body" />
+                {toc.length > 0 && <ReportToc items={toc} />}
+              </div>
             )}
 
             {/* 잠긴 리포트에는 버튼을 내밀지 않는다 — 누르면 403 인 버튼은 없느니만 못하다.
