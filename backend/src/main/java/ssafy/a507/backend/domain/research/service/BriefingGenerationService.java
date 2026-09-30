@@ -41,7 +41,7 @@ import ssafy.a507.backend.domain.research.repository.AiBriefingRepository;
  * <p><b>D16 — 확률 수치 직접 제시 금지.</b> 프롬프트로 막고, 응답을 다시 검사해 걸리면 저장하지
  * 않는다. 프롬프트만 믿으면 열 번에 한 번은 "상승 가능성 60%" 같은 문장이 섞여 나온다.
  *
- * <p>기준일은 오늘이 아니라 <b>일봉이 들어온 마지막 영업일</b>이다. 주말·휴일에도 배치는 도는데
+ * <p>기준일은 오늘이 아니라 <b>일봉과 코스피 지수가 둘 다 들어온 마지막 영업일</b>이다. 주말·휴일에도 배치는 도는데
  * 그날은 새 시세가 없으니 금요일 브리핑이 이미 있으면(같은 세대) 건너뛴다 — 같은 글을 세 번
  * 만들어 한도를 태우지 않는다.
  */
@@ -121,7 +121,12 @@ public class BriefingGenerationService {
             log.warn("[B6] daily_quotes 가 비어 있어 브리핑 생성을 건너뛴다 — 일봉 수집이 먼저다");
             return 0;
         }
-        LocalDate targetDate = latest.get();
+        // 지수 포털은 일봉보다 하루 넘게 늦다(2026-09-30). 일봉 최신일만 보면 지수가 오기 전에 기준일이
+        // 다음 날로 넘어가, 뒤늦게 지수가 도착한 날의 브리핑은 영영 안 만들어진다 — 지수가 따라잡을
+        // 틈이 있는 연휴·주말 앞날만 화면에 남았다. 둘 다 있는 마지막 날이 기준일이다.
+        LocalDate targetDate = indexQuoteRepository.findLatestTradeDate(IndexQuote.IndexCode.KOSPI)
+                .filter(latestIndex -> latestIndex.isBefore(latest.get()))
+                .orElse(latest.get());
         String promptVersion = aiProperties.promptVersion();
         try {
             boolean written = generateMarket(stockMaterials.quotedOn(targetDate), targetDate, promptVersion);
