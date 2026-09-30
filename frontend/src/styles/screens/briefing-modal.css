@@ -15,7 +15,7 @@
 }
 
 .bf-modal{
-  width:100%; max-width:620px;
+  width:100%; max-width:680px;
   /* **토큰이 아니라 흰색이다.** --surface 는 밤 화면(body.is-night.is-glass)에서
      rgba(255,255,255,.07) 로 뒤집힌다 — 유리 카드용 값이다. 그대로 두면 이 창이
      거의 투명하게 떠서 뒤 화면이 그대로 비치고 글이 읽히지 않는다(2026-09-22 실측,
@@ -95,6 +95,113 @@ body.is-night .bf-modal{
   word-break:keep-all;
 }
 .bf-text p:last-child{ margin-bottom:0; }
+
+/* ── 문단 나누기 (components/BriefingBody) ─────────────────
+   문단 하나가 한 칸이다. 칸 사이는 옅은 선 하나 — 상자를 겹겹이 두르면 620~680px 창에서
+   안쪽이 좁아져 오히려 줄이 늘어난다. 이름표(지수·업종·종목)가 칸의 머리다.
+   확인해 볼 점만 상자로 떼어 낸다 — 성격이 다른 문단이다(사실이 아니라 물음). */
+.bfb{ display:flex; flex-direction:column; gap:0; }
+.bfb-sec{ padding:14px 0; border-top:1px solid var(--rule); }
+.bfb-sec:first-child{ padding-top:4px; border-top:0; }
+.bf-text .bfb-label{
+  display:inline-flex; align-items:center; gap:6px;
+  margin:0 0 7px;
+  font-size:var(--fs-sm); font-weight:var(--fw-bold); color:var(--muted); letter-spacing:.01em;
+  line-height:1.4;
+}
+.bfb-label-icon{
+  display:inline-grid; place-items:center; width:22px; height:22px; border-radius:6px;
+  background:var(--brand-soft); color:var(--brand-ink);
+}
+/* 첫 문장 = 이 문단의 한 줄 요약 */
+.bf-text .bfb-lead{
+  margin:0 0 4px;
+  color:var(--ink); font-size:var(--fs-xl); font-weight:var(--fw-bold); line-height:1.65;
+}
+.bf-text .bfb-rest{ margin:0; font-size:var(--fs-lg); line-height:1.8; color:var(--body); }
+.bfb b.is-up{ color:var(--up); font-weight:var(--fw-bold); }
+.bfb b.is-down{ color:var(--down); font-weight:var(--fw-bold); }
+
+/* 상승·하락 비율 막대 */
+.bfb-breadth{ margin-top:12px; }
+.bfb-breadth-bar{ display:flex; gap:2px; height:8px; border-radius:4px; overflow:hidden; background:var(--surface-2); }
+.bfb-breadth-bar span{ flex-basis:0; }
+.bfb-breadth-bar .is-up{ background:var(--up); opacity:.75; }
+.bfb-breadth-bar .is-down{ background:var(--down); opacity:.7; }
+.bfb-breadth-legend{
+  display:flex; justify-content:space-between; gap:10px; margin-top:5px;
+  font-size:var(--fs-sm); font-weight:var(--fw-bold); color:var(--muted); font-variant-numeric:tabular-nums;
+}
+.bfb-breadth-legend .is-up{ color:var(--up); }
+.bfb-breadth-legend .is-down{ color:var(--down); }
+
+/* 그림 밑 원문. 그림이 요약이고 이 줄이 근거다 */
+.bf-text .bfb-caption{
+  margin:12px 0 0; font-size:var(--fs-base); line-height:1.75; color:var(--muted);
+}
+.bf-text .bfb-label-note{
+  margin-left:4px; padding:1px 7px; border-radius:999px;
+  background:var(--surface-2); color:var(--faint); font-size:var(--fs-xs); font-weight:var(--fw-bold);
+}
+
+/* 지수 카드 */
+.bfb-idx{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; }
+.bfb-idx-card{
+  display:flex; flex-direction:column; gap:3px;
+  padding:13px 15px; border-radius:12px;
+  background:linear-gradient(180deg, var(--brand-softer, #f6f4ff), var(--surface-2));
+  border:1px solid var(--rule);
+}
+.bfb-idx-name{ font-size:var(--fs-sm); font-weight:var(--fw-bold); color:var(--muted); }
+.bfb-idx-close{ font-size:1.55rem; font-weight:var(--fw-heavy); color:var(--ink); letter-spacing:-.02em; font-variant-numeric:tabular-nums; line-height:1.25; }
+.bfb-idx-chg{ display:flex; gap:12px; font-variant-numeric:tabular-nums; }
+.bfb-idx-chg span{ display:inline-flex; align-items:baseline; gap:4px; }
+.bfb-idx-chg em{ font-style:normal; font-size:var(--fs-xs); color:var(--faint); font-weight:var(--fw-bold); }
+.bfb-idx-chg b{ font-size:var(--fs-base); }
+
+/* 업종 막대: 가운데 0 선 기준 좌우 */
+.bfb-sectors{ list-style:none; margin:2px 0 0; padding:0; display:flex; flex-direction:column; gap:7px; }
+.bfb-sectors li{
+  display:grid; grid-template-columns:minmax(84px,120px) minmax(0,1fr) 62px; align-items:center; gap:10px;
+}
+.bfb-sc-name{ font-size:var(--fs-base); font-weight:var(--fw-bold); color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bfb-sc-track{ position:relative; height:12px; border-radius:3px; background:var(--surface-2); }
+.bfb-sc-track::after{ content:''; position:absolute; left:50%; top:-3px; bottom:-3px; width:1px; background:var(--faint); opacity:.6; }
+.bfb-sc-bar{ position:absolute; top:0; bottom:0; border-radius:3px; }
+.bfb-sc-bar.is-up{ left:50%; background:var(--up); opacity:.78; }
+.bfb-sc-bar.is-down{ right:50%; background:var(--down); opacity:.72; }
+.bfb-sc-val{ text-align:right; font-size:var(--fs-base); font-variant-numeric:tabular-nums; }
+
+/* 종목 순위: 상승·하락 두 줄 */
+.bfb-rank{ display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:10px; margin-top:12px; }
+.bfb-rank-col{ padding:11px 13px; border-radius:12px; border:1px solid var(--rule); }
+.bfb-rank-col.is-up{ background:linear-gradient(180deg, var(--up-soft), transparent 70%); }
+.bfb-rank-col.is-down{ background:linear-gradient(180deg, var(--down-soft), transparent 70%); }
+.bf-text .bfb-rank-head{ margin:0 0 7px; font-size:var(--fs-sm); font-weight:var(--fw-bold); }
+.bfb-rank-col.is-up .bfb-rank-head, .bfb-rank-col.is-up b{ color:var(--up); }
+.bfb-rank-col.is-down .bfb-rank-head, .bfb-rank-col.is-down b{ color:var(--down); }
+.bfb-rank ol{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+.bfb-rank li{ display:grid; grid-template-columns:16px minmax(64px,auto) minmax(30px,1fr) 58px; align-items:center; gap:8px; }
+.bfb-rank-no{ font-size:var(--fs-xs); font-weight:var(--fw-heavy); color:var(--faint); text-align:center; }
+.bfb-rank-name{ font-size:var(--fs-base); font-weight:var(--fw-bold); color:var(--ink); white-space:nowrap; }
+.bfb-rank-track{ height:6px; border-radius:3px; background:rgba(0,0,0,.05); overflow:hidden; }
+.bfb-rank-track span{ display:block; height:100%; border-radius:3px; }
+.bfb-rank-col.is-up .bfb-rank-track span{ background:var(--up); opacity:.75; }
+.bfb-rank-col.is-down .bfb-rank-track span{ background:var(--down); opacity:.7; }
+.bfb-rank b{ text-align:right; font-size:var(--fs-base); font-variant-numeric:tabular-nums; }
+
+/* 확인해 볼 점 */
+.bfb-check{
+  display:flex; gap:12px; align-items:flex-start;
+  margin-top:6px; padding:14px 16px;
+  border-radius:12px; background:var(--brand-soft);
+}
+.bfb-check-icon{
+  display:inline-grid; place-items:center; flex:none; width:30px; height:30px; border-radius:9px;
+  background:var(--surface); color:var(--brand-ink);
+}
+.bf-text .bfb-check .bfb-label{ margin-bottom:3px; color:var(--brand-ink); }
+.bf-text .bfb-check-text{ margin:0; color:var(--ink); font-size:var(--fs-lg); line-height:1.75; font-weight:var(--fw-bold); }
 
 .bf-nobody{
   margin:14px 0 0; padding:14px;

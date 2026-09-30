@@ -36,7 +36,7 @@ import ssafy.a507.backend.domain.monetize.dto.SubscribeRequest;
  *
  * <p>H2 로는 검증이 안 되는 것: 구독자 행 {@code PESSIMISTIC_WRITE}({@code SELECT … FOR UPDATE})가 다른
  * 커넥션의 같은 구독자 요청을 실제로 줄 세우는가. 잠금은 DB 엔진 구현이라 H2 에서 통과해도 PostgreSQL
- * 에서 통과한다는 보장이 없다. {@code PredictionSlotLockPostgresTest} 와 같은 모양이다.
+ * 에서 통과한다는 보장이 없다.
  *
  * <p><b>테스트에 {@code @Transactional} 을 붙이면 안 된다</b> — 붙이면 스레드가 한 트랜잭션 안에서 돌아
  * 레이스 자체가 생기지 않는다. 스레드마다 접수 트랜잭션이 따로 커밋돼야 한다.

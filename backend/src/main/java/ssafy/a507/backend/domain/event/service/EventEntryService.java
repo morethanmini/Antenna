@@ -67,8 +67,7 @@ import ssafy.a507.backend.domain.research.entity.ResearchPoint;
  *
  * <p><b>기존 등록({@code POST /predictions})은 건드리지 않는다.</b> 항목별 검사는
  * {@link PredictionRegisterService} 의 메서드를 그대로 부른다 — 규칙을 복사하면 두 경로가 조용히
- * 갈린다. 다른 것은 셋뿐이다: 슬롯을 세지 않고(이벤트 참가는 무료 3건과 무관), 날짜를 오늘이 아니라
- * 이벤트에서 가져오고, 배팅·작업 행이 함께 생긴다.
+ * 갈린다. 다른 것은 둘뿐이다: 날짜를 오늘이 아니라 이벤트에서 가져오고, 배팅·작업 행이 함께 생긴다.
  */
 @Slf4j
 @Service

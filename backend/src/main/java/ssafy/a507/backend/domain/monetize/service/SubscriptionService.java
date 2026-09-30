@@ -112,12 +112,12 @@ public class SubscriptionService {
      */
     private Accepted accept(Long subscriberId, Long publisherId, SubscribeRequest request) {
         // 자기 구독은 인자 비교라 DB 를 타지 않는다. 어차피 409 를 줄 요청에 행 잠금을 잡을 이유가 없어
-        // 잠금보다 앞에 둔다(형제 둘은 이런 검사가 없어 잠금이 ① 이다).
+        // 잠금보다 앞에 둔다(형제 EventEntryService 는 이런 검사가 없어 잠금이 ① 이다).
         if (subscriberId.equals(publisherId)) {
             throw new BusinessException(ErrorCode.SELF_SUBSCRIBE, "userId");
         }
         // 구독자 행 잠금 — 이 사용자의 구독 접수를 직렬화한다. 아래 중복 검사가 이 뒤에 있어야 두 번째
-        // 요청이 첫 번째가 커밋한 행을 보고 409 를 받는다(PredictionRegisterService · EventEntryService 와
+        // 요청이 첫 번째가 커밋한 행을 보고 409 를 받는다(EventEntryService 와
         // 같은 판단). 남의 구독에는 영향이 없다. 잠금은 이 접수 트랜잭션이 커밋될 때 풀리므로 체인 전송을
         // 기다리지 않는다.
         // ponytail: 코드가 지키는 규칙이다. 구독 행을 만드는 경로가 여기 말고 더 생기면 그 경로도 같은

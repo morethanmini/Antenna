@@ -68,7 +68,14 @@ public final class UserDtos {
              * null 은 "건드리지 않음" 이다. 내 파일이 아니거나 용도가 다르면 400 이다 —
              * 남이 올린 id 를 알아내 내 사진으로 걸 수 없어야 한다.
              */
-            @Size(max = 36) String avatarFileId) {}
+            @Size(max = 36) String avatarFileId,
+            /**
+             * 채널 배너. POST /uploads 가 준 fileId 다(purpose=BANNER).
+             *
+             * <p>규칙은 {@code avatarFileId} 와 같다 — 빈 문자열이면 지우고, null 은 건드리지
+             * 않으며, 내 파일이 아니거나 용도가 다르면 400 이다.
+             */
+            @Size(max = 36) String bannerFileId) {}
 
     /**
      * 외부 채널 한 줄.
@@ -104,6 +111,8 @@ public final class UserDtos {
              * CDN 으로 바뀔 때 화면까지 고쳐야 한다(UploadResponse 와 같은 판단).
              */
             String avatarUrl,
+            /** 채널 배너 주소. 안 올렸으면 null 이고, 그때는 화면이 빈 자리를 그린다 */
+            String bannerUrl,
             /** 관심 섹터. 없으면 빈 배열이다 — null 을 내리면 화면마다 가드를 따로 써야 한다 */
             List<String> interests,
             /** 외부 채널. 등록 순(created_at)으로 내린다 */

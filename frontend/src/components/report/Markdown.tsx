@@ -19,18 +19,43 @@
    react-markdown 묶음이 작지 않아 **지연 로딩**한다. 리포트 화면에 들어온 사람만 받는다 —
    홈·랭킹까지 이 무게를 지고 갈 이유가 없다. */
 import { Suspense, lazy } from 'react'
+import type { Components } from 'react-markdown'
+import { headingId } from './outline'
 import '../../styles/markdown.css'
 
-/* 세 묶음을 한 청크로 함께 받는다. 따로 쪼개면 왕복만 늘고, 어차피 셋이 같이 쓰인다. */
+/* 제목에 원문 줄 번호로 id 를 붙인다. 목차(ReportToc)가 원문에서 같은 줄 번호를 읽어
+   가리키므로, 렌더를 기다리지 않고도 둘이 맞는다 */
+type HeadingProps = { node?: { position?: { start: { line: number } } } } & React.HTMLAttributes<HTMLHeadingElement>
+const heading = (Tag: 'h1' | 'h2' | 'h3' | 'h4') =>
+  ({ node, children, ...props }: HeadingProps) => {
+    const line = node?.position?.start.line
+    return <Tag {...props} id={line ? headingId(line) : undefined}>{children}</Tag>
+  }
+const headings = { h1: heading('h1'), h2: heading('h2'), h3: heading('h3'), h4: heading('h4') }
+
+/* 묶음들을 한 청크로 함께 받는다. 따로 쪼개면 왕복만 늘고, 어차피 같이 쓰인다. */
 const Renderer = lazy(async () => {
-  const [{ default: ReactMarkdown }, { default: remarkGfm }, { default: remarkBreaks }] =
-    await Promise.all([import('react-markdown'), import('remark-gfm'), import('remark-breaks')])
+  const [{ default: ReactMarkdown }, { default: remarkGfm }, { default: remarkBreaks }, { default: rehypeReport }, blocks] =
+    await Promise.all([
+      import('react-markdown'), import('remark-gfm'), import('remark-breaks'),
+      import('./rehypeReport'), import('./blocks'),
+    ])
+
+  /* rehypeReport 가 만든 부품 자리. 표준 태그가 아니라 Components 타입에 없어서 넓혀 준다 */
+  const custom = {
+    'volume-chart': ({ node: _node, ...props }: Record<string, unknown>) => <blocks.VolumeChart {...props} />,
+    'report-summary': ({ node: _node, ...props }: Record<string, unknown>) => <blocks.ReportSummary {...props} />,
+  } as unknown as Components
 
   return {
     default: ({ text }: { text: string }) => (
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks]}
+        /* 문자 막대 차트·숫자 열·등락 색. 알아보지 못한 형태는 그대로 둔다(rehypeReport 머리말) */
+        rehypePlugins={[rehypeReport]}
         components={{
+          ...headings,
+          ...custom,
           /* 바깥으로 나가는 링크는 새 탭으로. rel 은 새 탭이 이 페이지를 조작하지 못하게 막는다 —
              본문을 쓴 사람이 우리 쪽 사람이 아닐 수 있다. */
           /* react-markdown 은 컴포넌트마다 hast 노드를 `node` 로 넘긴다. 그대로 펼치면

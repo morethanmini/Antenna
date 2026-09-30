@@ -40,7 +40,14 @@ public class UploadFile {
         REPORT,
         POST,
         /** 프로필 사진. 정사각으로 올라오고 users.avatar_file_id 가 가리킨다 (ANT-AUTH-05) */
-        PROFILE
+        PROFILE,
+        /**
+         * 채널 배너. 채널 프로필(E-02) 머리에 넓게 깔리고 users.banner_file_id 가 가리킨다.
+         *
+         * <p>PROFILE 과 나누는 까닭은 서로 자리가 달라서다 — 동그랗게 그리는 자리에 넓은 그림이
+         * 들어가면 한쪽이 잘리고, 그 반대도 같다. UserService 가 걸 때 용도를 본다.
+         */
+        BANNER
     }
 
     @Id

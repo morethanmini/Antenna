@@ -1,7 +1,6 @@
 /* C-01 예측 등록 도메인. 설계서 §3 C · §4 C-01 · §5 · §9.2.
 
-     GET  /predictions/slots         오늘 슬롯 잔여 · overCost(소각액)
-     POST /predictions               등록 — 201 슬롯 내 / 202 슬롯 초과(소각, ANT-PRED-10)
+     POST /predictions               등록 — 201. 횟수 제한·중복 검사가 없다(2026-09-30)
      GET  /predictions/me            내 예측 (C-02)
      GET  /predictions/{id}          예측 상세 (C-03)
 
@@ -23,7 +22,7 @@ import { api } from './client'
 import { releaseIdempotencyKey } from './idempotency'
 import { keccak256Utf8 } from '../chain/keccak'
 import type { ProofAnchorStatus } from './proof'
-import type { CursorList, OperationRef } from './types'
+import type { CursorList } from './types'
 import type { WalletNonce } from './wallet'
 
 /** UP/DOWN 둘뿐이다. "보합" 을 두지 않는다(§4 C-01). */
@@ -88,21 +87,6 @@ export const isAwaitingVerdict = (dday: number | null | undefined): dday is numb
 /** 근거 본문 상한. 구독자 전용이며 만기 리빌 후에도 공개되지 않는다. */
 export const NOTE_MAX = 5000
 
-/** 슬롯은 **하루** 단위다(서버 app.prediction.slot.free-per-day). 주 단위가 아니다. */
-export type SlotStatus = {
-  /** 이 셈이 걸린 날(KST). 자정에 넘어간다 */
-  date: string
-  freeLimit: number
-  used: number
-  remaining: number
-  /**
-   * 슬롯을 넘겨 등록할 때 소각할 금액(정수 ANT 문자열). 서버 금액표
-   * app.token.amounts.slot-over(ANT-TOKEN-08)에서 온다. 금액 필드는 문자열로 통일돼 있어
-   * 숫자로 바꾸지 않는다 — 표시는 formatToken(api/wallet.ts) 으로 한다.
-   */
-  overCost: string
-}
-
 export type PredictionDraft = {
   stockCode: string
   direction: Direction
@@ -131,21 +115,8 @@ export type PredictionCreated = {
   settleDate: string
 }
 
-/**
- * 슬롯을 넘겨 소각으로 접수된 경우(202, ANT-PRED-10). M-02 가 operationId 를 폴링한다.
- *
- * 예측은 접수 시점에 이미 저장돼 있어 predictionId 가 같이 온다 — 확정을 기다리는 동안에도
- * 상세로 갈 수 있다. 소각이 체인에서 확정되면 작업이 SUCCEEDED 가 된다.
- */
-export type PredictionQueued = OperationRef & { predictionId: number }
-
-export type CreateResult =
-  | { kind: 'created'; data: PredictionCreated }
-  | { kind: 'queued'; data: PredictionQueued }
-
-export function getSlots() {
-  return api.get<SlotStatus>('/predictions/slots')
-}
+/** kind 를 두는 이유 — 완료 화면이 대회 접수(EventResult)와 이것을 kind 로 가른다(predictForm.ts). */
+export type CreateResult = { kind: 'created'; data: PredictionCreated }
 
 /* ── 예측 포트폴리오 · GET /predictions/me/portfolio ──────
    C-04 가 쓰는 서버 집계. 여덟 필드가 전부다(설계서 §4 C-04). 화면이 목록을
@@ -503,7 +474,7 @@ export function getPredictionDistribution(code: string) {
 
 /**
  * 멱등 키 scope. 서버가 `Idempotency-Key` 를 **필수**로 받는다(없으면 400
- * IDEMPOTENCY_KEY_REQUIRED) — 예측에는 삭제 API 가 없고 슬롯도 되돌아오지 않아,
+ * IDEMPOTENCY_KEY_REQUIRED) — 예측에는 삭제 API 가 없어,
  * 타임아웃 뒤 한 번의 재시도가 예측 둘을 만들면 복구할 길이 없다.
  *
  * 봉인 재료가 바뀌면 다른 요청이므로 키도 갈라야 한다. noteSalt 가 등록마다 새로
@@ -512,17 +483,12 @@ export function getPredictionDistribution(code: string) {
 export const createScope = (d: PredictionDraft) =>
   `prediction:${d.stockCode}:${d.noteSalt}`
 
-/* 201 과 202 를 응답 본문 모양으로 가른다. api.post 는 상태 코드를 돌려주지 않는데,
-   그것 하나 때문에 공용 client 를 고치면 다른 화면까지 영향이 간다. 두 응답은
-   키가 겹치지 않아(operationId ↔ id) 모양만으로 확실히 갈린다. */
 export function createPrediction(draft: PredictionDraft, signature: string) {
   const scope = createScope(draft)
-  return api.post<PredictionCreated | PredictionQueued>(
+  return api.post<PredictionCreated>(
     '/predictions', { ...draft, signature }, { idempotencyScope: scope },
   )
-    .then((body): CreateResult => ('operationId' in body
-      ? { kind: 'queued', data: body }
-      : { kind: 'created', data: body }))
+    .then((body): CreateResult => ({ kind: 'created', data: body }))
     /* 확정된 뒤에야 키를 버린다. 실패한 재시도는 같은 키로 가야 서버가 중복으로
        세지 않는다 — 성공 응답을 받은 다음 요청만 새 키를 받는다. */
     .then((r) => { releaseIdempotencyKey(scope); return r })

@@ -308,7 +308,7 @@ class PredictionViewControllerTest {
     }
 
     @Test
-    @DisplayName("상세 — 없는 예측은 404, /me·/slots 같은 고정 경로는 상세로 잡히지 않는다")
+    @DisplayName("상세 — 없는 예측은 404, /me 같은 고정 경로는 상세로 잡히지 않는다")
     void 상세_없음과_경로() throws Exception {
         mockMvc.perform(get(DETAIL, 999_999).with(user(String.valueOf(viewerId))))
                 .andExpect(status().isNotFound())

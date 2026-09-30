@@ -39,6 +39,14 @@ public class AvatarUrls {
         return uploads.findById(user.getAvatarFileId()).map(UploadFile::getUrl).orElse(null);
     }
 
+    /** 채널 배너. 규칙은 {@link #of(User)} 와 같다 — 없거나 파일이 사라졌으면 null 이다 */
+    public String bannerOf(User user) {
+        if (user == null || user.getBannerFileId() == null) {
+            return null;
+        }
+        return uploads.findById(user.getBannerFileId()).map(UploadFile::getUrl).orElse(null);
+    }
+
     /**
      * 여러 사람을 한 번에. 돌려주는 표에는 <b>사진이 있는 사람만</b> 담긴다 —
      * 없는 사람은 키 자체가 없으므로 부르는 쪽에서 {@code map.get(id)} 가 null 이 된다.

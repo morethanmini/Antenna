@@ -532,8 +532,37 @@
   cursor:pointer;transition:border-color .14s,background .14s,box-shadow .14s;
 }
 .stock-detail-page .sd-point:hover{border-color:#c8ccdd}
-.stock-detail-page .sd-point.is-on{border-color:var(--brand);background:var(--brand-softer)}
-.stock-detail-page .sd-point input{margin:1px 0 0;flex:none;align-self:flex-start;accent-color:var(--brand)}
+/* 고른 칸(2026-09-29). 테두리 색만 바꾸던 때는 열 판 색(연빨강·연파랑) 위에서 연보라 채움이
+   묻혀 무엇을 골랐는지 훑어서는 안 보였다. 흰 바탕은 그대로 두고 **테두리를 굵게 · 살짝 띄우고 ·
+   고른 순서 번호**를 단다. 번호는 예측 근거로 넘어가는 차례와 같다 */
+.stock-detail-page .sd-point.is-on{
+  border-color:var(--brand);box-shadow:0 0 0 1px var(--brand), 0 8px 18px -12px rgba(91,77,224,.7);
+  transform:translateY(-1px);
+}
+.stock-detail-page .sd-point.is-on .sd-point-body{color:var(--ink)}
+/* 칸 안 오른쪽 위. 칸 밖 모서리에 걸면 스크롤 상자(예측 등록 창) 안에서 잘린다 */
+.stock-detail-page .sd-point-order{
+  flex:none;align-self:flex-start;margin-left:auto;
+  display:grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;
+  background:var(--brand);color:#fff;font-size:var(--fs-xs);font-weight:var(--fw-heavy);line-height:1;
+}
+/* 체크 칸. 기본 체크박스는 작고 옅어 판 색 위에서 고른 칸과 안 고른 칸이 비슷했다.
+   input 은 그대로 두고(키보드·보조기술이 상태를 읽는다) 겉모양만 바꾼다 */
+.stock-detail-page .sd-point input{
+  appearance:none;-webkit-appearance:none;
+  margin:1px 0 0;flex:none;align-self:flex-start;
+  width:18px;height:18px;border-radius:5px;
+  border:1.5px solid #c3c7d6;background:var(--surface);cursor:pointer;
+  transition:background .14s,border-color .14s;
+}
+.stock-detail-page .sd-point:hover input{border-color:var(--brand)}
+.stock-detail-page .sd-point input:checked{
+  border-color:var(--brand);
+  background:var(--brand) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / 13px no-repeat;
+}
+@media (prefers-reduced-motion:reduce){
+  .stock-detail-page .sd-point.is-on{transform:none}
+}
 .stock-detail-page .sd-point:focus-within{outline:2px solid var(--brand);outline-offset:2px}
 /* 포인트는 제목 없이 본문 한 덩어리다(서버 계약).
    줄간격을 1.6 에서 1.5 로 좁혔다 — 세 줄짜리 요약이 대부분이라, 넓은 줄간격이
@@ -541,6 +570,7 @@
 .stock-detail-page .sd-point-body{
   min-width:0;color:var(--body);font-size:var(--fs-md);line-height:1.5;word-break:keep-all;
 }
+.stock-detail-page .sd-point-body b{color:var(--ink);font-weight:var(--fw-heavy);font-variant-numeric:tabular-nums}
 
 .stock-detail-page .sd-point-foot{
   display:flex;align-items:center;justify-content:space-between;gap:12px;
@@ -600,16 +630,6 @@
   margin:2px 0 0;color:var(--muted);font-size:var(--fs-xs);line-height:1.5;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.stock-detail-page .sd-doc-more{
-  flex:none;display:inline-flex;align-items:center;gap:3px;height:28px;padding:0 8px 0 11px;
-  border:1px solid var(--rule);border-radius:999px;background:var(--surface);color:var(--body);
-  font-family:inherit;font-size:var(--fs-xs);font-weight:var(--fw-bold);cursor:pointer;
-  transition:border-color .14s,color .14s;
-}
-.stock-detail-page .sd-doc-more:hover:not(:disabled){border-color:var(--brand-soft);color:var(--brand-ink,var(--brand))}
-.stock-detail-page .sd-doc-more:disabled{color:var(--faint);cursor:default}
-.stock-detail-page .sd-doc-more:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
-.stock-detail-page .sd-doc-more svg{color:var(--faint)}
 .stock-detail-page .sd-doc-none{
   margin:0;padding:26px 0;text-align:center;color:var(--faint);font-size:var(--fs-sm);
 }
@@ -683,11 +703,18 @@
 .stock-detail-page .sd-doc-nav button:hover:not(:disabled){border-color:var(--brand-soft);color:var(--brand-ink,var(--brand))}
 .stock-detail-page .sd-doc-nav button:disabled{color:var(--faint);cursor:default}
 .stock-detail-page .sd-doc-nav button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
-.stock-detail-page .sd-doc-dots{display:inline-flex;align-items:center;gap:5px}
-.stock-detail-page .sd-doc-dots i{
-  width:6px;height:6px;border-radius:999px;background:var(--rule);transition:background .14s,width .14s;
+/* 점이 아니라 숫자다(2026-09-23). 점은 쪽수만큼 늘어나는데, 더보기를 몇 번 누르면
+   그 줄이 박스보다 길어져 화살표까지 밖으로 밀어냈다(실측: 박스 343px 에 점 35개
+   = 390px, 화살표가 좌우 52px 씩 밖). flex 항목은 기본이 min-width:auto 라 내용보다
+   좁아지지 않는 것이 원인이었다.
+
+   폭을 고쳐 막지 않고 점을 걷은 것은, 폭이 넉넉해도 점 서른 개로는 몇 번째인지
+   읽을 수 없기 때문이다. 숫자는 쪽수가 몇이든 폭이 거의 그대로다.
+   tabular-nums 로 자릿수를 고정해 넘길 때마다 좌우 화살표가 흔들리지 않게 한다. */
+.stock-detail-page .sd-doc-count{
+  min-width:0;color:var(--muted);font-size:var(--fs-md);font-weight:var(--fw-bold);
+  font-variant-numeric:tabular-nums;white-space:nowrap;
 }
-.stock-detail-page .sd-doc-dots i.is-on{width:16px;background:var(--brand)}
 
 /* ── 개요 · 지표 ───────────────────────────────────────── */
 .stock-detail-page .sd-desc{
@@ -806,10 +833,6 @@
 .stock-detail-page .sd-slots > p{margin:0;display:flex;align-items:baseline;gap:4px}
 .stock-detail-page .sd-slots b{font-size:var(--fs-5xl);font-weight:var(--fw-heavy);color:var(--ink)}
 .stock-detail-page .sd-slots span{color:var(--muted);font-size:var(--fs-base)}
-.stock-detail-page .sd-slot-warn{
-  margin:0;padding:9px 13px;border-radius:10px;background:#fff8e8;
-  color:#7a5300;font-size:var(--fs-md);line-height:1.6;
-}
 
 /* ── 예측 등록 폼(C-01) — 번호가 붙은 단계 ────────────────
    무엇을 몇 개나 정해야 하는지 한눈에 보이도록 단계에 번호를 붙였다.

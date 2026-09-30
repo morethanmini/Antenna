@@ -85,6 +85,8 @@ export type Channel = {
   userId: string
   nickname: string
   avatarUrl: string | null
+  /** 채널 배너. 안 올렸으면 null — 화면이 빈 자리를 그린다 */
+  bannerUrl: string | null
   /** 소개. 비어 있을 수 있다 */
   bio: string | null
   /** 관심 분야(섹터명). 서버가 주는 문자열을 그대로 쓴다 */

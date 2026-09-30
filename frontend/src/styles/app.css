@@ -623,12 +623,21 @@ button{border:0;background:none;cursor:pointer}
    **night.css 에서 이 창들을 다시 칠하지 말 것.** body.is-night .어쩌구(0,2,1)가
    여기(0,1,0)를 눌러 조용히 덮는다 — 실제로 그렇게 알림창 제목이 흰 판에 흰
    글씨가 된 적이 있다(039c7747 → b31c455f). 색은 여기 한 군데서만 정한다. */
+/* 아래 넷(.ab-modal · .iu-modal · .sub-modal · .wl-modal)은 판 색을 제 파일에서
+   #fff 로 박아 두었지만 **글자 토큰은 되돌리지 않았다.** 토큰이 뒤집히지 않는 화면
+   (bodyClass 가 is-night 뿐인 곳) 위에서만 떠 왔기 때문에 드러나지 않았을 뿐이다 —
+   채널 프로필(E-02)이 is-panel 로 들어오자 흰 판에 흰 글씨가 됐다(2026-09-29).
+   판만 박고 글자는 안 박으면 다음에 또 같은 일이 난다. 여기 목록으로 옮겨 온다. */
 .navburger-pop,
 .accountmenu-pop,
 .nt-pop,
 .se-modal,
 .bf-modal,
-.sj-dialog{
+.sj-dialog,
+.ab-modal,
+.iu-modal,
+.sub-modal,
+.wl-modal{
   --surface:#ffffff;
   --surface-2:#f0f2f7;
   --ink:#14141b;

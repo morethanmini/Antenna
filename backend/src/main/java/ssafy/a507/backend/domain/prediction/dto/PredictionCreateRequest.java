@@ -18,7 +18,7 @@ import ssafy.a507.backend.domain.prediction.entity.Prediction;
 /**
  * 예측 등록 요청 (ANT-PRED-01, 명세 v0.38 {@code POST /predictions}).
  *
- * <p>여기서 잡는 건 <b>모양</b>뿐이다. 종목 존재·직전 종가와의 모순·근거 포인트 소속·슬롯은 서비스가 본다 —
+ * <p>여기서 잡는 건 <b>모양</b>뿐이다. 종목 존재·직전 종가와의 모순·근거 포인트 소속은 서비스가 본다 —
  * DB 를 봐야 아는 것들이라서다. 형식 오류는 여기서 400 으로 끝나고, 그러면 nonce 를 태우지 않는다.
  *
  * <p>{@code noteSalt} 는 이 시스템의 유일한 난수다(ANT-PRED-02). 클라이언트가 만들어 보내고 서버는 형식만 본다.

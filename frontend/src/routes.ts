@@ -74,6 +74,10 @@ export type PageMeta = {
   /** 사이드바에서 활성으로 표시할 메뉴 키 */
   nav?: string
   bodyClass?: string
+  /** 주소에 따라 상단바까지 밤이 되는 화면. 참이면 셸이 bodyClass 에 is-night 를 더한다 —
+      같은 화면이 탭에 따라 밝은 판·어두운 판을 오가서 정적인 bodyClass 로는 답할 수 없다.
+      읽는 곳은 App.tsx 의 Page(?event= · ?mode= 와 같은 자리) */
+  nightWhen?: (params: URLSearchParams) => boolean
   /** 이 화면을 구현할 Jira 스토리 슬러그 */
   story: string
 }
@@ -116,14 +120,14 @@ export const ROUTES: PageMeta[] = [
   { screen: 'D-04', element: VerifyReport, path: '/ledger/verify/report/:reportId', title: '리포트 검산', access: 'user', mode: 'insight', sharedMode: true, nav: 'ledger', bodyClass: 'is-night', story: 'ANT-CHAIN-17' },
 
   // ── E. 채널 · 구독 ───────────────────────────────────
-  { screen: 'E-01', element: Ranking, path: '/rankings', title: '주가 예측 랭킹', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'predictor-market-page', story: 'ANT-FE-RANKING' },
+  { screen: 'E-01', element: Ranking, path: '/rankings', title: '주가 예측 랭킹', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'predictor-market-page', nightWhen: (p) => p.get('tab') === 'event', story: 'ANT-FE-RANKING' },
   /* 모의투자 랭킹(/sim/rankings)은 뺐다(2026-09-16). REPLAY 트랙 누적 순위인데,
      "한 시즌 안의 순위는 G-07 시즌 리더보드가 이미 보여 준다" 가 그때의 근거였다.
 
      ⚠ **그 G-07 이 빈 자리표시자였고 2026-09-17 에 지웠다.** 그래서 지금은 모의투자
      순위를 볼 화면이 하나도 없다. 순위를 되살려야 한다면 여기가 아니라 그 결정부터
      다시 봐야 한다. 실전 랭킹(/rankings)은 그대로다. */
-  { screen: 'E-02', element: ChannelProfile, path: '/channels/:userId', title: '채널 프로필', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'is-night', story: 'ANT-FE-CHANNEL-PROFILE' },
+  { screen: 'E-02', element: ChannelProfile, path: '/channels/:userId', title: '채널 프로필', access: 'user', mode: 'insight', nav: 'market', bodyClass: 'is-night is-panel', story: 'ANT-FE-CHANNEL-PROFILE' },
   { screen: 'E-03', element: SubscriptionList, path: '/me/subscriptions', title: '내 구독', access: 'user', mode: 'insight', nav: 'portfolio', bodyClass: 'is-night', story: 'ANT-FE-SUBSCRIPTION-LIST' },
   { screen: 'E-04', element: ChannelFee, path: '/me/channel', title: '내 채널 설정', access: 'user', mode: 'insight', nav: 'portfolio', bodyClass: 'is-night', story: 'ANT-FE-CHANNEL-FEE' },
   /* nav 가 사이드바 어느 키와도 겹치지 않는다 — 마이페이지는 사이드바가 아니라 상단
