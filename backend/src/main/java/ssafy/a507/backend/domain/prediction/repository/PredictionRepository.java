@@ -12,7 +12,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import ssafy.a507.backend.domain.common.Track;
 import ssafy.a507.backend.domain.monetize.entity.Subscription;
-import ssafy.a507.backend.domain.chain.entity.Operation;
 import ssafy.a507.backend.domain.prediction.entity.Prediction;
 
 public interface PredictionRepository extends JpaRepository<Prediction, Long> {
@@ -73,55 +72,6 @@ public interface PredictionRepository extends JpaRepository<Prediction, Long> {
             @Param("now") Instant now,
             @Param("cursorId") Long cursorId,
             Limit limit);
-
-    /**
-     * 슬롯 계산(ANT-PRED-01) — KST 하루 구간 [from, to) 에 이 사용자가 등록한 수. 트랙 구분 없이 센다(예측은 REAL 전용).
-     *
-     * <p><b>이벤트 참가는 빼고 센다</b>(ANT-EVENT-05). 배팅 이벤트는 ANT 를 내고 참가하는 별개 규칙이라 무료 슬롯 3건과
-     * 무관한데, 안 빼면 5종목을 걸자마자 그날 예측을 하나도 못 쓴다. 이벤트 예측인지는 컬럼이 아니라
-     * {@code prediction_event_bets} 행의 유무로 가른다 — 배팅 행이 1:1 로 붙어 있고, 그래서 {@code predictions} 에
-     * 이벤트 전용 컬럼을 더하지 않아도 된다.
-     */
-    @Query("""
-            select count(p) from Prediction p
-             where p.user.id = :userId
-               and p.createdAt >= :from and p.createdAt < :to
-               and not exists (select 1 from PredictionEventBet b where b.prediction = p)
-               and not exists (select 1 from Operation o
-                                where o.kind = :burn and o.resourceType = :resource and o.resourceId = p.id)
-            """)
-    long countFreeToday(
-            @Param("userId") Long userId,
-            @Param("from") Instant from,
-            @Param("to") Instant to,
-            @Param("burn") Operation.Kind burn,
-            @Param("resource") Operation.ResourceType resource);
-
-    /**
-     * 오늘 쓴 무료 슬롯. <b>소각으로 등록한 건(PREDICTION_BURN 작업이 붙은 예측)도 뺀다</b>(ANT-PRED-10) — 안 빼면
-     * 화면이 "오늘 4/3회" 가 된다. 무료 3건을 다 쓴 뒤의 등록은 어차피 전부 소각이라 판단은 같다.
-     */
-    default long countFreeToday(Long userId, Instant from, Instant to) {
-        return countFreeToday(userId, from, to, Operation.Kind.PREDICTION_BURN, Operation.ResourceType.PREDICTION);
-    }
-
-    /** 등록 중복 검사(QA 09-23) — 판정 전인 내 예측 중 종목·방향·목표가·기간이 모두 같은 것이 있나. 목표가는 수로 비교한다. */
-    @Query("""
-            select count(p) > 0 from Prediction p
-             where p.user.id = :userId
-               and p.stock.code = :stockCode
-               and p.direction = :direction
-               and p.targetPrice = :targetPrice
-               and p.horizon = :horizon
-               and p.status in :statuses
-            """)
-    boolean existsSame(
-            @Param("userId") Long userId,
-            @Param("stockCode") String stockCode,
-            @Param("direction") Prediction.Direction direction,
-            @Param("targetPrice") BigDecimal targetPrice,
-            @Param("horizon") short horizon,
-            @Param("statuses") Collection<Prediction.Status> statuses);
 
     /**
      * 판정 배치(ANT-PRED-03·04)가 훑을 대상의 <b>id 만</b> 가져온다. 한 건이 트랜잭션 하나라 엔티티는 그 트랜잭션 안에서 다시 읽는다 —

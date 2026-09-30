@@ -35,7 +35,6 @@ const BY_CODE: Record<string, Text> = {
 
   // 예측 · 잔액 · 모의투자
   [ERROR_CODE.PREDICTION_SLOT_EXCEEDED]: { title: '무료 예측 슬롯을 모두 썼어요', hint: '토큰을 소각하면 계속 등록할 수 있어요' },
-  [ERROR_CODE.PREDICTION_DUPLICATED]: { title: '같은 예측이 이미 진행 중이에요', hint: '목표가나 기간을 바꾸면 새로 걸 수 있어요' },
   [ERROR_CODE.INSUFFICIENT_BALANCE]: { title: '토큰 잔액이 부족해요', hint: '지갑에서 잔액을 확인해 주세요' },
   [ERROR_CODE.DAY_MISMATCH]: { title: '진행 상황이 달라졌어요', hint: '최신 상태로 맞춘 뒤 다시 시도해요', retryable: true },
   [ERROR_CODE.SEASON_NOT_FOUND]: { title: '시즌을 찾을 수 없습니다' },

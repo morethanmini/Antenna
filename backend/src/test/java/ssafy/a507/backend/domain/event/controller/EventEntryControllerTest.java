@@ -9,7 +9,6 @@ import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.mock;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -53,11 +52,10 @@ import ssafy.a507.backend.support.WalletSignatures;
 /**
  * POST /api/v1/events/{eventId}/entries — ANT-EVENT-05 (작업명세 v1.2 §3-3 · §4 · §6).
  *
- * <p>여기서 고정하는 것은 다섯이다.
+ * <p>여기서 고정하는 것은 넷이다.
  *
  * <ol>
  *   <li><b>첫 참가는 5종목 이상</b> — 이 규칙 때문에 묶음 API 가 존재한다
- *   <li><b>슬롯을 쓰지 않는다</b> — 이벤트 참가로 무료 예측 3건이 닳으면 안 된다
  *   <li><b>날짜는 이벤트가 준다</b> — 기존 판정 배치가 코드 한 줄 안 바꾸고 이벤트 예측을 판정한다
  *   <li><b>행을 먼저 커밋하고 전송한다</b>(§0.3) — 돈이 풀로 갔는데 배팅 행이 없으면 인덱서가 주인을 못 찾는다
  *   <li><b>전송 실패는 202 를 무너뜨리지 않는다</b> — 실패한 배팅은 재시도 크론이 봉인 전까지 다시 보낸다
@@ -186,17 +184,6 @@ class EventEntryControllerTest {
         // 목→월 = 4 캘린더일. 상수로 박지 않고 이벤트의 두 날짜에서 뽑는다
         assertThat(scalar("SELECT DISTINCT horizon FROM predictions")).isEqualTo("4");
         assertThat(scalar("SELECT DISTINCT track FROM predictions")).isEqualTo("REAL");
-    }
-
-    @Test
-    @DisplayName("무료 예측 슬롯을 쓰지 않는다 — 이벤트 참가로 하루 3건이 닳으면 안 된다")
-    void 슬롯은_그대로() throws Exception {
-        mockMvc.perform(entries(items(5), "key-1")).andExpect(status().isAccepted());
-
-        mockMvc.perform(get("/api/v1/predictions/slots").with(user(String.valueOf(bettor.getId()))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.used").value(0))
-                .andExpect(jsonPath("$.remaining").value(3));
     }
 
     @Test
