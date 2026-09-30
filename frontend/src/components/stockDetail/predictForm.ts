@@ -51,7 +51,7 @@ export const emptyPredictForm = (): PredictForm => ({
 
 /**
  * 대회 배팅 접수(202). 예측은 접수 시점에 저장돼 predictionId 가 오고, 소각 확정은
- * operationId 로 M-02 가 폴링한다 — PredictionQueued 와 같은 모양이지만 kind 를 따로
+ * operationId 로 M-02 가 폴링한다 — kind 를 따로
  * 두는 이유는 완료 화면의 말과 갈 곳이 다르기 때문이다(예측 상세가 아니라 대회로 돌아간다).
  */
 export type EventResult = {

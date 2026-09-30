@@ -52,7 +52,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * ANT-PRED-01 — 예측 등록·슬롯. H2.
+ * ANT-PRED-01 — 예측 등록. H2.
  *
  * <p>지갑은 web3j {@code Credentials} 가 대신하고({@link WalletSignatures}), nonce 는 인메모리 저장소, Redis(멱등키)는 맵으로
  * 흉내낸다. 서명 문자열은 요청 DTO 의 {@code signingPayload} 를 그대로 써서 만든다 — 프론트가 이 문자열을 똑같이 만들어야 한다는
@@ -200,56 +200,21 @@ class PredictionControllerTest {
                 .andExpect(jsonPath("$.code").value("IDEMPOTENCY_KEY_REQUIRED"));
     }
 
-    // ── 슬롯 ──────────────────────────────────────────────────────
+    // ── 제한 없음 ─────────────────────────────────────────────────
 
     @Test
-    @DisplayName("하루 3건까지 — 4번째는 소각 경로인데 체인이 꺼진 이 컨텍스트에서는 503 CHAIN_UNAVAILABLE 이고, slots 가 used/remaining 을 그대로 보여준다")
-    void 슬롯_3건() throws Exception {
-        mockMvc.perform(get(URL + "/slots").with(user(str(userId))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.freeLimit").value(3))
-                .andExpect(jsonPath("$.used").value(0))
-                .andExpect(jsonPath("$.remaining").value(3))
-                .andExpect(jsonPath("$.overCost").value("500")); // decimals 0 — 500 ANT 그대로 (금액표 ANT-TOKEN-08 · PRED-10 에서 조정)
-
-        for (int i = 0; i < 3; i++) {
-            perform(signed(request(SAMSUNG, "UP", "8100" + i, 7, List.of()), wallet), UUID.randomUUID().toString())
-                    .andExpect(status().isCreated());
+    @DisplayName("등록에 횟수 제한도 중복 검사도 없다 — 같은 예측을 하루에 몇 번 올려도 전부 201 이고 토큰 작업은 생기지 않는다")
+    void 제한_없이_등록() throws Exception {
+        for (int i = 1; i <= 12; i++) {
+            // noteSalt 만 등록마다 다르다 — 화면도 매번 새로 뽑는다. 같으면 commit_hash 유니크에 걸린다.
+            PredictionCreateRequest req = new PredictionCreateRequest(
+                    SAMSUNG, Prediction.Direction.UP, new BigDecimal("82000"), (short) 7,
+                    "3분기 실적 컨센서스 상회 전망", String.format("%064x", i), List.of(), "0x" + "00".repeat(65));
+            perform(signed(req, wallet), UUID.randomUUID().toString()).andExpect(status().isCreated());
         }
-        // 4번째부터는 소각(202)이다 — 체인이 있을 때의 모양은 PredictionBurnControllerTest 가 본다.
-        perform(signed(request(SAMSUNG, "UP", "85000", 7, List.of()), wallet), UUID.randomUUID().toString())
-                .andExpect(status().isServiceUnavailable())
-                .andExpect(jsonPath("$.code").value("CHAIN_UNAVAILABLE"));
 
-        mockMvc.perform(get(URL + "/slots").with(user(str(userId))))
-                .andExpect(jsonPath("$.used").value(3))
-                .andExpect(jsonPath("$.remaining").value(0));
-        // 체인 확인은 서명 검증 앞이다 — nonce 가 남아 있어야 한다.
-        assertThat(nonceStore.consume(userId, SignatureScope.PREDICTION)).isNotNull();
-    }
-
-    // ── 중복 ──────────────────────────────────────────────────────
-
-    @Test
-    @DisplayName("판정 전인 같은 예측(종목·방향·목표가·기간)을 또 올리면 409 PREDICTION_DUPLICATED — 기간이 다르거나 판정이 끝났으면 받는다")
-    void 같은_예측_중복() throws Exception {
-        perform(signed(request(SAMSUNG, "DOWN", "79000", 3, List.of()), wallet), UUID.randomUUID().toString())
-                .andExpect(status().isCreated());
-
-        // 소수점 표기가 달라도 같은 목표가다
-        perform(signed(request(SAMSUNG, "DOWN", "79000.00", 3, List.of()), wallet), UUID.randomUUID().toString())
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("PREDICTION_DUPLICATED"));
-        // 서명 검증 앞에서 막는다 — nonce 가 남아 있어야 한다.
-        assertThat(nonceStore.consume(userId, SignatureScope.PREDICTION)).isNotNull();
-
-        perform(signed(request(SAMSUNG, "DOWN", "79000", 5, List.of()), wallet), UUID.randomUUID().toString())
-                .andExpect(status().isCreated());
-
-        em.flush();
-        em.createNativeQuery("UPDATE predictions SET status = 'MISS'").executeUpdate();
-        perform(signed(request(SAMSUNG, "DOWN", "79000", 3, List.of()), wallet), UUID.randomUUID().toString())
-                .andExpect(status().isCreated());
+        assertThat(count("SELECT count(*) FROM predictions")).isEqualTo(12);
+        assertThat(count("SELECT count(*) FROM operations")).isZero();
     }
 
     // ── 서명 ──────────────────────────────────────────────────────
@@ -378,7 +343,7 @@ class PredictionControllerTest {
     @Test
     @DisplayName("인증 없이는 401")
     void 인증_없으면_401() throws Exception {
-        mockMvc.perform(get(URL + "/slots")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get(URL + "/me")).andExpect(status().isUnauthorized());
     }
 
     // ── 픽스처 ───────────────────────────────────────────────────

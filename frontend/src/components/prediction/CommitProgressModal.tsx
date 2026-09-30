@@ -12,11 +12,7 @@
 
    폴링은 배치 주기를 따라잡을 수 없다(분 단위일 수 있다). 그래서 기다리게 두지
    않고 닫기와 내 예측으로 가는 길을 처음부터 함께 연다. 창을 닫아도 등록은
-   그대로 진행된다.
-
-   201 과 202 는 두 번째 단계의 뜻이 다르다. 201 은 커밋 해시를 받은 것이고,
-   202 는 슬롯을 넘겨 소각으로 접수된 것이라 아직 예측 id 가 없다. 문구를 하나로
-   합치지 않는다 — 사용자가 받은 것이 서로 다르다. */
+   그대로 진행된다. */
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PROOF_STATUS_LABEL, fetchProof, isAnchorSettling } from '../../api/proof'
@@ -30,7 +26,7 @@ export type CommitPhase = 'signing' | 'committing' | 'settled'
 
 type Props = {
   phase: CommitPhase
-  /** settled 일 때만 있다. 201 인지 202 인지로 문구가 갈린다 */
+  /** settled 일 때만 있다 */
   result: CreateResult | null
   onClose: () => void
 }
@@ -68,8 +64,7 @@ export default function CommitProgressModal({ phase, result, onClose }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null)
 
   const settled = phase === 'settled'
-  const queued = result?.kind === 'queued'
-  const predictionId = result?.kind === 'created' ? result.data.id : null
+  const predictionId = result?.data.id ?? null
 
   /* 앵커 상태. 서버가 말해 주기 전까지는 아무것도 주장하지 않는다.
 
@@ -77,10 +72,9 @@ export default function CommitProgressModal({ phase, result, onClose }: Props) {
      초기값으로는 201 의 anchorStatus 를 못 잡는다(마운트 때는 아직 null 이다).
      폴링이 한 바퀴 돌기 전까지는 201 이 준 값을 쓰도록 파생해서 읽는다. */
   const [polled, setPolled] = useState<ProofAnchorStatus | null>(null)
-  const anchor = polled ?? (result?.kind === 'created' ? result.data.anchorStatus : null)
+  const anchor = polled ?? result?.data.anchorStatus ?? null
 
   /* 배치가 묶을 때까지 물어본다. 확정·실패로 끝나면 멈춘다.
-     202(소각)는 predictionId 가 아직 없어 폴링할 대상이 없다 — 그쪽은 M-02 몫이다.
 
      **한 번 실패했다고 그만두지 않는다.** 예전에는 catch 가 비어 있어서 401 이나
      끊긴 연결 한 번에 폴링이 영영 죽었다. 그러면 앵커가 확정돼도 화면은 계속
@@ -167,7 +161,7 @@ export default function CommitProgressModal({ phase, result, onClose }: Props) {
     },
     {
       key: 'commit',
-      label: queued ? '토큰 소각 접수' : '커밋 해시 생성',
+      label: '커밋 해시 생성',
       state: settled ? 'done' : phase === 'committing' ? 'busy' : 'wait',
     },
     {
@@ -178,11 +172,9 @@ export default function CommitProgressModal({ phase, result, onClose }: Props) {
          끝나지 않은 일처럼 보여, 등록이 이미 확정됐는데도 사용자를 붙잡아 둔다.
          확정·실패가 오면 그때 결과로 바꾼다 — 창이 열려 있으면 바로 반영된다. */
       key: 'anchor',
-      label: queued
-        ? '블록 확정 대기'
-        : anchor === 'CONFIRMED' || anchor === 'FAILED'
-          ? PROOF_STATUS_LABEL[anchor]
-          : '블록체인 기록 — 배치가 묶습니다',
+      label: anchor === 'CONFIRMED' || anchor === 'FAILED'
+        ? PROOF_STATUS_LABEL[anchor]
+        : '블록체인 기록 — 배치가 묶습니다',
       state: !settled
         ? 'wait'
         : anchor === 'FAILED'
@@ -201,9 +193,7 @@ export default function CommitProgressModal({ phase, result, onClose }: Props) {
       >
         <div className="cp-head">
           <p className="cp-eyebrow">
-            {!settled ? '예측을 블록에 기록하고 있어요'
-              : queued ? '토큰 소각으로 접수되었어요'
-              : '예측이 블록에 기록되었어요'}
+            {!settled ? '예측을 블록에 기록하고 있어요' : '예측이 블록에 기록되었어요'}
           </p>
           {/* 진행 중에는 닫지 못한다 — 위 useEffect 와 같은 이유다 */}
           <button
@@ -219,13 +209,8 @@ export default function CommitProgressModal({ phase, result, onClose }: Props) {
 
         {/* 서버가 받아 준 순간 등록은 끝이고 되돌릴 수 없다. 앵커가 남았다고
             "진행 중" 으로 적으면, 이미 확정된 일을 미완으로 읽게 만든다. */}
-        {/* 202 는 슬롯을 넘겨 소각으로 접수된 것이라 아직 봉인이 아니다.
-            블록이 확정돼야 예측이 선다 — 둘을 같은 말로 덮으면 사용자가 받은 것이
-            서로 다른데 같은 것으로 읽힌다. */}
         <h2 id="cp-title" className="cp-title">
-          {!settled ? '예측을 블록에 담아 봉인하고 있어요'
-            : queued ? '토큰 소각으로 접수했습니다'
-            : '예측이 봉인되었습니다'}
+          {!settled ? '예측을 블록에 담아 봉인하고 있어요' : '예측이 봉인되었습니다'}
         </h2>
 
         {/* 장면은 phase 와 anchor 만 따라간다. 시간이 지났다고 다음 단계로
@@ -244,13 +229,7 @@ export default function CommitProgressModal({ phase, result, onClose }: Props) {
 
         {/* 여기서 기다릴 일이 아니라는 것을 분명히 말한다. 이 문장이 없으면
             앵커 줄만 보고 창을 못 닫는다 — 배치는 몇 분에서 그 이상 걸린다. */}
-        {settled && queued && (
-          <p className="cp-note">
-            블록이 확정되면 예측 목록에 나타납니다 — <b>창을 닫아도 그대로 진행되고</b>,
-            진행 상황은 확정 기록에서 볼 수 있어요.
-          </p>
-        )}
-        {settled && !queued && anchor !== 'CONFIRMED' && anchor !== 'FAILED' && (
+        {settled && anchor !== 'CONFIRMED' && anchor !== 'FAILED' && (
           <p className="cp-note">
             이 예측은 이제 누구도, 나조차도 바꿀 수 없습니다.
             체인 기록은 잠시 뒤 배치가 묶어요 — <b>창을 닫아도 그대로 진행되고</b>,
@@ -276,11 +255,7 @@ export default function CommitProgressModal({ phase, result, onClose }: Props) {
         {settled && (
           <div className="cp-actions">
             <button type="button" className="cp-btn ghost" onClick={onClose}>닫기</button>
-            {queued ? (
-              <Link className="cp-btn solid" to="/ledger" onClick={onClose}>확정 기록 보기</Link>
-            ) : (
-              <Link className="cp-btn solid" to="/me/predictions" replace onClick={onClose}>예측 현황 보러가기</Link>
-            )}
+            <Link className="cp-btn solid" to="/me/predictions" replace onClick={onClose}>예측 현황 보러가기</Link>
           </div>
         )}
       </div>

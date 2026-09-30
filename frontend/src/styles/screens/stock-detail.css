@@ -833,10 +833,6 @@
 .stock-detail-page .sd-slots > p{margin:0;display:flex;align-items:baseline;gap:4px}
 .stock-detail-page .sd-slots b{font-size:var(--fs-5xl);font-weight:var(--fw-heavy);color:var(--ink)}
 .stock-detail-page .sd-slots span{color:var(--muted);font-size:var(--fs-base)}
-.stock-detail-page .sd-slot-warn{
-  margin:0;padding:9px 13px;border-radius:10px;background:#fff8e8;
-  color:#7a5300;font-size:var(--fs-md);line-height:1.6;
-}
 
 /* ── 예측 등록 폼(C-01) — 번호가 붙은 단계 ────────────────
    무엇을 몇 개나 정해야 하는지 한눈에 보이도록 단계에 번호를 붙였다.

@@ -15,10 +15,7 @@
    - evidencePointIds 는 B-03 투자 포인트에서 인계받은 것만 쓴다. 리포트·재무지표는 근거가 못 된다.
    - 기준가는 배치 B2 가 기준일 종가로 확정한다. 등록 직후 basePrice 가 비어 있고,
      빈 값을 0 으로 그리지 않는다.
-   - 응답: 201 슬롯 내 · 202 슬롯 초과 소각 · 401 서명 불일치.
-     **201 과 202 는 같은 창으로 끝난다**(ANT-FE-PREDICT-BURN-MODAL). 예전에는 202 를 받으면
-     봉인 창을 걷고 M-02 로 갈아끼웠는데, 개미가 걸어가던 창이 도중에 바뀌어 같은 등록인데
-     다른 제품처럼 보였다. CommitProgressModal 이 202 문구를 이미 갖고 있었다.
+   - 응답: 201 · 401 서명 불일치. 등록 횟수 제한(슬롯·소각)과 중복 검사는 없다(2026-09-30).
 
    왼쪽 패널 (설계 변경 2026-09-10)
    - 개별 예측 목록이 아니라 **구간별 인원(호가창)** 이다. 누가 걸었는지는 이 화면에서
@@ -40,10 +37,7 @@ import { useAsync } from '../../api/useAsync'
 import { eventEntrySigningPayload, fetchContestEvent, registerEntries } from '../../api/events'
 import WalletLinkModal from '../wallet/WalletLinkModal'
 import WalletPrelink from '../wallet/WalletPrelink'
-import ConfirmDialog from '../ConfirmDialog'
 import OperationModal from '../operation/OperationModal'
-import { useOperation } from '../../api/operations'
-import { formatToken } from '../../api/wallet'
 import { useWalletBalance } from '../../api/walletBalance'
 import CommitProgressModal, { type CommitPhase } from '../prediction/CommitProgressModal'
 import SlideToSign from '../prediction/SlideToSign'
@@ -55,7 +49,7 @@ import { POINT_KINDS, POINT_LABEL, POINTS_LOADING, getPoints } from '../../api/s
 import type { InvestPoint, PointKind, StockSummary } from '../../api/stockDetail'
 import {
   DIRECTIONS, HORIZON_MAX, HORIZON_MIN, HORIZON_TICKS, NOTE_MAX,
-  commitHash, commitPayload, createPrediction, getSlots, horizonLabel, horizonPickLabel, newNoteSalt, noteHash,
+  commitHash, commitPayload, createPrediction, horizonLabel, horizonPickLabel, newNoteSalt, noteHash,
   formatTargetInput, formatTargetPrice, predictionSigningPayload, targetPriceInRange, targetPriceInScale,
 } from '../../api/predictions'
 import type {
@@ -132,7 +126,6 @@ export default function PredictTab({
   const { user, setWalletLinked } = useAuth()
   const navigate = useNavigate()
 
-  const slots = useBlock(() => getSlots(), [])
   const points = useBlock(() => getPoints(code), [code])
 
   /* 부모가 들고 있는 값을 그대로 쓴다. 호출부는 지역 state 때와 똑같이
@@ -160,21 +153,8 @@ export default function PredictTab({
 
   const [linking, setLinking] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  /* 슬롯을 넘긴 등록은 서명 전에 한 번 묻는다 — 서명 문자열에는 금액이 없어(명세 "무료·소각 공통")
-     이 확인 창이 곧 소각 동의다. 확인하면 sign() 으로 이어진다. */
-  const [confirmingBurn, setConfirmingBurn] = useState(false)
-  /* 202 로 접수된 **대회 배팅** 작업. M-02 가 폴링하고 확정되면 예측 상세로 보낸다.
-     소각(슬롯 초과)은 여기 오지 않는다 — 봉인 창이 끝까지 서고 아래 burnWatch 만 건다 */
+  /* 202 로 접수된 **대회 배팅** 작업. M-02 가 폴링하고 확정되면 예측 상세로 보낸다. */
   const [burnOp, setBurnOp] = useState<string | null>(null)
-  /* 소각 작업을 **화면 없이** 지켜본다. 창을 띄우려는 게 아니라 잔액 때문이다 —
-     소각이 체인에서 확정되는 순간 상단 잔액 칩이 줄어야 하는데(ANT-FE-WALLET-SYNC),
-     그 재조회를 하던 것이 M-02 창 안의 이 훅이었다(useOperation → refreshWalletBalance).
-     창을 안 띄우게 됐다고 훅까지 뺄 이유는 없다. 훅은 아무것도 그리지 않는다. */
-  const [burnWatch, setBurnWatch] = useState<string | null>(null)
-  /* 반환값을 쓰지 않는다. 확정을 화면에 알리지 않기로 했고(낙관적 등록: 202 시점에 예측은
-     이미 저장돼 있고 소각이 실패해도 토큰은 안 탄다), 확정 전에 이 화면을 떠나면 훅의
-     정리 함수가 expectWalletChange 로 넘겨 준다. */
-  useOperation(burnWatch)
   const [failure, setFailure] = useState<ApiError | null>(null)
   /* 지갑 승인 뒤 서버 응답까지 빈 시간이 있다. 그 사이 화면이 그대로면 승인이
      먹혔는지 알 수 없고, 응답이 오는 순간 완료 화면이 튀어나온다.
@@ -315,11 +295,6 @@ export default function PredictTab({
     return map
   }, [points.data])
 
-  const remaining = slots.data?.remaining ?? 0
-  const overSlot = slots.data ? remaining <= 0 : false
-  /** 슬롯을 넘겼을 때 1건에 태우는 ANT. 서버 금액표에서 온다(slots.overCost) */
-  const overCost = slots.data ? formatToken(slots.data.overCost) : null
-
   /* 이벤트 배팅. 이벤트가 아니면 폼에 값이 있어도 없는 셈 친다 — 배너로 들어왔다가
      주소에서 event 를 지우고 새로고침하면 화면에 보이지도 않는 금액이 걸린 채
      서명 발판의 문구만 "예측하고 배팅하기" 로 남는다. */
@@ -370,11 +345,10 @@ export default function PredictTab({
   /**
    * 대회 등록 — 예측과 배팅이 한 요청으로 간다(POST /events/{eventId}/entries).
    *
-   * 평소 경로(POST /predictions)와 다른 점 셋.
+   * 평소 경로(POST /predictions)와 다른 점 둘.
    *  · **서명 문자열이 다르다.** `antenna:event-entry:v1` 이고 stake 가 줄 안에 들어간다.
    *    scope 도 EVENT_ENTRY 라 서버 nonce 칸이 갈린다 — PREDICTION 으로 받으면 401 이다.
    *  · **horizon 을 보내지 않는다.** 회차가 정한 값(baseDate→settleDate)을 서버가 채운다.
-   *  · **슬롯을 쓰지 않는다.** 이벤트 등록에는 소각 경로가 없다.
    *
    * 서버는 5~10 종목 묶음도 그대로 받지만, 최소 종목 수가 등록을 막지 않게 되면서
    * (2026-09-18) 1건짜리도 통과한다. 그래서 이 화면이 종목마다 한 번씩 부른다.
@@ -401,7 +375,7 @@ export default function PredictTab({
       setPhase('committing')
       const accepted = await registerEntries(eventId, { items, signature })
       /* 202 다. 체인 전송은 뒤에서 돌고 화면은 기다리지 않는다 — 진행은 M-02 가
-         operationId 로 맡는다. 예측 등록의 소각 경로와 같은 모양이다. */
+         operationId 로 맡는다. */
       setPhase(null)
       /* 완료 화면으로 넘어가 폼을 걷는다(2026-09-19). 전에는 폼을 그대로 두고 모달만
          띄웠는데, contest.reload() 가 돌아오면 mine 이 채워져 eventPath 가 꺼지고 발판이
@@ -469,21 +443,11 @@ export default function PredictTab({
       return
     }
 
-    /* 대회 등록은 이벤트 경로로 간다 — POST /events/{id}/entries.
-       여기서 일찍 갈라서는 이유는 아래 소각 확인을 지나치기 위해서다: 이벤트 등록은
-       일일 예측 슬롯을 쓰지 않아(EventEntryService 에 슬롯·소각 코드가 없다) 소각
-       동의를 받을 이유가 없다. */
+    /* 대회 등록은 이벤트 경로로 간다 — POST /events/{id}/entries. */
     if (eventPath && ev) {
       await submitEventEntry(ev.eventId)
       return
     }
-
-    /* 슬롯을 넘겼으면 소각 동의를 먼저 받는다. 서명 창까지 간 뒤에 금액을 알게 하지 않는다 */
-    if (overSlot && !confirmingBurn) {
-      setConfirmingBurn(true)
-      return
-    }
-    setConfirmingBurn(false)
 
     setSubmitting(true)
     setPhase('signing')
@@ -495,8 +459,7 @@ export default function PredictTab({
 
       const address = await connectAddress()
       /* scope 는 PREDICTION 이다(결정 B4). 이 값이 서버 nonce 칸 sig:nonce:{userId}:prediction
-         을 정하고, PredictionCreateRequest.scope() 도 같은 값을 돌려준다. 소각(PREDICTION_BURN)
-         은 슬롯을 넘겼을 때 M-02 가 쓰는 다른 칸이라 여기서 쓰면 서버가 못 찾는다. */
+         을 정하고, PredictionCreateRequest.scope() 도 같은 값을 돌려준다. */
       const nonce = await requestNonce('PREDICTION')
       const payload = predictionSigningPayload(commitFields(draft, hash), nonce)
       const signature = await personalSign(payload, address)
@@ -507,17 +470,7 @@ export default function PredictTab({
          (EventBet.tsx 머리말). 서버가 칸을 열면 draft 옆에 나란히 넘긴다. */
       const created = await createPrediction(draft, signature)
       onResult(created)
-      /* **무료든 소각이든 같은 봉인 창으로 끝난다**(ANT-FE-PREDICT-BURN-MODAL).
-         전에는 202 에서 setPhase(null) 로 창을 걷고 M-02 를 띄웠는데, 서명·커밋 동안
-         이미 돌고 있던 개미 장면이 응답 한 번에 글자만 있는 다른 창으로 바뀌었다.
-         CommitProgressModal 이 201/202 문구를 이미 갈라 놓고 있어 붙이기만 하면 됐다. */
       setPhase('settled')
-      if (created.kind === 'queued') {
-        /* 소각은 화면 없이 지켜본다 — 확정을 알리려는 게 아니라 잔액을 제때 줄이려는 것이다.
-           창이 하나여야 해서 M-02 를 띄우지 않는다(OperationModal 머리말: 두 겹으로 띄우면
-           사용자가 뒤 창을 모른 채 앞 창을 닫는다). */
-        setBurnWatch(created.data.operationId)
-      }
       /* 폼을 통째로 비운다(2026-09-21). 전에는 noteSalt 만 갈고 목표가·근거를 남겼는데,
          결과가 부모로 올라간 지금은 이 화면으로 되돌아올 길이 없어 남겨 둘 이유가 없고,
          남기면 어딘가로 새어 나갈 때 값이 그대로 쓰인다. 새 난수도 함께 뽑힌다 — 같은
@@ -595,7 +548,7 @@ export default function PredictTab({
                 <Link className="sd-cta" to="/me/predictions">내 예측에서 보기</Link>
               </p>
             </>
-          ) : result.kind === 'event' ? (
+          ) : (
             <>
               {/* 대회 배팅을 접수했다(202). 갈 곳은 예측 상세가 아니라 **대회**다 — 대회 페이지에서
                   들어온 사람이고, 남은 종목에 더 걸 곳도 거기다. 예측 상세는 M-02 가 확정 뒤에
@@ -610,29 +563,12 @@ export default function PredictTab({
                 <Link className="sd-cta" to={CONTEST_PATH}>대회로 돌아가기</Link>
               </p>
             </>
-          ) : (
-            <>
-              {/* 슬롯을 넘겨 소각으로 접수했다(202). 예측은 이미 저장됐고 소각 tx 확정만 남았다 */}
-              <h2>예측을 등록했어요</h2>
-              <p className="sd-done-sub">
-                무료 슬롯을 넘어 {overCost ?? ''} ANT가 소각돼요. 체인에서 확정되면 지갑 내역에 남아요.
-              </p>
-              <dl className="sd-commit">
-                <div><dt>작업 번호</dt><dd className="num">{result.data.operationId}</dd></div>
-              </dl>
-              <p className="sd-done-cta">
-                <Link className="sd-cta" to={`/predictions/${result.data.predictionId}`}>예측 상세 보기</Link>
-              </p>
-            </>
           )}
         </section>
 
         {/* 대회 배팅 접수(202) 폴링. **완료 화면 위에** 띄운다(2026-09-19) — 전에는 입력 화면
             쪽에 있어 결과가 서는 순간 폼이 남은 채 모달만 떴다. 닫아도 뒤에 남는 것이 완료
-            화면이라 같은 종목에 다시 걸 길이 없다.
-            **소각(슬롯 초과)은 여기 오지 않는다**(ANT-FE-PREDICT-BURN-MODAL). 그쪽은 봉인 창이
-            끝까지 서고, 잔액은 burnWatch 가 화면 없이 챙긴다. 그래서 kind 도 분기가 없다 —
-            서버 Operation.Kind 와 맞춘 EVENT_BET 하나뿐이다. */}
+            화면이라 같은 종목에 다시 걸 길이 없다. */}
         {burnOp && (
           <OperationModal
             operationId={burnOp}
@@ -662,22 +598,7 @@ export default function PredictTab({
         <PredictionDepth code={code} />
       </div>
 
-      <Panel
-        title="예측 등록하기"
-        /* 대회 등록은 일일 예측 슬롯을 쓰지 않는다 — EventEntryService 에 슬롯·소각
-           코드가 없다. 남은 횟수를 그대로 띄우면 걸 때마다 줄어드는 것처럼 읽힌다. */
-        note={!eventPath && slots.data ? `오늘 ${remaining}/${slots.data.freeLimit}회` : undefined}
-        span={6}
-      >
-        {overSlot && !eventPath && (
-          /* 무료 슬롯을 넘기면 등록마다 ANT 를 태운다(ANT-PRED-10). 발판 라벨에도 같은 금액을
-             적고, 밀면 서명 전에 확인 창이 한 번 더 묻는다 */
-          <p className="sd-slot-warn">
-            오늘 무료 슬롯을 모두 썼어요. 이제 예측 1건마다 <b>{overCost} ANT</b>를 소각해요.
-            무료 슬롯은 내일 다시 채워집니다.
-          </p>
-        )}
-
+      <Panel title="예측 등록하기" span={6}>
         <ol className="pf-steps">
           {/* ① 목표가 — 방향과 한 걸음으로 합쳤다(2026-09-10).
               방향은 목표가가 전일 종가의 어느 쪽인지로 정해진다. 따로 묻던 시절에는
@@ -1106,7 +1027,6 @@ export default function PredictTab({
             busy={submitting}
             label={
               eventPath ? '예측하고 배팅하기'
-                : overSlot ? `${overCost} ANT 소각하고 등록하기`
                 : bet > 0 ? '예측하고 배팅하기'
                   : '밀어서 등록하기'
             }
@@ -1127,18 +1047,6 @@ export default function PredictTab({
       </Panel>
 
       {progress}
-
-      {/* 소각 동의. 확인하면 submit 이 confirmingBurn 을 보고 서명으로 넘어간다 */}
-      {confirmingBurn && (
-        <ConfirmDialog
-          title={`${overCost} ANT 를 사용해 추가로 등록할까요?`}
-          description={`오늘 무료 슬롯 ${slots.data?.freeLimit ?? 10}건을 모두 썼습니다. 이 예측은 ${overCost} ANT 를 소각하고 등록되며, 소각은 되돌릴 수 없습니다.`}
-          confirmLabel={`${overCost} ANT 소각하고 등록`}
-          tone="danger"
-          onCancel={() => setConfirmingBurn(false)}
-          onConfirm={() => { void submit() }}
-        />
-      )}
 
       {/* 대회 배팅 접수(202) 모달은 완료 화면 쪽에 있다 — result 없이 burnOp 만 서는 길이 없다 */}
 
