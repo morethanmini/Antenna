@@ -188,6 +188,22 @@ class BriefingGenerationServiceTest {
     }
 
     @Test
+    @DisplayName("지수가 일봉보다 늦게 오면 둘 다 있는 마지막 영업일을 기준일로 잡는다 — 일봉 최신일만 보면 영영 건너뛴다")
+    void 지수_지연() {
+        seedQuotes(3);
+        seedIndex(TARGET.minusDays(1));
+        given(aiClient.complete(anyString(), anyString())).willReturn(REPLY);
+
+        assertThat(generationService.generate()).isEqualTo(1);
+
+        ArgumentCaptor<String> input = ArgumentCaptor.forClass(String.class);
+        verify(aiClient, times(1)).complete(anyString(), input.capture());
+        assertThat(input.getValue()).contains("기준일: 2026-09-01");
+        assertThat(aiBriefingRepository.findAll()).singleElement()
+                .extracting(AiBriefing::getTargetDate).isEqualTo(TARGET.minusDays(1));
+    }
+
+    @Test
     @DisplayName("일봉이 하나도 없으면 기준일이 없어 부르지 않는다")
     void 시세_없음() {
         assertThat(generationService.generate()).isZero();
@@ -227,9 +243,14 @@ class BriefingGenerationServiceTest {
 
     /** 코스피 6점 — 3150 에서 기준일 3200 까지. 1영업일 +0.31%. */
     private void seedIndex() {
+        seedIndex(TARGET);
+    }
+
+    /** 코스피 6점, 마지막 점이 {@code last} 다. */
+    private void seedIndex(LocalDate last) {
         for (int i = 0; i < 6; i++) {
             em.createNativeQuery("INSERT INTO index_quotes (index_code, trade_date, close) VALUES ('KOSPI', ?, ?)")
-                    .setParameter(1, TARGET.minusDays(5 - i))
+                    .setParameter(1, last.minusDays(5 - i))
                     .setParameter(2, new BigDecimal(3150 + i * 10))
                     .executeUpdate();
         }

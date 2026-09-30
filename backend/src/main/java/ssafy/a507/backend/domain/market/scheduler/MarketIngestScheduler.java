@@ -43,10 +43,11 @@ public class MarketIngestScheduler {
 
     /**
      * 지수·환율(ANT-DATA-04). 포털이 지수를 "영업일 하루 뒤 13시 이후"에 올리는데 시각이
-     * 일정하지 않아 13~18시 매시 두드린다. 멱등 upsert 라 몇 번 받아도 같고, 공개 전 회차는
+     * 일정하지 않아 매시 두드린다. 멱등 upsert 라 몇 번 받아도 같고, 공개 전 회차는
      * 빈손으로 돌아올 뿐이다. 한 번만 돌리면 공개가 조금만 늦어도 하루를 통째로 놓친다.
+     * 13~18시로 좁혀 두었더니 18시 뒤에 올라온 날은 다음 날 13시까지 브리핑이 하루 밀렸다(2026-09-30).
      */
-    @Scheduled(cron = "${app.market-data.index.cron:0 0 13-18 * * MON-FRI}", zone = "Asia/Seoul")
+    @Scheduled(cron = "${app.market-data.index.cron:0 0 * * * MON-FRI}", zone = "Asia/Seoul")
     public void ingestIndexQuotes() {
         indexIngestService.ingestPending(LocalDate.now(KST));
     }

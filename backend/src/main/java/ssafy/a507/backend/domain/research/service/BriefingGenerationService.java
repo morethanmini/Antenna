@@ -41,9 +41,14 @@ import ssafy.a507.backend.domain.research.repository.AiBriefingRepository;
  * <p><b>D16 — 확률 수치 직접 제시 금지.</b> 프롬프트로 막고, 응답을 다시 검사해 걸리면 저장하지
  * 않는다. 프롬프트만 믿으면 열 번에 한 번은 "상승 가능성 60%" 같은 문장이 섞여 나온다.
  *
- * <p>기준일은 오늘이 아니라 <b>일봉이 들어온 마지막 영업일</b>이다. 주말·휴일에도 배치는 도는데
- * 그날은 새 시세가 없으니 금요일 브리핑이 이미 있으면(같은 세대) 건너뛴다 — 같은 글을 세 번
- * 만들어 한도를 태우지 않는다.
+ * <p>기준일은 오늘이 아니라 <b>일봉과 지수가 둘 다 들어온 마지막 영업일</b>이다. 주말·휴일에도
+ * 배치는 도는데 그날은 새 시세가 없으니 금요일 브리핑이 이미 있으면(같은 세대) 건너뛴다 — 같은 글을
+ * 세 번 만들어 한도를 태우지 않는다.
+ *
+ * <p>일봉 최신일만 보면 안 된다(2026-09-30). 포털이 지수를 일봉보다 늦게 준다 — 09-29 일봉은 09-30
+ * 오전에 있는데 지수는 09-28 까지였다. 일봉 날짜를 기준일로 잡으면 그 지수가 오기 전에 다음 일봉이
+ * 먼저 와 기준일이 한 발 앞서 나가고, 매 회차 "지수 시세가 없어 건너뛴다" 로 끝난다. 그래서 화면이
+ * 09-23 에 멈춰 있었다 — 09-23 브리핑도 연휴로 일봉이 멈춘 09-28 에야 만들어졌다.
  */
 @Slf4j
 @Service
@@ -121,7 +126,12 @@ public class BriefingGenerationService {
             log.warn("[B6] daily_quotes 가 비어 있어 브리핑 생성을 건너뛴다 — 일봉 수집이 먼저다");
             return 0;
         }
-        LocalDate targetDate = latest.get();
+        // 코스피 점이 있는 마지막 날 ≤ 일봉 최신일. 코스피가 아직 하나도 없으면 일봉 날짜로 가서
+        // 아래 "지수 시세가 없어" 로그로 떨어진다 — 부팅 첫날의 빈 DB 가 조용히 지나가지 않게.
+        LocalDate targetDate = indexQuoteRepository
+                .findFirstByIndexCodeAndTradeDateLessThanEqualOrderByTradeDateDesc(IndexQuote.IndexCode.KOSPI, latest.get())
+                .map(IndexQuote::getTradeDate)
+                .orElse(latest.get());
         String promptVersion = aiProperties.promptVersion();
         try {
             boolean written = generateMarket(stockMaterials.quotedOn(targetDate), targetDate, promptVersion);

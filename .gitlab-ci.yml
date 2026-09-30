@@ -161,7 +161,7 @@ deploy-backend:
       SSAFY_FIN_BASE_URL=$SSAFY_FIN_BASE_URL
       SSAFY_FIN_API_KEY=$SSAFY_FIN_API_KEY
       BACKFILL_CRON=${BACKFILL_CRON:--}
-      AI_GENERATION_CRON=${AI_GENERATION_CRON:-0 30 13-21 * * *}
+      AI_GENERATION_CRON=${AI_GENERATION_CRON:-0 30 * * * *}
       EOF
 
     # ── 테스트 + jar 빌드 ─────────────────────────────────────────────
