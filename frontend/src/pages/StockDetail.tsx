@@ -40,9 +40,10 @@ export default function StockDetail() {
   const { code = '' } = useParams<{ code: string }>()
   const [params, setParams] = useSearchParams()
 
-  /* 기본 탭은 예측하기다(2026-09-22 확정) — 종목을 보러 들어오는 사람보다
-     예측하러 들어오는 사람이 우선이다. ?tab=info 일 때만 종목 정보를 편다. */
-  const tab: TabKey = params.get('tab') === 'info' ? 'info' : 'predict'
+  /* 기본 탭은 종목 정보다(2026-09-30, 09-22 의 예측하기 기본을 되돌림) — 표·지도·검색에서
+     눌러 들어오는 사람은 종목을 보러 온다. 예측하러 데려가는 링크(관심종목 예측 버튼 ·
+     /predict/new · 예측 상세 · 대회 카드)는 전부 ?tab=predict 를 달고 온다. */
+  const tab: TabKey = params.get('tab') === 'predict' ? 'predict' : 'info'
 
   /* 대회(J-01)로 들어왔는가. 대회 종목 카드가 `?tab=predict&event=scalping` 으로
      데려온다(EventStocks). 탭과 같이 **주소에** 둔다 — 상태로만 들고 있으면
@@ -56,9 +57,9 @@ export default function StockDetail() {
   const eventMode = params.get('event') === CONTEST.id
   const goTab = useCallback((next: TabKey) => {
     const p = new URLSearchParams(params)
-    /* 기본값이 predict 로 바뀌었으니, 주소를 짧게 두는 쪽(파라미터 생략)도
-       predict 다 — info 로 갈 때만 ?tab=info 를 남긴다. */
-    if (next === 'predict') p.delete('tab')
+    /* 기본값이 info 라 주소를 짧게 두는 쪽(파라미터 생략)도 info 다 —
+       predict 로 갈 때만 ?tab=predict 를 남긴다. */
+    if (next === 'info') p.delete('tab')
     else p.set('tab', next)
     /* 탭 전환은 히스토리를 쌓지 않는다. 탭을 다섯 번 오간 뒤 뒤로가기를
        다섯 번 눌러야 목록으로 돌아가면 답답하다. */
