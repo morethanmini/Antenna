@@ -188,6 +188,23 @@ class BriefingGenerationServiceTest {
     }
 
     @Test
+    @DisplayName("일봉이 지수보다 앞서 들어와 있으면 지수가 있는 마지막 날이 기준일이다 — 지수 포털이 늦어도 회차가 비지 않는다")
+    void 지수_늦음() {
+        seedQuotes(3);
+        seedIndex();
+        // 다음 영업일 일봉만 먼저 왔다. 지수는 아직 기준일까지다.
+        seedQuote(SAMSUNG, TARGET.plusDays(1), 70300);
+        em.flush();
+        given(aiClient.complete(anyString(), anyString())).willReturn(REPLY);
+
+        assertThat(generationService.generate()).isEqualTo(1);
+        em.flush();
+
+        assertThat(aiBriefingRepository.findAll()).singleElement()
+                .extracting(AiBriefing::getTargetDate).isEqualTo(TARGET);
+    }
+
+    @Test
     @DisplayName("일봉이 하나도 없으면 기준일이 없어 부르지 않는다")
     void 시세_없음() {
         assertThat(generationService.generate()).isZero();
