@@ -29,7 +29,8 @@ import ssafy.a507.backend.domain.market.entity.IndexQuote.IndexCode;
  *
  * <p><b>날짜별이 아니라 구간별이다.</b> 이 API 는 {@code beginBasDt}·{@code endBasDt} 를
  * 받아 여러 날을 한 번에 준다. 주식시세처럼 날짜마다 부를 이유가 없고, 2020년부터의 백필도
- * 페이지 300장쯤(하루 168행 × 1,660일 ÷ 1,000)이면 끝난다.
+ * 페이지 300장쯤(하루 168행 × 1,660일 ÷ 1,000)이면 끝난다. {@code beginBasDt} 는 포함,
+ * {@code endBasDt} 는 배타다 — {@link #fetchRange} 는 양끝 포함으로 받고 요청에서 하루를 더한다.
  *
  * <p><b>이름으로 걸러 달라고 하지 않는다.</b> {@code idxNm=코스피} 를 보내면 포털이 빈 응답을
  * 준다(2026-09-03 확인 — 한글 파라미터를 못 읽는 것으로 보인다). 그래서 그날의 168개 지수를
@@ -122,7 +123,10 @@ public class PublicDataIndexClient {
                 .queryParam("numOfRows", portal.pageSize())
                 .queryParam("pageNo", pageNo)
                 .queryParam("beginBasDt", BAS_DT.format(from))
-                .queryParam("endBasDt", BAS_DT.format(to))
+                // endBasDt 는 배타다 — 포털이 basDt < endBasDt 로 읽는다(2026-09-30 확인: begin=0928·end=0929 는
+                // 0928 만, end=0930 이어야 0929 가 온다). 그대로 보내면 마지막 날이 늘 빠져, 지수가 일봉보다
+                // 하루 늦게 들어오는 것처럼 보였다. 호출자는 포함 구간을 넘기고 여기서 하루를 더한다.
+                .queryParam("endBasDt", BAS_DT.format(to.plusDays(1)))
                 .build(true)
                 .toUri();
 

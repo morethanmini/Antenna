@@ -81,11 +81,11 @@ class PublicDataIndexClientTest {
     }
 
     @Test
-    @DisplayName("구간은 beginBasDt·endBasDt 로, 인증키는 한 번만 인코딩해 보낸다")
+    @DisplayName("구간은 beginBasDt·endBasDt 로 — endBasDt 는 포털이 배타로 읽으므로 마지막 날 다음 날을 보낸다. 인증키는 한 번만 인코딩")
     void 구간과_인증키를_실어_보낸다() {
         server.expect(requestTo(containsString("serviceKey=ab%2Bcd%2Fef%3D%3D")))
                 .andExpect(queryParam("beginBasDt", "20260825"))
-                .andExpect(queryParam("endBasDt", "20260902"))
+                .andExpect(queryParam("endBasDt", "20260903"))
                 .andExpect(queryParam("resultType", "json"))
                 .andRespond(withSuccess(utf8(ONE_PAGE), JSON));
 
