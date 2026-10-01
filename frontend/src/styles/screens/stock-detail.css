@@ -570,7 +570,6 @@
 .stock-detail-page .sd-point-body{
   min-width:0;color:var(--body);font-size:var(--fs-md);line-height:1.5;word-break:keep-all;
 }
-.stock-detail-page .sd-point-body b{color:var(--ink);font-weight:var(--fw-heavy);font-variant-numeric:tabular-nums}
 
 .stock-detail-page .sd-point-foot{
   display:flex;align-items:center;justify-content:space-between;gap:12px;

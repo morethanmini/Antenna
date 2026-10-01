@@ -14,7 +14,6 @@
    무엇을 골랐는지는 부모(StockDetail)가 든다. 탭을 옮겨도 선택이 살아 있어야 하고,
    그 인계에는 API 가 없어 상태로만 이어지기 때문이다(InfoTab 머리말). */
 import { useCallback, useLayoutEffect, useRef } from 'react'
-import type { ReactNode } from 'react'
 import { POINT_KINDS, POINT_LABEL, SOURCE_LABEL } from '../../api/stockDetail'
 import type { PointGroups, PointKind } from '../../api/stockDetail'
 
@@ -76,16 +75,6 @@ const POINT_FACE: Record<PointKind, string> = {
   check: 'curious',
 }
 
-/* 본문 안 숫자를 굵게(2026-09-29). 포인트는 "영업이익은 124.39%, 순이익은 141.57% 늘고" 처럼
-   한 문장에 수치가 몰려 있어, 훑어 읽을 때 숫자가 글에 묻혔다.
-   **색은 입히지 않는다.** 이 포인트들은 부호 없이 "늘고 · 줄어" 로 방향을 말로 적는다 —
-   글에서 방향을 짐작해 칠하면 틀릴 수 있고, 열 색이 이미 긍정·위험을 말한다.
-   단위가 붙은 수치만 잡는다. "2025년" 같은 연도는 수치가 아니라 때라서 그대로 둔다.
-   글자를 나눠 감쌀 뿐 HTML 을 만들지 않는다. */
-const FIGURE = /(\d[\d,]*(?:\.\d+)?\s*(?:%p|%|배|조\s?원|억\s?원|만\s?원|원))/g
-const figures = (text: string): ReactNode[] =>
-  text.split(FIGURE).map((part, i) => (i % 2 === 1 ? <b key={i}>{part}</b> : part))
-
 type Props = {
   /** 아직 안 왔으면 null — 그때는 종류마다 "없음" 이 선다. 부르는 쪽이 로딩 동안은 그리지 않는다 */
   points: PointGroups | null
@@ -144,7 +133,7 @@ export default function PointPicker({ points, picked, onPick }: Props) {
                         />
                         <span className="sd-point-text">
                           {/* 제목이 따로 없다. 본문 한 덩어리가 포인트 전체다 */}
-                          <span className="sd-point-body">{figures(p.body)}</span>
+                          <span className="sd-point-body">{p.body}</span>
                           {/* 출처 배지. 칸 **안쪽** 글 밑에 붙인다 — 칸 밖에 두면 어느
                               포인트의 출처인지 한 칸씩 밀려 보인다. 없는 포인트는
                               시세·재무 수치에서 나온 종합이라 배지도 없다 */}
